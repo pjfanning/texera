@@ -1,9 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.{LinkedBlockingDeque, LinkedBlockingQueue}
+
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InternalQueueElement
+import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  VirtualIdentity
+}
 
 object WorkerInternalQueue {
   // 4 kinds of elements can be accepted by internal queue
@@ -20,7 +28,7 @@ object WorkerInternalQueue {
     * dp thread is blocked waiting for the next element in the
     * worker-internal-queue
     */
-  case object DummyInput extends InternalQueueElement
+  case object UnblockForControlCommands extends InternalQueueElement
 }
 
 /** Inspired by the mailbox-ed thread, the internal queue should
@@ -30,17 +38,25 @@ trait WorkerInternalQueue {
   // blocking deque for batches:
   // main thread put batches into this queue
   // tuple input (dp thread) take batches from this queue
-  protected val blockingDeque = new LinkedBlockingDeque[InternalQueueElement]
+  protected val dataDeque = new LinkedBlockingDeque[InternalQueueElement]
 
-  def isQueueEmpty: Boolean = blockingDeque.isEmpty
+  protected val controlQueue = new LinkedBlockingQueue[(ControlPayload, VirtualIdentity)]
+
+  def isDataQueueEmpty: Boolean = dataDeque.isEmpty
+
+  def isControlQueueEmpty: Boolean = controlQueue.isEmpty
 
   def appendElement(elem: InternalQueueElement): Unit = {
-    blockingDeque.add(elem)
+    dataDeque.add(elem)
   }
 
   /* called when user want to fix/resume current tuple */
   def prependElement(elem: InternalQueueElement): Unit = {
-    blockingDeque.addFirst(elem)
+    dataDeque.addFirst(elem)
+  }
+
+  def enqueueCommand(cmd: ControlPayload, from: VirtualIdentity): Unit = {
+    controlQueue.add((cmd, from))
   }
 
 }
