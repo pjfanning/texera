@@ -21,6 +21,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   DataOutputPort,
   TupleToBatchConverter
 }
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.UnblockForControlCommands
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.{
@@ -114,15 +115,13 @@ class WorkflowWorker(
   }
 
   override def postStop(): Unit = {
-    if (workerStateManager.confirmState(Running)) {
-      // shutdown dp thread by sending a command
-      dataProcessor.enqueueCommand(
-        ControlInvocation(AsyncRPCClient.IgnoreReply, ShutdownDPThread()),
-        ActorVirtualIdentity.Self
-      )
-    } else {
-      // shutdown directly because dp thread is either blocked or completed
-      dataProcessor.shutdown()
+    // shutdown dp thread by sending a command
+    dataProcessor.enqueueCommand(
+      ControlInvocation(AsyncRPCClient.IgnoreReply, ShutdownDPThread()),
+      ActorVirtualIdentity.Self
+    )
+    if (dataProcessor.isDataQueueEmpty) {
+      dataProcessor.appendElement(UnblockForControlCommands)
     }
     logger.logInfo("stopped!")
   }
