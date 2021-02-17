@@ -120,9 +120,6 @@ class WorkflowWorker(
       ControlInvocation(AsyncRPCClient.IgnoreReply, ShutdownDPThread()),
       ActorVirtualIdentity.Self
     )
-    if (dataProcessor.isDataQueueEmpty) {
-      dataProcessor.appendElement(UnblockForControlCommands)
-    }
     logger.logInfo("stopped!")
   }
 

@@ -30,9 +30,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 
-class DataProcessorSpec extends AnyFlatSpec with MockFactory {
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.{Await, ExecutionContext, Future}
+
+class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterEach {
   lazy val logger: WorkflowLogger = WorkflowLogger("testDP")
   lazy val pauseManager: PauseManager = mock[PauseManager]
   lazy val dataOutputPort: DataOutputPort = mock[DataOutputPort]
@@ -46,49 +50,52 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory {
 
   case class DummyControl() extends ControlCommand[CommandCompleted]
 
-  def sendDataToDP(dp: DataProcessor, data: Seq[ITuple], interval: Long = -1): Unit = {
-    new Thread {
-      override def run {
-        dp.appendElement(SenderChangeMarker(linkID))
-        data.foreach { x =>
-          dp.appendElement(InputTuple(x))
-          if (interval > 0) {
-            Thread.sleep(interval)
-          }
+  def sendDataToDP(dp: DataProcessor, data: Seq[ITuple], interval: Long = -1): Future[_] = {
+    Future {
+      dp.appendElement(SenderChangeMarker(linkID))
+      data.foreach { x =>
+        dp.appendElement(InputTuple(x))
+        if (interval > 0) {
+          Thread.sleep(interval)
         }
-        dp.appendElement(EndMarker)
-        dp.appendElement(EndOfAllMarker)
       }
-    }.start()
+      dp.appendElement(EndMarker)
+      dp.appendElement(EndOfAllMarker)
+    }(ExecutionContext.global)
   }
 
   def sendControlToDP(
       dp: DataProcessor,
       control: Seq[ControlPayload],
       interval: Long = -1
-  ): Unit = {
-    new Thread {
-      override def run {
-        control.foreach { x =>
-          dp.enqueueCommand(x, ActorVirtualIdentity.Controller)
-          if (interval > 0) {
-            Thread.sleep(interval)
-          }
+  ): Future[_] = {
+    Future {
+      control.foreach { x =>
+        dp.enqueueCommand(x, ActorVirtualIdentity.Controller)
+        if (interval > 0) {
+          Thread.sleep(interval)
         }
       }
-    }.start()
+    }(ExecutionContext.global)
   }
 
-  def waitForDataProcessing(workerStateManager: WorkerStateManager): Unit = {
-    while (workerStateManager.getCurrentState != Completed) {
+  def waitForDataProcessing(
+      workerStateManager: WorkerStateManager,
+      timeout: FiniteDuration = 5.seconds
+  ): Unit = {
+    val deadline = timeout.fromNow
+    while (deadline.hasTimeLeft() && workerStateManager.getCurrentState != Completed) {
       //wait
     }
+    assert(workerStateManager.getCurrentState == Completed)
   }
 
-  def waitForControlProcessing(dp: DataProcessor): Unit = {
-    while (!dp.isControlQueueEmpty) {
+  def waitForControlProcessing(dp: DataProcessor, timeout: FiniteDuration = 5.seconds): Unit = {
+    val deadline = timeout.fromNow
+    while (deadline.hasTimeLeft() && !dp.isControlQueueEmpty) {
       //wait
     }
+    assert(dp.isControlQueueEmpty)
   }
 
   "data processor" should "process data messages" in {
@@ -111,7 +118,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory {
     }
 
     val dp = wire[DataProcessor]
-    sendDataToDP(dp, tuples)
+    Await.result(sendDataToDP(dp, tuples), 3.seconds)
     waitForDataProcessing(workerStateManager)
     dp.shutdown()
 
@@ -145,15 +152,16 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory {
         (operator.close _).expects().once()
       }
     }
-    val dp = wire[DataProcessor]
-    sendDataToDP(dp, tuples, 2)
-    sendControlToDP(dp, (0 until 100).map(_ => ControlInvocation(0, DummyControl())), 3)
+    val dp: DataProcessor = wire[DataProcessor]
+    val f1 = sendDataToDP(dp, tuples, 2)
+    val f2 = sendControlToDP(dp, (0 until 100).map(_ => ControlInvocation(0, DummyControl())), 3)
+    Await.result(f1.zip(f2), 5.seconds)
     waitForDataProcessing(workerStateManager)
     waitForControlProcessing(dp)
     dp.shutdown()
   }
 
-  "data processor" should "unblock once getting special message" in {
+  "data processor" should "process control command without inputting data" in {
     val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
     val operator = mock[OperatorExecutor]
     val workerStateManager: WorkerStateManager = new WorkerStateManager(Running)
@@ -163,14 +171,14 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory {
       (pauseManager.isPaused _).expects().anyNumberOfTimes()
       (asyncRPCServer.logControlInvocation _).expects(*, *).anyNumberOfTimes()
       (asyncRPCClient.send[CommandCompleted] _).expects(*, *).anyNumberOfTimes()
+      (asyncRPCServer.receive _).expects(*, *).repeat(3)
       (operator.close _).expects().once()
     }
     val dp = wire[DataProcessor]
-    (asyncRPCServer.receive _).expects(*, *).never()
-    sendControlToDP(dp, (0 until 3).map(_ => ControlInvocation(0, DummyControl())))
-    Thread.sleep(3000)
-    (asyncRPCServer.receive _).expects(*, *).repeat(3)
-    dp.appendElement(UnblockForControlCommands)
+    Await.result(
+      sendControlToDP(dp, (0 until 3).map(_ => ControlInvocation(0, DummyControl()))),
+      1.second
+    )
     waitForControlProcessing(dp)
     dp.shutdown()
   }

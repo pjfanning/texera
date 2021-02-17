@@ -2,7 +2,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import java.util.concurrent.{LinkedBlockingDeque, LinkedBlockingQueue}
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InternalQueueElement
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  InternalQueueElement,
+  UnblockForControlCommands
+}
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -42,7 +45,7 @@ trait WorkerInternalQueue {
 
   protected val controlQueue = new LinkedBlockingQueue[(ControlPayload, VirtualIdentity)]
 
-  def isDataQueueEmpty: Boolean = dataDeque.isEmpty
+  def isDataDequeEmpty: Boolean = dataDeque.isEmpty
 
   def isControlQueueEmpty: Boolean = controlQueue.isEmpty
 
@@ -56,7 +59,12 @@ trait WorkerInternalQueue {
   }
 
   def enqueueCommand(cmd: ControlPayload, from: VirtualIdentity): Unit = {
+    // this enqueue operation MUST happen before checking data queue.
     controlQueue.add((cmd, from))
+    // enqueue a unblock data message if data queue is empty.
+    if (isDataDequeEmpty) {
+      appendElement(UnblockForControlCommands)
+    }
   }
 
 }
