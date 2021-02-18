@@ -1,11 +1,11 @@
-package edu.uci.ics.amber.recovery
+package edu.uci.ics.amber.engine.recovery
 
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage
-import edu.uci.ics.amber.recovery.MainLogStorage.{DataMessageIdentifier, MainLogElement}
+import edu.uci.ics.amber.engine.recovery.MainLogStorage.{DataMessageIdentifier, MainLogElement}
 
 import scala.collection.mutable
 

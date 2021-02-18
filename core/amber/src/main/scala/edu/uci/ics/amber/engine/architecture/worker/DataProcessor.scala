@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Li
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, WorkflowLogger}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
-import edu.uci.ics.amber.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
+import edu.uci.ics.amber.engine.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
 
 class DataProcessor( // dependencies:
     logger: WorkflowLogger, // logger of the worker actor

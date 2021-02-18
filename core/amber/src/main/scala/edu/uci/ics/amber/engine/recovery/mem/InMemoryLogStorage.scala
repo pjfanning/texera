@@ -1,6 +1,6 @@
-package edu.uci.ics.amber.recovery.mem
+package edu.uci.ics.amber.engine.recovery.mem
 
-import edu.uci.ics.amber.recovery.MainLogStorage.MainLogElement
+import edu.uci.ics.amber.engine.recovery.MainLogStorage.MainLogElement
 
 import scala.collection.mutable
 

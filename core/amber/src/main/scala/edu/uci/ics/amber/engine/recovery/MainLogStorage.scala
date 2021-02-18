@@ -1,8 +1,8 @@
-package edu.uci.ics.amber.recovery
+package edu.uci.ics.amber.engine.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.VirtualIdentity
-import edu.uci.ics.amber.recovery.MainLogStorage.MainLogElement
+import edu.uci.ics.amber.engine.recovery.MainLogStorage.MainLogElement
 
 object MainLogStorage {
   trait MainLogElement

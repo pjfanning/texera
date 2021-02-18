@@ -1,9 +1,9 @@
-package edu.uci.ics.amber.recovery.mem
+package edu.uci.ics.amber.engine.recovery.mem
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
-import edu.uci.ics.amber.recovery.MainLogStorage
-import edu.uci.ics.amber.recovery.MainLogStorage.{DataMessageIdentifier, MainLogElement}
+import edu.uci.ics.amber.engine.recovery.MainLogStorage
+import edu.uci.ics.amber.engine.recovery.MainLogStorage.{DataMessageIdentifier, MainLogElement}
 
 class InMemoryMainLogStorage(id:ActorVirtualIdentity) extends MainLogStorage {
 

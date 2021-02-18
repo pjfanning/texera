@@ -21,7 +21,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, ITupleSinkOperatorExecutor}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
-import edu.uci.ics.amber.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
+import edu.uci.ics.amber.engine.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO

@@ -1,4 +1,4 @@
-package edu.uci.ics.amber.recovery
+package edu.uci.ics.amber.engine.recovery
 
 abstract class SecondaryLogStorage {
 

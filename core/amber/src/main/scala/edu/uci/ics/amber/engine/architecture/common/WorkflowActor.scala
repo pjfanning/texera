@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerIniti
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
-import edu.uci.ics.amber.recovery.{MainLogReplayManager, MainLogStorage, RecoveryStatus}
+import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage, RecoveryStatus}
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
