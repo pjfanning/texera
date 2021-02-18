@@ -8,32 +8,32 @@ import edu.uci.ics.amber.recovery.MainLogStorage.{DataMessageIdentifier, MainLog
 
 import scala.collection.mutable
 
-class MainLogReplayManager(logStorage:MainLogStorage, controlInputPort: ControlInputPort) {
+class MainLogReplayManager(logStorage: MainLogStorage, controlInputPort: ControlInputPort) {
 
   private val persistedMessages = logStorage.load()
 
   persistedMessages.collect {
-    case msg:WorkflowControlMessage => controlInputPort.handleControlMessage(msg)
+    case msg: WorkflowControlMessage => controlInputPort.handleControlMessage(msg)
   }
 
-  private val persistedDataOrder = persistedMessages.collect {case msg: DataMessageIdentifier => msg}.to[mutable.Queue]
+  private val persistedDataOrder =
+    persistedMessages.collect { case msg: DataMessageIdentifier => msg }.to[mutable.Queue]
   private val stashedMessages = mutable.HashMap[DataMessageIdentifier, WorkflowMessage]()
 
-  def filterMessage(messageIn:WorkflowMessage):Iterable[WorkflowMessage] = {
+  def filterMessage(messageIn: WorkflowMessage): Iterable[WorkflowMessage] = {
     val messageIdentifier = DataMessageIdentifier(messageIn.from, messageIn.sequenceNumber)
-    if(persistedDataOrder.head == messageIdentifier){
+    if (persistedDataOrder.head == messageIdentifier) {
       persistedDataOrder.dequeue()
       Iterable(messageIn) ++ checkStashedMessages()
-    }else{
+    } else {
       stashedMessages(messageIdentifier) = messageIn
       Iterable.empty
     }
   }
 
-
-  private def checkStashedMessages():Iterable[WorkflowMessage] = {
+  private def checkStashedMessages(): Iterable[WorkflowMessage] = {
     val ret = mutable.ArrayBuffer[WorkflowMessage]()
-    while(stashedMessages.contains(persistedDataOrder.head)){
+    while (stashedMessages.contains(persistedDataOrder.head)) {
       ret.append(stashedMessages.remove(persistedDataOrder.head).get)
     }
     ret

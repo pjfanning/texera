@@ -19,7 +19,8 @@ object ControlInputPort {
       from: VirtualIdentity,
       sequenceNumber: Long,
       payload: ControlPayload
-  ) extends WorkflowMessage with MainLogElement
+  ) extends WorkflowMessage
+      with MainLogElement
 }
 
 class ControlInputPort(
