@@ -9,36 +9,19 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
-  ControlInputPort,
-  DataInputPort,
-  DataOutputPort,
-  TupleToBatchConverter
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, ControlInputPort, DataInputPort, DataOutputPort, TupleToBatchConverter}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.UnblockForControlCommands
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager._
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.{
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  ITupleSinkOperatorExecutor
-}
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, ITupleSinkOperatorExecutor}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
+import edu.uci.ics.amber.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -72,13 +55,13 @@ class WorkflowWorker(
   lazy val batchProducer: TupleToBatchConverter = wire[TupleToBatchConverter]
   lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
   lazy val breakpointManager: BreakpointManager = wire[BreakpointManager]
+  lazy val secondaryLogReplayManager:SecondaryLogReplayManager = wire[SecondaryLogReplayManager]
+  lazy val secondaryLogStorage:SecondaryLogStorage = wire[SecondaryLogStorage]
 
   override lazy val controlInputPort: ControlInputPort = wire[WorkerControlInputPort]
 
   val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
     wire[WorkerAsyncRPCHandlerInitializer]
-
-  val receivedFaultedTupleIds: mutable.HashSet[Long] = new mutable.HashSet[Long]()
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef ! RegisterActorRef(identifier, self)
@@ -87,30 +70,42 @@ class WorkflowWorker(
   workerStateManager.assertState(Uninitialized)
   workerStateManager.transitTo(Ready)
 
-  override def receive: Receive = receiveAndProcessMessages
+  mainLogReplayManager.onComplete(() => {
+    context.become(receiveAndProcessMessages)
+    unstashAll()
+  })
+
+  def recovering: Receive = {
+    disallowActorRefRelatedMessages orElse
+      receiveDataMessagesDuringRecovery orElse
+      stashControlMessages orElse
+      logUnhandledMessages
+  }
+
+  override def receive: Receive = recovering
 
   def receiveAndProcessMessages: Receive = {
     disallowActorRefRelatedMessages orElse
       processControlMessages orElse
-      receiveDataMessages orElse {
-      case other =>
-        logger.logError(
-          WorkflowRuntimeError(s"unhandled message: $other", identifier.toString, Map.empty)
-        )
-    }
+      receiveDataMessages orElse
+      logUnhandledMessages
   }
 
   final def receiveDataMessages: Receive = {
     case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
-      if (workerStateManager.getCurrentState == Ready) {
-        workerStateManager.transitTo(Running)
-        asyncRPCClient.send(
-          WorkerStateUpdated(workerStateManager.getCurrentState),
-          ActorVirtualIdentity.Controller
-        )
-      }
+      transitStateToRunningFromReady()
+      mainLogStorage.persistSenderIdentifier(data.from, data.sequenceNumber)
       sender ! NetworkAck(id)
       dataInputPort.handleDataMessage(data)
+  }
+
+  final def receiveDataMessagesDuringRecovery:Receive = {
+    case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
+      transitStateToRunningFromReady()
+      sender ! NetworkAck(id)
+      mainLogReplayManager.filterMessage(data).foreach{
+        x => dataInputPort.handleDataMessage(x)
+      }
   }
 
   override def postStop(): Unit = {
@@ -120,6 +115,16 @@ class WorkflowWorker(
       ActorVirtualIdentity.Self
     )
     logger.logInfo("stopped!")
+  }
+
+  def transitStateToRunningFromReady(): Unit ={
+    if (workerStateManager.getCurrentState == Ready) {
+      workerStateManager.transitTo(Running)
+      asyncRPCClient.send(
+        WorkerStateUpdated(workerStateManager.getCurrentState),
+        ActorVirtualIdentity.Controller
+      )
+    }
   }
 
 }

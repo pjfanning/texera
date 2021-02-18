@@ -6,14 +6,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.messaginglayer.TupleToBatchConverter
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  EndMarker,
-  EndOfAllMarker,
-  InputTuple,
-  InternalQueueElement,
-  SenderChangeMarker,
-  UnblockForControlCommands
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, EndOfAllMarker, InputTuple, InternalQueueElement, SenderChangeMarker, UnblockForControlCommands}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -23,6 +16,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Li
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, WorkflowLogger}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
+import edu.uci.ics.amber.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
 
 class DataProcessor( // dependencies:
     logger: WorkflowLogger, // logger of the worker actor
@@ -32,7 +26,9 @@ class DataProcessor( // dependencies:
     pauseManager: PauseManager, // to pause/resume
     breakpointManager: BreakpointManager, // to evaluate breakpoints
     stateManager: WorkerStateManager,
-    asyncRPCServer: AsyncRPCServer
+    asyncRPCServer: AsyncRPCServer,
+                     secondaryLogStorage: SecondaryLogStorage,
+                     secondaryLogReplayManager: SecondaryLogReplayManager
 ) extends WorkerInternalQueue {
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.
@@ -42,6 +38,7 @@ class DataProcessor( // dependencies:
   private var currentInputLink: LinkIdentity = _
   private var currentOutputIterator: Iterator[ITuple] = _
   private var isCompleted = false
+  private var dataCursor = 0L
 
   // initialize dp thread upon construction
   private val dpThreadExecutor = Executors.newSingleThreadExecutor
@@ -152,7 +149,7 @@ class DataProcessor( // dependencies:
           isCompleted = true
           batchProducer.emitEndOfUpstream()
         case UnblockForControlCommands =>
-          processControlCommandsDuringExecution()
+          processControlCommandsDuringExecution(false)
       }
     }
     // Send Completed signal to worker actor.
@@ -214,14 +211,25 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def processControlCommandsDuringExecution(): Unit = {
-    while (!controlQueue.isEmpty || pauseManager.isPaused) {
-      // if paused, dp thread will wait for resume control command here.
-      takeOneControlCommandAndProcess()
+  private[this] def processControlCommandsDuringExecution(advanceDataCursor:Boolean = true): Unit = {
+    if(advanceDataCursor){
+      dataCursor += 1
+    }
+    if(secondaryLogReplayManager.isReplaying) {
+      replayControlCommands()
+    }else{
+      while (!controlQueue.isEmpty || pauseManager.isPaused) {
+        // if paused, dp thread will wait for resume control command here.
+        takeOneControlCommandAndProcess()
+      }
     }
   }
 
   private[this] def processControlCommandsAfterCompletion(): Unit = {
+    if(secondaryLogReplayManager.isReplaying){
+      replayControlCommands()
+      assert(!secondaryLogReplayManager.isReplaying)
+    }
     while (true) {
       takeOneControlCommandAndProcess()
     }
@@ -229,6 +237,9 @@ class DataProcessor( // dependencies:
 
   private[this] def takeOneControlCommandAndProcess(): Unit = {
     val (cmd, from) = controlQueue.take()
+    if(!secondaryLogReplayManager.isReplaying){
+      secondaryLogStorage.persistCurrentDataCursor(dataCursor)
+    }
     cmd match {
       case invocation: ControlInvocation =>
         asyncRPCServer.logControlInvocation(invocation, from)
@@ -236,6 +247,13 @@ class DataProcessor( // dependencies:
       case ret: ReturnPayload =>
         asyncRPCClient.logControlReply(ret, from)
         asyncRPCClient.fulfillPromise(ret)
+    }
+  }
+
+  private[this] def replayControlCommands(): Unit ={
+    while(secondaryLogReplayManager.isCurrentCorrelated(dataCursor)){
+      takeOneControlCommandAndProcess()
+      secondaryLogReplayManager.advanceCursor()
     }
   }
 
