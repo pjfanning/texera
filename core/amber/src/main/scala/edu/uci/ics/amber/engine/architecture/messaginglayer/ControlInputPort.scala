@@ -10,6 +10,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, Re
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
+import edu.uci.ics.amber.recovery.MainLogStorage.MainLogElement
 
 import scala.collection.mutable
 
@@ -18,7 +19,7 @@ object ControlInputPort {
       from: VirtualIdentity,
       sequenceNumber: Long,
       payload: ControlPayload
-  ) extends WorkflowMessage
+  ) extends WorkflowMessage with MainLogElement
 }
 
 class ControlInputPort(

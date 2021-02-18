@@ -79,7 +79,6 @@ class WorkflowWorker(
     wire[WorkerAsyncRPCHandlerInitializer]
 
   val receivedFaultedTupleIds: mutable.HashSet[Long] = new mutable.HashSet[Long]()
-  var isCompleted = false
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef ! RegisterActorRef(identifier, self)
