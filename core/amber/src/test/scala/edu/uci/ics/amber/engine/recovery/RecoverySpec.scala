@@ -258,7 +258,7 @@ class RecoverySpec
     messages.drop(3).foreach { x =>
       worker ! NetworkMessage(0, x)
     }
-    Thread.sleep(3000)
+    Thread.sleep(10000)
     assert(InMemoryLogStorage.getMainLogOf(id.toString).size == 13)
     assert(InMemoryLogStorage.getSecondaryLogOf(id.toString).size == 5)
   }
