@@ -7,7 +7,11 @@ import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.QueryWorkerStatistics
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.OneToOnePolicy
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
@@ -15,14 +19,27 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatist
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DataFrame,
+  EndOfUpstream,
+  WorkflowMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
 import edu.uci.ics.amber.engine.recovery.MainLogStorage.{FromID, IdentifierMapping}
-import edu.uci.ics.amber.engine.recovery.mem.{InMemoryLogStorage, InMemoryMainLogStorage, InMemorySecondaryLogStorage}
+import edu.uci.ics.amber.engine.recovery.mem.{
+  InMemoryLogStorage,
+  InMemoryMainLogStorage,
+  InMemorySecondaryLogStorage
+}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalamock.scalatest.MockFactory
@@ -161,7 +178,7 @@ class RecoverySpec
     forAllNetworkMessages(receiver, x => assert(receivedMessages.dequeue() == x))
   }
 
-  def smallWorkerChain(sender1:ActorVirtualIdentity, sender2:ActorVirtualIdentity): (
+  def smallWorkerChain(sender1: ActorVirtualIdentity, sender2: ActorVirtualIdentity): (
       ISourceOperatorExecutor,
       IOperatorExecutor,
       ActorRef,
@@ -233,7 +250,9 @@ class RecoverySpec
     val op = new SourceOperatorForRecoveryTest()
     val mainLogStorage: MainLogStorage = new InMemoryMainLogStorage(id)
     val secondaryLogStorage: SecondaryLogStorage = new InMemorySecondaryLogStorage(id)
-    val worker = system.actorOf(WorkflowWorker.props(id, op, TestProbe().ref, mainLogStorage, secondaryLogStorage))
+    val worker = system.actorOf(
+      WorkflowWorker.props(id, op, TestProbe().ref, mainLogStorage, secondaryLogStorage)
+    )
     messages.take(3).foreach { x =>
       worker ! NetworkMessage(0, x)
     }
@@ -286,7 +305,7 @@ class RecoverySpec
     val sender1 = WorkerActorVirtualIdentity("source2")
     val sender2 = WorkerActorVirtualIdentity("dummy2")
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
-      smallWorkerChain(sender1,sender2)
+      smallWorkerChain(sender1, sender2)
     val receivedMessageForSource =
       waitResponsesAndKillWorker(sourceWorker, controller1, null)
     val recoveredSource = initWorker(sender1, source, controller1, Seq((sender2, dummyWorker)))

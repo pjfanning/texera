@@ -57,7 +57,15 @@ object WorkflowWorker {
       mainLogStorage: MainLogStorage = new EmptyMainLogStorage(),
       secondaryLogStorage: SecondaryLogStorage = new EmptySecondaryLogStorage()
   ): Props =
-    Props(new WorkflowWorker(id, op, parentNetworkCommunicationActorRef, mainLogStorage, secondaryLogStorage))
+    Props(
+      new WorkflowWorker(
+        id,
+        op,
+        parentNetworkCommunicationActorRef,
+        mainLogStorage,
+        secondaryLogStorage
+      )
+    )
 }
 
 class WorkflowWorker(
