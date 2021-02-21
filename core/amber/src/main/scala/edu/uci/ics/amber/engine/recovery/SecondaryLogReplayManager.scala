@@ -8,7 +8,7 @@ class SecondaryLogReplayManager(storage: SecondaryLogStorage) {
 
   def isReplaying: Boolean = !completion.isDefined
 
-  def onComplete(callback:() => Unit): Unit ={
+  def onComplete(callback: () => Unit): Unit = {
     completion.onSuccess(x => callback())
   }
 
@@ -19,7 +19,7 @@ class SecondaryLogReplayManager(storage: SecondaryLogStorage) {
   checkIfCompleted()
 
   def isCurrentCorrelated(cur: Long): Boolean = {
-    correlatedSeq.head == cur
+    correlatedSeq.nonEmpty && correlatedSeq.head == cur
   }
 
   def advanceCursor(): Unit = {
@@ -28,8 +28,8 @@ class SecondaryLogReplayManager(storage: SecondaryLogStorage) {
   }
 
   @inline
-  private[this] def checkIfCompleted(): Unit ={
-    if(correlatedSeq.isEmpty && !completion.isDefined){
+  private[this] def checkIfCompleted(): Unit = {
+    if (correlatedSeq.isEmpty && !completion.isDefined) {
       completion.setValue(null)
     }
   }

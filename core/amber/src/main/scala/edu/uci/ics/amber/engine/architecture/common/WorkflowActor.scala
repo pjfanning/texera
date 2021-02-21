@@ -5,20 +5,39 @@ import com.softwaremill.macwire.wire
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{ControlInputPort, ControlOutputPort, NetworkCommunicationActor}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  GetActorRef,
+  NetworkAck,
+  NetworkMessage,
+  NetworkSenderActorRef,
+  RegisterActorRef
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{
+  ControlInputPort,
+  ControlOutputPort,
+  NetworkCommunicationActor
+}
 import edu.uci.ics.amber.engine.common.WorkflowLogger
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
+import edu.uci.ics.amber.engine.common.rpc.{
+  AsyncRPCClient,
+  AsyncRPCHandlerInitializer,
+  AsyncRPCServer
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.recovery.empty.EmptyMainLogStorage
+import edu.uci.ics.amber.engine.recovery.mem.InMemoryMainLogStorage
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
-import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage, RecoveryStatus}
+import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage}
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: ActorRef
+    parentNetworkCommunicationActorRef: ActorRef,
+    mainLogStorage: MainLogStorage = new EmptyMainLogStorage()
 ) extends Actor
     with Stash {
+
+  lazy val mainLogReplayManager: MainLogReplayManager = wire[MainLogReplayManager]
 
   val logger: WorkflowLogger = WorkflowLogger(s"$identifier")
 
@@ -39,9 +58,6 @@ abstract class WorkflowActor(
   // this variable cannot be lazy
   // because it should be initialized with the actor itself
   val rpcHandlerInitializer: AsyncRPCHandlerInitializer
-
-  val mainLogStorage:MainLogStorage = wire[MainLogStorage]
-  val mainLogReplayManager: MainLogReplayManager = wire[MainLogReplayManager]
 
   def disallowActorRefRelatedMessages: Receive = {
     case GetActorRef(id, replyTo) =>
@@ -64,17 +80,17 @@ abstract class WorkflowActor(
 
   def processControlMessages: Receive = {
     case msg @ NetworkMessage(id, cmd: WorkflowControlMessage) =>
-      mainLogStorage.persistentEntireMessage(cmd)
+      mainLogStorage.persistElement(cmd)
       sender ! NetworkAck(id)
       handleControlMessageWithTryCatch(cmd)
   }
 
-  def stashControlMessages:Receive = {
+  def stashControlMessages: Receive = {
     case msg @ NetworkMessage(id, cmd: WorkflowControlMessage) =>
       stash()
   }
 
-  def logUnhandledMessages:Receive = {
+  def logUnhandledMessages: Receive = {
     case other =>
       logger.logError(
         WorkflowRuntimeError(s"unhandled message: $other", identifier.toString, Map.empty)
@@ -90,6 +106,5 @@ abstract class WorkflowActor(
         logger.logError(WorkflowRuntimeError(e, identifier.toString))
     }
   }
-
 
 }

@@ -23,11 +23,14 @@ import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{
   Running
 }
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   LayerIdentity,
   LinkIdentity
 }
+import edu.uci.ics.amber.engine.recovery.mem.InMemorySecondaryLogStorage
+import edu.uci.ics.amber.engine.recovery.{SecondaryLogReplayManager, SecondaryLogStorage}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
@@ -44,6 +47,9 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   lazy val breakpointManager: BreakpointManager = mock[BreakpointManager]
   lazy val controlInputPort: ControlInputPort = mock[WorkerControlInputPort]
   lazy val controlOutputPort: ControlOutputPort = mock[ControlOutputPort]
+  lazy val logStorage: SecondaryLogStorage = wire[InMemorySecondaryLogStorage]
+  lazy val replayManager: SecondaryLogReplayManager = wire[SecondaryLogReplayManager]
+  val id = WorkerActorVirtualIdentity("testDPActor")
   val linkID: LinkIdentity =
     LinkIdentity(LayerIdentity("testDP", "mockOp", "src"), LayerIdentity("testDP", "mockOp", "dst"))
   val tuples: Seq[ITuple] = (0 until 400).map(ITuple(_))

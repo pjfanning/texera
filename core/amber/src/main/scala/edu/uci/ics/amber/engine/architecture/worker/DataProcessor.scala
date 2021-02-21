@@ -1,12 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import java.util.concurrent.{Executors, LinkedBlockingDeque}
+import java.util.concurrent.{CompletableFuture, Executors, LinkedBlockingDeque}
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.messaginglayer.TupleToBatchConverter
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, EndOfAllMarker, InputTuple, InternalQueueElement, SenderChangeMarker, UnblockForControlCommands}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  EndMarker,
+  EndOfAllMarker,
+  InputTuple,
+  InternalQueueElement,
+  SenderChangeMarker,
+  UnblockForControlCommands
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -27,8 +34,8 @@ class DataProcessor( // dependencies:
     breakpointManager: BreakpointManager, // to evaluate breakpoints
     stateManager: WorkerStateManager,
     asyncRPCServer: AsyncRPCServer,
-                     secondaryLogStorage: SecondaryLogStorage,
-                     secondaryLogReplayManager: SecondaryLogReplayManager
+    secondaryLogStorage: SecondaryLogStorage,
+    secondaryLogReplayManager: SecondaryLogReplayManager
 ) extends WorkerInternalQueue {
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.
@@ -211,13 +218,15 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def processControlCommandsDuringExecution(advanceDataCursor:Boolean = true): Unit = {
-    if(advanceDataCursor){
+  private[this] def processControlCommandsDuringExecution(
+      advanceDataCursor: Boolean = true
+  ): Unit = {
+    if (advanceDataCursor) {
       dataCursor += 1
     }
-    if(secondaryLogReplayManager.isReplaying) {
+    if (secondaryLogReplayManager.isReplaying) {
       replayControlCommands()
-    }else{
+    } else {
       while (!controlQueue.isEmpty || pauseManager.isPaused) {
         // if paused, dp thread will wait for resume control command here.
         takeOneControlCommandAndProcess()
@@ -226,7 +235,7 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def processControlCommandsAfterCompletion(): Unit = {
-    if(secondaryLogReplayManager.isReplaying){
+    if (secondaryLogReplayManager.isReplaying) {
       replayControlCommands()
       assert(!secondaryLogReplayManager.isReplaying)
     }
@@ -237,23 +246,31 @@ class DataProcessor( // dependencies:
 
   private[this] def takeOneControlCommandAndProcess(): Unit = {
     val (cmd, from) = controlQueue.take()
-    if(!secondaryLogReplayManager.isReplaying){
-      secondaryLogStorage.persistCurrentDataCursor(dataCursor)
-    }
     cmd match {
+      case ShutdownDPThread() =>
+        shutdown()
+        new CompletableFuture[Void]().get
       case invocation: ControlInvocation =>
+        persistCurrentDataCursor()
         asyncRPCServer.logControlInvocation(invocation, from)
         asyncRPCServer.receive(invocation, from.asInstanceOf[ActorVirtualIdentity])
       case ret: ReturnPayload =>
+        persistCurrentDataCursor()
         asyncRPCClient.logControlReply(ret, from)
         asyncRPCClient.fulfillPromise(ret)
     }
   }
 
-  private[this] def replayControlCommands(): Unit ={
-    while(secondaryLogReplayManager.isCurrentCorrelated(dataCursor)){
+  private[this] def replayControlCommands(): Unit = {
+    while (secondaryLogReplayManager.isCurrentCorrelated(dataCursor)) {
       takeOneControlCommandAndProcess()
       secondaryLogReplayManager.advanceCursor()
+    }
+  }
+
+  private[this] def persistCurrentDataCursor(): Unit = {
+    if (!secondaryLogReplayManager.isReplaying) {
+      secondaryLogStorage.persistCurrentDataCursor(dataCursor)
     }
   }
 
