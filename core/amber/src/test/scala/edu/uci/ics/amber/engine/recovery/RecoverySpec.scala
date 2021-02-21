@@ -7,11 +7,7 @@ import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.QueryWorkerStatistics
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.OneToOnePolicy
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
@@ -19,41 +15,27 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatist
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ControlPayload,
-  DataFrame,
-  EndOfUpstream,
-  WorkflowMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.recovery.MainLogStorage.{FromID, IdentifierMapping}
-import edu.uci.ics.amber.engine.recovery.mem.{
-  InMemoryLogStorage,
-  InMemoryMainLogStorage,
-  InMemorySecondaryLogStorage
-}
+import edu.uci.ics.amber.engine.recovery.mem.{InMemoryLogStorage, InMemoryMainLogStorage, InMemorySecondaryLogStorage}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalamock.scalatest.MockFactory
 
 import scala.collection.mutable
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 
 class RecoverySpec
     extends TestKit(ActorSystem("RecoverySpec"))
     with ImplicitSender
     with AnyFlatSpecLike
-    with BeforeAndAfterAll
-    with MockFactory {
+    with BeforeAndAfterAll {
 
   implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
@@ -64,10 +46,6 @@ class RecoverySpec
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
   }
-  val id = WorkerActorVirtualIdentity("testRecovery1")
-  val sender1 = WorkerActorVirtualIdentity("sender1")
-  val sender2 = WorkerActorVirtualIdentity("sender2")
-  val sender3 = WorkerActorVirtualIdentity("sender3")
   val receiverID = WorkerActorVirtualIdentity("receiver")
   val fakeLink: LinkIdentity =
     LinkIdentity(
@@ -140,22 +118,26 @@ class RecoverySpec
 
   def sendMessagesAsync(worker: ActorRef, controls: Seq[ControlCommand[_]]): Future[Boolean] = {
     Future {
-      val messages = controls.indices.map(i =>
-        WorkflowControlMessage(
-          ActorVirtualIdentity.Controller,
-          i,
-          ControlInvocation(i, controls(i))
-        )
-      )
-      messages.foreach { x =>
-        worker ! NetworkMessage(0, x)
-        Thread.sleep(400)
-      }
+      sendMessages(worker, controls)
       true
+    }(ExecutionContext.global)
+  }
+
+  def sendMessages(worker: ActorRef, controls: Seq[ControlCommand[_]]): Unit = {
+    val messages = controls.indices.map(i =>
+      WorkflowControlMessage(
+        ActorVirtualIdentity.Controller,
+        i,
+        ControlInvocation(i, controls(i))
+      )
+    )
+    messages.foreach { x =>
+      worker ! NetworkMessage(0, x)
+      Thread.sleep(400)
     }
   }
 
-  def blockingWaitResponsesAndKillWorker(
+  def waitResponsesAndKillWorker(
       worker: ActorRef,
       controller: TestProbe,
       receiver: TestProbe
@@ -179,7 +161,7 @@ class RecoverySpec
     forAllNetworkMessages(receiver, x => assert(receivedMessages.dequeue() == x))
   }
 
-  def smallWorkerChain(): (
+  def smallWorkerChain(sender1:ActorVirtualIdentity, sender2:ActorVirtualIdentity): (
       ISourceOperatorExecutor,
       IOperatorExecutor,
       ActorRef,
@@ -220,6 +202,10 @@ class RecoverySpec
   }
 
   "worker" should "write logs during normal processing" in {
+    val id = WorkerActorVirtualIdentity("testRecovery1")
+    val sender1 = WorkerActorVirtualIdentity("sender1")
+    val sender2 = WorkerActorVirtualIdentity("sender2")
+    val sender3 = WorkerActorVirtualIdentity("sender3")
     val messages = Seq(
       WorkflowControlMessage(
         sender1,
@@ -244,13 +230,10 @@ class RecoverySpec
       WorkflowControlMessage(sender3, 1, ControlInvocation(-1, QueryStatistics())),
       WorkflowDataMessage(sender1, 1, DataFrame(Array.empty))
     )
-    val op = mock[IOperatorExecutor]
-    (op.open _).expects().anyNumberOfTimes()
-    (op.close _).expects().anyNumberOfTimes()
+    val op = new SourceOperatorForRecoveryTest()
     val mainLogStorage: MainLogStorage = new InMemoryMainLogStorage(id)
     val secondaryLogStorage: SecondaryLogStorage = new InMemorySecondaryLogStorage(id)
-    val worker =
-      TestActorRef(new WorkflowWorker(id, op, TestProbe().ref, mainLogStorage, secondaryLogStorage))
+    val worker = system.actorOf(WorkflowWorker.props(id, op, TestProbe().ref, mainLogStorage, secondaryLogStorage))
     messages.take(3).foreach { x =>
       worker ! NetworkMessage(0, x)
     }
@@ -263,7 +246,9 @@ class RecoverySpec
     assert(InMemoryLogStorage.getSecondaryLogOf(id.toString).size == 5)
   }
 
-  "worker" should "recover with the log after restarting" in {
+  "source worker" should "recover with the log after restarting" in {
+    val id = WorkerActorVirtualIdentity("testRecovery2")
+    val sender1 = WorkerActorVirtualIdentity("sender4")
     val op = new SourceOperatorForRecoveryTest()
     val controller = TestProbe()
     val receiver = TestProbe()
@@ -276,19 +261,21 @@ class RecoverySpec
       QueryStatistics()
     )
     val worker = initWorker(id, op, controller, Seq((receiverID, receiver.ref)))
-    Await.result(sendMessagesAsync(worker, controls), 20.seconds)
-    val received = blockingWaitResponsesAndKillWorker(worker, controller, receiver)
+    sendMessages(worker, controls)
+    val received = waitResponsesAndKillWorker(worker, controller, receiver)
     val recovered = initWorker(id, op, controller, Seq((receiverID, receiver.ref)))
     testRecovery(recovered, controller, receiver, received)
   }
 
   "multiple workers" should "recover with their logs after restarting" in {
+    val sender1 = WorkerActorVirtualIdentity("source1")
+    val sender2 = WorkerActorVirtualIdentity("dummy1")
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
-      smallWorkerChain()
+      smallWorkerChain(sender1, sender2)
     val receivedMessageForSource =
-      blockingWaitResponsesAndKillWorker(sourceWorker, controller1, null)
+      waitResponsesAndKillWorker(sourceWorker, controller1, null)
     val receivedMessageForDummy =
-      blockingWaitResponsesAndKillWorker(dummyWorker, controller2, receiver)
+      waitResponsesAndKillWorker(dummyWorker, controller2, receiver)
     val recoveredDummy = initWorker(sender2, dummy, controller2, Seq((receiverID, receiver.ref)))
     val recoveredSource = initWorker(sender1, source, controller1, Seq((sender2, recoveredDummy)))
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
@@ -296,10 +283,12 @@ class RecoverySpec
   }
 
   "one worker" should "recover correctly while the other worker are still alive" in {
+    val sender1 = WorkerActorVirtualIdentity("source2")
+    val sender2 = WorkerActorVirtualIdentity("dummy2")
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
-      smallWorkerChain()
+      smallWorkerChain(sender1,sender2)
     val receivedMessageForSource =
-      blockingWaitResponsesAndKillWorker(sourceWorker, controller1, null)
+      waitResponsesAndKillWorker(sourceWorker, controller1, null)
     val recoveredSource = initWorker(sender1, source, controller1, Seq((sender2, dummyWorker)))
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
     val expectedData = ((0 until 15).map(x =>

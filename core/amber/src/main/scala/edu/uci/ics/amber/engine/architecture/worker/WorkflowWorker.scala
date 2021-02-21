@@ -53,9 +53,11 @@ object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
       op: IOperatorExecutor,
-      parentNetworkCommunicationActorRef: ActorRef
+      parentNetworkCommunicationActorRef: ActorRef,
+      mainLogStorage: MainLogStorage = new EmptyMainLogStorage(),
+      secondaryLogStorage: SecondaryLogStorage = new EmptySecondaryLogStorage()
   ): Props =
-    Props(new WorkflowWorker(id, op, parentNetworkCommunicationActorRef))
+    Props(new WorkflowWorker(id, op, parentNetworkCommunicationActorRef, mainLogStorage, secondaryLogStorage))
 }
 
 class WorkflowWorker(
