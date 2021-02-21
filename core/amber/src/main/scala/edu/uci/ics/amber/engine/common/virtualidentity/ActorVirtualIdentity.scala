@@ -1,10 +1,16 @@
 package edu.uci.ics.amber.engine.common.virtualidentity
 
 object ActorVirtualIdentity {
-  case class WorkerActorVirtualIdentity(name: String) extends ActorVirtualIdentity
-  case class ControllerVirtualIdentity() extends ActorVirtualIdentity
+  case class WorkerActorVirtualIdentity(name: String) extends ActorVirtualIdentity{
+    override def toString: String = "worker-"+name
+  }
+  case class ControllerVirtualIdentity() extends ActorVirtualIdentity {
+    override def toString: String = "controller"
+  }
   case class SelfVirtualIdentity() extends ActorVirtualIdentity
-  case class ClientVirtualIdentity() extends ActorVirtualIdentity
+  case class ClientVirtualIdentity() extends ActorVirtualIdentity {
+    override def toString: String = "client"
+  }
 
   lazy val Controller: ControllerVirtualIdentity = ControllerVirtualIdentity()
   lazy val Self: SelfVirtualIdentity = SelfVirtualIdentity()
