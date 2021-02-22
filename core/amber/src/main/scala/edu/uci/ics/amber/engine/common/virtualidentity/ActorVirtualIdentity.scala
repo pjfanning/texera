@@ -1,8 +1,8 @@
 package edu.uci.ics.amber.engine.common.virtualidentity
 
 object ActorVirtualIdentity {
-  case class WorkerActorVirtualIdentity(name: String) extends ActorVirtualIdentity{
-    override def toString: String = "worker-"+name
+  case class WorkerActorVirtualIdentity(name: String) extends ActorVirtualIdentity {
+    override def toString: String = "worker-" + name
   }
   case class ControllerVirtualIdentity() extends ActorVirtualIdentity {
     override def toString: String = "controller"
