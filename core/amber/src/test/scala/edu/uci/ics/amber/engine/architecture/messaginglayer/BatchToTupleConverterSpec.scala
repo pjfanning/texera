@@ -9,6 +9,8 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   SenderChangeMarker
 }
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream, InputLinking}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
@@ -18,8 +20,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
   private val mockInternalQueue = mock[WorkerInternalQueue]
   private val fakeID = WorkerActorVirtualIdentity("testReceiver")
-  val linkID1 = LinkIdentity(null, null)
-  val linkID2 = LinkIdentity(LayerIdentity("", "", ""), null)
+  private val stateManager = mock[WorkerStateManager]
+  (stateManager.getCurrentState _).expects().anyNumberOfTimes()
+  private val asyncRPCClient = mock[AsyncRPCClient]
+  (asyncRPCClient.send _).expects(*, *).anyNumberOfTimes()
+  private val linkID1 = LinkIdentity(null, null)
+  private val linkID2 = LinkIdentity(LayerIdentity("", "", ""), null)
+
   "tuple producer" should "break batch into tuples and output" in {
     val batchToTupleConverter = wire[BatchToTupleConverter]
     val inputBatch = DataFrame(Array.fill(4)(ITuple(1, 2, 3, 5, "9.8", 7.6)))

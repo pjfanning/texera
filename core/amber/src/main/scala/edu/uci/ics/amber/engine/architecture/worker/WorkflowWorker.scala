@@ -125,14 +125,12 @@ class WorkflowWorker(
 
   final def receiveDataMessages: Receive = {
     case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
-      transitStateToRunningFromReady()
       sender ! NetworkAck(id)
       dataInputPort.handleDataMessage(data)
   }
 
   final def receiveDataMessagesDuringRecovery: Receive = {
     case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
-      transitStateToRunningFromReady()
       sender ! NetworkAck(id)
       dataInputPort.handleDataMessage(data)
   }
@@ -141,16 +139,6 @@ class WorkflowWorker(
     // shutdown dp thread by sending a command
     dataProcessor.enqueueCommand(ShutdownDPThread(), ActorVirtualIdentity.Self)
     super.postStop()
-  }
-
-  def transitStateToRunningFromReady(): Unit = {
-    if (workerStateManager.getCurrentState == Ready) {
-      workerStateManager.transitTo(Running)
-      asyncRPCClient.send(
-        WorkerStateUpdated(workerStateManager.getCurrentState),
-        ActorVirtualIdentity.Controller
-      )
-    }
   }
 
 }

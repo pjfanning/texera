@@ -223,7 +223,6 @@ class RecoverySpec
     val receiver = TestProbe()
     val controlsForSource = Seq(
       QueryStatistics(),
-      QueryStatistics(),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(sender2))),
       StartWorker(),
       QueryStatistics(),
@@ -281,13 +280,13 @@ class RecoverySpec
         0,
         InputLinking(fakeLink)
       ),
-      WorkflowDataMessage(sender1, 0, DataFrame(Array.empty)),
-      WorkflowDataMessage(sender2, 0, DataFrame(Array.empty)),
+      WorkflowDataMessage(sender1, 1, DataFrame(Array.empty)),
       WorkflowDataMessage(sender2, 1, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender2, 1, ControlInvocation(-1, QueryStatistics())),
-      WorkflowDataMessage(sender3, 0, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender3, 1, ControlInvocation(-1, QueryStatistics())),
-      WorkflowDataMessage(sender1, 1, DataFrame(Array.empty))
+      WorkflowDataMessage(sender2, 2, DataFrame(Array.empty)),
+      WorkflowControlMessage(sender2, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowDataMessage(sender3, 1, DataFrame(Array.empty)),
+      WorkflowControlMessage(sender3, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowDataMessage(sender1, 2, DataFrame(Array.empty))
     )
     val op = new SourceOperatorForRecoveryTest()
     val mainLogStorage: MainLogStorage = new InMemoryMainLogStorage(id)
@@ -304,7 +303,7 @@ class RecoverySpec
     }
     Thread.sleep(10000)
     assert(InMemoryLogStorage.getMainLogOf(id.toString).size == 13)
-    assert(InMemoryLogStorage.getSecondaryLogOf(id.toString).size == 5)
+    assert(InMemoryLogStorage.getSecondaryLogOf(id.toString).size == 2)
     mainLogStorage.clear()
     secondaryLogStorage.clear()
   }
@@ -418,13 +417,14 @@ class RecoverySpec
       sourceSecondaryLog
     )
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
-    val expectedData = ((0 until 15).map(x =>
-      WorkflowDataMessage(dummyID, x, DataFrame(Array(ITuple(x + 1))))
-    ) ++ Seq(WorkflowDataMessage(dummyID, 15, EndOfUpstream()))).to[mutable.Queue]
+    val expectedData =
+      (Seq(WorkflowDataMessage(dummyID, 0, InputLinking(fakeLink))) ++ (1 until 16).map(x =>
+        WorkflowDataMessage(dummyID, x, DataFrame(Array(ITuple(x))))
+      ) ++ Seq(WorkflowDataMessage(dummyID, 16, EndOfUpstream()))).to[mutable.Queue]
     forAllNetworkMessages(receiver, w => assert(w == expectedData.dequeue()))
     val receivedControl = mutable.Queue[WorkflowMessage]()
     forAllNetworkMessages(controller2, w => receivedControl.enqueue(w))
-    assert(receivedControl.size == 9)
+    assert(receivedControl.size == 8)
     sourceMainLog.clear()
     sourceSecondaryLog.clear()
     dummyMainLog.clear()

@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   EndMarker,
@@ -13,11 +14,22 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   EndOfUpstream,
   InputLinking
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Ready, Running}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  VirtualIdentity
+}
 
 import scala.collection.mutable
 
-class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
+class BatchToTupleConverter(
+    workerInternalQueue: WorkerInternalQueue,
+    workerStateManager: WorkerStateManager,
+    asyncRPCClient: AsyncRPCClient
+) {
 
   /**
     * Map from Identifier to input number. Used to convert the Identifier
@@ -51,11 +63,13 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
       case InputLinking(link) =>
         registerInput(from, link)
       case DataFrame(payload) =>
+        transitStateToRunningFromReady()
         checkLinkChange(inputMap(from))
         payload.foreach { i =>
           workerInternalQueue.appendElement(InputTuple(i))
         }
       case EndOfUpstream() =>
+        transitStateToRunningFromReady()
         val link = inputMap(from)
         checkLinkChange(link)
         upstreamMap(link).remove(from)
@@ -73,6 +87,16 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     if (currentLink == null || currentLink != link) {
       workerInternalQueue.appendElement(SenderChangeMarker(link))
       currentLink = link
+    }
+  }
+
+  private def transitStateToRunningFromReady(): Unit = {
+    if (workerStateManager.getCurrentState == Ready) {
+      workerStateManager.transitTo(Running)
+      asyncRPCClient.send(
+        WorkerStateUpdated(workerStateManager.getCurrentState),
+        ActorVirtualIdentity.Controller
+      )
     }
   }
 
