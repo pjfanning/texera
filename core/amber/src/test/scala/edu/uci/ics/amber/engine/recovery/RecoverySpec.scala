@@ -20,12 +20,12 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ControlPayload,
   DataFrame,
   EndOfUpstream,
+  InputLinking,
   WorkflowMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -231,7 +231,6 @@ class RecoverySpec
       QueryStatistics()
     )
     val controlsForDummy = Seq(
-      UpdateInputLinking(sender1, fakeLink),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(receiverID))),
       QueryStatistics(),
       QueryStatistics(),
@@ -267,20 +266,20 @@ class RecoverySpec
     val sender2 = WorkerActorVirtualIdentity("sender2")
     val sender3 = WorkerActorVirtualIdentity("sender3")
     val messages = Seq(
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender1,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender1, fakeLink))
+        InputLinking(fakeLink)
       ),
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender2,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender2, fakeLink))
+        InputLinking(fakeLink)
       ),
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender3,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender3, fakeLink))
+        InputLinking(fakeLink)
       ),
       WorkflowDataMessage(sender1, 0, DataFrame(Array.empty)),
       WorkflowDataMessage(sender2, 0, DataFrame(Array.empty)),
@@ -317,7 +316,6 @@ class RecoverySpec
     val controller = TestProbe()
     val receiver = TestProbe()
     val controls = Seq(
-      UpdateInputLinking(sender1, fakeLink),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(receiverID))),
       StartWorker(),
       QueryStatistics(),

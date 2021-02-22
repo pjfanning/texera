@@ -1,10 +1,13 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, VirtualIdentity}
 
-trait DataPayload extends Serializable {}
+sealed trait DataPayload extends Serializable {}
 
 final case class EndOfUpstream() extends DataPayload
+
+final case class InputLinking(link: LinkIdentity) extends DataPayload
 
 final case class DataFrame(frame: Array[ITuple]) extends DataPayload {
   override def equals(obj: Any): Boolean = {

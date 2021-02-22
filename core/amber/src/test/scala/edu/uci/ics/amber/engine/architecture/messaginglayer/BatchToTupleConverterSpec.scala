@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   InputTuple,
   SenderChangeMarker
 }
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream, InputLinking}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
@@ -31,7 +31,7 @@ class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
       (mockInternalQueue.appendElement _).expects(EndMarker)
       (mockInternalQueue.appendElement _).expects(EndOfAllMarker)
     }
-    batchToTupleConverter.registerInput(fakeID, linkID1)
+    batchToTupleConverter.processDataPayload(fakeID, InputLinking(linkID1))
     batchToTupleConverter.processDataPayload(fakeID, inputBatch)
     batchToTupleConverter.processDataPayload(fakeID, EndOfUpstream())
   }
@@ -56,8 +56,8 @@ class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
     }
     val first = WorkerActorVirtualIdentity("first upstream")
     val second = WorkerActorVirtualIdentity("second upstream")
-    batchToTupleConverter.registerInput(first, linkID1)
-    batchToTupleConverter.registerInput(second, linkID2)
+    batchToTupleConverter.processDataPayload(first, InputLinking(linkID1))
+    batchToTupleConverter.processDataPayload(second, InputLinking(linkID2))
     batchToTupleConverter.processDataPayload(first, inputBatchFromUpstream1)
     batchToTupleConverter.processDataPayload(second, inputBatchFromUpstream2)
     batchToTupleConverter.processDataPayload(second, EndOfUpstream())

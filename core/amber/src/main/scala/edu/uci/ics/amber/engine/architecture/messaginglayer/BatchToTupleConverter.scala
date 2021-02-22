@@ -7,7 +7,12 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   InputTuple,
   SenderChangeMarker
 }
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  InputLinking
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, VirtualIdentity}
 
 import scala.collection.mutable
@@ -24,7 +29,7 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
   private val upstreamMap = new mutable.HashMap[LinkIdentity, mutable.HashSet[VirtualIdentity]]
   private var currentLink: LinkIdentity = _
 
-  def registerInput(identifier: VirtualIdentity, input: LinkIdentity): Unit = {
+  private[this] def registerInput(identifier: VirtualIdentity, input: LinkIdentity): Unit = {
     upstreamMap.getOrElseUpdate(input, new mutable.HashSet[VirtualIdentity]()).add(identifier)
     inputMap(identifier) = input
   }
@@ -42,17 +47,17 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     * @param dataPayload
     */
   def processDataPayload(from: VirtualIdentity, dataPayload: DataPayload): Unit = {
-    val link = inputMap(from)
-    if (currentLink == null || currentLink != link) {
-      workerInternalQueue.appendElement(SenderChangeMarker(link))
-      currentLink = link
-    }
     dataPayload match {
+      case InputLinking(link) =>
+        registerInput(from, link)
       case DataFrame(payload) =>
+        checkLinkChange(inputMap(from))
         payload.foreach { i =>
           workerInternalQueue.appendElement(InputTuple(i))
         }
       case EndOfUpstream() =>
+        val link = inputMap(from)
+        checkLinkChange(link)
         upstreamMap(link).remove(from)
         if (upstreamMap(link).isEmpty) {
           workerInternalQueue.appendElement(EndMarker)
@@ -61,8 +66,13 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
         if (upstreamMap.isEmpty) {
           workerInternalQueue.appendElement(EndOfAllMarker)
         }
-      case other =>
-        throw new NotImplementedError()
+    }
+  }
+
+  private def checkLinkChange(link: LinkIdentity): Unit = {
+    if (currentLink == null || currentLink != link) {
+      workerInternalQueue.appendElement(SenderChangeMarker(link))
+      currentLink = link
     }
   }
 
