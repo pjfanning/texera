@@ -25,7 +25,6 @@ import edu.uci.ics.amber.engine.common.rpc.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.recovery.empty.EmptyMainLogStorage
-import edu.uci.ics.amber.engine.recovery.mem.InMemoryMainLogStorage
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
 import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage}

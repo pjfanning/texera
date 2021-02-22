@@ -1,5 +1,8 @@
 package edu.uci.ics.amber.engine.recovery
 
+import java.io.File
+import java.nio.file.{Files, Paths}
+
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import akka.util.Timeout
@@ -35,11 +38,16 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity
 }
 import edu.uci.ics.amber.engine.recovery.MainLogStorage.{FromID, IdentifierMapping}
+import edu.uci.ics.amber.engine.recovery.local.{
+  LocalDiskMainLogStorage,
+  LocalDiskSecondaryLogStorage
+}
 import edu.uci.ics.amber.engine.recovery.mem.{
   InMemoryLogStorage,
   InMemoryMainLogStorage,
   InMemorySecondaryLogStorage
 }
+import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalamock.scalatest.MockFactory
@@ -57,10 +65,20 @@ class RecoverySpec
   implicit val timeout: Timeout = Timeout(5.seconds)
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
+  def deleteFolderSafely(path: String): Unit = {
+    val folder = new File(path)
+    if (folder.exists()) {
+      FileUtils.cleanDirectory(folder)
+      FileUtils.deleteDirectory(folder)
+    }
+  }
+
   override def beforeAll: Unit = {
+    deleteFolderSafely("./logs")
     system.actorOf(Props[SingleNodeListener], "cluster-info")
   }
   override def afterAll: Unit = {
+    deleteFolderSafely("./logs")
     TestKit.shutdownActorSystem(system)
   }
   val receiverID = WorkerActorVirtualIdentity("receiver")
@@ -69,6 +87,10 @@ class RecoverySpec
       LayerIdentity("testRecovery", "mockOp", "src"),
       LayerIdentity("testRecovery", "mockOp", "dst")
     )
+
+  def getMainLogStorage(id: ActorVirtualIdentity) = new LocalDiskMainLogStorage(id)
+
+  def getSecondaryLogStorage(id: ActorVirtualIdentity) = new LocalDiskSecondaryLogStorage(id)
 
   class SourceOperatorForRecoveryTest(outputLimit: Int = 15, generateInterval: Int = 100)
       extends ISourceOperatorExecutor {
@@ -178,7 +200,14 @@ class RecoverySpec
     forAllNetworkMessages(receiver, x => assert(receivedMessages.dequeue() == x))
   }
 
-  def smallWorkerChain(sender1: ActorVirtualIdentity, sender2: ActorVirtualIdentity, sender1MainLog: MainLogStorage, sender2MainLog:MainLogStorage, sender1SecondaryLog:SecondaryLogStorage, sender2SecondaryLog:SecondaryLogStorage): (
+  def smallWorkerChain(
+      sender1: ActorVirtualIdentity,
+      sender2: ActorVirtualIdentity,
+      sender1MainLog: MainLogStorage,
+      sender2MainLog: MainLogStorage,
+      sender1SecondaryLog: SecondaryLogStorage,
+      sender2SecondaryLog: SecondaryLogStorage
+  ): (
       ISourceOperatorExecutor,
       IOperatorExecutor,
       ActorRef,
@@ -209,8 +238,22 @@ class RecoverySpec
       QueryStatistics(),
       QueryStatistics()
     )
-    val dummyWorker = initWorker(sender2, dummy, controller2, Seq((receiverID, receiver.ref)), sender2MainLog, sender2SecondaryLog)
-    val sourceWorker = initWorker(sender1, source, controller1, Seq((sender2, dummyWorker)), sender1MainLog, sender1SecondaryLog)
+    val dummyWorker = initWorker(
+      sender2,
+      dummy,
+      controller2,
+      Seq((receiverID, receiver.ref)),
+      sender2MainLog,
+      sender2SecondaryLog
+    )
+    val sourceWorker = initWorker(
+      sender1,
+      source,
+      controller1,
+      Seq((sender2, dummyWorker)),
+      sender1MainLog,
+      sender1SecondaryLog
+    )
     val f1 = sendMessagesAsync(sourceWorker, controlsForSource)
     val f2 = sendMessagesAsync(dummyWorker, controlsForDummy)
     Await.result(f1, 20.seconds)
@@ -281,12 +324,26 @@ class RecoverySpec
       QueryStatistics(),
       QueryStatistics()
     )
-    val workerMainLog = new InMemoryMainLogStorage(id)
-    val workerSecondaryLog = new InMemorySecondaryLogStorage(id)
-    val worker = initWorker(id, op, controller, Seq((receiverID, receiver.ref)), workerMainLog, workerSecondaryLog)
+    val workerMainLog = getMainLogStorage(id)
+    val workerSecondaryLog = getSecondaryLogStorage(id)
+    val worker = initWorker(
+      id,
+      op,
+      controller,
+      Seq((receiverID, receiver.ref)),
+      workerMainLog,
+      workerSecondaryLog
+    )
     sendMessages(worker, controls)
     val received = waitResponsesAndKillWorker(worker, controller, receiver)
-    val recovered = initWorker(id, op, controller, Seq((receiverID, receiver.ref)), workerMainLog, workerSecondaryLog)
+    val recovered = initWorker(
+      id,
+      op,
+      controller,
+      Seq((receiverID, receiver.ref)),
+      workerMainLog,
+      workerSecondaryLog
+    )
     testRecovery(recovered, controller, receiver, received)
     workerMainLog.clear()
     workerSecondaryLog.clear()
@@ -295,18 +352,39 @@ class RecoverySpec
   "multiple workers" should "recover with their logs after restarting" in {
     val sourceID = WorkerActorVirtualIdentity("source1")
     val dummyID = WorkerActorVirtualIdentity("dummy1")
-    val sourceMainLog = new InMemoryMainLogStorage(sourceID)
-    val sourceSecondaryLog = new InMemorySecondaryLogStorage(sourceID)
-    val dummyMainLog = new InMemoryMainLogStorage(dummyID)
-    val dummySecondaryLog = new InMemorySecondaryLogStorage(dummyID)
+    val sourceMainLog = getMainLogStorage(sourceID)
+    val sourceSecondaryLog = getSecondaryLogStorage(sourceID)
+    val dummyMainLog = getMainLogStorage(dummyID)
+    val dummySecondaryLog = getSecondaryLogStorage(dummyID)
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
-      smallWorkerChain(sourceID, dummyID, sourceMainLog, dummyMainLog, sourceSecondaryLog, dummySecondaryLog)
+      smallWorkerChain(
+        sourceID,
+        dummyID,
+        sourceMainLog,
+        dummyMainLog,
+        sourceSecondaryLog,
+        dummySecondaryLog
+      )
     val receivedMessageForSource =
       waitResponsesAndKillWorker(sourceWorker, controller1, null)
     val receivedMessageForDummy =
       waitResponsesAndKillWorker(dummyWorker, controller2, receiver)
-    val recoveredDummy = initWorker(dummyID, dummy, controller2, Seq((receiverID, receiver.ref)), dummyMainLog, dummySecondaryLog)
-    val recoveredSource = initWorker(sourceID, source, controller1, Seq((dummyID, recoveredDummy)), sourceMainLog, sourceSecondaryLog)
+    val recoveredDummy = initWorker(
+      dummyID,
+      dummy,
+      controller2,
+      Seq((receiverID, receiver.ref)),
+      dummyMainLog,
+      dummySecondaryLog
+    )
+    val recoveredSource = initWorker(
+      sourceID,
+      source,
+      controller1,
+      Seq((dummyID, recoveredDummy)),
+      sourceMainLog,
+      sourceSecondaryLog
+    )
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
     testRecovery(recoveredDummy, controller2, receiver, receivedMessageForDummy)
     sourceMainLog.clear()
@@ -318,15 +396,29 @@ class RecoverySpec
   "one worker" should "recover correctly while the other worker are still alive" in {
     val sourceID = WorkerActorVirtualIdentity("source2")
     val dummyID = WorkerActorVirtualIdentity("dummy2")
-    val sourceMainLog = new InMemoryMainLogStorage(sourceID)
-    val sourceSecondaryLog = new InMemorySecondaryLogStorage(sourceID)
-    val dummyMainLog = new InMemoryMainLogStorage(dummyID)
-    val dummySecondaryLog = new InMemorySecondaryLogStorage(dummyID)
+    val sourceMainLog = getMainLogStorage(sourceID)
+    val sourceSecondaryLog = getSecondaryLogStorage(sourceID)
+    val dummyMainLog = getMainLogStorage(dummyID)
+    val dummySecondaryLog = getSecondaryLogStorage(dummyID)
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
-      smallWorkerChain(sourceID, dummyID, sourceMainLog, dummyMainLog, sourceSecondaryLog, dummySecondaryLog)
+      smallWorkerChain(
+        sourceID,
+        dummyID,
+        sourceMainLog,
+        dummyMainLog,
+        sourceSecondaryLog,
+        dummySecondaryLog
+      )
     val receivedMessageForSource =
       waitResponsesAndKillWorker(sourceWorker, controller1, null)
-    val recoveredSource = initWorker(sourceID, source, controller1, Seq((dummyID, dummyWorker)), sourceMainLog, sourceSecondaryLog)
+    val recoveredSource = initWorker(
+      sourceID,
+      source,
+      controller1,
+      Seq((dummyID, dummyWorker)),
+      sourceMainLog,
+      sourceSecondaryLog
+    )
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
     val expectedData = ((0 until 15).map(x =>
       WorkflowDataMessage(dummyID, x, DataFrame(Array(ITuple(x + 1))))
@@ -340,7 +432,5 @@ class RecoverySpec
     dummyMainLog.clear()
     dummySecondaryLog.clear()
   }
-
-
 
 }
