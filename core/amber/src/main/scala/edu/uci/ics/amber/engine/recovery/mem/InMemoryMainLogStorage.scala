@@ -16,4 +16,8 @@ class InMemoryMainLogStorage(id: ActorVirtualIdentity) extends MainLogStorage {
   override def load(): Iterable[MainLogStorage.MainLogElement] = {
     InMemoryLogStorage.getMainLogOf(idString)
   }
+
+  override def clear(): Unit = {
+    InMemoryLogStorage.clearMainLogOf(idString)
+  }
 }

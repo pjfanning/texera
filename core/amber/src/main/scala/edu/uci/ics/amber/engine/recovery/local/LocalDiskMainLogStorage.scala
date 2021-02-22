@@ -50,4 +50,6 @@ class LocalDiskMainLogStorage(id: ActorVirtualIdentity) extends MainLogStorage {
     }
     controlSerializer.flush()
   }
+
+  override def clear(): Unit = ???
 }

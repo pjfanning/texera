@@ -6,8 +6,12 @@ abstract class SecondaryLogStorage {
 
   def persistCurrentDataCursor(dataCursor: Long)
 
-  //for recovery:
+  // for recovery:
 
   def load(): Iterable[Long]
+
+  // clear everything
+
+  def clear():Unit
 
 }

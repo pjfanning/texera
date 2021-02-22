@@ -6,4 +6,6 @@ class EmptySecondaryLogStorage extends SecondaryLogStorage {
   override def persistCurrentDataCursor(dataCursor: Long): Unit = {}
 
   override def load(): Iterable[Long] = Iterable.empty
+
+  override def clear(): Unit = {}
 }
