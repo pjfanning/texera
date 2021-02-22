@@ -18,7 +18,9 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.OneToOnePolicy
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.ambermessage.{
@@ -283,9 +285,9 @@ class RecoverySpec
       WorkflowDataMessage(sender1, 1, DataFrame(Array.empty)),
       WorkflowDataMessage(sender2, 1, DataFrame(Array.empty)),
       WorkflowDataMessage(sender2, 2, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender2, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowControlMessage(sender2, 0, ControlInvocation(0, PauseWorker())),
       WorkflowDataMessage(sender3, 1, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender3, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowControlMessage(sender3, 0, ControlInvocation(0, ResumeWorker())),
       WorkflowDataMessage(sender1, 2, DataFrame(Array.empty))
     )
     val op = new SourceOperatorForRecoveryTest()
@@ -294,14 +296,10 @@ class RecoverySpec
     val worker = system.actorOf(
       WorkflowWorker.props(id, op, TestProbe().ref, mainLogStorage, secondaryLogStorage)
     )
-    messages.take(3).foreach { x =>
+    messages.foreach { x =>
       worker ! NetworkMessage(0, x)
     }
-    Thread.sleep(3000)
-    messages.drop(3).foreach { x =>
-      worker ! NetworkMessage(0, x)
-    }
-    Thread.sleep(10000)
+    Thread.sleep(2000)
     assert(InMemoryLogStorage.getMainLogOf(id.toString).size == 13)
     assert(InMemoryLogStorage.getSecondaryLogOf(id.toString).size == 2)
     mainLogStorage.clear()

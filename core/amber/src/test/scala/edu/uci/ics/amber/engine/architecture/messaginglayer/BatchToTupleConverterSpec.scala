@@ -21,13 +21,13 @@ class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
   private val mockInternalQueue = mock[WorkerInternalQueue]
   private val fakeID = WorkerActorVirtualIdentity("testReceiver")
   private val stateManager = mock[WorkerStateManager]
-  (stateManager.getCurrentState _).expects().anyNumberOfTimes()
   private val asyncRPCClient = mock[AsyncRPCClient]
-  (asyncRPCClient.send _).expects(*, *).anyNumberOfTimes()
   private val linkID1 = LinkIdentity(null, null)
   private val linkID2 = LinkIdentity(LayerIdentity("", "", ""), null)
 
   "tuple producer" should "break batch into tuples and output" in {
+    (stateManager.getCurrentState _).expects().anyNumberOfTimes()
+    (asyncRPCClient.send _).expects(*, *).anyNumberOfTimes()
     val batchToTupleConverter = wire[BatchToTupleConverter]
     val inputBatch = DataFrame(Array.fill(4)(ITuple(1, 2, 3, 5, "9.8", 7.6)))
     inSequence {
@@ -44,6 +44,8 @@ class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
   }
 
   "tuple producer" should "be aware of upstream change" in {
+    (stateManager.getCurrentState _).expects().anyNumberOfTimes()
+    (asyncRPCClient.send _).expects(*, *).anyNumberOfTimes()
     val batchToTupleConverter = wire[BatchToTupleConverter]
     val inputBatchFromUpstream1 = DataFrame(Array.fill(4)(ITuple(1, 2, 3, 5, "9.8", 7.6)))
     val inputBatchFromUpstream2 = DataFrame(Array.fill(4)(ITuple(2, 3, 4, 5, "6.7", 8.9)))
