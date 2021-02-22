@@ -107,4 +107,8 @@ abstract class WorkflowActor(
     }
   }
 
+  override def postStop(): Unit = {
+    logger.logInfo("stopped!")
+  }
+
 }

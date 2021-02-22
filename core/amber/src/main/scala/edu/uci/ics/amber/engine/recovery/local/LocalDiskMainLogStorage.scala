@@ -9,4 +9,6 @@ class LocalDiskMainLogStorage(id: ActorVirtualIdentity) extends MainLogStorage {
   override def load(): Iterable[MainLogStorage.MainLogElement] = ???
 
   override def persistElement(elem: MainLogStorage.MainLogElement): Unit = ???
+
+  override def clear(): Unit = ???
 }

@@ -7,4 +7,6 @@ class EmptyMainLogStorage extends MainLogStorage {
   override def load(): Iterable[MainLogStorage.MainLogElement] = Iterable.empty
 
   override def persistElement(elem: MainLogStorage.MainLogElement): Unit = {}
+
+  override def clear(): Unit = {}
 }

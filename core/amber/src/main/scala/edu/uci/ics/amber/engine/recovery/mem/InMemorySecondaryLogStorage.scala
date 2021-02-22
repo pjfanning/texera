@@ -14,4 +14,8 @@ class InMemorySecondaryLogStorage(id: ActorVirtualIdentity) extends SecondaryLog
   override def load(): Iterable[Long] = {
     InMemoryLogStorage.getSecondaryLogOf(idString)
   }
+
+  override def clear(): Unit = {
+    InMemoryLogStorage.clearSecondaryLogOf(idString)
+  }
 }

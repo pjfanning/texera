@@ -140,7 +140,7 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     dataProcessor.enqueueCommand(ShutdownDPThread(), ActorVirtualIdentity.Self)
-    logger.logInfo("stopped!")
+    super.postStop()
   }
 
   def transitStateToRunningFromReady(): Unit = {

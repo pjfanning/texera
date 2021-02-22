@@ -24,4 +24,16 @@ object InMemoryLogStorage {
     secondaryLogs(k)
   }
 
+  def clearMainLogOf(k:String): Unit ={
+    if(mainLogs.contains(k)){
+      mainLogs.remove(k)
+    }
+  }
+
+  def clearSecondaryLogOf(k:String): Unit ={
+    if(secondaryLogs.contains(k)){
+      secondaryLogs.remove(k)
+    }
+  }
+
 }

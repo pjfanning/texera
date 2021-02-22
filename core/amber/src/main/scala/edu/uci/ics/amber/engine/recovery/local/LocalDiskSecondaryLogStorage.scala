@@ -7,4 +7,6 @@ class LocalDiskSecondaryLogStorage(id: ActorVirtualIdentity) extends SecondaryLo
   override def persistCurrentDataCursor(dataCursor: Long): Unit = ???
 
   override def load(): Iterable[Long] = ???
+
+  override def clear(): Unit = ???
 }

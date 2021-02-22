@@ -17,7 +17,7 @@ abstract class MainLogStorage {
   private val mapping = mutable.HashMap[VirtualIdentity, Int]()
   private var counter = 0
 
-  //for persist:
+  // for persist:
   def persistElement(elem: MainLogElement)
 
   def receivedDataFrom(vid: VirtualIdentity): Unit = {
@@ -29,8 +29,11 @@ abstract class MainLogStorage {
     persistElement(FromID(mapping(vid)))
   }
 
-  //for recovery:
+  // for recovery:
 
   def load(): Iterable[MainLogElement]
+
+  // clear everything
+  def clear(): Unit
 
 }
