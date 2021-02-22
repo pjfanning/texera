@@ -12,6 +12,6 @@ abstract class SecondaryLogStorage {
 
   // clear everything
 
-  def clear():Unit
+  def clear(): Unit
 
 }
