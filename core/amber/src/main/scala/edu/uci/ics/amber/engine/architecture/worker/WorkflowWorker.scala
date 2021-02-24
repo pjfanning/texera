@@ -11,7 +11,8 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.Workfl
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   NetworkAck,
   NetworkMessage,
-  RegisterActorRef
+  RegisterActorRef,
+  SendRequest
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   BatchToTupleConverter,
@@ -34,6 +35,7 @@ import edu.uci.ics.amber.engine.common.{
   ISourceOperatorExecutor,
   ITupleSinkOperatorExecutor
 }
+import edu.uci.ics.amber.engine.recovery.RecoveryManager.RecoveryCompleted
 import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
 import edu.uci.ics.amber.engine.recovery.mem.InMemorySecondaryLogStorage
 import edu.uci.ics.amber.error.WorkflowRuntimeError
@@ -54,8 +56,8 @@ object WorkflowWorker {
       id: ActorVirtualIdentity,
       op: IOperatorExecutor,
       parentNetworkCommunicationActorRef: ActorRef,
-      mainLogStorage: MainLogStorage = new EmptyMainLogStorage(),
-      secondaryLogStorage: SecondaryLogStorage = new EmptySecondaryLogStorage()
+      mainLogStorage: MainLogStorage,
+      secondaryLogStorage: SecondaryLogStorage
   ): Props =
     Props(
       new WorkflowWorker(
@@ -72,8 +74,8 @@ class WorkflowWorker(
     identifier: ActorVirtualIdentity,
     operator: IOperatorExecutor,
     parentNetworkCommunicationActorRef: ActorRef,
-    mainLogStorage: MainLogStorage = new EmptyMainLogStorage(),
-    secondaryLogStorage: SecondaryLogStorage = new EmptySecondaryLogStorage()
+    mainLogStorage: MainLogStorage,
+    secondaryLogStorage: SecondaryLogStorage
 ) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef, mainLogStorage) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
@@ -103,6 +105,10 @@ class WorkflowWorker(
   workerStateManager.transitTo(Ready)
 
   mainLogReplayManager.onComplete(() => {
+    networkCommunicationActor ! SendRequest(
+      ActorVirtualIdentity.Controller,
+      RecoveryCompleted(identifier)
+    )
     context.become(receiveAndProcessMessages)
     unstashAll()
   })

@@ -10,9 +10,10 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.recovery.empty.EmptyMainLogStorage
 
 class TrivialControlTester(id: ActorVirtualIdentity, parentNetworkCommunicationActorRef: ActorRef)
-    extends WorkflowActor(id, parentNetworkCommunicationActorRef) {
+    extends WorkflowActor(id, parentNetworkCommunicationActorRef, new EmptyMainLogStorage()) {
   override val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
     wire[TesterAsyncRPCHandlerInitializer]
 

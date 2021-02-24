@@ -73,8 +73,8 @@ abstract class OpExecConfig(val id: OperatorIdentity) extends Serializable {
   def getAllWorkerStates: Iterable[WorkerState] = topology.layers.flatMap(l => l.states)
 
   def getWorker(id: ActorVirtualIdentity): WorkerInfo = {
-    val layer = topology.layers.find(l => l.workers.contains(id)).get
-    layer.workers(id)
+    val layer = topology.layers.find(l => l.identifiers.contains(id)).get
+    layer.getWorkerInfo(id)
   }
 
   def setAllWorkerState(state: WorkerState): Unit = {

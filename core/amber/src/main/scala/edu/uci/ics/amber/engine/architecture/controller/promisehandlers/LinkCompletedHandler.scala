@@ -41,7 +41,7 @@ trait LinkCompletedHandler {
           .collect(
             layerWithDependencies
               .filter(_.canStart)
-              .flatMap(l => l.workers.keys)
+              .flatMap(l => l.identifiers)
               .map(send(StartWorker(), _))
               .toSeq
           )

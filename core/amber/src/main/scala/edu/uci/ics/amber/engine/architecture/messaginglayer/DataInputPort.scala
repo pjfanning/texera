@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  DataPayload,
+  WorkflowFIFOMessage,
+  WorkflowMessage
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.VirtualIdentity
 import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage}
 
@@ -12,7 +16,7 @@ object DataInputPort {
       from: VirtualIdentity,
       sequenceNumber: Long,
       payload: DataPayload
-  ) extends WorkflowMessage
+  ) extends WorkflowFIFOMessage
 }
 
 class DataInputPort(

@@ -82,7 +82,7 @@ class Workflow(
 
   def getAllOperators: Iterable[OpExecConfig] = operators.values
 
-  def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = workerToLayer(id).workers(id)
+  def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = workerToLayer(id).getWorkerInfo(id)
 
   def getSourceLayers: Iterable[WorkerLayer] = {
     val tos = getAllLinks.map(_.to).toSet
@@ -110,6 +110,12 @@ class Workflow(
     operators.values.foreach { op =>
       op.results = null
     }
+  }
+
+  def getUpstreamWorkers(id: ActorVirtualIdentity): Iterable[ActorVirtualIdentity] = {
+    val layer = workerToLayer(id)
+    val upstreamWorkers = layer.getAllInputLinks.flatMap(x => idToLink(x).getUpstreamWorkersFor(id))
+    upstreamWorkers ++ upstreamWorkers.flatMap(x => getUpstreamWorkers(x))
   }
 
   def buildOperator(

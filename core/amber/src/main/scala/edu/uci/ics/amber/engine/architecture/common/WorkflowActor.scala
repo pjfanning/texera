@@ -27,12 +27,12 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.recovery.empty.EmptyMainLogStorage
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
-import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage}
+import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage, RecoveryManager}
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: ActorRef,
-    mainLogStorage: MainLogStorage = new EmptyMainLogStorage()
+    mainLogStorage: MainLogStorage
 ) extends Actor
     with Stash {
 

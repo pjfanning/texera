@@ -19,4 +19,9 @@ class AllToOne(from: WorkerLayer, to: WorkerLayer, batchSize: Int)
     from.identifiers.map(x => (x, new OneToOnePolicy(id, batchSize, Array(toActor)), Seq(toActor)))
   }
 
+  override def getMappingFromDownstreamToUpstream
+      : Map[ActorVirtualIdentity, Iterable[ActorVirtualIdentity]] = {
+    assert(from.isBuilt && to.isBuilt && to.numWorkers == 1)
+    Map(to.identifiers.head -> from.identifiers)
+  }
 }

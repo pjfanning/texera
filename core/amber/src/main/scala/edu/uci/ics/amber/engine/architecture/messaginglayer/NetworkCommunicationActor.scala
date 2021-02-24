@@ -14,6 +14,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.recovery.RecoveryManager.TriggerRecovery
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 
 import scala.collection.mutable
@@ -150,13 +151,7 @@ class NetworkCommunicationActor(parentRef: ActorRef) extends Actor with LazyLogg
 
   def sendMessagesAndReceiveAcks: Receive = {
     case SendRequest(id, msg) =>
-      if (idToActorRefs.contains(id)) {
-        forwardMessage(id, msg)
-      } else {
-        val stash = messageStash.getOrElseUpdate(id, new mutable.Queue[WorkflowMessage]())
-        stash.enqueue(msg)
-        getActorRefMappingFromParent(id)
-      }
+      handleSendRequest(id, msg)
     case NetworkAck(id) =>
       val actorID = messageIDToIdentity(id)
       val congestionControl = idToCongestionControls(actorID)
@@ -177,6 +172,7 @@ class NetworkCommunicationActor(parentRef: ActorRef) extends Actor with LazyLogg
       // only remove the mapping from id to actorRef
       // to trigger discover mechanism
       val actorID = messageIDToIdentity(msg.messageID)
+      handleSendRequest(ActorVirtualIdentity.Controller, TriggerRecovery(actorID))
       logger.warn(s"actor for $actorID might have crashed or failed")
       idToActorRefs.remove(actorID)
       if (parentRef != null) {
@@ -202,6 +198,17 @@ class NetworkCommunicationActor(parentRef: ActorRef) extends Actor with LazyLogg
     if (!queriedActorVirtualIdentities.contains(actorID)) {
       parentRef ! GetActorRef(actorID, Set(self))
       queriedActorVirtualIdentities.add(actorID)
+    }
+  }
+
+  @inline
+  private[this] def handleSendRequest(id: ActorVirtualIdentity, msg: WorkflowMessage): Unit = {
+    if (idToActorRefs.contains(id)) {
+      forwardMessage(id, msg)
+    } else {
+      val stash = messageStash.getOrElseUpdate(id, new mutable.Queue[WorkflowMessage]())
+      stash.enqueue(msg)
+      getActorRefMappingFromParent(id)
     }
   }
 

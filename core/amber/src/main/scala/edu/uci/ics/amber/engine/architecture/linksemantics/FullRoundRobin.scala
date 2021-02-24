@@ -19,4 +19,9 @@ class FullRoundRobin(from: WorkerLayer, to: WorkerLayer, batchSize: Int)
     )
   }
 
+  override def getMappingFromDownstreamToUpstream
+      : Map[ActorVirtualIdentity, Iterable[ActorVirtualIdentity]] = {
+    assert(from.isBuilt && to.isBuilt)
+    to.identifiers.map(x => x -> from.identifiers.toIterable).toMap
+  }
 }

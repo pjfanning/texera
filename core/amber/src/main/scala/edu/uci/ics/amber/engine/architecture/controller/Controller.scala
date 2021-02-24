@@ -21,6 +21,8 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.Ready
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.recovery.RecoveryManager.RecoveryMessage
+import edu.uci.ics.amber.engine.recovery.{MainLogStorage, RecoveryManager}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 
 import scala.concurrent.duration._
@@ -33,6 +35,8 @@ object Controller {
       workflow: Workflow,
       eventListener: ControllerEventListener,
       statusUpdateInterval: Long,
+      mainLogStorage: MainLogStorage =
+        RecoveryManager.defaultMainLogStorage(ActorVirtualIdentity.Controller),
       parentNetworkCommunicationActorRef: ActorRef = null
   ): Props =
     Props(
@@ -41,6 +45,7 @@ object Controller {
         workflow,
         eventListener,
         Option.apply(statusUpdateInterval),
+        mainLogStorage,
         parentNetworkCommunicationActorRef
       )
     )
@@ -51,12 +56,18 @@ class Controller(
     val workflow: Workflow,
     val eventListener: ControllerEventListener = ControllerEventListener(),
     val statisticsUpdateIntervalMs: Option[Long],
+    mainLogStorage: MainLogStorage,
     parentNetworkCommunicationActorRef: ActorRef
-) extends WorkflowActor(ActorVirtualIdentity.Controller, parentNetworkCommunicationActorRef) {
+) extends WorkflowActor(
+      ActorVirtualIdentity.Controller,
+      parentNetworkCommunicationActorRef,
+      mainLogStorage
+    ) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
   val rpcHandlerInitializer = wire[ControllerAsyncRPCHandlerInitializer]
+  val recoveryManager = wire[RecoveryManager]
 
   private def errorLogAction(err: WorkflowRuntimeError): Unit = {
     eventListener.workflowExecutionErrorListener.apply(ErrorOccurred(err))
@@ -100,27 +111,30 @@ class Controller(
   override def receive: Receive = initializing
 
   def initializing: Receive = {
-    case NetworkMessage(
-          id,
-          cmd @ WorkflowControlMessage(from, sequenceNumber, payload: ReturnPayload)
-        ) =>
-      //process reply messages
-      sender ! NetworkAck(id)
-      handleControlMessageWithTryCatch(cmd)
-    case NetworkMessage(
-          id,
-          cmd @ WorkflowControlMessage(ActorVirtualIdentity.Controller, sequenceNumber, payload)
-        ) =>
-      //process control messages from self
-      sender ! NetworkAck(id)
-      handleControlMessageWithTryCatch(cmd)
-    case msg =>
-      stash() //prevent other messages to be executed until initialized
+    processRecoveryMessages orElse {
+      case NetworkMessage(
+            id,
+            cmd @ WorkflowControlMessage(from, sequenceNumber, payload: ReturnPayload)
+          ) =>
+        //process reply messages
+        sender ! NetworkAck(id)
+        handleControlMessageWithTryCatch(cmd)
+      case NetworkMessage(
+            id,
+            cmd @ WorkflowControlMessage(ActorVirtualIdentity.Controller, sequenceNumber, payload)
+          ) =>
+        //process control messages from self
+        sender ! NetworkAck(id)
+        handleControlMessageWithTryCatch(cmd)
+      case msg =>
+        stash() //prevent other messages to be executed until initialized
+    }
   }
 
   def running: Receive = {
     acceptDirectInvocations orElse
-      processControlMessages orElse {
+      processControlMessages orElse
+      processRecoveryMessages orElse {
       case other =>
         logger.logInfo(s"unhandled message: $other")
     }
@@ -137,6 +151,18 @@ class Controller(
     }
     workflow.cleanupResults()
     super.postStop()
+  }
+
+  def processRecoveryMessages: Receive = {
+    case NetworkMessage(id, msg: RecoveryMessage) =>
+      sender ! NetworkAck(id)
+      msg match {
+        case RecoveryManager.TriggerRecovery(id) =>
+          val targetNode = availableNodes.head
+          recoveryManager.recoverWorkerChainFor(id, targetNode)
+        case RecoveryManager.RecoveryCompleted(id) =>
+          recoveryManager.setRecoverCompleted(id)
+      }
   }
 
 }

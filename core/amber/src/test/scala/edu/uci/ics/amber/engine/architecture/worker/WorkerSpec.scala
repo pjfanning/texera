@@ -18,6 +18,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.CommandCompleted
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -69,10 +70,18 @@ class WorkerSpec
         .expects(ActorVirtualIdentity.Controller, ReturnPayload(0, CommandCompleted()))
     }
 
-    val worker = TestActorRef(new WorkflowWorker(identifier1, mockOpExecutor, TestProbe().ref) {
-      override lazy val batchProducer = mockTupleToBatchConverter
-      override lazy val controlOutputPort = mockControlOutputPort
-    })
+    val worker = TestActorRef(
+      new WorkflowWorker(
+        identifier1,
+        mockOpExecutor,
+        TestProbe().ref,
+        new EmptyMainLogStorage(),
+        new EmptySecondaryLogStorage()
+      ) {
+        override lazy val batchProducer = mockTupleToBatchConverter
+        override lazy val controlOutputPort = mockControlOutputPort
+      }
+    )
     val invocation = ControlInvocation(0, AddOutputPolicy(mockPolicy))
     worker ! NetworkMessage(
       0,

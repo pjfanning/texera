@@ -41,7 +41,7 @@ trait StartWorkflowHandler {
             .filter(layer => layer.canStart)
             .flatMap { layer =>
               startedLayers.add(layer)
-              layer.workers.keys.map { worker =>
+              layer.identifiers.map { worker =>
                 send(StartWorker(), worker).map { ret =>
                   // update worker state
                   workflow.getWorkerInfo(worker).state = ret

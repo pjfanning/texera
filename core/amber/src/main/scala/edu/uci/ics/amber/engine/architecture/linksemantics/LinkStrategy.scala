@@ -12,6 +12,8 @@ abstract class LinkStrategy(
 
   val id = LinkIdentity(from.id, to.id)
 
+  to.addInputLink(id)
+
   def totalReceiversCount: Long = to.numWorkers
 
   private var currentCompletedCount = 0
@@ -22,4 +24,10 @@ abstract class LinkStrategy(
 
   // returns Iterable of (sender, sender's sending policy, set of receivers)
   def getPolicies: Iterable[(ActorVirtualIdentity, DataSendingPolicy, Seq[ActorVirtualIdentity])]
+
+  def getMappingFromDownstreamToUpstream: Map[ActorVirtualIdentity, Iterable[ActorVirtualIdentity]]
+
+  def getUpstreamWorkersFor(worker: ActorVirtualIdentity): Iterable[ActorVirtualIdentity] = {
+    getMappingFromDownstreamToUpstream(worker)
+  }
 }

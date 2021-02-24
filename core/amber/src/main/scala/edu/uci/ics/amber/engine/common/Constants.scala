@@ -1,5 +1,8 @@
 package edu.uci.ics.amber.engine.common
 
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
+
 import scala.concurrent.duration._
 
 object Constants {
@@ -13,4 +16,5 @@ object Constants {
   var numWorkerPerNode = 2
   var dataVolumePerNode = 10
   var defaultTau: FiniteDuration = 10.milliseconds
+
 }
