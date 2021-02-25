@@ -46,11 +46,12 @@ class RecoveryManager(
   }
 
   def setRecoverCompleted(id: ActorVirtualIdentity): Unit = {
-    isRecovering.remove(id)
+    if(isRecovering.contains(id)){
+      isRecovering.remove(id)
+    }
   }
 
   private def recoverWorker(id: ActorVirtualIdentity, onNode: Address): Unit = {
-    isRecovering.add(id)
     workflow
       .getWorkerLayer(id)
       .killAndReBuild(
@@ -61,6 +62,7 @@ class RecoveryManager(
         RecoveryManager.defaultMainLogStorage(id),
         RecoveryManager.defaultSecondLogStorage(id)
       )
+    isRecovering.add(id)
   }
 
 }
