@@ -285,9 +285,9 @@ class RecoverySpec
     )
     val op = new SourceOperatorForRecoveryTest()
     val controlLogStorage: LogStorage[WorkflowControlMessage] =
-      new InMemoryLogStorage(id.toString + "-control")
-    val dataLogStorage: LogStorage[DataLogElement] = new InMemoryLogStorage(id.toString + "-data")
-    val dpLogStorage: LogStorage[Long] = new InMemoryLogStorage(id.toString + "-dp")
+      new LocalDiskLogStorage(id.toString + "-control")
+    val dataLogStorage: LogStorage[DataLogElement] = new LocalDiskLogStorage(id.toString + "-data")
+    val dpLogStorage: LogStorage[Long] = new LocalDiskLogStorage(id.toString + "-dp")
     val worker = system.actorOf(
       WorkflowWorker.props(id, op, TestProbe().ref, controlLogStorage, dataLogStorage, dpLogStorage)
     )
@@ -295,9 +295,9 @@ class RecoverySpec
       worker ! NetworkMessage(0, x)
     }
     Thread.sleep(10000)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-control").size == 2)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-data").size == 11)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-dp").size == 2)
+    assert(controlLogStorage.load().size == 2)
+    assert(dataLogStorage.load().size == 11)
+    assert(dpLogStorage.load().size == 2)
     dataLogStorage.clear()
     dpLogStorage.clear()
     controlLogStorage.clear()
