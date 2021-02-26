@@ -10,11 +10,7 @@ import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.QueryWorkerStatistics
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.OneToOnePolicy
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
@@ -22,22 +18,14 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatist
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ControlPayload,
-  DataFrame,
-  EndOfUpstream,
-  WorkflowMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
+import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalamock.scalatest.MockFactory
@@ -77,10 +65,6 @@ class RecoverySpec
       LayerIdentity("testRecovery", "mockOp", "src"),
       LayerIdentity("testRecovery", "mockOp", "dst")
     )
-
-  def getMainLogStorage(id: ActorVirtualIdentity) = new LocalDiskMainLogStorage(id)
-
-  def getSecondaryLogStorage(id: ActorVirtualIdentity) = new LocalDiskSecondaryLogStorage(id)
 
   class SourceOperatorForRecoveryTest(outputLimit: Int = 15, generateInterval: Int = 100)
       extends ISourceOperatorExecutor {
@@ -323,9 +307,9 @@ class RecoverySpec
       QueryStatistics(),
       QueryStatistics()
     )
-    val workerControlLog = new InMemoryLogStorage[WorkflowControlMessage](id + "-control")
-    val workerDataLog = new InMemoryLogStorage[DataLogElement](id + "-data")
-    val workerDPLog = new InMemoryLogStorage[Long](id + "-dp")
+    val workerControlLog = new LocalDiskLogStorage[WorkflowControlMessage](id + "-control")
+    val workerDataLog = new LocalDiskLogStorage[DataLogElement](id + "-data")
+    val workerDPLog = new LocalDiskLogStorage[Long](id + "-dp")
     val worker = initWorker(
       id,
       op,
@@ -356,15 +340,15 @@ class RecoverySpec
     val sourceID = WorkerActorVirtualIdentity("source1")
     val dummyID = WorkerActorVirtualIdentity("dummy1")
     val sourceControlLogStorage: LogStorage[WorkflowControlMessage] =
-      new InMemoryLogStorage(sourceID.toString + "-control")
+      new LocalDiskLogStorage(sourceID.toString + "-control")
     val sourceDataLogStorage: LogStorage[DataLogElement] =
-      new InMemoryLogStorage(sourceID.toString + "-data")
-    val sourceDPLogStorage: LogStorage[Long] = new InMemoryLogStorage(sourceID.toString + "-dp")
+      new LocalDiskLogStorage(sourceID.toString + "-data")
+    val sourceDPLogStorage: LogStorage[Long] = new LocalDiskLogStorage(sourceID.toString + "-dp")
     val dummyControlLogStorage: LogStorage[WorkflowControlMessage] =
-      new InMemoryLogStorage(dummyID.toString + "-control")
+      new LocalDiskLogStorage(dummyID.toString + "-control")
     val dummyDataLogStorage: LogStorage[DataLogElement] =
-      new InMemoryLogStorage(dummyID.toString + "-data")
-    val dummyDPLogStorage: LogStorage[Long] = new InMemoryLogStorage(dummyID.toString + "-dp")
+      new LocalDiskLogStorage(dummyID.toString + "-data")
+    val dummyDPLogStorage: LogStorage[Long] = new LocalDiskLogStorage(dummyID.toString + "-dp")
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
       smallWorkerChain(
         sourceID,
@@ -412,15 +396,15 @@ class RecoverySpec
     val sourceID = WorkerActorVirtualIdentity("source2")
     val dummyID = WorkerActorVirtualIdentity("dummy2")
     val sourceControlLogStorage: LogStorage[WorkflowControlMessage] =
-      new InMemoryLogStorage(sourceID.toString + "-control")
+      new LocalDiskLogStorage(sourceID.toString + "-control")
     val sourceDataLogStorage: LogStorage[DataLogElement] =
-      new InMemoryLogStorage(sourceID.toString + "-data")
-    val sourceDPLogStorage: LogStorage[Long] = new InMemoryLogStorage(sourceID.toString + "-dp")
+      new LocalDiskLogStorage(sourceID.toString + "-data")
+    val sourceDPLogStorage: LogStorage[Long] = new LocalDiskLogStorage(sourceID.toString + "-dp")
     val dummyControlLogStorage: LogStorage[WorkflowControlMessage] =
-      new InMemoryLogStorage(dummyID.toString + "-control")
+      new LocalDiskLogStorage(dummyID.toString + "-control")
     val dummyDataLogStorage: LogStorage[DataLogElement] =
-      new InMemoryLogStorage(dummyID.toString + "-data")
-    val dummyDPLogStorage: LogStorage[Long] = new InMemoryLogStorage(dummyID.toString + "-dp")
+      new LocalDiskLogStorage(dummyID.toString + "-data")
+    val dummyDPLogStorage: LogStorage[Long] = new LocalDiskLogStorage(dummyID.toString + "-dp")
     val (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver) =
       smallWorkerChain(
         sourceID,
