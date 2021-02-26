@@ -17,6 +17,9 @@ trait AddOutputPolicyHandler {
   registerHandler { (msg: AddOutputPolicy, sender) =>
     stateManager.assertState(Ready)
     tupleToBatchConverter.addPolicy(msg.policy)
+    msg.policy.notifyDownStreams().foreach {
+      case (dest, msg) => dataOutputPort.sendTo(dest, msg)
+    }
     CommandCompleted()
   }
 

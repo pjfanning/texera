@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   EndMarker,
@@ -7,12 +8,28 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   InputTuple,
   SenderChangeMarker
 }
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
-import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  InputLinking
+}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Ready, Running}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  VirtualIdentity
+}
 
 import scala.collection.mutable
 
-class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
+class BatchToTupleConverter(
+    workerInternalQueue: WorkerInternalQueue,
+    workerStateManager: WorkerStateManager,
+    asyncRPCClient: AsyncRPCClient
+) {
 
   /**
     * Map from Identifier to input number. Used to convert the Identifier
@@ -24,7 +41,7 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
   private val upstreamMap = new mutable.HashMap[LinkIdentity, mutable.HashSet[VirtualIdentity]]
   private var currentLink: LinkIdentity = _
 
-  def registerInput(identifier: VirtualIdentity, input: LinkIdentity): Unit = {
+  private[this] def registerInput(identifier: VirtualIdentity, input: LinkIdentity): Unit = {
     upstreamMap.getOrElseUpdate(input, new mutable.HashSet[VirtualIdentity]()).add(identifier)
     inputMap(identifier) = input
   }
@@ -42,17 +59,19 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     * @param dataPayload
     */
   def processDataPayload(from: VirtualIdentity, dataPayload: DataPayload): Unit = {
-    val link = inputMap(from)
-    if (currentLink == null || currentLink != link) {
-      workerInternalQueue.appendElement(SenderChangeMarker(link))
-      currentLink = link
-    }
     dataPayload match {
+      case InputLinking(link) =>
+        registerInput(from, link)
       case DataFrame(payload) =>
+        transitStateToRunningFromReady()
+        checkLinkChange(inputMap(from))
         payload.foreach { i =>
           workerInternalQueue.appendElement(InputTuple(i))
         }
       case EndOfUpstream() =>
+        transitStateToRunningFromReady()
+        val link = inputMap(from)
+        checkLinkChange(link)
         upstreamMap(link).remove(from)
         if (upstreamMap(link).isEmpty) {
           workerInternalQueue.appendElement(EndMarker)
@@ -61,8 +80,23 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
         if (upstreamMap.isEmpty) {
           workerInternalQueue.appendElement(EndOfAllMarker)
         }
-      case other =>
-        throw new NotImplementedError()
+    }
+  }
+
+  private def checkLinkChange(link: LinkIdentity): Unit = {
+    if (currentLink == null || currentLink != link) {
+      workerInternalQueue.appendElement(SenderChangeMarker(link))
+      currentLink = link
+    }
+  }
+
+  private def transitStateToRunningFromReady(): Unit = {
+    if (workerStateManager.getCurrentState == Ready) {
+      workerStateManager.transitTo(Running)
+      asyncRPCClient.send(
+        WorkerStateUpdated(workerStateManager.getCurrentState),
+        ActorVirtualIdentity.Controller
+      )
     }
   }
 

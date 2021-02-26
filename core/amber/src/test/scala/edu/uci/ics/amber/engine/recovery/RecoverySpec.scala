@@ -18,14 +18,16 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.OneToOnePolicy
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ControlPayload,
   DataFrame,
   EndOfUpstream,
+  InputLinking,
   WorkflowMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -213,7 +215,6 @@ class RecoverySpec
     val receiver = TestProbe()
     val controlsForSource = Seq(
       QueryStatistics(),
-      QueryStatistics(),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(sender2))),
       StartWorker(),
       QueryStatistics(),
@@ -221,7 +222,6 @@ class RecoverySpec
       QueryStatistics()
     )
     val controlsForDummy = Seq(
-      UpdateInputLinking(sender1, fakeLink),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(receiverID))),
       QueryStatistics(),
       QueryStatistics(),
@@ -252,6 +252,7 @@ class RecoverySpec
     Await.result(f2, 20.seconds)
     (source, dummy, sourceWorker, dummyWorker, controller1, controller2, receiver)
   }
+//  The following test will randomly fail in github action, the reason is still unclear.
 
   "worker" should "write logs during normal processing" in {
     val id = WorkerActorVirtualIdentity("testRecovery1")
@@ -259,28 +260,28 @@ class RecoverySpec
     val sender2 = WorkerActorVirtualIdentity("sender2")
     val sender3 = WorkerActorVirtualIdentity("sender3")
     val messages = Seq(
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender1,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender1, fakeLink))
+        InputLinking(fakeLink)
       ),
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender2,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender2, fakeLink))
+        InputLinking(fakeLink)
       ),
-      WorkflowControlMessage(
+      WorkflowDataMessage(
         sender3,
         0,
-        ControlInvocation(-1, UpdateInputLinking(sender3, fakeLink))
+        InputLinking(fakeLink)
       ),
-      WorkflowDataMessage(sender1, 0, DataFrame(Array.empty)),
-      WorkflowDataMessage(sender2, 0, DataFrame(Array.empty)),
+      WorkflowDataMessage(sender1, 1, DataFrame(Array.empty)),
       WorkflowDataMessage(sender2, 1, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender2, 1, ControlInvocation(-1, QueryStatistics())),
-      WorkflowDataMessage(sender3, 0, DataFrame(Array.empty)),
-      WorkflowControlMessage(sender3, 1, ControlInvocation(-1, QueryStatistics())),
-      WorkflowDataMessage(sender1, 1, DataFrame(Array.empty))
+      WorkflowDataMessage(sender2, 2, DataFrame(Array.empty)),
+      WorkflowControlMessage(sender2, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowDataMessage(sender3, 1, DataFrame(Array.empty)),
+      WorkflowControlMessage(sender3, 0, ControlInvocation(-1, QueryStatistics())),
+      WorkflowDataMessage(sender1, 2, DataFrame(Array.empty))
     )
     val op = new SourceOperatorForRecoveryTest()
     val controlLogStorage: LogStorage[WorkflowControlMessage] =
@@ -290,17 +291,13 @@ class RecoverySpec
     val worker = system.actorOf(
       WorkflowWorker.props(id, op, TestProbe().ref, controlLogStorage, dataLogStorage, dpLogStorage)
     )
-    messages.take(3).foreach { x =>
-      worker ! NetworkMessage(0, x)
-    }
-    Thread.sleep(3000)
-    messages.drop(3).foreach { x =>
+    messages.foreach { x =>
       worker ! NetworkMessage(0, x)
     }
     Thread.sleep(10000)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-control").size == 5)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-data").size == 8)
-    assert(InMemoryLogStorage.getLogOf(id.toString + "-dp").size == 5)
+    assert(InMemoryLogStorage.getLogOf(id.toString + "-control").size == 2)
+    assert(InMemoryLogStorage.getLogOf(id.toString + "-data").size == 11)
+    assert(InMemoryLogStorage.getLogOf(id.toString + "-dp").size == 2)
     dataLogStorage.clear()
     dpLogStorage.clear()
     controlLogStorage.clear()
@@ -313,7 +310,6 @@ class RecoverySpec
     val controller = TestProbe()
     val receiver = TestProbe()
     val controls = Seq(
-      UpdateInputLinking(sender1, fakeLink),
       AddOutputPolicy(new OneToOnePolicy(fakeLink, 1, Array(receiverID))),
       StartWorker(),
       QueryStatistics(),
@@ -441,13 +437,14 @@ class RecoverySpec
       sourceDPLogStorage
     )
     testRecovery(recoveredSource, controller1, null, receivedMessageForSource)
-    val expectedData = ((0 until 15).map(x =>
-      WorkflowDataMessage(dummyID, x, DataFrame(Array(ITuple(x + 1))))
-    ) ++ Seq(WorkflowDataMessage(dummyID, 15, EndOfUpstream()))).to[mutable.Queue]
+    val expectedData =
+      (Seq(WorkflowDataMessage(dummyID, 0, InputLinking(fakeLink))) ++ (1 until 16).map(x =>
+        WorkflowDataMessage(dummyID, x, DataFrame(Array(ITuple(x))))
+      ) ++ Seq(WorkflowDataMessage(dummyID, 16, EndOfUpstream()))).to[mutable.Queue]
     forAllNetworkMessages(receiver, w => assert(w == expectedData.dequeue()))
     val receivedControl = mutable.Queue[WorkflowMessage]()
     forAllNetworkMessages(controller2, w => receivedControl.enqueue(w))
-    assert(receivedControl.size == 9)
+    assert(receivedControl.size == 8)
     sourceControlLogStorage.clear()
     dummyControlLogStorage.clear()
     sourceDataLogStorage.clear()

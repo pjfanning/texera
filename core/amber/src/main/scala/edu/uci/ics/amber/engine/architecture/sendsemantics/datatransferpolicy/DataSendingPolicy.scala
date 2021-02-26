@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy
 
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.ambermessage.DataPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, InputLinking}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.concurrent.ExecutionContext
@@ -13,6 +13,10 @@ abstract class DataSendingPolicy(
     var receivers: Array[ActorVirtualIdentity]
 ) extends Serializable {
   assert(receivers != null)
+
+  def notifyDownStreams(): Array[(ActorVirtualIdentity, DataPayload)] = {
+    receivers.map(x => (x, InputLinking(policyTag)))
+  }
 
   /**
     * Keeps on adding tuples to the batch. When the batch_size is reached, the batch is returned along with the receiver
