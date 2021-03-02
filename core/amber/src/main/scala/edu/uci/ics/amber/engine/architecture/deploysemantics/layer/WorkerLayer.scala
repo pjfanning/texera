@@ -5,21 +5,15 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.deploymentfilter.De
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import akka.actor.{ActorContext, ActorRef, Address, Deploy, PoisonPill}
 import akka.remote.RemoteScope
+import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerStatistics, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
-import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{
-  Uninitialized,
-  WorkerState
-}
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Uninitialized, WorkerState}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
-import edu.uci.ics.amber.engine.recovery.empty.EmptyMainLogStorage
-import edu.uci.ics.amber.engine.recovery.{MainLogStorage, RecoveryManager, SecondaryLogStorage}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
+import edu.uci.ics.amber.engine.recovery.{LogStorage, RecoveryManager}
 
 import scala.collection.mutable
 
@@ -87,8 +81,9 @@ class WorkerLayer(
         d,
         context,
         parentNetworkCommunicationActorRef,
-        RecoveryManager.defaultMainLogStorage(workerID),
-        RecoveryManager.defaultSecondLogStorage(workerID)
+        RecoveryManager.defaultControlLogStorage(workerID),
+        RecoveryManager.defaultDataLogStorage(workerID),
+        RecoveryManager.defaultDPLogStorage(workerID)
       )
     }
   }
@@ -99,8 +94,9 @@ class WorkerLayer(
       onNode: Address,
       context: ActorContext,
       parentNetworkCommunicationActorRef: ActorRef,
-      mainLogStorage: MainLogStorage,
-      secondaryLogStorage: SecondaryLogStorage
+      controlLogStorage: LogStorage[WorkflowControlMessage],
+      dataLogStorage: LogStorage[DataLogElement],
+      dpLogStorage: LogStorage[Long]
   ): Unit = {
     val ref = context.actorOf(
       WorkflowWorker
@@ -108,8 +104,9 @@ class WorkerLayer(
           workerID,
           metadata(index),
           parentNetworkCommunicationActorRef,
-          mainLogStorage,
-          secondaryLogStorage
+          controlLogStorage,
+          dataLogStorage,
+          dpLogStorage
         )
         .withDeploy(Deploy(scope = RemoteScope(onNode)))
     )
@@ -119,12 +116,13 @@ class WorkerLayer(
   }
 
   def killAndReBuild(
-      id: ActorVirtualIdentity,
-      onNode: Address,
-      context: ActorContext,
-      parentNetworkCommunicationActorRef: ActorRef,
-      mainLogStorage: MainLogStorage,
-      secondaryLogStorage: SecondaryLogStorage
+                      id: ActorVirtualIdentity,
+                      onNode: Address,
+                      context: ActorContext,
+                      parentNetworkCommunicationActorRef: ActorRef,
+                      controlLogStorage: LogStorage[WorkflowControlMessage],
+                      dataLogStorage: LogStorage[DataLogElement],
+                      dpLogStorage: LogStorage[Long]
   ): Unit = {
     val (index, ref) = workerRefs(id)
     ref ! PoisonPill
@@ -135,8 +133,9 @@ class WorkerLayer(
       targetNode,
       context,
       parentNetworkCommunicationActorRef,
-      mainLogStorage,
-      secondaryLogStorage
+      controlLogStorage,
+      dataLogStorage,
+      dpLogStorage
     )
   }
 

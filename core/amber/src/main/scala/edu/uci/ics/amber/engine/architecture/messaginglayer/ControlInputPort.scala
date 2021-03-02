@@ -23,7 +23,6 @@ object ControlInputPort {
       sequenceNumber: Long,
       payload: ControlPayload
   ) extends WorkflowFIFOMessage
-      with MainLogElement
 }
 
 class ControlInputPort(

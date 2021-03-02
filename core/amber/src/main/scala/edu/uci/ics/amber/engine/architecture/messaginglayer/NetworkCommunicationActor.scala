@@ -65,7 +65,7 @@ object NetworkCommunicationActor {
   * the messaging layer.
   */
 class NetworkCommunicationActor(parentRef: ActorRef)
-    extends ActorVirtualIdentityResolver
+    extends Actor
     with LazyLogging {
 
   val idToActorRefs = new mutable.HashMap[ActorVirtualIdentity, ActorRef]()
@@ -174,7 +174,6 @@ class NetworkCommunicationActor(parentRef: ActorRef)
       // only remove the mapping from id to actorRef
       // to trigger discover mechanism
       val actorID = messageIDToIdentity(msg.messageID)
-      handleSendRequest(ActorVirtualIdentity.Controller, TriggerRecovery(actorID))
       logger.warn(s"actor for $actorID might have crashed or failed")
       idToActorRefs.remove(actorID)
       if (parentRef != null) {

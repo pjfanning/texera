@@ -8,22 +8,15 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.clustering.ClusterRuntimeInfo
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  ErrorOccurred,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ErrorOccurred, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.Ready
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.recovery.RecoveryManager.RecoveryMessage
-import edu.uci.ics.amber.engine.recovery.{MainLogStorage, RecoveryManager}
+import edu.uci.ics.amber.engine.recovery.{LogStorage, RecoveryManager}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 
 import scala.concurrent.duration._
@@ -32,13 +25,13 @@ import scala.concurrent.{Await, ExecutionContext}
 object Controller {
 
   def props(
-      id: WorkflowIdentity,
-      workflow: Workflow,
-      eventListener: ControllerEventListener,
-      statusUpdateInterval: Long,
-      mainLogStorage: MainLogStorage =
-        RecoveryManager.defaultMainLogStorage(ActorVirtualIdentity.Controller),
-      parentNetworkCommunicationActorRef: ActorRef = null
+             id: WorkflowIdentity,
+             workflow: Workflow,
+             eventListener: ControllerEventListener,
+             statusUpdateInterval: Long,
+             controlLogStorage: LogStorage[WorkflowControlMessage] =
+        RecoveryManager.defaultControlLogStorage(ActorVirtualIdentity.Controller),
+             parentNetworkCommunicationActorRef: ActorRef = null
   ): Props =
     Props(
       new Controller(
@@ -46,7 +39,7 @@ object Controller {
         workflow,
         eventListener,
         Option.apply(statusUpdateInterval),
-        mainLogStorage,
+        controlLogStorage,
         parentNetworkCommunicationActorRef
       )
     )
@@ -57,12 +50,12 @@ class Controller(
     val workflow: Workflow,
     val eventListener: ControllerEventListener = ControllerEventListener(),
     val statisticsUpdateIntervalMs: Option[Long],
-    mainLogStorage: MainLogStorage,
+    logStorage: LogStorage[WorkflowControlMessage],
     parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(
       ActorVirtualIdentity.Controller,
       parentNetworkCommunicationActorRef,
-      mainLogStorage
+      logStorage
     ) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds

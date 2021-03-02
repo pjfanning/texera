@@ -1,7 +1,5 @@
 package edu.uci.ics.amber.engine.common
 
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
 
 import scala.concurrent.duration._
 

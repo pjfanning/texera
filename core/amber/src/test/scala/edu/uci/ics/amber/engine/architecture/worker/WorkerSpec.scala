@@ -5,10 +5,7 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  ControlOutputPort,
-  TupleToBatchConverter
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{ControlOutputPort, TupleToBatchConverter}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.DataSendingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddOutputPolicyHandler.AddOutputPolicy
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
@@ -18,7 +15,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.CommandCompleted
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
+import edu.uci.ics.amber.engine.recovery.EmptyLogStorage
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -75,8 +72,9 @@ class WorkerSpec
         identifier1,
         mockOpExecutor,
         TestProbe().ref,
-        new EmptyMainLogStorage(),
-        new EmptySecondaryLogStorage()
+        new EmptyLogStorage(),
+        new EmptyLogStorage(),
+        new EmptyLogStorage()
       ) {
         override lazy val batchProducer = mockTupleToBatchConverter
         override lazy val controlOutputPort = mockControlOutputPort
