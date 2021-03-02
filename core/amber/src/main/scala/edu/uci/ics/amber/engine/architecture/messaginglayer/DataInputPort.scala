@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   WorkflowMessage
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.VirtualIdentity
-import edu.uci.ics.amber.engine.recovery.{MainLogReplayManager, MainLogStorage}
+import edu.uci.ics.amber.engine.recovery.DataLogManager
 
 import scala.collection.mutable
 
@@ -21,8 +21,7 @@ object DataInputPort {
 
 class DataInputPort(
     tupleProducer: BatchToTupleConverter,
-    mainLogStorage: MainLogStorage,
-    mainLogReplayManager: MainLogReplayManager
+    dataLogManager: DataLogManager
 ) {
   private val idToOrderingEnforcers =
     new mutable.AnyRefMap[VirtualIdentity, OrderingEnforcer[DataPayload]]()
@@ -36,13 +35,8 @@ class DataInputPort(
     ) match {
       case Some(iterable) =>
         iterable.foreach { data =>
-          if (mainLogReplayManager.isReplaying) {
-            mainLogReplayManager.filterMessage(msg.from, data).foreach {
-              case (vid, payload) => tupleProducer.processDataPayload(vid, payload)
-            }
-          } else {
-            mainLogStorage.receivedDataFrom(msg.from)
-            tupleProducer.processDataPayload(msg.from, data)
+          dataLogManager.filterMessage(msg.from, data).foreach {
+            case (vid, payload) => tupleProducer.processDataPayload(vid, payload)
           }
         }
       case None =>

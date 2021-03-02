@@ -7,6 +7,7 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
+import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   NetworkAck,
@@ -36,18 +37,9 @@ import edu.uci.ics.amber.engine.common.{
   ITupleSinkOperatorExecutor
 }
 import edu.uci.ics.amber.engine.recovery.RecoveryManager.RecoveryCompleted
-import edu.uci.ics.amber.engine.recovery.empty.{EmptyMainLogStorage, EmptySecondaryLogStorage}
-import edu.uci.ics.amber.engine.recovery.mem.InMemorySecondaryLogStorage
-import edu.uci.ics.amber.error.WorkflowRuntimeError
-import edu.uci.ics.amber.engine.recovery.{
-  MainLogStorage,
-  SecondaryLogReplayManager,
-  SecondaryLogStorage
-}
+import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
+import edu.uci.ics.amber.engine.recovery.{DPLogManager, DataLogManager, EmptyLogStorage, LogStorage}
 
-import scala.annotation.elidable
-import scala.annotation.elidable.INFO
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -56,16 +48,18 @@ object WorkflowWorker {
       id: ActorVirtualIdentity,
       op: IOperatorExecutor,
       parentNetworkCommunicationActorRef: ActorRef,
-      mainLogStorage: MainLogStorage,
-      secondaryLogStorage: SecondaryLogStorage
+      controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage(),
+      dataLogStorage: LogStorage[DataLogElement] = new EmptyLogStorage(),
+      dpLogStorage: LogStorage[Long] = new EmptyLogStorage()
   ): Props =
     Props(
       new WorkflowWorker(
         id,
         op,
         parentNetworkCommunicationActorRef,
-        mainLogStorage,
-        secondaryLogStorage
+        controlLogStorage,
+        dataLogStorage,
+        dpLogStorage
       )
     )
 }
@@ -74,15 +68,17 @@ class WorkflowWorker(
     identifier: ActorVirtualIdentity,
     operator: IOperatorExecutor,
     parentNetworkCommunicationActorRef: ActorRef,
-    mainLogStorage: MainLogStorage,
-    secondaryLogStorage: SecondaryLogStorage
-) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef, mainLogStorage) {
+    controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage(),
+    dataLogStorage: LogStorage[DataLogElement] = new EmptyLogStorage(),
+    dpLogStorage: LogStorage[Long] = new EmptyLogStorage()
+) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef, controlLogStorage) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
 
-  lazy val secondaryLogReplayManager: SecondaryLogReplayManager = wire[SecondaryLogReplayManager]
+  lazy val dataLogManager: DataLogManager = wire[DataLogManager]
+  lazy val dpLogManager: DPLogManager = wire[DPLogManager]
 
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
@@ -104,7 +100,7 @@ class WorkflowWorker(
   workerStateManager.assertState(Uninitialized)
   workerStateManager.transitTo(Ready)
 
-  mainLogReplayManager.onComplete(() => {
+  dataLogManager.onComplete(() => {
     networkCommunicationActor ! SendRequest(
       ActorVirtualIdentity.Controller,
       RecoveryCompleted(identifier)
