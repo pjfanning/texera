@@ -28,6 +28,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   DataFrame,
   EndOfUpstream,
   InputLinking,
+  WorkflowFIFOMessage,
   WorkflowMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -113,9 +114,11 @@ class RecoverySpec
   def forAllNetworkMessages(probe: TestProbe, action: (WorkflowMessage) => Unit): Unit = {
     if (probe != null) {
       probe.receiveWhile(idle = 3.seconds) {
-        case NetworkMessage(id, content) =>
+        case NetworkMessage(id, content: WorkflowFIFOMessage) =>
           probe.sender() ! NetworkAck(id)
           action(content)
+        case NetworkMessage(id, _) =>
+          probe.sender() ! NetworkAck(id)
         case other => //skip
       }
     }
