@@ -8,10 +8,17 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.clustering.ClusterRuntimeInfo
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ErrorOccurred, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  ErrorOccurred,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.Ready
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, WorkflowIdentity}
@@ -25,13 +32,13 @@ import scala.concurrent.{Await, ExecutionContext}
 object Controller {
 
   def props(
-             id: WorkflowIdentity,
-             workflow: Workflow,
-             eventListener: ControllerEventListener,
-             statusUpdateInterval: Long,
-             controlLogStorage: LogStorage[WorkflowControlMessage] =
+      id: WorkflowIdentity,
+      workflow: Workflow,
+      eventListener: ControllerEventListener,
+      statusUpdateInterval: Long,
+      controlLogStorage: LogStorage[WorkflowControlMessage] =
         RecoveryManager.defaultControlLogStorage(ActorVirtualIdentity.Controller),
-             parentNetworkCommunicationActorRef: ActorRef = null
+      parentNetworkCommunicationActorRef: ActorRef = null
   ): Props =
     Props(
       new Controller(

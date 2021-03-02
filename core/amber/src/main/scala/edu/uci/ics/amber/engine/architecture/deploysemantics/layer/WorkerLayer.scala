@@ -9,9 +9,16 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.Wor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerStatistics, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
-import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Uninitialized, WorkerState}
+import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{
+  Uninitialized,
+  WorkerState
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
 import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
 import edu.uci.ics.amber.engine.recovery.{LogStorage, RecoveryManager}
 
@@ -116,13 +123,13 @@ class WorkerLayer(
   }
 
   def killAndReBuild(
-                      id: ActorVirtualIdentity,
-                      onNode: Address,
-                      context: ActorContext,
-                      parentNetworkCommunicationActorRef: ActorRef,
-                      controlLogStorage: LogStorage[WorkflowControlMessage],
-                      dataLogStorage: LogStorage[DataLogElement],
-                      dpLogStorage: LogStorage[Long]
+      id: ActorVirtualIdentity,
+      onNode: Address,
+      context: ActorContext,
+      parentNetworkCommunicationActorRef: ActorRef,
+      controlLogStorage: LogStorage[WorkflowControlMessage],
+      dataLogStorage: LogStorage[DataLogElement],
+      dpLogStorage: LogStorage[Long]
   ): Unit = {
     val (index, ref) = workerRefs(id)
     ref ! PoisonPill

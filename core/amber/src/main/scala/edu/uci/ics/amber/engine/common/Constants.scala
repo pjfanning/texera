@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.common
 
-
 import scala.concurrent.duration._
 
 object Constants {
