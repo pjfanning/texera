@@ -98,6 +98,9 @@ class Workflow(
 
   def getAllWorkers: Iterable[ActorVirtualIdentity] = workerToLayer.keys
 
+  def getAllWorkersOnNode(addr: Address): Iterable[ActorVirtualIdentity] =
+    getAllLayers.flatMap(x => x.getWorkersOnNode(addr))
+
   def getAllLayers: Iterable[WorkerLayer] = operators.values.flatMap(_.topology.layers)
 
   def getAllLinks: Iterable[LinkStrategy] = idToLink.values

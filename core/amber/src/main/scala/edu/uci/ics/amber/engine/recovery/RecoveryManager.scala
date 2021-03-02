@@ -24,7 +24,7 @@ object RecoveryManager {
   def defaultSecondLogStorage(id: ActorVirtualIdentity) = new EmptySecondaryLogStorage()
 
   sealed trait RecoveryMessage extends WorkflowMessage
-  final case class TriggerRecovery(id: ActorVirtualIdentity) extends RecoveryMessage
+  final case class TriggerRecovery(nodeAddr: Address) extends RecoveryMessage
   final case class RecoveryCompleted(id: ActorVirtualIdentity) extends RecoveryMessage
 }
 
@@ -36,22 +36,28 @@ class RecoveryManager(
 
   private val isRecovering = mutable.HashSet[ActorVirtualIdentity]()
 
-  def recoverWorkerChainFor(id: ActorVirtualIdentity, onNode: Address): Unit = {
+  def recoverWorkerOnNode(crashedNode: Address, replaceNode: Address): Unit = {
+    workflow.getAllWorkersOnNode(crashedNode).foreach {
+      recoverWorkerChain(_, replaceNode)
+    }
+  }
+
+  def recoverWorkerChain(id: ActorVirtualIdentity, newNode: Address): Unit = {
     if (!isRecovering.contains(id)) {
-      recoverWorker(id, onNode)
+      recoverWorker(id, newNode)
       val upstreamWorkersToReplay =
         workflow.getUpstreamWorkers(id).filter(x => !isRecovering.contains(x))
-      upstreamWorkersToReplay.foreach(recoverWorker(_, onNode))
+      upstreamWorkersToReplay.foreach(recoverWorker(_))
     }
   }
 
   def setRecoverCompleted(id: ActorVirtualIdentity): Unit = {
-    if(isRecovering.contains(id)){
+    if (isRecovering.contains(id)) {
       isRecovering.remove(id)
     }
   }
 
-  private def recoverWorker(id: ActorVirtualIdentity, onNode: Address): Unit = {
+  private def recoverWorker(id: ActorVirtualIdentity, onNode: Address = null): Unit = {
     workflow
       .getWorkerLayer(id)
       .killAndReBuild(

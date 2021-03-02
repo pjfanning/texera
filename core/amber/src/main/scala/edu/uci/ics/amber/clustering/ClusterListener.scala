@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.clustering
 
 import edu.uci.ics.amber.engine.common.Constants
-import akka.actor.{Actor, ActorLogging, Address, ExtendedActorSystem}
+import akka.actor.{Actor, ActorLogging, ActorRef, Address, ExtendedActorSystem}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{
   InitialStateAsEvents,
@@ -10,6 +10,7 @@ import akka.cluster.ClusterEvent.{
   MemberUp,
   UnreachableMember
 }
+import edu.uci.ics.amber.engine.recovery.RecoveryManager.TriggerRecovery
 
 import scala.collection.mutable
 
@@ -97,6 +98,10 @@ class ClusterListener extends Actor with ActorLogging {
         }
       }
       log.info("Member is Removed: {} after {}", member.address, previousStatus)
+      // trigger recovery on that node
+      ClusterRuntimeInfo.controllers.foreach { x =>
+        x ! TriggerRecovery(member.address)
+      }
     case _: MemberEvent                            => // ignore
     case ClusterListener.GetAvailableNodeAddresses => sender ! availableNodeAddresses.toArray
   }

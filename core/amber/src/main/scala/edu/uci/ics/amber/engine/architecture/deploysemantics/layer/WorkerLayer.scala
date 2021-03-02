@@ -128,15 +128,20 @@ class WorkerLayer(
   ): Unit = {
     val (index, ref) = workerRefs(id)
     ref ! PoisonPill
+    val targetNode = if (onNode == null) ref.path.address else onNode
     spawnWorker(
       id,
       index,
-      onNode,
+      targetNode,
       context,
       parentNetworkCommunicationActorRef,
       mainLogStorage,
       secondaryLogStorage
     )
+  }
+
+  def getWorkersOnNode(addr: Address): Iterable[ActorVirtualIdentity] = {
+    workerRefs.filter(x => x._2._2.path.address == addr).keys
   }
 
 }

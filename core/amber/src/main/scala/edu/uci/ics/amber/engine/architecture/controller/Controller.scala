@@ -6,6 +6,7 @@ import akka.util.Timeout
 import com.softwaremill.macwire.wire
 import com.twitter.util.Future
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
+import edu.uci.ics.amber.clustering.ClusterRuntimeInfo
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   ErrorOccurred,
@@ -65,6 +66,8 @@ class Controller(
     ) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
+
+  ClusterRuntimeInfo.controllers.add(self)
 
   val rpcHandlerInitializer = wire[ControllerAsyncRPCHandlerInitializer]
   val recoveryManager = wire[RecoveryManager]
@@ -150,6 +153,7 @@ class Controller(
       statusUpdateAskHandle.cancel()
     }
     workflow.cleanupResults()
+    ClusterRuntimeInfo.controllers.remove(self)
     super.postStop()
   }
 
@@ -157,9 +161,9 @@ class Controller(
     case NetworkMessage(id, msg: RecoveryMessage) =>
       sender ! NetworkAck(id)
       msg match {
-        case RecoveryManager.TriggerRecovery(id) =>
+        case RecoveryManager.TriggerRecovery(addr) =>
           val targetNode = availableNodes.head
-          recoveryManager.recoverWorkerChainFor(id, targetNode)
+          recoveryManager.recoverWorkerOnNode(addr, targetNode)
         case RecoveryManager.RecoveryCompleted(id) =>
           recoveryManager.setRecoverCompleted(id)
       }

@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
   NetworkMessage
 }
 
-class DeadLetterMonitorActor extends Actor {
+class DeadLetterMonitorActor extends ActorVirtualIdentityResolver {
   override def receive: Receive = {
     case d: DeadLetter =>
       d.message match {
