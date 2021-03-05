@@ -32,6 +32,7 @@ object AmberUtils {
       .parseString(s"""
         akka.remote.artery.canonical.port = 2552
         akka.remote.artery.canonical.hostname = $localIpAddress
+        akka.cluster.roles = ["controller"]
         akka.cluster.seed-nodes = [ "akka://Amber@$localIpAddress:2552" ]
         akka.actor.serialization-bindings."java.lang.Throwable" = akka-misc
         """)
@@ -53,6 +54,7 @@ object AmberUtils {
       .parseString(s"""
         akka.remote.artery.canonical.hostname = $localIpAddress
         akka.remote.artery.canonical.port = 0
+        akka.cluster.roles = ["worker"]
         akka.cluster.seed-nodes = [ "akka://Amber@$addr:2552" ]
         akka.actor.serialization-bindings."java.lang.Throwable" = akka-misc
         """)
