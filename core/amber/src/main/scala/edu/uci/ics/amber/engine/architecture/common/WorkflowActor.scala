@@ -1,18 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Stash}
+import akka.actor.{Actor, ActorRef, Stash}
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   GetActorRef,
-  NetworkAck,
-  NetworkMessage,
   NetworkSenderActorRef,
   RegisterActorRef
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  ControlInputPort,
   ControlOutputPort,
   NetworkCommunicationActor
 }
@@ -24,8 +20,6 @@ import edu.uci.ics.amber.engine.common.rpc.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.error.WorkflowRuntimeError
-import edu.uci.ics.amber.error.ErrorUtils.safely
-import edu.uci.ics.amber.engine.recovery.{ControlLogManager, EmptyLogStorage, LogStorage}
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
@@ -48,7 +42,6 @@ abstract class WorkflowActor(
   val networkCommunicationActor: NetworkSenderActorRef = NetworkSenderActorRef(
     context.actorOf(NetworkCommunicationActor.props(parentNetworkCommunicationActorRef))
   )
-  lazy val controlInputPort: ControlInputPort = wire[ControlInputPort]
   lazy val controlOutputPort: ControlOutputPort = wire[ControlOutputPort]
   lazy val asyncRPCClient: AsyncRPCClient = wire[AsyncRPCClient]
   lazy val asyncRPCServer: AsyncRPCServer = wire[AsyncRPCServer]

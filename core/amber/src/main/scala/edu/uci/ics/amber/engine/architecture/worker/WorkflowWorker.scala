@@ -1,43 +1,41 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import akka.actor.AbstractActor.ActorContext
 import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
   NetworkMessage,
   RegisterActorRef
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   BatchToTupleConverter,
-  ControlInputPort,
-  DataInputPort,
   DataOutputPort,
+  NetworkInputPort,
   TupleToBatchConverter
 }
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
   AsyncRPCHandlerInitializer,
   AsyncRPCServer
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
+import edu.uci.ics.amber.engine.common.IOperatorExecutor
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DataPayload,
+  WorkflowControlMessage,
+  WorkflowDataMessage
 }
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager._
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.{
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  ITupleSinkOperatorExecutor
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
 import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
 import edu.uci.ics.amber.engine.recovery.{DPLogManager, DataLogManager, EmptyLogStorage, LogStorage}
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -80,13 +78,14 @@ class WorkflowWorker(
 
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
-  lazy val dataInputPort: DataInputPort = wire[DataInputPort]
+  lazy val dataInputPort: NetworkInputPort[DataPayload] =
+    new NetworkInputPort[DataPayload](this.logger, this.handleDataPayload)
+  lazy val controlInputPort: NetworkInputPort[ControlPayload] =
+    new NetworkInputPort[ControlPayload](this.logger, this.handleControlPayload)
   lazy val dataOutputPort: DataOutputPort = wire[DataOutputPort]
   lazy val batchProducer: TupleToBatchConverter = wire[TupleToBatchConverter]
   lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
   lazy val breakpointManager: BreakpointManager = wire[BreakpointManager]
-
-  override lazy val controlInputPort: ControlInputPort = wire[WorkerControlInputPort]
 
   val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
     wire[WorkerAsyncRPCHandlerInitializer]
@@ -113,10 +112,16 @@ class WorkflowWorker(
   override def receive: Receive = recovering
 
   def receiveAndProcessMessages: Receive = {
-    disallowActorRefRelatedMessages orElse
-      processControlMessages orElse
-      receiveDataMessages orElse
-      logUnhandledMessages
+    disallowActorRefRelatedMessages orElse {
+      case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
+        dataInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
+      case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
+        controlInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
+      case other =>
+        logger.logError(
+          WorkflowRuntimeError(s"unhandled message: $other", identifier.toString, Map.empty)
+        )
+    }
   }
 
   final def receiveDataMessages: Receive = {
