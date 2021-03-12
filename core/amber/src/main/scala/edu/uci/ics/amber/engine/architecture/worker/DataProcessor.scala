@@ -6,29 +6,21 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.messaginglayer.TupleToBatchConverter
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  ControlElement,
-  EndMarker,
-  EndOfAllMarker,
-  InputTuple,
-  InternalQueueElement,
-  SenderChangeMarker
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, EndMarker, EndOfAllMarker, InputTuple, InternalQueueElement, SenderChangeMarker}
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Completed, Running}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LinkIdentity,
-  VirtualIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity, VirtualIdentity}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, WorkflowLogger}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
 import edu.uci.ics.amber.engine.recovery.DPLogManager
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 class DataProcessor( // dependencies:
     logger: WorkflowLogger, // logger of the worker actor
@@ -50,6 +42,7 @@ class DataProcessor( // dependencies:
   private var currentOutputIterator: Iterator[ITuple] = _
   private var isCompleted = false
   private var dataCursor = 0L
+  private val controlRecoveryQueue = mutable.Queue[ControlElement]()
 
   // initialize dp thread upon construction
   private val dpThreadExecutor = Executors.newSingleThreadExecutor
@@ -159,8 +152,8 @@ class DataProcessor( // dependencies:
           // end of processing, break DP loop
           isCompleted = true
           batchProducer.emitEndOfUpstream()
-        case ControlElement(cmd, from) =>
-          processControlCommand(cmd, from)
+        case ctrl: ControlElement =>
+          handleControlElement(ctrl)
       }
     }
     // Send Completed signal to worker actor.
@@ -168,7 +161,7 @@ class DataProcessor( // dependencies:
     asyncRPCClient.send(WorkerExecutionCompleted(), ActorVirtualIdentity.Controller)
     stateManager.transitTo(Completed)
     disableDataQueue()
-    processControlCommandsAfterCompletion()
+    takeControlElementsAfterCompletion()
   }
 
   private[this] def handleOperatorException(e: Throwable): Unit = {
@@ -189,18 +182,18 @@ class DataProcessor( // dependencies:
 
   private[this] def handleInputTuple(): Unit = {
     // process controls before processing the input tuple.
-    processControlCommandsDuringExecution()
+    takeControlElementsDuringExecution()
     if (currentInputTuple != null) {
       // pass input tuple to operator logic.
       currentOutputIterator = processInputTuple()
       // process controls before outputting tuples.
-      processControlCommandsDuringExecution()
+      takeControlElementsDuringExecution()
       // output loop: take one tuple from iterator at a time.
       while (outputAvailable(currentOutputIterator)) {
         // send tuple to downstream.
         outputOneTuple()
         // process controls after one tuple has been outputted.
-        processControlCommandsDuringExecution()
+        takeControlElementsDuringExecution()
       }
     }
   }
@@ -221,34 +214,48 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def processControlCommandsDuringExecution(
+  private[this] def takeControlElementsDuringExecution(
       advanceDataCursor: Boolean = true
   ): Unit = {
     if (advanceDataCursor) {
       dataCursor += 1
     }
-    if (dpLogManager.isRecovering) {
+    while (!isControlQueueEmpty) {
+      val control = getElement.asInstanceOf[ControlElement]
+      handleControlElement(control)
+    }
+    if(dpLogManager.isRecovering){
       replayControlCommands()
-    } else {
-      while (!isControlQueueEmpty) {
-        takeOneControlCommandAndProcess()
-      }
     }
   }
 
-  private[this] def processControlCommandsAfterCompletion(): Unit = {
-    if (dpLogManager.isRecovering) {
-      replayControlCommands()
-      assert(!dpLogManager.isRecovering)
-    }
+  private[this] def takeControlElementsAfterCompletion(): Unit = {
     while (true) {
-      takeOneControlCommandAndProcess()
+      if(dpLogManager.isRecovering){
+        replayControlCommands()
+      }
+      val control = getElement.asInstanceOf[ControlElement]
+      handleControlElement(control)
     }
   }
 
-  private[this] def takeOneControlCommandAndProcess(): Unit = {
-    val control = getElement.asInstanceOf[ControlElement]
-    processControlCommand(control.cmd, control.from)
+  private[this] def handleControlElement(control:ControlElement): Unit = {
+    if(dpLogManager.isRecovering){
+      replayControlCommands(control)
+    }else{
+      processControlCommand(control.cmd, control.from)
+    }
+  }
+
+  private[this] def replayControlCommands(control:ControlElement = null): Unit ={
+    if(control != null){
+      controlRecoveryQueue.enqueue(control)
+    }
+    while(dpLogManager.isCurrentCorrelated(dataCursor) && controlRecoveryQueue.nonEmpty){
+      val elem = controlRecoveryQueue.dequeue()
+      processControlCommand(elem.cmd, elem.from)
+      dpLogManager.advanceCursor()
+    }
   }
 
   private[this] def processControlCommand(cmd: ControlPayload, from: VirtualIdentity): Unit = {
@@ -257,24 +264,17 @@ class DataProcessor( // dependencies:
         shutdown()
         new CompletableFuture[Void]().get
       case invocation: ControlInvocation =>
-        persistCurrentDataCursor()
+        persistCurrentDataCursorIfRecoveryCompleted()
         asyncRPCServer.logControlInvocation(invocation, from)
         asyncRPCServer.receive(invocation, from.asInstanceOf[ActorVirtualIdentity])
       case ret: ReturnPayload =>
-        persistCurrentDataCursor()
+        persistCurrentDataCursorIfRecoveryCompleted()
         asyncRPCClient.logControlReply(ret, from)
         asyncRPCClient.fulfillPromise(ret)
     }
   }
 
-  private[this] def replayControlCommands(): Unit = {
-    while (dpLogManager.isCurrentCorrelated(dataCursor)) {
-      takeOneControlCommandAndProcess()
-      dpLogManager.advanceCursor()
-    }
-  }
-
-  private[this] def persistCurrentDataCursor(): Unit = {
+  private[this] def persistCurrentDataCursorIfRecoveryCompleted(): Unit = {
     if (!dpLogManager.isRecovering) {
       dpLogManager.persistCurrentDataCursor(dataCursor)
     }
