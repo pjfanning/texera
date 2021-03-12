@@ -15,11 +15,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkInputPort,
   TupleToBatchConverter
 }
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ControlPayload,
@@ -33,9 +28,16 @@ import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager._
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
 import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
-import edu.uci.ics.amber.engine.recovery.{DPLogManager, DataLogManager, EmptyLogStorage, LogStorage}
+import edu.uci.ics.amber.engine.recovery.{
+  ControlLogManager,
+  DPLogManager,
+  DataLogManager,
+  EmptyLogStorage,
+  LogStorage
+}
+import edu.uci.ics.amber.error.ErrorUtils.safely
+import edu.uci.ics.amber.error.WorkflowRuntimeError
 
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
@@ -67,11 +69,13 @@ class WorkflowWorker(
     controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage(),
     dataLogStorage: LogStorage[DataLogElement] = new EmptyLogStorage(),
     dpLogStorage: LogStorage[Long] = new EmptyLogStorage()
-) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef, controlLogStorage) {
+) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
+
+  lazy val controlLogManager: ControlLogManager = wire[ControlLogManager]
 
   lazy val dataLogManager: DataLogManager = wire[DataLogManager]
   lazy val dpLogManager: DPLogManager = wire[DPLogManager]
@@ -104,7 +108,7 @@ class WorkflowWorker(
 
   def recovering: Receive = {
     disallowActorRefRelatedMessages orElse
-      receiveDataMessagesDuringRecovery orElse
+      receiveDataMessages orElse
       stashControlMessages orElse
       logUnhandledMessages
   }
@@ -112,11 +116,9 @@ class WorkflowWorker(
   override def receive: Receive = recovering
 
   def receiveAndProcessMessages: Receive = {
-    disallowActorRefRelatedMessages orElse {
-      case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
-        dataInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
-      case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
-        controlInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
+    disallowActorRefRelatedMessages orElse
+      receiveDataMessages orElse
+      receiveControlMessages orElse {
       case other =>
         logger.logError(
           WorkflowRuntimeError(s"unhandled message: $other", identifier.toString, Map.empty)
@@ -125,17 +127,25 @@ class WorkflowWorker(
   }
 
   final def receiveDataMessages: Receive = {
-    case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
-      transitStateToRunningFromReady()
-      sender ! NetworkAck(id)
-      dataInputPort.handleDataMessage(data)
+    case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
+      dataInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
   }
 
-  final def receiveDataMessagesDuringRecovery: Receive = {
-    case msg @ NetworkMessage(id, data: WorkflowDataMessage) =>
-      transitStateToRunningFromReady()
-      sender ! NetworkAck(id)
-      dataInputPort.handleDataMessage(data)
+  def receiveControlMessages: Receive = {
+    case NetworkMessage(id, cmd @ WorkflowControlMessage(from, seqNum, payload)) =>
+      controlLogManager.persistControlMessage(cmd)
+      try {
+        // use control input port to pass control messages
+        controlInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
+      } catch safely {
+        case e =>
+          logger.logError(WorkflowRuntimeError(e, identifier.toString))
+      }
+  }
+
+  def stashControlMessages: Receive = {
+    case msg @ NetworkMessage(id, cmd: WorkflowControlMessage) =>
+      stash()
   }
 
   override def postStop(): Unit = {
@@ -151,6 +161,31 @@ class WorkflowWorker(
         WorkerStateUpdated(workerStateManager.getCurrentState),
         ActorVirtualIdentity.Controller
       )
+    }
+  }
+
+  final def handleDataPayload(from: VirtualIdentity, dataPayload: DataPayload): Unit = {
+    dataLogManager.filterMessage(from, dataPayload).foreach {
+      case (vid, payload) =>
+        transitStateToRunningFromReady()
+        tupleProducer.processDataPayload(vid, payload)
+    }
+  }
+
+  final def handleControlPayload(from: VirtualIdentity, controlPayload: ControlPayload): Unit = {
+    // let dp thread process it
+    assert(from.isInstanceOf[ActorVirtualIdentity])
+    controlPayload match {
+      case controlCommand @ (ControlInvocation(_, _) | ReturnPayload(_, _)) =>
+        dataProcessor.enqueueCommand(controlCommand, from)
+      case _ =>
+        logger.logError(
+          WorkflowRuntimeError(
+            s"unhandled control payload: $controlPayload",
+            identifier.toString,
+            Map.empty
+          )
+        )
     }
   }
 

@@ -5,6 +5,7 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   GetActorRef,
+  NetworkMessage,
   NetworkSenderActorRef,
   RegisterActorRef
 }
@@ -13,22 +14,22 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkCommunicationActor
 }
 import edu.uci.ics.amber.engine.common.WorkflowLogger
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowControlMessage
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
   AsyncRPCHandlerInitializer,
   AsyncRPCServer
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.recovery.{ControlLogManager, EmptyLogStorage, LogStorage}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
+import edu.uci.ics.amber.error.ErrorUtils.safely
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: ActorRef,
-    controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage()
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends Actor
     with Stash {
-
-  lazy val controlLogManager: ControlLogManager = wire[ControlLogManager]
 
   val logger: WorkflowLogger = WorkflowLogger(s"$identifier")
 
@@ -68,33 +69,11 @@ abstract class WorkflowActor(
       )
   }
 
-  def processControlMessages: Receive = {
-    case msg @ NetworkMessage(id, cmd: WorkflowControlMessage) =>
-      controlLogManager.persistControlMessage(cmd)
-      sender ! NetworkAck(id)
-      handleControlMessageWithTryCatch(cmd)
-  }
-
-  def stashControlMessages: Receive = {
-    case msg @ NetworkMessage(id, cmd: WorkflowControlMessage) =>
-      stash()
-  }
-
   def logUnhandledMessages: Receive = {
     case other =>
       logger.logError(
         WorkflowRuntimeError(s"unhandled message: $other", identifier.toString, Map.empty)
       )
-  }
-
-  def handleControlMessageWithTryCatch(cmd: WorkflowControlMessage): Unit = {
-    try {
-      // use control input port to pass control messages
-      controlInputPort.handleControlMessage(cmd)
-    } catch safely {
-      case e =>
-        logger.logError(WorkflowRuntimeError(e, identifier.toString))
-    }
   }
 
   override def postStop(): Unit = {
