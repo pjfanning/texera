@@ -75,8 +75,6 @@ class WorkflowWorker(
 
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
 
-  lazy val controlLogManager: ControlLogManager = wire[ControlLogManager]
-
   lazy val dataLogManager: DataLogManager = wire[DataLogManager]
   lazy val dpLogManager: DPLogManager = wire[DPLogManager]
 
@@ -100,6 +98,8 @@ class WorkflowWorker(
 
   workerStateManager.assertState(Uninitialized)
   workerStateManager.transitTo(Ready)
+
+  val controlLogManager: ControlLogManager = wire[ControlLogManager]
 
   dataLogManager.onComplete(() => {
     context.become(receiveAndProcessMessages)

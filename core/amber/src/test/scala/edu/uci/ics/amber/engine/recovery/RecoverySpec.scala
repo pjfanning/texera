@@ -188,6 +188,7 @@ class RecoverySpec
     Thread.sleep(15000)
     forAllNetworkMessages(controller, x => assert(receivedMessages.dequeue() == x))
     forAllNetworkMessages(receiver, x => assert(receivedMessages.dequeue() == x))
+    assert(receivedMessages.isEmpty)
   }
 
   def smallWorkerChain(
