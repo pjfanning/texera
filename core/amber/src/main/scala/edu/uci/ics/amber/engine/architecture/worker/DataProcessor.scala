@@ -6,14 +6,25 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.messaginglayer.TupleToBatchConverter
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, EndMarker, EndOfAllMarker, InputTuple, InternalQueueElement, SenderChangeMarker}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  ControlElement,
+  EndMarker,
+  EndOfAllMarker,
+  InputTuple,
+  InternalQueueElement,
+  SenderChangeMarker
+}
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.{Completed, Running}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  VirtualIdentity
+}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, WorkflowLogger}
 import edu.uci.ics.amber.error.WorkflowRuntimeError
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -224,14 +235,14 @@ class DataProcessor( // dependencies:
       val control = getElement.asInstanceOf[ControlElement]
       handleControlElement(control)
     }
-    if(dpLogManager.isRecovering){
+    if (dpLogManager.isRecovering) {
       replayControlCommands()
     }
   }
 
   private[this] def takeControlElementsAfterCompletion(): Unit = {
     while (true) {
-      if(dpLogManager.isRecovering){
+      if (dpLogManager.isRecovering) {
         replayControlCommands()
       }
       val control = getElement.asInstanceOf[ControlElement]
@@ -239,19 +250,19 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def handleControlElement(control:ControlElement): Unit = {
-    if(dpLogManager.isRecovering){
+  private[this] def handleControlElement(control: ControlElement): Unit = {
+    if (dpLogManager.isRecovering) {
       replayControlCommands(control)
-    }else{
+    } else {
       processControlCommand(control.cmd, control.from)
     }
   }
 
-  private[this] def replayControlCommands(control:ControlElement = null): Unit ={
-    if(control != null){
+  private[this] def replayControlCommands(control: ControlElement = null): Unit = {
+    if (control != null) {
       controlRecoveryQueue.enqueue(control)
     }
-    while(dpLogManager.isCurrentCorrelated(dataCursor) && controlRecoveryQueue.nonEmpty){
+    while (dpLogManager.isCurrentCorrelated(dataCursor) && controlRecoveryQueue.nonEmpty) {
       val elem = controlRecoveryQueue.dequeue()
       processControlCommand(elem.cmd, elem.from)
       dpLogManager.advanceCursor()
