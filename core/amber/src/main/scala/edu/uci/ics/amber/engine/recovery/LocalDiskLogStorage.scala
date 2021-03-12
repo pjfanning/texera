@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import com.esotericsoftware.kryo.KryoException
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.ScalaKryoInstantiator
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowControlMessage
 import edu.uci.ics.amber.engine.recovery.DataLogManager.{FromSender, IdentifierMapping}
 
 import scala.collection.mutable
@@ -40,7 +40,7 @@ class LocalDiskLogStorage[T](logName: String) extends LogStorage[T](logName) {
         case e: KryoException =>
           input.close()
           flag = false
-        case other =>
+        case other: Throwable =>
           throw other
       }
     }

@@ -154,20 +154,9 @@ class WorkflowWorker(
     super.postStop()
   }
 
-  def transitStateToRunningFromReady(): Unit = {
-    if (workerStateManager.getCurrentState == Ready) {
-      workerStateManager.transitTo(Running)
-      asyncRPCClient.send(
-        WorkerStateUpdated(workerStateManager.getCurrentState),
-        ActorVirtualIdentity.Controller
-      )
-    }
-  }
-
   final def handleDataPayload(from: VirtualIdentity, dataPayload: DataPayload): Unit = {
     dataLogManager.filterMessage(from, dataPayload).foreach {
       case (vid, payload) =>
-        transitStateToRunningFromReady()
         tupleProducer.processDataPayload(vid, payload)
     }
   }
