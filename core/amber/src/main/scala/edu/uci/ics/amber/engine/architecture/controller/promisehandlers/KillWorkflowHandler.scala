@@ -19,12 +19,13 @@ trait KillWorkflowHandler {
 
   registerHandler { (msg: KillWorkflow, sender) =>
     {
+      controller.logger.logInfo("start to kill workflow")
       disableStatusUpdate()
       updateFrontendWorkflowStatus()
       // kill the controller by sending poison pill
       // the workers and network communication actors will also be killed
       // the dp thread will be shut down when the workers kill themselves
-      actorContext.self ! PoisonPill
+      controller.context.self ! PoisonPill
       CommandCompleted()
     }
   }

@@ -29,12 +29,9 @@ import edu.uci.ics.amber.engine.recovery.{ControlLogManager, EmptyLogStorage, Lo
 
 abstract class WorkflowActor(
     val identifier: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: ActorRef,
-    controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage()
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends Actor
     with Stash {
-
-  lazy val controlLogManager: ControlLogManager = wire[ControlLogManager]
 
   val logger: WorkflowLogger = WorkflowLogger(s"$identifier")
 
@@ -55,6 +52,7 @@ abstract class WorkflowActor(
   // this variable cannot be lazy
   // because it should be initialized with the actor itself
   val rpcHandlerInitializer: AsyncRPCHandlerInitializer
+  val controlLogManager: ControlLogManager
 
   def disallowActorRefRelatedMessages: Receive = {
     case GetActorRef(id, replyTo) =>
@@ -94,6 +92,11 @@ abstract class WorkflowActor(
       )
   }
 
+  def stashUnhandledMessages: Receive = {
+    case other =>
+      stash()
+  }
+
   def handleControlMessageWithTryCatch(cmd: WorkflowControlMessage): Unit = {
     try {
       // use control input port to pass control messages
@@ -105,7 +108,9 @@ abstract class WorkflowActor(
   }
 
   override def postStop(): Unit = {
-    logger.logInfo("stopped!")
+    // release the resource
+    controlLogManager.releaseLogStorage()
+    logger.logInfo("workflow actor stopped!")
   }
 
 }

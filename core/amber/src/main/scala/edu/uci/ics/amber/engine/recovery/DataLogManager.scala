@@ -17,7 +17,7 @@ object DataLogManager {
   case class FromSender(id: Int) extends DataLogElement
 }
 
-class DataLogManager(logStorage: LogStorage[DataLogElement]) extends RecoveryComponent {
+class DataLogManager(logStorage: LogStorage[DataLogElement]) extends LogManager(logStorage) {
 
   private val idMappingForRecovery = HashBiMap.create[VirtualIdentity, Int]()
   private var counter = 0
@@ -86,6 +86,9 @@ class DataLogManager(logStorage: LogStorage[DataLogElement]) extends RecoveryCom
         ret.append((vid, payload))
         persistedDataOrder.dequeue()
         cont = persistedDataOrder.nonEmpty
+        if(stashedMessages(vid).isEmpty) {
+          stashedMessages.remove(vid)
+        }
       } else {
         cont = false
       }

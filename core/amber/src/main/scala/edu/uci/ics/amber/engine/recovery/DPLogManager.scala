@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.recovery
 
 import scala.collection.mutable
 
-class DPLogManager(logStorage: LogStorage[Long]) extends RecoveryComponent {
+class DPLogManager(logStorage: LogStorage[Long]) extends LogManager(logStorage) {
   private val correlatedSeq = logStorage.load().to[mutable.Queue]
 
   checkIfCompleted()

@@ -20,7 +20,7 @@ trait WorkerExecutionStartedHandler {
   registerHandler { (msg: WorkerStateUpdated, sender) =>
     {
       // set the state
-      workflow.getOperator(sender).getWorker(sender).state = msg.state
+      controller.workflow.getOperator(sender).getWorker(sender).state = msg.state
       updateFrontendWorkflowStatus()
       CommandCompleted()
     }

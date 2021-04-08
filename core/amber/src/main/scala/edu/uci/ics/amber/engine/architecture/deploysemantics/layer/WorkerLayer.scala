@@ -33,6 +33,7 @@ class WorkerLayer(
 ) extends Serializable {
 
   private val workers = mutable.HashMap[ActorVirtualIdentity, WorkerInfo]()
+  @transient
   private val workerRefs = mutable.HashMap[ActorVirtualIdentity, (Int, ActorRef)]()
   private val inLinks = mutable.HashSet[LinkIdentity]()
 

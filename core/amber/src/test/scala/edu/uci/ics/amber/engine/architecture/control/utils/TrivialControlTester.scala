@@ -4,18 +4,17 @@ import akka.actor.ActorRef
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.recovery.EmptyLogStorage
+import edu.uci.ics.amber.engine.recovery.{ControlLogManager, EmptyLogStorage}
 
 class TrivialControlTester(id: ActorVirtualIdentity, parentNetworkCommunicationActorRef: ActorRef)
-    extends WorkflowActor(id, parentNetworkCommunicationActorRef, new EmptyLogStorage()) {
+    extends WorkflowActor(id, parentNetworkCommunicationActorRef) {
   override val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
     wire[TesterAsyncRPCHandlerInitializer]
+
+  override val controlLogManager: ControlLogManager = new ControlLogManager(rpcHandlerInitializer,new EmptyLogStorage[WorkflowControlMessage],controlInputPort)
 
   override def receive: Receive = {
     disallowActorRefRelatedMessages orElse {

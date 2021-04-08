@@ -38,7 +38,7 @@ trait WorkerExecutionCompletedHandler {
     {
       assert(sender.isInstanceOf[WorkerActorVirtualIdentity])
       // get the corresponding operator of this worker
-      val operator = workflow.getOperator(sender)
+      val operator = controller.workflow.getOperator(sender)
       val future =
         if (operator.isInstanceOf[SinkOpExecConfig]) {
           // if the operator is sink, first query stats then collect results of this worker.
@@ -59,14 +59,14 @@ trait WorkerExecutionCompletedHandler {
         }
       future.flatMap { ret =>
         updateFrontendWorkflowStatus()
-        if (workflow.isCompleted) {
-          actorContext.parent ! ControllerState.Completed // for testing
+        if (controller.workflow.isCompleted) {
+          controller.context.parent ! ControllerState.Completed // for testing
           //send result to frontend
-          if (eventListener.workflowCompletedListener != null) {
-            eventListener.workflowCompletedListener
+          if (controller.eventListener.workflowCompletedListener != null) {
+            controller.eventListener.workflowCompletedListener
               .apply(
                 WorkflowCompleted(
-                  workflow.getEndOperators.map(op => op.id.operator -> op.results).toMap
+                  controller.workflow.getEndOperators.map(op => op.id.operator -> op.results).toMap
                 )
               )
           }

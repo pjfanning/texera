@@ -36,7 +36,7 @@ trait StartWorkflowHandler {
       val startedLayers = mutable.HashSet[WorkerLayer]()
       Future
         .collect(
-          workflow.getSourceLayers
+          controller.workflow.getSourceLayers
             // get all startable layers
             .filter(layer => layer.canStart)
             .flatMap { layer =>
@@ -44,14 +44,14 @@ trait StartWorkflowHandler {
               layer.identifiers.map { worker =>
                 send(StartWorker(), worker).map { ret =>
                   // update worker state
-                  workflow.getWorkerInfo(worker).state = ret
+                  controller.workflow.getWorkerInfo(worker).state = ret
                 }
               }
             }
             .toSeq
         )
         .map { ret =>
-          actorContext.parent ! ControllerState.Running // for testing
+          controller.context.parent ! ControllerState.Running // for testing
           enableStatusUpdate()
           CommandCompleted()
         }

@@ -26,10 +26,10 @@ trait QueryWorkerStatisticsHandler {
     {
       // send all worker QueryStatistics message
       Future
-        .collect(workflow.getAllWorkers.map { worker =>
+        .collect(controller.workflow.getAllWorkers.map { worker =>
           send(QueryStatistics(), worker).map { stats =>
             // update worker stats
-            workflow.getOperator(worker).getWorker(worker).stats = stats
+            controller.workflow.getOperator(worker).getWorker(worker).stats = stats
           }
         }.toSeq)
         .map { ret =>

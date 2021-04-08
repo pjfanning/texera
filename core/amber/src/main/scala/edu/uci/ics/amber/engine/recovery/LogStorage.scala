@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.recovery
 
-abstract class LogStorage[T](logName: String) {
+abstract class LogStorage[T] extends Serializable {
 
   // for persist:
   def persistElement(elem: T)
@@ -8,7 +8,10 @@ abstract class LogStorage[T](logName: String) {
   // for recovery:
   def load(): Iterable[T]
 
-  // clear everything
+  // delete everything
   def clear(): Unit
+
+  // release the resources
+  def release(): Unit
 
 }

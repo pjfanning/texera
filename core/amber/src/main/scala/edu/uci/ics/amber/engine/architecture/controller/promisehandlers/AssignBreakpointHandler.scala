@@ -25,7 +25,7 @@ trait AssignBreakpointHandler {
   registerHandler { (msg: AssignGlobalBreakpoint[_], sender) =>
     {
       // get target operator
-      val operator = workflow.getOperator(msg.operatorID)
+      val operator = controller.workflow.getOperator(msg.operatorID)
       // attach the breakpoint
       operator.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
       // get target workers from the operator given a breakpoint

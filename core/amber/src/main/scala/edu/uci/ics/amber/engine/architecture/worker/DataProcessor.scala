@@ -202,6 +202,7 @@ class DataProcessor( // dependencies:
   }
 
   def shutdown(): Unit = {
+    dpLogManager.releaseLogStorage()
     dpThread.cancel(true) // interrupt
     operator.close() // close operator
     dpThreadExecutor.shutdownNow() // destroy thread

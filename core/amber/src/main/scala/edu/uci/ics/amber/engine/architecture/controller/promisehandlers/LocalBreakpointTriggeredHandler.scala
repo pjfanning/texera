@@ -34,7 +34,7 @@ trait LocalBreakpointTriggeredHandler {
   registerHandler { (msg: LocalBreakpointTriggered, sender) =>
     {
       // get the operator where the worker triggers breakpoint
-      val targetOp = workflow.getOperator(sender)
+      val targetOp = controller.workflow.getOperator(sender)
       val opID = targetOp.id.operator
       // get global breakpoints given local breakpoints
       val unResolved = msg.localBreakpoints
@@ -102,8 +102,8 @@ trait LocalBreakpointTriggeredHandler {
                     }
                 } else {
                   // other wise, report to frontend and pause entire workflow
-                  if (eventListener.breakpointTriggeredListener != null) {
-                    eventListener.breakpointTriggeredListener.apply(
+                  if (controller.eventListener.breakpointTriggeredListener != null) {
+                    controller.eventListener.breakpointTriggeredListener.apply(
                       BreakpointTriggered(mutable.HashMap.empty, opID)
                     )
                   }

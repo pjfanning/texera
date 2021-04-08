@@ -21,7 +21,7 @@ object InMemoryLogStorage {
 
 }
 
-class InMemoryLogStorage[T](logName: String) extends LogStorage[T](logName) {
+class InMemoryLogStorage[T](logName: String) extends LogStorage[T] {
 
   override def persistElement(elem: T): Unit = {
     InMemoryLogStorage.getLogOf(logName).enqueue(elem)
@@ -34,4 +34,6 @@ class InMemoryLogStorage[T](logName: String) extends LogStorage[T](logName) {
   override def clear(): Unit = {
     InMemoryLogStorage.clearLogOf(logName)
   }
+
+  override def release(): Unit = {}
 }

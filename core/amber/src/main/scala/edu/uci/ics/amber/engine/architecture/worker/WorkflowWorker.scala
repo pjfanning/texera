@@ -9,36 +9,17 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DataInputPort.WorkflowDataMessage
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef,
-  SendRequest
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
-  ControlInputPort,
-  DataInputPort,
-  DataOutputPort,
-  TupleToBatchConverter
-}
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, RegisterActorRef, SendRequest}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, ControlInputPort, DataInputPort, DataOutputPort, TupleToBatchConverter}
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager._
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.{
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  ITupleSinkOperatorExecutor
-}
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor, ITupleSinkOperatorExecutor}
 import edu.uci.ics.amber.engine.recovery.RecoveryManager.RecoveryCompleted
 import edu.uci.ics.amber.engine.recovery.DataLogManager.DataLogElement
-import edu.uci.ics.amber.engine.recovery.{DPLogManager, DataLogManager, EmptyLogStorage, LogStorage}
+import edu.uci.ics.amber.engine.recovery.{ControlLogManager, DPLogManager, DataLogManager, EmptyLogStorage, LogStorage}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -71,14 +52,21 @@ class WorkflowWorker(
     controlLogStorage: LogStorage[WorkflowControlMessage] = new EmptyLogStorage(),
     dataLogStorage: LogStorage[DataLogElement] = new EmptyLogStorage(),
     dpLogStorage: LogStorage[Long] = new EmptyLogStorage()
-) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef, controlLogStorage) {
+) extends WorkflowActor(identifier, parentNetworkCommunicationActorRef) {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
-  val workerStateManager: WorkerStateManager = new WorkerStateManager()
+  val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
+    wire[WorkerAsyncRPCHandlerInitializer]
+
+  lazy val workerStateManager: WorkerStateManager = new WorkerStateManager()
+
+  workerStateManager.assertState(Uninitialized)
+  workerStateManager.transitTo(Ready)
 
   lazy val dataLogManager: DataLogManager = wire[DataLogManager]
   lazy val dpLogManager: DPLogManager = wire[DPLogManager]
+  val controlLogManager: ControlLogManager = wire[ControlLogManager]
 
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
@@ -90,15 +78,9 @@ class WorkflowWorker(
 
   override lazy val controlInputPort: ControlInputPort = wire[WorkerControlInputPort]
 
-  val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
-    wire[WorkerAsyncRPCHandlerInitializer]
-
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef ! RegisterActorRef(identifier, self)
   }
-
-  workerStateManager.assertState(Uninitialized)
-  workerStateManager.transitTo(Ready)
 
   dataLogManager.onComplete(() => {
     networkCommunicationActor ! SendRequest(
@@ -140,6 +122,8 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     dataProcessor.enqueueCommand(ShutdownDPThread(), ActorVirtualIdentity.Self)
+    // release the resource
+    dataLogManager.releaseLogStorage()
     super.postStop()
   }
 

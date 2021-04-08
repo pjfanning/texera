@@ -36,15 +36,15 @@ trait LocalOperatorExceptionHandler {
   registerHandler { (msg: LocalOperatorException, sender) =>
     {
       // report the faulted tuple to the frontend with the exception
-      if (eventListener.breakpointTriggeredListener != null) {
-        eventListener.breakpointTriggeredListener.apply(
+      if (controller.eventListener.breakpointTriggeredListener != null) {
+        controller.eventListener.breakpointTriggeredListener.apply(
           BreakpointTriggered(
             mutable.HashMap(
               (sender, FaultedTuple(msg.triggeredTuple, 0)) -> Array(
                 msg.e.toString
               )
             ),
-            workflow.getOperator(sender).id.operator
+            controller.workflow.getOperator(sender).id.operator
           )
         )
       }

@@ -1,64 +1,19 @@
 package edu.uci.ics.amber.engine.recovery
 
+import java.io.{DataInputStream, DataOutputStream, IOException, InputStream, OutputStream}
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
-import com.esotericsoftware.kryo.KryoException
-import com.esotericsoftware.kryo.io.{Input, Output}
-import com.twitter.chill.ScalaKryoInstantiator
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlInputPort.WorkflowControlMessage
-import edu.uci.ics.amber.engine.recovery.DataLogManager.{FromSender, IdentifierMapping}
+class LocalDiskLogStorage[T](logName: String) extends FileLogStorage[T] {
 
-import scala.collection.mutable
+  private lazy val path = Paths.get(s"./logs/$logName.logfile")
 
-class LocalDiskLogStorage[T](logName: String) extends LogStorage[T](logName) {
+  override def getInputStream: DataInputStream = new DataInputStream(Files.newInputStream(path))
 
-  private val path = Paths.get(s"./logs/$logName.logfile")
-  Files.createDirectories(path.getParent)
-  private val kryoInit = new ScalaKryoInstantiator
-  kryoInit.setRegistrationRequired(false)
-  private val kryo = kryoInit.newKryo()
-  kryo.register(WorkflowControlMessage.getClass)
-  kryo.register(IdentifierMapping.getClass)
-  kryo.register(FromSender.getClass)
-  private lazy val controlSerializer = new Output(
-    Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-  )
+  override def getOutputStream: DataOutputStream = new DataOutputStream(Files.newOutputStream(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND))
 
-  override def load(): Iterable[T] = {
-    // read file from disk
-    if (!Files.exists(path)) {
-      return Seq.empty
-    }
-    val input = new Input(Files.newInputStream(path))
-    var flag = true
-    val buf = mutable.ArrayBuffer.empty[T]
-    while (flag) {
-      try {
-        val message = kryo.readClassAndObject(input).asInstanceOf[T]
-        buf.append(message)
-      } catch {
-        case e: KryoException =>
-          input.close()
-          flag = false
-        case other =>
-          throw other
-      }
-    }
-    buf
-  }
+  override def fileExists: Boolean = Files.exists(path)
 
-  override def persistElement(elem: T): Unit = {
-    try {
-      kryo.writeClassAndObject(controlSerializer, elem)
-    } finally {
-      controlSerializer.flush()
-    }
-  }
+  override def createDirectories(): Unit = Files.createDirectories(path.getParent)
 
-  override def clear(): Unit = {
-    //delete file
-    if (Files.exists(path)) {
-      Files.delete(path)
-    }
-  }
+  override def deleteFile(): Unit = Files.delete(path)
 }

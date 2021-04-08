@@ -17,13 +17,8 @@ import scala.collection.mutable
 object RecoveryManager {
   def defaultControlLogStorage(
       id: ActorVirtualIdentity
-  ): EmptyLogStorage[WorkflowControlMessage] = {
-    if (id == ActorVirtualIdentity.Controller) {
-      new EmptyLogStorage[WorkflowControlMessage]()
-    } else {
-      new EmptyLogStorage[WorkflowControlMessage]()
-    }
-  }
+  ) = new EmptyLogStorage[WorkflowControlMessage]()
+
   def defaultDataLogStorage(id: ActorVirtualIdentity) = new EmptyLogStorage[DataLogElement]()
 
   def defaultDPLogStorage(id: ActorVirtualIdentity) = new EmptyLogStorage[Long]()

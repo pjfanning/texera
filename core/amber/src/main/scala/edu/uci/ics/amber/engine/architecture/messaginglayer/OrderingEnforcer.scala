@@ -30,10 +30,15 @@ class OrderingEnforcer[T: ClassTag] {
   var current = 0L
   val ofoMap = new mutable.LongMap[T]
 
-  def isDuplicated(sequenceNumber: Long): Boolean =
+  def isDuplicated(sequenceNumber: Long): Boolean = {
+    if(sequenceNumber == -1)return false
     sequenceNumber < current || ofoMap.contains(sequenceNumber)
+  }
 
-  def isAhead(sequenceNumber: Long): Boolean = sequenceNumber > current
+  def isAhead(sequenceNumber: Long): Boolean = {
+    if(sequenceNumber == -1)return false
+    sequenceNumber > current
+  }
 
   def stash(sequenceNumber: Long, data: T): Unit = {
     ofoMap(sequenceNumber) = data

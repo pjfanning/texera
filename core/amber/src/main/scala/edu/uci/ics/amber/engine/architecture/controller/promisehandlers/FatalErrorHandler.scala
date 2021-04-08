@@ -21,7 +21,7 @@ trait FatalErrorHandler {
   registerHandler { (msg: FatalError, sender) =>
     {
       // log the error to console
-      logger.logError(msg.e)
+      controller.logger.logError(msg.e)
       // shutdown the workflow
       execute(KillWorkflow(), ActorVirtualIdentity.Controller)
     }

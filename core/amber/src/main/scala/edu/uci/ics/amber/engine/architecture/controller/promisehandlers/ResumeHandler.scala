@@ -28,16 +28,16 @@ trait ResumeHandler {
       // send all workers resume
       // resume message has no effect on non-paused workers
       Future
-        .collect(workflow.getAllWorkers.map { worker =>
+        .collect(controller.workflow.getAllWorkers.map { worker =>
           send(ResumeWorker(), worker).map { ret =>
-            workflow.getWorkerInfo(worker).state = ret
+            controller.workflow.getWorkerInfo(worker).state = ret
           }
         }.toSeq)
         .map { ret =>
           // update frontend status
           updateFrontendWorkflowStatus()
           enableStatusUpdate() //re-enabled it since it is disabled in pause
-          actorContext.parent ! ControllerState.Running //for testing
+          controller.context.parent ! ControllerState.Running //for testing
           CommandCompleted()
         }
     }

@@ -41,7 +41,7 @@ trait PauseHandler {
   registerHandler { (msg: PauseWorkflow, sender) =>
     {
       Future
-        .collect(workflow.getAllOperators.map { operator =>
+        .collect(controller.workflow.getAllOperators.map { operator =>
           // create a buffer for the current input tuple
           // since we need to show them on the frontend
           val buffer = mutable.ArrayBuffer[(ITuple, ActorVirtualIdentity)]()
@@ -67,8 +67,8 @@ trait PauseHandler {
             )
             .map { ret =>
               // for each paused operator, send the input tuple
-              if (eventListener.reportCurrentTuplesListener != null) {
-                eventListener.reportCurrentTuplesListener
+              if (controller.eventListener.reportCurrentTuplesListener != null) {
+                controller.eventListener.reportCurrentTuplesListener
                   .apply(ReportCurrentProcessingTuple(operator.id.operator, buffer.toArray))
               }
             }
@@ -77,11 +77,11 @@ trait PauseHandler {
           // update frontend workflow status
           updateFrontendWorkflowStatus()
           // send paused to frontend
-          if (eventListener.workflowPausedListener != null) {
-            eventListener.workflowPausedListener.apply(WorkflowPaused())
+          if (controller.eventListener.workflowPausedListener != null) {
+            controller.eventListener.workflowPausedListener.apply(WorkflowPaused())
           }
           disableStatusUpdate() // to be enabled in resume
-          actorContext.parent ! ControllerState.Paused // for testing
+          controller.context.parent ! ControllerState.Paused // for testing
           CommandCompleted()
         }
     }
