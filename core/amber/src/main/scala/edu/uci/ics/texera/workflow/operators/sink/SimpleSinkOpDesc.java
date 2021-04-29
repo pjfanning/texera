@@ -2,12 +2,13 @@ package edu.uci.ics.texera.workflow.operators.sink;
 
 import com.google.common.base.Preconditions;
 import edu.uci.ics.amber.engine.operators.OpExecConfig;
+import edu.uci.ics.texera.workflow.common.IncrementalOutputMode;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
-import edu.uci.ics.texera.workflow.common.metadata.OutputPort;
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
+import net.minidev.json.annotate.JsonIgnore;
 import scala.collection.immutable.List;
 
 import static java.util.Collections.singletonList;
@@ -15,9 +16,13 @@ import static scala.collection.JavaConverters.asScalaBuffer;
 
 public class SimpleSinkOpDesc extends OperatorDescriptor {
 
+    // use SET_SNAPSHOT as the default output mode
+    @JsonIgnore
+    public IncrementalOutputMode outputMode = IncrementalOutputMode.SET_SNAPSHOT;
+
     @Override
     public OpExecConfig operatorExecutor() {
-        return new SimpleSinkOpExecConfig(this.operatorIdentifier());
+        return new SimpleSinkOpExecConfig(this.operatorIdentifier(), outputMode);
     }
 
     @Override

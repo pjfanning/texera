@@ -13,6 +13,27 @@ import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 
 import scala.collection.mutable
 
+object WorkflowCompiler {
+
+  def isSink(operatorID: String, workflowCompiler: WorkflowCompiler): Boolean = {
+    val outLinks =
+      workflowCompiler.workflowInfo.links.filter(link => link.origin.operatorID == operatorID)
+    outLinks.isEmpty
+  }
+
+  def getUpstreamOperators(
+      operatorID: String,
+      workflowCompiler: WorkflowCompiler
+  ): List[OperatorDescriptor] = {
+    workflowCompiler.workflowInfo.links
+      .filter(link => link.destination.operatorID == operatorID)
+      .flatMap(link =>
+        workflowCompiler.workflowInfo.operators.filter(o => o.operatorID == link.origin.operatorID)
+      ).toList
+  }
+
+}
+
 class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowContext) {
 
   init()

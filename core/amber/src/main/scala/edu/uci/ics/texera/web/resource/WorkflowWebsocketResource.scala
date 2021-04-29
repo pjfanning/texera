@@ -210,6 +210,9 @@ class WorkflowWebsocketResource {
       workflowStatusUpdateListener = statusUpdate => {
         send(session, WebWorkflowStatusUpdateEvent.apply(statusUpdate, texeraWorkflowCompiler))
       },
+      workflowResultUpdateListener = resultUpdate => {
+        send(session, WebWorkflowResultUpdateEvent.apply(resultUpdate, texeraWorkflowCompiler))
+      },
       modifyLogicCompletedListener = _ => {
         send(session, ModifyLogicCompletedEvent())
       },

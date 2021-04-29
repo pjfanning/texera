@@ -1,19 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowCompleted,
-  WorkflowStatusUpdate
-}
-import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerState
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerAsyncRPCHandlerInitializer, ControllerState}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.KillWorkflowHandler.KillWorkflow
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.QueryWorkerStatistics
 import edu.uci.ics.amber.engine.architecture.principal.OperatorState
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.CollectSinkResultsHandler.CollectSinkResults
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.Completed
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
@@ -42,7 +36,7 @@ trait WorkerExecutionCompletedHandler {
       val future =
         if (operator.isInstanceOf[SinkOpExecConfig]) {
           // if the operator is sink, first query stats then collect results of this worker.
-          send(QueryStatistics(), sender).join(send(CollectSinkResults(), sender)).map {
+          send(QueryWorkerStatistics(), sender).join(send(CollectSinkResults(), sender)).map {
             case (stats, results) =>
               val workerInfo = operator.getWorker(sender)
               workerInfo.stats = stats
@@ -51,7 +45,7 @@ trait WorkerExecutionCompletedHandler {
           }
         } else {
           // if the operator is not a sink, just query the stats
-          send(QueryStatistics(), sender).map { stats =>
+          send(QueryWorkerStatistics(), sender).map { stats =>
             val workerInfo = operator.getWorker(sender)
             workerInfo.stats = stats
             workerInfo.state = stats.workerState

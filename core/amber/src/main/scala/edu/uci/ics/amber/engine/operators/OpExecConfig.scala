@@ -8,12 +8,8 @@ import edu.uci.ics.amber.engine.architecture.principal.{OperatorState, OperatorS
 import edu.uci.ics.amber.engine.common.WorkflowLogger
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager._
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
 
 import scala.collection.mutable
 
@@ -79,17 +75,23 @@ abstract class OpExecConfig(val id: OperatorIdentity) extends Serializable {
 
   def getOutputRowCount: Long = topology.layers.last.statistics.map(_.outputRowCount).sum
 
-  def getOutputResults: Option[List[ITuple]] = {
-    val allEmpty = topology.layers.last.statistics.forall(e => e.outputResults.isEmpty)
-    if (allEmpty) {
-      Option.empty
-    } else {
-      Option(topology.layers.last.statistics.flatMap(e => e.outputResults).flatten.toList)
-    }
-  }
+//  def getOutputResults: Option[(IncrementalOutputMode, List[ITuple])] = {
+//    val allEmpty = topology.layers.last.statistics.forall(e => e.outputResults.isEmpty)
+//    if (allEmpty) {
+//      Option.empty
+//    } else {
+//      val outputMode = topology.layers.last.statistics.headOption.flatMap(s => s.outputResults.map(i => i._1))
+//      val results = topology.layers.last.statistics.flatMap(e => e.outputResults.map(r => r._2)).flatten.toList
+//      if (outputMode.isEmpty) {
+//        Option.empty
+//      } else {
+//        Option(outputMode.get, results)
+//      }
+//    }
+//  }
 
   def getOperatorStatistics: OperatorStatistics =
-    OperatorStatistics(getState, getInputRowCount, getOutputRowCount, getOutputResults)
+    OperatorStatistics(getState, getInputRowCount, getOutputRowCount)
 
   def checkStartDependencies(workflow: Workflow): Unit = {
     //do nothing by default

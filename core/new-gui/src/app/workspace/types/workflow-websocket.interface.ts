@@ -1,4 +1,4 @@
-import { LogicalPlan, WorkflowStatusUpdate, ResultObject, LogicalOperator, BreakpointInfo } from './execute-workflow.interface';
+import { LogicalPlan, WorkflowStatusUpdate, ResultObject, LogicalOperator, BreakpointInfo, WorkflowResultUpdate } from './execute-workflow.interface';
 import { BreakpointTriggerInfo, BreakpointFault, BreakpointFaultedTuple } from './workflow-common.interface';
 
 
@@ -83,6 +83,7 @@ export type TexeraWebsocketEventTypeMap = {
   'WorkflowStartedEvent': {},
   'WorkflowCompletedEvent': {result: ReadonlyArray<ResultObject>},
   'WebWorkflowStatusUpdateEvent': WorkflowStatusUpdate,
+  'WebWorkflowResultUpdateEvent': WorkflowResultUpdate,
   'WorkflowPausedEvent': {},
   'WorkflowResumedEvent': {},
   'RecoveryStartedEvent': {},
