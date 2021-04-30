@@ -36,7 +36,6 @@ export class WorkflowStatusService {
     this.getResultUpdateStream().subscribe(event => {
       Object.entries(event).forEach(e => {
         console.log(`operator ${e[0]} result update -  mode: ${e[1].outputMode}, count: ${e[1].result.table.length}`);
-        console.log(e[1].result);
       });
     });
 
@@ -45,14 +44,6 @@ export class WorkflowStatusService {
         return;
       }
       this.statusSubject.next(event.operatorStatistics);
-    }, error => {
-
-    });
-
-    this.workflowWebsocketService.websocketEvent().subscribe(event => {
-      // success logic
-    }, error => {
-      // error logic
     });
 
     this.workflowWebsocketService.websocketEvent().subscribe(event => {

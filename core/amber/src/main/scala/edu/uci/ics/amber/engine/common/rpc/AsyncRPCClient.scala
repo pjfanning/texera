@@ -83,7 +83,9 @@ class AsyncRPCClient(controlOutputPort: ControlOutputPort, logger: WorkflowLogge
       return
     }
     if (ret.returnValue != null) {
-      if (ret.returnValue.isInstanceOf[WorkerStatistics] || ret.returnValue.isInstanceOf[WorkerResult]) {
+      if (
+        ret.returnValue.isInstanceOf[WorkerStatistics] || ret.returnValue.isInstanceOf[WorkerResult]
+      ) {
         return
       }
       logger.logInfo(

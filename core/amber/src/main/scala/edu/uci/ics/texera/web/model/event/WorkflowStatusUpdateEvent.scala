@@ -1,7 +1,14 @@
 package edu.uci.ics.texera.web.model.event
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowResultUpdate, WorkflowStatusUpdate}
-import edu.uci.ics.amber.engine.architecture.principal.{OperatorResult, OperatorState, OperatorStatistics}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowResultUpdate,
+  WorkflowStatusUpdate
+}
+import edu.uci.ics.amber.engine.architecture.principal.{
+  OperatorResult,
+  OperatorState,
+  OperatorStatistics
+}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 

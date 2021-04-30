@@ -57,7 +57,9 @@ class WorkflowDAG(workflowInfo: WorkflowInfo) {
 
   def getDownstream(operatorID: String): List[OperatorDescriptor] = {
     val downstream = new mutable.MutableList[OperatorDescriptor]
-    jgraphtDag.outgoingEdgesOf(operatorID).forEach(e => downstream += operators(e.origin.operatorID))
+    jgraphtDag
+      .outgoingEdgesOf(operatorID)
+      .forEach(e => downstream += operators(e.origin.operatorID))
     downstream.toList
   }
 

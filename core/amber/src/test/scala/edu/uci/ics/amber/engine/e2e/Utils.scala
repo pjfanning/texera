@@ -33,7 +33,7 @@ object Utils {
     Controller.props(
       WorkflowIdentity(workflowTag),
       texeraWorkflowCompiler.amberWorkflow,
-      ControllerEventListener(),
+      ControllerEventListener()
     )
   }
 

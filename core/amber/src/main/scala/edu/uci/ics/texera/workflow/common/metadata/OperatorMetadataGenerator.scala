@@ -8,7 +8,6 @@ import com.kjetland.jackson.jsonSchema.{JsonSchemaConfig, JsonSchemaDraft, JsonS
 import com.kjetland.jackson.jsonSchema.JsonSchemaConfig.html5EnabledSchema
 import edu.uci.ics.texera.workflow.common.Utils.objectMapper
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 
 import java.util
@@ -81,7 +80,7 @@ object OperatorMetadataGenerator {
   def main(args: Array[String]): Unit = {
     // run this if you want to check the json schema generated for an operator descriptor
     // replace the argument with the class of your operator descriptor
-    println(generateOperatorJsonSchema(classOf[SimpleSinkOpDesc]).toPrettyString)
+    println(generateOperatorJsonSchema(classOf[CSVScanSourceOpDesc]).toPrettyString)
   }
 
   def generateOperatorJsonSchema(opDescClass: Class[_ <: OperatorDescriptor]): JsonNode = {
