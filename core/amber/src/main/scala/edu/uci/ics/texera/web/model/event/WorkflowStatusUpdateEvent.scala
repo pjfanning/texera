@@ -73,7 +73,7 @@ object WebWorkflowResultUpdateEvent {
   ): WebWorkflowResultUpdateEvent = {
     val resultMap = update.operatorResults
       .map(e => (e._1, WebIncrementalOperatorResult.apply(e._1, e._2, workflowCompiler)))
-      .filter(e => e._2.isEmpty)
+      .filter(e => e._2.nonEmpty)
       .map(e => (e._1, e._2.get))
     WebWorkflowResultUpdateEvent(resultMap)
   }

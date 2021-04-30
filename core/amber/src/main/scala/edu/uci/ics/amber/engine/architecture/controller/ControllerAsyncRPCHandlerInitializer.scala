@@ -45,8 +45,7 @@ class ControllerAsyncRPCHandlerInitializer(
     val controlOutputPort: ControlOutputPort,
     val eventListener: ControllerEventListener,
     val workflow: Workflow,
-    var statusUpdateAskHandle: Cancellable,
-    val statisticsUpdateIntervalMs: Option[Long],
+    val controllerConfig: ControllerConfig,
     source: AsyncRPCClient,
     receiver: AsyncRPCServer
 ) extends AsyncRPCHandlerInitializer(source, receiver)
@@ -64,30 +63,47 @@ class ControllerAsyncRPCHandlerInitializer(
     with LinkCompletedHandler
     with FatalErrorHandler {
 
-  def enableStatusUpdate(): Unit = {
-    if (statisticsUpdateIntervalMs.isDefined && statusUpdateAskHandle == null) {
-      statusUpdateAskHandle = actorContext.system.scheduler.scheduleWithFixedDelay(
-        0.milliseconds,
-        FiniteDuration.apply(statisticsUpdateIntervalMs.get, MILLISECONDS))(
-        () => {
-          actorContext.self ! ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateQueryStatistics()
-          )
-          actorContext.self ! ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateQueryResults()
-          )
-        }
-      )(actorContext.dispatcher)
+  var statusUpdateAskHandle: Option[Cancellable] = None
+  var resultUpdateAskHandle: Option[Cancellable] = None
 
+  def enableStatusUpdate(): Unit = {
+    if (controllerConfig.statisticsUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
+      statusUpdateAskHandle = Option(
+        actorContext.system.scheduler.scheduleAtFixedRate(
+          0.milliseconds,
+          FiniteDuration.apply(controllerConfig.statisticsUpdateIntervalMs.get, MILLISECONDS),
+          actorContext.self,
+          ControlInvocation(
+            AsyncRPCClient.IgnoreReplyAndDoNotLog,
+            ControllerInitiateQueryStatistics(Option.empty)
+          )
+        )(actorContext.dispatcher)
+      )
     }
+    if (controllerConfig.resultUpdateIntervalMs.nonEmpty && resultUpdateAskHandle.isEmpty) {
+      resultUpdateAskHandle = Option(
+        actorContext.system.scheduler.scheduleAtFixedRate(
+          0.milliseconds,
+          FiniteDuration.apply(controllerConfig.resultUpdateIntervalMs.get, MILLISECONDS),
+          actorContext.self,
+          ControlInvocation(
+            AsyncRPCClient.IgnoreReplyAndDoNotLog,
+            ControllerInitiateQueryResults(Option.empty)
+          )
+        )(actorContext.dispatcher)
+      )
+    }
+
   }
 
   def disableStatusUpdate(): Unit = {
-    if (statusUpdateAskHandle != null) {
-      statusUpdateAskHandle.cancel()
-      statusUpdateAskHandle = null
+    if (statusUpdateAskHandle.nonEmpty) {
+      statusUpdateAskHandle.get.cancel()
+      statusUpdateAskHandle = Option.empty
+    }
+    if (resultUpdateAskHandle.nonEmpty) {
+      resultUpdateAskHandle.get.cancel()
+      resultUpdateAskHandle = Option.empty
     }
   }
 

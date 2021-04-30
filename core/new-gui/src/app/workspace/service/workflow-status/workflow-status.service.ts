@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { ExecutionState, OperatorState, OperatorStatistics, IncrementalOutputResult, ResultObject } from '../../types/execute-workflow.interface';
+import { ExecutionState, OperatorState, OperatorStatistics, IncrementalOutputResult } from '../../types/execute-workflow.interface';
 import { ExecuteWorkflowService } from '../execute-workflow/execute-workflow.service';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
 import { WorkflowWebsocketService } from '../workflow-websocket/workflow-websocket.service';
-import { assertNever } from 'src/app/common/util/assert';
 
 @Injectable({
   providedIn: 'root'
@@ -23,7 +22,7 @@ export class WorkflowStatusService {
   //                                delta no retraction   - same as snapshot
   //                                delta with retraction - accumulated delta is not compacted
   // When resultUpdateStream emits a new update event, the update is already applied on the result set
-  private currentIncrementalResult: Record<string, ResultObject> = {};
+  private currentIncrementalResult: Record<string, IncrementalOutputResult> = {};
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -34,12 +33,26 @@ export class WorkflowStatusService {
       return;
     }
     this.getStatusUpdateStream().subscribe(event => this.currentStatus = event);
+    this.getResultUpdateStream().subscribe(event => {
+      Object.entries(event).forEach(e => {
+        console.log(`operator ${e[0]} result update -  mode: ${e[1].outputMode}, count: ${e[1].result.table.length}`);
+        console.log(e[1].result);
+      });
+    });
 
     this.workflowWebsocketService.websocketEvent().subscribe(event => {
       if (event.type !== 'WebWorkflowStatusUpdateEvent') {
         return;
       }
       this.statusSubject.next(event.operatorStatistics);
+    }, error => {
+
+    });
+
+    this.workflowWebsocketService.websocketEvent().subscribe(event => {
+      // success logic
+    }, error => {
+      // error logic
     });
 
     this.workflowWebsocketService.websocketEvent().subscribe(event => {
@@ -53,19 +66,22 @@ export class WorkflowStatusService {
         const resultUpdate = e[1];
 
         if (resultUpdate.outputMode === 'SET_SNAPSHOT') {
-          this.currentIncrementalResult[opID] = resultUpdate.result;
+          this.currentIncrementalResult[opID] = resultUpdate;
         } else if (resultUpdate.outputMode === 'SET_DELTA') {
           const combinedResult = [];
-          combinedResult.push(this.currentIncrementalResult[opID]?.table ?? []);
+          combinedResult.push(this.currentIncrementalResult[opID]?.result.table ?? []);
           combinedResult.push(resultUpdate.result.table);
           let rowCount = 0;
-          rowCount += this.currentIncrementalResult[opID]?.totalRowCount ?? 0;
+          rowCount += this.currentIncrementalResult[opID]?.result.totalRowCount ?? 0;
           rowCount += resultUpdate.result.totalRowCount;
           this.currentIncrementalResult[opID] = {
-            operatorID: resultUpdate.result.operatorID,
-            chartType: resultUpdate.result.chartType,
-            table: combinedResult,
-            totalRowCount: rowCount,
+            outputMode: resultUpdate.outputMode,
+            result: {
+              operatorID: resultUpdate.result.operatorID,
+              chartType: resultUpdate.result.chartType,
+              table: combinedResult,
+              totalRowCount: rowCount,
+            }
           };
         } else {
           const _exhaustiveCheck: never = resultUpdate.outputMode;

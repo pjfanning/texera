@@ -47,7 +47,7 @@ public class LineChartOpDesc extends VisualizationOperator {
 
     @Override
     public IncrementalOutputMode outputMode() {
-        return IncrementalOutputMode.SET_SNAPSHOT;
+        return IncrementalOutputMode.SET_DELTA;
     }
 
     @Override

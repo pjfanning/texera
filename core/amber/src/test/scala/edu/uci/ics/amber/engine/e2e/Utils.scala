@@ -34,7 +34,6 @@ object Utils {
       WorkflowIdentity(workflowTag),
       texeraWorkflowCompiler.amberWorkflow,
       ControllerEventListener(),
-      100
     )
   }
 

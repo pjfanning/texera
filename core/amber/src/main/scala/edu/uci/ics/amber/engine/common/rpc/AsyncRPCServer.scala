@@ -1,8 +1,8 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.QueryWorkerStatistics
 import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlOutputPort
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.{QueryWorkerResult, QueryWorkerStatistics}
 import edu.uci.ics.amber.engine.common.WorkflowLogger
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload, noReplyNeeded}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -86,11 +86,11 @@ class AsyncRPCServer(controlOutputPort: ControlOutputPort, logger: WorkflowLogge
     if (call.commandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
       return
     }
-    if (call.command.isInstanceOf[QueryWorkerStatistics]) {
+    if (call.command.isInstanceOf[QueryWorkerStatistics] || call.command.isInstanceOf[QueryWorkerResult]) {
       return
     }
     logger.logInfo(
-      s"receive command: ${call.command} from ${sender.toString} (controlID: ${call.commandID})"
+      s"AsyncRPCServer: receive command: ${call.command} from ${sender.toString} (controlID: ${call.commandID})"
     )
   }
 

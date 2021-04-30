@@ -1,15 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.{
-  QueryWorkerResult,
-  QueryWorkerStatistics
-}
-import edu.uci.ics.amber.engine.architecture.worker.{
-  WorkerAsyncRPCHandlerInitializer,
-  WorkerResult,
-  WorkerStatistics
-}
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.{QueryWorkerResult, QueryWorkerStatistics}
+import edu.uci.ics.amber.engine.architecture.worker.{WorkerAsyncRPCHandlerInitializer, WorkerResult, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.ITupleSinkOperatorExecutor
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+
+object QueryStatisticsHandler {
+  final case class QueryWorkerStatistics() extends ControlCommand[WorkerStatistics]
+  final case class QueryWorkerResult() extends ControlCommand[Option[WorkerResult]]
+}
 
 trait QueryStatisticsHandler {
   this: WorkerAsyncRPCHandlerInitializer =>

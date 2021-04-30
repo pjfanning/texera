@@ -1,12 +1,11 @@
 package edu.uci.ics.texera.web.resource
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.actor.{ActorRef, PoisonPill}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerEventListener}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, ControllerEventListener}
 import edu.uci.ics.amber.engine.architecture.principal.OperatorStatistics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -14,22 +13,17 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.model.event._
 import edu.uci.ics.texera.web.model.request._
-import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource.{
-  sessionDownloadCache,
-  sessionJobs,
-  sessionMap,
-  sessionResults
-}
+import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource.{sessionDownloadCache, sessionJobs, sessionMap, sessionResults}
 import edu.uci.ics.texera.web.resource.auth.UserResource
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, TexeraWebApplication}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
 import edu.uci.ics.texera.workflow.common.{Utils, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+
 import javax.servlet.http.HttpSession
 import javax.websocket.server.ServerEndpoint
 import javax.websocket.{EndpointConfig, _}
-
 import scala.collection.mutable
 
 object WorkflowWebsocketResource {
@@ -237,7 +231,7 @@ class WorkflowWebsocketResource {
     )
 
     val controllerActorRef = TexeraWebApplication.actorSystem.actorOf(
-      Controller.props(workflowTag, workflow, eventListener, 100)
+      Controller.props(workflowTag, workflow, eventListener, ControllerConfig.default)
     )
     texeraWorkflowCompiler.initializeBreakpoint(controllerActorRef)
     controllerActorRef ! ControlInvocation(AsyncRPCClient.IgnoreReply, StartWorkflow())
