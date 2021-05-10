@@ -59,9 +59,10 @@ export class WorkflowStatusService {
         if (resultUpdate.outputMode === 'SET_SNAPSHOT') {
           this.currentIncrementalResult[opID] = resultUpdate;
         } else if (resultUpdate.outputMode === 'SET_DELTA') {
-          const combinedResult = [];
-          combinedResult.push(this.currentIncrementalResult[opID]?.result.table ?? []);
-          combinedResult.push(resultUpdate.result.table);
+          const currentResult = this.currentIncrementalResult[opID]?.result.table ?? [];
+          const deltaResult = resultUpdate.result.table;
+          const combinedResult = currentResult.concat(deltaResult);
+
           let rowCount = 0;
           rowCount += this.currentIncrementalResult[opID]?.result.totalRowCount ?? 0;
           rowCount += resultUpdate.result.totalRowCount;
