@@ -4,7 +4,7 @@ import { ObjectTypeComponent } from './object.type';
 import { MultiSchemaTypeComponent } from './multischema.type';
 import { FormlyFieldConfig } from '@ngx-formly/core';
 import { CodeareaCustomTemplateComponent } from '../../workspace/component/codearea-custom-template/codearea-custom-template.component';
-import { DraggableArrayTypeComponent } from './drag-drop.type';
+import { DraggableArrayTypeComponent } from './draggable-array.type';
 
 /**
  * Configuration for using Json Schema with Formly.

@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormlyFieldSelect } from '@ngx-formly/material/select';
+import { util } from 'jointjs';
+import cloneDeep = util.cloneDeep;
 
 @Component({
   template: `
@@ -33,7 +35,7 @@ import { FormlyFieldSelect } from '@ngx-formly/material/select';
         >
         </ng-container>
         <div class="formly-drag-drop" cdkDropList
-             (cdkDropListDropped)="moveItemInArray(selectOptions, $event.previousIndex, $event.currentIndex);">
+             (cdkDropListDropped)="selectionOptions=selectOptions; drop($event); ">
           <span *ngFor="let item of selectOptions" cdkDrag>
             <mat-option style="position: relative;" *ngIf="!item.group" [value]="item.value" [disabled]="item.disabled">{{ item.label }}
               <i nz-icon nzType="menu" nzTheme="outline" cdkDragHandle
@@ -47,5 +49,23 @@ import { FormlyFieldSelect } from '@ngx-formly/material/select';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DraggableArrayTypeComponent extends FormlyFieldSelect {
-  moveItemInArray = moveItemInArray;
+  selectionOptions: any[] = [];
+
+  public drop($event: { previousIndex: number; currentIndex: number; }) {
+
+    const attributes: string[] = cloneDeep(this.model.attributes);
+    console.log('old attributes', attributes);
+    // const selectedIndexes = attributes.map((attribute: string) => this.selectionOptions.indexOf(attribute));
+    console.log('old options', this.selectionOptions);
+    moveItemInArray(this.selectionOptions, $event.previousIndex, $event.currentIndex);
+
+    console.log('new options', this.selectionOptions);
+    this.model.attributes = this.selectionOptions.map(entry => entry.label).filter(attribute => attributes.includes(attribute));
+    console.log('new attributes', this.model.attributes);
+    console.log('model', this.model);
+
+    // TODO: trigger model change event
+    this.model = {...this.model};
+  }
+
 }
