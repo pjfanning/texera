@@ -434,8 +434,8 @@ export class PropertyEditorComponent {
         }
       }
 
-      // special case for Project operator: we need to reorder the array, a custom template `dragablearray` is used
-      if (mapSource?.description?.toLowerCase() === 'a subset of columns to keep') {
+      // we need to reorder the array, a custom template `dragablearray` is used
+      if (mapSource?.autofill === 'attributeNameReorderList') {
         if (mappedField.type) {
           mappedField.type = 'draggablearray';
         }
