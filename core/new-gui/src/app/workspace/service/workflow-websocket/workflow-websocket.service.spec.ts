@@ -7,16 +7,6 @@ import { UndoRedoService } from "../undo-redo/undo-redo.service";
 import { JointUIService } from "../joint-ui/joint-ui.service";
 import { OperatorMetadataService } from "../operator-metadata/operator-metadata.service";
 import { StubOperatorMetadataService } from "../operator-metadata/stub-operator-metadata.service";
-import { HttpClient } from "@angular/common/http";
-import { Observable, of } from "rxjs";
-
-class StubHttpClient {
-  constructor() {}
-
-  public post(): Observable<string> {
-    return of("a");
-  }
-}
 
 describe("WorkflowWebsocketService", () => {
   let service: WorkflowWebsocketService;
@@ -31,8 +21,7 @@ describe("WorkflowWebsocketService", () => {
         {
           provide: OperatorMetadataService,
           useClass: StubOperatorMetadataService,
-        },
-        { provide: HttpClient, useClass: StubHttpClient },
+        }
       ],
     });
     service = TestBed.inject(WorkflowWebsocketService);
