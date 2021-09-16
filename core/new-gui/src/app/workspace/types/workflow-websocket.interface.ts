@@ -23,8 +23,8 @@ import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo }
 
 export interface RegisterWIdRequest
   extends Readonly<{
-  wId: string;
-  recoverFrontendState: boolean;
+    wId: string;
+    recoverFrontendState: boolean;
   }> {}
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
