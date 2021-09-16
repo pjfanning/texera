@@ -16,6 +16,7 @@ case class PaginatedResultEvent(
     pageIndex: Int,
     table: List[ObjectNode]
 ) extends TexeraWebSocketEvent
+    with FrameSynchronization
 
 case class OperatorAvailableResult(
     cacheValid: Boolean,

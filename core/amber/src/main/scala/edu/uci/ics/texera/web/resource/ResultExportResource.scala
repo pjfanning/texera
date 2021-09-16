@@ -12,18 +12,20 @@ import edu.uci.ics.texera.Utils.retry
 import edu.uci.ics.texera.web.model.event.ResultExportResponse
 import edu.uci.ics.texera.web.model.request.ResultExportRequest
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource.{
-  sessionExportCache,
-  sessionMap,
-  sessionResults
+  getExecutionContext,
+  getSessionContext,
+  getWId
 }
 import edu.uci.ics.texera.web.resource.auth.UserResource
 import edu.uci.ics.texera.web.resource.dashboard.file.UserFileResource
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import org.jooq.types.UInteger
-
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.util
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
+
+import javax.servlet.http.HttpSession
+
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
@@ -43,19 +45,18 @@ object ResultExportResource {
       request: ResultExportRequest
   ): ResultExportResponse = {
     // retrieve the file link saved in the session if exists
-    if (
-      sessionExportCache
-        .contains(sessionId) && sessionExportCache(sessionId).contains(request.exportType)
-    ) {
+    val wId = getWId(sessionId).get
+    val ec = getExecutionContext(wId).get
+    if (ec.exportCache.contains(request.exportType)) {
       return ResultExportResponse(
         "success",
-        s"Link retrieved from cache ${sessionExportCache(sessionId)(request.exportType)}"
+        s"Link retrieved from cache ${ec.exportCache(request.exportType)}"
       )
     }
 
     // By now the workflow should finish running
     val operatorWithResult: Option[OperatorResultService] =
-      sessionResults(sessionId).operatorResults.get(request.operatorId)
+      ec.resultService.operatorResults.get(request.operatorId)
     if (operatorWithResult.isEmpty) {
       return ResultExportResponse("error", "The workflow contains no results")
     }
@@ -68,9 +69,9 @@ object ResultExportResource {
     // handle the request according to export type
     request.exportType match {
       case "google_sheet" =>
-        handleGoogleSheetRequest(sessionId, request, results, attributeNames)
+        handleGoogleSheetRequest(wId, request, results, attributeNames)
       case "csv" =>
-        handleCSVRequest(sessionId, request, results, attributeNames)
+        handleCSVRequest(getSessionContext(sessionId).httpSession, request, results, attributeNames)
       case _ =>
         ResultExportResponse("error", s"Unknown export type: ${request.exportType}")
     }
@@ -78,7 +79,7 @@ object ResultExportResource {
   }
 
   def handleCSVRequest(
-      sessionId: String,
+      httpSession: HttpSession,
       request: ResultExportRequest,
       results: List[Tuple],
       headers: List[String]
@@ -90,7 +91,7 @@ object ResultExportResource {
     writer.close()
     val fileName = s"${request.workflowName}-${request.operatorId}.csv"
     val uid = UserResource
-      .getUser(sessionMap(sessionId)._2)
+      .getUser(httpSession)
       .map(u => u.getUid)
       .get
     val fileNameStored = UserFileResource.saveUserFileSafe(
@@ -105,7 +106,7 @@ object ResultExportResource {
   }
 
   private def handleGoogleSheetRequest(
-      sessionId: String,
+      wId: String,
       request: ResultExportRequest,
       results: List[ITuple],
       header: List[String]
@@ -144,16 +145,8 @@ object ResultExportResource {
     val message: String =
       s"Google sheet created. The results may be still uploading. You can access the sheet $link"
     // save the file link in the session cache
-    if (!sessionExportCache.contains(sessionId)) {
-      sessionExportCache.put(
-        sessionId,
-        mutable.HashMap(request.exportType -> link)
-      )
-    } else {
-      sessionExportCache(sessionId)
-        .put(request.exportType, link)
-    }
-
+    val ec = getExecutionContext(wId).get
+    ec.exportCache(request.exportType) = link
     ResultExportResponse("success", message)
   }
 

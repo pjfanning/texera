@@ -5,19 +5,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowResultUpdate
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.texera.web.model.event.TexeraWebSocketEvent
+import edu.uci.ics.texera.web.model.event.WebResultUpdateEvent
 import edu.uci.ics.texera.web.resource.WorkflowResultService.{
   PaginationMode,
   WebPaginationUpdate,
-  WebResultUpdate,
   defaultPageSize
 }
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource.send
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
-
 import javax.websocket.Session
+
 import scala.collection.mutable
 
 object WorkflowResultService {
@@ -100,8 +99,6 @@ object WorkflowResultService {
   }
 }
 
-case class WebResultUpdateEvent(updates: Map[String, WebResultUpdate]) extends TexeraWebSocketEvent
-
 /**
   * WorkflowResultService manages the materialized result of all sink operators in one workflow execution.
   *
@@ -131,8 +128,9 @@ class WorkflowResultService(
 
   val updatedSet: mutable.Set[String] = mutable.HashSet[String]()
 
-  def onResultUpdate(resultUpdate: WorkflowResultUpdate, session: Session): Unit = {
-
+  def onResultUpdate(
+      resultUpdate: WorkflowResultUpdate
+  ): Map[String, WorkflowResultService.WebResultUpdate] = {
     val tmpUpdatedSet = updatedSet.clone()
     for (id <- tmpUpdatedSet) {
       if (!operatorResults.contains(id)) {
@@ -164,8 +162,8 @@ class WorkflowResultService(
     // update the result snapshot of each operator
     resultUpdate.operatorResults.foreach(e => operatorResults(e._1).updateResult(e._2))
 
-    // send update event to frontend
-    send(session, WebResultUpdateEvent(webUpdateEvent))
+    // return update event
+    webUpdateEvent
 
   }
 

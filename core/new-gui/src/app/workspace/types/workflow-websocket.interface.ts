@@ -21,7 +21,13 @@ import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo }
  * 2. value is the payload this request/event needs
  */
 
-export interface WebSocketHelloWorld extends Readonly<{ message: string }> {}
+export interface RegisterWIdRequest
+  extends Readonly<{
+  wId: string;
+  recoverFrontendState: boolean;
+  }> {}
+
+export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
 
 export interface TexeraConstraintViolation
   extends Readonly<{
@@ -103,7 +109,7 @@ export interface CacheStatusUpdateEvent
   }> {}
 
 export type TexeraWebsocketRequestTypeMap = {
-  HelloWorldRequest: WebSocketHelloWorld;
+  RegisterWIdRequest: RegisterWIdRequest;
   HeartBeatRequest: {};
   ExecuteWorkflowRequest: LogicalPlan;
   PauseWorkflowRequest: {};
@@ -119,7 +125,7 @@ export type TexeraWebsocketRequestTypeMap = {
 };
 
 export type TexeraWebsocketEventTypeMap = {
-  HelloWorldResponse: WebSocketHelloWorld;
+  RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowErrorEvent: WorkflowError;
   WorkflowStartedEvent: {};
