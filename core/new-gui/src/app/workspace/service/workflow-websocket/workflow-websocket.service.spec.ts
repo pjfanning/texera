@@ -1,7 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 
 import { WorkflowWebsocketService } from "./workflow-websocket.service";
-import {WorkflowActionService} from '../workflow-graph/model/workflow-action.service';
+import {WorkflowActionService} from "../workflow-graph/model/workflow-action.service";
 
 describe("WorkflowWebsocketService", () => {
   let service: WorkflowWebsocketService;
