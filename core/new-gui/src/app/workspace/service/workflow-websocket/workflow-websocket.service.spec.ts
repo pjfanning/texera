@@ -18,6 +18,7 @@ describe("WorkflowWebsocketService", () => {
         WorkflowUtilService,
         UndoRedoService,
         JointUIService,
+        WorkflowWebsocketService,
         {
           provide: OperatorMetadataService,
           useClass: StubOperatorMetadataService,
