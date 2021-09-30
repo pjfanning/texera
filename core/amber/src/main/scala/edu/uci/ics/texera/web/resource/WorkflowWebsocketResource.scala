@@ -41,7 +41,6 @@ import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.google.common.collect.HashBiMap
 import javax.servlet.http.HttpSession
 import javax.websocket._
 import javax.websocket.server.ServerEndpoint
@@ -121,17 +120,11 @@ object WorkflowWebsocketResource {
     sessionMap(sId) = sc
   }
 
-  def trySend(wId: String, event: TexeraWebSocketEvent): Unit = {
+  def publishEvent(wId: String, event: TexeraWebSocketEvent): Unit = {
     WebsocketLogStorage.logMarkedEvent(wId, event)
     getSessionId(wId).foreach { sId =>
       sendInternal(getSessionContext(sId).session, event)
     }
-  }
-  def send(session: Session, event: TexeraWebSocketEvent): Unit = {
-    runIfOptionNonEmpty(getWId(session.getId)) { wId =>
-      WebsocketLogStorage.logMarkedEvent(wId, event)
-    }
-    sendInternal(session, event)
   }
 
   def sendInternal(session: Session, event: TexeraWebSocketEvent): Unit = {
@@ -206,9 +199,9 @@ class WorkflowWebsocketResource extends LazyLogging {
             }
           }
           setWIdForSession(session.getId, wId)
-          send(session, RegisterWIdResponse("wid registered"))
+          sendInternal(session, RegisterWIdResponse("wid registered"))
         case heartbeat: HeartBeatRequest =>
-          send(session, HeartBeatResponse())
+          sendInternal(session, HeartBeatResponse())
         case execute: ExecuteWorkflowRequest =>
           println(execute)
           //clear logs
@@ -239,8 +232,8 @@ class WorkflowWebsocketResource extends LazyLogging {
       }
     } catch {
       case err: Exception =>
-        send(
-          session,
+        publishEvent(
+          getWId(session.getId).get,
           WorkflowErrorEvent(generalErrors =
             Map("exception" -> (err.getMessage + "\n" + err.getStackTrace.mkString("\n")))
           )
@@ -272,7 +265,7 @@ class WorkflowWebsocketResource extends LazyLogging {
       .slice(from, from + request.pageSize)
       .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
 
-    send(session, PaginatedResultEvent.apply(request, paginationResults))
+    publishEvent(wId, PaginatedResultEvent.apply(request, paginationResults))
   }
 
   def addBreakpoint(session: Session, addBreakpoint: AddBreakpointRequest): Unit = {
@@ -303,7 +296,7 @@ class WorkflowWebsocketResource extends LazyLogging {
     val wId = getWId(session.getId).get
     val controller = getRuntimeContext(wId).get.controller
     controller ! ControlInvocation(AsyncRPCClient.IgnoreReply, RetryWorkflow())
-    send(session, WorkflowResumedEvent())
+    publishEvent(wId, WorkflowResumedEvent())
   }
 
   def pauseWorkflow(session: Session): Unit = {
@@ -318,7 +311,7 @@ class WorkflowWebsocketResource extends LazyLogging {
     val wId = getWId(session.getId).get
     val controller = getRuntimeContext(wId).get.controller
     controller ! ControlInvocation(AsyncRPCClient.IgnoreReply, ResumeWorkflow())
-    send(session, WorkflowResumedEvent())
+    publishEvent(wId, WorkflowResumedEvent())
   }
 
   def executeWorkflow(session: Session, request: ExecuteWorkflowRequest): Unit = {
@@ -397,7 +390,7 @@ class WorkflowWebsocketResource extends LazyLogging {
     val texeraWorkflowCompiler = new WorkflowCompiler(workflowInfo, context)
     val violations = texeraWorkflowCompiler.validate
     if (violations.nonEmpty) {
-      send(session, WorkflowErrorEvent(violations))
+      publishEvent(wId, WorkflowErrorEvent(violations))
       return
     }
 
@@ -440,12 +433,12 @@ class WorkflowWebsocketResource extends LazyLogging {
         .toMap
     )
 
-    send(session, availableResultEvent)
+    publishEvent(wId, availableResultEvent)
 
     val eventListener = ControllerEventListener(
       workflowCompletedListener = completed => {
         cleanUpRuntimeContext(wId)
-        trySend(wId, WorkflowCompletedEvent())
+        publishEvent(wId, WorkflowCompletedEvent())
         if (opResultSwitch && getSessionId(wId).nonEmpty) {
           getSessionId(wId).foreach { sId =>
             val activeSession = getSessionContext(sId).session
@@ -462,33 +455,30 @@ class WorkflowWebsocketResource extends LazyLogging {
         }
       },
       workflowStatusUpdateListener = statusUpdate => {
-        trySend(wId, WebWorkflowStatusUpdateEvent.apply(statusUpdate))
+        publishEvent(wId, WebWorkflowStatusUpdateEvent.apply(statusUpdate))
       },
       workflowResultUpdateListener = resultUpdate => {
         val webUpdateEvent = workflowResultService.onResultUpdate(resultUpdate)
-        getSessionId(wId).foreach { sId =>
-          // send update event to frontend
-          send(getSessionContext(sId).session, WebResultUpdateEvent(webUpdateEvent))
-        }
+        publishEvent(wId, WebResultUpdateEvent(webUpdateEvent))
       },
       breakpointTriggeredListener = breakpointTriggered => {
-        trySend(wId, BreakpointTriggeredEvent.apply(breakpointTriggered))
+        publishEvent(wId, BreakpointTriggeredEvent.apply(breakpointTriggered))
       },
       pythonPrintTriggeredListener = pythonPrintTriggered => {
-        trySend(wId, PythonPrintTriggeredEvent.apply(pythonPrintTriggered))
+        publishEvent(wId, PythonPrintTriggeredEvent.apply(pythonPrintTriggered))
       },
       workflowPausedListener = _ => {
-        trySend(wId, WorkflowPausedEvent())
+        publishEvent(wId, WorkflowPausedEvent())
       },
       reportCurrentTuplesListener = report => {
         //        send(session, OperatorCurrentTuplesUpdateEvent.apply(report))
       },
       recoveryStartedListener = _ => {
-        trySend(wId, RecoveryStartedEvent())
+        publishEvent(wId, RecoveryStartedEvent())
       },
       workflowExecutionErrorListener = errorOccurred => {
         logger.error("Workflow execution has error: {}.", errorOccurred.error)
-        trySend(wId, WorkflowExecutionErrorEvent(errorOccurred.error.getLocalizedMessage))
+        publishEvent(wId, WorkflowExecutionErrorEvent(errorOccurred.error.getLocalizedMessage))
       }
     )
 
@@ -504,7 +494,7 @@ class WorkflowWebsocketResource extends LazyLogging {
     )
     registerRuntimeContext(wId, RuntimeContext(controllerActorRef))
 
-    send(session, WorkflowStartedEvent())
+    publishEvent(wId, WorkflowStartedEvent())
 
   }
 
@@ -567,8 +557,9 @@ class WorkflowWebsocketResource extends LazyLogging {
   }
 
   def exportResult(session: Session, request: ResultExportRequest): Unit = {
-    val resultExportResponse = ResultExportResource.apply(getWId(session.getId).get, request)
-    send(session, resultExportResponse)
+    val wId = getWId(session.getId).get
+    val resultExportResponse = ResultExportResource.apply(wId, request)
+    publishEvent(wId, resultExportResponse)
   }
 
   def killWorkflow(session: Session): Unit = {
