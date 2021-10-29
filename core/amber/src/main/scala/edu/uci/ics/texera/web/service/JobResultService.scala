@@ -2,29 +2,21 @@ package edu.uci.ics.texera.web.service
 
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.twitter.util.Future
+import com.twitter.util.Future.Unit.unit
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowResultUpdate
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent,
-  WorkflowAvailableResultEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowAvailableResultEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.{
-  PaginationMode,
-  WebPaginationUpdate,
-  defaultPageSize
-}
+import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
+import edu.uci.ics.texera.workflow.common.workflow.WorkflowInfo
 import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
-import javax.websocket.Session
 import rx.lang.scala.Observer
 
 import scala.collection.mutable
@@ -121,9 +113,9 @@ class JobResultService(
     opResultStorage: OpResultStorage,
     client: AmberClient
 ) extends SnapshotMulticast[TexeraWebSocketEvent] {
+  val updatedSet: mutable.Set[String] = mutable.HashSet[String]()
   var operatorResults: mutable.HashMap[String, OperatorResultService] =
     mutable.HashMap[String, OperatorResultService]()
-  val updatedSet: mutable.Set[String] = mutable.HashSet[String]()
   var availableResultMap: Map[String, OperatorAvailableResult] = Map.empty
 
   client
@@ -143,7 +135,7 @@ class JobResultService(
     }
   })
 
-  def handleResultPagination(request: ResultPaginationRequest): Unit = {
+  def handleResultPagination(request: ResultPaginationRequest): Future[Unit] = {
     var operatorID = request.operatorID
     if (!operatorResults.contains(operatorID)) {
       val downstreamIDs = workflowInfo.toDAG
@@ -160,6 +152,7 @@ class JobResultService(
       .slice(from, from + request.pageSize)
       .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
     send(PaginatedResultEvent.apply(request, paginationResults))
+    unit
   }
 
   def onResultUpdate(

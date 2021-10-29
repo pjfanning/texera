@@ -1,9 +1,7 @@
 package edu.uci.ics.texera.web.service
 
-import java.time.{LocalDateTime, Duration => JDuration}
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.actor.Cancellable
+import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.texera.web.TexeraWebApplication
@@ -13,13 +11,16 @@ import org.jooq.types.UInteger
 import rx.lang.scala.subjects.BehaviorSubject
 import rx.lang.scala.{Observable, Subscription}
 
+import java.time.{LocalDateTime, Duration => JDuration}
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.DurationInt
 
 object WorkflowService {
-  private val wIdToWorkflowState = new ConcurrentHashMap[String, WorkflowService]()
   val cleanUpDeadlineInSeconds: Int =
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
+  private val wIdToWorkflowState = new ConcurrentHashMap[String, WorkflowService]()
+
   def getOrCreate(wId: String, cleanupTimeout: Int = cleanUpDeadlineInSeconds): WorkflowService = {
     wIdToWorkflowState.compute(
       wId,
@@ -37,11 +38,57 @@ object WorkflowService {
 class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
   // state across execution:
   val operatorCache: WorkflowCacheService = new WorkflowCacheService()
-  var jobService: Option[WorkflowJobService] = None
+  private val jobStateSubject = BehaviorSubject[WorkflowJobService]()
+  var jobServiceOpt: Option[WorkflowJobService] = None
   private var refCount = 0
   private var cleanUpJob: Cancellable = Cancellable.alreadyCancelled
   private var statusUpdateSubscription: Subscription = Subscription()
-  private val jobStateSubject = BehaviorSubject[WorkflowJobService]()
+
+  def connect(): Unit = {
+    synchronized {
+      refCount += 1
+      cleanUpJob.cancel()
+      logger.info(s"[$wid] workflow state clean up postponed. current user count = $refCount")
+    }
+  }
+
+  def disconnect(): Unit = {
+    synchronized {
+      refCount -= 1
+      if (
+        refCount == 0 && !jobServiceOpt.map(_.workflowRuntimeService.getStatus).contains(Running)
+      ) {
+        refreshDeadline()
+      } else {
+        logger.info(s"[$wid] workflow state clean up postponed. current user count = $refCount")
+      }
+    }
+  }
+
+  def initExecutionState(
+      req: WorkflowExecuteRequest,
+      uidOpt: Option[UInteger]
+  ): Future[WorkflowJobService] = {
+    val prevResults = jobServiceOpt match {
+      case Some(jobService) => jobService.workflowResultService.operatorResults
+      case None             => mutable.HashMap[String, OperatorResultService]()
+    }
+    val workflowJobService = new WorkflowJobService(
+      operatorCache,
+      uidOpt,
+      req,
+      prevResults
+    )
+    statusUpdateSubscription.unsubscribe()
+    cleanUpJob.cancel()
+    statusUpdateSubscription =
+      workflowJobService.workflowRuntimeService.getStatusObservable.subscribe(status =>
+        setCleanUpDeadline(status)
+      )
+    jobServiceOpt = Some(workflowJobService)
+    jobStateSubject.onNext(workflowJobService)
+    Future(workflowJobService)
+  }
 
   private[this] def setCleanUpDeadline(status: ExecutionStatusEnum): Unit = {
     synchronized {
@@ -74,7 +121,7 @@ class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
         logger.info(s"[$wid] workflow state clean up failed. current user count = $refCount")
       } else {
         WorkflowService.wIdToWorkflowState.remove(wid)
-        jobService.foreach(_.workflowRuntimeService.killWorkflow())
+        jobServiceOpt.foreach(_.workflowRuntimeService.killWorkflow())
         logger.info(s"[$wid] workflow state clean up completed.")
       }
     }
@@ -91,7 +138,7 @@ class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
   def disconnect(): Unit = {
     synchronized {
       refCount -= 1
-      if (refCount == 0 && !jobService.map(_.workflowRuntimeService.getStatus).contains(Running)) {
+      if (refCount == 0 && !jobServiceOpt.map(_.workflowRuntimeService.getStatus).contains(Running)) {
         refreshDeadline()
       } else {
         logger.info(s"[$wid] workflow state clean up postponed. current user count = $refCount")
@@ -100,7 +147,7 @@ class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
   }
 
   def initExecutionState(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
-    val prevResults = jobService match {
+    val prevResults = jobServiceOpt match {
       case Some(value) => value.workflowResultService.operatorResults
       case None        => mutable.HashMap[String, OperatorResultService]()
     }
@@ -115,7 +162,7 @@ class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
     statusUpdateSubscription = state.workflowRuntimeService.getStatusObservable.subscribe(status =>
       setCleanUpDeadline(status)
     )
-    jobService = Some(state)
+    jobServiceOpt = Some(state)
     jobStateSubject.onNext(state)
     state.startWorkflow()
   }

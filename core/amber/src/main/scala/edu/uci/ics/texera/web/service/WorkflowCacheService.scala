@@ -1,5 +1,7 @@
 package edu.uci.ics.texera.web.service
 
+import com.twitter.util.Future
+import com.twitter.util.Future.Unit.unit
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
@@ -21,7 +23,6 @@ import scala.collection.mutable
 object WorkflowCacheService extends LazyLogging {
   val opResultStorageConfig: Config = ConfigFactory.load("application")
   val storageType: String = AmberUtils.amberConfig.getString("cache.storage").toLowerCase
-  def isAvailable: Boolean = storageType != "off"
   var opResultStorage: OpResultStorage = storageType match {
     case "off" =>
       null
@@ -34,6 +35,8 @@ object WorkflowCacheService extends LazyLogging {
     case _ =>
       throw new RuntimeException(s"invalid storage config $storageType")
   }
+
+  def isAvailable: Boolean = storageType != "off"
   if (isAvailable) {
     logger.info(s"Use $storageType for materialization")
   }
@@ -51,7 +54,7 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
     mutable.HashMap[String, WorkflowVertex]()
   var cacheStatusMap: Map[String, CacheStatus] = _
 
-  def updateCacheStatus(request: CacheStatusUpdateRequest): Unit = {
+  def updateCacheStatus(request: CacheStatusUpdateRequest): Future[Unit] = {
     val workflowInfo = WorkflowInfo(request.operators, request.links, request.breakpoints)
     workflowInfo.cachedOperatorIds = request.cachedOperatorIds
     logger.debug(s"Cached operators: $cachedOperators with ${request.cachedOperatorIds}")
@@ -80,6 +83,7 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
       })
       .toMap
     send(CacheStatusUpdateEvent(cacheStatusMap))
+    unit
   }
 
   override def sendSnapshotTo(observer: Observer[TexeraWebSocketEvent]): Unit = {

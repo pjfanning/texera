@@ -1,11 +1,10 @@
 package edu.uci.ics.texera.web.service
 
 import com.google.common.collect.EvictingQueue
+import com.twitter.util.Future
+import com.twitter.util.Future.Unit.unit
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
-  ConditionalGlobalBreakpoint,
-  CountGlobalBreakpoint
-}
+import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{ConditionalGlobalBreakpoint, CountGlobalBreakpoint}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent._
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
@@ -16,22 +15,20 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHa
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.principal.{OperatorState, OperatorStatistics}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.common.FaultedTupleFrontend
 import edu.uci.ics.texera.web.model.websocket.event._
+import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowExecutionErrorEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonPrintTriggeredEvent
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
 import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest}
+import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.workflow.{
-  Breakpoint,
-  BreakpointCondition,
-  ConditionBreakpoint,
-  CountBreakpoint
-}
+import edu.uci.ics.texera.workflow.common.workflow.{Breakpoint, BreakpointCondition, ConditionBreakpoint, CountBreakpoint}
 import rx.lang.scala.subjects.BehaviorSubject
 import rx.lang.scala.{Observable, Observer}
 
@@ -153,7 +150,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def addBreakpoint(operatorID: String, breakpoint: Breakpoint): Unit = {
+  def addBreakpoint(operatorID: String, breakpoint: Breakpoint): Future[List[ActorVirtualIdentity]] = {
     val breakpointID = "breakpoint-" + operatorID + "-" + System.currentTimeMillis()
     breakpoint match {
       case conditionBp: ConditionBreakpoint =>
@@ -179,7 +176,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
             tuple => !tuple.getField(column).toString.trim.contains(conditionBp.value)
         }
 
-        client.sendSync(
+        client.sendAsync(
           AssignGlobalBreakpoint(
             new ConditionalGlobalBreakpoint(
               breakpointID,
@@ -192,7 +189,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
           )
         )
       case countBp: CountBreakpoint =>
-        client.sendSync(
+        client.sendAsync(
           AssignGlobalBreakpoint(new CountGlobalBreakpoint(breakpointID, countBp.count), operatorID)
         )
     }
@@ -218,15 +215,15 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def skipTuple(tupleReq: SkipTupleRequest): Unit = {
+  def skipTuple(tupleReq: SkipTupleRequest): Future[Unit] = {
     throw new RuntimeException("skipping tuple is temporarily disabled")
   }
 
-  def modifyLogic(operatorDescriptor: OperatorDescriptor): Unit = {
+  def modifyLogic(operatorDescriptor: OperatorDescriptor): Future[Unit] = {
     client.sendAsync(ModifyLogic(operatorDescriptor))
   }
 
-  def retryWorkflow(): Unit = {
+  def retryWorkflow(): Future[Unit] = {
     clearTriggeredBreakpoints()
     val f = client.sendAsync(RetryWorkflow())
     workflowStatus.onNext(Resuming)
@@ -235,7 +232,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def pauseWorkflow(): Unit = {
+  def pauseWorkflow(): Future[Unit] = {
     val f = client.sendAsync(PauseWorkflow())
     workflowStatus.onNext(Pausing)
     f.onSuccess { _ =>
@@ -243,7 +240,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def resumeWorkflow(): Unit = {
+  def resumeWorkflow(): Future[Unit] = {
     clearTriggeredBreakpoints()
     val f = client.sendAsync(ResumeWorkflow())
     workflowStatus.onNext(Resuming)
@@ -252,17 +249,18 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def killWorkflow(): Unit = {
+  def killWorkflow(): Future[Unit] = {
     client.shutdown()
     workflowStatus.onNext(Completed)
+    unit
   }
 
-  def removeBreakpoint(removeBreakpoint: RemoveBreakpointRequest): Unit = {
+  def removeBreakpoint(removeBreakpoint: RemoveBreakpointRequest): Future[Unit] = {
     throw new UnsupportedOperationException()
   }
 
-  def evaluatePythonExpression(request: PythonExpressionEvaluateRequest): Unit = {
-    send(client.sendSync(EvaluatePythonExpression(request.expression, request.operatorId)))
+  def evaluatePythonExpression(request: PythonExpressionEvaluateRequest): Future[PythonExpressionEvaluateResponse] = {
+    client.sendAsync(EvaluatePythonExpression(request.expression, request.operatorId))
   }
 
 }
