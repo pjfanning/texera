@@ -25,7 +25,7 @@ import javax.websocket.server.ServerEndpoint
 import scala.jdk.CollectionConverters.mapAsScalaMapConverter
 
 object WorkflowWebsocketResource {
-  val nextExecutionID = new AtomicInteger(0)
+  val nextJobId = new AtomicInteger(0)
 }
 
 @ServerEndpoint(
