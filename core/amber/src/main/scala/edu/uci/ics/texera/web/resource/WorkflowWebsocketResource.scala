@@ -160,8 +160,9 @@ class WorkflowWebsocketResource extends LazyLogging {
       case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
         if (WorkflowCacheService.isAvailable) {
           workflowState.operatorCache.updateCacheStatus(cacheStatusUpdateRequest)
+        } else {
+          unit
         }
-        unit
       case pythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest =>
         workflowState
           .getJobService()

@@ -2,7 +2,6 @@ package edu.uci.ics.texera.web.service
 
 import com.google.common.collect.EvictingQueue
 import com.twitter.util.Future
-import com.twitter.util.Future.Unit.unit
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
   ConditionalGlobalBreakpoint,
@@ -153,24 +152,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     clearTriggeredBreakpoints()
     val f = client.sendAsync(RetryWorkflow())
     workflowStatus.onNext(Resuming)
-    f.onSuccess { _ =>
-      workflowStatus.onNext(Running)
-    }
-  }
-
-  def pauseWorkflow(): Future[Unit] = {
-    val f = client.sendAsync(PauseWorkflow())
-    workflowStatus.onNext(Pausing)
-    f.onSuccess { _ =>
-      workflowStatus.onNext(Paused)
-    }
-  }
-
-  def resumeWorkflow(): Future[Unit] = {
-    clearTriggeredBreakpoints()
-    val f = client.sendAsync(ResumeWorkflow())
-    workflowStatus.onNext(Resuming)
-    f.onSuccess { _ =>
+    f.map { _ =>
       workflowStatus.onNext(Running)
     }
   }
@@ -181,14 +163,30 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
+  def pauseWorkflow(): Future[Unit] = {
+    val f = client.sendAsync(PauseWorkflow())
+    workflowStatus.onNext(Pausing)
+    f.map { _ =>
+      workflowStatus.onNext(Paused)
+    }
+  }
+
+  def resumeWorkflow(): Future[Unit] = {
+    clearTriggeredBreakpoints()
+    val f = client.sendAsync(ResumeWorkflow())
+    workflowStatus.onNext(Resuming)
+    f.map { _ =>
+      workflowStatus.onNext(Running)
+    }
+  }
+
   def killWorkflow(): Future[Unit] = {
     client.shutdown()
-    workflowStatus.onNext(Completed)
-    unit
+    Future.value(workflowStatus.onNext(Completed))
   }
 
   def removeBreakpoint(removeBreakpoint: RemoveBreakpointRequest): Future[Unit] = {
-    throw new UnsupportedOperationException()
+    Future.exception(new NotImplementedError())
   }
 
   def evaluatePythonExpression(

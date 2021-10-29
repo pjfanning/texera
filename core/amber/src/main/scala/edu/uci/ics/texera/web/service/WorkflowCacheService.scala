@@ -54,7 +54,7 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
     mutable.HashMap[String, WorkflowVertex]()
   var cacheStatusMap: Map[String, CacheStatus] = _
 
-  def updateCacheStatus(request: CacheStatusUpdateRequest): Future[Unit] = {
+  def updateCacheStatus(request: CacheStatusUpdateRequest): Future[CacheStatusUpdateEvent] = {
     val workflowInfo = WorkflowInfo(request.operators, request.links, request.breakpoints)
     workflowInfo.cachedOperatorIds = request.cachedOperatorIds
     logger.debug(s"Cached operators: $cachedOperators with ${request.cachedOperatorIds}")
@@ -82,8 +82,7 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
         }
       })
       .toMap
-    send(CacheStatusUpdateEvent(cacheStatusMap))
-    unit
+    Future.value(CacheStatusUpdateEvent(cacheStatusMap))
   }
 
   override def sendSnapshotTo(observer: Observer[TexeraWebSocketEvent]): Unit = {
