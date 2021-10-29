@@ -56,14 +56,15 @@ class WorkflowWebsocketResource extends LazyLogging {
       .map(_.asInstanceOf[User].getUid)
     val sessionState = SessionStateManager.getState(session.getId)
 
-    val responseFuture = (sessionState.getCurrentWorkflowState match {
+    val responseFuture = sessionState.getCurrentWorkflowState match {
       case Some(_) => handleRequestWithWorkflowState(request, session, uIdOpt)
       case None    => handleRequestWithoutWorkflowState(request, session, uIdOpt)
-    }).asInstanceOf[Future[TexeraWebSocketEvent]]
-
+    }
     responseFuture
-      .onSuccess { event: TexeraWebSocketEvent =>
-        send(session, event)
+      .onSuccess {
+        case event: TexeraWebSocketEvent =>
+          send(session, event)
+        case _ => // do nothing
       }
       .onFailure(throwable => {
         logger.error("error", throwable)
