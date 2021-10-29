@@ -57,8 +57,8 @@ class WorkflowWebsocketResource extends LazyLogging {
     val sessionState = SessionStateManager.getState(session.getId)
 
     val responseFuture = (sessionState.getCurrentWorkflowState match {
-      case Some(_) => handleRequestWithoutWorkflowState(request, session, uIdOpt)
-      case None    => handleRequestWithWorkflowState(request, session, uIdOpt)
+      case Some(_) => handleRequestWithWorkflowState(request, session, uIdOpt)
+      case None    => handleRequestWithoutWorkflowState(request, session, uIdOpt)
     }).filter(_.isInstanceOf[TexeraWebSocketEvent]).asInstanceOf[Future[TexeraWebSocketEvent]]
 
     responseFuture
@@ -172,10 +172,8 @@ class WorkflowWebsocketResource extends LazyLogging {
     }
   }
 
-  private def send(session: Session, msg: TexeraWebSocketEvent): Future[Unit] = {
-    FuturePool.unboundedPool {
-      session.getAsyncRemote.sendText(objectMapper.writeValueAsString(msg)).get
-    }
+  private def send(session: Session, msg: TexeraWebSocketEvent): Unit = {
+    session.getAsyncRemote.sendText(objectMapper.writeValueAsString(msg))
   }
 
 }
