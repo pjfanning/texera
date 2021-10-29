@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.web.resource
 
+import com.twitter.util.Future
 import com.twitter.util.Future.Unit.unit
-import com.twitter.util.{Future, FuturePool}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
@@ -59,22 +59,24 @@ class WorkflowWebsocketResource extends LazyLogging {
     val responseFuture = (sessionState.getCurrentWorkflowState match {
       case Some(_) => handleRequestWithWorkflowState(request, session, uIdOpt)
       case None    => handleRequestWithoutWorkflowState(request, session, uIdOpt)
-    }).filter(_.isInstanceOf[TexeraWebSocketEvent]).asInstanceOf[Future[TexeraWebSocketEvent]]
+    }).asInstanceOf[Future[TexeraWebSocketEvent]]
 
     responseFuture
       .onSuccess { event: TexeraWebSocketEvent =>
         send(session, event)
       }
-      .onFailure(throwable =>
+      .onFailure(throwable => {
+        logger.error("error", throwable)
         send(
           session,
           WorkflowErrorEvent(generalErrors =
             Map(
-              "exception" -> (throwable.getMessage + "\n" + throwable.getStackTrace.mkString("\n"))
+              "exception" -> (throwable.getMessage + "\n" + throwable.getStackTrace
+                .mkString("\n"))
             )
           )
         )
-      )
+      })
 
   }
 
