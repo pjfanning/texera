@@ -1,6 +1,5 @@
 package edu.uci.ics.texera.web.service
 
-import com.google.common.collect.EvictingQueue
 import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
@@ -36,6 +35,7 @@ import edu.uci.ics.texera.workflow.common.workflow.{
   ConditionBreakpoint,
   CountBreakpoint
 }
+import org.apache.commons.collections4.queue.CircularFifoQueue
 import rx.lang.scala.subjects.BehaviorSubject
 import rx.lang.scala.{Observable, Observer}
 
@@ -43,7 +43,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 object JobRuntimeService {
-  val bufferSize: Int = AmberUtils.amberConfig.getInt("web-server.python-console-buffer-size")
+  val pythonConsoleBufferSize: Int =
+    AmberUtils.amberConfig.getInt("web-server.python-console-buffer-size")
 }
 
 class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], client: AmberClient)
@@ -54,10 +55,11 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     new mutable.HashMap[String, OperatorRuntimeState]()
   var workflowError: Throwable = _
 
+  registerCallbacks()
+
   /** *
     *  Utility Functions
     */
-
   def startWorkflow(): Future[Unit] = {
     val f = client.sendAsync(StartWorkflow())
     workflowStatus.onNext(Initializing)
@@ -65,8 +67,6 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
       workflowStatus.onNext(Running)
     }
   }
-
-  registerCallbacks()
 
   def getStatus: ExecutionStatusEnum = workflowStatus.asJavaSubject.getValue
 
@@ -129,9 +129,9 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
         if (state.faults.nonEmpty) {
           observer.onNext(BreakpointTriggeredEvent(state.faults.toArray, opId))
         }
-        if (!state.pythonMessages.isEmpty) {
+        if (!state.pythonConsoleMessages.isEmpty) {
           val stringBuilder = new StringBuilder()
-          state.pythonMessages.forEach(s => stringBuilder.append(s))
+          state.pythonConsoleMessages.forEach(s => stringBuilder.append(s))
           observer.onNext(PythonPrintTriggeredEvent(stringBuilder.toString(), opId))
         }
     }
@@ -157,12 +157,6 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }
   }
 
-  def clearTriggeredBreakpoints(): Unit = {
-    operatorRuntimeStateMap.values.foreach { state =>
-      state.faults.clear()
-    }
-  }
-
   def pauseWorkflow(): Future[Unit] = {
     val f = client.sendAsync(PauseWorkflow())
     workflowStatus.onNext(Pausing)
@@ -177,6 +171,12 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     workflowStatus.onNext(Resuming)
     f.map { _ =>
       workflowStatus.onNext(Running)
+    }
+  }
+
+  def clearTriggeredBreakpoints(): Unit = {
+    operatorRuntimeStateMap.values.foreach { state =>
+      state.faults.clear()
     }
   }
 
@@ -251,7 +251,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     client
       .getObservable[PythonPrintTriggered]
       .subscribe((evt: PythonPrintTriggered) => {
-        operatorRuntimeStateMap(evt.operatorID).pythonMessages.add(evt.message)
+        operatorRuntimeStateMap(evt.operatorID).pythonConsoleMessages.add(evt.message)
         send(PythonPrintTriggeredEvent(evt))
       })
   }
@@ -268,8 +268,10 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
   }
 
   class OperatorRuntimeState {
-    val pythonMessages: EvictingQueue[String] =
-      EvictingQueue.create[String](JobRuntimeService.bufferSize)
+
+    val pythonConsoleMessages: CircularFifoQueue[String] = new CircularFifoQueue(
+      JobRuntimeService.pythonConsoleBufferSize
+    )
     val faults: mutable.ArrayBuffer[BreakpointFault] = new ArrayBuffer[BreakpointFault]()
     var stats: OperatorStatistics = OperatorStatistics(OperatorState.Uninitialized, 0, 0)
   }
