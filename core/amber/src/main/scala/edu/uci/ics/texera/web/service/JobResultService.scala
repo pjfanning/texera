@@ -3,13 +3,17 @@ package edu.uci.ics.texera.web.service
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.twitter.util.Future
-import com.twitter.util.Future.Unit.unit
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowResultUpdate
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
-import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowAvailableResultEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  PaginatedResultEvent,
+  TexeraWebSocketEvent,
+  WebResultUpdateEvent,
+  WorkflowAvailableResultEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
@@ -135,7 +139,7 @@ class JobResultService(
     }
   })
 
-  def handleResultPagination(request: ResultPaginationRequest): Future[Unit] = {
+  def handleResultPagination(request: ResultPaginationRequest): Future[PaginatedResultEvent] = {
     var operatorID = request.operatorID
     if (!operatorResults.contains(operatorID)) {
       val downstreamIDs = workflowInfo.toDAG
@@ -151,8 +155,8 @@ class JobResultService(
     val paginationResults = opResultService.getResult
       .slice(from, from + request.pageSize)
       .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
-    send(PaginatedResultEvent.apply(request, paginationResults))
-    unit
+    Future(PaginatedResultEvent.apply(request, paginationResults))
+
   }
 
   def onResultUpdate(

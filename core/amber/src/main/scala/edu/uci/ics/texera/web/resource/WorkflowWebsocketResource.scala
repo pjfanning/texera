@@ -17,6 +17,7 @@ import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheService, WorkflowService}
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState, SessionStateManager}
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
+import org.jooq.types.UInteger
 
 import java.util.concurrent.atomic.AtomicInteger
 import javax.websocket._
@@ -50,29 +51,45 @@ class WorkflowWebsocketResource extends LazyLogging {
   def myOnMsg(session: Session, message: String): Unit = {
     val request: TexeraWebSocketRequest =
       objectMapper.readValue(message, classOf[TexeraWebSocketRequest])
-
+    val uIdOpt = session.getUserProperties.asScala
+      .get(classOf[User].getName)
+      .map(_.asInstanceOf[User].getUid)
     val sessionState = SessionStateManager.getState(session.getId)
-    sessionState.getCurrentWorkflowState match {
-      case Some(_) => handleRequestAfterWorkflowState(request, session)
-      case None    => handleRequestBeforeWorkflowState(request, session)
-    }
+
+    val responseFuture = (sessionState.getCurrentWorkflowState match {
+      case Some(_) => handleRequestWithoutWorkflowState(request, session, uIdOpt)
+      case None    => handleRequestWithWorkflowState(request, session, uIdOpt)
+    }).filter(_.isInstanceOf[TexeraWebSocketEvent]).asInstanceOf[Future[TexeraWebSocketEvent]]
+
+    responseFuture
+      .onSuccess { event: TexeraWebSocketEvent =>
+        send(session, event)
+      }
+      .onFailure(throwable =>
+        send(
+          session,
+          WorkflowErrorEvent(generalErrors =
+            Map(
+              "exception" -> (throwable.getMessage + "\n" + throwable.getStackTrace.mkString("\n"))
+            )
+          )
+        )
+      )
 
   }
 
-  def handleRequestBeforeWorkflowState(
+  def handleRequestWithWorkflowState(
       request: TexeraWebSocketRequest,
-      session: Session
-  ): Future[Unit] = {
+      session: Session,
+      uIdOpt: Option[UInteger]
+  ): Future[TexeraWebSocketEvent] = {
 
-    val uidOpt = session.getUserProperties.asScala
-      .get(classOf[User].getName)
-      .map(_.asInstanceOf[User].getUid)
     val sessionState = SessionStateManager.getState(session.getId)
     request match {
       case wIdRequest: RegisterWIdRequest =>
         // hack to refresh frontend run button state
         send(session, WorkflowStateEvent(Uninitialized))
-        val workflowState = uidOpt match {
+        val workflowState = uIdOpt match {
           case Some(user) =>
             val workflowStateId = user + "-" + wIdRequest.wId
             WorkflowService.getOrCreate(workflowStateId)
@@ -85,34 +102,32 @@ class WorkflowWebsocketResource extends LazyLogging {
             //WorkflowService.getOrCreate("anonymous session " + session.getId, 0)
         }
         sessionState.subscribe(workflowState)
-        send(session, RegisterWIdResponse("wid registered"))
+        Future(RegisterWIdResponse("wid registered"))
       case heartbeat: HeartBeatRequest =>
         Future(HeartBeatResponse())
-      case _ => Future(throw new UnsupportedOperationException)
+      case _ => Future.exception(new NotImplementedError())
     }
   }
 
-  def handleRequestAfterWorkflowState(
+  def handleRequestWithoutWorkflowState(
       request: TexeraWebSocketRequest,
-      session: Session
+      session: Session,
+      uIdOpt: Option[UInteger]
   ): Future[Any] = {
-    val uidOpt = session.getUserProperties.asScala
-      .get(classOf[User].getName)
-      .map(_.asInstanceOf[User].getUid)
     val sessionState = SessionStateManager.getState(session.getId)
     val workflowState = sessionState.getCurrentWorkflowState.get
 
-    (request match {
+    request match {
 
       case heartbeat: HeartBeatRequest =>
         Future(HeartBeatResponse())
       case execute: WorkflowExecuteRequest =>
         workflowState
-          .initExecutionState(execute, uidOpt)
-          .onSuccess(workflowJobService => workflowJobService.startWorkflow())
-          .onFailure {
+          .initExecutionState(execute, uIdOpt)
+          .flatMap(workflowJobService => workflowJobService.startWorkflow())
+          .handle {
             case x: ConstraintViolationException =>
-              send(session, WorkflowErrorEvent(operatorErrors = x.violations))
+              WorkflowErrorEvent(operatorErrors = x.violations)
           }
 
       case newLogic: ModifyLogicRequest =>
@@ -140,7 +155,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           .handleResultPagination(paginationRequest)
 
       case resultExportRequest: ResultExportRequest =>
-        workflowState.getJobService().exportResult(uidOpt.get, resultExportRequest)
+        workflowState.getJobService().exportResult(uIdOpt.get, resultExportRequest)
 
       case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
         if (WorkflowCacheService.isAvailable) {
@@ -152,20 +167,8 @@ class WorkflowWebsocketResource extends LazyLogging {
           .getJobService()
           .workflowRuntimeService
           .evaluatePythonExpression(pythonExpressionEvaluateRequest)
-      case _ => Future(throw new UnsupportedOperationException)
-    }).onSuccess {
-      case event: TexeraWebSocketEvent =>
-        send(session, event)
-      case _ =>
-    }.onFailure(throwable =>
-      send(
-        session,
-        WorkflowErrorEvent(generalErrors =
-          Map("exception" -> (throwable.getMessage + "\n" + throwable.getStackTrace.mkString("\n")))
-        )
-      )
-    )
-
+      case _ => Future.exception(new NotImplementedError())
+    }
   }
 
   private def send(session: Session, msg: TexeraWebSocketEvent): Future[Unit] = {

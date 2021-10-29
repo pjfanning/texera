@@ -48,7 +48,7 @@ class WorkflowJobService(
     new JobResultService(workflowInfo, WorkflowCacheService.opResultStorage, client)
   val resultExportService: ResultExportService = new ResultExportService()
 
-  def startWorkflow(): Unit = {
+  def startWorkflow(): Future[Unit] = {
     if (WorkflowCacheService.isAvailable) {
       workflowResultService.updateResultFromPreviousRun(prevResults, operatorCache.cachedOperators)
     }
