@@ -19,7 +19,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
   * finalAgg: calculates final result:      average = sum / count
   *
   * Optionally, a group by function can be specified,
-  * which will cause the aggregation to be calculated per group
+  * which will breakpoint the aggregation to be calculated per group
   *
   * These function definitions are from
   * "Distributed Aggregation for Data-Parallel Computing: Interfaces and Implementations"

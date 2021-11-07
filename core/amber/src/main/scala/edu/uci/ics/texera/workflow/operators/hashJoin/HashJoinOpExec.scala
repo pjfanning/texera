@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
 import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -44,7 +44,7 @@ class HashJoinOpExec[K](
           Iterator()
         } else if (!isBuildTableFinished) {
           // should never happen, building phase has to finish before first probe
-          throw new WorkflowRuntimeException("Probe table came before build table ended")
+          throw new FatalError("Probe table came before build table ended")
         } else {
           // probing phase
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]

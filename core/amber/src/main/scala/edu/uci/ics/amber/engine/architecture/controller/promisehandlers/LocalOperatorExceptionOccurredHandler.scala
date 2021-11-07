@@ -1,19 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionOccurredHandler.LocalOperatorExceptionOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
+import edu.uci.ics.amber.engine.common.amberexception.LocalOperatorException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
-import scala.collection.mutable
-
-object LocalOperatorExceptionHandler {
-  final case class LocalOperatorException(triggeredTuple: ITuple, e: Throwable)
-      extends ControlCommand[Unit]
+object LocalOperatorExceptionOccurredHandler {
+  final case class LocalOperatorExceptionOccurred(
+      e: LocalOperatorException,
+      causedBy: ActorVirtualIdentity
+  ) extends ControlCommand[Unit]
 }
 
 /** indicate an exception thrown from the operator logic on a worker
@@ -28,9 +28,9 @@ object LocalOperatorExceptionHandler {
   *
   * possible sender: worker
   */
-trait LocalOperatorExceptionHandler {
+trait LocalOperatorExceptionOccurredHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
-  registerHandler { (msg: LocalOperatorException, sender) =>
+  registerHandler { (msg: LocalOperatorExceptionOccurred, sender) =>
     {
 
       // get the operator where the worker caught the local operator exception
@@ -43,11 +43,7 @@ trait LocalOperatorExceptionHandler {
       // report the faulted tuple to the frontend with the exception
       sendToClient(
         BreakpointTriggered(
-          mutable.HashMap(
-            (sender, FaultedTuple(msg.triggeredTuple, 0)) -> Array(
-              msg.e.toString
-            )
-          ),
+          msg.e,
           workflow.getOperator(sender).id.operator
         )
       )

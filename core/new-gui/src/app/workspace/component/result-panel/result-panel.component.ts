@@ -62,7 +62,7 @@ export class ResultPanelComponent implements OnInit {
           .getJointGraphWrapper()
           .getCurrentHighlightedOperatorIDs();
         if (event.current.state === ExecutionState.BreakpointTriggered) {
-          const breakpointOperator = this.executeWorkflowService.getBreakpointTriggerInfo()?.operatorID;
+          const breakpointOperator = this.executeWorkflowService.getBreakpointTriggerInfo()?.operatorId;
           if (breakpointOperator) {
             this.workflowActionService.getJointGraphWrapper().unhighlightOperators(...currentlyHighlighted);
             this.workflowActionService.getJointGraphWrapper().highlightOperators(breakpointOperator);

@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object StartHandler {
@@ -24,7 +24,7 @@ trait StartHandler {
       dataProcessor.appendElement(EndOfAllMarker)
       stateManager.getCurrentState
     } else {
-      throw new WorkflowRuntimeException(
+      throw new FatalError(
         s"non-source worker $actorId received unexpected StartWorker!"
       )
     }

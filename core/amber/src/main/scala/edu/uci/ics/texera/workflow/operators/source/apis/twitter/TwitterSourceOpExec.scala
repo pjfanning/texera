@@ -15,7 +15,7 @@ abstract class TwitterSourceOpExec(
   //  10 is the minimal tweets for each request
   // val TWITTER_API_BATCH_SIZE_MIN = 10
 
-  //  however, when using batch size < 100, could cause using different
+  //  however, when using batch size < 100, could breakpoint using different
   //  twitter endpoints which has different rate limit.
   //  (related to redouane59/twitteredV2.5)
   //  thus, in practice, we use 100 as the min batch size.

@@ -14,7 +14,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 export class ConsoleFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   // display error message:
-  errorMessages?: Readonly<Record<string, string>>;
+  errorMessages: ReadonlyArray<string> = [];
 
   // display print
   consoleMessages: ReadonlyArray<string> = [];
@@ -65,7 +65,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   clearConsole() {
     this.consoleMessages = [];
-    this.errorMessages = undefined;
+    this.errorMessages = [];
   }
 
   renderConsole() {
@@ -74,7 +74,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
     if (this.operatorId) {
       // first display error messages if applicable
-      if (this.operatorId === breakpointTriggerInfo?.operatorID) {
+      if (this.operatorId === breakpointTriggerInfo?.operatorId) {
         // if we hit a breakpoint
         this.displayBreakpoint(breakpointTriggerInfo);
       } else {
@@ -88,16 +88,8 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   displayBreakpoint(breakpointTriggerInfo: BreakpointTriggerInfo) {
-    const errorsMessages: Record<string, string> = {};
-    breakpointTriggerInfo.report.forEach(r => {
-      const splitPath = r.actorPath.split("/");
-      const workerName = splitPath[splitPath.length - 1];
-      const workerText = "Worker " + workerName + ":                ";
-      if (r.messages.toString().toLowerCase().includes("exception")) {
-        errorsMessages[workerText] = r.messages.toString();
-      }
-    });
-    this.errorMessages = errorsMessages;
+    this.errorMessages = [...this.errorMessages, breakpointTriggerInfo.breakpoint.message];
+
   }
 
   displayFault() {

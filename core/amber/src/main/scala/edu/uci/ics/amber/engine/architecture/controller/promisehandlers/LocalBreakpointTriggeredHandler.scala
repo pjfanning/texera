@@ -9,12 +9,10 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHan
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryAndRemoveBreakpointsHandler.QueryAndRemoveBreakpoints
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
+import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-
-import scala.collection.convert.ImplicitConversions.`collection asJava`
-import scala.collection.mutable
 
 object LocalBreakpointTriggeredHandler {
   final case class LocalBreakpointTriggered(localBreakpoints: Array[(String, Long)])
@@ -23,7 +21,7 @@ object LocalBreakpointTriggeredHandler {
 
 /** indicate one/multiple local breakpoints have triggered on a worker
   * note that local breakpoints can only be triggered on outputted tuples,
-  * if there is an error before the tuple gets outputted, a LocalOperatorException
+  * if there is an error before the tuple gets outputted, a LocalOperatorExceptionOccurred
   * message will be sent by the worker instead.
   *
   * possible sender: worker
@@ -103,7 +101,9 @@ trait LocalBreakpointTriggeredHandler {
                     .unit
                 } else {
                   // other wise, report to frontend and pause entire workflow
-                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID))
+                  triggeredBreakpoints.foreach(bp => {
+                    sendToClient(BreakpointTriggered(new BreakpointException(bp.toString), opID))
+                  })
                   execute(PauseWorkflow(), CONTROLLER)
                 }
               }

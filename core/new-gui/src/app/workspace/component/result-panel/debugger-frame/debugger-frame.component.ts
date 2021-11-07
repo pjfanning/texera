@@ -164,7 +164,6 @@ class PythonExpressionSource implements DataSource<FlatTreeNode> {
   }
 
   expandFlattenedNodes(nodes: FlatTreeNode[]): FlatTreeNode[] {
-    console.log(nodes);
     const treeControl = this.treeControl;
     const results: FlatTreeNode[] = [];
     const currentExpand: boolean[] = [];

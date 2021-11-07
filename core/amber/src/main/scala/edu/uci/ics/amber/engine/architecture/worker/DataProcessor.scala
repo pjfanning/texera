@@ -1,15 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorOccurredHandler.FatalErrorOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionOccurredHandler.LocalOperatorExceptionOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.messaginglayer.TupleToBatchConverter
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED}
+import edu.uci.ics.amber.engine.common.amberexception.{FatalError, LocalOperatorException}
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
@@ -44,10 +43,10 @@ class DataProcessor( // dependencies:
       } catch safely {
         case _: InterruptedException =>
           logger.info("DP Thread exits")
-        case err: Exception =>
+        case err: Throwable =>
           logger.error("DP Thread exists unexpectedly", err)
           asyncRPCClient.send(
-            FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err)),
+            FatalErrorOccurred(new FatalError(err), SELF),
             CONTROLLER
           )
         // dp thread will stop here
@@ -175,12 +174,12 @@ class DataProcessor( // dependencies:
   private[this] def handleOperatorException(e: Throwable): Unit = {
     if (currentInputTuple.isLeft) {
       asyncRPCClient.send(
-        LocalOperatorException(currentInputTuple.left.get, e),
+        LocalOperatorExceptionOccurred(new LocalOperatorException(e), SELF),
         CONTROLLER
       )
     } else {
       asyncRPCClient.send(
-        LocalOperatorException(ITuple("input exhausted"), e),
+        LocalOperatorExceptionOccurred(new LocalOperatorException(e), SELF),
         CONTROLLER
       )
     }

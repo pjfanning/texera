@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web.resource.dashboard.file
 
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.FileDao
@@ -99,6 +99,6 @@ object UserFileUtils {
     }
   }
 
-  case class FileIOException(message: String) extends WorkflowRuntimeException(message)
+  case class FileIOException(message: String) extends FatalError(message)
 
 }

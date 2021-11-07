@@ -9,20 +9,20 @@ import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent._
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorOccurredHandler.FatalErrorOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.principal.{OperatorState, OperatorStatistics}
+import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SnapshotMulticast
-import edu.uci.ics.texera.web.model.common.FaultedTupleFrontend
 import edu.uci.ics.texera.web.model.websocket.event._
-import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowExecutionErrorEvent
+import edu.uci.ics.texera.web.model.websocket.event.error.{WorkflowErrorEvent, WorkflowFatalEvent}
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonPrintTriggeredEvent
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
 import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest}
@@ -39,6 +39,7 @@ import org.apache.commons.collections4.queue.CircularFifoQueue
 import rx.lang.scala.subjects.BehaviorSubject
 import rx.lang.scala.{Observable, Observer}
 
+import java.io.{PrintWriter, StringWriter}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -53,7 +54,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
 
   val operatorRuntimeStateMap: mutable.HashMap[String, OperatorRuntimeState] =
     new mutable.HashMap[String, OperatorRuntimeState]()
-  var workflowError: Throwable = _
+  var workflowErrorEvent: Either[WorkflowErrorEvent, WorkflowFatalEvent] = _
 
   registerCallbacks()
 
@@ -126,8 +127,11 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     }.toMap))
     operatorRuntimeStateMap.foreach {
       case (opId, state) =>
-        if (state.faults.nonEmpty) {
-          observer.onNext(BreakpointTriggeredEvent(state.faults.toArray, opId))
+        if (state.breakpointExceptions.nonEmpty) {
+          state.breakpointExceptions.foreach((breakpointException: BreakpointException)=>{
+            observer.onNext(BreakpointTriggeredEvent(breakpointException, opId))
+          })
+
         }
         if (!state.pythonConsoleMessages.isEmpty) {
           val stringBuilder = new StringBuilder()
@@ -135,8 +139,8 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
           observer.onNext(PythonPrintTriggeredEvent(stringBuilder.toString(), opId))
         }
     }
-    if (workflowError != null) {
-      observer.onNext(WorkflowExecutionErrorEvent(workflowError.getLocalizedMessage))
+    if (workflowErrorEvent != null) {
+      observer.onNext(workflowErrorEvent.toOption.get)
     }
   }
 
@@ -176,7 +180,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
 
   def clearTriggeredBreakpoints(): Unit = {
     operatorRuntimeStateMap.values.foreach { state =>
-      state.faults.clear()
+      state.breakpointExceptions.clear()
     }
   }
 
@@ -210,16 +214,15 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     client
       .getObservable[BreakpointTriggered]
       .subscribe((evt: BreakpointTriggered) => {
-        val faults = operatorRuntimeStateMap(evt.operatorID).faults
-        for (elem <- evt.report) {
-          val actorPath = elem._1._1.toString
-          val faultedTuple = elem._1._2
-          if (faultedTuple != null) {
-            faults += BreakpointFault(actorPath, FaultedTupleFrontend.apply(faultedTuple), elem._2)
-          }
-        }
+        val currentBreakpoints = operatorRuntimeStateMap(evt.operatorId).breakpointExceptions
+        currentBreakpoints += evt.breakpoint
+
         workflowStatus.onNext(Paused)
-        send(BreakpointTriggeredEvent(faults.toArray, evt.operatorID))
+        send(BreakpointTriggeredEvent(evt.breakpoint, evt.operatorId))
+//        currentBreakpoints.foreach((exception: BreakpointException) => {
+//          send(BreakpointTriggeredEvent(exception, evt.operatorId))
+//        })
+
       })
   }
 
@@ -258,12 +261,16 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
 
   private[this] def registerCallbackOnFatalError(): Unit = {
     client
-      .getObservable[FatalError]
-      .subscribe((evt: FatalError) => {
+      .getObservable[FatalErrorOccurred]
+      .subscribe((evt: FatalErrorOccurred) => {
         client.shutdown()
-        workflowError = evt.e
+        val fatal = evt.e
         workflowStatus.onNext(Aborted)
-        send(WorkflowExecutionErrorEvent(evt.e.getLocalizedMessage))
+        val sw = new StringWriter
+        fatal.printStackTrace(new PrintWriter(sw))
+        workflowErrorEvent =
+          Right(WorkflowFatalEvent(evt.causedBy.toString, fatal.getLocalizedMessage, sw.toString))
+        send(workflowErrorEvent.toOption.get)
       })
   }
 
@@ -272,7 +279,8 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     val pythonConsoleMessages: CircularFifoQueue[String] = new CircularFifoQueue(
       JobRuntimeService.pythonConsoleBufferSize
     )
-    val faults: mutable.ArrayBuffer[BreakpointFault] = new ArrayBuffer[BreakpointFault]()
+    val breakpointExceptions: mutable.ArrayBuffer[BreakpointException] =
+      new ArrayBuffer[BreakpointException]()
     var stats: OperatorStatistics = OperatorStatistics(OperatorState.Uninitialized, 0, 0)
   }
 

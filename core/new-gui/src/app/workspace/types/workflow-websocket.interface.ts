@@ -41,9 +41,11 @@ export interface WorkflowError
     generalErrors: Record<string, string>;
   }> {}
 
-export interface WorkflowExecutionError
+export interface WorkflowFatal
   extends Readonly<{
-    message: string;
+  operatorId: string;
+  message: string;
+  trace: string;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
@@ -163,7 +165,7 @@ export type TexeraWebsocketEventTypeMap = {
   PythonPrintTriggeredEvent: PythonPrintTriggerInfo;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
-  WorkflowExecutionErrorEvent: WorkflowExecutionError;
+  WorkflowFatalEvent: WorkflowFatal;
   ResultExportResponse: ResultExportResponse;
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;

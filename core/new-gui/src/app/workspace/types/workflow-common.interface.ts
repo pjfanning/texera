@@ -64,15 +64,18 @@ export type BreakpointFaultedTuple = Readonly<{
   isInput: boolean;
 }>;
 
-export type BreakpointFault = Readonly<{
-  actorPath: string;
-  faultedTuple: BreakpointFaultedTuple;
-  messages: ReadonlyArray<string>;
+
+
+export type BreakpointException = Readonly<{
+  localizedMessage: string;
+  message: string;
+  stackTrace: ReadonlyArray<string>;
+  suppressed: ReadonlyArray<string>;
 }>;
 
 export type BreakpointTriggerInfo = Readonly<{
-  report: ReadonlyArray<BreakpointFault>;
-  operatorID: string;
+  breakpoint: BreakpointException;
+  operatorId: string;
 }>;
 
 export type PythonPrintTriggerInfo = Readonly<{

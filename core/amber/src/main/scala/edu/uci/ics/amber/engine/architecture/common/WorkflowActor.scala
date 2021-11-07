@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkOutputPort
 }
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
@@ -52,12 +52,12 @@ abstract class WorkflowActor(
 
   def disallowActorRefRelatedMessages: Receive = {
     case GetActorRef =>
-      throw new WorkflowRuntimeException(
+      throw new FatalError(
         "workflow actor should never receive get actor ref message"
       )
 
     case RegisterActorRef =>
-      throw new WorkflowRuntimeException(
+      throw new FatalError(
         "workflow actor should never receive register actor ref message"
       )
   }

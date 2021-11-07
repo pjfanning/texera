@@ -38,13 +38,13 @@ class ControllerAsyncRPCHandlerInitializer(
     with WorkerExecutionCompletedHandler
     with WorkerExecutionStartedHandler
     with LocalBreakpointTriggeredHandler
-    with LocalOperatorExceptionHandler
+    with LocalOperatorExceptionOccurredHandler
     with PauseHandler
     with QueryWorkerStatisticsHandler
     with ResumeHandler
     with StartWorkflowHandler
     with LinkCompletedHandler
-    with FatalErrorHandler
+    with FatalErrorOccurredHandler
     with PythonPrintHandler
     with RetryWorkflowHandler
     with ModifyLogicHandler

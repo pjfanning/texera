@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.common.statetransition
 
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.statetransition.StateManager.{
   InvalidStateException,
   InvalidTransitionException
@@ -10,9 +10,9 @@ import scala.collection.mutable
 
 object StateManager {
 
-  case class InvalidStateException(message: String) extends WorkflowRuntimeException(message)
+  case class InvalidStateException(message: String) extends FatalError(message)
 
-  case class InvalidTransitionException(message: String) extends WorkflowRuntimeException(message)
+  case class InvalidTransitionException(message: String) extends FatalError(message)
 }
 
 class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) {

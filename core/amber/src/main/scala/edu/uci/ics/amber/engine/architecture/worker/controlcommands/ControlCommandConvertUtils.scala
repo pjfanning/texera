@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.controlcommands
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionOccurredHandler.LocalOperatorExceptionOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonPrintHandler.PythonPrint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.EvaluateExpressionHandler.EvaluateExpression
@@ -18,8 +18,10 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandle
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
+import edu.uci.ics.amber.engine.common.amberexception.LocalOperatorException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
 object ControlCommandConvertUtils {
   def controlCommandToV2(
@@ -63,7 +65,7 @@ object ControlCommandConvertUtils {
       case WorkerExecutionCompletedV2() =>
         WorkerExecutionCompleted()
       case LocalOperatorExceptionV2(message) =>
-        LocalOperatorException(null, new RuntimeException(message))
+        LocalOperatorExceptionOccurred(new LocalOperatorException(message), SELF)
       case PythonPrintV2(message) =>
         PythonPrint(message)
       case _ =>

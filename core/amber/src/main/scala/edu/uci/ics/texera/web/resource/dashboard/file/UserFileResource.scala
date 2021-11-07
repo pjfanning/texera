@@ -230,7 +230,7 @@ class UserFileResource {
     if (filePath.isDefined) {
       val fileObject = filePath.get.toFile
 
-      // sending a FileOutputStream/ByteArrayOutputStream directly will cause MessageBodyWriter
+      // sending a FileOutputStream/ByteArrayOutputStream directly will breakpoint MessageBodyWriter
       // not found issue for jersey
       // so we create our own stream.
       val fileStream = new StreamingOutput() {

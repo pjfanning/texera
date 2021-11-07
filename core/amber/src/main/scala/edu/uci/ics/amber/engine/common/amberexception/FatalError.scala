@@ -1,8 +1,6 @@
 package edu.uci.ics.amber.engine.common.amberexception
 
-class WorkflowRuntimeException(message: String)
-    extends RuntimeException(message)
-    with Serializable {
+class FatalError(message: String) extends Error(message) with Serializable {
 
   def this(message: String, cause: Throwable) {
     this(message)

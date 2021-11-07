@@ -129,12 +129,12 @@ export class ExecuteWorkflowService {
         Object.entries(event.generalErrors).forEach(entry => {
           errorMessages[entry[0]] = entry[1];
         });
-        return { state: ExecutionState.Aborted, errorMessages: errorMessages };
+        return { state: ExecutionState.Aborted, errorMessages: [] };
       // TODO: Merge WorkflowErrorEvent and ErrorEvent
-      case "WorkflowExecutionErrorEvent":
+      case "WorkflowFatalEvent":
         return {
           state: ExecutionState.Aborted,
-          errorMessages: { WorkflowExecutionError: event.message },
+          errorMessages: [event.message],
         };
       default:
         return undefined;
@@ -145,11 +145,11 @@ export class ExecuteWorkflowService {
     return this.currentState;
   }
 
-  public getErrorMessages(): Readonly<Record<string, string>> | undefined {
+  public getErrorMessages(): ReadonlyArray<string> {
     if (this.currentState?.state === ExecutionState.Aborted) {
       return this.currentState.errorMessages;
     }
-    return undefined;
+    return [];
   }
 
   public getBreakpointTriggerInfo(): BreakpointTriggerInfo | undefined {
@@ -258,12 +258,7 @@ export class ExecuteWorkflowService {
     if (this.currentState.state !== ExecutionState.BreakpointTriggered) {
       throw new Error("cannot skip tuples, the current execution state is " + this.currentState.state);
     }
-    this.currentState.breakpoint.report.forEach(fault => {
-      this.workflowWebsocketService.send("SkipTupleRequest", {
-        faultedTuple: fault.faultedTuple,
-        actorPath: fault.actorPath,
-      });
-    });
+    throw new Error("Not supported");
   }
 
   public retryExecution(): void {
@@ -315,7 +310,7 @@ export class ExecuteWorkflowService {
     this.executionTimeoutID = window.setTimeout(() => {
       this.updateExecutionState({
         state: ExecutionState.Aborted,
-        errorMessages: { timeout: message },
+        errorMessages: [message],
       });
     }, EXECUTION_TIMEOUT);
     this.clearTimeoutState = clearTimeoutState;

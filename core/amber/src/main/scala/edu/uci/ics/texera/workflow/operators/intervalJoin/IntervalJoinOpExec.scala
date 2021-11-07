@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.intervalJoin
 
 import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -230,7 +230,7 @@ class IntervalJoinOpExec(
         rightBoundValue.getTime
       )
     } else {
-      throw new WorkflowRuntimeException(s"The data type can not support comparison: $dataType")
+      throw new FatalError(s"The data type can not support comparison: $dataType")
     }
     result
 

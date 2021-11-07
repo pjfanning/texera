@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQue
   DataElement
 }
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
   controlInvocationToV2,
   returnInvocationToV2
@@ -58,7 +58,7 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
           Thread.sleep(WAIT_TIME_MS)
           tryCount += 1
           if (tryCount >= MAX_TRY_COUNT)
-            throw new WorkflowRuntimeException(
+            throw new FatalError(
               s"Exceeded try limit of $MAX_TRY_COUNT when connecting to Flight Server!"
             )
       }

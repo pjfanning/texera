@@ -152,6 +152,6 @@ export type ExecutionStateInfo = Readonly<
     }
   | {
       state: ExecutionState.Aborted;
-      errorMessages: Readonly<Record<string, string>>;
+      errorMessages: ReadonlyArray<string>;
     }
 >;

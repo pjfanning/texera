@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorOccurredHandler.FatalErrorOccurred
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   NetworkMessage,
@@ -24,7 +24,7 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
   UNINITIALIZED
 }
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.amberexception.FatalError
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ControlPayload,
   DataPayload,
@@ -92,13 +92,13 @@ class WorkflowWorker(
         case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
           controlInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
         case other =>
-          throw new WorkflowRuntimeException(s"unhandled message: $other")
+          throw new FatalError(s"unhandled message: $other")
       }
     } catch {
-      case err: WorkflowRuntimeException =>
+      case err: FatalError =>
         logger.error(s"Encountered fatal error, worker is shutting done.", err)
         asyncRPCClient.send(
-          FatalError(err),
+          FatalErrorOccurred(err, SELF),
           CONTROLLER
         )
         throw err;
@@ -124,7 +124,7 @@ class WorkflowWorker(
       case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
         dataProcessor.enqueueCommand(controlCommand, from)
       case _ =>
-        throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
+        throw new FatalError(s"unhandled control payload: $controlPayload")
     }
   }
 

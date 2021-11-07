@@ -1,12 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.principal.{OperatorResult, OperatorStatistics}
+import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-
-import scala.collection.mutable
 
 object ControllerEvent {
 
@@ -25,8 +23,8 @@ object ControllerEvent {
       extends ControlCommand[Unit]
 
   case class BreakpointTriggered(
-      report: mutable.HashMap[(ActorVirtualIdentity, FaultedTuple), Array[String]],
-      operatorID: String = null
+      breakpoint: BreakpointException,
+      operatorId: String = null
   ) extends ControlCommand[Unit]
 
   case class PythonPrintTriggered(
