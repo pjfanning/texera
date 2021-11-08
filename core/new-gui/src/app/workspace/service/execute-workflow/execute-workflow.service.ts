@@ -41,10 +41,8 @@ export const EXECUTION_TIMEOUT = 3000;
  *  in order to capture the event of workflow graph starts executing.
  *
  * Components and Services subscribe to getExecuteEndedStream()
- *  for the event of the execution result (or errro) returned by the backend.
+ *  for the event of the execution result (or error) returned by the backend.
  *
- * @author Zuozhi Wang
- * @author Henry Chen
  */
 @Injectable({
   providedIn: "root",
@@ -121,20 +119,10 @@ export class ExecuteWorkflowService {
         };
       case "BreakpointTriggeredEvent":
         return { state: ExecutionState.BreakpointTriggered, breakpoint: event };
-      case "WorkflowErrorEvent":
-        const errorMessages: Record<string, string> = {};
-        Object.entries(event.operatorErrors).forEach(entry => {
-          errorMessages[entry[0]] = `${entry[1].propertyPath}: ${entry[1].message}`;
-        });
-        Object.entries(event.generalErrors).forEach(entry => {
-          errorMessages[entry[0]] = entry[1];
-        });
-        return { state: ExecutionState.Aborted, errorMessages: [] };
-      // TODO: Merge WorkflowErrorEvent and ErrorEvent
       case "WorkflowFatalEvent":
         return {
           state: ExecutionState.Aborted,
-          errorMessages: [event.message],
+          errorMessages: [event.exception.message],
         };
       default:
         return undefined;

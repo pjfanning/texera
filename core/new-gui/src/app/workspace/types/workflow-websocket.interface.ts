@@ -3,11 +3,16 @@ import {
   ExecutionState,
   LogicalOperator,
   LogicalPlan,
+  OperatorStatsUpdate,
   WebOutputMode,
   WorkflowResultUpdateEvent,
-  OperatorStatsUpdate,
 } from "./execute-workflow.interface";
-import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
+import {
+  BreakpointFaultedTuple,
+  BreakpointTriggerInfo,
+  ErrorTriggerInfo,
+  PythonPrintTriggerInfo
+} from "./workflow-common.interface";
 
 /**
  *  @fileOverview Type Definitions of WebSocket (Ws) API
@@ -29,24 +34,6 @@ export interface RegisterWIdRequest
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
 
-export interface TexeraConstraintViolation
-  extends Readonly<{
-    message: string;
-    propertyPath: string;
-  }> {}
-
-export interface WorkflowError
-  extends Readonly<{
-    operatorErrors: Record<string, TexeraConstraintViolation>;
-    generalErrors: Record<string, string>;
-  }> {}
-
-export interface WorkflowFatal
-  extends Readonly<{
-  operatorId: string;
-  message: string;
-  trace: string;
-  }> {}
 
 export type ModifyOperatorLogic = Readonly<{
   operator: LogicalOperator;
@@ -157,7 +144,6 @@ export type TexeraWebsocketEventTypeMap = {
   RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowStateEvent: WorkflowStateInfo;
-  WorkflowErrorEvent: WorkflowError;
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
@@ -165,7 +151,7 @@ export type TexeraWebsocketEventTypeMap = {
   PythonPrintTriggeredEvent: PythonPrintTriggerInfo;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
-  WorkflowFatalEvent: WorkflowFatal;
+  WorkflowFatalEvent: ErrorTriggerInfo;
   ResultExportResponse: ResultExportResponse;
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;

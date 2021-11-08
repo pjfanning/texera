@@ -1,18 +1,18 @@
 package edu.uci.ics.amber.engine.common.amberexception
 
-class LocalOperatorException(message:String) extends BreakpointException(message)  {
+class LocalOperatorException(message: String) extends BreakpointException(message) {
 
-    def this(message: String, cause: Throwable) {
-        this(message)
-        initCause(cause)
-    }
+  def this(message: String, cause: Throwable) {
+    this(message)
+    initCause(cause)
+  }
 
-    def this(cause: Throwable) {
-        this(Option(cause).map(_.toString).orNull, cause)
-    }
+  def this(cause: Throwable) {
+    this(Option(cause).map(_.toString).orNull, cause)
+  }
 
-    def this() {
-        this(null: String)
-    }
+  def this() {
+    this(null: String)
+  }
 
 }

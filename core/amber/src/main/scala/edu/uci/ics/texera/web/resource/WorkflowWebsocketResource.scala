@@ -3,9 +3,10 @@ package edu.uci.ics.texera.web.resource
 import com.twitter.util.Future
 import com.twitter.util.Future.Unit.unit
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowErrorEvent
+import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowFatalEvent
 import edu.uci.ics.texera.web.model.websocket.event.{
   TexeraWebSocketEvent,
   Uninitialized,
@@ -70,12 +71,7 @@ class WorkflowWebsocketResource extends LazyLogging {
         logger.error("error", throwable)
         send(
           session,
-          WorkflowErrorEvent(generalErrors =
-            Map(
-              "exception" -> (throwable.getMessage + "\n" + throwable.getStackTrace
-                .mkString("\n"))
-            )
-          )
+          WorkflowFatalEvent(CONTROLLER.toString, throwable)
         )
       })
 
@@ -129,8 +125,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           .initExecutionState(execute, uIdOpt)
           .flatMap(workflowJobService => workflowJobService.startWorkflow())
           .handle {
-            case x: ConstraintViolationException =>
-              WorkflowErrorEvent(operatorErrors = x.violations)
+            case x: ConstraintViolationException => WorkflowFatalEvent(CONTROLLER.toString, x)
           }
 
       case newLogic: ModifyLogicRequest =>

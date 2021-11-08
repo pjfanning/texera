@@ -22,7 +22,7 @@ import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.websocket.event._
-import edu.uci.ics.texera.web.model.websocket.event.error.{WorkflowErrorEvent, WorkflowFatalEvent}
+import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowFatalEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonPrintTriggeredEvent
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
 import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest}
@@ -54,7 +54,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
 
   val operatorRuntimeStateMap: mutable.HashMap[String, OperatorRuntimeState] =
     new mutable.HashMap[String, OperatorRuntimeState]()
-  var workflowErrorEvent: Either[WorkflowErrorEvent, WorkflowFatalEvent] = _
+  var workflowFatalEvent: WorkflowFatalEvent = _
 
   registerCallbacks()
 
@@ -128,7 +128,7 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
     operatorRuntimeStateMap.foreach {
       case (opId, state) =>
         if (state.breakpointExceptions.nonEmpty) {
-          state.breakpointExceptions.foreach((breakpointException: BreakpointException)=>{
+          state.breakpointExceptions.foreach((breakpointException: BreakpointException) => {
             observer.onNext(BreakpointTriggeredEvent(breakpointException, opId))
           })
 
@@ -139,8 +139,8 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
           observer.onNext(PythonPrintTriggeredEvent(stringBuilder.toString(), opId))
         }
     }
-    if (workflowErrorEvent != null) {
-      observer.onNext(workflowErrorEvent.toOption.get)
+    if (workflowFatalEvent != null) {
+      observer.onNext(workflowFatalEvent)
     }
   }
 
@@ -264,13 +264,9 @@ class JobRuntimeService(workflowStatus: BehaviorSubject[ExecutionStatusEnum], cl
       .getObservable[FatalErrorOccurred]
       .subscribe((evt: FatalErrorOccurred) => {
         client.shutdown()
-        val fatal = evt.e
         workflowStatus.onNext(Aborted)
-        val sw = new StringWriter
-        fatal.printStackTrace(new PrintWriter(sw))
-        workflowErrorEvent =
-          Right(WorkflowFatalEvent(evt.causedBy.toString, fatal.getLocalizedMessage, sw.toString))
-        send(workflowErrorEvent.toOption.get)
+        workflowFatalEvent = WorkflowFatalEvent(evt.causedBy.toString, evt.e)
+        send(workflowFatalEvent)
       })
   }
 
