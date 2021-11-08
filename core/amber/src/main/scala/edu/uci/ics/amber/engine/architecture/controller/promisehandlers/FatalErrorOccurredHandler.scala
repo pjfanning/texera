@@ -18,13 +18,13 @@ object FatalErrorOccurredHandler {
 trait FatalErrorOccurredHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
-  registerHandler { (msg: FatalErrorOccurred, sender) =>
+  registerHandler { (fatalErrorOccurred: FatalErrorOccurred, sender) =>
     {
       // log the error to console
-      logger.error("FatalErrorOccurred received", msg)
+      logger.error("FatalErrorOccurred received", fatalErrorOccurred)
 
       //report to client
-      sendToClient(msg)
+      sendToClient(fatalErrorOccurred)
     }
   }
 }

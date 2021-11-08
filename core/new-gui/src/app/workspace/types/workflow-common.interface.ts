@@ -64,7 +64,7 @@ export type BreakpointFaultedTuple = Readonly<{
   isInput: boolean;
 }>;
 
-export type BreakpointException = Readonly<{
+export type Throwable = Readonly<{
   localizedMessage: string;
   message: string;
   stackTrace: ReadonlyArray<string>;
@@ -72,12 +72,12 @@ export type BreakpointException = Readonly<{
 }>;
 
 export type BreakpointTriggerInfo = Readonly<{
-  breakpoint: BreakpointException;
+  breakpoint: Throwable;
   operatorId: string;
 }>;
 
 export type ErrorTriggerInfo = Readonly<{
-  exception: BreakpointException;
+  exception: Throwable;
   operatorId: string;
 }>;
 
