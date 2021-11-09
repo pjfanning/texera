@@ -51,7 +51,7 @@ class WorkflowJobService(
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo, workflowContext)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
-    WorkflowCacheService.opResultStorage
+    JobResultService.opResultStorage
   )
 
   // Runtime starts from here:
@@ -61,7 +61,7 @@ class WorkflowJobService(
 
   // Result-related services start from here:
   val workflowResultService: JobResultService =
-    new JobResultService(workflowInfo, WorkflowCacheService.opResultStorage, client)
+    new JobResultService(workflowInfo, client)
   val resultExportService: ResultExportService = new ResultExportService()
 
   def startWorkflow(): Unit = {
@@ -112,7 +112,7 @@ class WorkflowJobService(
         operatorCache.cacheSourceOperators,
         operatorCache.cacheSinkOperators,
         operatorCache.operatorRecord,
-        WorkflowCacheService.opResultStorage
+        JobResultService.opResultStorage
       )
       val newWorkflowInfo = workflowRewriter.rewrite
       val oldWorkflowInfo = workflowInfo

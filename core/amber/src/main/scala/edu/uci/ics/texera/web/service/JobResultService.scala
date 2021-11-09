@@ -121,9 +121,9 @@ object JobResultService {
   */
 class JobResultService(
     workflowInfo: WorkflowInfo,
-    opResultStorage: OpResultStorage,
     client: AmberClient
 ) extends SnapshotMulticast[TexeraWebSocketEvent] {
+  import JobResultService._
   var operatorResults: mutable.HashMap[String, OperatorResultService] =
     mutable.HashMap[String, OperatorResultService]()
   val updatedSet: mutable.Set[String] = mutable.HashSet[String]()

@@ -42,7 +42,7 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
       cacheSourceOperators.clone(),
       cacheSinkOperators.clone(),
       operatorRecord.clone(),
-      WorkflowCacheService.opResultStorage
+      JobResultService.opResultStorage
     )
 
     val invalidSet = workflowRewriter.cacheStatusUpdate()
