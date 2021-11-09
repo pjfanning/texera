@@ -123,7 +123,7 @@ class Controller(
       .onFailure((err: Throwable) => {
         logger.error("Failure when sending Python UDF code", err)
         // report error to frontend
-        asyncRPCClient.sendToClient(FatalErrorOccurred(new FatalError(err), CONTROLLER))
+        asyncRPCClient.sendToClient(FatalErrorOccurred(err, CONTROLLER))
       })
   }
 
@@ -160,7 +160,7 @@ class Controller(
     } catch safely {
       case err =>
         // report error to frontend
-        asyncRPCClient.sendToClient(FatalErrorOccurred(new FatalError(err), CONTROLLER))
+        asyncRPCClient.sendToClient(FatalErrorOccurred(err, CONTROLLER))
         // re-throw the error to fail the actor
         throw err
     }

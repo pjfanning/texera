@@ -46,7 +46,7 @@ class DataProcessor( // dependencies:
         case err: Throwable =>
           logger.error("DP Thread exists unexpectedly", err)
           asyncRPCClient.send(
-            FatalErrorOccurred(new FatalError(err), SELF),
+            FatalErrorOccurred(err, SELF),
             CONTROLLER
           )
         // dp thread will stop here
