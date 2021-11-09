@@ -5,7 +5,6 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.service.JobResultService._
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowInfo
 import edu.uci.ics.texera.workflow.operators.sink.{CacheSinkOpDesc, SimpleSinkOpDesc}
 
@@ -66,6 +65,9 @@ class OperatorResultService(
     * Produces the WebResultUpdate to send to frontend from a result update from the engine.
     */
   def convertWebResultUpdate(resultUpdate: OperatorResult): WebResultUpdate = {
+    if (opResultStorage.contains(uuid)) {
+      return WebPaginationUpdate(PaginationMode(), getSize, List.empty)
+    }
     (webOutputMode, resultUpdate.outputMode) match {
       case (PaginationMode(), SET_SNAPSHOT) =>
         val dirtyPageIndices =
@@ -88,15 +90,10 @@ class OperatorResultService(
     * Updates the current result of this operator.
     */
   def updateResult(resultUpdate: OperatorResult): Unit = {
+    if (opResultStorage.contains(uuid)) {
+      return
+    }
     workflowInfo.toDAG.getOperator(operatorID) match {
-      case op: CacheSinkOpDesc =>
-        resultUpdate.outputMode match {
-          case SET_SNAPSHOT =>
-            opResultStorage.put(op.uuid, resultUpdate.result.asInstanceOf[List[Tuple]])
-          case SET_DELTA =>
-            val tmp = opResultStorage.get(op.uuid)
-            opResultStorage.put(op.uuid, (tmp ++ resultUpdate.result.asInstanceOf[List[Tuple]]))
-        }
       case _ =>
         resultUpdate.outputMode match {
           case SET_SNAPSHOT =>
@@ -107,21 +104,36 @@ class OperatorResultService(
     }
   }
 
-  def getResult: List[ITuple] = {
-    if (workflowInfo.cachedOperatorIds.contains(operatorID)) {
-      opResultStorage.get(uuid)
+  def getResult: Iterable[ITuple] = {
+    if (opResultStorage.contains(uuid)) {
+      opResultStorage.get(uuid).getAll
     } else {
       this.result
     }
   }
 
+  def getRange(from: Int, to: Int): Iterable[ITuple] = {
+    if (opResultStorage.contains(uuid)) {
+      opResultStorage.get(uuid).getRange(from, to)
+    } else {
+      this.result.slice(from, to)
+    }
+  }
+
+  def getSize: Int = {
+    if (opResultStorage.contains(uuid)) {
+      opResultStorage.get(uuid).getCount.toInt
+    } else {
+      this.result.size
+    }
+  }
+
   def getSnapshot: WebResultUpdate = {
-    val res = getResult
     webOutputMode match {
       case PaginationMode() =>
-        WebPaginationUpdate(PaginationMode(), res.size, List.empty)
+        WebPaginationUpdate(PaginationMode(), getSize, List.empty)
       case SetSnapshotMode() | SetDeltaMode() =>
-        webDataFromTuple(webOutputMode, res, chartType)
+        webDataFromTuple(webOutputMode, getResult.toList, chartType)
     }
   }
 

@@ -49,7 +49,10 @@ class WorkflowJobService(
   val workflowContext: WorkflowContext = createWorkflowContext()
   val workflowInfo: WorkflowInfo = createWorkflowInfo(workflowContext)
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo, workflowContext)
-  val workflow: Workflow = workflowCompiler.amberWorkflow(WorkflowIdentity(workflowContext.jobId))
+  val workflow: Workflow = workflowCompiler.amberWorkflow(
+    WorkflowIdentity(workflowContext.jobId),
+    WorkflowCacheService.opResultStorage
+  )
 
   // Runtime starts from here:
   val client: AmberClient =

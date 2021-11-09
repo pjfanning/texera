@@ -18,6 +18,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
@@ -68,7 +69,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
       .toMap
       .filter(pair => pair._2.nonEmpty)
 
-  def amberWorkflow(workflowId: WorkflowIdentity): Workflow = {
+  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
     // pre-process: set output mode for sink based on the visualization operator before it
     workflowInfo.toDAG.getSinkOperators.foreach(sinkOpId => {
       val sinkOp = workflowInfo.toDAG.getOperator(sinkOpId)
@@ -79,7 +80,8 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
           case (viz: VisualizationOperator, sink: SimpleSinkOpDesc) =>
             sink.setOutputMode(viz.outputMode())
             sink.setChartType(viz.chartType())
-          case _ =>
+          case (_, sink: SimpleSinkOpDesc) =>
+            sink.setStorage(opResultStorage)
         }
       }
     })

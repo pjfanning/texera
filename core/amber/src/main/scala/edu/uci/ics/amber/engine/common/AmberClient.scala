@@ -78,6 +78,10 @@ class AmberClient(system: ActorSystem, workflow: Workflow, controllerConfig: Con
           senderMap.remove(originalCommandID)
         }
       case NetworkMessage(mId, _ @WorkflowControlMessage(_, _, _ @ControlInvocation(_, command))) =>
+        // this could take a lot of time and block the subsequent messages
+        // so updates from engine will be slowly consumed.
+        // i.e. engine has completed but it's not reflected in the frontend yet.
+        // TODO: fix the issue above?
         sender ! NetworkAck(mId)
         if (handlers.isDefinedAt(command)) {
           handlers(command)

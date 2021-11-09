@@ -321,7 +321,7 @@ class WorkflowRewriter(
   private def invalidateOperatorCache(opId: String): Unit = {
     if (cachedOperatorDescriptors.contains(opId)) {
       cachedOperatorDescriptors.remove(opId)
-      opResultStorage.remove(cacheSinkOperatorDescriptors(opId).uuid)
+      opResultStorage.remove(cacheSinkOperatorDescriptors(opId).operatorID)
       cacheSinkOperatorDescriptors.remove(opId)
       cacheSourceOperatorDescriptors.remove(opId)
     }
@@ -384,10 +384,9 @@ class WorkflowRewriter(
       operatorDescriptor.toString,
       cachedOperatorDescriptors.toString()
     )
-    val uuid = UUID.randomUUID().toString
-    val cacheSinkOperator = new CacheSinkOpDesc(uuid, opResultStorage)
+    val cacheSinkOperator = new CacheSinkOpDesc()
     cacheSinkOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSinkOperator))
-    val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
+    val cacheSourceOperator = new CacheSourceOpDesc(cacheSinkOperator.operatorID, opResultStorage)
     cacheSourceOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSourceOperator))
     cacheSinkOperator
   }

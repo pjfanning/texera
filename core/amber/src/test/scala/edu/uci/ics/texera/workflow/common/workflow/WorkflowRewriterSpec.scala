@@ -2,7 +2,6 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.storage.memory.MemoryOpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -24,7 +23,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
   }
 
   before {
-    opResultStorage = new MemoryOpResultStorage()
+    opResultStorage = new OpResultStorage()
   }
 
   var rewriter: WorkflowRewriter = _
@@ -86,7 +85,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val tuples = mutable.MutableList[Tuple]()
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new CacheSinkOpDesc(uuid, opResultStorage)
+    val cacheSinkOperator = new CacheSinkOpDesc()
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
     cacheSinkOperator.schema = new Schema()
     operatorOutputCache += ((sourceOperator.operatorID, tuples))
@@ -251,7 +250,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new CacheSinkOpDesc(uuid, opResultStorage)
+    val cacheSinkOperator = new CacheSinkOpDesc()
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
     cacheSinkOperator.schema = new Schema()
 
@@ -330,7 +329,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new CacheSinkOpDesc(uuid, opResultStorage)
+    val cacheSinkOperator = new CacheSinkOpDesc()
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
     cacheSinkOperator.schema = new Schema()
 
@@ -415,7 +414,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val uuidForFilter3 = UUID.randomUUID().toString
     val cacheSourceForFilter3 = new CacheSourceOpDesc(uuidForFilter3, opResultStorage)
-    val cacheSinkForFilter3 = new CacheSinkOpDesc(uuidForFilter3, opResultStorage)
+    val cacheSinkForFilter3 = new CacheSinkOpDesc()
 
     val cachedOperatorIDForFilter3 = filterOperator3.operatorID
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
@@ -501,7 +500,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val uuidForFilter = UUID.randomUUID().toString
     val cacheSourceForFilter = new CacheSourceOpDesc(uuidForFilter, opResultStorage)
-    val cacheSinkForFilter = new CacheSinkOpDesc(uuidForFilter, opResultStorage)
+    val cacheSinkForFilter = new CacheSinkOpDesc()
 
     val cachedOperatorIDForFilter = filterOperator.operatorID
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()

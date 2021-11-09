@@ -23,6 +23,7 @@ import java.sql.PreparedStatement
 import com.twitter.util.{Await, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.common.AmberClient
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -56,7 +57,7 @@ class DataProcessingSpec
       WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
       context
     )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"))
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
   }
 
   def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {

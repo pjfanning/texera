@@ -9,8 +9,6 @@ import edu.uci.ics.texera.web.model.websocket.event.{CacheStatusUpdateEvent, Tex
 import edu.uci.ics.texera.web.model.websocket.request.CacheStatusUpdateRequest
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.storage.memory.{JCSOpResultStorage, MemoryOpResultStorage}
-import edu.uci.ics.texera.workflow.common.storage.mongo.MongoOpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowInfo, WorkflowRewriter, WorkflowVertex}
 import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
@@ -19,24 +17,7 @@ import rx.lang.scala.Observer
 import scala.collection.mutable
 
 object WorkflowCacheService extends LazyLogging {
-  val opResultStorageConfig: Config = ConfigFactory.load("application")
-  val storageType: String = AmberUtils.amberConfig.getString("cache.storage").toLowerCase
-  def isAvailable: Boolean = storageType != "off"
-  var opResultStorage: OpResultStorage = storageType match {
-    case "off" =>
-      null
-    case "memory" =>
-      new MemoryOpResultStorage()
-    case "jcs" =>
-      new JCSOpResultStorage()
-    case "mongodb" =>
-      new MongoOpResultStorage()
-    case _ =>
-      throw new RuntimeException(s"invalid storage config $storageType")
-  }
-  if (isAvailable) {
-    logger.info(s"Use $storageType for materialization")
-  }
+  def isAvailable: Boolean = AmberUtils.amberConfig.getBoolean("cache.enabled")
 }
 
 class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with LazyLogging {

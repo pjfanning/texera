@@ -7,39 +7,29 @@ import edu.uci.ics.amber.engine.common.{ITupleSinkOperatorExecutor, InputExhaust
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.operators.sink.storage.{ShardedStorage, SinkStorage}
 
 import scala.collection.mutable
 
-class CacheSinkOpExec(uuid: String, dest: OpResultStorage)
-    extends ITupleSinkOperatorExecutor
-    with LazyLogging {
-
-  assert(null != dest)
-
-  val results: mutable.MutableList[Tuple] = mutable.MutableList()
+class CacheSinkOpExec(storage: ShardedStorage) extends ITupleSinkOperatorExecutor with LazyLogging {
 
   override def getResultTuples(): List[ITuple] = {
-    val tuples = dest.get(uuid)
-    assert(null != tuples)
-    logger.debug("result tuples length: {}", tuples.length)
-    tuples
+    List.empty
   }
 
   override def getOutputMode(): IncrementalOutputMode = IncrementalOutputMode.SET_SNAPSHOT
 
-  override def open(): Unit = {}
+  override def open(): Unit = storage.open()
 
-  override def close(): Unit = {}
+  override def close(): Unit = storage.close()
 
   override def processTuple(
       tuple: Either[ITuple, InputExhausted],
       input: LinkIdentity
   ): Iterator[ITuple] = {
     tuple match {
-      case Left(t) => results += t.asInstanceOf[Tuple]
-      case Right(_) =>
-        dest.remove(uuid)
-        dest.put(uuid, results.toList)
+      case Left(t)  => storage.putOne(t.asInstanceOf[Tuple])
+      case Right(_) => //skip
     }
     Iterator()
   }

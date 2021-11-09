@@ -9,8 +9,10 @@ import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor;
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage;
 import scala.Option;
 import scala.collection.immutable.List;
 
@@ -29,9 +31,17 @@ public class SimpleSinkOpDesc extends OperatorDescriptor {
     @JsonIgnore
     private Option<String> chartType = Option.empty();
 
+    // op result storage
+    @JsonIgnore
+    private OpResultStorage storage = null;
+
     @Override
     public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
-        return new SimpleSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, outputMode, this.chartType);
+        if(storage == null){
+            return new SimpleSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, outputMode, this.chartType);
+        }else{
+            return new CacheSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, storage.create(operatorID(), operatorSchemaInfo.outputSchema()));
+        }
     }
 
     @Override
@@ -83,6 +93,11 @@ public class SimpleSinkOpDesc extends OperatorDescriptor {
     @JsonIgnore
     public void setChartType(String chartType) {
         this.chartType = Option.apply(chartType);
+    }
+
+    @JsonIgnore
+    public void setStorage(OpResultStorage opResultStorage){
+        this.storage = opResultStorage;
     }
 
 }

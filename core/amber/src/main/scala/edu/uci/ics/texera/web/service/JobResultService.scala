@@ -3,7 +3,7 @@ package edu.uci.ics.texera.web.service
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowResultUpdate
-import edu.uci.ics.amber.engine.common.AmberClient
+import edu.uci.ics.amber.engine.common.{AmberClient, AmberUtils}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
@@ -24,7 +24,6 @@ import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
 import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
-import javax.websocket.Session
 import rx.lang.scala.Observer
 
 import scala.collection.mutable
@@ -32,6 +31,10 @@ import scala.collection.mutable
 object JobResultService {
 
   val defaultPageSize: Int = 10
+
+  var opResultStorage: OpResultStorage = new OpResultStorage(
+    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
+  )
 
   // convert Tuple from engine's format to JSON format
   def webDataFromTuple(
@@ -135,10 +138,11 @@ class JobResultService(
       case desc: CacheSinkOpDesc =>
         val upstreamID = workflowInfo.toDAG.getUpstream(sink).head.operatorID
         val service = new OperatorResultService(upstreamID, workflowInfo, opResultStorage)
-        service.uuid = desc.uuid
+        service.uuid = desc.operatorID
         operatorResults += ((sink, service))
       case _ =>
         val service = new OperatorResultService(sink, workflowInfo, opResultStorage)
+        service.uuid = sink
         operatorResults += ((sink, service))
     }
   })
@@ -156,9 +160,10 @@ class JobResultService(
     val opResultService = operatorResults(operatorID)
     // calculate from index (pageIndex starts from 1 instead of 0)
     val from = request.pageSize * (request.pageIndex - 1)
-    val paginationResults = opResultService.getResult
-      .slice(from, from + request.pageSize)
+    val paginationResults = opResultService
+      .getRange(from, from + request.pageSize)
       .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+      .toList
     send(PaginatedResultEvent.apply(request, paginationResults))
   }
 
@@ -187,7 +192,7 @@ class JobResultService(
           }
         } else {
           updatedSet += e._1
-          val size = operatorResults(e._1).getResult.size
+          val size = operatorResults(e._1).getSize
           (e._1, WebPaginationUpdate(PaginationMode(), size, List.empty))
         }
       })
