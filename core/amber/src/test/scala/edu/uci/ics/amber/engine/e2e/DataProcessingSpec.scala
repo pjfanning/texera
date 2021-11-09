@@ -39,11 +39,14 @@ class DataProcessingSpec
 
   var inMemoryMySQLInstance: Option[DB] = None
 
+  val resultStorage = new OpResultStorage()
+
   override def beforeAll: Unit = {
     system.actorOf(Props[SingleNodeListener], "cluster-info")
   }
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
+    resultStorage.close()
   }
 
   def buildWorkflow(
@@ -57,22 +60,26 @@ class DataProcessingSpec
       WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
       context
     )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 
   def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {
-    var results: Map[String, OperatorResult] = null
+    var results: Map[String, List[ITuple]] = null
     val client = new AmberClient(system, workflow, ControllerConfig.default)
     val completion = Promise[Unit]
     client
       .getObservable[WorkflowCompleted]
       .subscribe(evt => {
-        results = evt.result
+        val storageResults = workflow.getEndOperators
+          .filter(op => resultStorage.contains(op.id.operator))
+          .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
+          .toMap
+        results = evt.result.map(pair => (pair._1, pair._2.result)) ++ storageResults
         completion.setDone()
       })
     client.sendSync(StartWorkflow(), 1.second)
     Await.result(completion)
-    results.map(e => (e._1, e._2.result))
+    results
   }
 
   def initializeInMemoryMySQLInstance(): (String, String, String, String, String, String) = {
