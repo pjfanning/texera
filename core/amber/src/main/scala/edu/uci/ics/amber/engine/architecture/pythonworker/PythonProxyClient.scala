@@ -50,7 +50,7 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
         flightClient = FlightClient.builder(allocator, location).build()
         connected = new String(flightClient.doAction(new Action("heartbeat")).next.getBody) == "ack"
         if (!connected)
-          throw new RuntimeException("heartbeat failed")
+          throw new FatalError("heartbeat failed")
       } catch {
         case e: RuntimeException =>
           logger.warn("Not connected to the server in this try, retrying", e)

@@ -95,11 +95,11 @@ class WorkflowWorker(
           throw new FatalError(s"unhandled message: $other")
       }
     } catch {
-      case err: FatalError =>
+      case err: Throwable =>
         logger.error(s"Encountered fatal error, worker is shutting done.", err)
         asyncRPCClient.send(
           FatalErrorOccurred(err, SELF),
-          CONTROLLER
+          CONTROLLER // TODO: maybe change to SELF
         )
         throw err;
     }
