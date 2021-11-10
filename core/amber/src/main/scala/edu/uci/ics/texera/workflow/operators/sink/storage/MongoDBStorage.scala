@@ -17,8 +17,8 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
     "illegal attribute name for mongo DB"
   )
 
-  val url: String = AmberUtils.amberConfig.getString("cache.mongodb.url")
-  val databaseName: String = AmberUtils.amberConfig.getString("cache.mongodb.database")
+  val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
+  val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
   val client: MongoClient = MongoClients.create(url)
   val database: MongoDatabase = client.getDatabase(databaseName)
   database.getCollection(id).drop()
