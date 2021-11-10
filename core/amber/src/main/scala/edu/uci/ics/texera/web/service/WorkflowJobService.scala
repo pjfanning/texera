@@ -38,7 +38,7 @@ class WorkflowJobService(
     operatorCache: WorkflowCacheService,
     uidOpt: Option[UInteger],
     request: WorkflowExecuteRequest,
-    prevResults: mutable.HashMap[String, OperatorResultService]
+    prevResults: mutable.HashMap[String, ProgressiveResultService]
 ) extends SnapshotMulticast[TexeraWebSocketEvent]
     with LazyLogging {
 

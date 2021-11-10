@@ -4,7 +4,6 @@ import edu.uci.ics.amber.engine.architecture.principal.OperatorResult
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.service.JobResultService._
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
-import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowInfo
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 
@@ -12,10 +11,9 @@ import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
   * OperatorResultService manages the materialized result of an operator.
   * It always keeps the latest snapshot of the computation result.
   */
-class OperatorResultService(
+class ProgressiveResultService(
     val operatorID: String,
-    val workflowInfo: WorkflowInfo,
-    opResultStorage: OpResultStorage
+    val workflowInfo: WorkflowInfo
 ) {
 
   var uuid: String = _
@@ -65,10 +63,7 @@ class OperatorResultService(
     * Produces the WebResultUpdate to send to frontend from a result update from the engine.
     */
   def convertWebResultUpdate(resultUpdate: OperatorResult): WebResultUpdate = {
-    if (opResultStorage.contains(uuid)) {
-      return WebPaginationUpdate(PaginationMode(), getSize, List.empty)
-    }
-    (webOutputMode, resultUpdate.outputMode) match {
+    val webUpdate = (webOutputMode, resultUpdate.outputMode) match {
       case (PaginationMode(), SET_SNAPSHOT) =>
         val dirtyPageIndices =
           calculateDirtyPageIndices(result, resultUpdate.result, defaultPageSize)
@@ -84,54 +79,23 @@ class OperatorResultService(
           "update mode combination not supported: " + (webOutputMode, resultUpdate.outputMode)
         )
     }
-  }
-
-  /**
-    * Updates the current result of this operator.
-    */
-  def updateResult(resultUpdate: OperatorResult): Unit = {
-    if (opResultStorage.contains(uuid)) {
-      return
+    resultUpdate.outputMode match {
+      case SET_SNAPSHOT =>
+        this.result = resultUpdate.result
+      case SET_DELTA =>
+        this.result = (this.result ++ resultUpdate.result)
     }
-    workflowInfo.toDAG.getOperator(operatorID) match {
-      case _ =>
-        resultUpdate.outputMode match {
-          case SET_SNAPSHOT =>
-            this.result = resultUpdate.result
-          case SET_DELTA =>
-            this.result = (this.result ++ resultUpdate.result)
-        }
-    }
+    webUpdate
   }
 
   def getResult: Iterable[ITuple] = {
-    if (opResultStorage.contains(uuid)) {
-      opResultStorage.get(uuid).getAll
-    } else {
       this.result
-    }
-  }
-
-  def getRange(from: Int, to: Int): Iterable[ITuple] = {
-    if (opResultStorage.contains(uuid)) {
-      opResultStorage.get(uuid).getRange(from, to)
-    } else {
-      this.result.slice(from, to)
-    }
-  }
-
-  def getSize: Int = {
-    if (opResultStorage.contains(uuid)) {
-      opResultStorage.get(uuid).getCount.toInt
-    } else {
-      this.result.size
-    }
   }
 
   def getSnapshot: WebResultUpdate = {
     webOutputMode match {
       case PaginationMode() =>
-        WebPaginationUpdate(PaginationMode(), getSize, List.empty)
+        WebPaginationUpdate(PaginationMode(), result.size, List.empty)
       case SetSnapshotMode() | SetDeltaMode() =>
         webDataFromTuple(webOutputMode, getResult.toList, chartType)
     }

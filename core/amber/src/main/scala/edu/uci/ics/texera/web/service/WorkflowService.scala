@@ -101,8 +101,8 @@ class WorkflowService(wid: String, cleanUpTimeout: Int) extends LazyLogging {
 
   def initExecutionState(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
     val prevResults = jobService match {
-      case Some(value) => value.workflowResultService.operatorResults
-      case None        => mutable.HashMap[String, OperatorResultService]()
+      case Some(value) => value.workflowResultService.progressiveResults
+      case None        => mutable.HashMap[String, ProgressiveResultService]()
     }
     val state = new WorkflowJobService(
       operatorCache,

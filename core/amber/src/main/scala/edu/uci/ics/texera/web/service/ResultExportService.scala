@@ -53,8 +53,8 @@ class ResultExportService {
     }
 
     // By now the workflow should finish running
-    val operatorWithResult: Option[OperatorResultService] =
-      resultService.operatorResults.get(request.operatorId)
+    val operatorWithResult: Option[ProgressiveResultService] =
+      resultService.progressiveResults.get(request.operatorId)
     if (operatorWithResult.isEmpty) {
       return ResultExportResponse("error", "The workflow contains no results")
     }
