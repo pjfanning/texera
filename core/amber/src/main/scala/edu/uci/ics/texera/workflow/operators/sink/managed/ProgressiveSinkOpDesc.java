@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.sink;
+package edu.uci.ics.texera.workflow.operators.sink.managed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
@@ -12,7 +12,7 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor;
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
-import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage;
+import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc;
 import scala.Option;
 import scala.collection.immutable.List;
 
@@ -20,7 +20,7 @@ import static edu.uci.ics.texera.workflow.common.IncrementalOutputMode.SET_SNAPS
 import static java.util.Collections.singletonList;
 import static scala.collection.JavaConverters.asScalaBuffer;
 
-public class SimpleSinkOpDesc extends OperatorDescriptor {
+public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     // use SET_SNAPSHOT as the default output mode
     // this will be set internally by the workflow compiler
@@ -31,17 +31,9 @@ public class SimpleSinkOpDesc extends OperatorDescriptor {
     @JsonIgnore
     private Option<String> chartType = Option.empty();
 
-    // op result storage
-    @JsonIgnore
-    private OpResultStorage storage = null;
-
     @Override
     public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
-        if(storage == null){
-            return new SimpleSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, outputMode, this.chartType);
-        }else{
-            return new CacheSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, storage.create(operatorID(), operatorSchemaInfo.outputSchema()));
-        }
+        return new ProgressiveSinkOpExecConfig(operatorIdentifier(), operatorSchemaInfo, outputMode, this.chartType);
     }
 
     @Override
@@ -93,11 +85,6 @@ public class SimpleSinkOpDesc extends OperatorDescriptor {
     @JsonIgnore
     public void setChartType(String chartType) {
         this.chartType = Option.apply(chartType);
-    }
-
-    @JsonIgnore
-    public void setStorage(OpResultStorage opResultStorage){
-        this.storage = opResultStorage;
     }
 
 }

@@ -1,24 +1,24 @@
-package edu.uci.ics.texera.workflow.operators.sink
+package edu.uci.ics.texera.workflow.operators.sink.managed
 
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
-import edu.uci.ics.amber.engine.common.{ITupleSinkOperatorExecutor, InputExhausted}
-import edu.uci.ics.texera.workflow.common.{IncrementalOutputMode, ProgressiveUtils}
+import edu.uci.ics.amber.engine.common.{ISinkOperatorExecutor, InputExhausted}
+import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
+import edu.uci.ics.texera.workflow.common.{IncrementalOutputMode, ProgressiveUtils}
 
 import scala.collection.mutable
-import IncrementalOutputMode._
 
-class SimpleSinkOpExec(
+class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,
     val outputMode: IncrementalOutputMode,
     val chartType: Option[String]
-) extends ITupleSinkOperatorExecutor {
+) extends ISinkOperatorExecutor {
 
   val results: mutable.ListBuffer[Tuple] = mutable.ListBuffer()
 
-  def getResultTuples(): List[ITuple] = {
+  def getResultTuples: List[ITuple] = {
     outputMode match {
       case SET_SNAPSHOT =>
         results.toList
@@ -30,28 +30,25 @@ class SimpleSinkOpExec(
     }
   }
 
-  override def getOutputMode(): IncrementalOutputMode = this.outputMode
+  def getOutputMode: IncrementalOutputMode = this.outputMode
 
   override def open(): Unit = {}
 
   override def close(): Unit = {}
 
-  override def processTuple(
+  override def consume(
       tuple: Either[ITuple, InputExhausted],
       input: LinkIdentity
-  ): scala.Iterator[ITuple] = {
+  ): Unit = {
     tuple match {
       case Left(t) =>
         outputMode match {
           case SET_SNAPSHOT =>
             updateSetSnapshot(t.asInstanceOf[Tuple])
-            Iterator()
           case SET_DELTA =>
             results += t.asInstanceOf[Tuple]
-            Iterator()
         }
-      case Right(_) =>
-        Iterator()
+      case Right(_) => // skip
     }
   }
 

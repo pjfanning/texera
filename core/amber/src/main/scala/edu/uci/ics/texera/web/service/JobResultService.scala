@@ -7,23 +7,14 @@ import edu.uci.ics.amber.engine.common.{AmberClient, AmberUtils}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.SnapshotMulticast
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent,
-  WorkflowAvailableResultEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowAvailableResultEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.{
-  PaginationMode,
-  WebPaginationUpdate,
-  defaultPageSize
-}
+import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate, defaultPageSize}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
-import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.AppendOnlyTableSinkOpDesc
 import rx.lang.scala.Observer
 
 import scala.collection.mutable
@@ -135,7 +126,7 @@ class JobResultService(
 
   workflowInfo.toDAG.getSinkOperators.map(sink => {
     workflowInfo.toDAG.getOperator(sink) match {
-      case desc: CacheSinkOpDesc =>
+      case desc: AppendOnlyTableSinkOpDesc =>
         val upstreamID = workflowInfo.toDAG.getUpstream(sink).head.operatorID
         val service = new OperatorResultService(upstreamID, workflowInfo, opResultStorage)
         service.uuid = desc.operatorID
@@ -153,7 +144,7 @@ class JobResultService(
       val downstreamIDs = workflowInfo.toDAG
         .getDownstream(operatorID)
       // Get the first CacheSinkOpDesc, if exists
-      downstreamIDs.find(_.isInstanceOf[CacheSinkOpDesc]).foreach { op =>
+      downstreamIDs.find(_.isInstanceOf[AppendOnlyTableSinkOpDesc]).foreach { op =>
         operatorID = op.operatorID
       }
     }
@@ -184,7 +175,7 @@ class JobResultService(
           val e1 = resultUpdate.operatorResults(e._1)
           val opResultService = operatorResults(e._1)
           val webUpdateEvent = opResultService.convertWebResultUpdate(e1)
-          if (workflowInfo.toDAG.getOperator(e._1).isInstanceOf[CacheSinkOpDesc]) {
+          if (workflowInfo.toDAG.getOperator(e._1).isInstanceOf[AppendOnlyTableSinkOpDesc]) {
             val upID = opResultService.operatorID
             (upID, webUpdateEvent)
           } else {

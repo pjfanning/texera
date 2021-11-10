@@ -6,7 +6,7 @@ import edu.uci.ics.texera.web.service.JobResultService._
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowInfo
-import edu.uci.ics.texera.workflow.operators.sink.{CacheSinkOpDesc, SimpleSinkOpDesc}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 
 /**
   * OperatorResultService manages the materialized result of an operator.
@@ -25,11 +25,11 @@ class OperatorResultService(
   // derive the web output mode from the sink operator type
   val webOutputMode: WebOutputMode = {
     val op = workflowInfo.toDAG.getOperator(operatorID)
-    if (!op.isInstanceOf[SimpleSinkOpDesc]) {
+    if (!op.isInstanceOf[ProgressiveSinkOpDesc]) {
       PaginationMode()
       //        throw new RuntimeException("operator is not sink: " + op.operatorID)
     } else {
-      val sink = op.asInstanceOf[SimpleSinkOpDesc]
+      val sink = op.asInstanceOf[ProgressiveSinkOpDesc]
       (sink.getOutputMode, sink.getChartType) match {
         // visualization sinks use its corresponding mode
         case (SET_SNAPSHOT, Some(_)) => SetSnapshotMode()
@@ -44,11 +44,11 @@ class OperatorResultService(
   // chartType of this sink operator
   val chartType: Option[String] = {
     val op = workflowInfo.toDAG.getOperator(operatorID)
-    if (!op.isInstanceOf[SimpleSinkOpDesc]) {
-      new SimpleSinkOpDesc().getChartType
+    if (!op.isInstanceOf[ProgressiveSinkOpDesc]) {
+      new ProgressiveSinkOpDesc().getChartType
       //        throw new RuntimeException("operator is not sink: " + op.operatorID)
     } else {
-      op.asInstanceOf[SimpleSinkOpDesc].getChartType
+      op.asInstanceOf[ProgressiveSinkOpDesc].getChartType
     }
   }
 

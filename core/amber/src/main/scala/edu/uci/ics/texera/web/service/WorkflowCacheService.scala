@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.model.websocket.request.CacheStatusUpdateRequest
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowInfo, WorkflowRewriter, WorkflowVertex}
-import edu.uci.ics.texera.workflow.operators.sink.CacheSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.AppendOnlyTableSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 import rx.lang.scala.Observer
 
@@ -26,8 +26,8 @@ class WorkflowCacheService extends SnapshotMulticast[TexeraWebSocketEvent] with 
     mutable.HashMap[String, OperatorDescriptor]()
   val cacheSourceOperators: mutable.HashMap[String, CacheSourceOpDesc] =
     mutable.HashMap[String, CacheSourceOpDesc]()
-  val cacheSinkOperators: mutable.HashMap[String, CacheSinkOpDesc] =
-    mutable.HashMap[String, CacheSinkOpDesc]()
+  val cacheSinkOperators: mutable.HashMap[String, AppendOnlyTableSinkOpDesc] =
+    mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
   val operatorRecord: mutable.HashMap[String, WorkflowVertex] =
     mutable.HashMap[String, WorkflowVertex]()
   var cacheStatusMap: Map[String, CacheStatus] = _

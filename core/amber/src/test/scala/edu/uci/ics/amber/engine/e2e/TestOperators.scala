@@ -1,12 +1,9 @@
 package edu.uci.ics.amber.engine.e2e
 
-import edu.uci.ics.texera.workflow.operators.aggregate.{
-  AggregationFunction,
-  SpecializedAverageOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.aggregate.{AggregationFunction, SpecializedAverageOpDesc}
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
-import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBSourceOpDesc
@@ -118,8 +115,8 @@ object TestOperators {
     asterixDBOp
   }
 
-  def sinkOpDesc(): SimpleSinkOpDesc = {
-    new SimpleSinkOpDesc()
+  def sinkOpDesc(): ProgressiveSinkOpDesc = {
+    new ProgressiveSinkOpDesc()
   }
 
   def wordCloudOpDesc(textColumn: String, topN: Integer = null): WordCloudOpDesc = {

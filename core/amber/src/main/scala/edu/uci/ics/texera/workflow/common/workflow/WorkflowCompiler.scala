@@ -1,20 +1,13 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
 import akka.actor.ActorRef
-import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
-  ConditionalGlobalBreakpoint,
-  CountGlobalBreakpoint
-}
+import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{ConditionalGlobalBreakpoint, CountGlobalBreakpoint}
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.common.AmberClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  LinkIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
@@ -22,7 +15,7 @@ import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
-import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.{AppendOnlyTableSinkOpDesc, ProgressiveSinkOpDesc}
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 import scala.collection.mutable
@@ -77,11 +70,13 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
       if (upstream.nonEmpty) {
         (upstream.head, sinkOp) match {
           // match the combination of a visualization operator followed by a sink operator
-          case (viz: VisualizationOperator, sink: SimpleSinkOpDesc) =>
+          case (viz: VisualizationOperator, sink: ProgressiveSinkOpDesc) =>
             sink.setOutputMode(viz.outputMode())
             sink.setChartType(viz.chartType())
-          case (_, sink: SimpleSinkOpDesc) =>
+          case (_, sink: AppendOnlyTableSinkOpDesc) =>
             sink.setStorage(opResultStorage)
+          case _ =>
+            //skip
         }
       }
     })
