@@ -5,28 +5,15 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.common.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.{SnapshotMulticast, TexeraWebApplication}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  ExecutionStatusEnum,
-  TexeraWebSocketEvent,
-  Uninitialized,
-  WorkflowStateEvent
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  CacheStatusUpdateRequest,
-  ModifyLogicRequest,
-  ResultExportRequest,
-  WorkflowExecuteRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{ExecutionStatusEnum, TexeraWebSocketEvent, Uninitialized, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, ModifyLogicRequest, ResultExportRequest, WorkflowExecuteRequest}
 import edu.uci.ics.texera.web.model.websocket.response.ResultExportResponse
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowInfo.toJgraphtDAG
-import edu.uci.ics.texera.workflow.common.workflow.{
-  WorkflowCompiler,
-  WorkflowInfo,
-  WorkflowRewriter
-}
+import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo, WorkflowRewriter}
 import org.jooq.types.UInteger
 import rx.lang.scala.subjects.BehaviorSubject
 import rx.lang.scala.subscriptions.CompositeSubscription
@@ -38,7 +25,7 @@ class WorkflowJobService(
     operatorCache: WorkflowCacheService,
     uidOpt: Option[UInteger],
     request: WorkflowExecuteRequest,
-    prevResults: mutable.HashMap[String, ProgressiveResultService]
+    opResultStorage: OpResultStorage
 ) extends SnapshotMulticast[TexeraWebSocketEvent]
     with LazyLogging {
 
@@ -51,7 +38,7 @@ class WorkflowJobService(
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo, workflowContext)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
-    JobResultService.opResultStorage
+    opResultStorage
   )
 
   // Runtime starts from here:
@@ -61,7 +48,7 @@ class WorkflowJobService(
 
   // Result-related services start from here:
   val workflowResultService: JobResultService =
-    new JobResultService(workflowInfo, client)
+    new JobResultService(workflowInfo, client, opResultStorage)
   val resultExportService: ResultExportService = new ResultExportService()
 
   def startWorkflow(): Unit = {
@@ -109,7 +96,7 @@ class WorkflowJobService(
         operatorCache.cacheSourceOperators,
         operatorCache.cacheSinkOperators,
         operatorCache.operatorRecord,
-        JobResultService.opResultStorage
+        opResultStorage
       )
       val newWorkflowInfo = workflowRewriter.rewrite
       val oldWorkflowInfo = workflowInfo
@@ -147,7 +134,7 @@ class WorkflowJobService(
   }
 
   def exportResult(uid: UInteger, request: ResultExportRequest): ResultExportResponse = {
-    resultExportService.exportResult(uid, request)
+    resultExportService.exportResult(uid, opResultStorage, request)
   }
 
   override def sendSnapshotTo(observer: Observer[TexeraWebSocketEvent]): Unit = {

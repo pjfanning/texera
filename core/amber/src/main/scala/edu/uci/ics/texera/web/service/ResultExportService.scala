@@ -17,6 +17,7 @@ import edu.uci.ics.texera.web.model.websocket.request.ResultExportRequest
 import edu.uci.ics.texera.web.model.websocket.response.ResultExportResponse
 import edu.uci.ics.texera.web.resource.GoogleResource
 import edu.uci.ics.texera.web.resource.dashboard.file.UserFileResource
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage
 import org.jooq.types.UInteger
@@ -41,8 +42,9 @@ class ResultExportService {
   private val cache = new mutable.HashMap[String, String]
 
   def exportResult(
-      uid: UInteger,
-      request: ResultExportRequest
+                    uid: UInteger,
+                    opResultStorage: OpResultStorage,
+                    request: ResultExportRequest
   ): ResultExportResponse = {
     // retrieve the file link saved in the session if exists
     if (cache.contains(request.exportType)) {
@@ -54,7 +56,7 @@ class ResultExportService {
 
     // By now the workflow should finish running
     val operatorWithResult: SinkStorage =
-      JobResultService.opResultStorage.get(request.operatorId)
+      opResultStorage.get(request.operatorId)
     if (operatorWithResult == null) {
       return ResultExportResponse("error", "The workflow contains no results")
     }

@@ -9,7 +9,6 @@ import edu.uci.ics.texera.web.{SnapshotMulticast, TexeraWebApplication}
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
 import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowAvailableResultEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate, defaultPageSize, opResultStorage}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -24,10 +23,6 @@ import scala.concurrent.duration.DurationInt
 object JobResultService {
 
   val defaultPageSize: Int = 10
-
-  var opResultStorage: OpResultStorage = new OpResultStorage(
-    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
-  )
 
   // convert Tuple from engine's format to JSON format
   def webDataFromTuple(
@@ -114,7 +109,8 @@ object JobResultService {
   */
 class JobResultService(
     workflowInfo: WorkflowInfo,
-    client: AmberClient
+    client: AmberClient,
+    opResultStorage: OpResultStorage
 ) extends SnapshotMulticast[TexeraWebSocketEvent] {
 
   var progressiveResults: mutable.HashMap[String, ProgressiveResultService] =
@@ -125,7 +121,7 @@ class JobResultService(
     onResultUpdate()
   }
 
-  client.getObservable[WorkflowCompleted].subscribe(evt =>{
+  client.getObservable[WorkflowCompleted].onTerminateDetach.subscribe(evt =>{
     if(resultUpdateCancellable.cancel() || resultUpdateCancellable.isCancelled){
       // immediately perform final update
       onResultUpdate()
