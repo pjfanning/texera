@@ -2,20 +2,19 @@ package edu.uci.ics.texera.web.service
 
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.twitter.util.{Future, FuturePool}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowResultUpdate
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.common.{AmberClient, AmberUtils}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.{SnapshotMulticast, TexeraWebApplication}
 import edu.uci.ics.texera.web.model.websocket.event.WorkflowAvailableResultEvent.OperatorAvailableResult
 import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowAvailableResultEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate, defaultPageSize}
+import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate, defaultPageSize, opResultStorage}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
-import edu.uci.ics.texera.workflow.operators.sink.managed.AppendOnlyTableSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage
 import rx.lang.scala.Observer
 
@@ -98,7 +97,7 @@ object JobResultService {
 
   case class WebPaginationUpdate(
       mode: PaginationMode,
-      totalNumTuples: Int,
+      totalNumTuples: Long,
       dirtyPageIndices: List[Int]
   ) extends WebResultUpdate
 
@@ -117,33 +116,28 @@ class JobResultService(
     workflowInfo: WorkflowInfo,
     client: AmberClient
 ) extends SnapshotMulticast[TexeraWebSocketEvent] {
-  import JobResultService._
+
   var progressiveResults: mutable.HashMap[String, ProgressiveResultService] =
     mutable.HashMap[String, ProgressiveResultService]()
-  val tableResults = new mutable.HashMap[String, SinkStorage]()
   var availableResultMap: Map[String, OperatorAvailableResult] = Map.empty
 
-  client
-    .getObservable[WorkflowResultUpdate]
-    .subscribe((evt: WorkflowResultUpdate) => onResultUpdate(evt))
-
-  TexeraWebApplication.scheduleRecurringCallThroughActorSystem(3.seconds, 3.seconds){
-    onTableResultUpdate()
+  private val resultUpdateCancellable = TexeraWebApplication.scheduleRecurringCallThroughActorSystem(5.seconds, 5.seconds){
+    onResultUpdate()
   }
+
+  client.getObservable[WorkflowCompleted].subscribe(evt =>{
+    if(resultUpdateCancellable.cancel() || resultUpdateCancellable.isCancelled){
+      // immediately perform final update
+      onResultUpdate()
+    }
+  })
 
   workflowInfo.toDAG.getSinkOperators.map(sink => {
     workflowInfo.toDAG.getOperator(sink) match {
-      case desc: AppendOnlyTableSinkOpDesc =>
-        val upstreamID = workflowInfo.toDAG.getUpstream(sink).head.operatorID
-        if(workflowInfo.cachedOperatorIds.contains(upstreamID)){
-          tableResults += ((upstreamID, opResultStorage.get(desc.operatorID)))
-        }else{
-          tableResults += ((sink, opResultStorage.get(desc.operatorID)))
-        }
-      case _ =>
-        val service = new ProgressiveResultService(sink, workflowInfo)
-        service.uuid = sink
+      case sinkOp:ProgressiveSinkOpDesc =>
+        val service = new ProgressiveResultService(sinkOp)
         progressiveResults += ((sink, service))
+      case other => // skip other non-texera-managed sinks, if any
     }
   })
 
@@ -152,71 +146,37 @@ class JobResultService(
     val from = request.pageSize * (request.pageIndex - 1)
     val opId = request.operatorID
     val paginationIterable =
-      if(progressiveResults.contains(opId)){
-        progressiveResults(opId).getResult.slice(from, from + request.pageSize)
-      }else if(tableResults.contains(opId)){
-        tableResults(opId).getRange(from, from + request.pageSize)
+      if(opResultStorage.contains(opId)){
+        opResultStorage.get(opId).getRange(from, from + request.pageSize)
       }else{
         Iterable.empty
       }
     val mappedResults = paginationIterable
-      .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+      .map(tuple => tuple.asKeyValuePairJson())
       .toList
     send(PaginatedResultEvent.apply(request, mappedResults))
   }
 
-  def onResultUpdate(
-      resultUpdate: WorkflowResultUpdate
-  ): Unit = {
-    val webUpdateEvent = resultUpdate.operatorResults.map {
-      case (id, resultUpdate) =>
-        (id, progressiveResults(id).convertWebResultUpdate(resultUpdate))
-    }
-
-    // return update event
-    send(WebResultUpdateEvent(webUpdateEvent))
-  }
-
-  def onTableResultUpdate(): Unit ={
-    val webUpdateEvent = tableResults.map{
-      case (id, storage) =>
-        (id, WebPaginationUpdate(PaginationMode(), storage.getCount.toInt, List.empty))
+  def onResultUpdate(): Unit = {
+    val webUpdateEvent = progressiveResults.map {
+      case (id, service) =>
+        (id, service.convertWebResultUpdate())
     }.toMap
+
     // return update event
     send(WebResultUpdateEvent(webUpdateEvent))
-  }
-
-  //TODO: refactor the code below
-
-  def updateResultFromPreviousRun(
-                                   previousResults: mutable.HashMap[String, ProgressiveResultService],
-                                   cachedOps: mutable.HashMap[String, OperatorDescriptor]
-  ): Unit = {
-    progressiveResults.foreach(e => {
-      if (previousResults.contains(e._2.operatorID)) {
-        previousResults(e._2.operatorID) = e._2
-      }
-    })
-    previousResults.foreach(e => {
-      if (cachedOps.contains(e._2.operatorID) && !progressiveResults.contains(e._2.operatorID)) {
-        progressiveResults += ((e._2.operatorID, e._2))
-      }
-    })
   }
 
   def updateAvailableResult(operators: Iterable[OperatorDescriptor]): Unit = {
-    val cachedIDs = mutable.HashSet[String]()
-    val cachedIDMap = mutable.HashMap[String, String]()
-    progressiveResults.foreach(e => cachedIDMap += ((e._2.operatorID, e._1)))
     availableResultMap = operators
-      .filter(op => cachedIDMap.contains(op.operatorID))
+      .filter(op => progressiveResults.contains(op.operatorID))
       .map(op => op.operatorID)
       .map(id => {
         (
           id,
           OperatorAvailableResult(
-            cachedIDs.contains(id),
-            progressiveResults(cachedIDMap(id)).webOutputMode
+            opResultStorage.contains(id),
+            progressiveResults(id).webOutputMode
           )
         )
       })

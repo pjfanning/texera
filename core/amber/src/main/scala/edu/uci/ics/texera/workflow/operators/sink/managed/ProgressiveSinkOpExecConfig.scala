@@ -9,18 +9,19 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage
 
 class ProgressiveSinkOpExecConfig(
     tag: OperatorIdentity,
     val operatorSchemaInfo: OperatorSchemaInfo,
     outputMode: IncrementalOutputMode,
-    chartType: Option[String]
+    storage:SinkStorage
 ) extends OpExecConfig(tag) {
   override lazy val topology = new Topology(
     Array(
       new WorkerLayer(
         makeLayer(tag, "main"),
-        _ => new ProgressiveSinkOpExec(operatorSchemaInfo, outputMode, chartType),
+        idx => new ProgressiveSinkOpExec(operatorSchemaInfo, outputMode, storage.getShardedStorage(idx)),
         1,
         ForceLocal(),
         RandomDeployment()

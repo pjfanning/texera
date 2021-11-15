@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.workflow.WorkflowRewriter.copyOperator
 import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 import java.util.UUID
 
-import edu.uci.ics.texera.workflow.operators.sink.managed.AppendOnlyTableSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.{ProgressiveSinkOpDesc, ProgressiveSinkOpExec}
 
 import scala.collection.mutable
 
@@ -27,7 +27,7 @@ class WorkflowRewriter(
                         val workflowInfo: WorkflowInfo,
                         val cachedOperatorDescriptors: mutable.HashMap[String, OperatorDescriptor],
                         val cacheSourceOperatorDescriptors: mutable.HashMap[String, CacheSourceOpDesc],
-                        val cacheSinkOperatorDescriptors: mutable.HashMap[String, AppendOnlyTableSinkOpDesc],
+                        val cacheSinkOperatorDescriptors: mutable.HashMap[String, ProgressiveSinkOpDesc],
                         val operatorRecord: mutable.HashMap[String, WorkflowVertex],
                         val opResultStorage: OpResultStorage
 ) extends LazyLogging {
@@ -377,7 +377,7 @@ class WorkflowRewriter(
 
   private def generateCacheSinkOperator(
       operatorDescriptor: OperatorDescriptor
-  ): AppendOnlyTableSinkOpDesc = {
+  ): ProgressiveSinkOpDesc = {
     logger.info("Generating CacheSinkOperator for operator {}.", operatorDescriptor.toString)
     cachedOperatorDescriptors += ((operatorDescriptor.operatorID, copyOperator(operatorDescriptor)))
     logger.info(
@@ -385,7 +385,8 @@ class WorkflowRewriter(
       operatorDescriptor.toString,
       cachedOperatorDescriptors.toString()
     )
-    val cacheSinkOperator = new AppendOnlyTableSinkOpDesc()
+    val cacheSinkOperator = new ProgressiveSinkOpDesc()
+    cacheSinkOperator.setOperatorId(operatorDescriptor.operatorID)
     cacheSinkOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSinkOperator))
     val cacheSourceOperator = new CacheSourceOpDesc(cacheSinkOperator.operatorID, opResultStorage)
     cacheSourceOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSourceOperator))
@@ -396,7 +397,7 @@ class WorkflowRewriter(
       operatorDescriptor: OperatorDescriptor
   ): CacheSourceOpDesc = {
     val cacheSourceOperator = cacheSourceOperatorDescriptors(operatorDescriptor.operatorID)
-    cacheSourceOperator.schema = cacheSinkOperatorDescriptors(operatorDescriptor.operatorID).schema
+    cacheSourceOperator.schema = cacheSinkOperatorDescriptors(operatorDescriptor.operatorID).getStorage.getSchema
     cacheSourceOperator
   }
 

@@ -7,7 +7,6 @@ import ch.vorburger.mariadb4j.DB
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller._
-import edu.uci.ics.amber.engine.architecture.principal.OperatorResult
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -70,11 +69,10 @@ class DataProcessingSpec
     client
       .getObservable[WorkflowCompleted]
       .subscribe(evt => {
-        val storageResults = workflow.getEndOperators
+        results = workflow.getEndOperators
           .filter(op => resultStorage.contains(op.id.operator))
           .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
           .toMap
-        results = evt.result.map(pair => (pair._1, pair._2.result)) ++ storageResults
         completion.setDone()
       })
     client.sendSync(StartWorkflow(), 1.second)

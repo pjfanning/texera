@@ -7,34 +7,19 @@ import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 import edu.uci.ics.texera.workflow.common.{IncrementalOutputMode, ProgressiveUtils}
+import edu.uci.ics.texera.workflow.operators.sink.storage.{ShardedStorage, SinkStorage}
 
 import scala.collection.mutable
 
 class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,
     val outputMode: IncrementalOutputMode,
-    val chartType: Option[String]
+    val storage: ShardedStorage
 ) extends ISinkOperatorExecutor {
 
-  val results: mutable.ListBuffer[Tuple] = mutable.ListBuffer()
+  override def open(): Unit = storage.open()
 
-  def getResultTuples: List[ITuple] = {
-    outputMode match {
-      case SET_SNAPSHOT =>
-        results.toList
-      case SET_DELTA =>
-        val ret = results.toList
-        // clear the delta result buffer after every progressive output
-        results.clear()
-        ret
-    }
-  }
-
-  def getOutputMode: IncrementalOutputMode = this.outputMode
-
-  override def open(): Unit = {}
-
-  override def close(): Unit = {}
+  override def close(): Unit = storage.close()
 
   override def consume(
       tuple: Either[ITuple, InputExhausted],
@@ -46,7 +31,7 @@ class ProgressiveSinkOpExec(
           case SET_SNAPSHOT =>
             updateSetSnapshot(t.asInstanceOf[Tuple])
           case SET_DELTA =>
-            results += t.asInstanceOf[Tuple]
+            storage.putOne(t.asInstanceOf[Tuple])
         }
       case Right(_) => // skip
     }
@@ -56,9 +41,9 @@ class ProgressiveSinkOpExec(
     val (isInsertion, tupleValue) =
       ProgressiveUtils.getTupleFlagAndValue(deltaUpdate, operatorSchemaInfo)
     if (isInsertion) {
-      results += tupleValue
+      storage.putOne(tupleValue)
     } else {
-      results -= tupleValue
+      storage.removeOne(tupleValue)
     }
   }
 

@@ -10,12 +10,13 @@ import edu.uci.ics.texera.workflow.common.tuple.TupleUtils.document2Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.bson.Document
 
+import scala.collection.mutable
+import collection.JavaConverters._
+
 class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
 
-  assert(
-    schema.getAttributeNames.stream.noneMatch((name: String) => name.matches(".*[\\$\\.].*")),
-    "illegal attribute name for mongo DB"
-  )
+  schema.getAttributeNames.stream.forEach(name =>
+    assert(!name.matches(".*[\\$\\.].*"), s"illegal attribute name '$name' for mongo DB"))
 
   val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
   val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
@@ -25,29 +26,37 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
 
   class MongoDBShardedStorage(bufferSize: Int) extends ShardedStorage {
     var client: MongoClient = _
-    var buffer: util.ArrayList[Document] = _
+    var uncommittedInsertions: mutable.HashSet[Tuple] = _
     var collection: MongoCollection[Document] = _
 
     override def open(): Unit = {
-      buffer = new util.ArrayList[Document]()
+      uncommittedInsertions = new mutable.HashSet[Tuple]()
       client = MongoClients.create(url)
       val database: MongoDatabase = client.getDatabase(databaseName)
       collection = database.getCollection(id)
     }
 
     override def close(): Unit = {
-      if (!buffer.isEmpty) {
-        collection.insertMany(buffer)
-        buffer.clear()
+      if (uncommittedInsertions.nonEmpty) {
+        collection.insertMany(uncommittedInsertions.map(_.asDocument()).toList.asJava)
+        uncommittedInsertions.clear()
       }
       client.close()
     }
 
     override def putOne(tuple: Tuple): Unit = {
-      buffer.add(tuple.asDocument())
-      if (buffer.size == bufferSize) {
-        collection.insertMany(buffer)
-        buffer.clear()
+      uncommittedInsertions.add(tuple)
+      if (uncommittedInsertions.size == bufferSize) {
+        collection.insertMany(uncommittedInsertions.map(_.asDocument()).toList.asJava)
+        uncommittedInsertions.clear()
+      }
+    }
+
+    override def removeOne(tuple: Tuple): Unit = {
+      if(uncommittedInsertions.contains(tuple)){
+        uncommittedInsertions.remove(tuple)
+      }else{
+        collection.findOneAndDelete(tuple.asDocument())
       }
     }
   }
@@ -80,4 +89,12 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
   override def getCount: Long = {
     database.getCollection(id).countDocuments()
   }
+
+  override def getAllAfter(offset: Int): Iterable[Tuple] = {
+    val collection = database.getCollection(id)
+    val cursor = collection.find().sort(Sorts.ascending("_id")).skip(offset).cursor()
+    mkTupleIterable(cursor)
+  }
+
+  override def getSchema: Schema = schema
 }

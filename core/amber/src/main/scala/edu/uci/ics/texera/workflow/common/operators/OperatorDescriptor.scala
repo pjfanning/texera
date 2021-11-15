@@ -44,7 +44,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOp
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import java.util.UUID
 
-import edu.uci.ics.texera.workflow.operators.sink.managed.{AppendOnlyTableSinkOpDesc, ProgressiveSinkOpDesc}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
@@ -62,7 +62,6 @@ import edu.uci.ics.texera.workflow.operators.sink.managed.{AppendOnlyTableSinkOp
       name = "TwitterFullArchiveSearch"
     ),
     new Type(value = classOf[ProgressiveSinkOpDesc], name = "SimpleSink"),
-    new Type(value = classOf[AppendOnlyTableSinkOpDesc], name = "TableSink"),
     new Type(value = classOf[RegexOpDesc], name = "Regex"),
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
     new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
@@ -124,6 +123,10 @@ abstract class OperatorDescriptor extends Serializable {
 
   def setContext(workflowContext: WorkflowContext): Unit = {
     this.context = workflowContext
+  }
+
+  def setOperatorId(newId:String):Unit = {
+    this.operatorID = newId
   }
 
 }

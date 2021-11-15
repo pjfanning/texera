@@ -1,10 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.sink.storage
 
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 import scala.collection.mutable.ArrayBuffer
 
-class MemoryStorage extends SinkStorage with ShardedStorage {
+class MemoryStorage(schema: Schema) extends SinkStorage with ShardedStorage {
 
   private val results = new ArrayBuffer[Tuple]()
 
@@ -17,6 +18,14 @@ class MemoryStorage extends SinkStorage with ShardedStorage {
     synchronized {
       results += tuple
     }
+
+  override def removeOne(tuple: Tuple): Unit = synchronized{
+    results -= tuple
+  }
+
+  override def getAllAfter(offset: Int): Iterable[Tuple] = synchronized{
+    results.slice(offset, results.size)
+  }
 
   override def clear(): Unit =
     synchronized {
@@ -36,7 +45,5 @@ class MemoryStorage extends SinkStorage with ShardedStorage {
 
   override def getCount: Long = results.length
 
-  override def removeOne(tuple: Tuple): Unit = synchronized{
-    results -= tuple
-  }
+  override def getSchema: Schema = schema
 }

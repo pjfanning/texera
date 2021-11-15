@@ -65,9 +65,6 @@ class WorkflowJobService(
   val resultExportService: ResultExportService = new ResultExportService()
 
   def startWorkflow(): Unit = {
-    if (WorkflowCacheService.isAvailable) {
-      workflowResultService.updateResultFromPreviousRun(prevResults, operatorCache.cachedOperators)
-    }
     workflowResultService.updateAvailableResult(request.operators)
     for (pair <- workflowInfo.breakpoints) {
       workflowRuntimeService.addBreakpoint(pair.operatorID, pair.breakpoint)
@@ -150,7 +147,7 @@ class WorkflowJobService(
   }
 
   def exportResult(uid: UInteger, request: ResultExportRequest): ResultExportResponse = {
-    resultExportService.exportResult(uid, workflowResultService, request)
+    resultExportService.exportResult(uid, request)
   }
 
   override def sendSnapshotTo(observer: Observer[TexeraWebSocketEvent]): Unit = {

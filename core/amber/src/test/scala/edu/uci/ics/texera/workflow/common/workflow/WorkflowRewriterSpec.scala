@@ -11,7 +11,8 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import java.util.UUID
 
-import edu.uci.ics.texera.workflow.operators.sink.managed.{ProgressiveSinkOpDesc, AppendOnlyTableSinkOpDesc}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.storage.MemoryStorage
 
 import scala.collection.mutable
 
@@ -53,7 +54,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
       workflowInfo,
       mutable.HashMap[String, OperatorDescriptor](),
       mutable.HashMap[String, CacheSourceOpDesc](),
-      mutable.HashMap[String, AppendOnlyTableSinkOpDesc](),
+      mutable.HashMap[String, ProgressiveSinkOpDesc](),
       mutable.HashMap[String, WorkflowVertex](),
       opResultStorage
     )
@@ -86,15 +87,15 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val tuples = mutable.MutableList[Tuple]()
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new AppendOnlyTableSinkOpDesc()
+    val cacheSinkOperator = new ProgressiveSinkOpDesc()
+    cacheSinkOperator.setStorage(new MemoryStorage(new Schema()))
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
-    cacheSinkOperator.schema = new Schema()
     operatorOutputCache += ((sourceOperator.operatorID, tuples))
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     cachedOperators += ((sourceOperator.operatorID, operatorToString(sourceOperator)))
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
     cacheSourceOperators += ((sourceOperator.operatorID, cacheSourceOperator))
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((sourceOperator.operatorID, cacheSinkOperator))
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
     breakpoints += breakpointInfo
@@ -145,7 +146,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
 
     rewriter = new WorkflowRewriter(
       workflowInfo,
@@ -159,7 +160,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val rewrittenWorkflowInfo = rewriter.rewrite
     assert(3.equals(rewrittenWorkflowInfo.operators.size))
     assert(rewrittenWorkflowInfo.operators.contains(sourceOperator))
-    assert(rewrittenWorkflowInfo.operators(1).isInstanceOf[AppendOnlyTableSinkOpDesc])
+    assert(rewrittenWorkflowInfo.operators(1).isInstanceOf[ProgressiveSinkOpDesc])
     assert(rewrittenWorkflowInfo.operators.contains(sinkOperator))
     assert(2.equals(rewrittenWorkflowInfo.links.size))
     assert(0.equals(rewrittenWorkflowInfo.breakpoints.size))
@@ -197,7 +198,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
 
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
     breakpoints += breakpointInfo
@@ -219,7 +220,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     assert(3.equals(rewrittenWorkflowInfo.links.size))
     assert(1.equals(rewrittenWorkflowInfo.breakpoints.size))
     assert(cacheSinkOperators.contains(sourceOperator.operatorID))
-    assert(cacheSinkOperators(sourceOperator.operatorID).isInstanceOf[AppendOnlyTableSinkOpDesc])
+    assert(cacheSinkOperators(sourceOperator.operatorID).isInstanceOf[ProgressiveSinkOpDesc])
   }
 
   /**
@@ -251,9 +252,9 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new AppendOnlyTableSinkOpDesc()
+    val cacheSinkOperator = new ProgressiveSinkOpDesc()
+    cacheSinkOperator.setStorage(new MemoryStorage(new Schema()))
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
-    cacheSinkOperator.schema = new Schema()
 
     val cachedOperatorID = filterOperator.operatorID
 
@@ -264,7 +265,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     cachedOperators += ((cachedOperatorID, operatorToString(filterOperator)))
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
     cacheSourceOperators += ((cachedOperatorID, cacheSourceOperator))
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorID, cacheSinkOperator))
 
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
@@ -330,9 +331,8 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
-    val cacheSinkOperator = new AppendOnlyTableSinkOpDesc()
+    val cacheSinkOperator = new ProgressiveSinkOpDesc()
     val operatorOutputCache = mutable.HashMap[String, mutable.MutableList[Tuple]]()
-    cacheSinkOperator.schema = new Schema()
 
     val cachedOperatorID = filterOperator.operatorID
 
@@ -343,7 +343,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     cachedOperators += ((cachedOperatorID, operatorToString(filterOperator)))
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
     cacheSourceOperators += ((cachedOperatorID, cacheSourceOperator))
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorID, cacheSinkOperator))
 
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
@@ -415,7 +415,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val uuidForFilter3 = UUID.randomUUID().toString
     val cacheSourceForFilter3 = new CacheSourceOpDesc(uuidForFilter3, opResultStorage)
-    val cacheSinkForFilter3 = new AppendOnlyTableSinkOpDesc()
+    val cacheSinkForFilter3 = new ProgressiveSinkOpDesc()
 
     val cachedOperatorIDForFilter3 = filterOperator3.operatorID
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
@@ -423,7 +423,7 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
     cacheSourceOperators += ((cachedOperatorIDForFilter3, cacheSourceForFilter3))
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorIDForFilter3, cacheSinkForFilter3))
 
     workflowInfo.cachedOperatorIds =
@@ -501,15 +501,15 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val uuidForFilter = UUID.randomUUID().toString
     val cacheSourceForFilter = new CacheSourceOpDesc(uuidForFilter, opResultStorage)
-    val cacheSinkForFilter = new AppendOnlyTableSinkOpDesc()
-
+    val cacheSinkForFilter = new ProgressiveSinkOpDesc()
+    cacheSinkForFilter.setStorage(new MemoryStorage(new Schema()))
     val cachedOperatorIDForFilter = filterOperator.operatorID
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     cachedOperators += ((cachedOperatorIDForFilter, operatorToString(filterOperator)))
 
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
     cacheSourceOperators += ((cachedOperatorIDForFilter, cacheSourceForFilter))
-    val cacheSinkOperators = mutable.HashMap[String, AppendOnlyTableSinkOpDesc]()
+    val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorIDForFilter, cacheSinkForFilter))
 
     workflowInfo.cachedOperatorIds =

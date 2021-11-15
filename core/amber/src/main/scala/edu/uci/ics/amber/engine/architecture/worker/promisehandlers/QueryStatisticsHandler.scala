@@ -1,15 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.{QueryStatistics, QueryWorkerResult}
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerAsyncRPCHandlerInitializer, WorkerResult}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.{Constants, ISinkOperatorExecutor}
-import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpExec
 
 object QueryStatisticsHandler {
   final case class QueryStatistics() extends ControlCommand[WorkerStatistics]
-  final case class QueryWorkerResult() extends ControlCommand[Option[WorkerResult]]
 }
 
 trait QueryStatisticsHandler {
@@ -41,14 +39,5 @@ trait QueryStatisticsHandler {
 
     WorkerStatistics(state, in, displayOut)
   }
-
-  registerHandler((msg: QueryWorkerResult, sender) => {
-    operator match {
-      case sink: ProgressiveSinkOpExec =>
-        Option(WorkerResult(sink.getOutputMode, sink.getResultTuples))
-      case _ =>
-        None
-    }
-  })
 
 }

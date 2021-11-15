@@ -18,6 +18,7 @@ import edu.uci.ics.texera.web.model.websocket.response.ResultExportResponse
 import edu.uci.ics.texera.web.resource.GoogleResource
 import edu.uci.ics.texera.web.resource.dashboard.file.UserFileResource
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorage
 import org.jooq.types.UInteger
 
 import scala.annotation.tailrec
@@ -41,7 +42,6 @@ class ResultExportService {
 
   def exportResult(
       uid: UInteger,
-      resultService: JobResultService,
       request: ResultExportRequest
   ): ResultExportResponse = {
     // retrieve the file link saved in the session if exists
@@ -53,15 +53,14 @@ class ResultExportService {
     }
 
     // By now the workflow should finish running
-    val operatorWithResult: Option[ProgressiveResultService] =
-      resultService.progressiveResults.get(request.operatorId)
-    if (operatorWithResult.isEmpty) {
+    val operatorWithResult: SinkStorage =
+      JobResultService.opResultStorage.get(request.operatorId)
+    if (operatorWithResult == null) {
       return ResultExportResponse("error", "The workflow contains no results")
     }
 
     // convert the ITuple into tuple
-    val results: Iterable[Tuple] =
-      operatorWithResult.get.getResult.map(iTuple => iTuple.asInstanceOf[Tuple])
+    val results: Iterable[Tuple] = operatorWithResult.getAll
     val attributeNames = results.head.getSchema.getAttributeNames.asScala.toList
 
     // handle the request according to export type

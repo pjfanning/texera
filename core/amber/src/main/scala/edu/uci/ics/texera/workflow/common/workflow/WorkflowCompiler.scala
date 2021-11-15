@@ -15,7 +15,7 @@ import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
-import edu.uci.ics.texera.workflow.operators.sink.managed.{AppendOnlyTableSinkOpDesc, ProgressiveSinkOpDesc}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 import scala.collection.mutable
@@ -73,8 +73,6 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
           case (viz: VisualizationOperator, sink: ProgressiveSinkOpDesc) =>
             sink.setOutputMode(viz.outputMode())
             sink.setChartType(viz.chartType())
-          case (_, sink: AppendOnlyTableSinkOpDesc) =>
-            sink.setStorage(opResultStorage)
           case _ =>
             //skip
         }
@@ -85,9 +83,16 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
     val amberOperators: mutable.Map[OperatorIdentity, OpExecConfig] = mutable.Map()
     workflowInfo.operators.foreach(o => {
       val inputSchemas = inputSchemaMap(o).map(s => s.get).toArray
-      val outputSchema =
+      val outputSchema = {
         if (o.isInstanceOf[SourceOperatorDescriptor]) o.getOutputSchema(Array())
         else o.getOutputSchema(inputSchemas)
+      }
+      // assign storage to texera-managed sinks before generating exec config
+      o match {
+        case sink: ProgressiveSinkOpDesc =>
+          sink.setStorage(opResultStorage.create(o.operatorID, outputSchema))
+        case _ =>
+      }
       val amberOperator: OpExecConfig =
         o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchema))
       amberOperators.put(amberOperator.id, amberOperator)
