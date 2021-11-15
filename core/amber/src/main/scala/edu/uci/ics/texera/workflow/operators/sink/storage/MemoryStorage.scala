@@ -20,7 +20,7 @@ class MemoryStorage extends SinkStorage with ShardedStorage {
 
   override def clear(): Unit =
     synchronized {
-      results
+      results.clear()
     }
 
   override def open(): Unit = {}
