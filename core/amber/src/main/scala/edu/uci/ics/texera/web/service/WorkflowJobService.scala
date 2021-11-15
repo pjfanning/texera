@@ -61,7 +61,7 @@ class WorkflowJobService(
 
   private[this] def createWorkflowStatus(): BehaviorSubject[ExecutionStatusEnum] = {
     val status = BehaviorSubject[ExecutionStatusEnum](Uninitialized)
-    status.subscribe(x => send(WorkflowStateEvent(x)))
+    status.onTerminateDetach.subscribe(x => send(WorkflowStateEvent(x)))
     status
   }
 

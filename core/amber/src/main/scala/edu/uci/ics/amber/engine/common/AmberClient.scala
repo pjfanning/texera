@@ -4,16 +4,14 @@ import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.Future
-
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage
+import edu.uci.ics.amber.engine.common.ClientActor.{
+  ClosureRequest,
+  CommandRequest,
+  InitializeRequest,
+  ObservableRequest
 }
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowControlMessage
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import rx.lang.scala.{Observable, Subject}
 
@@ -24,72 +22,12 @@ import scala.reflect.ClassTag
 
 class AmberClient(system: ActorSystem, workflow: Workflow, controllerConfig: ControllerConfig) {
 
-  private case class CommandRequest[T](controlCommand: ControlCommand[T])
-  private case class ObservableRequest(pf: PartialFunction[Any, Unit])
-  private case class ClosureRequest[T](closure: () => T)
   private val client = system.actorOf(Props(new ClientActor))
   private implicit val timeout: Timeout = Timeout(1.minute)
-  private val registeredSubjects = new mutable.HashMap[Class[_], Subject[_]]()
+  private val registeredObservables = new mutable.HashMap[Class[_], Observable[_]]()
   @volatile private var isActive = true
 
-//  getObservable[WorkflowCompleted].subscribe(evt => {
-//    shutdown()
-//  })
-//
-//  getObservable[ErrorOccurred].subscribe(evt => {
-//    shutdown()
-//  })
-//
-//  getObservable[FatalError].subscribe(evt => {
-//    shutdown()
-//  })
-
-  class ClientActor extends Actor {
-    val controller: ActorRef = context.actorOf(Controller.props(workflow, controllerConfig))
-    var controlId = 0L
-    val senderMap = new mutable.LongMap[ActorRef]()
-    var handlers: PartialFunction[Any, Unit] = PartialFunction.empty
-
-    override def receive: Receive = {
-      case ClosureRequest(closure) =>
-        try {
-          sender ! closure()
-        } catch {
-          case e: Throwable =>
-            sender ! e
-        }
-      case CommandRequest(controlCommand) =>
-        controller ! ControlInvocation(controlId, controlCommand)
-        senderMap(controlId) = sender
-        controlId += 1
-      case req: ObservableRequest =>
-        handlers = req.pf orElse handlers
-        sender ! scala.runtime.BoxedUnit.UNIT
-      case NetworkMessage(
-            mId,
-            _ @WorkflowControlMessage(_, _, _ @ReturnInvocation(originalCommandID, controlReturn))
-          ) =>
-        sender ! NetworkAck(mId)
-        if (handlers.isDefinedAt(controlReturn)) {
-          handlers(controlReturn)
-        }
-        if (senderMap.contains(originalCommandID)) {
-          senderMap(originalCommandID) ! controlReturn
-          senderMap.remove(originalCommandID)
-        }
-      case NetworkMessage(mId, _ @WorkflowControlMessage(_, _, _ @ControlInvocation(_, command))) =>
-        // this could take a lot of time and block the subsequent messages
-        // so updates from engine will be slowly consumed.
-        // i.e. engine has completed but it's not reflected in the frontend yet.
-        // TODO: fix the issue above?
-        sender ! NetworkAck(mId)
-        if (handlers.isDefinedAt(command)) {
-          handlers(command)
-        }
-      case other =>
-        println(other) //skip
-    }
-  }
+  Await.result(client ? InitializeRequest(workflow, controllerConfig), 10.seconds)
 
   def shutdown(): Unit = {
     if (isActive) {
@@ -131,16 +69,17 @@ class AmberClient(system: ActorSystem, workflow: Workflow, controllerConfig: Con
       "get observable with a remote client actor is not supported"
     )
     val clazz = ct.runtimeClass
-    if (registeredSubjects.contains(clazz)) {
-      return registeredSubjects(clazz).asInstanceOf[Observable[T]]
+    if (registeredObservables.contains(clazz)) {
+      return registeredObservables(clazz).asInstanceOf[Observable[T]]
     }
-    val ob = Subject[T]
+    val sub = Subject[T]
     val req = ObservableRequest({
       case x: T =>
-        ob.onNext(x)
+        sub.onNext(x)
     })
     Await.result(client ? req, 2.seconds)
-    registeredSubjects(clazz) = ob
+    val ob = sub.onTerminateDetach
+    registeredObservables(clazz) = ob
     ob
   }
 
