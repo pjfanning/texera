@@ -10,4 +10,6 @@ trait ShardedStorage {
 
   def putOne(tuple: Tuple): Unit
 
+  def removeOne(tuple:Tuple): Unit
+
 }

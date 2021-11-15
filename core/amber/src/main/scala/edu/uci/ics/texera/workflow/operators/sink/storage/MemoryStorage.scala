@@ -35,4 +35,8 @@ class MemoryStorage extends SinkStorage with ShardedStorage {
     }
 
   override def getCount: Long = results.length
+
+  override def removeOne(tuple: Tuple): Unit = synchronized{
+    results -= tuple
+  }
 }
