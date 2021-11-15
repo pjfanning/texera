@@ -18,7 +18,7 @@ abstract class SnapshotMulticast[T] {
     */
   def subscribe(observer: Observer[T]): Subscription = {
     sendSnapshotTo(observer)
-    subject.subscribe(observer)
+    subject.onTerminateDetach.subscribe(observer)
   }
 
   /**
@@ -29,7 +29,7 @@ abstract class SnapshotMulticast[T] {
   def subscribeWithAmberClient(observer: Observer[T], client: AmberClient): Subscription = {
     client.executeClosureSync {
       sendSnapshotTo(observer)
-      subject.subscribe(observer)
+      subject.onTerminateDetach.subscribe(observer)
     }
   }
 

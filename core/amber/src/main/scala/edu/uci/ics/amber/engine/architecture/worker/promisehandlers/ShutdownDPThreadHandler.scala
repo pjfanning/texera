@@ -16,7 +16,7 @@ trait ShutdownDPThreadHandler {
   registerHandler { (msg: ShutdownDPThread, sender) =>
     {
       dataProcessor.shutdown()
-      new CompletableFuture[Void]().get // wait here to be interrupted
+      throw new InterruptedException() // actively interrupt itself
       () // return unit. this will actually never be called
     }
   }
