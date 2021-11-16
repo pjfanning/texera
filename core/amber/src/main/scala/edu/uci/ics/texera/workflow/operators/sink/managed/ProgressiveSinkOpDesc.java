@@ -2,15 +2,12 @@ package edu.uci.ics.texera.workflow.operators.sink.managed;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
-import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity;
 import edu.uci.ics.amber.engine.operators.OpExecConfig;
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode;
 import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor;
-import edu.uci.ics.texera.workflow.common.storage.OpResultStorage;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc;
@@ -35,6 +32,9 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @JsonIgnore
     private SinkStorage storage = null;
+
+    @JsonIgnore
+    private Option<String> cachedUpstreamId = Option.empty();
 
     @Override
     public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
@@ -97,5 +97,14 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @JsonIgnore
     public SinkStorage getStorage(){ return this.storage; }
+
+    @JsonIgnore
+    public Option<String> getCachedUpstreamId(){ return this.cachedUpstreamId;}
+
+    @JsonIgnore
+    public void setCachedUpstreamId(String id){
+        this.cachedUpstreamId = Option.apply(id);
+    }
+
 
 }

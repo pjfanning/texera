@@ -125,8 +125,4 @@ abstract class OperatorDescriptor extends Serializable {
     this.context = workflowContext
   }
 
-  def setOperatorId(newId:String):Unit = {
-    this.operatorID = newId
-  }
-
 }

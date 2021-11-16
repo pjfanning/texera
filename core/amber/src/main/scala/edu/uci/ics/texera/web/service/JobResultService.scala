@@ -116,8 +116,9 @@ class JobResultService(
   var progressiveResults: mutable.HashMap[String, ProgressiveResultService] =
     mutable.HashMap[String, ProgressiveResultService]()
   var availableResultMap: Map[String, OperatorAvailableResult] = Map.empty
+  private val resultPullingFrequency = AmberUtils.amberConfig.getInt("web-server.workflow-result-pulling-in-seconds")
 
-  private val resultUpdateCancellable = TexeraWebApplication.scheduleRecurringCallThroughActorSystem(5.seconds, 5.seconds){
+  private val resultUpdateCancellable = TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds, resultPullingFrequency.seconds){
     onResultUpdate()
   }
 
@@ -132,7 +133,10 @@ class JobResultService(
     workflowInfo.toDAG.getOperator(sink) match {
       case sinkOp:ProgressiveSinkOpDesc =>
         val service = new ProgressiveResultService(sinkOp)
-        progressiveResults += ((sink, service))
+        sinkOp.getCachedUpstreamId match {
+          case Some(upstreamId) => progressiveResults += ((upstreamId, service))
+          case None => progressiveResults += ((sink, service))
+        }
       case other => // skip other non-texera-managed sinks, if any
     }
   })

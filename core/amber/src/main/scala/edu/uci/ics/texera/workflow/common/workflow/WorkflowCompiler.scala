@@ -90,7 +90,10 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
       // assign storage to texera-managed sinks before generating exec config
       o match {
         case sink: ProgressiveSinkOpDesc =>
-          sink.setStorage(opResultStorage.create(o.operatorID, outputSchema))
+          sink.getCachedUpstreamId match {
+            case Some(upstreamId) => sink.setStorage(opResultStorage.create(upstreamId, outputSchema))
+            case None => sink.setStorage(opResultStorage.create(o.operatorID, outputSchema))
+          }
         case _ =>
       }
       val amberOperator: OpExecConfig =

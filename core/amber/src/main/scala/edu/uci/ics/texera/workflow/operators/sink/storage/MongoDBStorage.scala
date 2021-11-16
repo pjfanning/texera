@@ -22,6 +22,7 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
   val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
   val client: MongoClient = MongoClients.create(url)
   val database: MongoDatabase = client.getDatabase(databaseName)
+  val commitBatchSize: Int = AmberUtils.amberConfig.getInt("storage.mongodb.commit-batch-size")
   database.getCollection(id).drop()
 
   class MongoDBShardedStorage(bufferSize: Int) extends ShardedStorage {
@@ -74,7 +75,7 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorage {
     mkTupleIterable(cursor)
   }
 
-  override def getShardedStorage(idx: Int): ShardedStorage = new MongoDBShardedStorage(1000)
+  override def getShardedStorage(idx: Int): ShardedStorage = new MongoDBShardedStorage(commitBatchSize)
 
   override def clear(): Unit = {
     database.getCollection(id).drop()

@@ -386,9 +386,9 @@ class WorkflowRewriter(
       cachedOperatorDescriptors.toString()
     )
     val cacheSinkOperator = new ProgressiveSinkOpDesc()
-    cacheSinkOperator.setOperatorId(operatorDescriptor.operatorID)
+    cacheSinkOperator.setCachedUpstreamId(operatorDescriptor.operatorID)
     cacheSinkOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSinkOperator))
-    val cacheSourceOperator = new CacheSourceOpDesc(cacheSinkOperator.operatorID, opResultStorage)
+    val cacheSourceOperator = new CacheSourceOpDesc(operatorDescriptor.operatorID, opResultStorage)
     cacheSourceOperatorDescriptors += ((operatorDescriptor.operatorID, cacheSourceOperator))
     cacheSinkOperator
   }
