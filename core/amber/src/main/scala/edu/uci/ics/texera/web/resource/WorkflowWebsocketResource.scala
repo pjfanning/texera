@@ -8,7 +8,11 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowFatalEvent
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, Uninitialized, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  Uninitialized,
+  WorkflowStateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
 import edu.uci.ics.texera.web.model.websocket.response._
@@ -91,11 +95,11 @@ class WorkflowWebsocketResource extends LazyLogging {
             WorkflowService.getOrCreate(workflowStateId)
           case None =>
             // use a fixed wid for reconnection
-              val workflowStateId = "dummy wid"
-              WorkflowService.getOrCreate(workflowStateId)
-            // Alternative:
-            // anonymous session:set immediately cleanup
-            //WorkflowService.getOrCreate("anonymous session " + session.getId, 0)
+            val workflowStateId = "dummy wid"
+            WorkflowService.getOrCreate(workflowStateId)
+          // Alternative:
+          // anonymous session:set immediately cleanup
+          //WorkflowService.getOrCreate("anonymous session " + session.getId, 0)
         }
         sessionState.subscribe(workflowState)
         Future(RegisterWIdResponse("wid registered"))
