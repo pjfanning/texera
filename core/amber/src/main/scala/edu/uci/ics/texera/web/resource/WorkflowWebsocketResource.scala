@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.resource
 
+import com.twitter.util.Config.intoList
 import com.twitter.util.Future
 import com.twitter.util.Future.Unit.unit
 import com.typesafe.scalalogging.LazyLogging
@@ -7,11 +8,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.event.error.WorkflowFatalEvent
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  Uninitialized,
-  WorkflowStateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, Uninitialized, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
 import edu.uci.ics.texera.web.model.websocket.response._
