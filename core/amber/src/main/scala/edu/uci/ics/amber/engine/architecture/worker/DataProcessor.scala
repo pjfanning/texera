@@ -21,6 +21,7 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, InputEx
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
+import scala.collection.mutable
 
 class DataProcessor( // dependencies:
     operator: IOperatorExecutor, // core logic
@@ -58,8 +59,10 @@ class DataProcessor( // dependencies:
   private var outputTupleCount = 0L
   private var currentInputTuple: Either[ITuple, InputExhausted] = _
   private var currentInputLink: LinkIdentity = _
-  private var currentOutputIterator: Iterator[ITuple] = _
+  private var currentOutputIterator: Iterator[(ITuple, Int)] = _
   private var isCompleted = false
+  var inputToOrdinalMapping = new mutable.HashMap[LinkIdentity, Int]()
+  var outputToOrdinalMapping = new mutable.HashMap[LinkIdentity, Int]()
 
   def getOperatorExecutor(): IOperatorExecutor = operator
 
@@ -92,8 +95,8 @@ class DataProcessor( // dependencies:
     * this function is only called by the DP thread
     * @return an iterator of output tuples
     */
-  private[this] def processInputTuple(): Iterator[ITuple] = {
-    var outputIterator: Iterator[ITuple] = null
+  private[this] def processInputTuple(): Iterator[(ITuple, Int)] = {
+    var outputIterator: Iterator[(ITuple, Int)] = null
     try {
       outputIterator = operator.processTuple(currentInputTuple, currentInputLink)
       if (currentInputTuple.isLeft) {
@@ -112,8 +115,11 @@ class DataProcessor( // dependencies:
     */
   private[this] def outputOneTuple(): Unit = {
     var outputTuple: ITuple = null
+    var outputPort: Int = null
     try {
-      outputTuple = currentOutputIterator.next
+      val next = currentOutputIterator.next
+      outputTuple = next._1
+      outputPort = next._2
     } catch safely {
       case e =>
         // invalidate current output tuple
@@ -130,7 +136,7 @@ class DataProcessor( // dependencies:
         stateManager.transitTo(PAUSED)
       } else {
         outputTupleCount += 1
-        batchProducer.passTupleToDownstream(outputTuple)
+        batchProducer.passTupleToDownstream(outputTuple, outputPort)
       }
     }
   }
