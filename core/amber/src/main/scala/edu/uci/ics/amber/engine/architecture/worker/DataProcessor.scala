@@ -59,10 +59,8 @@ class DataProcessor( // dependencies:
   private var outputTupleCount = 0L
   private var currentInputTuple: Either[ITuple, InputExhausted] = _
   private var currentInputLink: LinkIdentity = _
-  private var currentOutputIterator: Iterator[(ITuple, Int)] = _
+  private var currentOutputIterator: Iterator[(ITuple, LinkIdentity)] = _
   private var isCompleted = false
-  var inputToOrdinalMapping = new mutable.HashMap[LinkIdentity, Int]()
-  var outputToOrdinalMapping = new mutable.HashMap[LinkIdentity, Int]()
 
   def getOperatorExecutor(): IOperatorExecutor = operator
 
@@ -95,8 +93,8 @@ class DataProcessor( // dependencies:
     * this function is only called by the DP thread
     * @return an iterator of output tuples
     */
-  private[this] def processInputTuple(): Iterator[(ITuple, Int)] = {
-    var outputIterator: Iterator[(ITuple, Int)] = null
+  private[this] def processInputTuple(): Iterator[(ITuple, LinkIdentity)] = {
+    var outputIterator: Iterator[(ITuple, LinkIdentity)] = null
     try {
       outputIterator = operator.processTuple(currentInputTuple, currentInputLink)
       if (currentInputTuple.isLeft) {
@@ -114,29 +112,27 @@ class DataProcessor( // dependencies:
     * this function is only called by the DP thread
     */
   private[this] def outputOneTuple(): Unit = {
-    var outputTuple: ITuple = null
-    var outputPort: Int = null
+    var out: (ITuple, LinkIdentity) = null
+    var outputPort: LinkIdentity = null
     try {
-      val next = currentOutputIterator.next
-      outputTuple = next._1
-      outputPort = next._2
+      out = currentOutputIterator.next
     } catch safely {
       case e =>
         // invalidate current output tuple
-        outputTuple = null
+        out = null
         // also invalidate outputIterator
         currentOutputIterator = null
         // forward input tuple to the user and pause DP thread
         handleOperatorException(e)
     }
-    if (outputTuple != null) {
-      if (breakpointManager.evaluateTuple(outputTuple)) {
+    if (out != null) {
+      if (breakpointManager.evaluateTuple(out._1)) {
         pauseManager.pause()
         disableDataQueue()
         stateManager.transitTo(PAUSED)
       } else {
         outputTupleCount += 1
-        batchProducer.passTupleToDownstream(outputTuple, outputPort)
+        batchProducer.passTupleToDownstream(out._1, out._2)
       }
     }
   }
