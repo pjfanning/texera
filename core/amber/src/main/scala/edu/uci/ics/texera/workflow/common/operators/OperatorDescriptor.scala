@@ -113,6 +113,11 @@ abstract class OperatorDescriptor extends Serializable {
 
   def getOutputSchema(schemas: Array[Schema]): Schema
 
+  // override if the operator has multiple output ports, schema must be specified for each port
+  def getOutputSchemas(schemas: Array[Schema]): Array[Schema] = {
+    Array.fill(1)(getOutputSchema(schemas))
+  }
+
   def validate(): Array[ConstraintViolation] = {
     Array()
   }

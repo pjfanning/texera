@@ -59,7 +59,7 @@ class DataProcessor( // dependencies:
   private var outputTupleCount = 0L
   private var currentInputTuple: Either[ITuple, InputExhausted] = _
   private var currentInputLink: LinkIdentity = _
-  private var currentOutputIterator: Iterator[(ITuple, LinkIdentity)] = _
+  private var currentOutputIterator: Iterator[(ITuple, Option[LinkIdentity])] = _
   private var isCompleted = false
 
   def getOperatorExecutor(): IOperatorExecutor = operator
@@ -112,8 +112,7 @@ class DataProcessor( // dependencies:
     * this function is only called by the DP thread
     */
   private[this] def outputOneTuple(): Unit = {
-    var out: (ITuple, LinkIdentity) = null
-    var outputPort: LinkIdentity = null
+    var out: (ITuple, Option[LinkIdentity]) = null
     try {
       out = currentOutputIterator.next
     } catch safely {

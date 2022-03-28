@@ -11,7 +11,7 @@ trait IOperatorExecutor {
 
   def close(): Unit
 
-  def processTuple(tuple: Either[ITuple, InputExhausted], input: LinkIdentity): Iterator[(ITuple, LinkIdentity)]
+  def processTuple(tuple: Either[ITuple, InputExhausted], input: LinkIdentity): Iterator[(ITuple, Option[LinkIdentity])]
 
   def getParam(query: String): String = { null }
 
