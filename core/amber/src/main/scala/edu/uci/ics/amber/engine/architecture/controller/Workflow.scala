@@ -185,6 +185,7 @@ class Workflow(
         workerLayer.build(
           prev,
           allNodes,
+          opExecConfig,
           communicationActor.ref,
           ctx,
           workerToLayer,
@@ -205,6 +206,7 @@ class Workflow(
         workerLayer.build(
           prev,
           allNodes,
+          opExecConfig,
           communicationActor.ref,
           ctx,
           workerToLayer,
@@ -218,6 +220,7 @@ class Workflow(
           layer.build(
             operatorInLinks(layer).map(y => (null, y)).toArray,
             allNodes,
+            opExecConfig,
             communicationActor.ref,
             ctx,
             workerToLayer,

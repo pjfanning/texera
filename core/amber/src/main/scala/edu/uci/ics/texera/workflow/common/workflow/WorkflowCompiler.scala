@@ -120,7 +120,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         amberOperators(dest).topology.layers.head.id
       )
       amberOperators(dest).setInputToOrdinalMapping(layerLink, link.destination.portOrdinal, link.destination.portName)
-      amberOperators(dest).setOutputToOrdinalMapping(layerLink, link.origin.portOrdinal, link.origin.portName)
+      amberOperators(origin).setOutputToOrdinalMapping(layerLink, link.origin.portOrdinal, link.origin.portName)
     })
 
     val outLinksImmutable: Map[OperatorIdentity, Set[OperatorIdentity]] =

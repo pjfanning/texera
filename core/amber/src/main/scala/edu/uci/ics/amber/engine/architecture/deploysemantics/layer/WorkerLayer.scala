@@ -55,6 +55,7 @@ class WorkerLayer(
   def build(
       prev: Array[(OpExecConfig, WorkerLayer)],
       all: Array[Address],
+      opExecConfig: OpExecConfig,
       parentNetworkCommunicationActorRef: ActorRef,
       context: ActorContext,
       workerToLayer: mutable.HashMap[ActorVirtualIdentity, WorkerLayer],

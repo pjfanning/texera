@@ -1,38 +1,39 @@
 package edu.uci.ics.texera.workflow.operators.split
 
 import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
+import scala.collection.mutable
 import scala.util.Random
 
-class SplitOpExec(val actor: Int, val opDesc: SplitOpDesc)
+class SplitOpExec(val actor: Int, val opDesc: SplitOpDesc,
+                  val outputMapping: mutable.HashMap[LinkIdentity, (Int, String)])
     extends OperatorExecutor {
-  var n: Int = 0
 
-  val reservoir: Array[Tuple] = Array.ofDim(opDesc.getKForActor(actor))
-  val rand: Random = new Random(opDesc.getSeed(actor))
+  val outputLinkMapping: Map[String, LinkIdentity] = this.outputMapping.toMap.mapValues(v => v._2).map(_.swap);
 
-  override def processTexeraTuple(
-      tuple: Either[Tuple, InputExhausted],
-      input: LinkIdentity
-  ): Iterator[Tuple] = {
-    tuple match {
-      case Left(t) =>
-        if (n < opDesc.getKForActor(actor)) {
-          reservoir(n) = t
-        } else {
-          val i = rand.nextInt(n)
-          if (i < opDesc.getKForActor(actor)) {
-            reservoir(i) = t
-          }
-        }
-        n += 1
-        Iterator()
-      case Right(_) => reservoir.iterator
+  val random = new Random(opDesc.seeds(actor))
+
+  override def processTuple(
+                             tuple: Either[ITuple, InputExhausted],
+                             input: LinkIdentity
+                           ): Iterator[(ITuple, Option[LinkIdentity])] = {
+
+    if (tuple.isLeft) {
+      val isTraining = random.nextInt(100) < opDesc.k
+      val port = if (isTraining) "training" else "testing"
+      val outLink = outputLinkMapping.get(port)
+      Iterator.single((tuple.left.get, outLink))
+    } else {
+      Iterator.empty
     }
   }
+
+  def processTexeraTuple(tuple: Either[Tuple, InputExhausted], input: LinkIdentity): Iterator[Tuple] = ???
+
 
   override def open(): Unit = {}
 

@@ -93,8 +93,8 @@ class DataProcessor( // dependencies:
     * this function is only called by the DP thread
     * @return an iterator of output tuples
     */
-  private[this] def processInputTuple(): Iterator[(ITuple, LinkIdentity)] = {
-    var outputIterator: Iterator[(ITuple, LinkIdentity)] = null
+  private[this] def processInputTuple(): Iterator[(ITuple, Option[LinkIdentity])] = {
+    var outputIterator: Iterator[(ITuple, Option[LinkIdentity])] = null
     try {
       outputIterator = operator.processTuple(currentInputTuple, currentInputLink)
       if (currentInputTuple.isLeft) {
@@ -208,7 +208,7 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def outputAvailable(outputIterator: Iterator[ITuple]): Boolean = {
+  private[this] def outputAvailable(outputIterator: Iterator[(ITuple, Option[LinkIdentity])]): Boolean = {
     try {
       outputIterator != null && outputIterator.hasNext
     } catch safely {

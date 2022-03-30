@@ -400,7 +400,7 @@ export class ExecuteWorkflowService {
       return workflowGraph.getOperator(operatorID).outputPorts.findIndex(port => port.portID === outputPortID);
     };
     const getOutputPortName = (operatorID: string, outputPortID: string): string => {
-      return workflowGraph.getOperator(operatorID).outputPorts[getInputPortOrdinal(operatorID, outputPortID)].displayName ?? "";
+      return workflowGraph.getOperator(operatorID).outputPorts[getOutputPortOrdinal(operatorID, outputPortID)].displayName ?? "";
     };
 
     const operators: LogicalOperator[] = workflowGraph.getAllEnabledOperators().map(op => ({
