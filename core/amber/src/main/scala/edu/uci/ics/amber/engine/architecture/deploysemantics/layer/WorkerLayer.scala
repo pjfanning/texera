@@ -71,7 +71,7 @@ class WorkerLayer(
       val ref: ActorRef = context.actorOf(
         if (operatorExecutor.isInstanceOf[PythonUDFOpExecV2]) {
           PythonWorkflowWorker
-            .props(workerId, operatorExecutor, parentNetworkCommunicationActorRef)
+            .props(workerId, operatorExecutor, opExecConfig, parentNetworkCommunicationActorRef)
             .withDeploy(Deploy(scope = RemoteScope(address)))
         } else {
           WorkflowWorker

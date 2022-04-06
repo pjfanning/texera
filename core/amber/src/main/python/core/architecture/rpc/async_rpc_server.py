@@ -4,6 +4,7 @@ from core.architecture.handlers.add_partitioning_handler import AddPartitioningH
 from core.architecture.handlers.evaluate_expression_handler import EvaluateExpressionHandler
 from core.architecture.handlers.handler_base import Handler
 from core.architecture.handlers.initialize_operator_logic_handler import InitializeOperatorLogicHandler
+from core.architecture.handlers.initialize_port_mapping_handler import InitializePortMappingHandler
 from core.architecture.handlers.modify_operator_logic_handler import ModifyOperatorLogicHandler
 from core.architecture.handlers.monitoring_handler import MonitoringHandler
 from core.architecture.handlers.open_operator_handler import OpenOperatorHandler
@@ -33,6 +34,7 @@ class AsyncRPCServer:
         self.register(OpenOperatorHandler())
         self.register(AddPartitioningHandler())
         self.register(UpdateInputLinkingHandler())
+        self.register(InitializePortMappingHandler())
         self.register(QueryStatisticsHandler())
         self.register(QueryCurrentInputTupleHandler())
         self.register(InitializeOperatorLogicHandler())

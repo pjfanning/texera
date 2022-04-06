@@ -6,9 +6,11 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonPr
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.EvaluateExpressionHandler.EvaluateExpression
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
+import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializePortMappingHandler.InitializePortMapping
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyOperatorLogicHandler.ModifyOperatorLogic
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ReplayCurrentTupleHandler.ReplayCurrentTuple
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning
+import edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlReturnV2
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlReturnV2.Value.Empty
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
@@ -30,8 +32,8 @@ import scala.collection.JavaConverters._
 
 object ControlCommandConvertUtils {
   def controlCommandToV2(
-      controlCommand: ControlCommand[_]
-  ): ControlCommandV2 = {
+                          controlCommand: ControlCommand[_]
+                        ): ControlCommandV2 = {
     controlCommand match {
       case StartWorker() =>
         StartWorkerV2()
@@ -45,6 +47,10 @@ object ControlCommandConvertUtils {
         AddPartitioningV2(tag, partitioning)
       case UpdateInputLinking(identifier, inputLink) =>
         UpdateInputLinkingV2(identifier, inputLink)
+      case InitializePortMapping(inputToOrdinalMapping, outputToOrdinalMapping) =>
+        InitializePortMappingV2(
+          inputToOrdinalMapping.toSeq.map({ case (l, (i, n)) => PortOrdinalPair(l, PortOrdinalPair.Ordinal(i, n)) }),
+          outputToOrdinalMapping.toSeq.map({ case (l, (i, n)) => PortOrdinalPair(l, PortOrdinalPair.Ordinal(i, n)) }))
       case QueryStatistics() =>
         QueryStatisticsV2()
       case QueryCurrentInputTuple() =>
@@ -72,8 +78,8 @@ object ControlCommandConvertUtils {
   }
 
   def controlCommandToV1(
-      controlCommand: ControlCommandV2
-  ): ControlCommand[_] = {
+                          controlCommand: ControlCommandV2
+                        ): ControlCommand[_] = {
     controlCommand match {
       case WorkerExecutionCompletedV2() =>
         WorkerExecutionCompleted()
@@ -90,11 +96,11 @@ object ControlCommandConvertUtils {
   }
 
   def controlReturnToV1(
-      controlReturnV2: ControlReturnV2
-  ): Any = {
+                         controlReturnV2: ControlReturnV2
+                       ): Any = {
     controlReturnV2.value match {
-      case Empty                                                        => Unit
-      case _: ControlReturnV2.Value.CurrentInputTupleInfo               => null
+      case Empty => Unit
+      case _: ControlReturnV2.Value.CurrentInputTupleInfo => null
       case selfWorkloadReturn: ControlReturnV2.Value.SelfWorkloadReturn =>
         // TODO: convert real samples back from PythonUDF.
         //  this is left hardcoded now since sampling is not currently enabled for PythonUDF.

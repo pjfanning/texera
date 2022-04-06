@@ -180,6 +180,30 @@ class LinkCompletedV2(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class InitializePortMappingV2(betterproto.Message):
+    input_to_ordinal_mapping: List[
+        "InitializePortMappingV2PortOrdinalPair"
+    ] = betterproto.message_field(1)
+    output_to_ordinal_mapping: List[
+        "InitializePortMappingV2PortOrdinalPair"
+    ] = betterproto.message_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class InitializePortMappingV2PortOrdinalPair(betterproto.Message):
+    link_identity: "__common__.LinkIdentity" = betterproto.message_field(1)
+    ordinal: "InitializePortMappingV2PortOrdinalPairOrdinal" = (
+        betterproto.message_field(2)
+    )
+
+
+@dataclass(eq=False, repr=False)
+class InitializePortMappingV2PortOrdinalPairOrdinal(betterproto.Message):
+    port_index: int = betterproto.int32_field(1)
+    port_name: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
 class ControlCommandV2(betterproto.Message):
     start_worker: "StartWorkerV2" = betterproto.message_field(1, group="sealed_value")
     pause_worker: "PauseWorkerV2" = betterproto.message_field(2, group="sealed_value")
@@ -190,18 +214,14 @@ class ControlCommandV2(betterproto.Message):
     update_input_linking: "UpdateInputLinkingV2" = betterproto.message_field(
         5, group="sealed_value"
     )
-    query_statistics: "QueryStatisticsV2" = betterproto.message_field(
+    initialize_port_mapping: "InitializePortMappingV2" = betterproto.message_field(
         6, group="sealed_value"
     )
-    query_current_input_tuple: "QueryCurrentInputTupleV2" = betterproto.message_field(
-        7, group="sealed_value"
+    open_operator: "OpenOperatorV2" = betterproto.message_field(
+        11, group="sealed_value"
     )
-    local_operator_exception: "LocalOperatorExceptionV2" = betterproto.message_field(
-        8, group="sealed_value"
-    )
-    open_operator: "OpenOperatorV2" = betterproto.message_field(9, group="sealed_value")
     link_completed: "LinkCompletedV2" = betterproto.message_field(
-        10, group="sealed_value"
+        12, group="sealed_value"
     )
     initialize_operator_logic: "InitializeOperatorLogicV2" = betterproto.message_field(
         21, group="sealed_value"
@@ -216,8 +236,17 @@ class ControlCommandV2(betterproto.Message):
     evaluate_expression: "EvaluateExpressionV2" = betterproto.message_field(
         25, group="sealed_value"
     )
+    query_statistics: "QueryStatisticsV2" = betterproto.message_field(
+        41, group="sealed_value"
+    )
+    query_current_input_tuple: "QueryCurrentInputTupleV2" = betterproto.message_field(
+        42, group="sealed_value"
+    )
     query_self_workload_metrics: "QuerySelfWorkloadMetricsV2" = (
-        betterproto.message_field(41, group="sealed_value")
+        betterproto.message_field(43, group="sealed_value")
+    )
+    local_operator_exception: "LocalOperatorExceptionV2" = betterproto.message_field(
+        99, group="sealed_value"
     )
     worker_execution_completed: "WorkerExecutionCompletedV2" = (
         betterproto.message_field(101, group="sealed_value")

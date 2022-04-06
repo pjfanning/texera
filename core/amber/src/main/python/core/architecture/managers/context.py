@@ -1,5 +1,6 @@
 from proto.edu.uci.ics.amber.engine.architecture.worker import WorkerState
 from .pause_manager import PauseManager
+from .port_manager import PortManager
 from .state_manager import StateManager
 from .statistics_manager import StatisticsManager
 from ..packaging.batch_to_tuple_converter import BatchToTupleConverter
@@ -28,3 +29,4 @@ class Context:
         self.pause_manager = PauseManager()
         self.tuple_to_batch_converter = TupleToBatchConverter()
         self.batch_to_tuple_converter = BatchToTupleConverter()
+        self.port_manager = PortManager()
