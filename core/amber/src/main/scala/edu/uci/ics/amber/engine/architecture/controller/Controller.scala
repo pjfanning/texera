@@ -94,7 +94,6 @@ class Controller(
   prepareWorkers()
 
   def prepareWorkers(): Future[Unit] = {
-    println(workflow.getAllLayers)
     Future(asyncRPCClient.sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus)))
       .flatMap(_ =>
         Future

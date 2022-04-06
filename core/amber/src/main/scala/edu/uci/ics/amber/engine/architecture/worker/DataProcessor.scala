@@ -65,11 +65,13 @@ class DataProcessor( // dependencies:
   def getOperatorExecutor(): IOperatorExecutor = operator
 
   /** provide API for actor to get stats of this operator
+    *
     * @return (input tuple count, output tuple count)
     */
   def collectStatistics(): (Long, Long) = (inputTupleCount, outputTupleCount)
 
   /** provide API for actor to get current input tuple of this operator
+    *
     * @return current input tuple if it exists
     */
   def getCurrentInputTuple: ITuple = {
@@ -91,6 +93,7 @@ class DataProcessor( // dependencies:
 
   /** process currentInputTuple through operator logic.
     * this function is only called by the DP thread
+    *
     * @return an iterator of output tuples
     */
   private[this] def processInputTuple(): Iterator[(ITuple, Option[LinkIdentity])] = {
@@ -124,19 +127,21 @@ class DataProcessor( // dependencies:
         // forward input tuple to the user and pause DP thread
         handleOperatorException(e)
     }
-    if (out != null) {
-      if (breakpointManager.evaluateTuple(out._1)) {
-        pauseManager.pause()
-        disableDataQueue()
-        stateManager.transitTo(PAUSED)
-      } else {
-        outputTupleCount += 1
-        batchProducer.passTupleToDownstream(out._1, out._2)
-      }
+    if (out == null) return
+
+    val (outputTuple, outputPortOpt) = out
+    if (breakpointManager.evaluateTuple(outputTuple)) {
+      pauseManager.pause()
+      disableDataQueue()
+      stateManager.transitTo(PAUSED)
+    } else {
+      outputTupleCount += 1
+      batchProducer.passTupleToDownstream(outputTuple, outputPortOpt)
     }
   }
 
   /** Provide main functionality of data processing
+    *
     * @throws Exception (from engine code only)
     */
   @throws[Exception]
