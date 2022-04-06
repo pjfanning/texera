@@ -12,18 +12,17 @@ from core.models import Tuple
 from core.models.payload import OutputDataFrame, DataPayload
 from core.util import get_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import HashBasedShufflePartitioning, \
-    OneToOnePartitioning, Partitioning, \
-    RoundRobinPartitioning
+    OneToOnePartitioning, Partitioning, RoundRobinPartitioning
 from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity, LinkIdentity
 
 
 class TupleToBatchConverter:
 
     def __init__(self, ):
-        self._partitioners: OrderedDict[LinkIdentity, Partitioning] = OrderedDict()
+        self._partitioners: OrderedDict[LinkIdentity, Partitioner] = OrderedDict()
         self._partitioning_to_partitioner: dict[type(Partitioning), type(Partitioner)] = {
-            OneToOnePartitioning:         OneToOnePartitioner,
-            RoundRobinPartitioning:       RoundRobinPartitioner,
+            OneToOnePartitioning: OneToOnePartitioner,
+            RoundRobinPartitioning: RoundRobinPartitioner,
             HashBasedShufflePartitioning: HashBasedShufflePartitioner
         }
 
@@ -39,8 +38,13 @@ class TupleToBatchConverter:
         partitioner: type = self._partitioning_to_partitioner[type(the_partitioning)]
         self._partitioners.update({tag: partitioner(the_partitioning)})
 
-    def tuple_to_batch(self, tuple_: Tuple) -> Iterator[typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
-        return chain(*(partitioner.add_tuple_to_batch(tuple_) for partitioner in self._partitioners.values()))
+    def tuple_to_batch(self, tuple_: Tuple, output_links: typing.List[LinkIdentity] = None) -> Iterator[
+        typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
+        if output_links is None:
+            output_links = list()
+        partitioners = map(lambda link: self._partitioners.get(link),
+                           output_links) if output_links else self._partitioners.values()
+        return chain(*(partitioner.add_tuple_to_batch(tuple_) for partitioner in partitioners))
 
     def emit_end_of_upstream(self) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         return chain(*(partitioner.no_more() for partitioner in self._partitioners.values()))
