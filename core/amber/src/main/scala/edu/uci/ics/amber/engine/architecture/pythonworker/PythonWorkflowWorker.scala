@@ -9,9 +9,6 @@ import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
-import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISourceOperatorExecutor}
-import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.Utils
 
 import java.io.IOException
@@ -24,7 +21,6 @@ object PythonWorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
       op: IOperatorExecutor,
-      opExecConfig: OpExecConfig,
       parentNetworkCommunicationActorRef: ActorRef
   ): Props =
     Props(new PythonWorkflowWorker(id, op, parentNetworkCommunicationActorRef))

@@ -55,7 +55,6 @@ class WorkerLayer(
   def build(
       prev: Array[(OpExecConfig, WorkerLayer)],
       all: Array[Address],
-      opExecConfig: OpExecConfig,
       parentNetworkCommunicationActorRef: ActorRef,
       context: ActorContext,
       workerToLayer: mutable.HashMap[ActorVirtualIdentity, WorkerLayer],
@@ -71,7 +70,7 @@ class WorkerLayer(
       val ref: ActorRef = context.actorOf(
         if (operatorExecutor.isInstanceOf[PythonUDFOpExecV2]) {
           PythonWorkflowWorker
-            .props(workerId, operatorExecutor, opExecConfig, parentNetworkCommunicationActorRef)
+            .props(workerId, operatorExecutor, parentNetworkCommunicationActorRef)
             .withDeploy(Deploy(scope = RemoteScope(address)))
         } else {
           WorkflowWorker
