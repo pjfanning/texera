@@ -24,16 +24,16 @@ import java.util.concurrent.{ExecutorService, Executors, Future}
 import scala.collection.mutable
 
 class DataProcessor( // dependencies:
-                     operator: IOperatorExecutor, // core logic
-                     asyncRPCClient: AsyncRPCClient, // to send controls
-                     batchProducer: TupleToBatchConverter, // to send output tuples
-                     pauseManager: PauseManager, // to pause/resume
-                     breakpointManager: BreakpointManager, // to evaluate breakpoints
-                     stateManager: WorkerStateManager,
-                     asyncRPCServer: AsyncRPCServer,
-                     val actorId: ActorVirtualIdentity
-                   ) extends WorkerInternalQueue
-  with AmberLogging {
+    operator: IOperatorExecutor, // core logic
+    asyncRPCClient: AsyncRPCClient, // to send controls
+    batchProducer: TupleToBatchConverter, // to send output tuples
+    pauseManager: PauseManager, // to pause/resume
+    breakpointManager: BreakpointManager, // to evaluate breakpoints
+    stateManager: WorkerStateManager,
+    asyncRPCServer: AsyncRPCServer,
+    val actorId: ActorVirtualIdentity
+) extends WorkerInternalQueue
+    with AmberLogging {
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private val dpThread: Future[_] = dpThreadExecutor.submit(new Runnable() {
@@ -214,7 +214,9 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def outputAvailable(outputIterator: Iterator[(ITuple, Option[LinkIdentity])]): Boolean = {
+  private[this] def outputAvailable(
+      outputIterator: Iterator[(ITuple, Option[LinkIdentity])]
+  ): Boolean = {
     try {
       outputIterator != null && outputIterator.hasNext
     } catch safely {
@@ -242,9 +244,9 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def processControlCommand(
-                                           payload: ControlPayload,
-                                           from: ActorVirtualIdentity
-                                         ): Unit = {
+      payload: ControlPayload,
+      from: ActorVirtualIdentity
+  ): Unit = {
     payload match {
       case invocation: ControlInvocation =>
         asyncRPCServer.logControlInvocation(invocation, from)

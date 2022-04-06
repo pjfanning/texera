@@ -9,18 +9,21 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import scala.collection.mutable
 import scala.util.Random
 
-class SplitOpExec(val actor: Int, val opDesc: SplitOpDesc,
-                  val outputMapping: mutable.HashMap[LinkIdentity, (Int, String)])
-    extends OperatorExecutor {
+class SplitOpExec(
+    val actor: Int,
+    val opDesc: SplitOpDesc,
+    val outputMapping: mutable.HashMap[LinkIdentity, (Int, String)]
+) extends OperatorExecutor {
 
-  val outputLinkMapping: Map[String, LinkIdentity] = this.outputMapping.toMap.mapValues(v => v._2).map(_.swap);
+  val outputLinkMapping: Map[String, LinkIdentity] =
+    this.outputMapping.toMap.mapValues(v => v._2).map(_.swap);
 
   val random = new Random(opDesc.seeds(actor))
 
   override def processTuple(
-                             tuple: Either[ITuple, InputExhausted],
-                             input: LinkIdentity
-                           ): Iterator[(ITuple, Option[LinkIdentity])] = {
+      tuple: Either[ITuple, InputExhausted],
+      input: LinkIdentity
+  ): Iterator[(ITuple, Option[LinkIdentity])] = {
 
     if (tuple.isLeft) {
       val isTraining = random.nextInt(100) < opDesc.k
@@ -32,8 +35,10 @@ class SplitOpExec(val actor: Int, val opDesc: SplitOpDesc,
     }
   }
 
-  def processTexeraTuple(tuple: Either[Tuple, InputExhausted], input: LinkIdentity): Iterator[Tuple] = ???
-
+  def processTexeraTuple(
+      tuple: Either[Tuple, InputExhausted],
+      input: LinkIdentity
+  ): Iterator[Tuple] = ???
 
   override def open(): Unit = {}
 
