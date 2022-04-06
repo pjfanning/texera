@@ -136,7 +136,6 @@ class DataProcessor( // dependencies:
       stateManager.transitTo(PAUSED)
     } else {
       outputTupleCount += 1
-
       batchProducer.passTupleToDownstream(outputTuple, outputPortOpt)
     }
   }
