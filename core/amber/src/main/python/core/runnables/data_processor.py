@@ -1,6 +1,6 @@
 import traceback
 import typing
-from typing import Iterator, List, MutableMapping, Optional, Union
+from typing import Iterator, Optional, Union
 
 import pyarrow
 from loguru import logger
