@@ -1,15 +1,16 @@
-from typing import Union, List, Tuple
+from typing import Union, List
 
 from proto.edu.uci.ics.amber.engine.architecture.worker import InitializePortMappingV2PortOrdinalPair
 from proto.edu.uci.ics.amber.engine.common import LinkIdentity
 
 
 class PortMap(dict):
-    def __getitem__(self, item: Union[LinkIdentity, int, str]) -> Union[List[LinkIdentity], Tuple[int, str]]:
+    def __getitem__(self, item: Union[LinkIdentity, int, str]) -> Union[
+        List[LinkIdentity], InitializePortMappingV2PortOrdinalPair]:
         """
         :param item:  Union[LinkIdentity, int, str], could be a LinkIdentity, a port index, or a port name.
         :return:
-            - If querying for a LinkIdentity, returns the (index, name) tuple.
+            - If querying for a LinkIdentity, returns the InitializePortMappingV2PortOrdinalPair(index, name).
             - If querying for a port index or a port name, returns list of all
                 LinkIdentities that match.
         """
@@ -17,6 +18,15 @@ class PortMap(dict):
             return super(PortMap, self).__getitem__(item)
         else:
             return [k for k, v in self if item in v]
+
+    def get_port_ordinal(self, link: LinkIdentity) -> InitializePortMappingV2PortOrdinalPair:
+        return self[link]
+
+    def get_links_by_port_index(self, index: int) -> List[LinkIdentity]:
+        return self.get(index, [])
+
+    def get_links_by_port_name(self, name: str) -> List[LinkIdentity]:
+        return self.get(name, [])
 
 
 class PortManager:
@@ -37,16 +47,16 @@ class PortManager:
             self.output_to_ordinal_mapping[link] = ordinal
 
     def get_input_port_index(self, link: LinkIdentity):
-        return self.input_to_ordinal_mapping[link].port_index
+        return self.input_to_ordinal_mapping.get_port_ordinal(link).port_index
 
     def get_output_port_index(self, link: LinkIdentity):
-        return self.input_to_ordinal_mapping[link].port_index
+        return self.input_to_ordinal_mapping.get_port_ordinal(link).port_index
 
     def get_input_port_name(self, link: LinkIdentity):
-        return self.input_to_ordinal_mapping[link].port_name
+        return self.input_to_ordinal_mapping.get_port_ordinal(link).port_name
 
     def get_output_port_name(self, link: LinkIdentity):
-        return self.input_to_ordinal_mapping[link].port_name
+        return self.input_to_ordinal_mapping.get_port_ordinal(link).port_name
 
     def __str__(self):
         return "inputs: " + str(self.input_to_ordinal_mapping) \
