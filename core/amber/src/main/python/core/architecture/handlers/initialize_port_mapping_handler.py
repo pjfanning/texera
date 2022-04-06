@@ -8,5 +8,5 @@ class InitializePortMappingHandler(Handler):
 
     def __call__(self, context: Context, command: cmd, *args, **kwargs):
         context.port_manager.set_input_ports(command.input_to_ordinal_mapping)
-        context.port_manager.set_input_ports(command.output_to_ordinal_mapping)
+        context.port_manager.set_output_ports(command.output_to_ordinal_mapping)
         return None
