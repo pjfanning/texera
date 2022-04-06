@@ -31,8 +31,6 @@ class DataProcessor(StoppableQueueBlockingRunnable):
         self._current_input_tuple: Optional[Union[Tuple, InputExhausted]] = None
         self._current_input_link: Optional[LinkIdentity] = None
         self._current_input_tuple_iter: Optional[Iterator[Union[Tuple, InputExhausted]]] = None
-        self._input_links: List[LinkIdentity] = list()
-        self._input_link_map: MutableMapping[LinkIdentity, int] = dict()
 
         self.context = Context(self)
         self._async_rpc_server = AsyncRPCServer(output_queue, context=self.context)
@@ -146,11 +144,7 @@ class DataProcessor(StoppableQueueBlockingRunnable):
         """
 
         # bind link with input index
-        if link not in self._input_link_map:
-            self._input_links.append(link)
-            index = len(self._input_links) - 1
-            self._input_link_map[link] = index
-        input_ = self._input_link_map[link]
+        input_ = self.context.port_manager.get_input_port_index(link)
 
         return map(lambda t: Tuple(t) if t is not None else None,
                    self._operator.process_tuple(tuple_, input_) if isinstance(tuple_, Tuple)

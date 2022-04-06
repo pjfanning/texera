@@ -39,9 +39,9 @@ class ManyToOneOpExecConfig(
     // example: 1 -> 0 means port 1 depends on port 0, so that it needs to wait until port 0 finishes.
     for ((dependerIndex, dependeeIndex) <- dependency) {
       val dependeeLink =
-        inputToOrdinalMapping.find({ case (_, index) => index == dependeeIndex }).get._1
+        inputToOrdinalMapping.find({ case (_, (index, _)) => index == dependeeIndex }).get._1
       val dependerLink =
-        inputToOrdinalMapping.find({ case (_, index) => index == dependerIndex }).get._1
+        inputToOrdinalMapping.find({ case (_, (index, _)) => index == dependerIndex }).get._1
       workflow.getSources(toOperatorIdentity(dependerLink.from)).foreach { source =>
         workflow.getOperator(source).topology.layers.head.startAfter(dependeeLink)
       }
