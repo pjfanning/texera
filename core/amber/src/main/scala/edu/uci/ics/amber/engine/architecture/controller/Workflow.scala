@@ -20,10 +20,10 @@ import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
 import scala.collection.mutable
 
 class Workflow(
-                workflowId: WorkflowIdentity,
-                operatorToOpExecConfig: mutable.Map[OperatorIdentity, OpExecConfig],
-                outLinks: Map[OperatorIdentity, Set[OperatorIdentity]]
-              ) {
+    workflowId: WorkflowIdentity,
+    operatorToOpExecConfig: mutable.Map[OperatorIdentity, OpExecConfig],
+    outLinks: Map[OperatorIdentity, Set[OperatorIdentity]]
+) {
   private val inLinks: Map[OperatorIdentity, Set[OperatorIdentity]] =
     AmberUtils.reverseMultimap(outLinks)
 
@@ -89,8 +89,8 @@ class Workflow(
     * worker layer.
     */
   def getUpStreamConnectedWorkerLayers(
-                                        opID: OperatorIdentity
-                                      ): mutable.HashMap[OperatorIdentity, WorkerLayer] = {
+      opID: OperatorIdentity
+  ): mutable.HashMap[OperatorIdentity, WorkerLayer] = {
     val upstreamOperatorToLayers = new mutable.HashMap[OperatorIdentity, WorkerLayer]()
     getDirectUpstreamOperators(opID).foreach(uOpID =>
       upstreamOperatorToLayers(uOpID) = getOperator(uOpID).topology.layers.last
@@ -139,10 +139,10 @@ class Workflow(
     operatorToOpExecConfig.values.forall(op => op.getState == WorkflowAggregatedState.COMPLETED)
 
   def build(
-             allNodes: Array[Address],
-             communicationActor: NetworkSenderActorRef,
-             ctx: ActorContext
-           ): Unit = {
+      allNodes: Array[Address],
+      communicationActor: NetworkSenderActorRef,
+      ctx: ActorContext
+  ): Unit = {
     val builtOperators = mutable.HashSet[OperatorIdentity]()
     var frontier: Iterable[OperatorIdentity] = sourceOperators
     while (frontier.nonEmpty) {
@@ -167,12 +167,12 @@ class Workflow(
   }
 
   def buildOperator(
-                     allNodes: Array[Address],
-                     prev: Array[(OpExecConfig, WorkerLayer)],
-                     communicationActor: NetworkSenderActorRef,
-                     operatorIdentity: OperatorIdentity,
-                     ctx: ActorContext
-                   ): Unit = {
+      allNodes: Array[Address],
+      prev: Array[(OpExecConfig, WorkerLayer)],
+      communicationActor: NetworkSenderActorRef,
+      operatorIdentity: OperatorIdentity,
+      ctx: ActorContext
+  ): Unit = {
     val opExecConfig = operatorToOpExecConfig(
       operatorIdentity
     ) // This metadata gets updated at the end of this function
@@ -197,9 +197,7 @@ class Workflow(
         opExecConfig.topology.links.groupBy(_.to).map(x => (x._1, x._2.map(_.from).toSet))
       var layers: Iterable[WorkerLayer] =
         opExecConfig.topology.links
-          .filter(linkStrategy =>
-            opExecConfig.topology.links.forall(_.to != linkStrategy.from)
-          )
+          .filter(linkStrategy => opExecConfig.topology.links.forall(_.to != linkStrategy.from))
           .map(_.from)
       layers.foreach(workerLayer => {
         workerLayer.build(
@@ -251,9 +249,9 @@ class Workflow(
   }
 
   def linkOperators(
-                     from: (OpExecConfig, WorkerLayer),
-                     to: (OpExecConfig, WorkerLayer)
-                   ): LinkStrategy = {
+      from: (OpExecConfig, WorkerLayer),
+      to: (OpExecConfig, WorkerLayer)
+  ): LinkStrategy = {
     val sender = from._2
     val receiver = to._2
     val receiverOpExecConfig = to._1

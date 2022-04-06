@@ -208,7 +208,9 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def outputAvailable(outputIterator: Iterator[(ITuple, Option[LinkIdentity])]): Boolean = {
+  private[this] def outputAvailable(
+      outputIterator: Iterator[(ITuple, Option[LinkIdentity])]
+  ): Boolean = {
     try {
       outputIterator != null && outputIterator.hasNext
     } catch safely {

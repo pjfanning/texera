@@ -11,7 +11,10 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkMessage,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializePortMappingHandler.InitializePortMapping
@@ -41,18 +44,18 @@ object ControllerConfig {
 }
 
 final case class ControllerConfig(
-                                   monitoringIntervalMs: Option[Long],
-                                   skewDetectionIntervalMs: Option[Long],
-                                   statusUpdateIntervalMs: Option[Long]
-                                 )
+    monitoringIntervalMs: Option[Long],
+    skewDetectionIntervalMs: Option[Long],
+    statusUpdateIntervalMs: Option[Long]
+)
 
 object Controller {
 
   def props(
-             workflow: Workflow,
-             controllerConfig: ControllerConfig = ControllerConfig.default,
-             parentNetworkCommunicationActorRef: ActorRef = null
-           ): Props =
+      workflow: Workflow,
+      controllerConfig: ControllerConfig = ControllerConfig.default,
+      parentNetworkCommunicationActorRef: ActorRef = null
+  ): Props =
     Props(
       new Controller(
         workflow,
@@ -63,10 +66,10 @@ object Controller {
 }
 
 class Controller(
-                  val workflow: Workflow,
-                  val controllerConfig: ControllerConfig,
-                  parentNetworkCommunicationActorRef: ActorRef
-                ) extends WorkflowActor(CONTROLLER, parentNetworkCommunicationActorRef) {
+    val workflow: Workflow,
+    val controllerConfig: ControllerConfig,
+    parentNetworkCommunicationActorRef: ActorRef
+) extends WorkflowActor(CONTROLLER, parentNetworkCommunicationActorRef) {
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayloadWithTryCatch)
   implicit val ec: ExecutionContext = context.dispatcher
@@ -119,8 +122,8 @@ class Controller(
         Future
           .collect(
             // initialize python operator code
-            workflow.getPythonWorkers.map (
-              ( workerID: ActorVirtualIdentity) =>
+            workflow.getPythonWorkers
+              .map((workerID: ActorVirtualIdentity) =>
                 asyncRPCClient.send(
                   InitializePortMapping(
                     workflow.getOperator(workerID).inputToOrdinalMapping.toMap,
@@ -128,7 +131,8 @@ class Controller(
                   ),
                   workerID
                 )
-            ).toSeq
+              )
+              .toSeq
           )
           .onFailure((err: Throwable) => {
             logger.error("Failure when binding Python ports", err)
@@ -180,9 +184,9 @@ class Controller(
   }
 
   def handleControlPayloadWithTryCatch(
-                                        from: ActorVirtualIdentity,
-                                        controlPayload: ControlPayload
-                                      ): Unit = {
+      from: ActorVirtualIdentity,
+      controlPayload: ControlPayload
+  ): Unit = {
     try {
       controlPayload match {
         // use control input port to pass control messages
@@ -212,9 +216,9 @@ class Controller(
       //process reply messages
       controlInputPort.handleMessage(this.sender(), id, from, seqNum, payload)
     case NetworkMessage(
-    id,
-    WorkflowControlMessage(CONTROLLER, seqNum, payload)
-    ) =>
+          id,
+          WorkflowControlMessage(CONTROLLER, seqNum, payload)
+        ) =>
       //process control messages from self
       controlInputPort.handleMessage(
         this.sender(),

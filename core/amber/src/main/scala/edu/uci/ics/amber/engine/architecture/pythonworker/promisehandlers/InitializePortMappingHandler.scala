@@ -7,6 +7,8 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import scala.collection.mutable
 
 object InitializePortMappingHandler {
-  final case class InitializePortMapping(inputToOrdinalMapping: Map[LinkIdentity, (Int, String)], outputToOrdinalMapping: Map[LinkIdentity, (Int, String)])
-    extends ControlCommand[Unit]
+  final case class InitializePortMapping(
+      inputToOrdinalMapping: Map[LinkIdentity, (Int, String)],
+      outputToOrdinalMapping: Map[LinkIdentity, (Int, String)]
+  ) extends ControlCommand[Unit]
 }
