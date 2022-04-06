@@ -12,10 +12,10 @@ public class PythonUDFOpExecV2 implements OperatorExecutor {
 
 
     private final String code;
-    private final Schema outputSchema;
+    private final Schema[] outputSchema;
 
 
-    public PythonUDFOpExecV2(String code, Schema outputSchema) {
+    public PythonUDFOpExecV2(String code, Schema... outputSchema) {
         this.code = code;
         this.outputSchema = outputSchema;
     }
@@ -39,7 +39,7 @@ public class PythonUDFOpExecV2 implements OperatorExecutor {
         return code;
     }
 
-    public Schema getOutputSchema() {
+    public Schema[] getOutputSchema() {
         return outputSchema;
     }
 }

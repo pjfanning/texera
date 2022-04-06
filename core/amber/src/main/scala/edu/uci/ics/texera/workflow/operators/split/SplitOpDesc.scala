@@ -4,13 +4,8 @@ import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyD
 import com.google.common.base.Preconditions
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.operators.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.operators.{OneToOneOpExecConfig, OperatorDescriptor}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
+import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
 import scala.util.Random
@@ -39,8 +34,10 @@ class SplitOpDesc extends OperatorDescriptor {
     )
   }
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+  override def getOutputSchema(schemas: Array[Schema]): Schema = throw new NotImplementedError()
+
+  override def getOutputSchemas(schemas: Array[Schema]): Array[Schema] = {
     Preconditions.checkArgument(schemas.length == 1)
-    schemas(0)
+    Array(schemas(0), schemas(0))
   }
 }
