@@ -1,19 +1,12 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
-import akka.actor.ActorRef
 import com.google.common.base.Verify
-import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{ConditionalGlobalBreakpoint, CountGlobalBreakpoint}
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
-import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
@@ -99,7 +92,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         case _ =>
       }
       val amberOperator: OpExecConfig =
-        o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas:_*))
+        o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas: _*))
       amberOperators.put(amberOperator.id, amberOperator)
     })
 
