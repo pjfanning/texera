@@ -53,9 +53,6 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @Override
     public Schema getOutputSchema(Schema[] schemas) {
-        if (! (schemas.length == 1)) {
-            System.out.println();
-        }
         Preconditions.checkArgument(schemas.length == 1);
         Schema inputSchema = schemas[0];
 
