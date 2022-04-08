@@ -82,7 +82,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
     val amberOperators: mutable.Map[OperatorIdentity, OpExecConfig] = mutable.Map()
     workflowInfo.operators.foreach(o => {
       val inputSchemas: Array[Schema] =
-        if (o.isInstanceOf[SourceOperatorDescriptor])
+        if (! o.isInstanceOf[SourceOperatorDescriptor])
           inputSchemaMap(o).map(s => s.get).toArray
         else Array()
       val outputSchemas = o.getOutputSchemas(inputSchemas)
