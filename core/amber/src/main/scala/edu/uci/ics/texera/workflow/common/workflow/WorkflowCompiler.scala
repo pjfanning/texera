@@ -99,7 +99,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         case _ =>
       }
       val amberOperator: OpExecConfig =
-        o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas:_*))
+        o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas))
       amberOperators.put(amberOperator.id, amberOperator)
     })
 
