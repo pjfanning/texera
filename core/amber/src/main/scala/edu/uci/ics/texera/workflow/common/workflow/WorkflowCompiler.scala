@@ -169,7 +169,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         // get the input schema list, should be pre-populated with size equals to num of ports
         val destInputSchemas = inputSchemaMap(dest)
         // put the schema into the ordinal corresponding to the port
-        val schemaOnPort = outputSchemas.map(schemas => schemas(link.origin.portOrdinal))
+        val schemaOnPort = outputSchemas.flatMap(schemas => schemas.toList.lift(link.origin.portOrdinal))
         destInputSchemas(link.destination.portOrdinal) = schemaOnPort
         inputSchemaMap.update(dest, destInputSchemas)
       })
