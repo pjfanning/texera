@@ -13,6 +13,7 @@ import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescrip
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
+import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
@@ -162,7 +163,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         inputSchemaMap.update(op, mutable.MutableList(outputSchemas.map(s => s(0))))
       }
 
-      if (outputSchemas.nonEmpty) {
+      if (!op.isInstanceOf[SinkOpDesc] && outputSchemas.nonEmpty) {
         Verify.verify(outputSchemas.get.length == op.operatorInfo.outputPorts.length)
       }
 
