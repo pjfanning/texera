@@ -2,7 +2,11 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import com.google.common.base.Verify
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  LinkIdentity,
+  OperatorIdentity,
+  WorkflowIdentity
+}
 import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
@@ -169,7 +173,8 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         // get the input schema list, should be pre-populated with size equals to num of ports
         val destInputSchemas = inputSchemaMap(dest)
         // put the schema into the ordinal corresponding to the port
-        val schemaOnPort = outputSchemas.flatMap(schemas => schemas.toList.lift(link.origin.portOrdinal))
+        val schemaOnPort =
+          outputSchemas.flatMap(schemas => schemas.toList.lift(link.origin.portOrdinal))
         destInputSchemas(link.destination.portOrdinal) = schemaOnPort
         inputSchemaMap.update(dest, destInputSchemas)
       })
