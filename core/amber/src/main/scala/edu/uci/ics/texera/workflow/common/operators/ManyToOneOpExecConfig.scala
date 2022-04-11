@@ -14,10 +14,10 @@ import edu.uci.ics.amber.engine.operators.OpExecConfig
 import scala.collection.mutable
 
 class ManyToOneOpExecConfig(
-    override val id: OperatorIdentity,
-    val opExec: Int => IOperatorExecutor,
-    val dependency: mutable.Map[Int, Int] = mutable.Map()
-) extends OpExecConfig(id) {
+                             override val id: OperatorIdentity,
+                             val opExec: Int => IOperatorExecutor,
+                             val dependency: mutable.Map[Int, Int] = mutable.Map()
+                           ) extends OpExecConfig(id) {
 
   override lazy val topology: Topology = {
     new Topology(
@@ -37,11 +37,11 @@ class ManyToOneOpExecConfig(
   override def checkStartDependencies(workflow: Workflow): Unit = {
     // Map[depender -> dependee]
     // example: 1 -> 0 means port 1 depends on port 0, so that it needs to wait until port 0 finishes.
-    for ((dependerIndex, dependeeIndex) <- dependency) {
+    for ((dependerOrdinal, dependeeOrdinal) <- dependency) {
       val dependeeLink =
-        inputToOrdinalMapping.find({ case (_, index) => index._1 == dependeeIndex }).get._1
+        inputToOrdinalMapping.find({ case (_, (ordinal, _)) => ordinal == dependeeOrdinal }).get._1
       val dependerLink =
-        inputToOrdinalMapping.find({ case (_, index) => index._1 == dependerIndex }).get._1
+        inputToOrdinalMapping.find({ case (_, (ordinal, _)) => ordinal == dependerOrdinal }).get._1
       workflow.getSources(toOperatorIdentity(dependerLink.from)).foreach { source =>
         workflow.getOperator(source).topology.layers.head.startAfter(dependeeLink)
       }
@@ -49,8 +49,8 @@ class ManyToOneOpExecConfig(
   }
 
   override def assignBreakpoint(
-      breakpoint: GlobalBreakpoint[_]
-  ): Array[ActorVirtualIdentity] = {
+                                 breakpoint: GlobalBreakpoint[_]
+                               ): Array[ActorVirtualIdentity] = {
     // TODO: take worker states into account
     topology.layers(0).identifiers
   }
