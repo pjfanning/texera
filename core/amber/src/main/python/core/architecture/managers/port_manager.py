@@ -46,13 +46,13 @@ class PortManager:
     def get_input_port_ordinal(self, link: LinkIdentity) -> int:
         return self.input_to_ordinal_mapping.get_port_info(link).port_ordinal
 
-    def get_output_port_ordinal(self, link: LinkIdentity):
+    def get_output_port_ordinal(self, link: LinkIdentity) -> int:
         return self.input_to_ordinal_mapping.get_port_info(link).port_ordinal
 
-    def get_input_port_name(self, link: LinkIdentity):
+    def get_input_port_name(self, link: LinkIdentity) -> str:
         return self.input_to_ordinal_mapping.get_port_info(link).port_name
 
-    def get_output_port_name(self, link: LinkIdentity):
+    def get_output_port_name(self, link: LinkIdentity) -> str:
         return self.input_to_ordinal_mapping.get_port_info(link).port_name
 
     def __str__(self):
