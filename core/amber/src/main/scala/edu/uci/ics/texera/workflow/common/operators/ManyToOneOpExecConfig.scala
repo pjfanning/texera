@@ -14,10 +14,10 @@ import edu.uci.ics.amber.engine.operators.OpExecConfig
 import scala.collection.mutable
 
 class ManyToOneOpExecConfig(
-                             override val id: OperatorIdentity,
-                             val opExec: Int => IOperatorExecutor,
-                             val dependency: mutable.Map[Int, Int] = mutable.Map()
-                           ) extends OpExecConfig(id) {
+    override val id: OperatorIdentity,
+    val opExec: Int => IOperatorExecutor,
+    val dependency: mutable.Map[Int, Int] = mutable.Map()
+) extends OpExecConfig(id) {
 
   override lazy val topology: Topology = {
     new Topology(
@@ -49,8 +49,8 @@ class ManyToOneOpExecConfig(
   }
 
   override def assignBreakpoint(
-                                 breakpoint: GlobalBreakpoint[_]
-                               ): Array[ActorVirtualIdentity] = {
+      breakpoint: GlobalBreakpoint[_]
+  ): Array[ActorVirtualIdentity] = {
     // TODO: take worker states into account
     topology.layers(0).identifiers
   }
