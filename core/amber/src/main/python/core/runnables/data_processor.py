@@ -143,12 +143,12 @@ class DataProcessor(StoppableQueueBlockingRunnable):
         :return: Iterator[Tuple], iterator of result Tuple(s).
         """
 
-        # bind link with input index
-        input_ = self.context.port_manager.get_input_port_index(link)
+        # bind link with input ordinal
+        port_ordinal = self.context.port_manager.get_input_port_ordinal(link)
 
         return map(lambda t: Tuple(t) if t is not None else None,
-                   self._operator.process_tuple(tuple_, input_) if isinstance(tuple_, Tuple)
-                   else self._operator.on_finish(input_))
+                   self._operator.process_tuple(tuple_, port_ordinal) if isinstance(tuple_, Tuple)
+                   else self._operator.on_finish(port_ordinal))
 
     def report_exception(self) -> None:
         """

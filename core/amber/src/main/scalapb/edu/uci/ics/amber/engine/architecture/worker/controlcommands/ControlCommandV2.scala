@@ -1117,8 +1117,8 @@ object UpdateInputLinkingV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ic
 
 @SerialVersionUID(0L)
 final case class InitializePortMappingV2(
-    inputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair],
-    outputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]
+    inputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair],
+    outputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]
     ) extends scalapb.GeneratedMessage with edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2.NonEmpty with scalapb.lenses.Updatable[InitializePortMappingV2] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
@@ -1157,13 +1157,13 @@ final case class InitializePortMappingV2(
       };
     }
     def clearInputToOrdinalMapping = copy(inputToOrdinalMapping = _root_.scala.Seq.empty)
-    def addInputToOrdinalMapping(__vs: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair*): InitializePortMappingV2 = addAllInputToOrdinalMapping(__vs)
-    def addAllInputToOrdinalMapping(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]): InitializePortMappingV2 = copy(inputToOrdinalMapping = inputToOrdinalMapping ++ __vs)
-    def withInputToOrdinalMapping(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]): InitializePortMappingV2 = copy(inputToOrdinalMapping = __v)
+    def addInputToOrdinalMapping(__vs: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair*): InitializePortMappingV2 = addAllInputToOrdinalMapping(__vs)
+    def addAllInputToOrdinalMapping(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]): InitializePortMappingV2 = copy(inputToOrdinalMapping = inputToOrdinalMapping ++ __vs)
+    def withInputToOrdinalMapping(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]): InitializePortMappingV2 = copy(inputToOrdinalMapping = __v)
     def clearOutputToOrdinalMapping = copy(outputToOrdinalMapping = _root_.scala.Seq.empty)
-    def addOutputToOrdinalMapping(__vs: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair*): InitializePortMappingV2 = addAllOutputToOrdinalMapping(__vs)
-    def addAllOutputToOrdinalMapping(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]): InitializePortMappingV2 = copy(outputToOrdinalMapping = outputToOrdinalMapping ++ __vs)
-    def withOutputToOrdinalMapping(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]): InitializePortMappingV2 = copy(outputToOrdinalMapping = __v)
+    def addOutputToOrdinalMapping(__vs: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair*): InitializePortMappingV2 = addAllOutputToOrdinalMapping(__vs)
+    def addAllOutputToOrdinalMapping(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]): InitializePortMappingV2 = copy(outputToOrdinalMapping = outputToOrdinalMapping ++ __vs)
+    def withOutputToOrdinalMapping(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]): InitializePortMappingV2 = copy(outputToOrdinalMapping = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => inputToOrdinalMapping
@@ -1185,17 +1185,17 @@ final case class InitializePortMappingV2(
 object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2] {
   implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2] = this
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2 = {
-    val __inputToOrdinalMapping: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]
-    val __outputToOrdinalMapping: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]
+    val __inputToOrdinalMapping: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]
+    val __outputToOrdinalMapping: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
       _tag__ match {
         case 0 => _done__ = true
         case 10 =>
-          __inputToOrdinalMapping += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair](_input__)
+          __inputToOrdinalMapping += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair](_input__)
         case 18 =>
-          __outputToOrdinalMapping += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair](_input__)
+          __outputToOrdinalMapping += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair](_input__)
         case tag => _input__.skipField(tag)
       }
     }
@@ -1208,8 +1208,8 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
       edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2(
-        inputToOrdinalMapping = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]]).getOrElse(_root_.scala.Seq.empty),
-        outputToOrdinalMapping = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]]).getOrElse(_root_.scala.Seq.empty)
+        inputToOrdinalMapping = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]]).getOrElse(_root_.scala.Seq.empty),
+        outputToOrdinalMapping = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]]).getOrElse(_root_.scala.Seq.empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
@@ -1218,14 +1218,14 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
-      case 1 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
-      case 2 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
+      case 1 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair
+      case 2 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair
     }
     __out
   }
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] =
     Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]](
-      _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
+      _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair
     )
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
   lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2(
@@ -1233,10 +1233,10 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
     outputToOrdinalMapping = _root_.scala.Seq.empty
   )
   @SerialVersionUID(0L)
-  final case class PortOrdinalPair(
+  final case class PortInfoPair(
       linkIdentity: edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity,
-      ordinal: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal
-      ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PortOrdinalPair] {
+      portInfo: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo
+      ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PortInfoPair] {
       @transient
       private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
       private[this] def __computeSerializedValue(): _root_.scala.Int = {
@@ -1250,8 +1250,8 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
         };
         
         {
-          val __value = ordinal
-          if (__value != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance) {
+          val __value = portInfo
+          if (__value != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance) {
             __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(__value.serializedSize) + __value.serializedSize
           }
         };
@@ -1275,16 +1275,16 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
           }
         };
         {
-          val __v = ordinal
-          if (__v != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance) {
+          val __v = portInfo
+          if (__v != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance) {
             _output__.writeTag(2, 2)
             _output__.writeUInt32NoTag(__v.serializedSize)
             __v.writeTo(_output__)
           }
         };
       }
-      def withLinkIdentity(__v: edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity): PortOrdinalPair = copy(linkIdentity = __v)
-      def withOrdinal(__v: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal): PortOrdinalPair = copy(ordinal = __v)
+      def withLinkIdentity(__v: edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity): PortInfoPair = copy(linkIdentity = __v)
+      def withPortInfo(__v: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo): PortInfoPair = copy(portInfo = __v)
       def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
         (__fieldNumber: @_root_.scala.unchecked) match {
           case 1 => {
@@ -1292,8 +1292,8 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
             if (__t != edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity.defaultInstance) __t else null
           }
           case 2 => {
-            val __t = ordinal
-            if (__t != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance) __t else null
+            val __t = portInfo
+            if (__t != edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance) __t else null
           }
         }
       }
@@ -1301,19 +1301,19 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
         _root_.scala.Predef.require(__field.containingMessage eq companion.scalaDescriptor)
         (__field.number: @_root_.scala.unchecked) match {
           case 1 => linkIdentity.toPMessage
-          case 2 => ordinal.toPMessage
+          case 2 => portInfo.toPMessage
         }
       }
       def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
-      def companion = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
-      // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortOrdinalPair])
+      def companion = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair
+      // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortInfoPair])
   }
   
-  object PortOrdinalPair extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair] {
-    implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair] = this
-    def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair = {
+  object PortInfoPair extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair] {
+    implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair] = this
+    def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair = {
       var __linkIdentity: _root_.scala.Option[edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity] = _root_.scala.None
-      var __ordinal: _root_.scala.Option[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal] = _root_.scala.None
+      var __portInfo: _root_.scala.Option[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo] = _root_.scala.None
       var _done__ = false
       while (!_done__) {
         val _tag__ = _input__.readTag()
@@ -1322,21 +1322,21 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
           case 10 =>
             __linkIdentity = _root_.scala.Some(__linkIdentity.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
           case 18 =>
-            __ordinal = _root_.scala.Some(__ordinal.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
+            __portInfo = _root_.scala.Some(__portInfo.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
           case tag => _input__.skipField(tag)
         }
       }
-      edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair(
+      edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair(
           linkIdentity = __linkIdentity.getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity.defaultInstance),
-          ordinal = __ordinal.getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance)
+          portInfo = __portInfo.getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance)
       )
     }
-    implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair] = _root_.scalapb.descriptors.Reads{
+    implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair] = _root_.scalapb.descriptors.Reads{
       case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
         _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
-        edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair(
+        edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair(
           linkIdentity = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity]).getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity.defaultInstance),
-          ordinal = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal]).getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance)
+          portInfo = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo]).getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance)
         )
       case _ => throw new RuntimeException("Expected PMessage")
     }
@@ -1346,31 +1346,31 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
       var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
       (__number: @_root_.scala.unchecked) match {
         case 1 => __out = edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
-        case 2 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal
+        case 2 => __out = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo
       }
       __out
     }
     lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] =
       Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]](
-        _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal
+        _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo
       )
     def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-    lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair(
+    lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair(
       linkIdentity = edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity.defaultInstance,
-      ordinal = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal.defaultInstance
+      portInfo = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo.defaultInstance
     )
     @SerialVersionUID(0L)
-    final case class Ordinal(
-        portIndex: _root_.scala.Int,
+    final case class PortInfo(
+        portOrdinal: _root_.scala.Int,
         portName: _root_.scala.Predef.String
-        ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[Ordinal] {
+        ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PortInfo] {
         @transient
         private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
         private[this] def __computeSerializedValue(): _root_.scala.Int = {
           var __size = 0
           
           {
-            val __value = portIndex
+            val __value = portOrdinal
             if (__value != 0) {
               __size += _root_.com.google.protobuf.CodedOutputStream.computeInt32Size(1, __value)
             }
@@ -1394,7 +1394,7 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
         }
         def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): _root_.scala.Unit = {
           {
-            val __v = portIndex
+            val __v = portOrdinal
             if (__v != 0) {
               _output__.writeInt32(1, __v)
             }
@@ -1406,12 +1406,12 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
             }
           };
         }
-        def withPortIndex(__v: _root_.scala.Int): Ordinal = copy(portIndex = __v)
-        def withPortName(__v: _root_.scala.Predef.String): Ordinal = copy(portName = __v)
+        def withPortOrdinal(__v: _root_.scala.Int): PortInfo = copy(portOrdinal = __v)
+        def withPortName(__v: _root_.scala.Predef.String): PortInfo = copy(portName = __v)
         def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
           (__fieldNumber: @_root_.scala.unchecked) match {
             case 1 => {
-              val __t = portIndex
+              val __t = portOrdinal
               if (__t != 0) __t else null
             }
             case 2 => {
@@ -1423,19 +1423,19 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
         def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
           _root_.scala.Predef.require(__field.containingMessage eq companion.scalaDescriptor)
           (__field.number: @_root_.scala.unchecked) match {
-            case 1 => _root_.scalapb.descriptors.PInt(portIndex)
+            case 1 => _root_.scalapb.descriptors.PInt(portOrdinal)
             case 2 => _root_.scalapb.descriptors.PString(portName)
           }
         }
         def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
-        def companion = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal
-        // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortOrdinalPair.Ordinal])
+        def companion = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo
+        // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortInfoPair.PortInfo])
     }
     
-    object Ordinal extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal] {
-      implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal] = this
-      def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal = {
-        var __portIndex: _root_.scala.Int = 0
+    object PortInfo extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo] {
+      implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo] = this
+      def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo = {
+        var __portOrdinal: _root_.scala.Int = 0
         var __portName: _root_.scala.Predef.String = ""
         var _done__ = false
         while (!_done__) {
@@ -1443,76 +1443,76 @@ object InitializePortMappingV2 extends scalapb.GeneratedMessageCompanion[edu.uci
           _tag__ match {
             case 0 => _done__ = true
             case 8 =>
-              __portIndex = _input__.readInt32()
+              __portOrdinal = _input__.readInt32()
             case 18 =>
               __portName = _input__.readStringRequireUtf8()
             case tag => _input__.skipField(tag)
           }
         }
-        edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal(
-            portIndex = __portIndex,
+        edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo(
+            portOrdinal = __portOrdinal,
             portName = __portName
         )
       }
-      implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal] = _root_.scalapb.descriptors.Reads{
+      implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo] = _root_.scalapb.descriptors.Reads{
         case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
           _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
-          edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal(
-            portIndex = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Int]).getOrElse(0),
+          edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo(
+            portOrdinal = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Int]).getOrElse(0),
             portName = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Predef.String]).getOrElse("")
           )
         case _ => throw new RuntimeException("Expected PMessage")
       }
-      def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.javaDescriptor.getNestedTypes().get(0)
-      def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.scalaDescriptor.nestedMessages(0)
+      def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.javaDescriptor.getNestedTypes().get(0)
+      def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.scalaDescriptor.nestedMessages(0)
       def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = throw new MatchError(__number)
       lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
       def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-      lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal(
-        portIndex = 0,
+      lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo(
+        portOrdinal = 0,
         portName = ""
       )
-      implicit class OrdinalLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal](_l) {
-        def portIndex: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.portIndex)((c_, f_) => c_.copy(portIndex = f_))
+      implicit class PortInfoLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo](_l) {
+        def portOrdinal: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.portOrdinal)((c_, f_) => c_.copy(portOrdinal = f_))
         def portName: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.portName)((c_, f_) => c_.copy(portName = f_))
       }
-      final val PORT_INDEX_FIELD_NUMBER = 1
+      final val PORT_ORDINAL_FIELD_NUMBER = 1
       final val PORT_NAME_FIELD_NUMBER = 2
       def of(
-        portIndex: _root_.scala.Int,
+        portOrdinal: _root_.scala.Int,
         portName: _root_.scala.Predef.String
-      ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal(
-        portIndex,
+      ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo(
+        portOrdinal,
         portName
       )
-      // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortOrdinalPair.Ordinal])
+      // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortInfoPair.PortInfo])
     }
     
-    implicit class PortOrdinalPairLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair](_l) {
+    implicit class PortInfoPairLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair](_l) {
       def linkIdentity: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity] = field(_.linkIdentity)((c_, f_) => c_.copy(linkIdentity = f_))
-      def ordinal: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal] = field(_.ordinal)((c_, f_) => c_.copy(ordinal = f_))
+      def portInfo: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo] = field(_.portInfo)((c_, f_) => c_.copy(portInfo = f_))
     }
     final val LINK_IDENTITY_FIELD_NUMBER = 1
-    final val ORDINAL_FIELD_NUMBER = 2
+    final val PORT_INFO_FIELD_NUMBER = 2
     def of(
       linkIdentity: edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity,
-      ordinal: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair.Ordinal
-    ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair(
+      portInfo: edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair.PortInfo
+    ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair(
       linkIdentity,
-      ordinal
+      portInfo
     )
-    // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortOrdinalPair])
+    // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.InitializePortMappingV2.PortInfoPair])
   }
   
   implicit class InitializePortMappingV2Lens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2](_l) {
-    def inputToOrdinalMapping: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]] = field(_.inputToOrdinalMapping)((c_, f_) => c_.copy(inputToOrdinalMapping = f_))
-    def outputToOrdinalMapping: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]] = field(_.outputToOrdinalMapping)((c_, f_) => c_.copy(outputToOrdinalMapping = f_))
+    def inputToOrdinalMapping: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]] = field(_.inputToOrdinalMapping)((c_, f_) => c_.copy(inputToOrdinalMapping = f_))
+    def outputToOrdinalMapping: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]] = field(_.outputToOrdinalMapping)((c_, f_) => c_.copy(outputToOrdinalMapping = f_))
   }
   final val INPUT_TO_ORDINAL_MAPPING_FIELD_NUMBER = 1
   final val OUTPUT_TO_ORDINAL_MAPPING_FIELD_NUMBER = 2
   def of(
-    inputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair],
-    outputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair]
+    inputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair],
+    outputToOrdinalMapping: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair]
   ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2 = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2(
     inputToOrdinalMapping,
     outputToOrdinalMapping

@@ -182,24 +182,24 @@ class LinkCompletedV2(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class InitializePortMappingV2(betterproto.Message):
     input_to_ordinal_mapping: List[
-        "InitializePortMappingV2PortOrdinalPair"
+        "InitializePortMappingV2PortInfoPair"
     ] = betterproto.message_field(1)
     output_to_ordinal_mapping: List[
-        "InitializePortMappingV2PortOrdinalPair"
+        "InitializePortMappingV2PortInfoPair"
     ] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
-class InitializePortMappingV2PortOrdinalPair(betterproto.Message):
+class InitializePortMappingV2PortInfoPair(betterproto.Message):
     link_identity: "__common__.LinkIdentity" = betterproto.message_field(1)
-    ordinal: "InitializePortMappingV2PortOrdinalPairOrdinal" = (
+    port_info: "InitializePortMappingV2PortInfoPairPortInfo" = (
         betterproto.message_field(2)
     )
 
 
 @dataclass(eq=False, repr=False)
-class InitializePortMappingV2PortOrdinalPairOrdinal(betterproto.Message):
-    port_index: int = betterproto.int32_field(1)
+class InitializePortMappingV2PortInfoPairPortInfo(betterproto.Message):
+    port_ordinal: int = betterproto.int32_field(1)
     port_name: str = betterproto.string_field(2)
 
 

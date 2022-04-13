@@ -73,16 +73,16 @@ message LinkCompletedV2 {
 }
 
 message InitializePortMappingV2 {
-  message PortOrdinalPair {
-    message Ordinal {
-      int32 port_index = 1;
+  message PortInfoPair {
+    message PortInfo {
+      int32 port_ordinal = 1;
       string port_name = 2;
     }
     common.LinkIdentity link_identity = 1 [(scalapb.field).no_box = true];
-    Ordinal ordinal = 2 [(scalapb.field).no_box = true];
+    PortInfo port_info = 2 [(scalapb.field).no_box = true];
   }
-  repeated PortOrdinalPair input_to_ordinal_mapping = 1;
-  repeated PortOrdinalPair output_to_ordinal_mapping = 2;
+  repeated PortInfoPair input_to_ordinal_mapping = 1;
+  repeated PortInfoPair output_to_ordinal_mapping = 2;
 }
 
 message ControlCommandV2 {

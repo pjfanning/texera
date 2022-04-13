@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.Initia
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyOperatorLogicHandler.ModifyOperatorLogic
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ReplayCurrentTupleHandler.ReplayCurrentTuple
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning
-import edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortOrdinalPair
+import edu.uci.ics.amber.engine.architecture.worker.controlcommands.InitializePortMappingV2.PortInfoPair
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlReturnV2
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlReturnV2.Value.Empty
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
@@ -50,10 +50,10 @@ object ControlCommandConvertUtils {
       case InitializePortMapping(inputToOrdinalMapping, outputToOrdinalMapping) =>
         InitializePortMappingV2(
           inputToOrdinalMapping.toSeq.map({
-            case (l, (i, n)) => PortOrdinalPair(l, PortOrdinalPair.Ordinal(i, n))
+            case (l, (i, n)) => PortInfoPair(l, PortInfoPair.PortInfo(i, n))
           }),
           outputToOrdinalMapping.toSeq.map({
-            case (l, (i, n)) => PortOrdinalPair(l, PortOrdinalPair.Ordinal(i, n))
+            case (l, (i, n)) => PortInfoPair(l, PortInfoPair.PortInfo(i, n))
           })
         )
       case QueryStatistics() =>
