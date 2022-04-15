@@ -8,7 +8,9 @@ from core.architecture.handlers.handler_base import Handler
 from core.architecture.handlers.initialize_operator_logic_handler import (
     InitializeOperatorLogicHandler,
 )
-from core.architecture.handlers.initialize_port_mapping_handler import InitializePortMappingHandler
+from core.architecture.handlers.initialize_port_mapping_handler import (
+    InitializePortMappingHandler,
+)
 from core.architecture.handlers.modify_operator_logic_handler import (
     ModifyOperatorLogicHandler,
 )
