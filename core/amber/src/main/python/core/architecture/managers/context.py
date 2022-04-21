@@ -32,6 +32,6 @@ class Context:
 
         self.statistics_manager = StatisticsManager()
         self.pause_manager = PauseManager()
-        self.tuple_to_batch_converter = TupleToBatchConverter()
-        self.batch_to_tuple_converter = BatchToTupleConverter()
         self.port_manager = PortManager()
+        self.batch_to_tuple_converter = BatchToTupleConverter()
+        self.tuple_to_batch_converter = TupleToBatchConverter(self.port_manager)

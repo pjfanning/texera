@@ -2,7 +2,7 @@
 # sources: edu/uci/ics/amber/engine/architecture/worker/controlcommands.proto, edu/uci/ics/amber/engine/architecture/worker/controlreturns.proto, edu/uci/ics/amber/engine/architecture/worker/statistics.proto, edu/uci/ics/amber/engine/architecture/worker/workloadmetrics.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import List
 
 import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
@@ -143,8 +143,25 @@ class LocalOperatorExceptionV2(betterproto.Message):
 class InitializeOperatorLogicV2(betterproto.Message):
     code: str = betterproto.string_field(1)
     is_source: bool = betterproto.bool_field(2)
-    output_schema: Dict[str, str] = betterproto.map_field(
-        3, betterproto.TYPE_STRING, betterproto.TYPE_STRING
+    output_schemas: List["InitializeOperatorLogicV2Schema"] = betterproto.message_field(
+        3
+    )
+
+
+@dataclass(eq=False, repr=False)
+class InitializeOperatorLogicV2Attribute(betterproto.Message):
+    """
+    TODO: change it to enum AttributeType TODO: unify with java declaration
+    """
+
+    attribute_name: str = betterproto.string_field(1)
+    attribute_type: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class InitializeOperatorLogicV2Schema(betterproto.Message):
+    attributes: List["InitializeOperatorLogicV2Attribute"] = betterproto.message_field(
+        1
     )
 
 

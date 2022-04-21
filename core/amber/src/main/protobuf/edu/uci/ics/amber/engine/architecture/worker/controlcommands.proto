@@ -46,7 +46,18 @@ message LocalOperatorExceptionV2 {
 message InitializeOperatorLogicV2 {
   string code = 1;
   bool is_source = 2;
-  map<string, string> output_schema = 3;
+
+  // TODO: unify Attribute and Schema with java declaration
+  message Attribute {
+    string attribute_name = 1;
+    string attribute_type = 2; // TODO: change it to enum AttributeType
+  }
+
+  message Schema {
+    repeated Attribute attributes = 1;
+  }
+
+  repeated Schema output_schemas = 3;
 }
 
 message ModifyOperatorLogicV2 {

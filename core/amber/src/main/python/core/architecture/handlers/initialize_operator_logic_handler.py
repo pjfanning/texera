@@ -12,5 +12,7 @@ class InitializeOperatorLogicHandler(Handler):
         operator: type(Operator) = load_operator(command.code)
         context.dp._operator = operator()
         context.dp._operator.is_source = command.is_source
-        context.dp._operator.output_schema = command.output_schema
+        context.dp._operator.output_schemas = command.output_schemas
+        for ordinal, output_schema in enumerate(context.dp._operator.output_schemas):
+            context.port_manager.set_output_port_schema(ordinal, output_schema)
         return None

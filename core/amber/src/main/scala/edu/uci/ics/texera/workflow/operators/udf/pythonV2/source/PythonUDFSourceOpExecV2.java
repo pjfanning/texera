@@ -12,11 +12,13 @@ import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.util.Either;
 
+
+
 public class PythonUDFSourceOpExecV2 extends PythonUDFOpExecV2 implements SourceOperatorExecutor {
 
 
-    public PythonUDFSourceOpExecV2(String code, Schema outputSchema) {
-        super(code, outputSchema);
+    public PythonUDFSourceOpExecV2(String code, Schema[] outputSchemas) {
+        super(code, outputSchemas);
     }
 
 

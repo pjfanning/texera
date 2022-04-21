@@ -20,6 +20,7 @@ from core.models import (
     SenderChangeMarker,
     Tuple,
 )
+from core.models.tuple import PortConfig
 from core.util import IQueue, StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.print_writer.print_log_handler import PrintLogHandler
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
@@ -148,22 +149,22 @@ class DataProcessor(StoppableQueueBlockingRunnable):
             self.context.statistics_manager.increase_input_tuple_count()
 
         try:
-            for output_tuple in self.process_tuple_with_udf(
+            for output in self.process_tuple_with_udf(
                 self._current_input_tuple, self._current_input_link
             ):
                 self.check_and_process_control()
-                if output_tuple is not None:
-                    schema = self._operator.output_schema
-                    self.cast_tuple_to_match_schema(output_tuple, schema)
-                    self.context.statistics_manager.increase_output_tuple_count()
+
+                if output is not None:
+                    output_tuple, output_config = output
                     for (
                         to,
                         batch,
                     ) in self.context.tuple_to_batch_converter.tuple_to_batch(
-                        output_tuple
+                        output_tuple, output_config
                     ):
-                        batch.schema = self._operator.output_schema
+
                         self._output_queue.put(DataElement(tag=to, payload=batch))
+                    self.context.statistics_manager.increase_output_tuple_count()
         except Exception as err:
             logger.exception(err)
             self.report_exception()
@@ -185,8 +186,21 @@ class DataProcessor(StoppableQueueBlockingRunnable):
         # bind link with input ordinal
         port_ordinal = self.context.port_manager.get_input_port_ordinal(link)
 
+        def convert_to_tuple(t):
+            return Tuple(t) if t is not None else None
+
+        def get_config(output):
+            if isinstance(output, Tuple):
+                return output, PortConfig()
+            elif isinstance(output, tuple) and len(output) == 2:
+                tuple_, raw_config = output
+                tuple_ = convert_to_tuple(tuple_)
+                if tuple_ is None or not isinstance(raw_config, dict):
+                    return
+                return tuple_, PortConfig(**raw_config)
+
         return map(
-            lambda t: Tuple(t) if t is not None else None,
+            get_config,
             self._operator.process_tuple(tuple_, port_ordinal)
             if isinstance(tuple_, Tuple)
             else self._operator.on_finish(port_ordinal),
@@ -249,7 +263,7 @@ class DataProcessor(StoppableQueueBlockingRunnable):
         :param _: EndOfAllMarker
         """
         for to, batch in self.context.tuple_to_batch_converter.emit_end_of_upstream():
-            batch.schema = self._operator.output_schema
+
             self._output_queue.put(DataElement(tag=to, payload=batch))
             self.check_and_process_control()
         self.complete()
@@ -322,17 +336,3 @@ class DataProcessor(StoppableQueueBlockingRunnable):
                 self.context.pause_manager.resume()
                 self.context.input_queue.enable_sub()
             self.context.state_manager.transit_to(WorkerState.RUNNING)
-
-    @staticmethod
-    def cast_tuple_to_match_schema(output_tuple, schema):
-        # TODO: move this into Tuple, after making Tuple aware of Schema
-
-        # right now only support casting ANY to binary.
-        import pickle
-
-        for field_name in output_tuple.get_field_names():
-            field_value = output_tuple[field_name]
-            field = schema.field(field_name)
-            field_type = field.type if field is not None else None
-            if field_type == pyarrow.binary():
-                output_tuple[field_name] = b"pickle    " + pickle.dumps(field_value)

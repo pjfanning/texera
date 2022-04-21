@@ -2,7 +2,7 @@ import datetime
 import pyarrow
 import typing
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Mapping, Iterator, TypeVar, Dict, Callable
 
 import pandas
@@ -182,3 +182,20 @@ class Tuple:
 
     def __len__(self) -> int:
         return len(self._field_data)
+
+
+@dataclass
+class PortConfig:
+    port_ordinal: int
+    _port_ordinal: int = field(init=False, repr=False, default=0)
+
+    @property
+    def port_ordinal(self) -> int:
+        return self._port_ordinal
+
+    @port_ordinal.setter
+    def port_ordinal(self, ordinal: int) -> None:
+        if type(ordinal) is property:
+            # initial value not specified, use default
+            ordinal = PortConfig._port_ordinal
+        self._port_ordinal = ordinal

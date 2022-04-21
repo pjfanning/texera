@@ -105,7 +105,7 @@ class Controller(
                   InitializeOperatorLogic(
                     pythonOperatorExec.getCode,
                     pythonOperatorExec.isInstanceOf[ISourceOperatorExecutor],
-                    pythonOperatorExec.getOutputSchema
+                    pythonOperatorExec.getOutputSchemas
                   ),
                   workerID
                 )
