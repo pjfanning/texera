@@ -129,8 +129,8 @@
 .texera-result-panel-grid-container {
   grid-column: 2/3;
   grid-row: 5/6;
-  overflow: auto;
-  transition: height 1s;
+  /*overflow: auto;*/
+  transition: height 2s;
 }
 
 .texera-result-panel-toggle-grid-container {

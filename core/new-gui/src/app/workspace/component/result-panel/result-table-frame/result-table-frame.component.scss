@@ -3,16 +3,24 @@
 }
 
 :host ::ng-deep .ant-table-header {
-  width: 300vw;
+  width: 150vw;
 }
 
 :host ::ng-deep .ant-table-body {
-  width: 300vw;
+  width: 150vw;
 }
 
 div.scroll {
-  margin: 4px, 4px;
+  margin: 1px, 1px;
   padding: 4px;
   width: 100%;
   overflow-x: auto;
+}
+
+td.data-size{
+  font-size: xx-small;
+}
+
+th.header-size{
+  font-size: xx-small;
 }
