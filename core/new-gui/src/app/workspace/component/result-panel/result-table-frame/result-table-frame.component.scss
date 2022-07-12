@@ -1,26 +1,33 @@
 :host ::ng-deep .ant-table-wrapper {
-  width: 300px;
+  width: 500px;
 }
 
+:host ::ng-deep .ant-table-pagination.ant-pagination {
+  margin: 10px;
+}
+
+:host ::ng-deep .ant-table-pagination-right {
+  justify-content: left;
+}
 :host ::ng-deep .ant-table-header {
-  width: 150vw;
+  width: 200vw;
 }
 
 :host ::ng-deep .ant-table-body {
-  width: 150vw;
+  width: 200vw;
 }
 
 div.scroll {
-  margin: 1px, 1px;
-  padding: 4px;
+  margin: 0px, 0px;
+  padding: 0px;
   width: 100%;
-  overflow-x: auto;
+  overflow-x: scroll;
 }
 
 td.data-size {
-  font-size: xx-small;
+  font-size: 9px;
 }
 
 th.header-size {
-  font-size: xx-small;
+  font-size: 10px;
 }
