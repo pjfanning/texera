@@ -46,10 +46,10 @@
   grid-template-columns: 200px auto 350px;
   grid-template-rows:
     var(--header-height)
-    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.6)
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.4)
     0px
     var(--resultbar-height)
-    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.4);
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.6);
   position: relative;
 }
 
