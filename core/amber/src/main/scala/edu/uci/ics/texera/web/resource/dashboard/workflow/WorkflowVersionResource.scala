@@ -37,7 +37,8 @@ object WorkflowVersionResource {
   private final val AGGREGATE_TIME_LIMIT_MILLSEC =
     AmberUtils.amberConfig.getInt("user-sys.version-time-limit-in-minutes") * 60000
   // list of Json keys in the diff patch that are considered UNimportant
-  private final val VERSION_UNIMPORTANCE_RULES = List("/operatorPositions/")
+  private final val VERSION_UNIMPORTANCE_RULES =
+    List("/operatorPositions/", "/commentBoxes/", "/comments/")
 
   /**
     * This function retrieves the latest version of a workflow

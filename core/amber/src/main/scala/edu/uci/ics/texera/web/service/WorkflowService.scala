@@ -21,6 +21,7 @@ import edu.uci.ics.texera.web.model.websocket.request.{
   WorkflowExecuteRequest,
   WorkflowKillRequest
 }
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
@@ -38,9 +39,11 @@ object WorkflowService {
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
 
   def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
+    val vId = getLatestVersion(UInteger.valueOf(wId))
+
     uidOpt match {
       case Some(user) =>
-        user + "-" + wId
+        user + "-" + wId + "-" + vId
       case None =>
         // use a fixed wid for reconnection
         "dummy wid"
