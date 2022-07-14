@@ -15,7 +15,7 @@ import { ChartType } from "../../types/visualization.interface";
 
 export const DEFAULT_PAGE_SIZE = 5;
 
-/**
+/*
  * WorkflowResultService manages the result data of a workflow execution.
  */
 @Injectable({
