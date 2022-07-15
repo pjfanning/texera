@@ -96,11 +96,11 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
           sink.getCachedUpstreamId match {
             case Some(upstreamId) =>
               sink.setStorage(
-                opResultStorage.create(workflowContext.executionID, upstreamId, outputSchemas(0))
+                opResultStorage.create(key = upstreamId, schema = outputSchemas(0))
               )
             case None =>
               sink.setStorage(
-                opResultStorage.create(workflowContext.executionID, o.operatorID, outputSchemas(0))
+                opResultStorage.create(workflowContext.executionID + "_", o.operatorID, outputSchemas(0))
               )
           }
         case _ =>

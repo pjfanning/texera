@@ -27,13 +27,13 @@ class OpResultStorage(mode: String = "memory") extends Serializable with LazyLog
     cache.get(key)
   }
 
-  def create(executionID: Long, key: String, schema: Schema): SinkStorageReader = {
+  def create(executionID: String = "", key: String, schema: Schema): SinkStorageReader = {
     val storage: SinkStorageReader =
       if (mode == "memory") {
         new MemoryStorage(schema)
       } else {
         try {
-          new MongoDBStorage(executionID + "_" + key, schema)
+          new MongoDBStorage(executionID + key, schema)
         } catch {
           case t: Throwable =>
             t.printStackTrace()
