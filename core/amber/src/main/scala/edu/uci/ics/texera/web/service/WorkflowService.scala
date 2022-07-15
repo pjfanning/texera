@@ -27,6 +27,7 @@ import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
 import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
@@ -39,11 +40,9 @@ object WorkflowService {
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
 
   def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
-    val vId = getLatestVersion(UInteger.valueOf(wId))
-
     uidOpt match {
       case Some(user) =>
-        user + "-" + wId + "-" + vId
+        wId.toString
       case None =>
         // use a fixed wid for reconnection
         "dummy wid"
@@ -60,7 +59,16 @@ object WorkflowService {
         if (v == null) {
           new WorkflowService(uidOpt, wId, cleanupTimeout)
         } else {
-          v
+          //if usre system is not enabled, return v
+          // retrieve the one stored in memory
+          val lowerBound = UInteger.valueOf(v.workflowContxt.vId)
+          // retrieve the latest one in mysql
+          val upperBound = getLatestVersion(UInteger.valueOf(wId))
+          if (isVersionInRangeUnimportant(lowerBound, upperBound, UInteger.valueOf(wId))) {
+            v
+          } else {
+            new WorkflowService(uidOpt, wId, cleanupTimeout)
+          }
         }
       }
     )
@@ -97,6 +105,7 @@ class WorkflowService(
   val operatorCache: WorkflowCacheService =
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+  var workflowContxt = new WorkflowContext()
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -156,7 +165,8 @@ class WorkflowService(
         )
       )
     }
-    new WorkflowContext(jobID, uidOpt, wId)
+    val vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
+    new WorkflowContext(jobID, uidOpt, vId, wId)
   }
 
   def initJobService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
@@ -164,8 +174,9 @@ class WorkflowService(
       //unsubscribe all
       jobService.getValue.unsubscribeAll()
     }
+    workflowContxt = createWorkflowContext(req)
     val job = new WorkflowJobService(
-      createWorkflowContext(req),
+      workflowContxt,
       wsInput,
       operatorCache,
       resultService,

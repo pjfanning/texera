@@ -121,6 +121,30 @@ object WorkflowVersionResource {
     workflowVersionDao.update(workflowVersion)
   }
 
+  /*
+   * This function retrieves the content of versions from a specific workflow in a range
+   * @param lowerBound lower bound of the version search range
+   * @param UpperBound upper bound of the search range
+   * @param wid workflow id
+   * @return a list of contents as strings
+   */
+  def isVersionInRangeUnimportant(
+      lowerBound: UInteger,
+      UpperBound: UInteger,
+      wid: UInteger
+  ): Boolean = {
+    val contents = context
+      .select(WORKFLOW_VERSION.CONTENT)
+      .from(WORKFLOW_VERSION)
+      .leftJoin(WORKFLOW)
+      .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
+      .where(WORKFLOW_VERSION.WID.eq(wid))
+      .and(WORKFLOW_VERSION.VID.between(lowerBound).and(UpperBound))
+      .fetchInto(classOf[String])
+      .toList
+    contents.forall(content => !isVersionImportant(content))
+  }
+
   /**
     * This function is for testing if the version is following the current design of keeping an empty delta for the
     * last version for migrating versions that followed the old design to the new design.
