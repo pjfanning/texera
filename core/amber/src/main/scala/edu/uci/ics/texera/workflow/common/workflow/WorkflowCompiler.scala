@@ -16,6 +16,8 @@ import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
+import edu.uci.ics.texera.Utils.objectMapper
+import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 
 import scala.collection.mutable
 
@@ -84,6 +86,11 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
 
     val inputSchemaMap = propagateWorkflowSchema()
     val amberOperators: mutable.Map[OperatorIdentity, OpExecConfig] = mutable.Map()
+    // create a JSON object that holds pointers to the workflow's results in Mongo
+    // TODO in the future, will extract this logic from here when we need pointers to the stats storage
+    val resultsJSON = objectMapper.createObjectNode()
+    val sinksPointers = objectMapper.createArrayNode()
+
     workflowInfo.operators.foreach(o => {
       val inputSchemas: Array[Schema] =
         if (!o.isInstanceOf[SourceOperatorDescriptor])
@@ -100,8 +107,14 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
               )
             case None =>
               sink.setStorage(
-                opResultStorage.create(workflowContext.executionID + "_", o.operatorID, outputSchemas(0))
+                opResultStorage.create(
+                  workflowContext.executionID + "_",
+                  o.operatorID,
+                  outputSchemas(0)
+                )
               )
+              // add the sink collection name to the JSON array of sinks
+              sinksPointers.add(workflowContext.executionID + "_" + o.operatorID)
           }
         case _ =>
       }
@@ -109,6 +122,12 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas))
       amberOperators.put(amberOperator.id, amberOperator)
     })
+// update execution entry in MySQL to have pointers to the mongo collections
+    resultsJSON.put("results", sinksPointers)
+    ExecutionsMetadataPersistService.updateExistingExecutionVolumnPointers(
+      workflowContext.executionID,
+      resultsJSON.toString
+    )
 
     val outLinks: mutable.Map[OperatorIdentity, mutable.Set[OperatorIdentity]] = mutable.Map()
     workflowInfo.links.foreach(link => {
