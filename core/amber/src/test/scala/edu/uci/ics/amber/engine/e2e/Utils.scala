@@ -31,7 +31,11 @@ object Utils {
       context
     )
 
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), new OpResultStorage())
+    texeraWorkflowCompiler.amberWorkflow(
+      WorkflowIdentity(workflowTag),
+      new OpResultStorage(),
+      context
+    )
   }
 
 }

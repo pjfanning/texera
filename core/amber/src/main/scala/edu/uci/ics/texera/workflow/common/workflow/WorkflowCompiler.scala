@@ -61,7 +61,11 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
       .toMap
       .filter(pair => pair._2.nonEmpty)
 
-  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
+  def amberWorkflow(
+      workflowId: WorkflowIdentity,
+      opResultStorage: OpResultStorage,
+      workflowContext: WorkflowContext
+  ): Workflow = {
     // pre-process: set output mode for sink based on the visualization operator before it
     workflowInfo.toDAG.getSinkOperators.foreach(sinkOpId => {
       val sinkOp = workflowInfo.toDAG.getOperator(sinkOpId)
@@ -91,8 +95,13 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
         case sink: ProgressiveSinkOpDesc =>
           sink.getCachedUpstreamId match {
             case Some(upstreamId) =>
-              sink.setStorage(opResultStorage.create(upstreamId, outputSchemas(0)))
-            case None => sink.setStorage(opResultStorage.create(o.operatorID, outputSchemas(0)))
+              sink.setStorage(
+                opResultStorage.create(workflowContext.executionID, upstreamId, outputSchemas(0))
+              )
+            case None =>
+              sink.setStorage(
+                opResultStorage.create(workflowContext.executionID, o.operatorID, outputSchemas(0))
+              )
           }
         case _ =>
       }
