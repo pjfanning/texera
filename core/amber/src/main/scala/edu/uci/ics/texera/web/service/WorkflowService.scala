@@ -62,7 +62,13 @@ object WorkflowService {
           //if user system is not enabled, return v
           if (userSystemEnabled) {
             // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
-            if (isVersionInRangeUnimportant(UInteger.valueOf(v.vId), getLatestVersion(UInteger.valueOf(wId)), UInteger.valueOf(wId))) {
+            if (
+              isVersionInRangeUnimportant(
+                UInteger.valueOf(v.vId),
+                getLatestVersion(UInteger.valueOf(wId)),
+                UInteger.valueOf(wId)
+              )
+            ) {
               v
             } else {
               new WorkflowService(uidOpt, wId, cleanupTimeout)
@@ -107,7 +113,7 @@ class WorkflowService(
   val operatorCache: WorkflowCacheService =
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
-  var vId:Int = -1
+  var vId: Int = -1
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
