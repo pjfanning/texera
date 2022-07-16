@@ -59,16 +59,18 @@ object WorkflowService {
         if (v == null) {
           new WorkflowService(uidOpt, wId, cleanupTimeout)
         } else {
-          //if usre system is not enabled, return v
-          // retrieve the one stored in memory
-          val lowerBound = UInteger.valueOf(v.workflowContxt.vId)
-          // retrieve the latest one in mysql
-          val upperBound = getLatestVersion(UInteger.valueOf(wId))
-          if (isVersionInRangeUnimportant(lowerBound, upperBound, UInteger.valueOf(wId))) {
-            v
+          //if user system is not enabled, return v
+          if (userSystemEnabled) {
+            // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
+            if (isVersionInRangeUnimportant(UInteger.valueOf(v.workflowContxt.vId), getLatestVersion(UInteger.valueOf(wId)), UInteger.valueOf(wId))) {
+              v
+            } else {
+              new WorkflowService(uidOpt, wId, cleanupTimeout)
+            }
           } else {
-            new WorkflowService(uidOpt, wId, cleanupTimeout)
+            v
           }
+
         }
       }
     )
