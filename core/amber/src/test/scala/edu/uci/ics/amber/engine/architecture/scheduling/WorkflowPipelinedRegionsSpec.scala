@@ -32,7 +32,11 @@ class WorkflowPipelinedRegionsSpec extends AnyFlatSpec with MockFactory {
       WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
       context
     )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
+    texeraWorkflowCompiler.amberWorkflow(
+      WorkflowIdentity("workflow-test"),
+      new OpResultStorage(),
+      context
+    )
   }
 
   "Pipelined Regions" should "correctly find regions in headerlessCsv->keyword->sink workflow" in {
