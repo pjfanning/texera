@@ -179,7 +179,13 @@ class WorkflowService(
     if (WorkflowService.userSystemEnabled) {
       executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, uidOpt)
     }
-    new WorkflowContext(jobID, uidOpt, getLatestVersion(UInteger.valueOf(wId)).intValue(), wId, executionID)
+    new WorkflowContext(
+      jobID,
+      uidOpt,
+      getLatestVersion(UInteger.valueOf(wId)).intValue(),
+      wId,
+      executionID
+    )
 
   }
 
