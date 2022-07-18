@@ -177,7 +177,7 @@ class WorkflowService(
     var executionID: Long = -1 // for every new execution,
     // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {
-      executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, uidOpt)
+      executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, vId, uidOpt)
     }
     new WorkflowContext(
       jobID,
