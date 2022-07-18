@@ -173,8 +173,14 @@ class WorkflowService(
         )
       )
     }
-    val vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
-    new WorkflowContext(jobID, uidOpt, vId, wId)
+
+    var executionID: Long = -1 // for every new execution,
+    // reset it so that the value doesn't carry over across executions
+    if (WorkflowService.userSystemEnabled) {
+      executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, uidOpt)
+    }
+    new WorkflowContext(jobID, uidOpt, getLatestVersion(UInteger.valueOf(wId)).intValue(), wId, executionID)
+
   }
 
   def initJobService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {

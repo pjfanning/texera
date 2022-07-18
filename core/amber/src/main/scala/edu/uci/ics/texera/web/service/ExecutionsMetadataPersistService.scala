@@ -67,12 +67,23 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     newExecution.getEid.longValue()
   }
 
-  def tryUpdateExistingExecution(eid: Long, state: WorkflowAggregatedState): Unit = {
+  def tryUpdateExistingExecutionStatus(eid: Long, state: WorkflowAggregatedState): Unit = {
     try {
       val code = maptoStatusCode(state)
       val execution = workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(eid))
       execution.setStatus(code)
       execution.setCompletionTime(new Timestamp(System.currentTimeMillis()))
+      workflowExecutionsDao.update(execution)
+    } catch {
+      case t: Throwable =>
+        logger.info("Unable to update execution. Error = " + t.getMessage)
+    }
+  }
+
+  def updateExistingExecutionVolumnPointers(eid: Long, pointers: String): Unit = {
+    try {
+      val execution = workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(eid))
+      execution.setResult(pointers)
       workflowExecutionsDao.update(execution)
     } catch {
       case t: Throwable =>

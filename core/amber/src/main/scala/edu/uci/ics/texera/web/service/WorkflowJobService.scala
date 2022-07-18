@@ -35,7 +35,8 @@ class WorkflowJobService(
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
-    resultService.opResultStorage
+    resultService.opResultStorage,
+    workflowContext
   )
 
   // Runtime starts from here:
@@ -57,8 +58,6 @@ class WorkflowJobService(
     client.sendAsync(ModifyLogic(req.operator))
   }))
 
-  workflowContext.executionID = -1 // for every new execution,
-  // reset it so that the value doesn't carry over across executions
   def startWorkflow(): Unit = {
     for (pair <- workflowInfo.breakpoints) {
       Await.result(
@@ -67,6 +66,7 @@ class WorkflowJobService(
       )
     }
     resultService.attachToJob(stateStore, workflowInfo, client)
+
     if (WorkflowService.userSystemEnabled) {
       workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
         workflowContext.wId,
@@ -74,6 +74,7 @@ class WorkflowJobService(
         workflowContext.userId
       )
     }
+
     stateStore.jobMetadataStore.updateState(jobInfo =>
       jobInfo.withState(READY).withEid(workflowContext.executionID).withError(null)
     )
