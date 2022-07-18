@@ -66,15 +66,6 @@ class WorkflowJobService(
       )
     }
     resultService.attachToJob(stateStore, workflowInfo, client)
-
-    if (WorkflowService.userSystemEnabled) {
-      workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
-        workflowContext.wId,
-        workflowContext.vId,
-        workflowContext.userId
-      )
-    }
-
     stateStore.jobMetadataStore.updateState(jobInfo =>
       jobInfo.withState(READY).withEid(workflowContext.executionID).withError(null)
     )
