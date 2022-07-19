@@ -183,8 +183,8 @@ class WorkflowService(
     new WorkflowContext(
       jobID,
       uidOpt,
-      getLatestVersion(UInteger.valueOf(wId)).intValue(),
       vId,
+      wId,
       executionID
     )
 
