@@ -133,8 +133,8 @@ object WorkflowVersionResource {
       UpperBound: UInteger,
       wid: UInteger
   ): Boolean = {
-    if (lowerBound==UpperBound) {
-      return false
+    if (lowerBound == UpperBound) {
+      return true
     }
     val contents = context
       .select(WORKFLOW_VERSION.CONTENT)
