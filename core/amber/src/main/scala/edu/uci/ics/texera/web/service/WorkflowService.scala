@@ -113,7 +113,7 @@ class WorkflowService(
   val operatorCache: WorkflowCacheService =
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
-  var vId: Int = getLatestVersion(UInteger.valueOf(wId)).intValue()
+  var vId: Int = -1
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -175,9 +175,9 @@ class WorkflowService(
     }
 
     var executionID: Long = -1 // for every new execution,
-
     // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {
+      vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
       executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, vId, uidOpt)
     }
     new WorkflowContext(
