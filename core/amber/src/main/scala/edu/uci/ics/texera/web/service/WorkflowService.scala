@@ -21,11 +21,13 @@ import edu.uci.ics.texera.web.model.websocket.request.{
   WorkflowExecuteRequest,
   WorkflowKillRequest
 }
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
 import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
@@ -40,7 +42,7 @@ object WorkflowService {
   def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
     uidOpt match {
       case Some(user) =>
-        user + "-" + wId
+        wId.toString
       case None =>
         // use a fixed wid for reconnection
         "dummy wid"
@@ -57,7 +59,24 @@ object WorkflowService {
         if (v == null) {
           new WorkflowService(uidOpt, wId, cleanupTimeout)
         } else {
-          v
+          //if user system is not enabled, return v
+          if (userSystemEnabled) {
+            // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
+            if (
+              isVersionInRangeUnimportant(
+                UInteger.valueOf(v.vId),
+                getLatestVersion(UInteger.valueOf(wId)),
+                UInteger.valueOf(wId)
+              )
+            ) {
+              v
+            } else {
+              new WorkflowService(uidOpt, wId, cleanupTimeout)
+            }
+          } else {
+            v
+          }
+
         }
       }
     )
@@ -94,6 +113,7 @@ class WorkflowService(
   val operatorCache: WorkflowCacheService =
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+  var vId: Int = -1
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -153,12 +173,21 @@ class WorkflowService(
         )
       )
     }
+
     var executionID: Long = -1 // for every new execution,
     // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {
-      executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, uidOpt)
+      vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
+      executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, vId, uidOpt)
     }
-    new WorkflowContext(jobID, uidOpt, wId, executionID)
+    new WorkflowContext(
+      jobID,
+      uidOpt,
+      vId,
+      wId,
+      executionID
+    )
+
   }
 
   def initJobService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
