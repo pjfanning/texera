@@ -6,6 +6,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW, WORKF
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.context
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
 import org.jooq.types.UInteger
@@ -37,6 +38,31 @@ object WorkflowExecutionsResource {
       bookmarked: Boolean,
       name: String
   )
+
+  /**
+    * This function retrieves the latest execution of a workflow
+    * @param wid
+    * @return eid
+    */
+  def getLatestExecution(wid: UInteger): Option[UInteger] = {
+    val executions = context
+      .select(WORKFLOW_EXECUTIONS.EID)
+      .from(WORKFLOW_EXECUTIONS)
+      .leftJoin(WORKFLOW)
+      .on(WORKFLOW_EXECUTIONS.WID.eq(WORKFLOW.WID))
+      .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
+      .fetchInto(classOf[UInteger])
+      .toList
+    if (executions.isEmpty) {
+      None
+    } else {
+      Some(executions.max)
+    }
+  }
+
+  def getExecutionVersion(eId: UInteger): UInteger = {
+    executionsDao.fetchOneByEid(eId).getVid
+  }
 
 }
 

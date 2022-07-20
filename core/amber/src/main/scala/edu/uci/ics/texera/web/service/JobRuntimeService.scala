@@ -21,7 +21,9 @@ import edu.uci.ics.texera.web.model.websocket.request.{
   WorkflowResumeRequest
 }
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
+import org.jooq.types.UInteger
 
 import scala.collection.mutable
 
@@ -39,10 +41,17 @@ class JobRuntimeService(
       // Update workflow state
       if (newState.state != oldState.state) {
         if (WorkflowService.userSystemEnabled) {
-          ExecutionsMetadataPersistService.tryUpdateExistingExecutionStatus(
+          val wId: UInteger = ExecutionsMetadataPersistService.tryUpdateExistingExecutionStatus(
             newState.eid,
             newState.state
           )
+
+          if (
+            newState.state == WorkflowAggregatedState.ABORTED || newState.state == WorkflowAggregatedState.COMPLETED
+          ) {
+            WorkflowService.removeWorkflowService(wId.toString)
+          }
+
         }
         outputEvts.append(WorkflowStateEvent(Utils.aggregatedStateToString(newState.state)))
       }

@@ -22,6 +22,11 @@ import edu.uci.ics.texera.web.model.websocket.request.{
   WorkflowKillRequest
 }
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
+  getExecutionById,
+  getExecutionVersion,
+  getLatestExecution
+}
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
@@ -55,31 +60,57 @@ object WorkflowService {
   ): WorkflowService = {
     wIdToWorkflowState.compute(
       mkWorkflowStateId(wId, uidOpt),
-      (_, v) => {
-        if (v == null) {
-          new WorkflowService(uidOpt, wId, cleanupTimeout)
+      (_, workflwservice) => {
+        if (workflwservice == null) {
+          //executed and removed OR never executed
+          val eId: Option[UInteger] = getLatestExecution(UInteger.valueOf(wId))
+          eId match {
+            case Some(eId: UInteger) =>
+              //executed and removed from hashmap
+              //TODO do I need to check if user system is enabled here?
+              if (
+                isVersionInRangeUnimportant(
+                  getExecutionVersion(eId), //this can be optimized?
+                  getLatestVersion(UInteger.valueOf(wId)),
+                  UInteger.valueOf(wId)
+                )
+              ) {
+                //TODO retrieve and initialize WorkflowService using eId here, initialize all fiends except exportService and operatorCache
+                var wkfService = getExecutionById(eId)
+                println("--------------------------------------------")
+                println(wkfService)
+                println("--------------------------------------------")
+                new WorkflowService(uidOpt, wId, cleanupTimeout)
+              } else {
+                new WorkflowService(uidOpt, wId, cleanupTimeout)
+              }
+            case None =>
+              new WorkflowService(uidOpt, wId, cleanupTimeout)
+          }
         } else {
-          //if user system is not enabled, return v
           if (userSystemEnabled) {
             // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
             if (
               isVersionInRangeUnimportant(
-                UInteger.valueOf(v.vId),
+                UInteger.valueOf(workflwservice.vId),
                 getLatestVersion(UInteger.valueOf(wId)),
                 UInteger.valueOf(wId)
               )
             ) {
-              v
+              workflwservice
             } else {
               new WorkflowService(uidOpt, wId, cleanupTimeout)
             }
           } else {
-            v
+            workflwservice
           }
 
         }
       }
     )
+  }
+  def removeWorkflowService(wId: String): Unit = {
+    wIdToWorkflowState.remove(wId)
   }
 }
 
