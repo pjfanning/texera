@@ -4,35 +4,18 @@ import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.texera.Utils.objectMapper
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowExecutionErrorEvent
-}
-import edu.uci.ics.texera.web.{
-  SubscriptionManager,
-  TexeraWebApplication,
-  WebsocketInput,
-  WorkflowLifecycleManager
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  CacheStatusUpdateRequest,
-  TexeraWebSocketRequest,
-  WorkflowExecuteRequest,
-  WorkflowKillRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowExecutionErrorEvent}
+import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput, WorkflowLifecycleManager}
+import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, TexeraWebSocketRequest, WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
-import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
-  getExecutionById,
-  getExecutionVersion,
-  getLatestExecution
-}
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{getExecutionById, getExecutionVersion, getLatestExecution}
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
+import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
@@ -76,11 +59,14 @@ object WorkflowService {
                 )
               ) {
                 //TODO retrieve and initialize WorkflowService using eId here, initialize all fiends except exportService and operatorCache
-                var wkfService = getExecutionById(eId)
+                var workflwexecution = getExecutionById(eId)
                 println("--------------------------------------------")
-                println(wkfService)
+                println(workflwexecution)
+                println(maptoAggregatedState(workflwexecution.getStatus))
                 println("--------------------------------------------")
-                new WorkflowService(uidOpt, wId, cleanupTimeout)
+                var retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
+                retrievedWorkflowService.stateStore
+                retrievedWorkflowService
               } else {
                 new WorkflowService(uidOpt, wId, cleanupTimeout)
               }
