@@ -23,6 +23,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public executionsTableHeaders: string[] = [
     "",
     "",
+    "",
     "Execution#",
     "Username",
     "Name",

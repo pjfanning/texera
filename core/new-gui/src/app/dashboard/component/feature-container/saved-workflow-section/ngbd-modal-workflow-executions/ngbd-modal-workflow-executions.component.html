@@ -42,6 +42,9 @@
             (click)="onBookmarkToggle(row)"
           ></i>
         </td>
+        <td nzEllipsis>
+          <i nz-icon nzType="eye" class="view-icon" nzTheme="outline"></i>
+        </td>
         <td nzEllipsis>{{(i + 1)}}</td>
         <td nzEllipsis>{{row.userName || "anonymous" }}</td>
         <td nzEllipsis>
