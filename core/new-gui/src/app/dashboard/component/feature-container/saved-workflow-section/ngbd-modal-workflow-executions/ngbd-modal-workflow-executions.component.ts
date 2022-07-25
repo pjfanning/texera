@@ -7,6 +7,9 @@ import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-en
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
 import { ExecutionState } from "../../../../../workspace/types/execute-workflow.interface";
 import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.component";
+import { Router } from "@angular/router";
+
+export const ROUTER_WORKFLOW_BASE_URL = "/workflow";
 
 @UntilDestroy()
 @Component({
@@ -14,6 +17,7 @@ import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.comp
   templateUrl: "./ngbd-modal-workflow-executions.component.html",
   styleUrls: ["./ngbd-modal-workflow-executions.component.scss"],
 })
+
 export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   @Input() workflow!: Workflow;
 
@@ -48,7 +52,8 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   constructor(
     public activeModal: NgbActiveModal,
     private workflowExecutionsService: WorkflowExecutionsService,
-    private modalService: NgbModal
+    private modalService: NgbModal,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -212,5 +217,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
           exe1.completionTime < exe2.completionTime ? 1 : exe2.completionTime < exe1.completionTime ? -1 : 0
         );
     }
+  }
+
+  jumpToWorkflow(execution: WorkflowExecutionsEntry) {
+    this.activeModal.close()
+    this.router.navigate([`/exeuctions/display_execution`, {wid: this.workflow.wid, execution: execution}]).then(null);
+    // console.log(execution);
   }
 }

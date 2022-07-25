@@ -4,7 +4,9 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW, WORKFLOW_EXECUTIONS}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Workflow
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
@@ -19,6 +21,7 @@ import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 object WorkflowExecutionsResource {
   final private lazy val context = SqlServer.createDSLContext()
   final private lazy val executionsDao = new WorkflowExecutionsDao(context.configuration)
+  final private val workflowDao = new WorkflowDao(context.configuration)
 
   def getExecutionById(eId: UInteger): WorkflowExecutions = {
     executionsDao.fetchOneByEid(eId)
@@ -43,6 +46,7 @@ object WorkflowExecutionsResource {
 case class ExecutionBookmarkRequest(wid: UInteger, eId: UInteger, isBookmarked: Boolean)
 case class ExecutionDeleteRequest(wid: UInteger, eId: UInteger)
 case class ExecutionRenameRequest(wid: UInteger, eId: UInteger, executionName: String)
+case class ExecutionViewRequest(wid: UInteger, execution: WorkflowExecutionEntry)
 
 @PermitAll
 @Path("/executions")
@@ -145,5 +149,23 @@ class WorkflowExecutionsResource {
     val execution = getExecutionById(request.eId)
     execution.setName(request.executionName)
     executionsDao.update(execution)
+  }
+
+  @PUT
+  @Path("/display_execution")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def displayWorkflow(
+      execution: ExecutionViewRequest,
+      @Auth sessionUser: SessionUser
+  ): Workflow = {
+    val user = sessionUser.getUser
+    if (
+      WorkflowAccessResource.hasNoWorkflowAccess(execution.wid, user.getUid) ||
+      WorkflowAccessResource.hasNoWorkflowAccessRecord(execution.wid, user.getUid)
+    ) {
+      throw new ForbiddenException("No sufficient access privilege.")
+    } else {
+      workflowDao.fetchOneByWid(execution.wid)
+    }
   }
 }
