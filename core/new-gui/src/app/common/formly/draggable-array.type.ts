@@ -3,28 +3,30 @@ import { moveItemInArray } from '@angular/cdk/drag-drop';
 import { FormlyFieldSelect } from '@ngx-formly/material/select';
 import { util } from 'jointjs';
 import cloneDeep = util.cloneDeep;
+import { MatPseudoCheckboxState } from '@angular/material/core';
+import { FormControl } from '@angular/forms';
 
 @Component({
   template: `
     <ng-template #selectAll let-selectOptions="selectOptions">
       <mat-option (click)="toggleSelectAll(selectOptions)">
-        <mat-pseudo-checkbox class="mat-option-pseudo-checkbox" [state]="getSelectAllState(selectOptions)">
+        <mat-pseudo-checkbox class="mat-option-pseudo-checkbox" [state]="getSelectAllStateWrapper(selectOptions)">
         </mat-pseudo-checkbox>
         {{ to.selectAllOption }}
       </mat-option>
     </ng-template>
     <mat-select
       [id]="id"
-      [formControl]="formControl"
+      [formControl]="control"
       [formlyAttributes]="field"
-      [placeholder]="to.placeholder"
+      [placeholder]="to.placeholder ?? ''"
       [tabIndex]="to.tabindex"
-      [required]="to.required"
+      [required]="to.required ?? false"
       [compareWith]="to.compareWith"
       [multiple]="to.multiple"
       (selectionChange)="change($event)"
       [errorStateMatcher]="errorStateMatcher"
-      [aria-labelledby]="_getAriaLabelledby()"
+      [aria-labelledby]="_getAriaLabelledby()?.toString() ?? ''"
       [disableOptionCentering]="to.disableOptionCentering"
     >
       <ng-container *ngIf="to.options | formlySelectOptions: field | async as selectOptions">
@@ -50,6 +52,15 @@ import cloneDeep = util.cloneDeep;
 })
 export class DraggableArrayTypeComponent extends FormlyFieldSelect {
   selectionOptions: any[] = [];
+
+  public get control() {
+    return this.formControl as FormControl;
+  }
+
+  public getSelectAllStateWrapper(options: any[]): MatPseudoCheckboxState {
+    const state = this.getSelectAllState(options);
+    return state === "" ? "unchecked" : state;
+  }
 
   public drop($event: { previousIndex: number; currentIndex: number; }) {
 

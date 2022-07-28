@@ -7,7 +7,7 @@ import edu.uci.ics.texera.workflow.common.metadata._
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeNameReorderList
 import edu.uci.ics.texera.workflow.common.operators.OneToOneOpExecConfig
 import edu.uci.ics.texera.workflow.common.operators.map.MapOpDesc
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
 import scala.jdk.CollectionConverters.asJavaIterableConverter
 
@@ -19,8 +19,8 @@ class ProjectionOpDescV2 extends MapOpDesc {
   @AutofillAttributeNameReorderList
   var attributes: List[String] = List()
 
-  override def operatorExecutor: OneToOneOpExecConfig = {
-    new OneToOneOpExecConfig(operatorIdentifier, _ => new ProjectionOpExec(attributes))
+  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OneToOneOpExecConfig = {
+    new OneToOneOpExecConfig(operatorIdentifier, _ => new ProjectionOpExecV2(attributes))
   }
 
   override def operatorInfo: OperatorInfo = {
