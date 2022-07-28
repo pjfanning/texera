@@ -16,6 +16,7 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import io.reactivex.rxjava3.core.Observer
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
@@ -65,7 +66,7 @@ object WorkflowService {
                 println(maptoAggregatedState(workflwexecution.getStatus))
                 println("--------------------------------------------")
                 var retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
-                retrievedWorkflowService.stateStore
+                retrievedWorkflowService.status = maptoAggregatedState(workflwexecution.getStatus)
                 retrievedWorkflowService
               } else {
                 new WorkflowService(uidOpt, wId, cleanupTimeout)
@@ -122,6 +123,7 @@ class WorkflowService(
     }
   }
   val wsInput = new WebsocketInput(errorHandler)
+  var status:WorkflowAggregatedState
   val stateStore = new WorkflowStateStore()
   val resultService: JobResultService =
     new JobResultService(opResultStorage, stateStore)
