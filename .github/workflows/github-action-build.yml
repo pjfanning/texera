@@ -2,61 +2,118 @@ name: build
 
 on:
   push:
-    branches: 
+    branches:
       - 'ci-enable/**'
+      - 'master'
   pull_request:
-    paths-ignore:
-      - 'core/scripts/**'
-      - '**/.gitignore'
-      - '**.md'
-      - '**.csv'
-      - '**.txt'
   workflow_dispatch:
-  
+
 jobs:
   gui:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [ 14.x ]
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        node-version:
+          - 14
+        architecture:
+          - x64
     steps:
-      - name: Checkout Texera
-        uses: actions/checkout@v2
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: Cache npm and node_modules
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.npm
-            core/new-gui/node_modules
-          key: ${{ runner.os }}-node-with-modules-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-with-modules-
-      - name: Install dependency with npm install
-        run: npm --prefix core/new-gui install --progress=false
-      - name: Backup - Install dependency with npm ci
-        if: ${{ failure() }}
-        run: npm --prefix core/new-gui ci --progress=false
-      - name: Build with npm
-        run: npm run --prefix core/new-gui build --prod --progress=false
-      - name: Run frontend unit tests
-        run: npm run --prefix core/new-gui test:ci
-
-  amber:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Cancel Previous Runs  # add cancel here since this stage is the fastest one.
-        uses: styfle/cancel-workflow-action@0.6.0
-        with:
+          ignore_sha: true
+          all_but_latest: true
           access_token: ${{ github.token }}
       - name: Checkout Texera
         uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          architecture: ${{ matrix.architecture }}
+      - uses: actions/cache@v2
+        with:
+          path: |
+            core/new-gui/node_modules
+            core/new-gui/multi-target/node_modules
+          key: ${{ runner.os }}-yarn-cache-v4-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-cache-v4-
+      - name: Install dependency
+        run: yarn --cwd core/new-gui install --frozen-lockfile --progress=false
+      - name: Lint with Prettier & ESLint
+        run: yarn --cwd core/new-gui format:ci
+      - name: Run frontend unit tests
+        run: yarn --cwd core/new-gui run test:ci
+      - name: Prod build
+        run: yarn --cwd core/new-gui run build
+
+  amber:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        java-version: [ 8, 11 ]
+    runs-on: ${{ matrix.os }}
+    env:
+      JAVA_OPTS: -Xms2048M -Xmx2048M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+      JVM_OPTS: -Xms2048M -Xmx2048M -Xss6M -XX:ReservedCodeCacheSize=256M -Dfile.encoding=UTF-8
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          ignore_sha: true
+          all_but_latest: true
+          access_token: ${{ github.token }}
+      - name: Checkout Texera
+        uses: actions/checkout@v2
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java-version }}
+      - uses: coursier/cache-action@v6
+        with:
+          extraSbtFiles: '["core/amber/*.sbt", "core/amber/project/**.{scala,sbt}", "core/amber/project/build.properties" ]'
       - name: Lint with scalafmt
         run: cd core/amber && sbt scalafmtCheckAll
       - name: Compile with sbt
-        run: cd core/amber && sbt clean compile
+        run: cd core/amber && sbt clean package
       - name: Run backend tests
-        run: cd core/amber && sbt test
+        run: cd core/amber && sbt -v -J-Xmx2G test
+
+  python_udf:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          ignore_sha: true
+          all_but_latest: true
+          access_token: ${{ github.token }}
+      - name: Checkout Texera
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f core/amber/requirements.txt ]; then pip install -r core/amber/requirements.txt; fi
+      - name: Lint with flake8 and black
+        run: |
+          cd core/amber/src/main/python && flake8 && black . --check
+      - name: Test with pytest
+        run: |
+          cd core/amber/src/main/python && pytest -sv

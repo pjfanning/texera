@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
+import { Injectable } from "@angular/core";
+import { Observable } from "rxjs";
+import { Subject } from "rxjs";
 
 /**
  * ResultPanelToggleService handles the logic to open / close the result panel
@@ -10,13 +10,11 @@ import { Subject } from 'rxjs/Subject';
  * @author Angela Wang
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class ResultPanelToggleService {
-
   private currentResultPanelStatus: boolean = false;
   private toggleDisplayChangeStream = new Subject<boolean>();
-  constructor() { }
 
   public isResultPanelOpen() {
     return this.currentResultPanelStatus;
@@ -41,6 +39,9 @@ export class ResultPanelToggleService {
    *
    */
   public openResultPanel(): void {
+    if (this.currentResultPanelStatus) {
+      return;
+    }
     this.currentResultPanelStatus = true;
     this.toggleDisplayChangeStream.next(true);
   }
@@ -54,6 +55,9 @@ export class ResultPanelToggleService {
    *
    */
   public closeResultPanel(): void {
+    if (this.currentResultPanelStatus === false) {
+      return;
+    }
     this.currentResultPanelStatus = false;
     this.toggleDisplayChangeStream.next(false);
   }
@@ -73,12 +77,4 @@ export class ResultPanelToggleService {
       this.openResultPanel();
     }
   }
-
 }
-
-
-
-
-
-
-

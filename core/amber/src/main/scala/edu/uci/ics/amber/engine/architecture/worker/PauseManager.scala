@@ -1,13 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.atomic.AtomicInteger
-
-import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlOutputPort
-import edu.uci.ics.amber.engine.architecture.worker.PauseManager.ExecutionPaused
-import edu.uci.ics.amber.engine.common.WorkflowLogger
-
 object PauseManager {
   final val NoPause = 0
   final val Paused = 1
@@ -17,10 +9,12 @@ object PauseManager {
 
 class PauseManager {
 
-  protected val logger: WorkflowLogger = WorkflowLogger("PauseManager")
-
   // current pause privilege level
   private var pausePrivilegeLevel = PauseManager.NoPause
+
+  // used temporarily for reshape in sort.
+  // TODO: Refactor to expose various pause levels
+  var pausedByOperatorLogic = false
 
   /** pause functionality
     * both dp thread and actor can call this function

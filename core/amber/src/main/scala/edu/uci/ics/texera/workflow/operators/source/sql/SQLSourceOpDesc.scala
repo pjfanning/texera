@@ -3,7 +3,12 @@ package edu.uci.ics.texera.workflow.operators.source.sql
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, UIWidget}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  BatchByColumn,
+  EnablePresets,
+  UIWidget
+}
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
@@ -11,23 +16,28 @@ import java.sql._
 
 abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
 
+  @EnablePresets
   @JsonProperty(required = true)
   @JsonSchemaTitle("Host")
   var host: String = _
 
+  @EnablePresets
   @JsonProperty(required = true, defaultValue = "default")
   @JsonSchemaTitle("Port")
   @JsonPropertyDescription("A port number or 'default'")
   var port: String = _
 
+  @EnablePresets
   @JsonProperty(required = true)
   @JsonSchemaTitle("Database")
   var database: String = _
 
+  @EnablePresets
   @JsonProperty(required = true)
   @JsonSchemaTitle("Table Name")
   var table: String = _
 
+  @EnablePresets
   @JsonProperty(required = true)
   @JsonSchemaTitle("Username")
   var username: String = _
@@ -52,14 +62,14 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Keyword Search?")
   @JsonDeserialize(contentAs = classOf[java.lang.Boolean])
-  @JsonSchemaInject(json = """{"toggleHidden" : ["searchByColumn", "keywords"]}""")
-  var search: Option[Boolean] = Option(false)
+  @JsonSchemaInject(json = """{"toggleHidden" : ["keywordSearchByColumn", "keywords"]}""")
+  var keywordSearch: Option[Boolean] = Option(false)
 
   @JsonProperty()
   @JsonSchemaTitle("Keyword Search Column")
   @JsonDeserialize(contentAs = classOf[java.lang.String])
   @AutofillAttributeName
-  var searchByColumn: Option[String] = None
+  var keywordSearchByColumn: Option[String] = None
 
   @JsonProperty()
   @JsonSchemaTitle("Keywords to Search")
@@ -82,18 +92,18 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
   @JsonProperty(defaultValue = "auto")
   @JsonSchemaTitle("Min")
   @JsonDeserialize(contentAs = classOf[java.lang.String])
-  @JsonSchemaInject(json = """{"dependOn" : "batchByColumn"}""")
+  @BatchByColumn
   var min: Option[String] = None
 
   @JsonProperty(defaultValue = "auto")
   @JsonSchemaTitle("Max")
   @JsonDeserialize(contentAs = classOf[java.lang.String])
-  @JsonSchemaInject(json = """{"dependOn" : "batchByColumn"}""")
+  @BatchByColumn
   var max: Option[String] = None
 
   @JsonProperty(defaultValue = "1000000000")
   @JsonSchemaTitle("Batch by Interval")
-  @JsonSchemaInject(json = """{"dependOn" : "batchByColumn"}""")
+  @BatchByColumn
   var interval = 0L
 
   /**
@@ -129,12 +139,13 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
       connection.setReadOnly(true)
       val databaseMetaData = connection.getMetaData
       val columns = databaseMetaData.getColumns(null, null, this.table, null)
-      while ({ columns.next }) {
+      while ({
+        columns.next
+      }) {
         val columnName = columns.getString("COLUMN_NAME")
         val datatype = columns.getInt("DATA_TYPE")
         datatype match {
-          case Types.BIT | // -7 Types.BIT
-              Types.TINYINT | // -6 Types.TINYINT
+          case Types.TINYINT | // -6 Types.TINYINT
               Types.SMALLINT | // 5 Types.SMALLINT
               Types.INTEGER => // 4 Types.INTEGER
             schemaBuilder.add(new Attribute(columnName, AttributeType.INTEGER))
@@ -143,10 +154,12 @@ abstract class SQLSourceOpDesc extends SourceOperatorDescriptor {
               Types.DOUBLE | // 8 Types.DOUBLE
               Types.NUMERIC => // 3 Types.NUMERIC
             schemaBuilder.add(new Attribute(columnName, AttributeType.DOUBLE))
-          case Types.BOOLEAN => // 16 Types.BOOLEAN
+          case Types.BIT | // -7 Types.BIT
+              Types.BOOLEAN => // 16 Types.BOOLEAN
             schemaBuilder.add(new Attribute(columnName, AttributeType.BOOLEAN))
-          case Types.BINARY | //-2 Types.BINARY
-              Types.DATE | //91 Types.DATE
+          case Types.BINARY => //-2 Types.BINARY
+            schemaBuilder.add(new Attribute(columnName, AttributeType.BINARY))
+          case Types.DATE | //91 Types.DATE
               Types.TIME | //92 Types.TIME
               Types.LONGVARCHAR | //-1 Types.LONGVARCHAR
               Types.CHAR | //1 Types.CHAR

@@ -9,7 +9,7 @@ export const defaultEnvironment = {
   /**
    * root API URL of the backend
    */
-  apiUrl: 'api',
+  apiUrl: "api",
   /**
    * whether fetching available source tables is enabled
    * see SourceTablesService for details
@@ -29,14 +29,24 @@ export const defaultEnvironment = {
    */
   executionStatusEnabled: true,
   /**
-   * whether download execution result is supported
+   * whether export execution result is supported
    */
-  downloadExecutionResultEnabled: false,
+  exportExecutionResultEnabled: false,
 
   /**
    * whether user system is enabled
    */
   userSystemEnabled: false,
+
+  /**
+   * whether user preset feature is enabled, requires user system to be enabled
+   */
+  userPresetEnabled: false,
+
+  /**
+   * whether workflow executions tracking feature is enabled
+   */
+  workflowExecutionsTrackingEnabled: false,
 
   amberEngineEnabled: true,
 
@@ -46,13 +56,44 @@ export const defaultEnvironment = {
   linkBreakpointEnabled: true,
 
   /**
+   * whether operator caching is enabled
+   */
+  operatorCacheEnabled: false,
+
+  /**
+   * whether debugger is enabled
+   */
+  debuggerEnabled: false,
+
+  asyncRenderingEnabled: false,
+
+  /**
    * the access code for mapbox
    */
   mapbox: {
-    accessToken: ''
-  }
+    accessToken: "",
+  },
 
+  /**
+   * all google-related configs
+   */
+  google: {
+    clientID: "",
+    publicKey: "",
+  },
+
+  /**
+   * Whether workflow collab should be active
+   */
+  workflowCollabEnabled: false,
+
+  /**
+   * Default pagination values
+   */
+  defaultPageIndex: 1,
+  defaultPageSize: 10,
+  defaultNumOfItems: 0,
+  defaultPageSizeOptions: [5, 10, 20, 30, 40],
 };
 
 export type AppEnv = typeof defaultEnvironment;
-

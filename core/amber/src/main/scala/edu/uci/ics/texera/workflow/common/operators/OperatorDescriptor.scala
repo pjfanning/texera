@@ -1,35 +1,43 @@
 package edu.uci.ics.texera.workflow.common.operators
 
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.amber.engine.operators.OpExecConfig
-import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.aggregate.SpecializedAverageOpDesc
+import edu.uci.ics.texera.workflow.operators.dictionary.DictionaryMatcherOpDesc
+import edu.uci.ics.texera.workflow.operators.difference.DifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.distinct.DistinctOpDesc
 import edu.uci.ics.texera.workflow.operators.filter.SpecializedFilterOpDesc
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
+import edu.uci.ics.texera.workflow.operators.intersect.IntersectOpDesc
+import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
-import edu.uci.ics.texera.workflow.operators.pythonUDF.PythonUDFOpDesc
+import edu.uci.ics.texera.workflow.operators.projection.{ProjectionOpDesc, ProjectionOpDescV2}
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
-import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.TwitterFullArchiveSearchSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
+import edu.uci.ics.texera.workflow.operators.source.scan.csv.{CSVOldScanSourceOpDesc, CSVScanSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.mysql.MySQLSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.postgresql.PostgreSQLSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
+import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
+import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.pythonV1.PythonUDFOpDesc
+import edu.uci.ics.texera.workflow.operators.udf.pythonV2.source.PythonUDFSourceOpDescV2
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.htmlviz.HtmlVizOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.pieChart.PieChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatterplot.ScatterplotOpDesc
@@ -37,6 +45,9 @@ import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOp
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 
 import java.util.UUID
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
+import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
@@ -53,11 +64,17 @@ import java.util.UUID
       value = classOf[TwitterFullArchiveSearchSourceOpDesc],
       name = "TwitterFullArchiveSearch"
     ),
-    new Type(value = classOf[SimpleSinkOpDesc], name = "SimpleSink"),
+    new Type(
+      value = classOf[TwitterSearchSourceOpDesc],
+      name = "TwitterSearch"
+    ),
+    new Type(value = classOf[ProgressiveSinkOpDesc], name = "SimpleSink"),
+    new Type(value = classOf[SplitOpDesc], name = "Split"),
     new Type(value = classOf[RegexOpDesc], name = "Regex"),
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
     new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
     new Type(value = classOf[ProjectionOpDesc], name = "Projection"),
+    new Type(value = classOf[ProjectionOpDescV2], name = "ProjectionV2"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
     new Type(value = classOf[KeywordSearchOpDesc], name = "KeywordSearch"),
     new Type(value = classOf[SpecializedAverageOpDesc], name = "Aggregate"),
@@ -66,8 +83,12 @@ import java.util.UUID
     new Type(value = classOf[BarChartOpDesc], name = "BarChart"),
     new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
     new Type(value = classOf[WordCloudOpDesc], name = "WordCloud"),
+    new Type(value = classOf[HtmlVizOpDesc], name = "HTMLVisualizer"),
     new Type(value = classOf[ScatterplotOpDesc], name = "Scatterplot"),
     new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
+    new Type(value = classOf[PythonUDFOpDescV2], name = "PythonUDFV2"),
+    new Type(value = classOf[PythonUDFSourceOpDescV2], name = "PythonUDFSourceV2"),
+    new Type(value = classOf[DualInputPortsPythonUDFOpDescV2], name = "DualInputPortsPythonUDFV2"),
     new Type(value = classOf[MySQLSourceOpDesc], name = "MySQLSource"),
     new Type(value = classOf[PostgreSQLSourceOpDesc], name = "PostgreSQLSource"),
     new Type(value = classOf[AsterixDBSourceOpDesc], name = "AsterixDBSource"),
@@ -76,7 +97,15 @@ import java.util.UUID
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
-    new Type(value = classOf[DistinctOpDesc], name = "Distinct")
+    new Type(value = classOf[DistinctOpDesc], name = "Distinct"),
+    new Type(value = classOf[IntersectOpDesc], name = "Intersect"),
+    new Type(value = classOf[SymmetricDifferenceOpDesc], name = "SymmetricDifference"),
+    new Type(value = classOf[DifferenceOpDesc], name = "Difference"),
+    new Type(value = classOf[IntervalJoinOpDesc], name = "IntervalJoin"),
+    new Type(value = classOf[UnnestStringOpDesc], name = "UnnestString"),
+    new Type(value = classOf[DictionaryMatcherOpDesc], name = "DictionaryMatcher"),
+    new Type(value = classOf[SortPartitionsOpDesc], name = "SortPartitions"),
+    new Type(value = classOf[CSVOldScanSourceOpDesc], name = "CSVOldFileScan")
   )
 )
 abstract class OperatorDescriptor extends Serializable {
@@ -87,13 +116,18 @@ abstract class OperatorDescriptor extends Serializable {
   @JsonProperty(PropertyNameConstants.OPERATOR_ID)
   var operatorID: String = UUID.randomUUID.toString
 
-  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobID, operatorID)
+  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobId, operatorID)
 
-  def operatorExecutor: OpExecConfig
+  def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig
 
   def operatorInfo: OperatorInfo
 
   def getOutputSchema(schemas: Array[Schema]): Schema
+
+  // override if the operator has multiple output ports, schema must be specified for each port
+  def getOutputSchemas(schemas: Array[Schema]): Array[Schema] = {
+    Array.fill(1)(getOutputSchema(schemas))
+  }
 
   def validate(): Array[ConstraintViolation] = {
     Array()

@@ -1,41 +1,36 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.principal.{OperatorState, OperatorStatistics}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.error.WorkflowRuntimeError
+import edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object ControllerEvent {
 
-  case class WorkflowCompleted(
-      // map from sink operator ID to the result list of tuples
-      result: Map[String, List[ITuple]]
-  )
+  case class WorkflowCompleted() extends ControlCommand[Unit]
 
-  case class WorkflowPaused()
+  case class WorkflowPaused() extends ControlCommand[Unit]
 
   case class WorkflowStatusUpdate(
-      operatorStatistics: Map[String, OperatorStatistics]
-  )
-
-  case class ModifyLogicCompleted()
+      operatorStatistics: Map[String, OperatorRuntimeStats]
+  ) extends ControlCommand[Unit]
 
   case class BreakpointTriggered(
       report: mutable.HashMap[(ActorVirtualIdentity, FaultedTuple), Array[String]],
       operatorID: String = null
-  )
+  ) extends ControlCommand[Unit]
 
-  case class SkipTupleResponse()
-
-  case class ErrorOccurred(error: WorkflowRuntimeError)
+  case class PythonPrintTriggered(
+      message: String,
+      operatorID: String = null
+  ) extends ControlCommand[Unit]
 
   case class ReportCurrentProcessingTuple(
       operatorID: String,
       tuple: Array[(ITuple, ActorVirtualIdentity)]
-  )
+  ) extends ControlCommand[Unit]
 
 }

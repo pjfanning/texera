@@ -64,7 +64,7 @@ class RecoverySpec
 //    val request =
 //      objectMapper.readValue(
 //        WorkflowJSONExamples.csvToKeywordToSink,
-//        classOf[ExecuteWorkflowRequest]
+//        classOf[WorkflowExecuteRequest]
 //      )
 //    val texeraWorkflowCompiler = new WorkflowCompiler(
 //      WorkflowInfo(request.operators, request.links, request.breakpoints),
@@ -75,7 +75,7 @@ class RecoverySpec
 //    val workflowTag = WorkflowTag.apply("workflow-test")
 //
 //    val controller = parent.childActorOf(
-//      Controller.props(workflowTag, workflow, false, ControllerEventListener(), 100)
+//      CONTROLLER.props(workflowTag, workflow, false, ControllerEventListener(), 100)
 //    )
 //    controller ! AckedControllerInitialization
 //    parent.expectMsg(30.seconds, ReportState(ControllerState.Ready))

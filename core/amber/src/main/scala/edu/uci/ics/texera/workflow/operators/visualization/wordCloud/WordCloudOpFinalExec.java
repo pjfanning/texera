@@ -1,20 +1,21 @@
 package edu.uci.ics.texera.workflow.operators.visualization.wordCloud;
 
+import edu.uci.ics.amber.engine.architecture.worker.PauseManager;
 import edu.uci.ics.amber.engine.common.InputExhausted;
-import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient;
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity;
+import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
-import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
-import org.apache.curator.shaded.com.google.common.collect.Iterators;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
 import scala.util.Either;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc.finalInsertRetractSchema;
+import static edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc.partialAggregateSchema;
 
 /**
  * Merge word count maps into a single map (termFreqMap), calculate the size of each token based on its count, and
@@ -28,11 +29,6 @@ public class WordCloudOpFinalExec implements OperatorExecutor {
 
     private HashMap<String, Integer> termFreqMap;
     private final int topN;
-
-    private static final Schema resultSchema = Schema.newBuilder().add(
-            new Attribute("word", AttributeType.STRING),
-            new Attribute("count", AttributeType.INTEGER)
-    ).build();
 
     public static final int UPDATE_INTERVAL_MS = 500;
     private long lastUpdatedTime = 0;
@@ -59,10 +55,10 @@ public class WordCloudOpFinalExec implements OperatorExecutor {
 
         List<Tuple> termFreqTuples = new ArrayList<>();
         for (Map.Entry<String, Integer> e : topNWordFreqs) {
-            termFreqTuples.add(Tuple.newBuilder().add(
-                    resultSchema,
-                    Arrays.asList(e.getKey(), e.getValue())
-            ).build());
+            termFreqTuples.add(Tuple.newBuilder(partialAggregateSchema)
+                    .addSequentially(new Object[]{e.getKey(), e.getValue()})
+                    .build()
+            );
         }
         return termFreqTuples;
     }
@@ -75,14 +71,14 @@ public class WordCloudOpFinalExec implements OperatorExecutor {
         insertions.removeAll(prevWordCloudTuples);
 
         List<Tuple> results = new ArrayList<>();
-        retractions.forEach(tuple -> results.add(ProgressiveUtils.addRetractionFlag(tuple)));
-        insertions.forEach(tuple -> results.add(ProgressiveUtils.addInsertionFlag(tuple)));
+        retractions.forEach(tuple -> results.add(ProgressiveUtils.addRetractionFlag(tuple, finalInsertRetractSchema)));
+        insertions.forEach(tuple -> results.add(ProgressiveUtils.addInsertionFlag(tuple, finalInsertRetractSchema)));
         return results;
     }
 
     @Override
-    public Iterator<Tuple> processTexeraTuple(Either<Tuple, InputExhausted> tuple, LinkIdentity input) {
-        if(tuple.isLeft()) {
+    public Iterator<Tuple> processTexeraTuple(Either<Tuple, InputExhausted> tuple, LinkIdentity input, PauseManager pauseManager, AsyncRPCClient asyncRPCClient) {
+        if (tuple.isLeft()) {
             String term = tuple.left().get().getString(0);
             int frequency = tuple.left().get().getInt(1);
             termFreqMap.put(term, termFreqMap.get(term) == null ? frequency : termFreqMap.get(term) + frequency);
@@ -98,7 +94,7 @@ public class WordCloudOpFinalExec implements OperatorExecutor {
                 prevWordCloudTuples = normalizedWordCloudTuples;
                 return JavaConverters.asScalaIterator(results.iterator());
             } else {
-                return JavaConverters.asScalaIterator(Iterators.emptyIterator());
+                return JavaConverters.asScalaIterator(Collections.emptyIterator());
             }
         } else {
             if (counterSinceLastUpdate > 0) {
@@ -110,7 +106,7 @@ public class WordCloudOpFinalExec implements OperatorExecutor {
                 prevWordCloudTuples = normalizedWordCloudTuples;
                 return JavaConverters.asScalaIterator(results.iterator());
             } else {
-                return JavaConverters.asScalaIterator(Iterators.emptyIterator());
+                return JavaConverters.asScalaIterator(Collections.emptyIterator());
             }
         }
     }

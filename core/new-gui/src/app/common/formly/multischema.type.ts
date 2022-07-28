@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { FieldType } from '@ngx-formly/core';
+import { Component } from "@angular/core";
+import { FieldType } from "@ngx-formly/core";
 
 @Component({
   // selector: 'formly-multi-schema-type',
@@ -17,7 +17,6 @@ import { FieldType } from '@ngx-formly/core';
   `,
 })
 export class MultiSchemaTypeComponent extends FieldType {}
-
 
 /**  Copyright 2018 Google Inc. All Rights Reserved.
     Use of this source code is governed by an MIT-style license that

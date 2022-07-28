@@ -1,23 +1,32 @@
-/* tslint:disable:no-unused-variable */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { DebugElement } from '@angular/core';
+/* eslint-disable no-unused-vars, @typescript-eslint/no-unused-vars */
+import { ComponentFixture, TestBed, waitForAsync } from "@angular/core/testing";
 
-import { CodeareaCustomTemplateComponent } from './codearea-custom-template.component';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Overlay } from '@angular/cdk/overlay';
+import { CodeareaCustomTemplateComponent } from "./codearea-custom-template.component";
+import { MatDialogModule } from "@angular/material/dialog";
+import { HttpClientTestingModule } from "@angular/common/http/testing";
+import { WorkflowActionService } from "../../service/workflow-graph/model/workflow-action.service";
+import { OperatorMetadataService } from "../../service/operator-metadata/operator-metadata.service";
+import { StubOperatorMetadataService } from "../../service/operator-metadata/stub-operator-metadata.service";
 
-describe('CodeareaCustomTemplateComponent', () => {
+describe("CodeareaCustomTemplateComponent", () => {
   let component: CodeareaCustomTemplateComponent;
   let fixture: ComponentFixture<CodeareaCustomTemplateComponent>;
 
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ CodeareaCustomTemplateComponent ],
-      imports: [ MatDialogModule ]
+  beforeEach(
+    waitForAsync(() => {
+      TestBed.configureTestingModule({
+        declarations: [CodeareaCustomTemplateComponent],
+        imports: [MatDialogModule, HttpClientTestingModule],
+        providers: [
+          WorkflowActionService,
+          {
+            provide: OperatorMetadataService,
+            useClass: StubOperatorMetadataService,
+          },
+        ],
+      }).compileComponents();
     })
-    .compileComponents();
-  }));
+  );
 
   beforeEach(() => {
     fixture = TestBed.createComponent(CodeareaCustomTemplateComponent);
@@ -25,7 +34,7 @@ describe('CodeareaCustomTemplateComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });

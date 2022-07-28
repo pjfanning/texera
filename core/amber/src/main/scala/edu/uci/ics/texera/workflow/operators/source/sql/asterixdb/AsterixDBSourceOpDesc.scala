@@ -7,25 +7,75 @@ import com.fasterxml.jackson.annotation.{
 }
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import edu.uci.ics.amber.engine.operators.OpExecConfig
 import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorGroupConstants,
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.metadata.annotations.UIWidget
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  UIWidget
+}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{
+  Attribute,
+  AttributeType,
+  OperatorSchemaInfo,
+  Schema
+}
 import edu.uci.ics.texera.workflow.operators.source.sql.{SQLSourceOpDesc, SQLSourceOpExecConfig}
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBConnUtil.{
   fetchDataTypeFields,
   queryAsterixDB
 }
 import kong.unirest.json.JSONObject
-
 import java.util.Collections.singletonList
+
 import scala.jdk.CollectionConverters.asScalaBuffer
 
 @JsonIgnoreProperties(value = Array("username", "password"))
 class AsterixDBSourceOpDesc extends SQLSourceOpDesc {
+
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Geo Search?")
+  @JsonDeserialize(contentAs = classOf[java.lang.Boolean])
+  @JsonSchemaInject(json = """{"toggleHidden" : ["geoSearchByColumns", "geoSearchBoundingBox"]}""")
+  var geoSearch: Option[Boolean] = Option(false)
+
+  @JsonProperty()
+  @JsonSchemaTitle("Geo Search By Columns")
+  @JsonPropertyDescription(
+    "column(s) to check if any of them is in the bounding box below"
+  )
+  @AutofillAttributeNameList
+  // TODO: set it to one column in the future since it implicitly adds OR semantics
+  var geoSearchByColumns: List[String] = List.empty
+
+  @JsonProperty()
+  @JsonSchemaTitle("Geo Search Bounding Box")
+  @JsonPropertyDescription(
+    "at least 2 entries should be provided to form a bounding box. format of each entry: long, lat"
+  )
+  var geoSearchBoundingBox: List[String] = List.empty
+
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Regex Search?")
+  @JsonDeserialize(contentAs = classOf[java.lang.Boolean])
+  @JsonSchemaInject(json = """{"toggleHidden" : ["regexSearchByColumn", "regex"]}""")
+  var regexSearch: Option[Boolean] = Option(false)
+
+  @JsonProperty()
+  @JsonSchemaTitle("Regex Search By Column")
+  @JsonDeserialize(contentAs = classOf[java.lang.String])
+  @AutofillAttributeName
+  var regexSearchByColumn: Option[String] = None
+
+  @JsonProperty()
+  @JsonSchemaTitle("Regex to Search")
+  @JsonDeserialize(contentAs = classOf[java.lang.String])
+  @JsonSchemaInject(json = UIWidget.UIWidgetTextArea)
+  var regex: Option[String] = None
 
   @JsonProperty()
   @JsonSchemaTitle("Keywords to Search")
@@ -36,7 +86,7 @@ class AsterixDBSourceOpDesc extends SQLSourceOpDesc {
   )
   override def getKeywords: Option[String] = super.getKeywords
 
-  override def operatorExecutor =
+  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig =
     new SQLSourceOpExecConfig(
       this.operatorIdentifier,
       (worker: Any) =>
@@ -48,14 +98,20 @@ class AsterixDBSourceOpDesc extends SQLSourceOpDesc {
           table,
           limit,
           offset,
-          search,
-          searchByColumn,
-          keywords,
           progressive,
           batchByColumn,
           min,
           max,
-          interval
+          interval,
+          keywordSearch.getOrElse(false),
+          keywordSearchByColumn.orNull,
+          keywords.orNull,
+          geoSearch.getOrElse(false),
+          geoSearchByColumns,
+          geoSearchBoundingBox,
+          regexSearch.getOrElse(false),
+          regexSearchByColumn.orNull,
+          regex.orNull
         )
     )
 

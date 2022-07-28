@@ -1,16 +1,17 @@
 package edu.uci.ics.texera.workflow.operators.source.scan
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty}
+
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.texera.web.resource.dashboard.file.UserFileUtils
-import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorGroupConstants,
   OperatorInfo,
   OutputPort
 }
+import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
-import org.codehaus.jackson.map.annotate.JsonDeserialize
 
 import java.util.Collections.singletonList
 import scala.collection.JavaConverters.asScalaBuffer
@@ -35,6 +36,18 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   @JsonIgnore
   var fileTypeName: Option[String] = None
 
+  @JsonProperty()
+  @JsonSchemaTitle("Limit")
+  @JsonPropertyDescription("max output count")
+  @JsonDeserialize(contentAs = classOf[Int])
+  var limit: Option[Int] = None
+
+  @JsonProperty()
+  @JsonSchemaTitle("Offset")
+  @JsonPropertyDescription("starting point of output")
+  @JsonDeserialize(contentAs = classOf[Int])
+  var offset: Option[Int] = None
+
   override def sourceSchema(): Schema = {
     if (filePath.isEmpty) return null
     inferSchema()
@@ -44,15 +57,27 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   override def setContext(workflowContext: WorkflowContext): Unit = {
     super.setContext(workflowContext)
 
-    if (context.userID.isDefined)
-      // if context has a valid user ID, the fileName will be a file name,
+    if (fileName.isEmpty) {
+      throw new RuntimeException("no input file name")
+    }
+
+    if (context.userId.isDefined) {
+      // if context has a valid user ID, the fileName will be in the following format:
+      //    ownerName/fileName
       // resolve fileName to be the actual file path.
-      filePath = Option(
-        UserFileUtils.getFilePath(context.userID.get.toString, fileName.get).toString
-      )
-    else
+      val splitNames = fileName.get.split("/")
+      filePath = UserFileUtils
+        .getFilePathByInfo(
+          ownerName = splitNames.apply(0),
+          fileName = splitNames.apply(1),
+          context.userId.get
+        )
+        .map(_.toString)
+
+    } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
       filePath = fileName
+    }
 
   }
 

@@ -43,12 +43,13 @@
 
 .texera-workspace-grid-container {
   display: grid;
-  grid-template-columns: 14% 70% 16%;
-  grid-template-rows: var(--header-height)
-                       calc((100% - var(--header-height) - var(--resultbar-height)) * 0.65)
-                      0px
-                      var(--resultbar-height)
-                       calc((100% - var(--header-height) - var(--resultbar-height)) * 0.35);
+  grid-template-columns: 200px auto 350px;
+  grid-template-rows:
+    var(--header-height)
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.6)
+    0px
+    var(--resultbar-height)
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.4);
   position: relative;
 }
 
@@ -62,12 +63,13 @@
 
 .texera-original-workspace-grid-container {
   display: grid;
-  grid-template-columns: 14% 70% 16%;
-  grid-template-rows: var(--header-height)
-                       calc((100% - var(--header-height) - var(--resultbar-height)) * 0.65)
-                       calc((100% - var(--header-height) - var(--resultbar-height)) * 0.35)
-                       var(--resultbar-height)
-                      0px;
+  grid-template-columns: 200px auto 350px;
+  grid-template-rows:
+    var(--header-height)
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.6)
+    calc((100% - var(--header-height) - var(--resultbar-height)) * 0.4)
+    var(--resultbar-height)
+    0px;
   position: relative;
 }
 
@@ -104,17 +106,17 @@
   overflow: auto;
 }
 
+.texera-right-side-bar-split-editor-minimap {
+  height: calc(100vh - var(--header-height) - 10px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
 
 /**
 * this style specifies that the workflow editor in the middle
 * will occupy the 2nd (middle) columm and use the second row (middle)
 **/
 .texera-workflow-editor-grid-container {
-  grid-column: 2/3;
-  grid-row: 2/4;
-}
-
-.texera-mini-map {
   grid-column: 2/3;
   grid-row: 2/4;
 }
@@ -150,4 +152,9 @@
   background-color: white;
   margin-top: 10px;
   left: 30px;
+}
+
+.particular-version-metadata {
+  display: inline-block;
+  margin-right: 1.25em;
 }

@@ -2,6 +2,17 @@
   font-size: x-large;
 }
 
-.button-area {
-  margin: 20px;
+.attribute-container {
+  text-align: center;
+  .code-button {
+    &.readonly {
+      color: black;
+      background-color: blanchedalmond;
+      border-color: blanchedalmond;
+
+      &:hover {
+        background-color: #fff0d9;
+      }
+    }
+  }
 }

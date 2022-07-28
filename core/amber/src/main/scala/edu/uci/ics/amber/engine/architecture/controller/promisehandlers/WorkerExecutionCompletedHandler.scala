@@ -1,27 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowCompleted,
-  WorkflowStatusUpdate
-}
-import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerState
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.KillWorkflowHandler.KillWorkflow
-import edu.uci.ics.amber.engine.architecture.principal.OperatorState
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.CollectSinkResultsHandler.CollectSinkResults
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
-import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager.Completed
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.WorkerActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.operators.SinkOpExecConfig
 
+import scala.collection.mutable
+
 object WorkerExecutionCompletedHandler {
-  final case class WorkerExecutionCompleted() extends ControlCommand[CommandCompleted]
+  final case class WorkerExecutionCompleted() extends ControlCommand[Unit]
 }
 
 /** indicate a worker has completed its job
@@ -36,49 +28,29 @@ trait WorkerExecutionCompletedHandler {
 
   registerHandler { (msg: WorkerExecutionCompleted, sender) =>
     {
-      assert(sender.isInstanceOf[WorkerActorVirtualIdentity])
-      // get the corresponding operator of this worker
-      val operator = workflow.getOperator(sender)
-      val future =
-        if (operator.isInstanceOf[SinkOpExecConfig]) {
-          // if the operator is sink, first query stats then collect results of this worker.
-          send(QueryStatistics(), sender).join(send(CollectSinkResults(), sender)).map {
-            case (stats, results) =>
-              val workerInfo = operator.getWorker(sender)
-              workerInfo.stats = stats
-              workerInfo.state = stats.workerState
-              operator.acceptResultTuples(results)
+      assert(sender.isInstanceOf[ActorVirtualIdentity])
+
+      // after worker execution is completed, query statistics immediately one last time
+      // because the worker might be killed before the next query statistics interval
+      // and the user sees the last update before completion
+      val statsRequests = new mutable.MutableList[Future[Unit]]()
+      statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender))), CONTROLLER)
+
+      Future
+        .collect(statsRequests)
+        .flatMap(_ => {
+          // if entire workflow is completed, clean up
+          if (workflow.isCompleted) {
+            // after query result come back: send completed event, cleanup ,and kill workflow
+            sendToClient(WorkflowCompleted())
+            disableStatusUpdate()
+            disableMonitoring()
+            disableSkewHandling()
+            Future.Done
+          } else {
+            Future.Done
           }
-        } else {
-          // if the operator is not a sink, just query the stats
-          send(QueryStatistics(), sender).map { stats =>
-            val workerInfo = operator.getWorker(sender)
-            workerInfo.stats = stats
-            workerInfo.state = stats.workerState
-          }
-        }
-      future.flatMap { ret =>
-        updateFrontendWorkflowStatus()
-        if (workflow.isCompleted) {
-          //send result to frontend
-          if (eventListener.workflowCompletedListener != null) {
-            eventListener.workflowCompletedListener
-              .apply(
-                WorkflowCompleted(
-                  workflow.getEndOperators.map(op => op.id.operator -> op.results).toMap
-                )
-              )
-          }
-          disableStatusUpdate()
-          actorContext.parent ! ControllerState.Completed // for testing
-          // clean up all workers and terminate self
-          execute(KillWorkflow(), ActorVirtualIdentity.Controller)
-        } else {
-          Future {
-            CommandCompleted()
-          }
-        }
-      }
+        })
     }
   }
 }

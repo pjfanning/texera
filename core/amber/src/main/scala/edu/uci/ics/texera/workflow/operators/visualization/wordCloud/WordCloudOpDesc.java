@@ -6,6 +6,7 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInt;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import edu.uci.ics.amber.engine.common.Constants;
 import edu.uci.ics.amber.engine.operators.OpExecConfig;
+import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
@@ -13,6 +14,7 @@ import edu.uci.ics.texera.workflow.common.metadata.OutputPort;
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
+import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants;
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator;
@@ -43,12 +45,21 @@ public class WordCloudOpDesc extends VisualizationOperator {
         return VisualizationConstants.WORD_CLOUD;
     }
 
+    public static final Schema partialAggregateSchema = Schema.newBuilder().add(
+            new Attribute("word", AttributeType.STRING),
+            new Attribute("count", AttributeType.INTEGER)).build();
+
+    public static final Schema finalInsertRetractSchema = Schema.newBuilder()
+            .add(ProgressiveUtils.insertRetractFlagAttr())
+            .add(partialAggregateSchema).build();
+
     @Override
-    public OpExecConfig operatorExecutor() {
+    public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
         if (topN == null) {
             topN = 100;
         }
-        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.defaultNumWorkers(), textColumn, topN);
+
+        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.currentWorkerNum(), textColumn, topN, partialAggregateSchema);
     }
 
     @Override
@@ -62,9 +73,6 @@ public class WordCloudOpDesc extends VisualizationOperator {
 
     @Override
     public Schema getOutputSchema(Schema[] schemas) {
-        return Schema.newBuilder().add(
-                new Attribute("word", AttributeType.STRING),
-                new Attribute("size", AttributeType.INTEGER)
-        ).build();
+        return finalInsertRetractSchema;
     }
 }

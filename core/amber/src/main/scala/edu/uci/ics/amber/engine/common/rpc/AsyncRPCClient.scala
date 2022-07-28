@@ -1,13 +1,15 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ControlOutputPort
-import edu.uci.ics.amber.engine.architecture.worker.WorkerStatistics
-import edu.uci.ics.amber.engine.common.WorkflowLogger
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnPayload}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 
@@ -31,11 +33,10 @@ import scala.collection.mutable
   */
 object AsyncRPCClient {
 
-  def noReplyNeeded(id: Long): Boolean = id < 0
-
   final val IgnoreReply = -1
-
   final val IgnoreReplyAndDoNotLog = -2
+
+  def noReplyNeeded(id: Long): Boolean = id < 0
 
   /** The invocation of a control command
     * @param commandID
@@ -43,24 +44,30 @@ object AsyncRPCClient {
     */
   case class ControlInvocation(commandID: Long, command: ControlCommand[_]) extends ControlPayload
 
-  /** The return message of a promise.
+  /** The invocation of a return to a promise.
     * @param originalCommandID
-    * @param returnValue
+    * @param controlReturn
     */
-  case class ReturnPayload(originalCommandID: Long, returnValue: Any) extends ControlPayload
+  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
 
 }
 
-class AsyncRPCClient(controlOutputPort: ControlOutputPort, logger: WorkflowLogger) {
-
-  private var promiseID = 0L
+class AsyncRPCClient(
+    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    val actorId: ActorVirtualIdentity
+) extends AmberLogging {
 
   private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()
+  private var promiseID = 0L
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
     val (p, id) = createPromise[T]()
-    controlOutputPort.sendTo(to, ControlInvocation(id, cmd))
+    controlOutputEndpoint.sendTo(to, ControlInvocation(id, cmd))
     p
+  }
+
+  def sendToClient(cmd: ControlCommand[_]): Unit = {
+    controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))
   }
 
   private def createPromise[T](): (Promise[T], Long) = {
@@ -70,28 +77,37 @@ class AsyncRPCClient(controlOutputPort: ControlOutputPort, logger: WorkflowLogge
     (promise, promiseID)
   }
 
-  def fulfillPromise(ret: ReturnPayload): Unit = {
+  def fulfillPromise(ret: ReturnInvocation): Unit = {
     if (unfulfilledPromises.contains(ret.originalCommandID)) {
       val p = unfulfilledPromises(ret.originalCommandID)
-      p.setValue(ret.returnValue.asInstanceOf[p.returnType])
+
+      ret.controlReturn match {
+        case error: Throwable =>
+          p.setException(error)
+        case ControlException(msg) =>
+          p.setException(new RuntimeException(msg))
+        case _ =>
+          p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
+      }
+
       unfulfilledPromises.remove(ret.originalCommandID)
     }
   }
 
-  def logControlReply(ret: ReturnPayload, sender: VirtualIdentity): Unit = {
+  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
     if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
       return
     }
-    if (ret.returnValue != null) {
-      if (ret.returnValue.isInstanceOf[WorkerStatistics]) {
+    if (ret.controlReturn != null) {
+      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
         return
       }
-      logger.logInfo(
-        s"receive reply: ${ret.returnValue.getClass.getSimpleName} from ${sender.toString} (controlID: ${ret.originalCommandID})"
+      logger.info(
+        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
       )
     } else {
-      logger.logInfo(
-        s"receive reply: null from ${sender.toString} (controlID: ${ret.originalCommandID})"
+      logger.info(
+        s"receive reply: null from $sender (controlID: ${ret.originalCommandID})"
       )
     }
   }

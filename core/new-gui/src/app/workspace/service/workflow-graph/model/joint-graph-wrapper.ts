@@ -1,60 +1,55 @@
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import { Point } from '../../../types/workflow-common.interface';
-import { UndoRedoService } from './../../undo-redo/undo-redo.service';
-import { environment } from './../../../../../environments/environment';
+import { fromEvent, Observable, ReplaySubject, Subject, merge } from "rxjs";
+import { bufferToggle, filter, map, mergeMap, startWith, windowToggle } from "rxjs/operators";
+import { Point } from "../../../types/workflow-common.interface";
+import * as joint from "jointjs";
+import * as dagre from "dagre";
+import * as graphlib from "graphlib";
+import { ObservableContextManager } from "src/app/common/util/context";
 
 type operatorIDsType = { operatorIDs: string[] };
 type linkIDType = { linkID: string };
 
-
 type JointModelEventInfo = {
-  add: boolean,
-  merge: boolean,
-  remove: boolean,
+  add: boolean;
+  merge: boolean;
+  remove: boolean;
   changes: {
-    added: joint.dia.Cell[],
-    merged: joint.dia.Cell[],
-    removed: joint.dia.Cell[]
-  }
+    added: joint.dia.Cell[];
+    merged: joint.dia.Cell[];
+    removed: joint.dia.Cell[];
+  };
 };
 
 // argument type of callback event on a JointJS Model,
 // which is a 3-element tuple:
 // 1. the JointJS model (Cell) of the event
 // 2 and 3. additional information of the event
-type JointModelEvent = [
-  joint.dia.Cell,
-  { graph: joint.dia.Graph, models: joint.dia.Cell[] },
-  JointModelEventInfo
-];
+type JointModelEvent = [joint.dia.Cell, { graph: joint.dia.Graph; models: joint.dia.Cell[] }, JointModelEventInfo];
 
-type JointLinkChangeEvent = [
-  joint.dia.Link,
-  { x: number, y: number },
-  { ui: boolean, updateConnectionOnly: boolean }
-];
+type JointLinkChangeEvent = [joint.dia.Link, { x: number; y: number }, { ui: boolean; updateConnectionOnly: boolean }];
 
-type JointPositionChangeEvent = [
-  joint.dia.Element,
-  { x: number, y: number }
-];
+type JointPositionChangeEvent = [joint.dia.Element, { x: number; y: number }];
 
-type JointLayerChangeEvent = [
-  joint.dia.Element | joint.dia.Link,
-  number
-];
+type JointLayerChangeEvent = [joint.dia.Element | joint.dia.Link, number];
 
 type PositionInfo = {
-  currPos: Point,
-  lastPos: Point | undefined
+  currPos: Point;
+  lastPos: Point | undefined;
 };
 
 export type JointHighlights = Readonly<{
-  operators: readonly string[],
-  groups: readonly string[],
-  links: readonly string[]
+  operators: readonly string[];
+  groups: readonly string[];
+  links: readonly string[];
+  commentBoxes: readonly string[];
 }>;
+
+export type JointGraphContextType = Readonly<{
+  async: boolean;
+}>;
+const DefaultContext: JointGraphContextType = {
+  async: false,
+};
 
 /**
  * JointGraphWrapper wraps jointGraph to provide:
@@ -75,15 +70,20 @@ export type JointHighlights = Readonly<{
  * For an overview of the services in WorkflowGraphModule, see workflow-graph-design.md
  */
 export class JointGraphWrapper {
-
   // zoom diff represents the ratio that is zoom in/out everytime, for clicking +/- buttons or using mousewheel
   public static readonly ZOOM_CLICK_DIFF: number = 0.05;
   public static readonly ZOOM_MOUSEWHEEL_DIFF: number = 0.01;
   public static readonly INIT_ZOOM_VALUE: number = 1;
-  public static readonly INIT_PAN_OFFSET: Point = { x: 0, y: 0 };
 
-  public static readonly ZOOM_MINIMUM: number = 0.70;
-  public static readonly ZOOM_MAXIMUM: number = 1.30;
+  public static readonly ZOOM_MINIMUM: number = 0.7;
+  public static readonly ZOOM_MAXIMUM: number = 1.3;
+
+  public jointGraphContext = JointGraphWrapper.jointGraphContextFactory();
+  public navigatorMoveDelta: Subject<{ deltaX: number; deltaY: number }> = new Subject();
+
+  private mainJointPaper: joint.dia.Paper | undefined;
+  private mainJointPaperAttachedStream: Subject<joint.dia.Paper> = new ReplaySubject(1);
+  private miniMapPaper: joint.dia.Paper | undefined;
 
   private elementPositions: Map<string, PositionInfo> = new Map<string, PositionInfo>();
   private listenPositionChange: boolean = true;
@@ -92,7 +92,10 @@ export class JointGraphWrapper {
   private multiSelect: boolean = false;
 
   private currentHighlights: JointHighlights = {
-    operators: [], groups: [], links: []
+    operators: [],
+    groups: [],
+    links: [],
+    commentBoxes: [],
   };
 
   // the currently highlighted operators' IDs
@@ -112,12 +115,19 @@ export class JointGraphWrapper {
   // event stream of unhighlighing a link
   private jointLinkUnhighlightStream = new Subject<readonly string[]>();
 
+  private jointCommentBoxHighlightStream = new Subject<readonly string[]>();
+
+  private jointCommentBoxUnhighlightStream = new Subject<readonly string[]>();
+
+  private currentHighlightedCommentBoxes: string[] = [];
+
   // event stream of zooming the jointJS paper
   private workflowEditorZoomSubject: Subject<number> = new Subject<number>();
   // event stream of restoring zoom / offset default of the jointJS paper
-  private restorePaperOffsetSubject: Subject<Point> = new Subject<Point>();
-  // event stream of panning to make mini-map and main workflow paper compatible in offset
-  private panPaperOffsetSubject: Subject<Point> = new Subject<Point>();
+  private restorePaperOffsetSubject: Subject<void> = new Subject<void>();
+  // event stream to toggle the jointPaper grids on or off.
+  private jointPaperGridsToggleStream = new Subject<void>();
+
   // event stream of showing the breakpoint button of a link
   private jointLinkBreakpointShowStream = new Subject<linkIDType>();
   // event stream of hiding the breakpoint button of a link
@@ -129,48 +139,83 @@ export class JointGraphWrapper {
 
   // current zoom ratio
   private zoomRatio: number = JointGraphWrapper.INIT_ZOOM_VALUE;
-  // panOffset, a point of panning offset alongside x and y axis
-  private panOffset: Point = JointGraphWrapper.INIT_PAN_OFFSET;
 
   /**
    * This will capture all events in JointJS
    *  involving the 'add' operation
    */
-  private jointCellAddStream = Observable
-    .fromEvent<JointModelEvent>(this.jointGraph, 'add')
-    .map(value => value[0]);
+  private jointCellAddStream = fromEvent<JointModelEvent>(this.jointGraph, "add").pipe(map(value => value[0]));
 
   /**
    * This will capture all events in JointJS
    *  involving the 'change position' operation
    */
-  private jointCellDragStream = Observable
-    .fromEvent<JointModelEvent>(this.jointGraph, 'change:position')
-    .map(value => value[0]);
+  private jointCellDragStream = fromEvent<JointModelEvent>(this.jointGraph, "change:position").pipe(
+    map(value => value[0])
+  );
 
   /**
    * This will capture all events in JointJS
    *  involving the 'remove' operation
    */
-  private jointCellDeleteStream = Observable
-    .fromEvent<JointModelEvent>(this.jointGraph, 'remove')
-    .map(value => value[0]);
+  private jointCellDeleteStream = fromEvent<JointModelEvent>(this.jointGraph, "remove").pipe(map(value => value[0]));
 
-
-  constructor(private jointGraph: joint.dia.Graph) {
+  constructor(public jointGraph: joint.dia.Graph) {
     // handle if the currently highlighted operator/group/link is deleted, it should be unhighlighted
     this.handleElementDeleteUnhighlight();
 
-    this.jointCellAddStream.filter(cell => cell.isElement()).subscribe(element => {
-      const initPosition = {currPos: (element as joint.dia.Element).position(), lastPos: undefined};
+    this.jointCellAddStream.pipe(filter(cell => cell.isElement())).subscribe(element => {
+      const initPosition = {
+        currPos: (element as joint.dia.Element).position(),
+        lastPos: undefined,
+      };
       this.elementPositions.set(element.id.toString(), initPosition);
     });
 
-    this.jointCellDeleteStream.filter(cell => cell.isElement()).subscribe(element =>
-      this.elementPositions.delete(element.id.toString()));
-
+    this.jointCellDeleteStream
+      .pipe(filter(cell => cell.isElement()))
+      .subscribe(element => this.elementPositions.delete(element.id.toString()));
   }
 
+  /**
+   * Let the JointGraph model be attached to the joint paper (paperOptions will be passed to Joint Paper constructor).
+   *
+   * We don't want to expose JointModel as a public variable, so instead we let JointPaper to pass the constructor options,
+   *  and JointModel can be still attached to it without being publicly accessible by other modules.
+   *
+   * @param paperOptions JointJS paper options
+   */
+  public attachMainJointPaper(paperOptions: joint.dia.Paper.Options): joint.dia.Paper {
+    paperOptions.model = this.jointGraph;
+    const paper = new joint.dia.Paper(paperOptions);
+    this.mainJointPaper = paper;
+    this.mainJointPaperAttachedStream.next(this.mainJointPaper);
+    this.jointGraphContext.attachPaper(paper);
+    return paper;
+  }
+
+  public getMainJointPaper(): joint.dia.Paper | undefined {
+    return this.mainJointPaper;
+  }
+
+  public getMainJointPaperAttachedStream(): Observable<joint.dia.Paper> {
+    return this.mainJointPaperAttachedStream;
+  }
+
+  public attachMiniMapJointPaper(paperOptions: joint.dia.Paper.Options): joint.dia.Paper {
+    paperOptions.model = this.jointGraph;
+    const paper = new joint.dia.Paper(paperOptions);
+    this.miniMapPaper = paper;
+    return paper;
+  }
+
+  public pageToJointLocalCoordinate(point: Point): Point {
+    if (!this.mainJointPaper) {
+      throw new Error("jointJS main paper is not initialized yet");
+    }
+    const jointLocalPoint = this.mainJointPaper.pageToLocalPoint(point);
+    return { x: jointLocalPoint.x, y: jointLocalPoint.y };
+  }
 
   /**
    * This method is used to toggle the multiselect mode.
@@ -216,11 +261,16 @@ export class JointGraphWrapper {
     return this.currentHighlightedLinks;
   }
 
+  public getCurrentHighlightedCommentBoxIDs(): readonly string[] {
+    return this.currentHighlightedCommentBoxes;
+  }
+
   public getCurrentHighlights(): JointHighlights {
     return {
       operators: this.currentHighlightedOperators,
       groups: this.currentHighlightedGroups,
-      links: this.currentHighlightedLinks
+      links: this.currentHighlightedLinks,
+      commentBoxes: this.currentHighlightedCommentBoxes,
     };
   }
 
@@ -232,25 +282,37 @@ export class JointGraphWrapper {
    * - oldPosition: the element's position before moving
    * - newPosition: where the element is moved to
    */
-  public getElementPositionChangeEvent(): Observable<{ elementID: string, oldPosition: Point, newPosition: Point }> {
-    return Observable
-      .fromEvent<JointPositionChangeEvent>(this.jointGraph, 'change:position').map(e => {
+  public getElementPositionChangeEvent(): Observable<{
+    elementID: string;
+    oldPosition: Point;
+    newPosition: Point;
+  }> {
+    return fromEvent<JointPositionChangeEvent>(this.jointGraph, "change:position").pipe(
+      map(e => {
         const elementID = e[0].id.toString();
         const oldPosition = this.elementPositions.get(elementID);
         const newPosition = { x: e[1].x, y: e[1].y };
         if (!oldPosition) {
           throw new Error(`internal error: cannot find element position for ${elementID}`);
         }
-        if (!oldPosition.lastPos || oldPosition.currPos.x !== newPosition.x || oldPosition.currPos.y !== newPosition.y) {
+        if (
+          !oldPosition.lastPos ||
+          oldPosition.currPos.x !== newPosition.x ||
+          oldPosition.currPos.y !== newPosition.y
+        ) {
           oldPosition.lastPos = oldPosition.currPos;
         }
-        this.elementPositions.set(elementID, {currPos: newPosition, lastPos: oldPosition.lastPos});
+        this.elementPositions.set(elementID, {
+          currPos: newPosition,
+          lastPos: oldPosition.lastPos,
+        });
         return {
           elementID: elementID,
           oldPosition: oldPosition.lastPos,
-          newPosition: newPosition
+          newPosition: newPosition,
         };
-      });
+      })
+    );
   }
 
   /**
@@ -260,26 +322,32 @@ export class JointGraphWrapper {
    * - cellID: the moved cell's ID
    * - newPosition: the cell's new layer
    */
-  public getCellLayerChangeEvent(): Observable<{ cellID: string, newLayer: number }> {
-    return Observable
-      .fromEvent<JointLayerChangeEvent>(this.jointGraph, 'change:z').map(e => {
+  public getCellLayerChangeEvent(): Observable<{
+    cellID: string;
+    newLayer: number;
+  }> {
+    return fromEvent<JointLayerChangeEvent>(this.jointGraph, "change:z").pipe(
+      map(e => {
         return {
           cellID: e[0].id.toString(),
-          newLayer: e[1]
+          newLayer: e[1],
         };
-      });
+      })
+    );
   }
 
   public highlightElements(elements: JointHighlights): void {
     this.highlightOperators(...elements.operators);
     this.highlightGroups(...elements.groups);
     this.highlightLinks(...elements.links);
+    this.highlightCommentBoxes(...elements.commentBoxes);
   }
 
   public unhighlightElements(elements: JointHighlights): void {
     this.unhighlightOperators(...elements.operators);
     this.unhighlightGroups(...elements.groups);
     this.unhighlightLinks(...elements.links);
+    this.unhighlightCommentBoxes(...elements.commentBoxes);
   }
 
   /**
@@ -293,7 +361,8 @@ export class JointGraphWrapper {
   public highlightOperators(...operatorIDs: string[]): void {
     const highlightedOperatorIDs: string[] = [];
     operatorIDs.forEach(operatorID =>
-      this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs));
+      this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs)
+    );
     if (highlightedOperatorIDs.length > 0) {
       this.jointOperatorHighlightStream.next(highlightedOperatorIDs);
     }
@@ -310,7 +379,8 @@ export class JointGraphWrapper {
   public unhighlightOperators(...operatorIDs: string[]): void {
     const unhighlightedOperatorIDs: string[] = [];
     operatorIDs.forEach(operatorID =>
-      this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs));
+      this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs)
+    );
     if (unhighlightedOperatorIDs.length > 0) {
       this.jointOperatorUnhighlightStream.next(unhighlightedOperatorIDs);
     }
@@ -326,8 +396,7 @@ export class JointGraphWrapper {
    */
   public highlightGroups(...groupIDs: string[]): void {
     const highlightedGroupIDs: string[] = [];
-    groupIDs.forEach(groupID =>
-      this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs));
+    groupIDs.forEach(groupID => this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs));
     if (highlightedGroupIDs.length > 0) {
       this.jointGroupHighlightStream.next(highlightedGroupIDs);
     }
@@ -343,8 +412,7 @@ export class JointGraphWrapper {
    */
   public unhighlightGroups(...groupIDs: string[]): void {
     const unhighlightedGroupIDs: string[] = [];
-    groupIDs.forEach(groupID =>
-      this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs));
+    groupIDs.forEach(groupID => this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs));
     if (unhighlightedGroupIDs.length > 0) {
       this.jointGroupUnhighlightStream.next(unhighlightedGroupIDs);
     }
@@ -357,8 +425,7 @@ export class JointGraphWrapper {
    */
   public highlightLinks(...linkIDs: string[]): void {
     const highlightedLinkIDs: string[] = [];
-    linkIDs.forEach(linkID =>
-      this.highlightElement(linkID, this.currentHighlightedLinks, highlightedLinkIDs));
+    linkIDs.forEach(linkID => this.highlightElement(linkID, this.currentHighlightedLinks, highlightedLinkIDs));
     if (highlightedLinkIDs.length > 0) {
       this.jointLinkHighlightStream.next(highlightedLinkIDs);
     }
@@ -371,18 +438,38 @@ export class JointGraphWrapper {
    */
   public unhighlightLinks(...linkIDs: string[]): void {
     const unhighlightedLinkIDs: string[] = [];
-    linkIDs.forEach(linkID =>
-      this.unhighlightElement(linkID, this.currentHighlightedLinks, unhighlightedLinkIDs));
+    linkIDs.forEach(linkID => this.unhighlightElement(linkID, this.currentHighlightedLinks, unhighlightedLinkIDs));
     if (unhighlightedLinkIDs.length > 0) {
       this.jointLinkUnhighlightStream.next(unhighlightedLinkIDs);
     }
   }
 
+  public highlightCommentBoxes(...commentBoxIDs: string[]): void {
+    const highlightedCommentBoxesIDs: string[] = [];
+    this.unhighlightCommentBoxes(...this.currentHighlightedCommentBoxes);
+    commentBoxIDs.forEach(commentBoxID =>
+      this.highlightElement(commentBoxID, this.currentHighlightedCommentBoxes, highlightedCommentBoxesIDs)
+    );
+
+    if (highlightedCommentBoxesIDs.length > 0) {
+      this.jointCommentBoxHighlightStream.next(highlightedCommentBoxesIDs);
+    }
+  }
+
+  public unhighlightCommentBoxes(...commentBoxIDs: string[]): void {
+    const unhighlightedCommentBoxesIDs: string[] = [];
+    commentBoxIDs.forEach(commentBoxID =>
+      this.unhighlightElement(commentBoxID, this.currentHighlightedCommentBoxes, unhighlightedCommentBoxesIDs)
+    );
+    if (unhighlightedCommentBoxesIDs.length > 0) {
+      this.jointCommentBoxUnhighlightStream.next(unhighlightedCommentBoxesIDs);
+    }
+  }
   /**
    * Gets the event stream of an operator being highlighted.
    */
   public getJointOperatorHighlightStream(): Observable<readonly string[]> {
-    return this.jointOperatorHighlightStream.asObservable();
+    return this.jointOperatorHighlightStream.pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
   /**
@@ -390,7 +477,7 @@ export class JointGraphWrapper {
    * The operator could be unhighlighted because it's deleted.
    */
   public getJointOperatorUnhighlightStream(): Observable<readonly string[]> {
-    return this.jointOperatorUnhighlightStream.asObservable();
+    return this.jointOperatorUnhighlightStream.pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
   /**
@@ -404,14 +491,14 @@ export class JointGraphWrapper {
    * get the event stream of a link being highlighted.
    */
   public getLinkHighlightStream(): Observable<readonly string[]> {
-    return this.jointLinkHighlightStream.asObservable();
+    return this.jointLinkHighlightStream.pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
   /**
    * get the event stream of a link being unhighlighted.
    */
   public getLinkUnhighlightStream(): Observable<readonly string[]> {
-    return this.jointLinkUnhighlightStream.asObservable();
+    return this.jointLinkUnhighlightStream.pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
   /**
@@ -432,7 +519,7 @@ export class JointGraphWrapper {
    * Gets the event stream of an operator being dragged.
    */
   public getJointGroupHighlightStream(): Observable<readonly string[]> {
-    return this.jointGroupHighlightStream.asObservable();
+    return this.jointGroupHighlightStream.pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
   /**
@@ -440,16 +527,24 @@ export class JointGraphWrapper {
    * The group could be unhighlighted because it's deleted.
    */
   public getJointGroupUnhighlightStream(): Observable<readonly string[]> {
-    return this.jointGroupUnhighlightStream.asObservable();
+    return this.jointGroupUnhighlightStream.asObservable().pipe(this.jointGraphContext.bufferWhileAsync);
   }
 
+  public getJointCommentBoxHighlightStream(): Observable<readonly string[]> {
+    return this.jointCommentBoxHighlightStream.asObservable();
+  }
+
+  public getJointCommentBoxUnhighlightStream(): Observable<readonly string[]> {
+    return this.jointCommentBoxUnhighlightStream.asObservable();
+  }
   /**
    * Gets the event stream of an element being dragged.
    */
   public getJointElementCellDragStream(): Observable<joint.dia.Element> {
-    const jointElementDragStream = this.jointCellDragStream
-      .filter(cell => cell.isElement())
-      .map(cell => <joint.dia.Element>cell);
+    const jointElementDragStream = this.jointCellDragStream.pipe(
+      filter(cell => cell.isElement()),
+      map(cell => <joint.dia.Element>cell)
+    );
     return jointElementDragStream;
   }
 
@@ -458,9 +553,10 @@ export class JointGraphWrapper {
    * An element cell can be an operator or an group.
    */
   public getJointElementCellDeleteStream(): Observable<joint.dia.Element> {
-    const jointElementDeleteStream = this.jointCellDeleteStream
-      .filter(cell => cell.isElement())
-      .map(cell => <joint.dia.Element>cell);
+    const jointElementDeleteStream = this.jointCellDeleteStream.pipe(
+      filter(cell => cell.isElement()),
+      map(cell => <joint.dia.Element>cell)
+    );
     return jointElementDeleteStream;
   }
 
@@ -473,13 +569,13 @@ export class JointGraphWrapper {
    *
    */
   public getJointLinkCellAddStream(): Observable<joint.dia.Link> {
-    const jointLinkAddStream = this.jointCellAddStream
-      .filter(cell => cell.isLink())
-      .map(cell => <joint.dia.Link>cell);
+    const jointLinkAddStream = this.jointCellAddStream.pipe(
+      filter(cell => cell.isLink()),
+      map(cell => <joint.dia.Link>cell)
+    );
 
     return jointLinkAddStream;
   }
-
 
   /**
    * Returns an Observable stream capturing the link cell delete event in JointJS graph.
@@ -490,26 +586,12 @@ export class JointGraphWrapper {
    *
    */
   public getJointLinkCellDeleteStream(): Observable<joint.dia.Link> {
-    const jointLinkDeleteStream = this.jointCellDeleteStream
-      .filter(cell => cell.isLink())
-      .map(cell => <joint.dia.Link>cell);
+    const jointLinkDeleteStream = this.jointCellDeleteStream.pipe(
+      filter(cell => cell.isLink()),
+      map(cell => <joint.dia.Link>cell)
+    );
 
     return jointLinkDeleteStream;
-  }
-
-  public getPanPaperOffsetStream(): Observable<Point> {
-    return this.panPaperOffsetSubject.asObservable();
-  }
-
-  /**
-   * This method will update the panning offset so that dropping
-   *  a new operator will appear at the correct location on the UI.
-   *
-   * @param panOffset new offset from panning
-   */
-  public setPanningOffset(panOffset: Point): void {
-    this.panOffset = panOffset;
-    this.panPaperOffsetSubject.next(panOffset);
   }
 
   /**
@@ -546,17 +628,23 @@ export class JointGraphWrapper {
   }
 
   /**
-   * This method will fetch current pan offset of the paper.
-   */
-  public getPanningOffset(): Point {
-    return this.panOffset;
-  }
-
-  /**
    * This method will fetch current zoom ratio of the paper.
    */
   public getZoomRatio(): number {
     return this.zoomRatio;
+  }
+
+  public autoLayoutJoint(): void {
+    joint.layout.DirectedGraph.layout(this.jointGraph, {
+      dagre: dagre,
+      graphlib: graphlib,
+      nodeSep: 100,
+      edgeSep: 150,
+      rankSep: 80,
+      ranker: "tight-tree",
+      rankDir: "LR",
+      resizeClusters: true,
+    });
   }
 
   /**
@@ -565,15 +653,14 @@ export class JointGraphWrapper {
    */
   public restoreDefaultZoomAndOffset(): void {
     this.setZoomProperty(JointGraphWrapper.INIT_ZOOM_VALUE);
-    this.panOffset = JointGraphWrapper.INIT_PAN_OFFSET;
-    this.restorePaperOffsetSubject.next(this.panOffset);
+    this.restorePaperOffsetSubject.next();
   }
 
   /**
    * Returns an Observable stream capturing the event of restoring
    *  default offset
    */
-  public getRestorePaperOffsetStream(): Observable<Point> {
+  public getRestorePaperOffsetStream(): Observable<void> {
     return this.restorePaperOffsetSubject.asObservable();
   }
 
@@ -586,9 +673,9 @@ export class JointGraphWrapper {
    *  - one end of the link is moved from one point to another point in the paper
    */
   public getJointLinkCellChangeStream(): Observable<joint.dia.Link> {
-    const jointLinkChangeStream = Observable
-      .fromEvent<JointLinkChangeEvent>(this.jointGraph, 'change:source change:target')
-      .map(value => value[0]);
+    const jointLinkChangeStream = fromEvent<JointLinkChangeEvent>(this.jointGraph, "change:source change:target").pipe(
+      map(value => value[0])
+    );
 
     return jointLinkChangeStream;
   }
@@ -599,10 +686,10 @@ export class JointGraphWrapper {
    */
   public getElementPosition(elementID: string): Point {
     const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
-    if (! cell) {
+    if (!cell) {
       throw new Error(`element with ID ${elementID} doesn't exist`);
     }
-    if (! cell.isElement()) {
+    if (!cell.isElement()) {
       throw new Error(`${elementID} is not an element`);
     }
     const element = <joint.dia.Element>cell;
@@ -616,14 +703,30 @@ export class JointGraphWrapper {
    */
   public setElementPosition(elementID: string, offsetX: number, offsetY: number): void {
     const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
-    if (! cell) {
+    if (!cell) {
       throw new Error(`element with ID ${elementID} doesn't exist`);
     }
-    if (! cell.isElement()) {
+    if (!cell.isElement()) {
       throw new Error(`${elementID} is not an element`);
     }
     const element = <joint.dia.Element>cell;
     element.translate(offsetX, offsetY);
+  }
+
+  /**
+   * This method repositions the element according to given absolute positions.
+   * An element can be an operator or a group.
+   */
+  public setAbsolutePosition(elementID: string, posX: number, poY: number): void {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
+    if (!cell) {
+      throw new Error(`element with ID ${elementID} doesn't exist`);
+    }
+    if (!cell.isElement()) {
+      throw new Error(`${elementID} is not an element`);
+    }
+    const element = <joint.dia.Element>cell;
+    element.position(posX, poY);
   }
 
   /**
@@ -649,8 +752,7 @@ export class JointGraphWrapper {
       const highlightedLinks = Object.assign([], this.currentHighlightedLinks);
       highlightedLinks.forEach(highlightedLink => this.unhighlightLink(highlightedLink));
     }
-    this.getCurrentHighlightedOperatorIDs()
-      .forEach(operatorID => this.unhighlightOperators(operatorID));
+    this.getCurrentHighlightedOperatorIDs().forEach(operatorID => this.unhighlightOperators(operatorID));
     this.currentHighlightedLinks.push(linkID);
     this.jointLinkHighlightStream.next([linkID]);
   }
@@ -701,13 +803,13 @@ export class JointGraphWrapper {
    */
   public setElementSize(elementID: string, width: number, height: number): void {
     const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
-    if (! cell) {
+    if (!cell) {
       throw new Error(`element with ID ${elementID} doesn't exist`);
     }
-    if (! cell.isElement()) {
+    if (!cell.isElement()) {
       throw new Error(`${elementID} is not an element`);
     }
-    const element = <joint.dia.Element> cell;
+    const element = <joint.dia.Element>cell;
     element.resize(width, height);
   }
 
@@ -717,10 +819,10 @@ export class JointGraphWrapper {
    */
   public getCellLayer(cellID: string): number {
     const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(cellID);
-    if (! cell) {
+    if (!cell) {
       throw new Error(`cell with ID ${cellID} doesn't exist`);
     }
-    return cell.attributes.z;
+    return cell.attributes.z || 0;
   }
 
   /**
@@ -729,10 +831,10 @@ export class JointGraphWrapper {
    */
   public setCellLayer(cellID: string, layer: number): void {
     const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(cellID);
-    if (! cell) {
+    if (!cell) {
       throw new Error(`cell with ID ${cellID} doesn't exist`);
     }
-    cell.set('z', layer);
+    cell.set("z", layer);
   }
 
   /**
@@ -751,6 +853,18 @@ export class JointGraphWrapper {
     this.listenPositionChange = listenPositionChange;
   }
 
+  public freeze(): void {
+    this.mainJointPaper?.freeze();
+  }
+
+  public unfreeze(): void {
+    this.mainJointPaper?.unfreeze();
+  }
+
+  public updateViews(): void {
+    this.mainJointPaper?.updateViews();
+  }
+
   /**
    * Highlights the element with given elementID.
    *
@@ -761,7 +875,11 @@ export class JointGraphWrapper {
    * there is only one element that could be highlighted at a time, therefore
    *  if there are other highlighted elements, they will be unhighlighted.
    */
-  private highlightElement(elementID: string, currentHighlightedElements: string[], highlightedElements: string[]): void {
+  private highlightElement(
+    elementID: string,
+    currentHighlightedElements: string[],
+    highlightedElements: string[]
+  ): void {
     // try to get the element using element ID
     if (!this.jointGraph.getCell(elementID)) {
       throw new Error(`element with ID ${elementID} doesn't exist`);
@@ -775,6 +893,7 @@ export class JointGraphWrapper {
       this.unhighlightOperators(...this.getCurrentHighlightedOperatorIDs());
       this.unhighlightGroups(...this.getCurrentHighlightedGroupIDs());
       this.unhighlightLinks(...this.getCurrentHighlightedLinkIDs());
+      this.unhighlightCommentBoxes(...this.getCurrentHighlightedCommentBoxIDs());
     }
     // highlight the element and add it to the list of highlighted elements
     currentHighlightedElements.push(elementID);
@@ -785,7 +904,11 @@ export class JointGraphWrapper {
    * Unhighlights the given highlighted element (operator or group).
    * This function fills the unhighlightedElements array to include the unhighlighted elements.
    */
-  private unhighlightElement(elementID: string, currentHighlightedElements: string[], unhighlightedElements: string[]): void {
+  private unhighlightElement(
+    elementID: string,
+    currentHighlightedElements: string[],
+    unhighlightedElements: string[]
+  ): void {
     if (!currentHighlightedElements.includes(elementID)) {
       return;
     }
@@ -811,4 +934,112 @@ export class JointGraphWrapper {
     });
   }
 
+  // Modifies an observable to buffer output while the jointgraph
+  // is in an async context
+  public createContextAwareStream<T>(source: Observable<T>) {
+    // Code adapted from https://kddsky.medium.com/pauseable-observables-in-rxjs-58ce2b8c7dfd
+    // Retrieved on 02/06/2022
+
+    const BufferOnOffStream = this.jointGraphContext
+      .getChangeContextStream()
+      .pipe(map(([_, context]) => context.async));
+
+    const startBuffer = BufferOnOffStream.pipe(filter(async => async == true));
+
+    const stopBuffer = BufferOnOffStream.pipe(
+      filter(async => async == false),
+      map(x => true)
+    );
+
+    return merge(
+      source.pipe(bufferToggle(startBuffer, () => stopBuffer)),
+      source.pipe(windowToggle(stopBuffer, () => startBuffer))
+    ).pipe(mergeMap(x => x));
+  }
+
+  public static jointGraphContextFactory() {
+    class JointGraphContext extends ObservableContextManager<JointGraphContextType>(DefaultContext) {
+      private static jointPaper: joint.dia.Paper | undefined;
+
+      public static async() {
+        return this._async(this.getContext());
+      }
+
+      // Custom RXJS operator to buffer output while the jointgraph
+      // is in an async context
+      public static bufferWhileAsync<T>(source: Observable<T>): Observable<T> {
+        // Code adapted from https://kddsky.medium.com/pauseable-observables-in-rxjs-58ce2b8c7dfd
+        // Retrieved on 02/06/2022
+
+        const BufferOnOffStream = JointGraphContext.getChangeContextStream().pipe(map(([_, context]) => context.async));
+
+        const startBuffer = BufferOnOffStream.pipe(filter(async => async == true));
+
+        const stopBuffer = BufferOnOffStream.pipe(
+          filter(async => async == false),
+          map(x => true)
+        );
+
+        // Either buffertoggle or windowtoggle must be signalled to start first.
+        // Afterwards, they will start when the other stops.
+        // see Code adapted citation for more info.
+        let startBuffer_BT, stopBuffer_WT: Observable<boolean>;
+        if (JointGraphContext.async() == true) {
+          startBuffer_BT = startBuffer.pipe(startWith(true));
+          stopBuffer_WT = stopBuffer;
+        } else {
+          startBuffer_BT = startBuffer;
+          stopBuffer_WT = stopBuffer.pipe(startWith(true));
+        }
+
+        return merge(
+          source.pipe(bufferToggle(startBuffer_BT, () => stopBuffer)),
+          source.pipe(windowToggle(stopBuffer_WT, () => startBuffer))
+        ).pipe(mergeMap(x => x));
+      }
+
+      public static attachPaper(jointPaper: joint.dia.Paper) {
+        this.jointPaper = jointPaper;
+        this.jointPaper.options.async = this.async();
+      }
+
+      protected static enter(context: JointGraphContextType): void {
+        super.enter(context);
+        if (this.jointPaper !== undefined) {
+          this.jointPaper.options.async = this.async();
+        }
+      }
+
+      protected static exit(): void {
+        if (this.jointPaper !== undefined) {
+          const CURRENT_ASYNC_MODE = this._async(this.getContext());
+          const NEW_ASYNC_MODE = this._async(this.prevContext());
+
+          this.jointPaper.options.async = NEW_ASYNC_MODE;
+          if (CURRENT_ASYNC_MODE == true && NEW_ASYNC_MODE == false) this.jointPaper.updateViews();
+        }
+        super.exit();
+      }
+
+      private static _async(context: JointGraphContextType) {
+        return context.async;
+      }
+    }
+
+    return JointGraphContext;
+  }
+
+  /**
+   * Returns an observable to indicate a toggle of grids has happened, and lets workflow editor to handle the state.
+   */
+  public getJointPaperGridsToggleStream(): Observable<void> {
+    return this.jointPaperGridsToggleStream.asObservable();
+  }
+
+  /**
+   * Triggers a toggle of whether to show grids in jointPaper.
+   */
+  public toggleGrids() {
+    this.jointPaperGridsToggleStream.next();
+  }
 }

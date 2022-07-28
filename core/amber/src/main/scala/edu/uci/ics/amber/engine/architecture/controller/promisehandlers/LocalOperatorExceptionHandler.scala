@@ -1,22 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{CommandCompleted, ControlCommand}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object LocalOperatorExceptionHandler {
   final case class LocalOperatorException(triggeredTuple: ITuple, e: Throwable)
-      extends ControlCommand[CommandCompleted]
+      extends ControlCommand[Unit]
 }
 
 /** indicate an exception thrown from the operator logic on a worker
@@ -35,21 +32,25 @@ trait LocalOperatorExceptionHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
   registerHandler { (msg: LocalOperatorException, sender) =>
     {
-      // report the faulted tuple to the frontend with the exception
-      if (eventListener.breakpointTriggeredListener != null) {
-        eventListener.breakpointTriggeredListener.apply(
-          BreakpointTriggered(
-            mutable.HashMap(
-              (sender, FaultedTuple(msg.triggeredTuple, 0)) -> Array(
-                msg.e.toString
-              )
-            ),
-            workflow.getOperator(sender).id.operator
-          )
-        )
-      }
+
+      // get the operator where the worker caught the local operator exception
+      val operator = workflow.getOperator(sender)
+      operator.caughtLocalExceptions.put(sender, msg.e)
+
       // then pause the workflow
-      execute(PauseWorkflow(), ActorVirtualIdentity.Controller)
+      execute(PauseWorkflow(), CONTROLLER)
+
+      // report the faulted tuple to the frontend with the exception
+      sendToClient(
+        BreakpointTriggered(
+          mutable.HashMap(
+            (sender, FaultedTuple(msg.triggeredTuple, 0)) -> Array(
+              msg.e.toString
+            )
+          ),
+          workflow.getOperator(sender).id.operator
+        )
+      )
     }
   }
 }

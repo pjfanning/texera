@@ -1,12 +1,12 @@
 package edu.uci.ics.amber.engine.common
 
-import java.io.{BufferedReader, InputStreamReader}
-import java.net.{InetAddress, URL}
-
+import akka.actor.{ActorSystem, Address, DeadLetter, Props}
+import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.clustering.ClusterListener
-import akka.actor.{ActorSystem, DeadLetter, Props}
-import com.typesafe.config.ConfigFactory
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DeadLetterMonitorActor
+
+import java.io.{BufferedReader, InputStreamReader}
+import java.net.URL
 
 object AmberUtils {
 
@@ -16,9 +16,9 @@ object AmberUtils {
       .groupBy(_._1)
       .mapValues(_.map(_._2).toSet)
 
-  def startActorMaster(localhost: Boolean): ActorSystem = {
+  def startActorMaster(clusterMode: Boolean): ActorSystem = {
     var localIpAddress = "localhost"
-    if (!localhost) {
+    if (clusterMode) {
       try {
         val query = new URL("http://checkip.amazonaws.com")
         val in = new BufferedReader(new InputStreamReader(query.openStream()))
@@ -28,41 +28,52 @@ object AmberUtils {
       }
     }
 
-    val config = ConfigFactory
+    val masterConfig = ConfigFactory
       .parseString(s"""
         akka.remote.artery.canonical.port = 2552
         akka.remote.artery.canonical.hostname = $localIpAddress
         akka.cluster.seed-nodes = [ "akka://Amber@$localIpAddress:2552" ]
-        akka.actor.serialization-bindings."java.lang.Throwable" = akka-misc
         """)
-      .withFallback(ConfigFactory.load("clustered"))
-
-    val system = ActorSystem("Amber", config)
-    val info = system.actorOf(Props[ClusterListener], "cluster-info")
-    val deadLetterMonitorActor =
-      system.actorOf(Props[DeadLetterMonitorActor], name = "dead-letter-monitor-actor")
-    system.eventStream.subscribe(deadLetterMonitorActor, classOf[DeadLetter])
-
-    system
+      .withFallback(akkaConfig)
+    Constants.masterNodeAddr = createMasterAddress(localIpAddress)
+    createAmberSystem(masterConfig)
   }
+
+  def akkaConfig: Config = ConfigFactory.load("cluster").withFallback(amberConfig)
+
+  def amberConfig: Config = ConfigFactory.load()
+
+  def createMasterAddress(addr: String): Address = Address("akka", "Amber", addr, 2552)
 
   def startActorWorker(mainNodeAddress: Option[String]): ActorSystem = {
     val addr = mainNodeAddress.getOrElse("localhost")
-    val localIpAddress = "localhost"
-    val config = ConfigFactory
+    var localIpAddress = "localhost"
+    if (mainNodeAddress.isDefined) {
+      try {
+        val query = new URL("http://checkip.amazonaws.com")
+        val in = new BufferedReader(new InputStreamReader(query.openStream()))
+        localIpAddress = in.readLine()
+      } catch {
+        case e: Exception => throw e
+      }
+    }
+    val workerConfig = ConfigFactory
       .parseString(s"""
         akka.remote.artery.canonical.hostname = $localIpAddress
         akka.remote.artery.canonical.port = 0
         akka.cluster.seed-nodes = [ "akka://Amber@$addr:2552" ]
-        akka.actor.serialization-bindings."java.lang.Throwable" = akka-misc
         """)
-      .withFallback(ConfigFactory.load("clustered"))
-    val system = ActorSystem("Amber", config)
-    val info = system.actorOf(Props[ClusterListener], "cluster-info")
+      .withFallback(akkaConfig)
+    Constants.masterNodeAddr = createMasterAddress(addr)
+    createAmberSystem(workerConfig)
+  }
+
+  def createAmberSystem(actorSystemConf: Config): ActorSystem = {
+    val system = ActorSystem("Amber", actorSystemConf)
+    system.actorOf(Props[ClusterListener], "cluster-info")
     val deadLetterMonitorActor =
       system.actorOf(Props[DeadLetterMonitorActor], name = "dead-letter-monitor-actor")
     system.eventStream.subscribe(deadLetterMonitorActor, classOf[DeadLetter])
-    Constants.masterNodeAddr = addr
     system
   }
 }

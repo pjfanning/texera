@@ -1,10 +1,11 @@
-import { NullTypeComponent } from './null.type';
-import { ArrayTypeComponent } from './array.type';
-import { ObjectTypeComponent } from './object.type';
-import { MultiSchemaTypeComponent } from './multischema.type';
-import { FormlyFieldConfig } from '@ngx-formly/core';
-import { CodeareaCustomTemplateComponent } from '../../workspace/component/codearea-custom-template/codearea-custom-template.component';
+import { NullTypeComponent } from "./null.type";
+import { ArrayTypeComponent } from "./array.type";
+import { ObjectTypeComponent } from "./object.type";
+import { MultiSchemaTypeComponent } from "./multischema.type";
+import { FormlyFieldConfig } from "@ngx-formly/core";
+import { CodeareaCustomTemplateComponent } from "../../workspace/component/codearea-custom-template/codearea-custom-template.component";
 import { DraggableArrayTypeComponent } from './draggable-array.type';
+import { PresetWrapperComponent } from "./preset-wrapper/preset-wrapper.component";
 
 /**
  * Configuration for using Json Schema with Formly.
@@ -13,49 +14,50 @@ import { DraggableArrayTypeComponent } from './draggable-array.type';
  */
 export const TEXERA_FORMLY_CONFIG = {
   validationMessages: [
-    { name: 'required', message: 'This field is required' },
-    { name: 'null', message: 'should be null' },
-    { name: 'minlength', message: minlengthValidationMessage },
-    { name: 'maxlength', message: maxlengthValidationMessage },
-    { name: 'min', message: minValidationMessage },
-    { name: 'max', message: maxValidationMessage },
-    { name: 'multipleOf', message: multipleOfValidationMessage },
-    { name: 'exclusiveMinimum', message: exclusiveMinimumValidationMessage },
-    { name: 'exclusiveMaximum', message: exclusiveMaximumValidationMessage },
-    { name: 'minItems', message: minItemsValidationMessage },
-    { name: 'maxItems', message: maxItemsValidationMessage },
-    { name: 'uniqueItems', message: 'should NOT have duplicate items' },
-    { name: 'const', message: constValidationMessage },
+    { name: "required", message: "This field is required" },
+    { name: "null", message: "should be null" },
+    { name: "minlength", message: minlengthValidationMessage },
+    { name: "maxlength", message: maxlengthValidationMessage },
+    { name: "min", message: minValidationMessage },
+    { name: "max", message: maxValidationMessage },
+    { name: "multipleOf", message: multipleOfValidationMessage },
+    { name: "exclusiveMinimum", message: exclusiveMinimumValidationMessage },
+    { name: "exclusiveMaximum", message: exclusiveMaximumValidationMessage },
+    { name: "minItems", message: minItemsValidationMessage },
+    { name: "maxItems", message: maxItemsValidationMessage },
+    { name: "uniqueItems", message: "should NOT have duplicate items" },
+    { name: "const", message: constValidationMessage },
   ],
   types: [
-    { name: 'string', extends: 'input' },
+    { name: "string", extends: "input" },
     {
-      name: 'number',
-      extends: 'input',
+      name: "number",
+      extends: "input",
       defaultOptions: {
         templateOptions: {
-          type: 'number',
+          type: "number",
         },
       },
     },
     {
-      name: 'integer',
-      extends: 'input',
+      name: "integer",
+      extends: "input",
       defaultOptions: {
         templateOptions: {
-          type: 'number'
+          type: "number",
         },
       },
     },
-    {name: 'boolean', extends: 'checkbox'},
-    {name: 'enum', extends: 'select'},
-    {name: 'null', component: NullTypeComponent, wrappers: ['form-field']},
-    {name: 'array', component: ArrayTypeComponent},
-    {name: 'object', component: ObjectTypeComponent},
-    {name: 'multischema', component: MultiSchemaTypeComponent},
-    {name: 'draggablearray', component: DraggableArrayTypeComponent},
-    {name: 'codearea', component: CodeareaCustomTemplateComponent}
+    { name: "boolean", extends: "checkbox" },
+    { name: "enum", extends: "select" },
+    { name: "null", component: NullTypeComponent, wrappers: ["form-field"] },
+    { name: "array", component: ArrayTypeComponent },
+    { name: "object", component: ObjectTypeComponent },
+    { name: "multischema", component: MultiSchemaTypeComponent },
+    { name: 'draggablearray', component: DraggableArrayTypeComponent },
+    { name: "codearea", component: CodeareaCustomTemplateComponent },
   ],
+  wrappers: [{ name: "preset-wrapper", component: PresetWrapperComponent }],
 };
 
 export function minItemsValidationMessage(err: any, field: FormlyFieldConfig) {
@@ -97,4 +99,3 @@ export function exclusiveMaximumValidationMessage(err: any, field: FormlyFieldCo
 export function constValidationMessage(err: any, field: FormlyFieldConfig) {
   return `should be equal to constant "${field.templateOptions?.const}"`;
 }
-

@@ -11,6 +11,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import static edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName.*;
+import static edu.uci.ics.texera.workflow.common.metadata.annotations.CommonOpDescAnnotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})

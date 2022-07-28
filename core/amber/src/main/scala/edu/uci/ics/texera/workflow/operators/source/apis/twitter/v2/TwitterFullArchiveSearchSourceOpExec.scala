@@ -1,34 +1,44 @@
 package edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2
 
-import com.github.redouane59.twitter.dto.tweet.Tweet
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeTypeUtils, Schema}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.{
+  Attribute,
+  AttributeType,
+  OperatorSchemaInfo
+}
 import edu.uci.ics.texera.workflow.operators.source.apis.twitter.TwitterSourceOpExec
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.TwitterUtils.tweetDataToTuple
+import io.github.redouane59.twitter.dto.endpoints.AdditionalParameters
+import io.github.redouane59.twitter.dto.tweet.TweetList
+import io.github.redouane59.twitter.dto.tweet.TweetV2.TweetData
+import io.github.redouane59.twitter.dto.user.UserV2.UserData
 
-import java.time.{LocalDateTime, ZoneId, ZoneOffset}
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import scala.collection.{mutable, Iterator}
-import scala.collection.JavaConverters._
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-class TwitterFullArchiveSearchSourceOpExec(
-    schema: Schema,
-    accessToken: String,
-    accessTokenSecret: String,
-    apiKey: String,
-    apiSecretKey: String,
-    searchQuery: String,
-    fromDateTime: String,
-    toDateTime: String,
-    var curLimit: Int
-) extends TwitterSourceOpExec(accessToken, accessTokenSecret, apiKey, apiSecretKey) {
+import scala.collection.mutable.ListBuffer
+import scala.collection.{Iterator, mutable}
+import scala.jdk.CollectionConverters.asScalaBufferConverter
 
+class TwitterFullArchiveSearchSourceOpExec(
+    desc: TwitterFullArchiveSearchSourceOpDesc,
+    operatorSchemaInfo: OperatorSchemaInfo
+) extends TwitterSourceOpExec(desc.apiKey, desc.apiSecretKey, desc.stopWhenRateLimited) {
+  val outputSchemaAttributes: Array[AttributeType] = operatorSchemaInfo
+    .outputSchemas(0)
+    .getAttributes
+    .map((attribute: Attribute) => {
+      attribute.getType
+    })
+    .toArray
+  var curLimit: Int = desc.limit
   // nextToken is used to retrieve next page of results, if exists.
   var nextToken: String = _
-
   // contains tweets from the previous request.
-  var tweetCache: mutable.Buffer[Tweet] = mutable.Buffer()
-
+  var tweetCache: mutable.Buffer[TweetData] = mutable.Buffer()
+  var userCache: Map[String, UserData] = Map()
   var hasNextRequest: Boolean = curLimit > 0
+  var lastQueryTime: Long = 0
 
   override def produceTexeraTuple(): Iterator[Tuple] =
     new Iterator[Tuple]() {
@@ -38,10 +48,10 @@ class TwitterFullArchiveSearchSourceOpExec(
         // if the current cache is exhausted, query for the next response
         if (tweetCache.isEmpty && hasNextRequest) {
           queryForNextBatch(
-            searchQuery,
-            LocalDateTime.parse(fromDateTime, DateTimeFormatter.ISO_DATE_TIME),
-            LocalDateTime.parse(toDateTime, DateTimeFormatter.ISO_DATE_TIME),
-            curLimit.min(TWITTER_API_BATCH_SIZE)
+            desc.searchQuery,
+            LocalDateTime.parse(desc.fromDateTime, DateTimeFormatter.ISO_DATE_TIME),
+            LocalDateTime.parse(desc.toDateTime, DateTimeFormatter.ISO_DATE_TIME),
+            curLimit.min(TWITTER_API_BATCH_SIZE_MAX)
           )
         }
 
@@ -49,7 +59,7 @@ class TwitterFullArchiveSearchSourceOpExec(
         if (tweetCache.isEmpty) {
           return null
         }
-        val tweet: Tweet = tweetCache.remove(0)
+        val tweet: TweetData = tweetCache.remove(0)
 
         curLimit -= 1
 
@@ -58,36 +68,9 @@ class TwitterFullArchiveSearchSourceOpExec(
           hasNextRequest = false
         }
 
-        val fields = AttributeTypeUtils.parseFields(
-          Array[Object](
-            tweet.getId,
-            tweet.getText,
-            // given the fact that the redouane59/twittered library is using LocalDateTime as the API parameter,
-            // we have to fix it to UTC time zone to normalize the time.
-            tweet.getCreatedAt
-              .atZone(ZoneId.systemDefault())
-              .withZoneSameInstant(ZoneId.of("UTC"))
-              .toLocalDateTime
-              .atOffset(ZoneOffset.UTC)
-              .format(DateTimeFormatter.ISO_DATE_TIME),
-            tweet.getAuthorId,
-            // tweet.getUser, // currently unsupported by the redouane59/twittered library
-            // TODO: add user information
-            tweet.getLang,
-            tweet.getTweetType.toString,
-            // TODO: add actual geo related information
-            Option(tweet.getGeo).map(_.getPlaceId).orNull,
-            Option(tweet.getGeo).map(_.getCoordinates).orNull,
-            tweet.getInReplyToStatusId,
-            tweet.getInReplyToUserId,
-            Integer.valueOf(tweet.getLikeCount),
-            Integer.valueOf(tweet.getQuoteCount),
-            Integer.valueOf(tweet.getReplyCount),
-            Integer.valueOf(tweet.getRetweetCount)
-          ),
-          schema.getAttributes.map((attribute: Attribute) => { attribute.getType }).toArray
-        )
-        Tuple.newBuilder.add(schema, fields).build
+        val user = userCache.get(tweet.getAuthorId)
+
+        tweetDataToTuple(tweet, user, operatorSchemaInfo.outputSchemas(0))
       }
     }
 
@@ -97,20 +80,64 @@ class TwitterFullArchiveSearchSourceOpExec(
       endDateTime: LocalDateTime,
       maxResults: Int
   ): Unit = {
+    def enforceRateLimit(): Unit = {
+      // Twitter limit 1 request per second and 300 calls in 15 minutes for V2 FullArchiveSearch
+      // If request too frequently, twitter will force the client wait for 5 minutes.
+      // Here we send at most 1 request per second to avoid hitting rate limit.
+      val currentTime = System.currentTimeMillis()
 
-    val response = twitterClient.searchForTweetsFullArchive(
-      query,
-      startDateTime,
-      endDateTime,
-      maxResults.max(10), // a request needs at least 10 results
-      nextToken
-    )
+      // using 1100 to avoid some edge cases
+      if (currentTime - lastQueryTime < 1100) {
+        Thread.sleep(currentTime - lastQueryTime)
+      }
+      lastQueryTime = System.currentTimeMillis()
+    }
 
-    nextToken = response.getNextToken
+    val params = AdditionalParameters
+      .builder()
+      .startTime(startDateTime)
+      .endTime(endDateTime)
+      .maxResults(maxResults.max(TWITTER_API_BATCH_SIZE_MIN))
+      .recursiveCall(false)
+      .nextToken(nextToken)
+      .build()
+
+    // There is bug in the library twittered that it returns null although there exists
+    // more pages.
+    // Below is a temporary patch to make sure the query stops when there are actually
+    // no more pages. The strategy is to repeat the last request multiple times to ensure
+    // it returns the nextToken as null. The solution is not ideal but should do job in
+    // the most cases.
+    // TODO: replace with newer version library twittered when the bug is fixed.
+    var response: TweetList = null
+    var retry = 2
+    do {
+      enforceRateLimit()
+      response = twitterClient.searchAllTweets(query, params)
+      retry -= 1
+
+      if (response == null || response.getMeta == null) {
+        // Error in request, result in null responses
+        throw new RuntimeException("error in requesting Twitter API, please check your query.")
+
+      }
+    } while (response.getMeta.getNextToken == null && retry > 0)
+
+    nextToken = response.getMeta.getNextToken
+
+    tweetCache =
+      if (response != null && response.getData != null) response.getData.asScala else ListBuffer()
+
+    userCache =
+      if (response != null && response.getIncludes != null && response.getIncludes.getUsers != null)
+        response.getIncludes.getUsers
+          .map((userData: UserData) => userData.getId -> userData)
+          .toMap
+      else Map()
 
     // when there is no more pages left, no need to request any more
     hasNextRequest = nextToken != null
 
-    tweetCache = response.getTweets.asScala
   }
+
 }

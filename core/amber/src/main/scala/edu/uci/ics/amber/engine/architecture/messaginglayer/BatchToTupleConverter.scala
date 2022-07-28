@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   SenderChangeMarker
 }
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
-import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, VirtualIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
 
@@ -20,12 +20,12 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     * We also keep track of the upstream actors so that we can emit
     * EndOfAllMarker when all upstream actors complete their job
     */
-  private val inputMap = new mutable.HashMap[VirtualIdentity, LinkIdentity]
-  private val upstreamMap = new mutable.HashMap[LinkIdentity, mutable.HashSet[VirtualIdentity]]
+  private val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
+  private val upstreamMap = new mutable.HashMap[LinkIdentity, mutable.HashSet[ActorVirtualIdentity]]
   private var currentLink: LinkIdentity = _
 
-  def registerInput(identifier: VirtualIdentity, input: LinkIdentity): Unit = {
-    upstreamMap.getOrElseUpdate(input, new mutable.HashSet[VirtualIdentity]()).add(identifier)
+  def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
+    upstreamMap.getOrElseUpdate(input, new mutable.HashSet[ActorVirtualIdentity]()).add(identifier)
     inputMap(identifier) = input
   }
 
@@ -41,7 +41,7 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     * @param from
     * @param dataPayload
     */
-  def processDataPayload(from: VirtualIdentity, dataPayload: DataPayload): Unit = {
+  def processDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
     val link = inputMap(from)
     if (currentLink == null || currentLink != link) {
       workerInternalQueue.appendElement(SenderChangeMarker(link))
@@ -50,7 +50,7 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
     dataPayload match {
       case DataFrame(payload) =>
         payload.foreach { i =>
-          workerInternalQueue.appendElement(InputTuple(i))
+          workerInternalQueue.appendElement(InputTuple(from, i))
         }
       case EndOfUpstream() =>
         upstreamMap(link).remove(from)
@@ -65,5 +65,14 @@ class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
         throw new NotImplementedError()
     }
   }
+
+  /**
+    * This method is used by flow control logic. It returns the number of credits available for this particular sender
+    * worker.
+    * @param sender the worker sending the network message
+    * @return
+    */
+  def getSenderCredits(sender: ActorVirtualIdentity): Int =
+    workerInternalQueue.getSenderCredits(sender)
 
 }

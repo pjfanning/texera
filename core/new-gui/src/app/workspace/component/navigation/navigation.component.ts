@@ -1,22 +1,32 @@
-import { UserIconComponent } from './../../../dashboard/component/top-bar/user-icon/user-icon.component';
-import { DatePipe, Location } from '@angular/common';
-import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
-import { TourService } from 'ngx-tour-ng-bootstrap';
-import { environment } from '../../../../environments/environment';
-import { UserService } from '../../../common/service/user/user.service';
-import { WorkflowPersistService } from '../../../common/service/user/workflow-persist/workflow-persist.service';
-import { Workflow } from '../../../common/type/workflow';
-import { ExecuteWorkflowService } from '../../service/execute-workflow/execute-workflow.service';
-import { UndoRedoService } from '../../service/undo-redo/undo-redo.service';
-import { ValidationWorkflowService } from '../../service/validation/validation-workflow.service';
-import { WorkflowCacheService } from '../../service/workflow-cache/workflow-cache.service';
-import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
-import { WorkflowActionService } from '../../service/workflow-graph/model/workflow-action.service';
-import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
-import { ExecutionState } from '../../types/execute-workflow.interface';
-import { NgbActiveModal, NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { ResultDownloadComponent } from './result-download/result-download.component';
-import { WorkflowWebsocketService } from '../../service/workflow-websocket/workflow-websocket.service';
+import { DatePipe, Location } from "@angular/common";
+import { ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
+import { environment } from "../../../../environments/environment";
+import { UserService } from "../../../common/service/user/user.service";
+import {
+  DEFAULT_WORKFLOW_NAME,
+  WorkflowPersistService,
+} from "../../../common/service/workflow-persist/workflow-persist.service";
+import { Workflow, WorkflowContent } from "../../../common/type/workflow";
+import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
+import { UndoRedoService } from "../../service/undo-redo/undo-redo.service";
+import { ValidationWorkflowService } from "../../service/validation/validation-workflow.service";
+import { JointGraphWrapper } from "../../service/workflow-graph/model/joint-graph-wrapper";
+import { WorkflowActionService } from "../../service/workflow-graph/model/workflow-action.service";
+import { ExecutionState } from "../../types/execute-workflow.interface";
+import { WorkflowWebsocketService } from "../../service/workflow-websocket/workflow-websocket.service";
+import { merge } from "rxjs";
+import { WorkflowResultExportService } from "../../service/workflow-result-export/workflow-result-export.service";
+import { debounceTime } from "rxjs/operators";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { WorkflowUtilService } from "../../service/workflow-graph/util/workflow-util.service";
+import { isSink } from "../../service/workflow-graph/model/workflow-graph";
+import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+import { concatMap, catchError } from "rxjs/operators";
+import { UserProjectService } from "src/app/dashboard/service/user-project/user-project.service";
+import { WorkflowCollabService } from "../../service/workflow-collab/workflow-collab.service";
+import { NzUploadFile } from "ng-zorro-antd/upload";
+import { saveAs } from "file-saver";
+import { NotificationService } from "src/app/common/service/notification/notification.service";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -33,47 +43,65 @@ import { WorkflowWebsocketService } from '../../service/workflow-websocket/workf
  * @author Henry Chen
  *
  */
+@UntilDestroy()
 @Component({
-  selector: 'texera-navigation',
-  templateUrl: './navigation.component.html',
-  styleUrls: ['./navigation.component.scss']
+  selector: "texera-navigation",
+  templateUrl: "./navigation.component.html",
+  styleUrls: ["./navigation.component.scss"],
 })
 export class NavigationComponent implements OnInit {
-
-  public executionState: ExecutionState;  // set this to true when the workflow is started
+  public executionState: ExecutionState; // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public isWorkflowValid: boolean = true; // this will check whether the workflow error or not
   public isSaving: boolean = false;
 
-  @Input() public autoSaveState: string = '';
-  @Input() public currentWorkflowName: string = '';  // reset workflowName
-  @ViewChild('nameInput') nameInputBox: ElementRef<HTMLElement>|undefined;
+  @Input() private pid: number = 0;
+  @Input() public autoSaveState: string = "";
+  @Input() public currentWorkflowName: string = ""; // reset workflowName
+  @Input() public particularVersionDate: string = ""; // placeholder for the metadata information of a particular workflow version
+  @ViewChild("nameInput") nameInputBox: ElementRef<HTMLElement> | undefined;
 
   // variable bound with HTML to decide if the running spinner should show
-  public runButtonText = 'Run';
-  public runIcon = 'play-circle';
+  public runButtonText = "Run";
+  public runIcon = "play-circle";
   public runDisable = false;
 
   // whether user dashboard is enabled and accessible from the workspace
   public userSystemEnabled: boolean = environment.userSystemEnabled;
+  public workflowCollabEnabled: boolean = environment.workflowCollabEnabled;
+  public lockGranted: boolean = true;
+  public workflowReadonly: boolean = false;
+  // flag to display a particular version in the current canvas
+  public displayParticularWorkflowVersion: boolean = false;
   public onClickRunHandler: () => void;
 
-  public downloadResultPopup: NgbModalRef | undefined;
+  // whether the disable-operator-button should be enabled
+  public isDisableOperatorClickable: boolean = false;
+  public isDisableOperator: boolean = true;
+
+  public operatorCacheEnabled: boolean = environment.operatorCacheEnabled;
+  public isCacheOperatorClickable: boolean = false;
+  public isCacheOperator: boolean = true;
+
+  public static readonly COLLAB_RELOAD_WAIT_TIME = 500;
 
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
-    public tourService: TourService,
     public workflowActionService: WorkflowActionService,
-    public workflowStatusService: WorkflowStatusService,
     public workflowWebsocketService: WorkflowWebsocketService,
     private location: Location,
     public undoRedoService: UndoRedoService,
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
+    public workflowVersionService: WorkflowVersionService,
     public userService: UserService,
-    private workflowCacheService: WorkflowCacheService,
     private datePipe: DatePipe,
-    private modalService: NgbModal
+    public workflowResultExportService: WorkflowResultExportService,
+    public workflowCollabService: WorkflowCollabService,
+    public workflowUtilService: WorkflowUtilService,
+    private userProjectService: UserProjectService,
+    private notificationService: NotificationService,
+    public changeDetectionRef: ChangeDetectorRef
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -84,109 +112,117 @@ export class NavigationComponent implements OnInit {
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
     // this.currentWorkflowName = this.workflowCacheService.getCachedWorkflow();
-
-    executeWorkflowService.getExecutionStateStream().subscribe(
-      event => {
-        this.executionState = event.current.state;
-        this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
-      }
-    );
-
-    executeWorkflowService.getResultDownloadStream().subscribe(
-      response => {
-        if (!this.downloadResultPopup) {
-          this.downloadResultPopup = this.modalService.open(ResultDownloadComponent);
-        }
-        this.downloadResultPopup.componentInstance.message = response.message;
-        this.downloadResultPopup.componentInstance.link = response.link;
-        this.downloadResultPopup.componentInstance.openInNewTab();
-      }
-    );
-
-    // set the map of operatorStatusMap
-    validationWorkflowService.getWorkflowValidationErrorStream()
-                             .subscribe(value => {
-                               this.isWorkflowValid = Object.keys(value.errors).length === 0;
-                               this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
-                             });
-
-    this.registerWorkflowMetadataDisplayRefresh();
   }
 
-  ngOnInit() {
+  public ngOnInit(): void {
+    this.executeWorkflowService
+      .getExecutionStateStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
+        this.executionState = event.current.state;
+        this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
+      });
+
+    // set the map of operatorStatusMap
+    this.validationWorkflowService
+      .getWorkflowValidationErrorStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(value => {
+        this.isWorkflowValid = Object.keys(value.errors).length === 0;
+        this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
+      });
+
+    this.registerWorkflowMetadataDisplayRefresh();
+    this.handleWorkflowVersionDisplay();
+    this.handleDisableOperatorStatusChange();
+    this.handleCacheOperatorStatusChange();
+    this.handleLockChange();
+    this.handleWorkflowAccessChange();
   }
 
   // apply a behavior to the run button via bound variables
-  public applyRunButtonBehavior(
-    behavior: {
-      text: string,
-      icon: string,
-      disable: boolean,
-      onClick: () => void
-    }
-  ) {
+  public applyRunButtonBehavior(behavior: { text: string; icon: string; disable: boolean; onClick: () => void }) {
     this.runButtonText = behavior.text;
     this.runIcon = behavior.icon;
     this.runDisable = behavior.disable;
     this.onClickRunHandler = behavior.onClick;
   }
 
-  public getRunButtonBehavior(executionState: ExecutionState, isWorkflowValid: boolean): {
-    text: string,
-    icon: string,
-    disable: boolean,
-    onClick: () => void
+  public getRunButtonBehavior(
+    executionState: ExecutionState,
+    isWorkflowValid: boolean
+  ): {
+    text: string;
+    icon: string;
+    disable: boolean;
+    onClick: () => void;
   } {
     if (!isWorkflowValid) {
       return {
-        text: 'Error', icon: 'exclamation-circle', disable: true, onClick: () => {
-        }
+        text: "Error",
+        icon: "exclamation-circle",
+        disable: true,
+        onClick: () => {},
       };
     }
     switch (executionState) {
       case ExecutionState.Uninitialized:
       case ExecutionState.Completed:
-      case ExecutionState.Failed:
+      case ExecutionState.Aborted:
         return {
-          text: 'Run', icon: 'play-circle', disable: false,
-          onClick: () => this.executeWorkflowService.executeWorkflow()
+          text: "Run",
+          icon: "play-circle",
+          disable: false,
+          onClick: () => this.executeWorkflowService.executeWorkflow(),
         };
-      case ExecutionState.WaitingToRun:
+      case ExecutionState.Initializing:
         return {
-          text: 'Submitting', icon: 'loading', disable: true,
-          onClick: () => {
-          }
+          text: "Submitting",
+          icon: "loading",
+          disable: true,
+          onClick: () => {},
         };
       case ExecutionState.Running:
         return {
-          text: 'Pause', icon: 'loading', disable: false,
-          onClick: () => this.executeWorkflowService.pauseWorkflow()
+          text: "Pause",
+          icon: "loading",
+          disable: false,
+          onClick: () => this.executeWorkflowService.pauseWorkflow(),
         };
       case ExecutionState.Paused:
       case ExecutionState.BreakpointTriggered:
         return {
-          text: 'Resume', icon: 'pause-circle', disable: false,
-          onClick: () => this.executeWorkflowService.resumeWorkflow()
+          text: "Resume",
+          icon: "pause-circle",
+          disable: false,
+          onClick: () => this.executeWorkflowService.resumeWorkflow(),
         };
       case ExecutionState.Pausing:
         return {
-          text: 'Pausing', icon: 'loading', disable: true,
-          onClick: () => {
-          }
+          text: "Pausing",
+          icon: "loading",
+          disable: true,
+          onClick: () => {},
         };
       case ExecutionState.Resuming:
         return {
-          text: 'Resuming', icon: 'loading', disable: true,
-          onClick: () => {
-          }
+          text: "Resuming",
+          icon: "loading",
+          disable: true,
+          onClick: () => {},
         };
       case ExecutionState.Recovering:
         return {
-          text: 'Recovering', icon: 'loading', disable: true,
-          onClick: () => {
-          }
+          text: "Recovering",
+          icon: "loading",
+          disable: true,
+          onClick: () => {},
         };
     }
+  }
+
+  public onClickAddCommentBox(): void {
+    this.workflowActionService.addCommentBox(this.workflowUtilService.getNewCommentBox());
   }
 
   public handleKill(): void {
@@ -210,6 +246,14 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
+   * This method will flip the current status of whether to draw grids in jointPaper.
+   * This option is only for the current session and will be cleared on refresh.
+   */
+  public onClickToggleGrids(): void {
+    this.workflowActionService.getJointGraphWrapper().toggleGrids();
+  }
+
+  /**
    * This method will decrease the zoom ratio and send the new zoom ratio value
    *  to the joint graph wrapper to change overall zoom ratio that is used in
    *  zoom buttons and mouse wheel zoom.
@@ -217,15 +261,17 @@ export class NavigationComponent implements OnInit {
    * If the zoom ratio already reaches minimum, this method will not do anything.
    */
   public onClickZoomOut(): void {
-
     // if zoom is already at minimum, don't zoom out again.
     if (this.isZoomRatioMin()) {
       return;
     }
 
     // make the ratio small.
-    this.workflowActionService.getJointGraphWrapper()
-        .setZoomProperty(this.workflowActionService.getJointGraphWrapper().getZoomRatio() - JointGraphWrapper.ZOOM_CLICK_DIFF);
+    this.workflowActionService
+      .getJointGraphWrapper()
+      .setZoomProperty(
+        this.workflowActionService.getJointGraphWrapper().getZoomRatio() - JointGraphWrapper.ZOOM_CLICK_DIFF
+      );
   }
 
   /**
@@ -236,40 +282,36 @@ export class NavigationComponent implements OnInit {
    * If the zoom ratio already reaches maximum, this method will not do anything.
    */
   public onClickZoomIn(): void {
-
     // if zoom is already reach maximum, don't zoom in again.
     if (this.isZoomRatioMax()) {
       return;
     }
 
     // make the ratio big.
-    this.workflowActionService.getJointGraphWrapper()
-        .setZoomProperty(this.workflowActionService.getJointGraphWrapper().getZoomRatio() + JointGraphWrapper.ZOOM_CLICK_DIFF);
+    this.workflowActionService
+      .getJointGraphWrapper()
+      .setZoomProperty(
+        this.workflowActionService.getJointGraphWrapper().getZoomRatio() + JointGraphWrapper.ZOOM_CLICK_DIFF
+      );
   }
 
   /**
-   * This is the handler for the execution result download button.
+   * This method will run the autoLayout function
    *
-   * This sends the finished execution result ID to the backend to download execution result in
-   *  excel format.
    */
-  public onClickDownloadExecutionResult(downloadType: string): void {
-    // exit if the workflow is not finished
-    if (this.isDownloadDisabled()) {
+  public onClickAutoLayout(): void {
+    if (!this.hasOperators()) {
       return;
     }
-    this.executeWorkflowService.downloadWorkflowExecutionResult(downloadType, this.currentWorkflowName);
-    this.downloadResultPopup = this.modalService.open(ResultDownloadComponent);
-    this.downloadResultPopup.componentInstance.message = 'Collecting results. It may takes a while';
-    // set the variable to undefined when user closes the popup
-    this.downloadResultPopup.result.then(() => {this.downloadResultPopup = undefined; });
+    this.workflowActionService.autoLayoutWorkflow();
   }
 
   /**
-   * enable result downloading only when the workflow completes executing
+   * This is the handler for the execution result export button.
+   *
    */
-  public isDownloadDisabled(): boolean {
-    return !(this.executionState === ExecutionState.Completed && environment.downloadExecutionResultEnabled);
+  public onClickExportExecutionResult(exportType: string): void {
+    this.workflowResultExportService.exportWorkflowExecutionResult(exportType, this.currentWorkflowName);
   }
 
   /**
@@ -283,8 +325,70 @@ export class NavigationComponent implements OnInit {
    * Delete all operators (including hidden ones) on the graph.
    */
   public onClickDeleteAllOperators(): void {
-    const allOperatorIDs = this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID);
+    const allOperatorIDs = this.workflowActionService
+      .getTexeraGraph()
+      .getAllOperators()
+      .map(op => op.operatorID);
     this.workflowActionService.deleteOperatorsAndLinks(allOperatorIDs, []);
+  }
+
+  public onClickImportWorkflow = (file: NzUploadFile): boolean => {
+    const reader = new FileReader();
+    reader.readAsText(file as any);
+    reader.onload = () => {
+      try {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          throw new Error("incorrect format: file is not a string");
+        }
+
+        const workflowContent = JSON.parse(result) as WorkflowContent;
+
+        // set the workflow name using the file name without the extension
+        const fileExtensionIndex = file.name.lastIndexOf(".");
+        var workflowName: string;
+        if (fileExtensionIndex === -1) {
+          workflowName = file.name;
+        } else {
+          workflowName = file.name.substring(0, fileExtensionIndex);
+        }
+        if (workflowName.trim() === "") {
+          workflowName = DEFAULT_WORKFLOW_NAME;
+        }
+
+        const workflow: Workflow = {
+          content: workflowContent,
+          name: workflowName,
+          wid: undefined,
+          creationTime: undefined,
+          lastModifiedTime: undefined,
+        };
+
+        // enable workspace for modification
+        this.workflowActionService.toggleLockListen(false);
+        this.workflowActionService.enableWorkflowModification();
+        // load the fetched workflow
+        this.workflowActionService.reloadWorkflow(workflow, true);
+        // clear stack
+        this.undoRedoService.clearUndoStack();
+        this.undoRedoService.clearRedoStack();
+        this.workflowActionService.toggleLockListen(true);
+        this.workflowActionService.syncLock();
+      } catch (error) {
+        this.notificationService.error(
+          "An error occured when importing the workflow. Please import a workflow json file."
+        );
+        console.error(error);
+      }
+    };
+    return false;
+  };
+
+  public onClickExportWorkflow(): void {
+    const workflowContent: WorkflowContent = this.workflowActionService.getWorkflowContent();
+    const workflowContentJson = JSON.stringify(workflowContent);
+    const fileName = this.currentWorkflowName + ".json";
+    saveAs(new Blob([workflowContentJson], { type: "text/plain;charset=utf-8" }), fileName);
   }
 
   /**
@@ -311,8 +415,10 @@ export class NavigationComponent implements OnInit {
    */
   public highlightedElementsGroupable(): boolean {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    return this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length === 0 &&
-      this.workflowActionService.getOperatorGroup().operatorsGroupable(highlightedOperators);
+    return (
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length === 0 &&
+      this.workflowActionService.getOperatorGroup().operatorsGroupable(highlightedOperators)
+    );
   }
 
   /**
@@ -326,23 +432,81 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
+   * callback function when user clicks the "disable operator" icon:
+   * this.isDisableOperator indicates whether the operators should be disabled or enabled
+   */
+  public onClickDisableOperators(): void {
+    if (this.isDisableOperator) {
+      this.workflowActionService.disableOperators(this.effectivelyHighlightedOperators());
+    } else {
+      this.workflowActionService.enableOperators(this.effectivelyHighlightedOperators());
+    }
+  }
+
+  public onClickCacheOperators(): void {
+    const effectiveHighlightedOperators = this.effectivelyHighlightedOperators();
+    const effectiveHighlightedOperatorsExcludeSink = effectiveHighlightedOperators.filter(
+      op => !isSink(this.workflowActionService.getTexeraGraph().getOperator(op))
+    );
+
+    if (this.isCacheOperator) {
+      this.workflowActionService.cacheOperators(effectiveHighlightedOperatorsExcludeSink);
+    } else {
+      this.workflowActionService.unCacheOperators(effectiveHighlightedOperatorsExcludeSink);
+    }
+  }
+
+  /**
    * Returns true if currently highlighted elements are all groups.
    */
   public highlightedElementsUngroupable(): boolean {
-    return this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length > 0 &&
-      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().length === 0;
+    return (
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length > 0 &&
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().length === 0
+    );
   }
 
   public persistWorkflow(): void {
-    this.isSaving = true;
-    this.workflowPersistService.persistWorkflow(this.workflowActionService.getWorkflow())
-        .subscribe((updatedWorkflow: Workflow) => {
-          this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
-          this.isSaving = false;
-        }, error => {
-          alert(error);
-          this.isSaving = false;
-        });
+    if (this.workflowCollabService.isLockGranted()) {
+      this.isSaving = true;
+      if (this.pid === 0) {
+        this.workflowPersistService
+          .persistWorkflow(this.workflowActionService.getWorkflow())
+          .pipe(untilDestroyed(this))
+          .subscribe(
+            (updatedWorkflow: Workflow) => {
+              this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
+              this.isSaving = false;
+            },
+            (error: unknown) => {
+              alert(error);
+              this.isSaving = false;
+            }
+          );
+      } else {
+        // add workflow to project, backend will create new mapping if not already added
+        this.workflowPersistService
+          .persistWorkflow(this.workflowActionService.getWorkflow())
+          .pipe(
+            concatMap((updatedWorkflow: Workflow) => {
+              this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
+              this.isSaving = false;
+              return this.userProjectService.addWorkflowToProject(this.pid, updatedWorkflow.wid!);
+            }),
+            catchError((err: unknown) => {
+              throw err;
+            }),
+            untilDestroyed(this)
+          )
+          .subscribe(
+            () => {},
+            (error: unknown) => {
+              alert(error);
+              this.isSaving = false;
+            }
+          );
+      }
+    }
   }
 
   /**
@@ -357,18 +521,151 @@ export class NavigationComponent implements OnInit {
 
   onClickCreateNewWorkflow() {
     this.workflowActionService.resetAsNewWorkflow();
-    this.location.go('/');
+    this.location.go("/");
+  }
+
+  onClickAcquireLock() {
+    this.workflowCollabService.acquireLock();
   }
 
   registerWorkflowMetadataDisplayRefresh() {
-    this.workflowActionService.workflowMetaDataChanged().debounceTime(100)
-        .subscribe(() => {
-          this.currentWorkflowName = this.workflowActionService.getWorkflowMetadata()?.name;
-          this.autoSaveState = this.workflowActionService.getWorkflowMetadata().lastModifiedTime === undefined ?
-            '' : 'Saved at ' + this.datePipe.transform(this.workflowActionService.getWorkflowMetadata().lastModifiedTime,
-            'MM/dd/yyyy HH:mm:ss zzz', Intl.DateTimeFormat().resolvedOptions().timeZone, 'en');
-
-        });
+    this.workflowActionService
+      .workflowMetaDataChanged()
+      .pipe(debounceTime(100))
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.currentWorkflowName = this.workflowActionService.getWorkflowMetadata()?.name;
+        this.autoSaveState =
+          this.workflowActionService.getWorkflowMetadata().lastModifiedTime === undefined
+            ? ""
+            : "Saved at " +
+              this.datePipe.transform(
+                this.workflowActionService.getWorkflowMetadata().lastModifiedTime,
+                "MM/dd/yyyy HH:mm:ss zzz",
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+                "en"
+              );
+      });
   }
 
+  onClickGetAllVersions() {
+    this.workflowVersionService.clickDisplayWorkflowVersions();
+  }
+
+  private handleWorkflowVersionDisplay(): void {
+    this.workflowVersionService
+      .getDisplayParticularVersionStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(displayVersionFlag => {
+        this.particularVersionDate =
+          this.workflowActionService.getWorkflowMetadata().creationTime === undefined
+            ? ""
+            : "" +
+              this.datePipe.transform(
+                this.workflowActionService.getWorkflowMetadata().creationTime,
+                "MM/dd/yyyy HH:mm:ss zzz",
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+                "en"
+              );
+        this.displayParticularWorkflowVersion = displayVersionFlag;
+      });
+  }
+
+  closeParticularVersionDisplay() {
+    this.workflowVersionService.closeParticularVersionDisplay();
+  }
+
+  revertToVersion() {
+    this.workflowVersionService.revertToVersion();
+    // after swapping the workflows to point to the particular version, persist it in DB
+    this.persistWorkflow();
+    setTimeout(() => {
+      this.workflowCollabService.requestOthersToReload();
+    }, NavigationComponent.COLLAB_RELOAD_WAIT_TIME);
+  }
+
+  /**
+   * Updates the status of the disable operator icon:
+   * If all selected operators are disabled, then click it will re-enable the operators
+   * If any of the selected operator is not disabled, then click will disable all selected operators
+   */
+  handleDisableOperatorStatusChange() {
+    merge(
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorUnhighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupUnhighlightStream(),
+      this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream()
+    )
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
+        const effectiveHighlightedOperators = this.effectivelyHighlightedOperators();
+        const allDisabled = this.effectivelyHighlightedOperators().every(op =>
+          this.workflowActionService.getTexeraGraph().isOperatorDisabled(op)
+        );
+
+        this.isDisableOperator = !allDisabled;
+        this.isDisableOperatorClickable = effectiveHighlightedOperators.length !== 0;
+      });
+  }
+
+  handleCacheOperatorStatusChange() {
+    merge(
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorUnhighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupUnhighlightStream(),
+      this.workflowActionService.getTexeraGraph().getCachedOperatorsChangedStream()
+    )
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
+        const effectiveHighlightedOperators = this.effectivelyHighlightedOperators();
+        const effectiveHighlightedOperatorsExcludeSink = effectiveHighlightedOperators.filter(
+          op => !isSink(this.workflowActionService.getTexeraGraph().getOperator(op))
+        );
+
+        const allCached = effectiveHighlightedOperatorsExcludeSink.every(op =>
+          this.workflowActionService.getTexeraGraph().isOperatorCached(op)
+        );
+
+        this.isCacheOperator = !allCached;
+        this.isCacheOperatorClickable = effectiveHighlightedOperatorsExcludeSink.length !== 0;
+      });
+  }
+
+  private handleLockChange(): void {
+    this.workflowCollabService
+      .getLockStatusStream()
+      .pipe(untilDestroyed(this))
+      .subscribe((lockGranted: boolean) => {
+        this.lockGranted = lockGranted;
+        this.changeDetectionRef.detectChanges();
+      });
+  }
+
+  private handleWorkflowAccessChange(): void {
+    this.workflowCollabService
+      .getWorkflowAccessStream()
+      .pipe(untilDestroyed(this))
+      .subscribe((workflowReadonly: boolean) => {
+        this.workflowReadonly = workflowReadonly;
+      });
+  }
+
+  /**
+   * Gets all highlighted operators, and all operators in the highlighted groups
+   */
+  effectivelyHighlightedOperators(): readonly string[] {
+    const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+    const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+
+    const operatorInHighlightedGroups: string[] = highlightedGroups.flatMap(g =>
+      Array.from(this.workflowActionService.getOperatorGroup().getGroup(g).operators.keys())
+    );
+
+    const effectiveHighlightedOperators = new Set<string>();
+    highlightedOperators.forEach(op => effectiveHighlightedOperators.add(op));
+    operatorInHighlightedGroups.forEach(op => effectiveHighlightedOperators.add(op));
+    return Array.from(effectiveHighlightedOperators);
+  }
 }

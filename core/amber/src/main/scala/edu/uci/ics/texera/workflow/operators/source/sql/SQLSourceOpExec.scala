@@ -21,15 +21,16 @@ abstract class SQLSourceOpExec(
     table: String,
     var curLimit: Option[Long],
     var curOffset: Option[Long],
-    search: Option[Boolean],
-    searchByColumn: Option[String],
-    keywords: Option[String],
     // progressiveness related
     progressive: Option[Boolean],
     batchByColumn: Option[String],
     min: Option[String],
     max: Option[String],
-    interval: Long
+    interval: Long,
+    // filter conditions:
+    keywordSearch: Boolean,
+    keywordSearchByColumn: String,
+    keywords: String
 ) extends SourceOperatorExecutor {
 
   // connection and query related
@@ -89,7 +90,7 @@ abstract class SQLSourceOpExec(
                 if (resultSet.next()) {
 
                   // manually skip until the offset position in order to adapt to progressive batches
-                  curOffset.fold()(offset => {
+                  curOffset.foreach(offset => {
                     if (offset > 0) {
                       curOffset = Option(offset - 1)
                       break
@@ -103,7 +104,7 @@ abstract class SQLSourceOpExec(
                     break
 
                   // update the limit in order to adapt to progressive batches
-                  curLimit.fold()(limit => {
+                  curLimit.foreach(limit => {
                     if (limit > 0) {
                       curLimit = Option(limit - 1)
                     }
@@ -179,14 +180,14 @@ abstract class SQLSourceOpExec(
     */
   @throws[SQLException]
   protected def buildTupleFromRow: Tuple = {
-    val tupleBuilder = Tuple.newBuilder
+    val tupleBuilder = Tuple.newBuilder(schema)
 
     for (attr <- schema.getAttributes.asScala) {
 
       breakable {
         val columnName = attr.getName
         val columnType = attr.getType
-        val value = curResultSet.get.getString(columnName)
+        val value = curResultSet.get.getObject(columnName)
 
         if (value == null) {
           // add the field as null
@@ -374,7 +375,7 @@ abstract class SQLSourceOpExec(
   @throws[SQLException]
   protected def loadTableNames(): Unit
 
-  protected def addKeywordSearch(queryBuilder: StringBuilder): Unit
+  protected def addFilterConditions(queryBuilder: StringBuilder): Unit
 
   /**
     * generate sql query string using the info provided by user. One of following
@@ -403,9 +404,8 @@ abstract class SQLSourceOpExec(
     // TODO: add more selection conditions, including alias
     addBaseSelect(queryBuilder)
 
-    // add keyword search if applicable
-    if (search.getOrElse(false) && searchByColumn.isDefined && keywords.isDefined)
-      addKeywordSearch(queryBuilder)
+    // add filter conditions if applicable
+    addFilterConditions(queryBuilder)
 
     // add sliding window if progressive mode is enabled
     if (progressive.getOrElse(false) && batchByColumn.isDefined && interval > 0L)
@@ -447,8 +447,8 @@ abstract class SQLSourceOpExec(
           var curIndex = 1
 
           // fill up the keywords
-          if (search.getOrElse(false) && searchByColumn.isDefined && keywords.isDefined) {
-            preparedStatement.setString(curIndex, keywords.get)
+          if (keywordSearch && keywordSearchByColumn != null && keywords != null) {
+            preparedStatement.setString(curIndex, keywords)
             curIndex += 1
           }
 

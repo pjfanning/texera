@@ -1,48 +1,21 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { async, ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ResultPanelComponent, RowModalComponent } from './result-panel.component';
-import { ExecuteWorkflowService } from './../../service/execute-workflow/execute-workflow.service';
-import { CustomNgMaterialModule } from './../../../common/custom-ng-material.module';
+import { ResultPanelComponent } from "./result-panel.component";
+import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
 
-import { WorkflowActionService } from './../../service/workflow-graph/model/workflow-action.service';
-import { UndoRedoService } from './../../service/undo-redo/undo-redo.service';
-import { JointUIService } from './../../service/joint-ui/joint-ui.service';
-import { OperatorMetadataService } from './../../service/operator-metadata/operator-metadata.service';
-import { StubOperatorMetadataService } from './../../service/operator-metadata/stub-operator-metadata.service';
-import { NgbModule, NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { marbles } from 'rxjs-marbles';
-import { mockResultData } from '../../service/execute-workflow/mock-result-data';
-import { By } from '@angular/platform-browser';
-import { Observable } from 'rxjs/Observable';
-import { HttpClient } from '@angular/common/http';
+import { WorkflowActionService } from "../../service/workflow-graph/model/workflow-action.service";
+import { OperatorMetadataService } from "../../service/operator-metadata/operator-metadata.service";
+import { StubOperatorMetadataService } from "../../service/operator-metadata/stub-operator-metadata.service";
+import { By } from "@angular/platform-browser";
 
-import { ResultPanelToggleService } from './../../service/result-panel-toggle/result-panel-toggle.service';
-import { NgxJsonViewerModule } from 'ngx-json-viewer';
+import { ResultPanelToggleService } from "../../service/result-panel-toggle/result-panel-toggle.service";
+import { HttpClientTestingModule } from "@angular/common/http/testing";
+import { NzModalModule, NzModalService } from "ng-zorro-antd/modal";
+import { ExecutionState } from "../../types/execute-workflow.interface";
+import { DynamicModule } from "ng-dynamic-component";
+import { mockPoint, mockResultPredicate } from "../../service/workflow-graph/model/mock-workflow-data";
 
-import { NgModule } from '@angular/core';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
-import { ExecutionState } from '../../types/execute-workflow.interface';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { VisualizationPanelComponent } from '../visualization-panel/visualization-panel.component';
-import { VisualizationPanelContentComponent } from '../visualization-panel-content/visualization-panel-content.component';
-import { WorkflowUtilService } from '../../service/workflow-graph/util/workflow-util.service';
-
-// this is how to import entry components in testings
-// Stack Overflow Link: https://stackoverflow.com/questions/41483841/providing-entrycomponents-for-a-testbed/45550720
-@NgModule({
-  declarations: [RowModalComponent],
-  entryComponents: [
-    RowModalComponent,
-  ],
-  imports: [
-    NgxJsonViewerModule
-  ]
-})
-class CustomNgBModalModule {}
-
-describe('ResultPanelComponent', () => {
+describe("ResultPanelComponent", () => {
   let component: ResultPanelComponent;
   let fixture: ComponentFixture<ResultPanelComponent>;
   let executeWorkflowService: ExecuteWorkflowService;
@@ -52,32 +25,18 @@ describe('ResultPanelComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [
-        ResultPanelComponent,
-        VisualizationPanelComponent,
-        VisualizationPanelContentComponent,
-      ],
-      imports: [
-        NgbModule,
-        CustomNgMaterialModule,
-        CustomNgBModalModule,
-        HttpClientTestingModule,
-        NzModalModule,
-        NzTableModule,
-        NoopAnimationsModule,
-      ],
+      declarations: [ResultPanelComponent],
+      imports: [DynamicModule, HttpClientTestingModule, NzModalModule],
       providers: [
         WorkflowActionService,
-        WorkflowUtilService,
-        UndoRedoService,
-        JointUIService,
         ExecuteWorkflowService,
         ResultPanelToggleService,
-        { provide: OperatorMetadataService, useClass: StubOperatorMetadataService },
-      ]
-
-    })
-      .compileComponents();
+        {
+          provide: OperatorMetadataService,
+          useClass: StubOperatorMetadataService,
+        },
+      ],
+    }).compileComponents();
   }));
 
   beforeEach(() => {
@@ -90,22 +49,7 @@ describe('ResultPanelComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
-    const messageDiv = fixture.debugElement.query(By.css('.texera-panel-message'));
-    const tableDiv = fixture.debugElement.query(By.css('.result-table'));
-    const tableHtmlElement: HTMLElement = tableDiv.nativeElement;
-
-    // Tests to check if, initially, messageDiv does not exist while result-table
-    //  exists but no visible.
-    expect(messageDiv).toBeFalsy();
-    expect(tableDiv).toBeTruthy();
-
-    // We only test its attribute because the style isn't directly accessbile
-    //  by the element, rather it was used through this attribute 'hidden'
-    expect(tableHtmlElement.hasAttribute('hidden')).toBeTruthy();
-    expect(component).toBeTruthy();
-  });
-
+  it("should create", () => expect(component).toBeTruthy());
 
   // it('should change the content of result panel correctly when selected operator is a sink operator with result', marbles((m) => {
 
@@ -162,14 +106,6 @@ describe('ResultPanelComponent', () => {
   //     }
   //   });
   // }));
-
-  it(`currentResult should not be modified if setupResultTable is called with empty (zero-length) execution result  `, () => {
-    component.currentResult = [{test: 'property'}];
-    (component as any).setupResultTable([]);
-
-    expect(component.currentResult).toEqual([{test: 'property'}]);
-
-  });
 
   // it('should respond to error and print error messages', marbles((m) => {
   //   const endMarbleString = '-e-|';
@@ -237,75 +173,58 @@ describe('ResultPanelComponent', () => {
 
   //   fixture.detectChanges();
 
-
   //   const resultTable = fixture.debugElement.query(By.css('.result-table'));
   //   expect(resultTable).toBeTruthy();
   // });
 
-
-
-  it('should hide the result panel by default', () => {
-    const resultPanelDiv = fixture.debugElement.query(By.css('.texera-workspace-result-panel-body'));
-    const resultPanelHtmlElement: HTMLElement = resultPanelDiv.nativeElement;
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeTruthy();
+  it("should show nothing by default", () => {
+    expect(component.frameComponentConfigs.size).toBe(0);
   });
 
-
-  it('should show the result panel if a workflow finishes execution', () => {
-    (executeWorkflowService as any).updateExecutionState({
-      state: ExecutionState.Completed, resultID: 'resultID', resultMap: new Map([])
+  it("should show the result panel if a workflow finishes execution", () => {
+    workflowActionService.addOperator(mockResultPredicate, mockPoint);
+    executeWorkflowService["updateExecutionState"]({
+      state: ExecutionState.Running,
+    });
+    executeWorkflowService["updateExecutionState"]({
+      state: ExecutionState.Completed,
     });
     fixture.detectChanges();
-    const resultPanelDiv = fixture.debugElement.query(By.css('.texera-workspace-result-panel-body'));
+    const resultPanelDiv = fixture.debugElement.query(By.css(".texera-workspace-result-panel-body"));
     const resultPanelHtmlElement: HTMLElement = resultPanelDiv.nativeElement;
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeFalsy();
+    expect(resultPanelHtmlElement.hasAttribute("hidden")).toBeFalsy();
   });
 
-  it(`should show the result panel if the current status of the result panel is hidden and when the toggle is triggered`, () => {
-
-    const resultPanelDiv = fixture.debugElement.query(By.css('.texera-workspace-result-panel-body'));
+  it("should show the result panel if the current status of the result panel is hidden and when the toggle is triggered", () => {
+    const resultPanelDiv = fixture.debugElement.query(By.css(".texera-workspace-result-panel-body"));
     const resultPanelHtmlElement: HTMLElement = resultPanelDiv.nativeElement;
 
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeTruthy();
+    expect(resultPanelHtmlElement.hasAttribute("hidden")).toBeTruthy();
 
-    const currentStatus = false;
     resultPanelToggleService.toggleResultPanel();
     fixture.detectChanges();
 
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeFalsy();
-
+    expect(resultPanelHtmlElement.hasAttribute("hidden")).toBeFalsy();
   });
 
   it(`should hide the result panel if the current status of the result panel is already
       shown when the toggle is triggered`, () => {
-    const resultPanelDiv = fixture.debugElement.query(By.css('.texera-workspace-result-panel-body'));
+    const resultPanelDiv = fixture.debugElement.query(By.css(".texera-workspace-result-panel-body"));
     const resultPanelHtmlElement: HTMLElement = resultPanelDiv.nativeElement;
 
-    (executeWorkflowService as any).updateExecutionState({
-      state: ExecutionState.Completed, resultID: 'resultID', resultMap: new Map([])
+    workflowActionService.addOperator(mockResultPredicate, mockPoint);
+    executeWorkflowService["updateExecutionState"]({
+      state: ExecutionState.Running,
+    });
+    executeWorkflowService["updateExecutionState"]({
+      state: ExecutionState.Completed,
     });
     fixture.detectChanges();
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeFalsy();
+    expect(resultPanelHtmlElement.hasAttribute("hidden")).toBeFalsy();
 
     resultPanelToggleService.toggleResultPanel();
     fixture.detectChanges();
 
-    expect(resultPanelHtmlElement.hasAttribute('hidden')).toBeTruthy();
-
+    expect(resultPanelHtmlElement.hasAttribute("hidden")).toBeTruthy();
   });
-
-  it(`it should call modalService.open() to open the popup for result detail when open() is called`, () => {
-    const modalSpy =  spyOn(nzModalService, 'create').and.callThrough();
-
-    (executeWorkflowService as any).updateExecutionState({
-      state: ExecutionState.Completed, resultID: 'resultID', resultMap: new Map([])
-    });
-    fixture.detectChanges();
-
-    component.open(mockResultData[0].table[0]);
-
-    expect(modalSpy).toHaveBeenCalledTimes(1);
-    nzModalService.closeAll();
-  });
-
 });

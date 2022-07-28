@@ -5,7 +5,6 @@
 // import { NavigationComponent } from './navigation.component';
 // import { ExecuteWorkflowService } from './../../service/execute-workflow/execute-workflow.service';
 // import { WorkflowActionService } from './../../service/workflow-graph/model/workflow-action.service';
-// import { TourService } from 'ngx-tour-ng-bootstrap';
 // import { UndoRedoService } from './../../service/undo-redo/undo-redo.service';
 // import { ValidationWorkflowService } from '../../service/validation/validation-workflow.service';
 
@@ -15,7 +14,7 @@
 // import { OperatorMetadataService } from '../../service/operator-metadata/operator-metadata.service';
 // import { JointUIService } from '../../service/joint-ui/joint-ui.service';
 
-// import { Observable } from 'rxjs/Observable';
+// import { Observable } from 'rxjs';
 // import { marbles } from 'rxjs-marbles';
 // import { HttpClient } from '@angular/common/http';
 // import { mockExecutionResult } from '../../service/execute-workflow/mock-result-data';
@@ -56,7 +55,6 @@
 //         ValidationWorkflowService,
 //         { provide: OperatorMetadataService, useClass: StubOperatorMetadataService },
 //         { provide: HttpClient, useClass: StubHttpClient },
-//         TourService,
 //         WorkflowStatusService
 //       ]
 //     }).compileComponents();
@@ -84,7 +82,6 @@
 //   //   spyOn(httpClient, 'post').and.returnValue(
 //   //     Observable.of(mockExecutionResult)
 //   //   );
-
 
 //   //   const runButtonElement = fixture.debugElement.query(By.css('.texera-navigation-run-button'));
 //   //   m.hot('-e-').do(event => runButtonElement.triggerEventHandler('click', null)).subscribe();
@@ -185,7 +182,7 @@
 //   //     m.hot(endMarbleString, endMarblevalues)
 //   //   );
 
-//   //   const mockComponent = new NavigationComponent(executeWorkFlowService, TestBed.get(TourService),
+//   //   const mockComponent = new NavigationComponent(executeWorkFlowService,
 //   //     workflowActionService, workflowStatusService, undoRedoService, validationWorkflowService);
 
 //   //   executeWorkFlowService.getExecutionPauseResumeStream()
@@ -195,7 +192,6 @@
 //   //       }
 //   //     });
 //   // }));
-
 
 //   // it('it should update isWorkflowPaused variable to false when 1 is returned from getExecutionPauseResumeStream', marbles((m) => {
 //   //   const endMarbleString = '-e-|';
@@ -207,7 +203,7 @@
 //   //     m.hot(endMarbleString, endMarblevalues)
 //   //   );
 
-//   //   const mockComponent = new NavigationComponent(executeWorkFlowService, TestBed.get(TourService),
+//   //   const mockComponent = new NavigationComponent(executeWorkFlowService,
 //   //     workflowActionService, workflowStatusService, undoRedoService, validationWorkflowService);
 
 //   //   executeWorkFlowService.getExecutionPauseResumeStream()

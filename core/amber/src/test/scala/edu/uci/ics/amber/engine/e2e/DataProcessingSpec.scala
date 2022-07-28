@@ -5,15 +5,8 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import ch.vorburger.mariadb4j.DB
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.controller.{
-  Controller,
-  ControllerEventListener,
-  ControllerState,
-  Workflow
-}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.architecture.controller._
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -22,12 +15,16 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 import edu.uci.ics.texera.workflow.common.workflow._
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregationFunction
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.flatspec.AnyFlatSpecLike
-
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import java.sql.PreparedStatement
+
+import com.twitter.util.{Await, Promise}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
+import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
+
 import scala.collection.mutable
-import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
 class DataProcessingSpec
@@ -38,46 +35,47 @@ class DataProcessingSpec
     with BeforeAndAfterEach {
 
   implicit val timeout: Timeout = Timeout(5.seconds)
-  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   var inMemoryMySQLInstance: Option[DB] = None
+
+  val resultStorage = new OpResultStorage()
 
   override def beforeAll: Unit = {
     system.actorOf(Props[SingleNodeListener], "cluster-info")
   }
   override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
+    resultStorage.close()
   }
 
   def buildWorkflow(
       operators: mutable.MutableList[OperatorDescriptor],
       links: mutable.MutableList[OperatorLink]
-  ): (WorkflowIdentity, Workflow) = {
+  ): Workflow = {
     val context = new WorkflowContext
-    context.jobID = "workflow-test"
+    context.jobId = "workflow-test"
 
     val texeraWorkflowCompiler = new WorkflowCompiler(
       WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
       context
     )
-    val workflow = texeraWorkflowCompiler.amberWorkflow
-    val workflowTag = WorkflowIdentity("workflow-test")
-    (workflowTag, workflow)
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 
-  def executeWorkflow(id: WorkflowIdentity, workflow: Workflow): Map[String, List[ITuple]] = {
-    val parent = TestProbe()
+  def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {
     var results: Map[String, List[ITuple]] = null
-    val eventListener = ControllerEventListener()
-    eventListener.workflowCompletedListener = evt => results = evt.result
-    val controller = parent.childActorOf(
-      Controller.props(id, workflow, eventListener, 100)
-    )
-    parent.expectMsg(ControllerState.Ready)
-    controller ! ControlInvocation(AsyncRPCClient.IgnoreReply, StartWorkflow())
-    parent.expectMsg(ControllerState.Running)
-    parent.expectMsg(1.minute, ControllerState.Completed)
-    parent.ref ! PoisonPill
+    val client = new AmberClient(system, workflow, ControllerConfig.default, error => {})
+    val completion = Promise[Unit]
+    client
+      .registerCallback[WorkflowCompleted](evt => {
+        results = workflow.getEndOperators
+          .filter(op => resultStorage.contains(op.id.operator))
+          .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
+          .toMap
+        completion.setDone()
+      })
+    Await.result(client.sendAsync(StartWorkflow()))
+    Await.result(completion)
     results
   }
 
@@ -117,7 +115,7 @@ class DataProcessingSpec
   "Engine" should "execute headerlessCsv->sink workflow normally" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -126,7 +124,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(id, workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow)(sink.operatorID)
 
     assert(results.size == 100)
   }
@@ -134,7 +132,7 @@ class DataProcessingSpec
   "Engine" should "execute headerlessMultiLineDataCsv-->sink workflow normally" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallMultiLineDataCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -143,7 +141,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(id, workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow)(sink.operatorID)
 
     assert(results.size == 100)
   }
@@ -151,7 +149,7 @@ class DataProcessingSpec
   "Engine" should "execute jsonl->sink workflow normally" in {
     val jsonlOp = TestOperators.smallJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](jsonlOp, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -160,7 +158,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(id, workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow)(sink.operatorID)
 
     assert(results.size == 100)
 
@@ -179,7 +177,7 @@ class DataProcessingSpec
   "Engine" should "execute mediumFlattenJsonl->sink workflow normally" in {
     val jsonlOp = TestOperators.mediumFlattenJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](jsonlOp, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -188,7 +186,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(id, workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow)(sink.operatorID)
 
     assert(results.size == 1000)
 
@@ -208,7 +206,7 @@ class DataProcessingSpec
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, keywordOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -218,26 +216,48 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
+  }
+
+  "Engine" should "execute headerlessCsv->word count->sink workflow normally" in {
+
+    val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
+    // Get only the highest count, for testing purposes
+    val wordCountOpDesc = TestOperators.wordCloudOpDesc("column-1", 1)
+    val sink = TestOperators.sinkOpDesc()
+    val workflow = buildWorkflow(
+      mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, wordCountOpDesc, sink),
+      mutable.MutableList[OperatorLink](
+        OperatorLink(
+          OperatorPort(headerlessCsvOpDesc.operatorID, 0),
+          OperatorPort(wordCountOpDesc.operatorID, 0)
+        ),
+        OperatorLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+      )
+    )
+    val result = executeWorkflow(workflow).values
+    // Assert that only one tuple came out successfully
+    assert(result.size == 1)
+
   }
 
   "Engine" should "execute csv->sink workflow normally" in {
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](csvOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
   }
 
   "Engine" should "execute csv->keyword->sink workflow normally" in {
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -247,7 +267,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
   }
 
   "Engine" should "execute csv->keyword->count->sink workflow normally" in {
@@ -256,7 +276,7 @@ class DataProcessingSpec
     val countOpDesc =
       TestOperators.aggregateAndGroupByDesc("Region", AggregationFunction.COUNT, List[String]())
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, countOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -270,7 +290,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
   }
 
   "Engine" should "execute csv->keyword->averageAndGroupBy->sink workflow normally" in {
@@ -283,7 +303,7 @@ class DataProcessingSpec
         List[String]("Country")
       )
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable
         .MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
       mutable.MutableList[OperatorLink](
@@ -301,7 +321,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
   }
 
   "Engine" should "execute csv->(csv->)->join->sink workflow normally" in {
@@ -309,7 +329,7 @@ class DataProcessingSpec
     val headerlessCsvOpDesc2 = TestOperators.headerlessSmallCsvScanOpDesc()
     val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](
         headerlessCsvOpDesc1,
         headerlessCsvOpDesc2,
@@ -331,7 +351,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
   }
 
   // TODO: use mock data to perform the test, remove dependency on the real AsterixDB
@@ -360,7 +380,7 @@ class DataProcessingSpec
     )
 
     val sink = TestOperators.sinkOpDesc()
-    val (id, workflow) = buildWorkflow(
+    val workflow = buildWorkflow(
       mutable.MutableList[OperatorDescriptor](inMemoryMsSQLSourceOpDesc, sink),
       mutable.MutableList[OperatorLink](
         OperatorLink(
@@ -369,7 +389,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(id, workflow)
+    executeWorkflow(workflow)
 
     inMemoryMySQLInstance.get.stop()
   }

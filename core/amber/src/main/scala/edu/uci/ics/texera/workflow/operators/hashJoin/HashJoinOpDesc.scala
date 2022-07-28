@@ -14,32 +14,40 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.{OneToOneOpExecConfig, OperatorDescriptor}
-import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpDesc
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
+import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
+
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
 class HashJoinOpDesc[K] extends OperatorDescriptor {
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Small Input attr")
-  @JsonPropertyDescription("Small Input Join Key")
+  @JsonSchemaTitle("Left Input Attribute")
+  @JsonPropertyDescription("attribute to be joined on the Left Input")
   @AutofillAttributeName
   var buildAttributeName: String = _
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Large input attr")
-  @JsonPropertyDescription("Large Input Join Key")
+  @JsonSchemaTitle("Right Input Attribute")
+  @JsonPropertyDescription("attribute to be joined on the Right Input")
   @AutofillAttributeNameOnPort1
   var probeAttributeName: String = _
+
+  @JsonProperty(required = true, defaultValue = "inner")
+  @JsonSchemaTitle("Join Type")
+  @JsonPropertyDescription("select the join type to execute")
+  var joinType: JoinType = JoinType.INNER
 
   @JsonIgnore
   var opExecConfig: HashJoinOpExecConfig[K] = _
 
-  override def operatorExecutor: OpExecConfig = {
+  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     opExecConfig = new HashJoinOpExecConfig[K](
-      this.operatorIdentifier,
+      operatorIdentifier,
       probeAttributeName,
-      buildAttributeName
+      buildAttributeName,
+      joinType,
+      operatorSchemaInfo
     )
     opExecConfig
   }
@@ -49,7 +57,7 @@ class HashJoinOpDesc[K] extends OperatorDescriptor {
       "Hash Join",
       "join two inputs",
       OperatorGroupConstants.JOIN_GROUP,
-      inputPorts = List(InputPort("small"), InputPort("large")),
+      inputPorts = List(InputPort("left"), InputPort("right")),
       outputPorts = List(OutputPort())
     )
 
@@ -57,27 +65,27 @@ class HashJoinOpDesc[K] extends OperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Preconditions.checkArgument(schemas.length == 2)
     val builder = Schema.newBuilder()
-    builder.add(schemas(0)).removeIfExists(probeAttributeName)
+    val buildSchema = schemas(0)
+    val probeSchema = schemas(1)
+    builder.add(buildSchema).removeIfExists(probeAttributeName)
     if (probeAttributeName.equals(buildAttributeName)) {
-      schemas(1)
-        .getAttributes()
-        .forEach(attr => {
-          if (
-            schemas(0).containsAttribute(attr.getName()) && attr.getName() != probeAttributeName
-          ) {
-            // appending 1 to the output of Join schema in case of duplicate attributes in probe and build table
-            builder.add(new Attribute(s"${attr.getName()}1", attr.getType()))
-          } else {
-            builder.add(attr)
-          }
-        })
+      probeSchema.getAttributes.foreach(attr => {
+        val attributeName = attr.getName
+        if (buildSchema.containsAttribute(attributeName) && attributeName != probeAttributeName) {
+          // appending 1 to the output of Join schema in case of duplicate attributes in probe and build table
+          builder.add(new Attribute(s"$attributeName#@1", attr.getType))
+        } else {
+          builder.add(attr)
+        }
+      })
+
     } else {
-      schemas(1)
-        .getAttributes()
+      probeSchema.getAttributes
         .forEach(attr => {
-          if (schemas(0).containsAttribute(attr.getName())) {
-            builder.add(new Attribute(s"${attr.getName()}#@1", attr.getType()))
-          } else if (!attr.getName().equalsIgnoreCase(probeAttributeName)) {
+          val attributeName = attr.getName
+          if (buildSchema.containsAttribute(attributeName)) {
+            builder.add(new Attribute(s"$attributeName#@1", attr.getType))
+          } else if (!attributeName.equalsIgnoreCase(probeAttributeName)) {
             builder.add(attr)
           }
         })

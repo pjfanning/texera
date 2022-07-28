@@ -1,48 +1,77 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
-import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
+import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeTypeUtils, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Schema}
 
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import java.io.{File, FileInputStream, InputStreamReader}
 
-class CSVScanSourceOpExec private[csv] (
-    val localPath: String,
-    val schema: Schema,
-    val customDelimiter: Char,
-    val hasHeader: Boolean
-) extends SourceOperatorExecutor {
-  var rows: Iterator[Seq[String]] = _
-  var reader: CSVReader = _
-  override def produceTexeraTuple(): Iterator[Tuple] =
-    new Iterator[Tuple]() {
-      override def hasNext: Boolean = rows.hasNext
+class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
+    extends SourceOperatorExecutor {
+  val schema: Schema = desc.inferSchema()
+  var inputReader: InputStreamReader = _
+  var parser: CsvParser = _
 
-      override def next: Tuple = {
-        // obtain String representation of each field
-        val fields: Seq[String] = rows.next
-        // parse Strings into inferred AttributeTypes
-        val parsedFields: Array[Object] = AttributeTypeUtils.parseFields(
-          fields.toArray,
-          schema.getAttributes
-            .map((attr: Attribute) => attr.getType)
-            .toArray
-        )
-        Tuple.newBuilder.add(schema, parsedFields).build
+  var nextRow: Array[String] = _
+
+  override def produceTexeraTuple(): Iterator[Tuple] = {
+
+    val rowIterator = new Iterator[Array[String]] {
+      override def hasNext: Boolean = {
+        if (nextRow != null) {
+          return true
+        }
+        nextRow = parser.parseNext()
+        nextRow != null
       }
 
+      override def next(): Array[String] = {
+        val ret = nextRow
+        nextRow = null
+        ret
+      }
     }
 
-  override def open(): Unit = {
-    implicit object CustomFormat extends DefaultCSVFormat {
-      override val delimiter: Char = customDelimiter
-    }
-    rows = CSVReader.open(localPath)(CustomFormat).iterator
-    // skip line if this worker reads the start of a file, and the file has a header line
-    if (hasHeader) rows.next()
+    var tupleIterator = rowIterator
+      .drop(desc.offset.getOrElse(0))
+      .map(row => {
+        try {
+          val parsedFields: Array[Object] =
+            AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
+          Tuple.newBuilder(schema).addSequentially(parsedFields).build
+        } catch {
+          case _: Throwable => null
+        }
+      })
+      .filter(t => t != null)
+
+    if (desc.limit.isDefined) tupleIterator = tupleIterator.take(desc.limit.get)
+
+    tupleIterator
   }
 
-  override def close(): Unit = reader.close()
+  override def open(): Unit = {
+    inputReader = new InputStreamReader(new FileInputStream(new File(desc.filePath.get)))
 
+    val csvFormat = new CsvFormat()
+    csvFormat.setDelimiter(desc.customDelimiter.get.charAt(0))
+    csvFormat.setComment('\0') // disable skipping lines starting with # (default comment character)
+    val csvSetting = new CsvParserSettings()
+    csvSetting.setMaxCharsPerColumn(-1)
+    csvSetting.setFormat(csvFormat)
+    csvSetting.setHeaderExtractionEnabled(desc.hasHeader)
+
+    parser = new CsvParser(csvSetting)
+    parser.beginParsing(inputReader)
+  }
+
+  override def close(): Unit = {
+    if (parser != null) {
+      parser.stopParsing()
+    }
+    if (inputReader != null) {
+      inputReader.close()
+    }
+  }
 }

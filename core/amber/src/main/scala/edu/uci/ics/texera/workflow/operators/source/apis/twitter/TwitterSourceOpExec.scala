@@ -1,16 +1,25 @@
 package edu.uci.ics.texera.workflow.operators.source.apis.twitter
-import com.github.redouane59.twitter.TwitterClient
-import com.github.redouane59.twitter.signature.TwitterCredentials
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
+import io.github.redouane59.twitter.TwitterClient
+import io.github.redouane59.twitter.signature.TwitterCredentials
 
 abstract class TwitterSourceOpExec(
-    accessToken: String,
-    accessTokenSecret: String,
     apiKey: String,
-    apiSecretKey: String
+    apiSecretKey: String,
+    stopWhenRateLimited: Boolean
 ) extends SourceOperatorExecutor {
-  // batch size for each API request, 500 is the maximum tweets for each request defined by Twitter
-  val TWITTER_API_BATCH_SIZE = 500
+  // batch size for each API request defined by Twitter
+  //  500 is the maximum tweets for each request
+  val TWITTER_API_BATCH_SIZE_MAX = 500
+
+  //  10 is the minimal tweets for each request
+  // val TWITTER_API_BATCH_SIZE_MIN = 10
+
+  //  however, when using batch size < 100, could cause using different
+  //  twitter endpoints which has different rate limit.
+  //  (related to redouane59/twitteredV2.5)
+  //  thus, in practice, we use 100 as the min batch size.
+  val TWITTER_API_BATCH_SIZE_MIN = 100
 
   var twitterClient: TwitterClient = _
 
@@ -18,12 +27,11 @@ abstract class TwitterSourceOpExec(
     twitterClient = new TwitterClient(
       TwitterCredentials
         .builder()
-        .accessToken(accessToken)
-        .accessTokenSecret(accessTokenSecret)
         .apiKey(apiKey)
         .apiSecretKey(apiSecretKey)
         .build()
     )
+    twitterClient.setAutomaticRetry(!stopWhenRateLimited)
   }
 
   override def close(): Unit = {}

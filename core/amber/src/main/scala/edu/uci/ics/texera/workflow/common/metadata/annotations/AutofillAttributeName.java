@@ -10,25 +10,12 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName.*;
-
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 @JacksonAnnotationsInside
 @JsonSchemaInject(
-        strings = @JsonSchemaString(path = autofill, value = attributeName),
-        ints = @JsonSchemaInt(path = autofillAttributeOnPort, value = 0))
+        strings = @JsonSchemaString(path = CommonOpDescAnnotation.autofill, value = CommonOpDescAnnotation.attributeName),
+        ints = @JsonSchemaInt(path = CommonOpDescAnnotation.autofillAttributeOnPort, value = 0))
 public @interface AutofillAttributeName {
-
-    // JSON schema key
-    String autofill = "autofill";
-
-    // allowed JSON schema values for the key autoCompleteType
-    String attributeName = "attributeName";
-    String attributeNameList = "attributeNameList";
-    String attributeNameReorderList = "attributeNameReorderList";
-
-    // JSON schema key to indicate which port
-    String autofillAttributeOnPort = "autofillAttributeOnPort";
 
 }

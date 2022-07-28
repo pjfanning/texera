@@ -6,11 +6,12 @@ import edu.uci.ics.texera.workflow.operators.aggregate.{
 }
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
-import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.mysql.MySQLSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 
 object TestOperators {
 
@@ -117,7 +118,14 @@ object TestOperators {
     asterixDBOp
   }
 
-  def sinkOpDesc(): SimpleSinkOpDesc = {
-    new SimpleSinkOpDesc()
+  def sinkOpDesc(): ProgressiveSinkOpDesc = {
+    new ProgressiveSinkOpDesc()
+  }
+
+  def wordCloudOpDesc(textColumn: String, topN: Integer = null): WordCloudOpDesc = {
+    val wordCountOpDesc = new WordCloudOpDesc()
+    wordCountOpDesc.textColumn = textColumn
+    wordCountOpDesc.topN = topN
+    wordCountOpDesc
   }
 }
