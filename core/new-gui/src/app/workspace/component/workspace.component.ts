@@ -23,6 +23,8 @@ import { of } from "rxjs";
 import { isDefined } from "../../common/util/predicate";
 import { WorkflowCollabService } from "../service/workflow-collab/workflow-collab.service";
 import { UserProjectService } from "src/app/dashboard/service/user-project/user-project.service";
+import { WorkflowExecutionsService } from "../../dashboard/service/workflow-executions/workflow-executions.service";
+import { WorkflowExecutionsEntry } from "../../dashboard/type/workflow-executions-entry";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
@@ -41,6 +43,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
   userSystemEnabled = environment.userSystemEnabled;
+  public execution_flag: boolean = false;
+  public execution: WorkflowExecutionsEntry | undefined;
 
   constructor(
     private userService: UserService,
@@ -60,7 +64,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private route: ActivatedRoute,
     private operatorMetadataService: OperatorMetadataService,
     private message: NzMessageService,
-    private userProjectService: UserProjectService
+    private userProjectService: UserProjectService,
+    private workflowExecutionService: WorkflowExecutionsService
   ) {}
 
   ngOnInit() {
@@ -103,9 +108,27 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.resetAsNewWorkflow();
 
     if (this.userSystemEnabled) {
+      /* */
+      if (this.route.snapshot.params.eid) {
+        /* constructe received execution information */
+        this.execution = {
+          eId: this.route.snapshot.params.eId,
+          vId: this.route.snapshot.params.vId,
+          userName: this.route.snapshot.params.userName,
+          startingTime: this.route.snapshot.params.startingTime,
+          completionTime: this.route.snapshot.params.completionTime,
+          status: this.route.snapshot.params.status,
+          result: this.route.snapshot.params.result,
+          bookmarked: this.route.snapshot.params.bookmarked,
+          name: this.route.snapshot.params.name,
+        };
+        this.execution_flag = true;
+      }
       this.registerReEstablishWebsocketUponWIdChange();
     } else {
       let wid = this.route.snapshot.params.id ?? 0;
+
+      // review only flag, hide things,
       this.workflowWebsocketService.openWebsocket(wid);
       this.workflowCollabService.openWebsocket(wid);
     }
@@ -146,7 +169,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         if (
           this.userService.isLogin() &&
           this.workflowPersistService.isWorkflowPersistEnabled() &&
-          this.workflowCollabService.isLockGranted()
+          this.workflowCollabService.isLockGranted() &&
+          !this.execution_flag
         ) {
           this.workflowPersistService
             .persistWorkflow(this.workflowActionService.getWorkflow())
@@ -163,34 +187,71 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   loadWorkflowWithId(wid: number): void {
     // disable the workspace until the workflow is fetched from the backend
     this.workflowActionService.disableWorkflowModification();
-    this.workflowPersistService
-      .retrieveWorkflow(wid)
-      .pipe(untilDestroyed(this))
-      .subscribe(
-        (workflow: Workflow) => {
-          // enable workspace for modification
-          this.workflowActionService.toggleLockListen(false);
-          this.workflowActionService.enableWorkflowModification();
-          // load the fetched workflow
-          this.workflowActionService.reloadWorkflow(workflow);
-          // clear stack
-          this.undoRedoService.clearUndoStack();
-          this.undoRedoService.clearRedoStack();
-          this.workflowActionService.toggleLockListen(true);
-          this.workflowActionService.syncLock();
-        },
-        () => {
-          // enable workspace for modification
-          this.workflowActionService.enableWorkflowModification();
-          // clear the current workflow
-          this.workflowActionService.reloadWorkflow(undefined);
-          // clear stack
-          this.undoRedoService.clearUndoStack();
-          this.undoRedoService.clearRedoStack();
 
-          this.message.error("You don't have access to this workflow, please log in with an appropriate account");
-        }
-      );
+    // if display particular execution is true
+    if (this.execution_flag && this.execution) {
+      this.workflowExecutionService
+        .displayWorkflowExecution(wid, this.execution.vId)
+        .pipe(untilDestroyed(this))
+        .subscribe(
+          (workflow: Workflow) => {
+            // we need to display the version on the paper but keep the original workflow in the background
+            this.workflowActionService.setTempWorkflow(this.workflowActionService.getWorkflow());
+            // disable persist to DB because it is read only
+            this.workflowPersistService.setWorkflowPersistFlag(false);
+            // disable the undoredo service because reloading the workflow is considered an action
+            this.undoRedoService.disableWorkFlowModification();
+            // enable modidification to reload workflow
+            this.workflowActionService.enableWorkflowModification();
+            // reload the read only workflow version on the paper
+            this.workflowActionService.reloadWorkflow(workflow);
+            // set display particular execution flag true
+            this.workflowExecutionService.setDisplayParticularExecution(true);
+            // disable modifications because it is read only
+            this.workflowActionService.disableWorkflowModification();
+          },
+          () => {
+            // enable workspace for modification
+            this.workflowActionService.enableWorkflowModification();
+            // clear the current workflow
+            this.workflowActionService.reloadWorkflow(undefined);
+            // clear stack
+            this.undoRedoService.clearUndoStack();
+            this.undoRedoService.clearRedoStack();
+
+            this.message.error("You don't have access to this workflow, please log in with an appropriate account");
+          }
+        );
+    } else {
+      this.workflowPersistService
+        .retrieveWorkflow(wid)
+        .pipe(untilDestroyed(this))
+        .subscribe(
+          (workflow: Workflow) => {
+            // enable workspace for modification
+            this.workflowActionService.toggleLockListen(false);
+            this.workflowActionService.enableWorkflowModification();
+            // load the fetched workflow
+            this.workflowActionService.reloadWorkflow(workflow);
+            // clear stack
+            this.undoRedoService.clearUndoStack();
+            this.undoRedoService.clearRedoStack();
+            this.workflowActionService.toggleLockListen(true);
+            this.workflowActionService.syncLock();
+          },
+          () => {
+            // enable workspace for modification
+            this.workflowActionService.enableWorkflowModification();
+            // clear the current workflow
+            this.workflowActionService.reloadWorkflow(undefined);
+            // clear stack
+            this.undoRedoService.clearUndoStack();
+            this.undoRedoService.clearRedoStack();
+
+            this.message.error("You don't have access to this workflow, please log in with an appropriate account");
+          }
+        );
+    }
   }
 
   registerLoadOperatorMetadata() {

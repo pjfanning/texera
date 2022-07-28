@@ -9,15 +9,12 @@ import { ExecutionState } from "../../../../../workspace/types/execute-workflow.
 import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.component";
 import { Router } from "@angular/router";
 
-export const ROUTER_WORKFLOW_BASE_URL = "/workflow";
-
 @UntilDestroy()
 @Component({
   selector: "texera-ngbd-modal-workflow-executions",
   templateUrl: "./ngbd-modal-workflow-executions.component.html",
   styleUrls: ["./ngbd-modal-workflow-executions.component.scss"],
 })
-
 export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   @Input() workflow!: Workflow;
 
@@ -220,8 +217,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   }
 
   jumpToWorkflow(execution: WorkflowExecutionsEntry) {
-    this.activeModal.close()
-    this.router.navigate([`/exeuctions/display_execution`, {wid: this.workflow.wid, execution: execution}]).then(null);
-    // console.log(execution);
+    this.activeModal.close();
+    this.router.navigate([`/executions/${this.workflow.wid}/${execution.eId}`, execution]);
   }
 }

@@ -15,6 +15,7 @@ import { DebuggerFrameComponent } from "./debugger-frame/debugger-frame.componen
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+import { WorkflowExecutionsService } from "../../../dashboard/service/workflow-executions/workflow-executions.service";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
@@ -49,21 +50,28 @@ export class ResultPanelComponent implements OnInit {
     private workflowActionService: WorkflowActionService,
     private workflowResultService: WorkflowResultService,
     private workflowVersionService: WorkflowVersionService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private workflowExecutionService: WorkflowExecutionsService
   ) {}
 
   ngOnInit(): void {
     this.registerAutoRerenderResultPanel();
     this.registerAutoOpenResultPanel();
-    this.handleResultPanelForVersionPreview();
+    this.handleResultPanelForPreview();
   }
 
-  handleResultPanelForVersionPreview() {
+  handleResultPanelForPreview() {
     this.workflowVersionService
       .getDisplayParticularVersionStream()
       .pipe(untilDestroyed(this))
       .subscribe(displayVersionFlag => {
         this.previewWorkflowVersion = displayVersionFlag;
+      });
+    this.workflowExecutionService
+      .getDisplayParticularExecutionStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(displayExecutionFlag => {
+        this.previewWorkflowVersion = displayExecutionFlag;
       });
   }
 

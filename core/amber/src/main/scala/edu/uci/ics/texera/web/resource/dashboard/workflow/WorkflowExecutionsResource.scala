@@ -46,7 +46,6 @@ object WorkflowExecutionsResource {
 case class ExecutionBookmarkRequest(wid: UInteger, eId: UInteger, isBookmarked: Boolean)
 case class ExecutionDeleteRequest(wid: UInteger, eId: UInteger)
 case class ExecutionRenameRequest(wid: UInteger, eId: UInteger, executionName: String)
-case class ExecutionViewRequest(wid: UInteger, execution: WorkflowExecutionEntry)
 
 @PermitAll
 @Path("/executions")
@@ -149,23 +148,5 @@ class WorkflowExecutionsResource {
     val execution = getExecutionById(request.eId)
     execution.setName(request.executionName)
     executionsDao.update(execution)
-  }
-
-  @PUT
-  @Path("/display_execution")
-  @Consumes(Array(MediaType.APPLICATION_JSON))
-  def displayWorkflow(
-      execution: ExecutionViewRequest,
-      @Auth sessionUser: SessionUser
-  ): Workflow = {
-    val user = sessionUser.getUser
-    if (
-      WorkflowAccessResource.hasNoWorkflowAccess(execution.wid, user.getUid) ||
-      WorkflowAccessResource.hasNoWorkflowAccessRecord(execution.wid, user.getUid)
-    ) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else {
-      workflowDao.fetchOneByWid(execution.wid)
-    }
   }
 }
