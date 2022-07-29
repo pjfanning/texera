@@ -92,7 +92,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of workflowExecutionsList; let i=index;">
+        <tr *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
           <td nzEllipsis>
             <input type="checkbox" />
           </td>
@@ -110,7 +110,6 @@
           <td nzEllipsis>
             <i nz-icon nzType="eye" class="view-icon" (click)="jumpToWorkflow(row)" nzTheme="outline"></i>
           </td>
-          <td nzEllipsis>{{(i + 1)}}</td>
           <td nzEllipsis>{{row.userName || "anonymous" }}</td>
           <td nzEllipsis>
             <label
