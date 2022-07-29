@@ -141,6 +141,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
       windowClass: "modal-xl",
     });
     modalRef.componentInstance.workflow = workflow;
+    modalRef.componentInstance.workflowName = workflow.name;
   }
 
   /**
