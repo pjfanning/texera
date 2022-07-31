@@ -137,11 +137,12 @@ object WorkflowVersionResource {
       UpperBound: UInteger,
       wid: UInteger
   ): Boolean = {
+    if (lowerBound == UpperBound) {
+      return true
+    }
     val contents = context
       .select(WORKFLOW_VERSION.CONTENT)
       .from(WORKFLOW_VERSION)
-      .leftJoin(WORKFLOW)
-      .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
       .where(WORKFLOW_VERSION.WID.eq(wid))
       .and(WORKFLOW_VERSION.VID.between(lowerBound).and(UpperBound))
       .fetchInto(classOf[String])

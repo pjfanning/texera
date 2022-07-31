@@ -4,20 +4,34 @@ import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.texera.Utils.objectMapper
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowExecutionErrorEvent}
-import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput, WorkflowLifecycleManager}
-import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, TexeraWebSocketRequest, WorkflowExecuteRequest, WorkflowKillRequest}
-import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  WorkflowErrorEvent,
+  WorkflowExecutionErrorEvent
+}
+import edu.uci.ics.texera.web.{
+  SubscriptionManager,
+  TexeraWebApplication,
+  WebsocketInput,
+  WorkflowLifecycleManager
+}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{getExecutionById, getExecutionVersion, getLatestExecution}
+import edu.uci.ics.texera.web.model.websocket.request.{
+  CacheStatusUpdateRequest,
+  TexeraWebSocketRequest,
+  WorkflowExecuteRequest,
+  WorkflowKillRequest
+}
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
-import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import io.reactivex.rxjava3.core.Observer
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
 import org.jooq.types.UInteger
@@ -192,11 +206,10 @@ class WorkflowService(
         )
       )
     }
-
     var executionID: Long = -1 // for every new execution,
-
     // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {
+      vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
       executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, vId, uidOpt)
     }
     new WorkflowContext(
