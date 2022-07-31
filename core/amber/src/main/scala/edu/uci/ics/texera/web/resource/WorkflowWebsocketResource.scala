@@ -72,11 +72,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           send(session, WorkflowStateEvent("Uninitialized"))
           val workflowState = WorkflowService.getOrCreate(wIdRequest.wId, uidOpt)
 
-          if (
-            aggregatedStateToString(workflowState.status) != "Completed" || aggregatedStateToString(
-              workflowState.status
-            ) != "Aborted"
-          ) {
+          if (workflowState.status.isCompleted || workflowState.status.isAborted) {
             send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
 
             send(
