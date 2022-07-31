@@ -6,10 +6,21 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.Utils.aggregatedStateToString
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, OperatorStatisticsUpdateEvent, TexeraWebSocketEvent, WebResultUpdateEvent, WorkflowErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  OperatorStatistics,
+  OperatorStatisticsUpdateEvent,
+  TexeraWebSocketEvent,
+  WebResultUpdateEvent,
+  WorkflowErrorEvent,
+  WorkflowStateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
-import edu.uci.ics.texera.web.service.JobResultService.{PaginationMode, WebPaginationUpdate, WebResultUpdate}
+import edu.uci.ics.texera.web.service.JobResultService.{
+  PaginationMode,
+  WebPaginationUpdate,
+  WebResultUpdate
+}
 import edu.uci.ics.texera.web.service.{WorkflowCacheService, WorkflowService}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
@@ -61,19 +72,44 @@ class WorkflowWebsocketResource extends LazyLogging {
           send(session, WorkflowStateEvent("Uninitialized"))
           val workflowState = WorkflowService.getOrCreate(wIdRequest.wId, uidOpt)
 
-          if (aggregatedStateToString(workflowState.status) != "Completed" || aggregatedStateToString(workflowState.status) != "Aborted") {
+          if (
+            aggregatedStateToString(workflowState.status) != "Completed" || aggregatedStateToString(
+              workflowState.status
+            ) != "Aborted"
+          ) {
             println("--------------------------------------------------")
             println("update state")
             println(Utils.aggregatedStateToString(workflowState.status))
             print("--------------------------------------------------")
             send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
 
-
-            send(session, OperatorStatisticsUpdateEvent(Map("CSVFileScan-operator-51b96cce-0d61-4d9d-a723-73f055f29ffa"->new OperatorStatistics("Completed", 0, 100))))
+            send(
+              session,
+              OperatorStatisticsUpdateEvent(
+                Map(
+                  "CSVFileScan-operator-51b96cce-0d61-4d9d-a723-73f055f29ffa" -> new OperatorStatistics(
+                    "Completed",
+                    0,
+                    100
+                  )
+                )
+              )
+            )
             var myVar = new PaginationMode()
-            var myList = List(1,2,3,4,5,6,7,8,9,10)
-            send(session, WebResultUpdateEvent(Map("SimpleSink-operator-99694039-09a0-4442-9e51-0830ba816e93"->WebPaginationUpdate(myVar, 100, myList)))) //append the eId to retrieve mongo result here
-          }else {
+            var myList = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+            send(
+              session,
+              WebResultUpdateEvent(
+                Map(
+                  "SimpleSink-operator-99694039-09a0-4442-9e51-0830ba816e93" -> WebPaginationUpdate(
+                    myVar,
+                    100,
+                    myList
+                  )
+                )
+              )
+            ) //append the eId to retrieve mongo result here
+          } else {
             sessionState.subscribe(workflowState)
           }
 

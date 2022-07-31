@@ -3,22 +3,15 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
-import edu.uci.ics.texera.Utils.objectMapper
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowExecutionErrorEvent
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
+import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
+  getExecutionById,
+  getExecutionVersion,
+  getLatestExecution
 }
-import edu.uci.ics.texera.web.{
-  SubscriptionManager,
-  TexeraWebApplication,
-  WebsocketInput,
-  WorkflowLifecycleManager
-}
-import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{getExecutionById, getExecutionVersion, getLatestExecution}
 import edu.uci.ics.texera.web.model.websocket.request.{
   CacheStatusUpdateRequest,
-  TexeraWebSocketRequest,
   WorkflowExecuteRequest,
   WorkflowKillRequest
 }
@@ -29,11 +22,10 @@ import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
-import io.reactivex.rxjava3.core.Observer
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
-import io.reactivex.rxjava3.subjects.{BehaviorSubject, Subject}
+import io.reactivex.rxjava3.subjects.{BehaviorSubject}
 import org.jooq.types.UInteger
 
 object WorkflowService {
@@ -137,7 +129,7 @@ class WorkflowService(
     }
   }
   val wsInput = new WebsocketInput(errorHandler)
-  var status:WorkflowAggregatedState
+  var status: WorkflowAggregatedState = _
   val stateStore = new WorkflowStateStore()
   val resultService: JobResultService =
     new JobResultService(opResultStorage, stateStore)

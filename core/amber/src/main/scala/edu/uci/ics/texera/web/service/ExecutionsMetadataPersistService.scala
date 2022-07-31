@@ -44,9 +44,9 @@ object ExecutionsMetadataPersistService extends LazyLogging {
   }
 
   /**
-   * @param
-   * @return
-   */
+    * @param
+    * @return
+    */
   def maptoAggregatedState(statusCode: Byte): WorkflowAggregatedState = {
     statusCode match {
       case 0 => WorkflowAggregatedState.READY

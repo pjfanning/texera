@@ -43,8 +43,6 @@ class SessionState(session: Session) {
     }
   }
 
-
-
   def subscribe(workflowService: WorkflowService): Unit = {
     unsubscribe()
     currentWorkflowState = Some(workflowService)
