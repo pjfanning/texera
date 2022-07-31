@@ -105,9 +105,8 @@ class WorkflowWebsocketResource extends LazyLogging {
                 )
               )
             ) //append the eId to retrieve mongo result here
-          } else {
-            sessionState.subscribe(workflowState)
           }
+          sessionState.subscribe(workflowState)
 
           send(session, RegisterWIdResponse("wid registered"))
 
