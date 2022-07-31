@@ -2,11 +2,10 @@ package edu.uci.ics.texera.web.resource.dashboard.workflow
 
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW, WORKFLOW_EXECUTIONS}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
-import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.context
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
 import org.jooq.types.UInteger
@@ -40,26 +39,24 @@ object WorkflowExecutionsResource {
   /**
     * This function retrieves the latest execution of a workflow
     * @param wid
-    * @return eid
+    * @return executionEntry
     */
-  def getLatestExecution(wid: UInteger): Option[UInteger] = {
+  def getLatestExecution(wid: UInteger): Option[WorkflowExecutions] = {
     val executions = context
-      .select(WORKFLOW_EXECUTIONS.EID)
+      .select(WORKFLOW_EXECUTIONS.EID, WORKFLOW_EXECUTIONS.VID, WORKFLOW_EXECUTIONS.STATUS)
       .from(WORKFLOW_EXECUTIONS)
-      .leftJoin(WORKFLOW)
-      .on(WORKFLOW_EXECUTIONS.WID.eq(WORKFLOW.WID))
       .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
-      .fetchInto(classOf[UInteger])
+      .fetchInto(classOf[WorkflowExecutions])
       .toList
     if (executions.isEmpty) {
       None
     } else {
-      Some(executions.max)
+      Some(
+        executions.max((x: WorkflowExecutions, y: WorkflowExecutions) =>
+          x.getEid compareTo y.getEid
+        )
+      )
     }
-  }
-
-  def getExecutionVersion(eId: UInteger): UInteger = {
-    executionsDao.fetchOneByEid(eId).getVid
   }
 
 }
@@ -110,8 +107,6 @@ class WorkflowExecutionsResource {
           WORKFLOW_EXECUTIONS.NAME
         )
         .from(WORKFLOW_EXECUTIONS)
-        .leftJoin(WORKFLOW)
-        .on(WORKFLOW_EXECUTIONS.WID.eq(WORKFLOW.WID))
         .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
         .fetchInto(classOf[WorkflowExecutionEntry])
         .toList

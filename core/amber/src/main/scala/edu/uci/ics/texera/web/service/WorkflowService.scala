@@ -3,6 +3,7 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
@@ -25,7 +26,7 @@ import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResourc
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
-import io.reactivex.rxjava3.subjects.{BehaviorSubject}
+import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.jooq.types.UInteger
 
 object WorkflowService {
@@ -50,60 +51,84 @@ object WorkflowService {
   ): WorkflowService = {
     wIdToWorkflowState.compute(
       mkWorkflowStateId(wId, uidOpt),
-      (_, workflwservice) => {
-        if (workflwservice == null) {
-          //executed and removed OR never executed
-          val eId: Option[UInteger] = getLatestExecution(UInteger.valueOf(wId))
-          eId match {
-            case Some(eId: UInteger) =>
-              //executed and removed from hashmap
-              //TODO do I need to check if user system is enabled here?
-              if (
-                isVersionInRangeUnimportant(
-                  getExecutionVersion(eId), //this can be optimized?
-                  getLatestVersion(UInteger.valueOf(wId)),
-                  UInteger.valueOf(wId)
-                )
-              ) {
-                //TODO retrieve and initialize WorkflowService using eId here, initialize all fiends except exportService and operatorCache
-                var workflwexecution = getExecutionById(eId)
-                println("--------------------------------------------")
-                println(workflwexecution)
-                println(maptoAggregatedState(workflwexecution.getStatus))
-                println("--------------------------------------------")
-                var retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
-                retrievedWorkflowService.status = maptoAggregatedState(workflwexecution.getStatus)
-                retrievedWorkflowService
-              } else {
-                new WorkflowService(uidOpt, wId, cleanupTimeout)
-              }
-            case None =>
-              new WorkflowService(uidOpt, wId, cleanupTimeout)
-          }
-        } else {
-          if (userSystemEnabled) {
-            // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
-            if (
-              isVersionInRangeUnimportant(
-                UInteger.valueOf(workflwservice.vId),
-                getLatestVersion(UInteger.valueOf(wId)),
-                UInteger.valueOf(wId)
-              )
-            ) {
-              workflwservice
-            } else {
-              new WorkflowService(uidOpt, wId, cleanupTimeout)
-            }
-          } else {
-            workflwservice
-          }
-
+      (_, workflowService) => {
+        // either it was never executed or cleared from memory
+        if (workflowService == null) {
+          retrieveFromStorageOrCreateNew(wId, uidOpt, cleanupTimeout)
+        }
+        // it exists in memory
+        else {
+          validateWorkflowVersion(wId, workflowService, uidOpt, cleanupTimeout)
         }
       }
     )
   }
+
+  /**
+    * Function to create a new workflowService or retrieves an execution from storage
+    * @return
+    */
+  def retrieveFromStorageOrCreateNew(
+      wId: Int,
+      uidOpt: Option[UInteger],
+      cleanupTimeout: Int
+  ): WorkflowService = {
+    if (userSystemEnabled) {
+      val latestExecution: Option[WorkflowExecutions] = getLatestExecution(UInteger.valueOf(wId))
+      latestExecution match {
+        case Some(latestExecution: WorkflowExecutions) =>
+          if (
+            isVersionInRangeUnimportant(
+              latestExecution.getVid,
+              getLatestVersion(UInteger.valueOf(wId)),
+              UInteger.valueOf(wId)
+            )
+          ) {
+            val retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
+            retrievedWorkflowService.status = maptoAggregatedState(latestExecution.getStatus)
+            retrievedWorkflowService.vId = latestExecution.getVid.intValue()
+            return retrievedWorkflowService
+          }
+      }
+    }
+    new WorkflowService(uidOpt, wId, cleanupTimeout)
+  }
+
+  /**
+    * this function clears an execution from memory when the status is completed or aborted
+    * @param wId
+    */
   def removeWorkflowService(wId: String): Unit = {
     wIdToWorkflowState.remove(wId)
+  }
+
+  /**
+    * This function validates if the version of the reattached workflow matches the one in memory
+    * @param wId
+    * @param service
+    * @param uidOpt
+    * @param cleanupTimeout
+    * @return new or existing execution
+    */
+  def validateWorkflowVersion(
+      wId: Int,
+      service: WorkflowService,
+      uidOpt: Option[UInteger],
+      cleanupTimeout: Int = cleanUpDeadlineInSeconds
+  ): WorkflowService = {
+    if (userSystemEnabled) {
+      // retrieve the version stored in memory as lowerBound and the latest one stored in mysql as upperBound
+      if (
+        !isVersionInRangeUnimportant(
+          UInteger.valueOf(service.vId),
+          getLatestVersion(UInteger.valueOf(wId)),
+          UInteger.valueOf(wId)
+        )
+      ) {
+        return new WorkflowService(uidOpt, wId, cleanupTimeout)
+      }
+    }
+    service
   }
 }
 
@@ -138,7 +163,7 @@ class WorkflowService(
   val operatorCache: WorkflowCacheService =
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
-  var vId: Int = getLatestVersion(UInteger.valueOf(wId)).intValue()
+  var vId: Int = -1
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -198,6 +223,7 @@ class WorkflowService(
         )
       )
     }
+
     var executionID: Long = -1 // for every new execution,
     // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {

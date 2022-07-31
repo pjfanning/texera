@@ -77,10 +77,6 @@ class WorkflowWebsocketResource extends LazyLogging {
               workflowState.status
             ) != "Aborted"
           ) {
-            println("--------------------------------------------------")
-            println("update state")
-            println(Utils.aggregatedStateToString(workflowState.status))
-            print("--------------------------------------------------")
             send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
 
             send(
