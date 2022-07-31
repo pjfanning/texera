@@ -7,8 +7,6 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutio
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
-  getExecutionById,
-  getExecutionVersion,
   getLatestExecution
 }
 import edu.uci.ics.texera.web.model.websocket.request.{

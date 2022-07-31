@@ -2,7 +2,6 @@ package edu.uci.ics.texera.web
 
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.service.WorkflowService
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import io.reactivex.rxjava3.disposables.Disposable
 
 import javax.websocket.Session
@@ -50,5 +49,6 @@ class SessionState(session: Session) {
     jobSubscription = workflowService.connectToJob(evt =>
       session.getAsyncRemote.sendText(objectMapper.writeValueAsString(evt))
     )
+
   }
 }
