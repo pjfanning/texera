@@ -10,6 +10,7 @@ import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, OperatorStatisticsUpdateEvent, TexeraWebSocketEvent}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
+import edu.uci.ics.texera.web.service.OPMongoStorage.insert
 
 class JobStatsService(
     client: AmberClient,
@@ -32,27 +33,19 @@ class JobStatsService(
                 stats.outputCount
               )
 
-              //only proceed if stats.state is COMPLETED/ABORTED?
-              var mapper: ObjectMapper = new ObjectMapper()
-              //TODO: these two belong somewhere else so a new one doesn't get created every time, specific to an execution
-              var execution: ObjectNode = mapper.createObjectNode() //TODO: obtain the eId here? or let mongo manager obtain it?
-              var operator: ObjectNode = mapper.createObjectNode()
+              if (stats.state == COMPLETED || stats.state == ABORTED) {
+                val mapper: ObjectMapper = new ObjectMapper()
+                val operator: ObjectNode = mapper.createObjectNode()
 
-              var opStats:ObjectNode  = mapper.createObjectNode() //mongo manager will need to check if operator ID already exists in the array
+                val opStats: ObjectNode = mapper.createObjectNode()
 
+                opStats.put("state", Utils.aggregatedStateToString(stats.state))
+                opStats.put("inputCount", stats.inputCount)
+                opStats.put("outputCount", stats.outputCount)
 
-              opStats.put("state", Utils.aggregatedStateToString(stats.state))
-              opStats.put("inputCount", stats.inputCount)
-              opStats.put("outputCount", stats.outputCount)
+                insert("stat", stateStore.eId,x._1,opStats)
+              }
 
-              operator.set(x._1, opStats)
-
-//              execution.set("operators", ) //need to build an ArrayNode to store operators
-//              execution.put("expiredAfterSeconds", 172800)
-
-              println("------------------")
-              println(operator.toString)
-              println("------------------")
               (x._1, res)
           })
         )

@@ -31,6 +31,7 @@ class WorkflowJobService(
     with LazyLogging {
 
   val stateStore = new JobStateStore()
+  stateStore.eId = workflowContext.executionID.toInt
   val workflowInfo: WorkflowInfo = createWorkflowInfo()
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
