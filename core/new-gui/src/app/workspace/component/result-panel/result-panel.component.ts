@@ -42,7 +42,7 @@ export class ResultPanelComponent implements OnInit {
   currentOperatorId?: string | undefined;
 
   showResultPanel: boolean = false;
-  previewWorkflowVersion: boolean = false;
+  previewWorkflow: boolean = false;
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -65,13 +65,13 @@ export class ResultPanelComponent implements OnInit {
       .getDisplayParticularVersionStream()
       .pipe(untilDestroyed(this))
       .subscribe(displayVersionFlag => {
-        this.previewWorkflowVersion = displayVersionFlag;
+        this.previewWorkflow = displayVersionFlag;
       });
     this.workflowExecutionService
       .getDisplayParticularExecutionStream()
       .pipe(untilDestroyed(this))
       .subscribe(displayExecutionFlag => {
-        this.previewWorkflowVersion = displayExecutionFlag;
+        this.previewWorkflow = displayExecutionFlag;
       });
   }
 
@@ -156,7 +156,7 @@ export class ResultPanelComponent implements OnInit {
   rerenderResultPanel(): void {
     // if the workflow on the paper is a version preview then this is a temporary workaround until a future PR
     // TODO: let the results be tied with an execution ID instead of a workflow ID
-    if (this.previewWorkflowVersion) {
+    if (this.previewWorkflow) {
       return;
     }
     // update highlighted operator
