@@ -3,7 +3,6 @@ package edu.uci.ics.texera.web.resource
 import java.util.concurrent.atomic.AtomicInteger
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.Utils.aggregatedStateToString
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
 import edu.uci.ics.texera.web.model.websocket.event.{
@@ -16,16 +15,8 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 }
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
-import edu.uci.ics.texera.web.service.JobResultService.{
-  PaginationMode,
-  WebPaginationUpdate,
-  WebResultUpdate
-}
-import edu.uci.ics.texera.web.service.{WorkflowCacheService, WorkflowService}
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.web.service.{WorkflowService}
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
-
-import java.util
 import javax.websocket._
 import javax.websocket.server.ServerEndpoint
 import scala.jdk.CollectionConverters.mapAsScalaMapConverter
@@ -87,20 +78,12 @@ class WorkflowWebsocketResource extends LazyLogging {
                 )
               )
             )
-            var myVar = new PaginationMode()
-            var myList = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
             send(
               session,
               WebResultUpdateEvent(
-                Map(
-                  "SimpleSink-operator-99694039-09a0-4442-9e51-0830ba816e93" -> WebPaginationUpdate(
-                    myVar,
-                    100,
-                    myList
-                  )
-                )
+                workflowState.getResultUpdateMessage()
               )
-            ) //append the eId to retrieve mongo result here
+            )
           }
           sessionState.subscribe(workflowState)
 

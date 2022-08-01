@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.resource.dashboard.workflow
 
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW, WORKFLOW_EXECUTIONS}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
@@ -36,25 +36,42 @@ object WorkflowExecutionsResource {
       name: String
   )
 
+  case class ExecutionContent(
+      eId: UInteger,
+      vId: UInteger,
+      content: String,
+      status: Byte,
+      result: String
+  )
+
   /**
     * This function retrieves the latest execution of a workflow
     * @param wid
-    * @return executionEntry
+    * @return ExecutionContent
     */
-  def getLatestExecution(wid: UInteger): Option[WorkflowExecutions] = {
+  def getLatestExecution(wid: UInteger): Option[ExecutionContent] = {
     val executions = context
-      .select(WORKFLOW_EXECUTIONS.EID, WORKFLOW_EXECUTIONS.VID, WORKFLOW_EXECUTIONS.STATUS)
+      .select(
+        WORKFLOW_EXECUTIONS.EID,
+        WORKFLOW_EXECUTIONS.VID,
+        field(
+          context
+            .select(WORKFLOW.CONTENT)
+            .from(WORKFLOW)
+            .where(WORKFLOW_EXECUTIONS.WID.eq(WORKFLOW.WID))
+        ),
+        WORKFLOW_EXECUTIONS.STATUS,
+        WORKFLOW_EXECUTIONS.RESULT
+      )
       .from(WORKFLOW_EXECUTIONS)
       .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
-      .fetchInto(classOf[WorkflowExecutions])
+      .fetchInto(classOf[ExecutionContent])
       .toList
     if (executions.isEmpty) {
       None
     } else {
       Some(
-        executions.max((x: WorkflowExecutions, y: WorkflowExecutions) =>
-          x.getEid compareTo y.getEid
-        )
+        executions.max((x: ExecutionContent, y: ExecutionContent) => x.eId compareTo y.eId)
       )
     }
   }

@@ -3,10 +3,10 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
+  ExecutionContent,
   getLatestExecution
 }
 import edu.uci.ics.texera.web.model.websocket.request.{
@@ -23,6 +23,9 @@ import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
+import edu.uci.ics.texera.web.service.JobResultService.{WebResultUpdate}
+import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, WorkflowInfo}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.jooq.types.UInteger
@@ -72,19 +75,45 @@ object WorkflowService {
       cleanupTimeout: Int
   ): WorkflowService = {
     if (userSystemEnabled) {
-      val latestExecution: Option[WorkflowExecutions] = getLatestExecution(UInteger.valueOf(wId))
+      val latestExecution: Option[ExecutionContent] = getLatestExecution(UInteger.valueOf(wId))
       latestExecution match {
-        case Some(latestExecution: WorkflowExecutions) =>
+        case Some(latestExecution: ExecutionContent) =>
           if (
             isVersionInRangeUnimportant(
-              latestExecution.getVid,
+              latestExecution.vId,
               getLatestVersion(UInteger.valueOf(wId)),
               UInteger.valueOf(wId)
             )
           ) {
             val retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
-            retrievedWorkflowService.status = maptoAggregatedState(latestExecution.getStatus)
-            retrievedWorkflowService.vId = latestExecution.getVid.intValue()
+            retrievedWorkflowService.status = maptoAggregatedState(latestExecution.status)
+            retrievedWorkflowService.vId = latestExecution.vId.intValue()
+            val workflowInfo = retrievedWorkflowService.createWorkflowInfo(latestExecution.content)
+            val job = new WorkflowJobService(
+              new WorkflowContext(
+                String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet),
+                uidOpt,
+                retrievedWorkflowService.vId,
+                wId,
+                latestExecution.eId.longValue()
+              ),
+              retrievedWorkflowService.wsInput,
+              retrievedWorkflowService.operatorCache,
+              retrievedWorkflowService.resultService,
+              null,
+              retrievedWorkflowService.errorHandler,
+              workflowInfo
+            )
+            retrievedWorkflowService.jobService.onNext(job)
+            val workflowDAG = workflowInfo.toDAG
+            workflowDAG.getSinkOperators.foreach(sink => {
+              retrievedWorkflowService.resultService.progressiveResults.put(
+                sink,
+                new ProgressiveResultService(
+                  workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
+                )
+              )
+            })
             return retrievedWorkflowService
           }
       }
@@ -177,6 +206,25 @@ class WorkflowService(
     wsInput.subscribe((evt: WorkflowExecuteRequest, uidOpt) => initJobService(evt, uidOpt))
   )
 
+  def getResultUpdateMessage(): Map[String, WebResultUpdate] = {
+    resultService.progressiveResults.map {
+      case (id, service) =>
+        (
+          id,
+          service.convertWebResultUpdate(
+            service.sink.getStorage.getCount.toInt,
+            service.sink.getStorage.getCount.toInt
+          )
+        )
+    }.toMap
+  }
+
+  def createWorkflowInfo(workflowContent: String): WorkflowInfo = {
+    val logicalPlanMapper: DBWorkflowToLogicalPlan = DBWorkflowToLogicalPlan(workflowContent)
+    logicalPlanMapper.createLogicalPlan()
+    logicalPlanMapper.getWorkflowLogicalPlan()
+  }
+
   def connect(onNext: TexeraWebSocketEvent => Unit): Disposable = {
     lifeCycleManager.increaseUserCount()
     val subscriptions = stateStore.getAllStores
@@ -249,7 +297,8 @@ class WorkflowService(
       operatorCache,
       resultService,
       req,
-      errorHandler
+      errorHandler,
+      WorkflowInfo(req.operators, req.links, req.breakpoints)
     )
     lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
     jobService.onNext(job)
