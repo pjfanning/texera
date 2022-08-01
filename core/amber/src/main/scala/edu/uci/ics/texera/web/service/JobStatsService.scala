@@ -35,14 +35,11 @@ class JobStatsService(
 
               if (stats.state == COMPLETED || stats.state == ABORTED) {
                 val mapper: ObjectMapper = new ObjectMapper()
-                val operator: ObjectNode = mapper.createObjectNode()
-
                 val opStats: ObjectNode = mapper.createObjectNode()
 
                 opStats.put("state", Utils.aggregatedStateToString(stats.state))
                 opStats.put("inputCount", stats.inputCount)
                 opStats.put("outputCount", stats.outputCount)
-
                 insert("stat", stateStore.eId,x._1,opStats)
               }
 
