@@ -13,6 +13,9 @@ import { delayWhen, filter, map, retryWhen, tap } from "rxjs/operators";
 import { environment } from "../../../../environments/environment";
 import { AuthService } from "../../../common/service/user/auth.service";
 import { getWebsocketUrl } from "src/app/common/util/url";
+import {ExecuteWorkflowService} from "../execute-workflow/execute-workflow.service";
+import {WorkflowGraphReadonly} from "../workflow-graph/model/workflow-graph";
+import {operators} from "ajv/dist/compile/codegen";
 
 export const WS_HEARTBEAT_INTERVAL_MS = 10000;
 export const WS_RECONNECT_INTERVAL_MS = 3000;
@@ -98,7 +101,10 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(_ => (this.isConnected = true));
   }
 
-  public openExecutionWebsocket(eId: number) {
+  public openExecutionWebsocket(eId: number, workflowGraph: WorkflowGraphReadonly) {
+    const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(workflowGraph);
+    const operators = logicalPlan.operators;
+    const links = logicalPlan.links;
     const websocketUrl =
       getWebsocketUrl(WorkflowWebsocketService.TEXERA_WEBSOCKET_ENDPOINT) +
       (environment.userSystemEnabled && AuthService.getAccessToken() !== null
@@ -115,7 +121,7 @@ export class WorkflowWebsocketService {
           ),
           delayWhen(_ => timer(WS_RECONNECT_INTERVAL_MS)), // reconnect after delay
           tap(_ => {
-            this.send("RegisterEIdRequest", { eId }); // re-register wid
+            this.send("RegisterEIdRequest", { eId, operators, links }); // re-register wid
             this.send("HeartBeatRequest", {}); // try to send heartbeat immediately after reconnect
           })
         )
@@ -127,7 +133,7 @@ export class WorkflowWebsocketService {
     );
 
     // send wid registration and recover frontend state
-    this.send("RegisterEIdRequest", { eId });
+    this.send("RegisterEIdRequest", { eId, operators, links });
 
     // refresh connection status
     this.websocketEvent().subscribe(_ => (this.isConnected = true));

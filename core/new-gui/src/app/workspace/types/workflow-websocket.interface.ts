@@ -5,7 +5,7 @@ import {
   LogicalPlan,
   WebOutputMode,
   WorkflowResultUpdateEvent,
-  OperatorStatsUpdate,
+  OperatorStatsUpdate, LogicalLink,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
 import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
@@ -31,6 +31,8 @@ export interface RegisterWIdRequest
 export interface RegisterEIdRequest
   extends Readonly<{
     eId: number;
+    operators: LogicalOperator[];
+    links: LogicalLink[];
   }> {}
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}

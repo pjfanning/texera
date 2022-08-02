@@ -123,7 +123,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           name: this.route.snapshot.params.name,
         };
         this.execution_flag = true;
-        this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId);
+        this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId, this.workflowActionService.getTexeraGraph());
       } else {
         this.registerReEstablishWebsocketUponWIdChange();
       }
