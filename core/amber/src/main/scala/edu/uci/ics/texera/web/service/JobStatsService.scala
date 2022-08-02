@@ -2,12 +2,19 @@ package edu.uci.ics.texera.web.service
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowCompleted,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
-import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, OperatorStatisticsUpdateEvent, TexeraWebSocketEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  OperatorStatistics,
+  OperatorStatisticsUpdateEvent,
+  TexeraWebSocketEvent
+}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
 import edu.uci.ics.texera.web.service.OPMongoStorage.insert
@@ -39,7 +46,7 @@ class JobStatsService(
               opStats.put("state", Utils.aggregatedStateToString(stats.state))
               opStats.put("inputCount", stats.inputCount)
               opStats.put("outputCount", stats.outputCount)
-              insert("stat", stateStore.eId,x._1,opStats)
+              insert("stat", stateStore.eId, x._1, opStats)
 
               (x._1, res)
           })
