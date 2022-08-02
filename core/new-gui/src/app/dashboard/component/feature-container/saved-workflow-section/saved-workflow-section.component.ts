@@ -17,6 +17,9 @@ import { NgbdModalWorkflowExecutionsComponent } from "./ngbd-modal-workflow-exec
 import { environment } from "../../../../../environments/environment";
 import { UserProject } from "../../../type/user-project";
 import { DeletePromptComponent } from "../../delete-prompt/delete-prompt.component";
+import { ActivatedRoute } from "@angular/router";
+import { Workflow, WorkflowContent } from "src/app/common/type/workflow";
+import { jsonCast } from "src/app/common/util/storage";
 
 export const ROUTER_WORKFLOW_BASE_URL = "/workflow";
 export const ROUTER_WORKFLOW_CREATE_NEW_URL = "/";
@@ -68,6 +71,25 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public userProjectsList: ReadonlyArray<UserProject> = []; // list of projects accessible by user
   public projectFilterList: number[] = []; // for filter by project mode, track which projects are selected
   public isSearchByProject: boolean = false; // track searching mode user currently selects
+  public returnFromExecutionDisplay: boolean = false;
+
+  /* empty template workflow/dashboardWorkflowEntry for reopen execution table*/
+  public emptyWorkflow: Workflow = {
+    name: "",
+    wid: 0,
+    creationTime: 0,
+    lastModifiedTime: 0,
+    content: jsonCast<WorkflowContent>(
+      " {\"operators\":[],\"operatorPositions\":{},\"links\":[],\"groups\":[],\"breakpoints\":{}}"
+    ),
+  };
+  public emptyDashboardEntry: DashboardWorkflowEntry = {
+    isOwner: true,
+    accessLevel: "",
+    workflow: this.emptyWorkflow,
+    projectIDs: [],
+    ownerName: "",
+  };
 
   constructor(
     private userService: UserService,
@@ -75,11 +97,17 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
     private workflowPersistService: WorkflowPersistService,
     private notificationService: NotificationService,
     private modalService: NgbModal,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
     this.registerDashboardWorkflowEntriesRefresh();
+    /* if detected return from particular execution display, reopen execution table */
+    if (this.route.snapshot.params.wid) {
+      this.emptyDashboardEntry.workflow.wid = this.route.snapshot.params.wid;
+      this.onClickGetWorkflowExecutions(this.emptyDashboardEntry);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {

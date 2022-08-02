@@ -27,6 +27,9 @@ import { WorkflowCollabService } from "../../service/workflow-collab/workflow-co
 import { NzUploadFile } from "ng-zorro-antd/upload";
 import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
+import { WorkflowExecutionsService } from "../../../dashboard/service/workflow-executions/workflow-executions.service";
+import { WorkflowExecutionsEntry } from "../../../dashboard/type/workflow-executions-entry";
+import { ActivatedRoute } from "@angular/router";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -59,6 +62,7 @@ export class NavigationComponent implements OnInit {
   @Input() public autoSaveState: string = "";
   @Input() public currentWorkflowName: string = ""; // reset workflowName
   @Input() public particularVersionDate: string = ""; // placeholder for the metadata information of a particular workflow version
+  @Input() public particularExecutionName: string = "";
   @ViewChild("nameInput") nameInputBox: ElementRef<HTMLElement> | undefined;
 
   // variable bound with HTML to decide if the running spinner should show
@@ -85,6 +89,9 @@ export class NavigationComponent implements OnInit {
 
   public static readonly COLLAB_RELOAD_WAIT_TIME = 500;
 
+  public displayParticularWorkflowExecution: boolean = false;
+  public execution: WorkflowExecutionsEntry | undefined;
+
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowActionService: WorkflowActionService,
@@ -101,7 +108,9 @@ export class NavigationComponent implements OnInit {
     public workflowUtilService: WorkflowUtilService,
     private userProjectService: UserProjectService,
     private notificationService: NotificationService,
-    public changeDetectionRef: ChangeDetectorRef
+    public changeDetectionRef: ChangeDetectorRef,
+    public workflowExecutionService: WorkflowExecutionsService,
+    private route: ActivatedRoute
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -133,7 +142,20 @@ export class NavigationComponent implements OnInit {
       });
 
     this.registerWorkflowMetadataDisplayRefresh();
-    this.handleWorkflowVersionDisplay();
+    if (this.route.snapshot.params.eid) {
+      this.execution = {
+        eId: this.route.snapshot.params.eId,
+        vId: this.route.snapshot.params.vId,
+        userName: this.route.snapshot.params.userName,
+        startingTime: this.route.snapshot.params.startingTime,
+        completionTime: this.route.snapshot.params.completionTime,
+        status: this.route.snapshot.params.status,
+        result: this.route.snapshot.params.result,
+        bookmarked: this.route.snapshot.params.bookmarked,
+        name: this.route.snapshot.params.name,
+      };
+    }
+    this.handleWorkflowDisplay();
     this.handleDisableOperatorStatusChange();
     this.handleCacheOperatorStatusChange();
     this.handleLockChange();
@@ -552,7 +574,7 @@ export class NavigationComponent implements OnInit {
     this.workflowVersionService.clickDisplayWorkflowVersions();
   }
 
-  private handleWorkflowVersionDisplay(): void {
+  private handleWorkflowDisplay(): void {
     this.workflowVersionService
       .getDisplayParticularVersionStream()
       .pipe(untilDestroyed(this))
@@ -569,10 +591,31 @@ export class NavigationComponent implements OnInit {
               );
         this.displayParticularWorkflowVersion = displayVersionFlag;
       });
+    this.workflowExecutionService
+      .getDisplayParticularExecutionStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(displayExecutionFlag => {
+        this.particularVersionDate =
+          this.execution?.startingTime === undefined
+            ? ""
+            : "" +
+              this.datePipe.transform(
+                this.execution.startingTime,
+                "MM/dd/yyyy HH:mm:ss zzz",
+                Intl.DateTimeFormat().resolvedOptions().timeZone,
+                "en"
+              );
+        this.particularExecutionName = this.execution?.name === undefined ? "" : this.execution.name;
+        this.displayParticularWorkflowExecution = displayExecutionFlag;
+      });
   }
 
-  closeParticularVersionDisplay() {
-    this.workflowVersionService.closeParticularVersionDisplay();
+  closeParticularDisplay() {
+    if (this.displayParticularWorkflowVersion) {
+      this.workflowVersionService.closeParticularVersionDisplay();
+    } else if (this.displayParticularWorkflowExecution) {
+      this.workflowExecutionService.closeParticularExecutionDisplay();
+    }
   }
 
   revertToVersion() {

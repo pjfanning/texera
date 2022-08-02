@@ -7,6 +7,7 @@ import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-en
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
 import { ExecutionState } from "../../../../../workspace/types/execute-workflow.interface";
 import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.component";
+import { Router } from "@angular/router";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import Fuse from "fuse.js";
 import { filter } from "lodash";
@@ -26,6 +27,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public workflowExecutionsIsEditingName: number[] = [];
   public currentlyHoveredExecution: WorkflowExecutionsEntry | undefined;
   public executionsTableHeaders: string[] = [
+    "",
     "",
     "",
     "Username",
@@ -84,7 +86,8 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     public activeModal: NgbActiveModal,
     private workflowExecutionsService: WorkflowExecutionsService,
     private modalService: NgbModal,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -264,6 +267,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
           exe1.completionTime < exe2.completionTime ? 1 : exe2.completionTime < exe1.completionTime ? -1 : 0
         );
     }
+  }
+
+  jumpToWorkflow(execution: WorkflowExecutionsEntry) {
+    this.activeModal.close();
+    this.router.navigate([`/executions/${this.workflow.wid}/${execution.eId}`, execution]);
   }
 
   public searchInputOnChange(value: string): void {
