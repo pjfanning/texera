@@ -17,13 +17,29 @@ object OPMongoStorage {
   def insert(collectionName: String, eId: Int, operator_id: String,opStats: ObjectNode): Unit = {
     var collection: MongoCollection[Document] = null
     val upsertOpt: UpdateOptions = new UpdateOptions().upsert(true)
-
     if (!collectionExists(collectionName)) {
       database.createCollection(collectionName)
     }
     collection = database.getCollection(collectionName)
-    if (!operatorExists(collectionName, operator_id, eId)){ //to avoid redundant events
-      val op: Document = new Document("$push", new Document("operators", Document.parse(opStats.toString).append("operator_id", operator_id))).append("$set", new Document("created_at", new Date()))
+    if (operatorExists(collection, operator_id, eId)){
+      collection.updateOne(
+        new Document("execution_ID", eId)
+          .append("operators.operator_id", operator_id),
+        new Document("$set",
+          new Document("operators.$",
+            Document.parse(opStats.toString())
+              .append("operator_id", operator_id)
+          )
+        ),
+        upsertOpt
+      )
+    }else{
+      val op: Document = new Document("$push",
+        new Document("operators",
+          Document.parse(opStats.toString)
+          .append("operator_id", operator_id)))
+          .append("$set", new Document("created_at", new Date())
+          )
       collection.updateOne(new Document("execution_ID", eId), op, upsertOpt)
     }
     collection.createIndex(new Document("execution_id", eId), new IndexOptions().expireAfter(172800, TimeUnit.SECONDS)) //TTL index for expiration in 2 days
@@ -40,9 +56,9 @@ object OPMongoStorage {
     false
   }
 
-  def operatorExists(collectionName:String, operator_id: String, eId: Int): Boolean = {
-    val collection: MongoCollection[Document] = database.getCollection(collectionName)
-    val op: Document = new Document("execution_ID", eId.toString).append("operators.operator_id", operator_id)
+  def operatorExists(collection:MongoCollection[Document], operator_id: String, eId: Int): Boolean = {
+    val op: Document = new Document("execution_ID", eId)
+      .append("operators.operator_id", operator_id)
     if (collection.find(op).first() != null) {
       return true
     }
