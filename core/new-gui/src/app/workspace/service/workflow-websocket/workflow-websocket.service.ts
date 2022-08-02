@@ -98,6 +98,41 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(_ => (this.isConnected = true));
   }
 
+  public openExecutionWebsocket(eId: number) {
+    const websocketUrl =
+      getWebsocketUrl(WorkflowWebsocketService.TEXERA_WEBSOCKET_ENDPOINT) +
+      (environment.userSystemEnabled && AuthService.getAccessToken() !== null
+        ? "?access-token=" + AuthService.getAccessToken()
+        : "");
+    this.websocket = webSocket<TexeraWebsocketEvent | TexeraWebsocketRequest>(websocketUrl);
+    // setup reconnection logic
+    const wsWithReconnect = this.websocket.pipe(
+      retryWhen(errors =>
+        errors.pipe(
+          tap(_ => (this.isConnected = false)), // update connection status
+          tap(_ =>
+            console.log(`websocket connection lost, reconnecting in ${WS_RECONNECT_INTERVAL_MS / 1000} seconds`)
+          ),
+          delayWhen(_ => timer(WS_RECONNECT_INTERVAL_MS)), // reconnect after delay
+          tap(_ => {
+            this.send("RegisterEIdRequest", { eId }); // re-register wid
+            this.send("HeartBeatRequest", {}); // try to send heartbeat immediately after reconnect
+          })
+        )
+      )
+    );
+    // set up event listener on re-connectable websocket observable
+    this.wsWithReconnectSubscription = wsWithReconnect.subscribe(event =>
+      this.webSocketResponseSubject.next(event as TexeraWebsocketEvent)
+    );
+
+    // send wid registration and recover frontend state
+    this.send("RegisterEIdRequest", { eId });
+
+    // refresh connection status
+    this.websocketEvent().subscribe(_ => (this.isConnected = true));
+  }
+
   public reopenWebsocket(wId: number) {
     this.closeWebsocket();
     this.openWebsocket(wId);

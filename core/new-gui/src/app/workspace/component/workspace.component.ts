@@ -123,8 +123,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           name: this.route.snapshot.params.name,
         };
         this.execution_flag = true;
+        this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId);
+      } else {
+        this.registerReEstablishWebsocketUponWIdChange();
       }
-      this.registerReEstablishWebsocketUponWIdChange();
     } else {
       let wid = this.route.snapshot.params.id ?? 0;
 

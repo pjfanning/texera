@@ -28,6 +28,11 @@ export interface RegisterWIdRequest
     wId: number;
   }> {}
 
+export interface RegisterEIdRequest
+  extends Readonly<{
+    eId: number;
+  }> {}
+
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
 
 export interface TexeraConstraintViolation
@@ -139,6 +144,7 @@ export type WorkflowStateInfo = Readonly<{
 
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
+  RegisterEIdRequest: RegisterEIdRequest;
   AddBreakpointRequest: BreakpointInfo;
   CacheStatusUpdateRequest: CacheStatusUpdateRequest;
   HeartBeatRequest: {};
