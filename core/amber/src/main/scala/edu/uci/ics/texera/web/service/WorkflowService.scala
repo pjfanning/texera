@@ -3,17 +3,11 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
-import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{
-  ExecutionContent,
-  getLatestExecution
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  CacheStatusUpdateRequest,
-  WorkflowExecuteRequest,
-  WorkflowKillRequest
-}
+import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{ExecutionContent, getExecutionById, getLatestExecution}
+import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, RegisterEIdRequest, WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
@@ -23,12 +17,14 @@ import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
-import edu.uci.ics.texera.web.service.JobResultService.{WebResultUpdate}
+import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, WorkflowInfo}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.jooq.types.UInteger
+
+import scala.collection.mutable
 
 object WorkflowService {
   private val wIdToWorkflowState = new ConcurrentHashMap[String, WorkflowService]()
@@ -63,6 +59,44 @@ object WorkflowService {
         }
       }
     )
+  }
+
+  /**
+   * Function retrieves an execution from storage
+   * @return
+   */
+  def retrieveExecution(request: RegisterEIdRequest): WorkflowService = {
+    val execution: WorkflowExecutions = getExecutionById(UInteger.valueOf(request.eId))
+          val retrievedWorkflowService = new WorkflowService(Some(execution.getUid), execution.getWid.intValue(), cleanUpDeadlineInSeconds)
+          retrievedWorkflowService.status = maptoAggregatedState(execution.getStatus)
+          retrievedWorkflowService.vId = execution.getVid.intValue()
+          val workflowInfo = WorkflowInfo(request.operators, request.links, mutable.MutableList())
+          val job = new WorkflowJobService(
+            new WorkflowContext(
+              String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet),
+              Some(execution.getUid),
+              retrievedWorkflowService.vId,
+              execution.getWid.intValue(),
+              request.eId
+            ),
+            retrievedWorkflowService.wsInput,
+            retrievedWorkflowService.operatorCache,
+            retrievedWorkflowService.resultService,
+            null,
+            retrievedWorkflowService.errorHandler,
+            workflowInfo
+          )
+          retrievedWorkflowService.jobService.onNext(job)
+          val workflowDAG = workflowInfo.toDAG
+          workflowDAG.getSinkOperators.foreach(sink => {
+            retrievedWorkflowService.resultService.progressiveResults.put(
+              sink,
+              new ProgressiveResultService(
+                workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
+              )
+            )
+          })
+          retrievedWorkflowService
   }
 
   /**

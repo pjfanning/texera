@@ -58,6 +58,27 @@ class WorkflowWebsocketResource extends LazyLogging {
     val workflowStateOpt = sessionState.getCurrentWorkflowState
     try {
       request match {
+        case viewExecutionRequest: RegisterEIdRequest =>
+          val workflowState = WorkflowService.retrieveExecution(viewExecutionRequest)
+          send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
+          send(
+            session,
+            OperatorStatisticsUpdateEvent(
+              Map(
+                "CSVFileScan-operator-51b96cce-0d61-4d9d-a723-73f055f29ffa" -> new OperatorStatistics(
+                  "Completed",
+                  0,
+                  100
+                )
+              )
+            )
+          )
+          send(
+            session,
+            WebResultUpdateEvent(
+              workflowState.getResultUpdateMessage()
+            )
+          )
         case wIdRequest: RegisterWIdRequest =>
           // hack to refresh frontend run button state
           send(session, WorkflowStateEvent("Uninitialized"))
