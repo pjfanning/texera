@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import com.mongodb.client.model.{IndexOptions, UpdateOptions}
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.texera.web.model.websocket.event.OperatorStatistics
 import org.bson.Document
+
+import java.util
 import java.util.concurrent.TimeUnit
 import java.util.Date
 
@@ -63,5 +66,27 @@ object OPMongoStorage {
       return true
     }
     false
+  }
+
+  def getOperatorStat(eId:Int, operator_id: String, collectionName: String): OperatorStatistics = {
+    val collection: MongoCollection[Document] = database.getCollection(collectionName)
+    val op: Document = new Document("execution_ID", eId)
+      .append("operators.operator_id", operator_id)
+    var opStatsDoc: Document = collection
+      .find(new Document("execution_ID", eId))
+      .projection(
+      new Document("_id", 0)
+        .append("operators",
+          new Document("$elemMatch",
+            new Document("operator_id", operator_id)
+      ))).first()
+
+    opStatsDoc = opStatsDoc.get("operators").asInstanceOf[util.ArrayList[Document]].get(0)
+    OperatorStatistics(
+      opStatsDoc.get("state").asInstanceOf[String],
+      opStatsDoc.get("inputCount").asInstanceOf[Int].toLong,
+      opStatsDoc.get("outputCount").asInstanceOf[Int].toLong
+    )
+
   }
 }
