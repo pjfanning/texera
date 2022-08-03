@@ -103,25 +103,29 @@ object StatStorage {
   }
 
   def executionExists(eId: Int): Boolean = {
-    val op: Document = new Document("execution_ID", eId)
-    collection.find(op).first() != null
+    val condition: Document = new Document("execution_ID", eId)
+    collection.find(condition).first() != null
   }
 
-//    def getOperatorStat(eId: Int): Map[String, OperatorStatistics] = {
-//      val condition: BasicDBObject = new BasicDBObject
-//      condition.put(
-//        "execution_ID",
-//        new BasicDBObject("$eq", eId)
-//      )
-//      val opStatsDoc: Document = collection
-//        .find(condition)
-//        .first()
-//
-//      //TODO asinstance of Map(opID -> value)
-//      OperatorStatistics(
-//        opStatsDoc.get("state").asInstanceOf[String],
-//        opStatsDoc.get("inputCount").asInstanceOf[Int].toLong,
-//        opStatsDoc.get("outputCount").asInstanceOf[Int].toLong
-//      )
-//    }
+  def getOperatorStat(eId: Int): Map[String, OperatorStatistics] = {
+    val condition: Document = new Document("execution_ID", eId)
+    val opStatsDoc: Document = collection
+      .find(condition)
+      .first()
+
+    val opStatsMap: mutable.Map[String, OperatorStatistics] = mutable.Map()
+    val opStatsDocs: Document = opStatsDoc.get("operatorStatistics").asInstanceOf[Document]
+    opStatsDocs.keySet().forEach(opID => {
+      val opStats = opStatsDocs.get(opID).asInstanceOf[Document]
+      opStatsMap.put(opID,
+        OperatorStatistics(
+          opStats.get("operatorState").asInstanceOf[String],
+          opStats.get("aggregatedInputRowCount").asInstanceOf[String].toLong,
+          opStats.get("aggregatedOutputRowCount").asInstanceOf[String].toLong
+        )
+      )
+    }
+    )
+    opStatsMap.toMap
+  }
 }
