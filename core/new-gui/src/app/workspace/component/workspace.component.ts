@@ -123,7 +123,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           name: this.route.snapshot.params.name,
         };
         this.execution_flag = true;
-        this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId, this.workflowActionService.getTexeraGraph());
       } else {
         this.registerReEstablishWebsocketUponWIdChange();
       }
@@ -207,6 +206,11 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             this.workflowActionService.enableWorkflowModification();
             // reload the read only workflow version on the paper
             this.workflowActionService.reloadWorkflow(workflow);
+
+            if (this.execution){
+              this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId, this.workflowActionService.getTexeraGraph())
+            }
+            
             // set display particular execution flag true
             this.workflowExecutionService.setDisplayParticularExecution(true);
             // disable modifications because it is read only
