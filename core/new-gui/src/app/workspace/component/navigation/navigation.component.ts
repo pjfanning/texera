@@ -29,7 +29,7 @@ import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { WorkflowExecutionsService } from "../../../dashboard/service/workflow-executions/workflow-executions.service";
 import { WorkflowExecutionsEntry } from "../../../dashboard/type/workflow-executions-entry";
-import { ActivatedRoute } from "@angular/router";
+import { Router } from "@angular/router";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -110,7 +110,7 @@ export class NavigationComponent implements OnInit {
     private notificationService: NotificationService,
     public changeDetectionRef: ChangeDetectorRef,
     public workflowExecutionService: WorkflowExecutionsService,
-    private route: ActivatedRoute
+    private router: Router
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -121,6 +121,9 @@ export class NavigationComponent implements OnInit {
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
     // this.currentWorkflowName = this.workflowCacheService.getCachedWorkflow();
+    if (this.router.getCurrentNavigation()?.extras.state?.execution){
+      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
+    }
   }
 
   public ngOnInit(): void {
@@ -142,19 +145,19 @@ export class NavigationComponent implements OnInit {
       });
 
     this.registerWorkflowMetadataDisplayRefresh();
-    if (this.route.snapshot.params.eid) {
-      this.execution = {
-        eId: this.route.snapshot.params.eId,
-        vId: this.route.snapshot.params.vId,
-        userName: this.route.snapshot.params.userName,
-        startingTime: this.route.snapshot.params.startingTime,
-        completionTime: this.route.snapshot.params.completionTime,
-        status: this.route.snapshot.params.status,
-        result: this.route.snapshot.params.result,
-        bookmarked: this.route.snapshot.params.bookmarked,
-        name: this.route.snapshot.params.name,
-      };
-    }
+    // if (this.route.snapshot.params.eid) {
+    //   this.execution = {
+    //     eId: this.route.snapshot.params.eId,
+    //     vId: this.route.snapshot.params.vId,
+    //     userName: this.route.snapshot.params.userName,
+    //     startingTime: this.route.snapshot.params.startingTime,
+    //     completionTime: this.route.snapshot.params.completionTime,
+    //     status: this.route.snapshot.params.status,
+    //     result: this.route.snapshot.params.result,
+    //     bookmarked: this.route.snapshot.params.bookmarked,
+    //     name: this.route.snapshot.params.name,
+    //   };
+    // }
     this.handleWorkflowDisplay();
     this.handleDisableOperatorStatusChange();
     this.handleCacheOperatorStatusChange();
