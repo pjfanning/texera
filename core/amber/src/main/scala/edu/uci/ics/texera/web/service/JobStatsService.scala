@@ -1,7 +1,5 @@
 package edu.uci.ics.texera.web.service
 
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowCompleted,
   WorkflowStatusUpdate
@@ -12,12 +10,10 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{
   OperatorStatistics,
-  OperatorStatisticsUpdateEvent,
-  TexeraWebSocketEvent
+  OperatorStatisticsUpdateEvent
 }
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.{JobStateStore, StatStorage}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
-import edu.uci.ics.texera.web.storage.MongoStorage.insert
 
 class JobStatsService(
     client: AmberClient,
@@ -39,14 +35,7 @@ class JobStatsService(
                 stats.inputCount,
                 stats.outputCount
               )
-
-              val mapper: ObjectMapper = new ObjectMapper()
-              val opStats: ObjectNode = mapper.createObjectNode()
-
-              opStats.put("state", Utils.aggregatedStateToString(stats.state))
-              opStats.put("inputCount", stats.inputCount)
-              opStats.put("outputCount", stats.outputCount)
-              insert("stat", stateStore.eId, x._1, opStats)
+              StatStorage.insertOrUpdate(stateStore.eId, x._1, res)
 
               (x._1, res)
           })
