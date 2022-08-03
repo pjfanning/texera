@@ -17,7 +17,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 }
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
-import edu.uci.ics.texera.web.service.OPMongoStorage.insert
+import edu.uci.ics.texera.web.storage.MongoStorage.insert
 
 class JobStatsService(
     client: AmberClient,

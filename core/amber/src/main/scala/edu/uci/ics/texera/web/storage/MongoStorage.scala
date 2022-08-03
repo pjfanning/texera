@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.web.service
+package edu.uci.ics.texera.web.storage
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.mongodb.client.model.{IndexOptions, UpdateOptions}
@@ -8,14 +8,15 @@ import edu.uci.ics.texera.web.model.websocket.event.OperatorStatistics
 import org.bson.Document
 
 import java.util
-import java.util.concurrent.TimeUnit
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
-object OPMongoStorage {
+object MongoStorage {
   val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
   val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
   val client: MongoClient = MongoClients.create(url)
   val database: MongoDatabase = client.getDatabase(databaseName)
+  val timeToLive: Int = AmberUtils.amberConfig.getInt("storage.mongodb.cleanup.ttl-in-seconds")
 
   def insert(collectionName: String, eId: Int, operator_id: String, opStats: ObjectNode): Unit = {
     var collection: MongoCollection[Document] = null
@@ -54,7 +55,7 @@ object OPMongoStorage {
     }
     collection.createIndex(
       new Document("execution_id", eId),
-      new IndexOptions().expireAfter(172800, TimeUnit.SECONDS)
+      new IndexOptions().expireAfter(timeToLive, TimeUnit.SECONDS)
     ) //TTL index for expiration in 2 days
   }
 

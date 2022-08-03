@@ -8,12 +8,12 @@ import edu.uci.ics.texera.web.workflowruntimestate.{
 }
 
 // states that within one execution.
-class JobStateStore {
+class JobStateStore(eid: Int) {
   val statsStore = new StateStore(JobStatsStore())
   val jobMetadataStore = new StateStore(JobMetadataStore())
   val pythonStore = new StateStore(JobPythonStore())
   val breakpointStore = new StateStore(JobBreakpointStore())
-  var eId: Int = -1
+  val eId: Int = eid
 
   def getAllStores: Iterable[StateStore[_]] = {
     Iterable(statsStore, pythonStore, breakpointStore, jobMetadataStore)
