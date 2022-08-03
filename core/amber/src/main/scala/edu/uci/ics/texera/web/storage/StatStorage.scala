@@ -115,17 +115,19 @@ object StatStorage {
 
     val opStatsMap: mutable.Map[String, OperatorStatistics] = mutable.Map()
     val opStatsDocs: Document = opStatsDoc.get("operatorStatistics").asInstanceOf[Document]
-    opStatsDocs.keySet().forEach(opID => {
-      val opStats = opStatsDocs.get(opID).asInstanceOf[Document]
-      opStatsMap.put(opID,
-        OperatorStatistics(
-          opStats.get("operatorState").asInstanceOf[String],
-          opStats.get("aggregatedInputRowCount").asInstanceOf[String].toLong,
-          opStats.get("aggregatedOutputRowCount").asInstanceOf[String].toLong
+    opStatsDocs
+      .keySet()
+      .forEach((opID: String) => {
+        val opStats: Document = opStatsDocs.get(opID).asInstanceOf[Document]
+        opStatsMap.put(
+          opID,
+          OperatorStatistics(
+            opStats.get("operatorState").asInstanceOf[String],
+            opStats.get("aggregatedInputRowCount").asInstanceOf[String].toLong,
+            opStats.get("aggregatedOutputRowCount").asInstanceOf[String].toLong
+          )
         )
-      )
-    }
-    )
+      })
     opStatsMap.toMap
   }
 }
