@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.storage
 
+import com.mongodb.BasicDBObject
 import com.mongodb.client.model.{IndexOptions, Indexes}
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
@@ -89,13 +90,16 @@ object StatStorage {
       eid: Int,
       operatorStatistics: mutable.Map[String, OperatorStatistics]
   ): Unit = {
-    if (executionExists(eid))
-      collection.replaceOne(
-        new Document("execution_ID", eid),
-        executionStatsAsDocs(eid, operatorStatistics)
+    if (executionExists(eid)) {
+      val condition: BasicDBObject = new BasicDBObject
+      condition.put(
+        "execution_ID",
+        new BasicDBObject("$eq", eid)
       )
-    else
+      collection.replaceOne(condition, executionStatsAsDocs(eid, operatorStatistics))
+    } else {
       collection.insertOne(executionStatsAsDocs(eid, operatorStatistics))
+    }
   }
 
   def executionExists(eId: Int): Boolean = {
@@ -103,24 +107,21 @@ object StatStorage {
     collection.find(op).first() != null
   }
 
-//    def getOperatorStat(eId: Int, operator_id: String, collectionName: String): OperatorStatistics = {
-//      val collection: MongoCollection[Document] = database.getCollection(collectionName)
-//      val op: Document = new Document("execution_ID", eId)
-//        .append("operators.operator_id", operator_id)
-//      var opStatsDoc: Document = collection
-//        .find(new Document("execution_ID", eId))
-//        .projection(
-//          new Document("_id", 0)
-//            .append("operators", new Document("$elemMatch", new Document("operator_id", operator_id)))
-//        )
+//    def getOperatorStat(eId: Int): Map[String, OperatorStatistics] = {
+//      val condition: BasicDBObject = new BasicDBObject
+//      condition.put(
+//        "execution_ID",
+//        new BasicDBObject("$eq", eId)
+//      )
+//      val opStatsDoc: Document = collection
+//        .find(condition)
 //        .first()
 //
-//      opStatsDoc = opStatsDoc.get("operators").asInstanceOf[util.ArrayList[Document]].get(0)
+//      //TODO asinstance of Map(opID -> value)
 //      OperatorStatistics(
 //        opStatsDoc.get("state").asInstanceOf[String],
 //        opStatsDoc.get("inputCount").asInstanceOf[Int].toLong,
 //        opStatsDoc.get("outputCount").asInstanceOf[Int].toLong
 //      )
-//
 //    }
 }
