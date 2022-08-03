@@ -97,15 +97,19 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
     private workflowPersistService: WorkflowPersistService,
     private notificationService: NotificationService,
     private modalService: NgbModal,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
+    private router: Router
+  ) {
+    if (this.router.getCurrentNavigation()?.extras.state?.wid) {
+      this.returnFromExecutionDisplay = true;
+      this.emptyDashboardEntry.workflow.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+    }
+  }
 
   ngOnInit() {
+    console.log("123",this.router.getCurrentNavigation())
     this.registerDashboardWorkflowEntriesRefresh();
     /* if detected return from particular execution display, reopen execution table */
-    if (this.route.snapshot.params.wid) {
-      this.emptyDashboardEntry.workflow.wid = this.route.snapshot.params.wid;
+    if (this.returnFromExecutionDisplay) {
       this.onClickGetWorkflowExecutions(this.emptyDashboardEntry);
     }
   }

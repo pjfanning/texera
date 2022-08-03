@@ -88,6 +88,6 @@ export class WorkflowExecutionsService {
     this.workflowPersistService.setWorkflowPersistFlag(true);
     this.setDisplayParticularExecution(false);
 
-    this.router.navigate(["/dashboard/workflow", { wid: wid }]);
+    this.router.navigate([`/dashboard/workflow`], {state: { wid: wid }});
   }
 }

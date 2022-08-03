@@ -25,11 +25,11 @@ const routes: Routes = [
     component: WorkspaceComponent,
   },
   {
-    path: "executions/:id/:eid",
+    path: "executions/:eid",
     component: WorkspaceComponent,
   },
   {
-    path: "executions/:id/:eid",
+    path: "executions/:eid",
     component: NavigationComponent,
   },
 ];
