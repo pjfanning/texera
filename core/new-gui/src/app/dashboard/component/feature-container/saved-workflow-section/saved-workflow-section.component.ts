@@ -143,7 +143,6 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
    * open the workflow executions page
    */
   public onClickGetWorkflowExecutions({ workflow }: DashboardWorkflowEntry): void {
-    console.log(this.allDashboardWorkflowEntries);
     const modalRef = this.modalService.open(NgbdModalWorkflowExecutionsComponent, {
       size: "lg",
       windowClass: "modal-xl",
@@ -205,6 +204,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   public searchInputOnChange(value: string): void {
+    console.log("123", value)
     // enable autocomplete only when searching for workflow name
     if (!value.includes(":")) {
       const filteredDashboardWorkflowNames: string[] = [];
