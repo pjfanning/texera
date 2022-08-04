@@ -6,12 +6,14 @@ import { FormsModule } from "@angular/forms";
 
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
 import { HttpClientModule } from "@angular/common/http";
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { NgbdModalWorkflowExecutionsComponent } from "./ngbd-modal-workflow-executions.component";
 import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-entry";
 import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
 import { jsonCast } from "../../../../../common/util/storage";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
+import { RouterTestingModule } from '@angular/router/testing';
 
 describe("NgbModalWorkflowExecutionsComponent", () => {
   let component: NgbdModalWorkflowExecutionsComponent;
@@ -129,7 +131,7 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
       TestBed.configureTestingModule({
         declarations: [NgbdModalWorkflowExecutionsComponent],
         providers: [NgbActiveModal, WorkflowExecutionsService],
-        imports: [MatDialogModule, FormsModule, HttpClientModule],
+        imports: [MatDialogModule, FormsModule, HttpClientTestingModule, RouterTestingModule],
       }).compileComponents();
     })
   );
