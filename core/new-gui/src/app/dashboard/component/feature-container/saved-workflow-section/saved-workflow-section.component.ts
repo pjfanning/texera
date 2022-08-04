@@ -2,7 +2,10 @@ import { Component, OnInit, Input, SimpleChanges, OnChanges } from "@angular/cor
 import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { from, Observable } from "rxjs";
-import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {
+  DEFAULT_WORKFLOW_NAME,
+  WorkflowPersistService,
+} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import { NgbdModalWorkflowShareAccessComponent } from "./ngbd-modal-share-access/ngbd-modal-workflow-share-access.component";
 import { NgbdModalAddProjectWorkflowComponent } from "../user-project-list/user-project-section/ngbd-modal-add-project-workflow/ngbd-modal-add-project-workflow.component";
 import { NgbdModalRemoveProjectWorkflowComponent } from "../user-project-list/user-project-section/ngbd-modal-remove-project-workflow/ngbd-modal-remove-project-workflow.component";
@@ -17,9 +20,10 @@ import { NgbdModalWorkflowExecutionsComponent } from "./ngbd-modal-workflow-exec
 import { environment } from "../../../../../environments/environment";
 import { UserProject } from "../../../type/user-project";
 import { DeletePromptComponent } from "../../delete-prompt/delete-prompt.component";
-import { ActivatedRoute } from "@angular/router";
-import { Workflow, WorkflowContent } from "src/app/common/type/workflow";
 import { jsonCast } from "src/app/common/util/storage";
+import { Workflow, WorkflowContent } from "../../../../common/type/workflow";
+import { NzUploadFile } from "ng-zorro-antd/upload";
+import { saveAs } from "file-saver";
 
 export const ROUTER_WORKFLOW_BASE_URL = "/workflow";
 export const ROUTER_WORKFLOW_CREATE_NEW_URL = "/";
@@ -97,15 +101,18 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
     private workflowPersistService: WorkflowPersistService,
     private notificationService: NotificationService,
     private modalService: NgbModal,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {}
+    private router: Router
+  ) {
+    if (this.router.getCurrentNavigation()?.extras.state?.wid) {
+      this.returnFromExecutionDisplay = true;
+      this.emptyDashboardEntry.workflow.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+    }
+  }
 
   ngOnInit() {
     this.registerDashboardWorkflowEntriesRefresh();
     /* if detected return from particular execution display, reopen execution table */
-    if (this.route.snapshot.params.wid) {
-      this.emptyDashboardEntry.workflow.wid = this.route.snapshot.params.wid;
+    if (this.returnFromExecutionDisplay) {
       this.onClickGetWorkflowExecutions(this.emptyDashboardEntry);
     }
   }
@@ -145,6 +152,28 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   /**
+   * Download the workflow as a json file
+   */
+  public onClickDownloadWorkfllow({ workflow: { wid } }: DashboardWorkflowEntry): void {
+    if (wid) {
+      this.workflowPersistService
+        .retrieveWorkflow(wid)
+        .pipe(untilDestroyed(this))
+        .subscribe(data => {
+          const workflowCopy: Workflow = {
+            ...data,
+            wid: undefined,
+            creationTime: undefined,
+            lastModifiedTime: undefined,
+          };
+          const workflowJson = JSON.stringify(workflowCopy.content);
+          const fileName = workflowCopy.name + ".json";
+          saveAs(new Blob([workflowJson], { type: "text/plain;charset=utf-8" }), fileName);
+        });
+    }
+  }
+
+  /**
    * open the Modal to add workflow(s) to project
    */
   public onClickOpenAddWorkflow() {
@@ -175,6 +204,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   public searchInputOnChange(value: string): void {
+    console.log("123", value)
     // enable autocomplete only when searching for workflow name
     if (!value.includes(":")) {
       const filteredDashboardWorkflowNames: string[] = [];
@@ -292,6 +322,48 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public onClickCreateNewWorkflowFromDashboard(): void {
     this.router.navigate([`${ROUTER_WORKFLOW_CREATE_NEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
   }
+
+  /**
+   * Verify Uploaded file name and upload the file
+   */
+  public onClickUploadExistingWorkflowFromLocal = (file: NzUploadFile): boolean => {
+    var reader = new FileReader();
+    reader.readAsText(file as unknown as Blob);
+    reader.onload = () => {
+      try {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          throw new Error("Incorrect format: file is not a string");
+        }
+        const workflowContent = JSON.parse(result) as WorkflowContent;
+        const fileExtensionIndex = file.name.lastIndexOf(".");
+        var workflowName: string;
+        if (fileExtensionIndex === -1) {
+          workflowName = file.name;
+        } else {
+          workflowName = file.name.substring(0, fileExtensionIndex);
+        }
+        if (workflowName.trim() === "") {
+          workflowName = DEFAULT_WORKFLOW_NAME;
+        }
+        this.workflowPersistService
+          .createWorkflow(workflowContent, workflowName)
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: uploadedWorkflow => {
+              this.dashboardWorkflowEntries = [...this.dashboardWorkflowEntries, uploadedWorkflow];
+            },
+            error: (err: unknown) => alert(err),
+          });
+      } catch (error) {
+        this.notificationService.error(
+          "An error occurred when importing the workflow. Please import a workflow json file."
+        );
+        console.error(error);
+      }
+    };
+    return false;
+  };
 
   /**
    * duplicate the current workflow. A new record will appear in frontend
@@ -451,7 +523,6 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
       this.searchWorkflow();
     }
   }
-
   /**
    * For color tags, enable clicking 'x' to remove a workflow from a project
    *

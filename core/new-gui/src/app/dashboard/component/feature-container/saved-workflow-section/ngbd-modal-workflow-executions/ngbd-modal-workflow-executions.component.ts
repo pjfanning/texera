@@ -271,7 +271,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
 
   jumpToWorkflow(execution: WorkflowExecutionsEntry) {
     this.activeModal.close();
-    this.router.navigate([`/executions/${this.workflow.wid}/${execution.eId}`, execution]);
+    this.router.navigate([`/executions/${execution.eId}`], {
+      state: { execution: JSON.stringify(execution), wid: this.workflow.wid },
+    });
   }
 
   public searchInputOnChange(value: string): void {
