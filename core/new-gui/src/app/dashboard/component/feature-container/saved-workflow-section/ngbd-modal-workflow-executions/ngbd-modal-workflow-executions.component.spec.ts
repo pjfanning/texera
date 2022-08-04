@@ -14,7 +14,7 @@ import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
 import { jsonCast } from "../../../../../common/util/storage";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import { RouterTestingModule } from "@angular/router/testing";
-import { Router } from "@angular/router"
+import { Router } from "@angular/router";
 
 describe("NgbModalWorkflowExecutionsComponent", () => {
   let component: NgbdModalWorkflowExecutionsComponent;
@@ -132,10 +132,14 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     waitForAsync(() => {
       TestBed.configureTestingModule({
         declarations: [NgbdModalWorkflowExecutionsComponent],
-        providers: [NgbActiveModal, WorkflowExecutionsService,
-        {
-          provide: Router, useValue: router
-        }],
+        providers: [
+          NgbActiveModal,
+          WorkflowExecutionsService,
+          {
+            provide: Router,
+            useValue: router,
+          },
+        ],
         imports: [MatDialogModule, FormsModule, HttpClientTestingModule, RouterTestingModule],
       }).compileComponents();
     })
@@ -300,7 +304,8 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     var testExecution = component.workflowExecutionsDisplayedList[0];
     component.jumpToWorkflow(testExecution);
-    expect (router.navigate).toHaveBeenCalledWith([`/executions/${testExecution.eId}`], 
-                                                  {state:{execution:JSON.stringify(testExecution), wid:component.workflow.wid}});
+    expect(router.navigate).toHaveBeenCalledWith([`/executions/${testExecution.eId}`], {
+      state: { execution: JSON.stringify(testExecution), wid: component.workflow.wid },
+    });
   });
 });
