@@ -4,14 +4,14 @@ import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{ExecutionContent, getExecutionById, getLatestExecution}
 import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, RegisterEIdRequest, WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
-import edu.uci.ics.texera.web.storage.WorkflowStateStore
+import edu.uci.ics.texera.web.storage.{StatStorage, WorkflowStateStore}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.isVersionInRangeUnimportant
@@ -70,6 +70,7 @@ object WorkflowService {
           val retrievedWorkflowService = new WorkflowService(Some(execution.getUid), execution.getWid.intValue(), cleanUpDeadlineInSeconds)
           retrievedWorkflowService.status = maptoAggregatedState(execution.getStatus)
           retrievedWorkflowService.vId = execution.getVid.intValue()
+          retrievedWorkflowService.executionID = request.eId
           val workflowInfo = WorkflowInfo(request.operators, request.links, mutable.MutableList())
           val job = new WorkflowJobService(
             new WorkflowContext(
@@ -122,6 +123,7 @@ object WorkflowService {
             val retrievedWorkflowService = new WorkflowService(uidOpt, wId, cleanupTimeout)
             retrievedWorkflowService.status = maptoAggregatedState(latestExecution.status)
             retrievedWorkflowService.vId = latestExecution.vId.intValue()
+            retrievedWorkflowService.executionID = latestExecution.eId.longValue()
             val workflowInfo = retrievedWorkflowService.createWorkflowInfo(latestExecution.content)
             val job = new WorkflowJobService(
               new WorkflowContext(
@@ -225,6 +227,8 @@ class WorkflowService(
     new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
   var vId: Int = -1
+  var executionID: Long = -1 // for every new execution,
+  // reset it so that the value doesn't carry over across executions
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -251,6 +255,10 @@ class WorkflowService(
           )
         )
     }.toMap
+  }
+
+  def getWorkflowStatsMessage(eId: Int): Map[String, OperatorStatistics]= {
+    StatStorage.getOperatorStat(eId)
   }
 
   def createWorkflowInfo(workflowContent: String): WorkflowInfo = {
@@ -304,8 +312,6 @@ class WorkflowService(
       )
     }
 
-    var executionID: Long = -1 // for every new execution,
-    // reset it so that the value doesn't carry over across executions
     if (WorkflowService.userSystemEnabled) {
       vId = getLatestVersion(UInteger.valueOf(wId)).intValue()
       executionID = ExecutionsMetadataPersistService.insertNewExecution(wId, vId, uidOpt)

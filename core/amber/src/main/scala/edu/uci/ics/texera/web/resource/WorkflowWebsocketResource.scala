@@ -62,16 +62,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           val workflowState = WorkflowService.retrieveExecution(viewExecutionRequest)
           send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
           send(
-            session,
-            OperatorStatisticsUpdateEvent(
-              Map(
-                "CSVFileScan-operator-51b96cce-0d61-4d9d-a723-73f055f29ffa" -> new OperatorStatistics(
-                  "Completed",
-                  0,
-                  100
-                )
-              )
-            )
+            session,OperatorStatisticsUpdateEvent(workflowState.getWorkflowStatsMessage(viewExecutionRequest.eId))
           )
           send(
             session,
@@ -79,6 +70,7 @@ class WorkflowWebsocketResource extends LazyLogging {
               workflowState.getResultUpdateMessage()
             )
           )
+          sessionState.subscribe(workflowState)
         case wIdRequest: RegisterWIdRequest =>
           // hack to refresh frontend run button state
           send(session, WorkflowStateEvent("Uninitialized"))
@@ -88,16 +80,7 @@ class WorkflowWebsocketResource extends LazyLogging {
             send(session, WorkflowStateEvent(Utils.aggregatedStateToString(workflowState.status)))
 
             send(
-              session,
-              OperatorStatisticsUpdateEvent(
-                Map(
-                  "CSVFileScan-operator-51b96cce-0d61-4d9d-a723-73f055f29ffa" -> new OperatorStatistics(
-                    "Completed",
-                    0,
-                    100
-                  )
-                )
-              )
+              session,OperatorStatisticsUpdateEvent(workflowState.getWorkflowStatsMessage(workflowState.executionID.toInt))
             )
             send(
               session,
