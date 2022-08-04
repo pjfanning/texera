@@ -116,7 +116,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.resetAsNewWorkflow();
 
     if (this.userSystemEnabled) {
-      this.registerReEstablishWebsocketUponWIdChange();
+      if (!this.execution_flag) {
+        this.registerReEstablishWebsocketUponWIdChange();
+      }
     } else {
       let wid = this.route.snapshot.params.id ?? 0;
 
@@ -197,6 +199,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             this.workflowActionService.enableWorkflowModification();
             // reload the read only workflow version on the paper
             this.workflowActionService.reloadWorkflow(workflow);
+
+            if (this.execution) {
+              this.workflowWebsocketService.openExecutionWebsocket(
+                this.execution.eId,
+                this.workflowActionService.getTexeraGraph()
+              );
+            }
             // set display particular execution flag true
             this.workflowExecutionService.setDisplayParticularExecution(true);
             // disable modifications because it is read only

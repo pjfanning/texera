@@ -204,7 +204,6 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   public searchInputOnChange(value: string): void {
-    console.log("123", value)
     // enable autocomplete only when searching for workflow name
     if (!value.includes(":")) {
       const filteredDashboardWorkflowNames: string[] = [];
