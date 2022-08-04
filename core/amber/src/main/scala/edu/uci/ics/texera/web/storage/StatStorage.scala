@@ -12,6 +12,7 @@ import java.util.Date
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
+import edu.uci.ics.texera.Utils
 
 object StatStorage {
   var uncommittedStats: mutable.Map[Int, mutable.Map[String, OperatorStatistics]] = mutable.Map()
@@ -28,6 +29,7 @@ object StatStorage {
       "storage.mongodb.stat.workflow-stat-persist-update-frequency-seconds"
     )
   val collection: MongoCollection[Document] = database.getCollection(statCollectionName)
+  final val objectMapper = Utils.objectMapper
 
   // if the collection doesn't exist, then create it and add an index on the timestamp column
   if (collection.countDocuments() == 0) {
@@ -47,7 +49,7 @@ object StatStorage {
 
   def persistStats(): Unit = {
     if (AmberUtils.amberConfig.getString("storage.mode").equalsIgnoreCase("mongodb")) {
-      uncommittedStats.foreach(execution => insertOrUpdate(execution._1, execution._2))
+      uncommittedStats.foreach(execution => insertOrUpdateWorkflowOpStatsInDB(execution._1, execution._2))
     }
     uncommittedStats.clear()
   }
@@ -73,7 +75,7 @@ object StatStorage {
     doc
   }
 
-  def insertOrUpdate(eId: Int, operator_id: String, opStats: OperatorStatistics): Unit = {
+  def saveWorkflowOpStats(eId: Int, operator_id: String, opStats: OperatorStatistics): Unit = {
     val workflowStats = uncommittedStats.get(eId)
     workflowStats match {
       // execution exists
@@ -86,7 +88,7 @@ object StatStorage {
     }
   }
 
-  def insertOrUpdate(
+  def insertOrUpdateWorkflowOpStatsInDB(
       eid: Int,
       operatorStatistics: mutable.Map[String, OperatorStatistics]
   ): Unit = {
@@ -107,7 +109,7 @@ object StatStorage {
     collection.find(condition).first() != null
   }
 
-  def getOperatorStat(eId: Int): Map[String, OperatorStatistics] = {
+  def getWorkflowOpsStats(eId: Int): Map[String, OperatorStatistics] = {
     val condition: Document = new Document("execution_ID", eId)
     val opStatsDoc: Document = collection
       .find(condition)
@@ -121,11 +123,7 @@ object StatStorage {
         val opStats: Document = opStatsDocs.get(opID).asInstanceOf[Document]
         opStatsMap.put(
           opID,
-          OperatorStatistics(
-            opStats.get("operatorState").asInstanceOf[String],
-            opStats.get("aggregatedInputRowCount").asInstanceOf[String].toLong,
-            opStats.get("aggregatedOutputRowCount").asInstanceOf[String].toLong
-          )
+          objectMapper.readValue(opStats.toJson(), classOf[OperatorStatistics])
         )
       })
     opStatsMap.toMap
