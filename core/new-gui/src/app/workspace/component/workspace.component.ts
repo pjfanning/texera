@@ -1,6 +1,6 @@
 import { Location } from "@angular/common";
 import { AfterViewInit, OnInit, Component, OnDestroy } from "@angular/core";
-import { ActivatedRoute,Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { environment } from "../../../environments/environment";
 import { Version } from "../../../environments/version";
 import { UserService } from "../../common/service/user/user.service";
@@ -69,9 +69,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private workflowExecutionService: WorkflowExecutionsService,
     private router: Router
   ) {
-    if (this.router.getCurrentNavigation()?.extras.state?.execution){
+    if (this.router.getCurrentNavigation()?.extras.state?.execution) {
       this.execution_flag = true;
-      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution)
+      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
       this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
     }
   }
@@ -116,25 +116,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.resetAsNewWorkflow();
 
     if (this.userSystemEnabled) {
-      /* */
-      // if (this.execution_flag && this.execution) {
-      //   /* constructe received execution information */
-      //   // this.execution = {
-      //   //   eId: this.route.snapshot.params.eId,
-      //   //   vId: this.route.snapshot.params.vId,
-      //   //   userName: this.route.snapshot.params.userName,
-      //   //   startingTime: this.route.snapshot.params.startingTime,
-      //   //   completionTime: this.route.snapshot.params.completionTime,
-      //   //   status: this.route.snapshot.params.status,
-      //   //   result: this.route.snapshot.params.result,
-      //   //   bookmarked: this.route.snapshot.params.bookmarked,
-      //   //   name: this.route.snapshot.params.name,
-      //   // };
-      //   // this.execution_flag = true;
-      //   this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId);
-      // } else {
-      //   this.registerReEstablishWebsocketUponWIdChange();
-      // }
       this.registerReEstablishWebsocketUponWIdChange();
     } else {
       let wid = this.route.snapshot.params.id ?? 0;
@@ -272,7 +253,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         let wid = this.route.snapshot.params.id;
-        if (wid === undefined){
+        if (wid === undefined) {
           wid = this.wid;
         }
         if (environment.userSystemEnabled) {

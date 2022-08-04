@@ -121,7 +121,7 @@ export class NavigationComponent implements OnInit {
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
     // this.currentWorkflowName = this.workflowCacheService.getCachedWorkflow();
-    if (this.router.getCurrentNavigation()?.extras.state?.execution){
+    if (this.router.getCurrentNavigation()?.extras.state?.execution) {
       this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
     }
   }
@@ -145,19 +145,6 @@ export class NavigationComponent implements OnInit {
       });
 
     this.registerWorkflowMetadataDisplayRefresh();
-    // if (this.route.snapshot.params.eid) {
-    //   this.execution = {
-    //     eId: this.route.snapshot.params.eId,
-    //     vId: this.route.snapshot.params.vId,
-    //     userName: this.route.snapshot.params.userName,
-    //     startingTime: this.route.snapshot.params.startingTime,
-    //     completionTime: this.route.snapshot.params.completionTime,
-    //     status: this.route.snapshot.params.status,
-    //     result: this.route.snapshot.params.result,
-    //     bookmarked: this.route.snapshot.params.bookmarked,
-    //     name: this.route.snapshot.params.name,
-    //   };
-    // }
     this.handleWorkflowDisplay();
     this.handleDisableOperatorStatusChange();
     this.handleCacheOperatorStatusChange();

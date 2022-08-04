@@ -106,7 +106,6 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
-    console.log("123",this.router.getCurrentNavigation())
     this.registerDashboardWorkflowEntriesRefresh();
     /* if detected return from particular execution display, reopen execution table */
     if (this.returnFromExecutionDisplay) {
@@ -140,6 +139,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
    * open the workflow executions page
    */
   public onClickGetWorkflowExecutions({ workflow }: DashboardWorkflowEntry): void {
+    console.log(this.allDashboardWorkflowEntries);
     const modalRef = this.modalService.open(NgbdModalWorkflowExecutionsComponent, {
       size: "lg",
       windowClass: "modal-xl",
