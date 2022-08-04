@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.model.websocket.request.{ModifyLogicRequest, WorkflowExecuteRequest}
-import edu.uci.ics.texera.web.storage.{JobStateStore}
+import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -31,7 +31,7 @@ class WorkflowJobService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  val stateStore = new JobStateStore()
+  val stateStore = new JobStateStore(workflowContext.executionID.toInt)
   val workflowInfo: WorkflowInfo = createWorkflowInfo(workflowInfoRaw)
   var workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
