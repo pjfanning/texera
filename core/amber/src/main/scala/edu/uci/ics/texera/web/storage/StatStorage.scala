@@ -49,7 +49,9 @@ object StatStorage {
 
   def persistStats(): Unit = {
     if (AmberUtils.amberConfig.getString("storage.mode").equalsIgnoreCase("mongodb")) {
-      uncommittedStats.foreach(execution => insertOrUpdateWorkflowOpStatsInDB(execution._1, execution._2))
+      uncommittedStats.foreach(execution =>
+        insertOrUpdateWorkflowOpStatsInDB(execution._1, execution._2)
+      )
     }
     uncommittedStats.clear()
   }
