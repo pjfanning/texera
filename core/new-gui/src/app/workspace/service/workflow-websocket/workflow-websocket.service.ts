@@ -13,9 +13,9 @@ import { delayWhen, filter, map, retryWhen, tap } from "rxjs/operators";
 import { environment } from "../../../../environments/environment";
 import { AuthService } from "../../../common/service/user/auth.service";
 import { getWebsocketUrl } from "src/app/common/util/url";
-import {ExecuteWorkflowService} from "../execute-workflow/execute-workflow.service";
-import {WorkflowGraphReadonly} from "../workflow-graph/model/workflow-graph";
-import {operators} from "ajv/dist/compile/codegen";
+import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.service";
+import { WorkflowGraphReadonly } from "../workflow-graph/model/workflow-graph";
+import { operators } from "ajv/dist/compile/codegen";
 
 export const WS_HEARTBEAT_INTERVAL_MS = 10000;
 export const WS_RECONNECT_INTERVAL_MS = 3000;

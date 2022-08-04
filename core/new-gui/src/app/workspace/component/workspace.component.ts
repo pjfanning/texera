@@ -207,10 +207,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             // reload the read only workflow version on the paper
             this.workflowActionService.reloadWorkflow(workflow);
 
-            if (this.execution){
-              this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId, this.workflowActionService.getTexeraGraph())
+            if (this.execution) {
+              this.workflowWebsocketService.openExecutionWebsocket(
+                this.execution.eId,
+                this.workflowActionService.getTexeraGraph()
+              );
             }
-            
+
             // set display particular execution flag true
             this.workflowExecutionService.setDisplayParticularExecution(true);
             // disable modifications because it is read only

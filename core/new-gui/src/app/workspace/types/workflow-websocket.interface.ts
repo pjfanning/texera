@@ -5,7 +5,8 @@ import {
   LogicalPlan,
   WebOutputMode,
   WorkflowResultUpdateEvent,
-  OperatorStatsUpdate, LogicalLink,
+  OperatorStatsUpdate,
+  LogicalLink,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
 import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
