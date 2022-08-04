@@ -14,11 +14,13 @@ import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
 import { jsonCast } from "../../../../../common/util/storage";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import { RouterTestingModule } from "@angular/router/testing";
+import { Router } from "@angular/router"
 
 describe("NgbModalWorkflowExecutionsComponent", () => {
   let component: NgbdModalWorkflowExecutionsComponent;
   let fixture: ComponentFixture<NgbdModalWorkflowExecutionsComponent>;
   let modalService: NgbActiveModal;
+  let router = { navigate: jasmine.createSpy("navigate") };
 
   const workflow: Workflow = {
     wid: 1,
@@ -130,7 +132,10 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     waitForAsync(() => {
       TestBed.configureTestingModule({
         declarations: [NgbdModalWorkflowExecutionsComponent],
-        providers: [NgbActiveModal, WorkflowExecutionsService],
+        providers: [NgbActiveModal, WorkflowExecutionsService,
+        {
+          provide: Router, useValue: router
+        }],
         imports: [MatDialogModule, FormsModule, HttpClientTestingModule, RouterTestingModule],
       }).compileComponents();
     })
@@ -286,5 +291,16 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     const SortedCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
     /* Order: Exe6, Exe7, Exe2, Exe1, Exe5, Exe4, Exe3*/
     expect(SortedCase).toEqual([6, 7, 2, 1, 5, 4, 3]);
+  });
+
+  /* test redirection to workspace */
+  it("redirection to workspace Test for view", () => {
+    component.workflow = workflow;
+    component.workflowExecutionsDisplayedList = [];
+    component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
+    var testExecution = component.workflowExecutionsDisplayedList[0];
+    component.jumpToWorkflow(testExecution);
+    expect (router.navigate).toHaveBeenCalledWith([`/executions/${testExecution.eId}`], 
+                                                  {state:{execution:JSON.stringify(testExecution), wid:component.workflow.wid}});
   });
 });
