@@ -34,6 +34,8 @@ import { WorkflowVersionService } from "src/app/dashboard/service/workflow-versi
 import { WorkflowCollabService } from "../../service/workflow-collab/workflow-collab.service";
 import { expressionType } from "@angular/compiler/src/output/output_ast";
 import { of } from "rxjs";
+import { JwtHelperService, JWT_OPTIONS  } from '@auth0/angular-jwt';
+import { GoogleAuthService, GoogleApiService, NG_GAPI_CONFIG } from "ng-gapi";
 
 describe("WorkflowEditorComponent", () => {
   /**
@@ -170,6 +172,10 @@ describe("WorkflowEditorComponent", () => {
             UndoRedoService,
             WorkflowVersionService,
             WorkflowCollabService,
+            // JwtHelperService,
+            // { provide: JWT_OPTIONS, useValue: JWT_OPTIONS },
+            // GoogleAuthService,
+            // GoogleApiService,            
           ],
         }).compileComponents();
       })
