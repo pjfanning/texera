@@ -16,7 +16,6 @@ import { NotificationService } from "../../../../../common/service/notification/
 import { RouterTestingModule } from "@angular/router/testing";
 import { Router } from "@angular/router";
 
-
 describe("NgbModalWorkflowExecutionsComponent", () => {
   let component: NgbdModalWorkflowExecutionsComponent;
   let fixture: ComponentFixture<NgbdModalWorkflowExecutionsComponent>;
@@ -199,13 +198,13 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     component.paginatedExecutionEntries = component.allExecutionEntries;
     component.fuse.setCollection(component.allExecutionEntries);
     component.workflowExecutionsDisplayedList = component.allExecutionEntries;
-    component.executionSearchValue = "status:Completed";
+    component.executionSearchValue = "status:completed";
     component.searchExecution();
     const filteredCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
     expect(filteredCase).toEqual([1, 2, 3]);
   });
 
-  it("filterComboTest", () => {
+  it("filterComboTest1", () => {
     component.workflow = workflow;
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
@@ -216,6 +215,19 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     component.searchExecution();
     const filteredCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
     expect(filteredCase).toEqual([1, 7]);
+  });
+
+  it("filterComboTest2", () => {
+    component.workflow = workflow;
+    component.allExecutionEntries = [];
+    component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
+    component.paginatedExecutionEntries = component.allExecutionEntries;
+    component.fuse.setCollection(component.allExecutionEntries);
+    component.workflowExecutionsDisplayedList = component.allExecutionEntries;
+    component.executionSearchValue = "user:texera status:completed";
+    component.searchExecution();
+    const filteredCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
+    expect(filteredCase).toEqual([1]);
   });
 
   it("executionNameSortTest increasingOrder", () => {
@@ -297,10 +309,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     /* Order: Exe6, Exe7, Exe2, Exe1, Exe5, Exe4, Exe3*/
     expect(SortedCase).toEqual([6, 7, 2, 1, 5, 4, 3]);
   });
-
-  // it("check", () => {
-
-  // });
 
   /* test redirection to workspace */
   it("redirection to workspace Test for view", () => {
