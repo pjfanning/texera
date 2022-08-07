@@ -44,7 +44,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public showResultPanel: boolean = false;
   userSystemEnabled = environment.userSystemEnabled;
   public execution_flag: boolean = false;
-  public execution: WorkflowExecutionsEntry | undefined;
+  public execution = <WorkflowExecutionsEntry>{};
   public wid: number = 0;
 
   constructor(
@@ -69,6 +69,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private workflowExecutionService: WorkflowExecutionsService,
     private router: Router
   ) {
+    // if routed to this from execution table
     if (this.router.getCurrentNavigation()?.extras.state?.execution) {
       this.execution_flag = true;
       this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
@@ -183,39 +184,17 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.disableWorkflowModification();
 
     // if display particular execution is true
-    if (this.execution_flag && this.execution) {
+    if (this.execution_flag) {
       this.workflowExecutionService
-        .displayWorkflowExecution(wid, this.execution.vId)
+        .retrieveWorkflowByExecution(wid, this.execution.vId)
         .pipe(untilDestroyed(this))
         .subscribe(
           (workflow: Workflow) => {
-            // we need to display the version on the paper but keep the original workflow in the background
-            this.workflowActionService.setTempWorkflow(this.workflowActionService.getWorkflow());
-            // disable persist to DB because it is read only
-            this.workflowPersistService.setWorkflowPersistFlag(false);
-            // disable the undoredo service because reloading the workflow is considered an action
-            this.undoRedoService.disableWorkFlowModification();
-            // enable modidification to reload workflow
-            this.workflowActionService.enableWorkflowModification();
-            // reload the read only workflow version on the paper
-            this.workflowActionService.reloadWorkflow(workflow);
-
-            if (this.execution) {
-              this.workflowWebsocketService.openExecutionWebsocket(
-                this.execution.eId,
-                this.workflowActionService.getTexeraGraph()
-              );
-            }
-            // set display particular execution flag true
-            this.workflowExecutionService.setDisplayParticularExecution(true);
-            // disable modifications because it is read only
-            this.workflowActionService.disableWorkflowModification();
+            this.workflowExecutionService.displayWorkflowExecution(workflow, this.execution);
           },
           () => {
             // enable workspace for modification
             this.workflowActionService.enableWorkflowModification();
-            // clear the current workflow
-            this.workflowActionService.reloadWorkflow(undefined);
             // clear stack
             this.undoRedoService.clearUndoStack();
             this.undoRedoService.clearRedoStack();

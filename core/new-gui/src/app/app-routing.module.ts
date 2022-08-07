@@ -28,10 +28,6 @@ const routes: Routes = [
     path: "executions/:eid",
     component: WorkspaceComponent,
   },
-  {
-    path: "executions/:eid",
-    component: NavigationComponent,
-  },
 ];
 
 if (environment.userSystemEnabled) {

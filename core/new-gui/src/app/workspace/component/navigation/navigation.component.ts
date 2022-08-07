@@ -29,7 +29,7 @@ import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { WorkflowExecutionsService } from "../../../dashboard/service/workflow-executions/workflow-executions.service";
 import { WorkflowExecutionsEntry } from "../../../dashboard/type/workflow-executions-entry";
-import { Router } from "@angular/router";
+import { WorkspaceComponent } from "../workspace.component";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -110,7 +110,7 @@ export class NavigationComponent implements OnInit {
     private notificationService: NotificationService,
     public changeDetectionRef: ChangeDetectorRef,
     public workflowExecutionService: WorkflowExecutionsService,
-    private router: Router
+    private workSpaceComponent: WorkspaceComponent
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -121,9 +121,6 @@ export class NavigationComponent implements OnInit {
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
     // this.currentWorkflowName = this.workflowCacheService.getCachedWorkflow();
-    if (this.router.getCurrentNavigation()?.extras.state?.execution) {
-      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
-    }
   }
 
   public ngOnInit(): void {
@@ -586,16 +583,17 @@ export class NavigationComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(displayExecutionFlag => {
         this.particularVersionDate =
-          this.execution?.startingTime === undefined
+          this.workSpaceComponent.execution?.startingTime === undefined
             ? ""
             : "" +
               this.datePipe.transform(
-                this.execution.startingTime,
+                this.workSpaceComponent.execution.startingTime,
                 "MM/dd/yyyy HH:mm:ss zzz",
                 Intl.DateTimeFormat().resolvedOptions().timeZone,
                 "en"
               );
-        this.particularExecutionName = this.execution?.name === undefined ? "" : this.execution.name;
+        this.particularExecutionName =
+          this.workSpaceComponent.execution?.name === undefined ? "" : this.workSpaceComponent.execution.name;
         this.displayParticularWorkflowExecution = displayExecutionFlag;
       });
   }
