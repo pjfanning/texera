@@ -191,6 +191,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         .subscribe(
           (workflow: Workflow) => {
             this.workflowExecutionService.displayWorkflowExecution(workflow, this.execution);
+            // send execution request to backend through websocket
+            this.workflowWebsocketService.openExecutionWebsocket(this.execution.eId, this.workflowActionService.getTexeraGraph());
           },
           () => {
             // enable workspace for modification

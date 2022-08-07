@@ -9,7 +9,6 @@ import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/u
 import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 import { UndoRedoService } from "src/app/workspace/service/undo-redo/undo-redo.service";
 import { Router } from "@angular/router";
-import { WorkflowWebsocketService } from "src/app/workspace/service/workflow-websocket/workflow-websocket.service";
 
 export const WORKFLOW_EXECUTIONS_API_BASE_URL = `${AppSettings.getApiEndpoint()}/executions`;
 export const WORKFLOW_VERSIONS_API_BASE_URL = `${AppSettings.getApiEndpoint()}/version`;
@@ -22,7 +21,6 @@ export class WorkflowExecutionsService {
     private http: HttpClient,
     private workflowActionService: WorkflowActionService,
     private undoRedoService: UndoRedoService,
-    private workflowWebsocketService: WorkflowWebsocketService,
     private router: Router
   ) {}
 
@@ -72,8 +70,6 @@ export class WorkflowExecutionsService {
     this.workflowActionService.enableWorkflowModification();
     // reload the read only workflow version on the paper
     this.workflowActionService.reloadWorkflow(workflow);
-    // send execution request to backend through websocket
-    this.workflowWebsocketService.openExecutionWebsocket(execution.eId, this.workflowActionService.getTexeraGraph());
     // set display particular execution flag true
     this.setDisplayParticularExecution(true);
     // disable modifications because it is read only
