@@ -1,7 +1,16 @@
-import { ChangeDetectorRef, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from "@angular/core";
+import {
+  ChangeDetectorRef,
+  Component,
+  ComponentFactoryResolver,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  SimpleChanges,
+} from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
 import { Subject } from "rxjs";
-import { FormGroup } from "@angular/forms";
+import { Form, FormGroup } from "@angular/forms";
 import { FormlyFieldConfig, FormlyFormOptions } from "@ngx-formly/core";
 import Ajv from "ajv";
 import { FormlyJsonschema } from "@ngx-formly/core/json-schema";
@@ -395,9 +404,25 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         );
       }
       // if we need to reorder the array, a custom template `dragablearray` is used
-      if (mapSource?.autofill === 'attributeNameReorderList') {
+      if (mapSource?.autofill === "attributeNameReorderList") {
+        // console.log("mapSource", mapSource);
+        // console.log("mapField", mappedField);
         if (mappedField.type) {
-          mappedField.type = 'draggablearray';
+          mappedField.type = "draggablearray";
+        }
+        // sort according to the reordered list
+        // could be more efficient?
+        if (this.formData) {
+          const attributeList = mappedField.templateOptions?.options as any[]; // safe to do so?
+          for (var i = 0; i < this.formData.attributes.length; ++i) {
+            for (var j = 0; j < attributeList.length; ++j) {
+              if (attributeList[j].label === this.formData.attributes[i]) {
+                const temp = attributeList[j];
+                attributeList[j] = attributeList[i];
+                attributeList[i] = temp;
+              }
+            }
+          }
         }
       }
       return mappedField;
