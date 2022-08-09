@@ -4,7 +4,7 @@ import { ObjectTypeComponent } from "./object.type";
 import { MultiSchemaTypeComponent } from "./multischema.type";
 import { FormlyFieldConfig } from "@ngx-formly/core";
 import { CodeareaCustomTemplateComponent } from "../../workspace/component/codearea-custom-template/codearea-custom-template.component";
-import { DraggableArrayTypeComponent } from './draggable-array.type';
+import { DraggableArrayTypeComponent } from "./draggable-array.type";
 import { PresetWrapperComponent } from "./preset-wrapper/preset-wrapper.component";
 
 /**
@@ -54,7 +54,7 @@ export const TEXERA_FORMLY_CONFIG = {
     { name: "array", component: ArrayTypeComponent },
     { name: "object", component: ObjectTypeComponent },
     { name: "multischema", component: MultiSchemaTypeComponent },
-    { name: 'draggablearray', component: DraggableArrayTypeComponent },
+    { name: "draggablearray", component: DraggableArrayTypeComponent },
     { name: "codearea", component: CodeareaCustomTemplateComponent },
   ],
   wrappers: [{ name: "preset-wrapper", component: PresetWrapperComponent }],
