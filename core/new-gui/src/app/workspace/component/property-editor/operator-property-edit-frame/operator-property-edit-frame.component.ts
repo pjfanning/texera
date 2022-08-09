@@ -42,6 +42,11 @@ import { PresetWrapperComponent } from "src/app/common/formly/preset-wrapper/pre
 import { environment } from "src/environments/environment";
 import { WorkflowCollabService } from "../../../service/workflow-collab/workflow-collab.service";
 import { WorkflowVersionService } from "../../../../dashboard/service/workflow-version/workflow-version.service";
+import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
+import { JSONSchema7Type } from "json-schema";
+// @ts-ignore
+import { levenshtein } from "edit-distance";
+import { OperatorPredicate } from "src/app/workspace/types/workflow-common.interface";
 
 export type PropertyDisplayComponent = TypeCastingDisplayComponent;
 
@@ -274,6 +279,55 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       .pipe(filter(({ operatorID }) => operatorID === this.currentOperatorId))
       .pipe(untilDestroyed(this))
       .subscribe(_ => this.rerenderEditorForm());
+
+    this.dynamicSchemaService
+      .getOperatorDynamicSchemaChangedStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(vals => this.updateOperatorPropertiesOnSchemaChange(vals.operatorID, vals.oldSchema, vals.newSchema));
+  }
+
+  updateOperatorPropertiesOnSchemaChange(
+    operatorID: string,
+    oldSchema: OperatorSchema,
+    newSchema: OperatorSchema
+  ): void {
+    const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
+    // only handle projection operator now
+    if (operator.operatorType === "ProjectionV2") {
+      if (!oldSchema.jsonSchema.properties || !newSchema.jsonSchema.properties) return;
+      if (
+        !(oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items ||
+        !(newSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items
+      )
+        return;
+      if (!((oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7).enum) return;
+      const oldAttributeList = (
+        (oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7
+      ).enum as string[];
+      const newAttributeList = (
+        (newSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7
+      ).enum as string[];
+      const attributeMapping = levenshtein(
+        oldAttributeList,
+        newAttributeList,
+        (_: any) => 1,
+        (_: any) => 1,
+        (a: string, b: string) => (a !== b ? 1 : 0)
+      );
+      const attributes = operator.operatorProperties.attributes;
+      if (!attributes) return;
+      let newAttributes: string[] = [];
+      console.log(attributes, attributeMapping.pairs());
+      const pairs = attributeMapping.pairs();
+      // pair = [old attribute name, new attribute name]
+      for (var i = 0; i < pairs.length; ++i) {
+        const pair = pairs[i];
+        if (!pair[0] || (attributes.includes(pair[0]) && pair[1])) {
+          newAttributes.push(pair[1]);
+        }
+      }
+      this.workflowActionService.setOperatorProperty(operatorID, { attributes: newAttributes });
+    }
   }
 
   /**
@@ -412,7 +466,7 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         }
         // sort according to the reordered list
         // could be more efficient?
-        if (this.formData) {
+        if (this.formData && this.formData.attributes) {
           const attributeList = mappedField.templateOptions?.options as any[]; // safe to do so?
           for (var i = 0; i < this.formData.attributes.length; ++i) {
             for (var j = 0; j < attributeList.length; ++j) {

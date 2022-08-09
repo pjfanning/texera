@@ -40,6 +40,8 @@ export class DynamicSchemaService {
   // this stream is used to capture the event when the dynamic schema of an existing operator is changed
   private operatorDynamicSchemaChangedStream = new Subject<{
     operatorID: string;
+    oldSchema: OperatorSchema;
+    newSchema: OperatorSchema;
   }>();
 
   constructor(
@@ -83,6 +85,8 @@ export class DynamicSchemaService {
    */
   public getOperatorDynamicSchemaChangedStream(): Observable<{
     operatorID: string;
+    oldSchema: OperatorSchema;
+    newSchema: OperatorSchema;
   }> {
     return this.operatorDynamicSchemaChangedStream.asObservable();
   }
@@ -142,12 +146,17 @@ export class DynamicSchemaService {
     if (isEqual(currentDynamicSchema, dynamicSchema)) {
       return;
     }
-
+    // console.log(dynamicSchema)
     // set the new dynamic schema
     this.dynamicSchemaMap.set(operatorID, dynamicSchema);
     // only emit event if the old dynamic schema is not present
     if (currentDynamicSchema) {
-      this.operatorDynamicSchemaChangedStream.next({ operatorID });
+      console.log("next!");
+      this.operatorDynamicSchemaChangedStream.next({
+        operatorID: operatorID,
+        oldSchema: currentDynamicSchema,
+        newSchema: dynamicSchema,
+      });
     }
   }
 
