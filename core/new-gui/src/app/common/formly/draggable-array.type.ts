@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { moveItemInArray } from '@angular/cdk/drag-drop';
-import { FormlyFieldSelect } from '@ngx-formly/material/select';
-import { util } from 'jointjs';
+import { ChangeDetectionStrategy, Component } from "@angular/core";
+import { moveItemInArray } from "@angular/cdk/drag-drop";
+import { FormlyFieldSelect } from "@ngx-formly/material/select";
+import { util } from "jointjs";
 import cloneDeep = util.cloneDeep;
-import { MatPseudoCheckboxState } from '@angular/material/core';
-import { FormControl } from '@angular/forms';
+import { MatPseudoCheckboxState } from "@angular/material/core";
+import { FormControl } from "@angular/forms";
 
 @Component({
   template: `
@@ -36,19 +36,24 @@ import { FormControl } from '@angular/forms';
           [ngTemplateOutletContext]="{ selectOptions: selectOptions }"
         >
         </ng-container>
-        <div class="formly-drag-drop" cdkDropList
-             (cdkDropListDropped)="selectionOptions=selectOptions; drop($event); ">
+        <div class="formly-drag-drop" cdkDropList (cdkDropListDropped)="selectionOptions = selectOptions; drop($event)">
           <span *ngFor="let item of selectOptions" cdkDrag>
-            <mat-option style="position: relative;" *ngIf="!item.group" [value]="item.value" [disabled]="item.disabled">{{ item.label }}
-              <i nz-icon nzType="menu" nzTheme="outline" cdkDragHandle
-                 style="right: 10px;position: absolute;top: 50%;transform: translateY(-50%);"></i>
+            <mat-option style="position: relative;" *ngIf="!item.group" [value]="item.value" [disabled]="item.disabled"
+              >{{ item.label }}
+              <i
+                nz-icon
+                nzType="menu"
+                nzTheme="outline"
+                cdkDragHandle
+                style="right: 10px;position: absolute;top: 50%;transform: translateY(-50%);"
+              ></i>
             </mat-option>
           </span>
         </div>
       </ng-container>
     </mat-select>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.Default,
 })
 export class DraggableArrayTypeComponent extends FormlyFieldSelect {
   selectionOptions: any[] = [];
@@ -62,21 +67,27 @@ export class DraggableArrayTypeComponent extends FormlyFieldSelect {
     return state === "" ? "unchecked" : state;
   }
 
-  public drop($event: { previousIndex: number; currentIndex: number; }) {
-
+  public drop($event: { previousIndex: number; currentIndex: number }) {
     const attributes: string[] = cloneDeep(this.model.attributes);
-    console.log('old attributes', attributes);
-    // const selectedIndexes = attributes.map((attribute: string) => this.selectionOptions.indexOf(attribute));
-    console.log('old options', this.selectionOptions);
+    // console.log('old attributes', attributes);
+    // // const selectedIndexes = attributes.map((attribute: string) => this.selectionOptions.indexOf(attribute));
+    // console.log('old options', this.selectionOptions);
+    // console.log('old formControl', this.formControl);
+
     moveItemInArray(this.selectionOptions, $event.previousIndex, $event.currentIndex);
 
-    console.log('new options', this.selectionOptions);
-    this.model.attributes = this.selectionOptions.map(entry => entry.label).filter(attribute => attributes.includes(attribute));
-    console.log('new attributes', this.model.attributes);
-    console.log('model', this.model);
+    console.log("new options", this.selectionOptions);
+    this.model.attributes = this.selectionOptions
+      .map(entry => entry.label)
+      .filter(attribute => attributes.includes(attribute));
+    // console.log('new attributes', this.model.attributes);
+    // console.log('model', this.model);
+    // console.log('formControl', this.formControl);
 
     // TODO: trigger model change event
-    this.model = {...this.model};
-  }
 
+    this.formControl.setValue(this.model.attributes);
+
+    this.model = { ...this.model };
+  }
 }
