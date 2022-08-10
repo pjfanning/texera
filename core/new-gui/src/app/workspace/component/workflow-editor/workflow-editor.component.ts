@@ -72,6 +72,10 @@ export const WORKFLOW_EDITOR_JOINTJS_ID = "texera-workflow-editor-jointjs-body-i
  * @author Henry Chen
  *
  */
+
+// this code is causing the unit test to fail
+declare var $: any;
+
 @UntilDestroy()
 @Component({
   selector: "texera-workflow-editor",
@@ -146,6 +150,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
     this.handlePaperMouseZoom();
     this.handleOperatorSuggestionHighlightEvent();
     this.dragDropService.registerWorkflowEditorDrop(this.WORKFLOW_EDITOR_JOINTJS_ID);
+
+    this.rightClickContextMenu();
 
     this.handleElementDelete();
     this.handleElementSelectAll();
@@ -553,6 +559,104 @@ export class WorkflowEditorComponent implements AfterViewInit {
       });
   }
 
+  private rightClickContextMenu(): void {
+    const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+
+    const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+
+    var isVisible = function (key: any, opt: { $trigger: { nodeName: string } }) {
+      if (highlightedOperatorIDs.length > 0 || highlightedGroupIDs.length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    jQuery(() => {
+      $.contextMenu({
+        selector: ".texera-workspace-workflow-editor-body",
+
+        callback: (key: any, options: any) => {
+          if (key == "copy") {
+            this.clearCopiedElements();
+            this.saveHighlighedElements();
+          } else if (key == "paste") {
+            if (this.copiedOperators.size > 0 || this.copiedGroups.size > 0) {
+              const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
+              const links: OperatorLink[] = [];
+              const groups: Group[] = [];
+              const positions: Point[] = [];
+
+              this.copiedOperators = new Map<string, CopiedOperator>(
+                Array.from<any>(this.copiedOperators).sort((first, second) => first[1].layer - second[1].layer)
+              );
+
+              this.copiedOperators.forEach((copiedOperator: { operator: any }, operatorID: any) => {
+                const newOperator = this.copyOperator(copiedOperator.operator);
+                const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
+                operatorsAndPositions.push({
+                  op: newOperator,
+                  pos: newOperatorPosition,
+                });
+                positions.push(newOperatorPosition);
+              });
+
+              this.copiedGroups.forEach((copiedGroup: { group: any; position: any }, groupID: any) => {
+                const newGroup = this.copyGroup(copiedGroup.group);
+
+                const oldPosition = copiedGroup.position;
+                const newPosition = this.calcGroupPosition(newGroup.groupID, groupID, positions);
+                positions.push(newPosition);
+
+                const delta = {
+                  x: newPosition.x - oldPosition.x,
+                  y: newPosition.y - oldPosition.y,
+                };
+
+                newGroup.operators.forEach(
+                  (operatorInfo: { position: { x: number; y: number }; operator: any }, operatorID: any) => {
+                    operatorInfo.position.x += delta.x;
+                    operatorInfo.position.y += delta.x;
+
+                    operatorsAndPositions.push({
+                      op: operatorInfo.operator,
+                      pos: operatorInfo.position,
+                    });
+                  }
+                );
+
+                newGroup.links.forEach((linkInfo: { link: OperatorLink }, operatorID: any) => {
+                  links.push(linkInfo.link);
+                });
+
+                groups.push(newGroup);
+              });
+
+              this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, new Map());
+            }
+          } else if (key == "cut") {
+            this.clearCopiedElements();
+            this.saveHighlighedElements();
+            this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, [], highlightedGroupIDs);
+          } else if (key == "delete") {
+            this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, [], highlightedGroupIDs);
+          }
+          if (highlightedOperatorIDs.length == 0 || highlightedGroupIDs.length == 0) {
+          }
+          //var m = "clicked: " + key;
+          //alert(m); '
+          return true;
+        },
+        items: {
+          copy: { name: "Copy", icon: "copy", visible: isVisible },
+          paste: { name: "Paste", icon: "paste" },
+          cut: { name: "Cut", icon: "cut", visible: isVisible },
+          delete: { name: "Delete", icon: "delete", visible: isVisible },
+        },
+      });
+    });
+  }
+
   private handleHighlightMouseDBClickInput(): void {
     fromJointPaperEvent(this.getJointPaper(), "cell:pointerdblclick")
       .pipe(untilDestroyed(this))
@@ -805,6 +909,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   /**
+   *
    * Handles the event where the Delete button is clicked for a Link,
    *  and call workflowAction to delete the corresponding link.
    *

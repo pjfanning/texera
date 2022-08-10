@@ -29,6 +29,7 @@
               }
             ],
             "styles": [
+              "node_modules/jquery-contextmenu/dist/jquery.contextMenu.min.css",
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "node_modules/jointjs/css/layout.css",
               "node_modules/jointjs/css/themes/material.css",
@@ -37,6 +38,9 @@
               "src/styles.scss"
             ],
             "scripts": [
+              "node_modules/jquery/dist/jquery.min.js",
+              "node_modules/jquery-contextmenu/dist/jquery.contextMenu.min.js",
+              "node_modules/jquery-contextmenu/dist/jquery.ui.position.min.js",
               "./node_modules/ngx-monaco-editor/assets/monaco/vs/loader.js"
             ],
             "allowedCommonJsDependencies": [
