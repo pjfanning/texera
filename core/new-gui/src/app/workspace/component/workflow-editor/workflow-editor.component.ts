@@ -76,7 +76,6 @@ export const WORKFLOW_EDITOR_JOINTJS_ID = "texera-workflow-editor-jointjs-body-i
  *
  */
 
-// this code is causing the unit test to fail
 declare var $: any;
 
 @UntilDestroy()
