@@ -63,7 +63,7 @@ export class WorkflowExecutionsService {
     );
   }
 
-  public displayWorkflowExecution(workflow: Workflow, execution: WorkflowExecutionsEntry) {
+  public displayWorkflowExecution(workflow: Workflow) {
     // disable the undoredo service because reloading the workflow is considered an action
     this.undoRedoService.disableWorkFlowModification();
     // enable modidification to reload workflow

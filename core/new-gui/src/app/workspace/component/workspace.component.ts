@@ -190,7 +190,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         .pipe(untilDestroyed(this))
         .subscribe(
           (workflow: Workflow) => {
-            this.workflowExecutionService.displayWorkflowExecution(workflow, this.execution);
+            this.workflowExecutionService.displayWorkflowExecution(workflow);
             // send execution request to backend through websocket
             this.workflowWebsocketService.openExecutionWebsocket(
               this.execution.eId,
