@@ -220,19 +220,28 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           }
         );
     } else if (this.comparison_flag) {
-      console.log("vids", this.execution.vId," ", this.execution_to_compare.vId);
       let workflowsToCombine: Workflow[] = [];
       this.workflowExecutionService
         .retrieveWorkflowByExecutions(wid, this.execution.vId, this.execution_to_compare.vId)
         .pipe(untilDestroyed(this))
         .subscribe((workflow:Workflow)=> {
-          // this.workflowExecutionService.displayWorkflowExecution(workflow);
           console.log(workflow);
           workflowsToCombine.push(workflow);
           if (workflowsToCombine.length == 2) {
             this.combineAndDisplayWorkflows(workflowsToCombine);
           }
-        });
+        },
+          () => {
+            // enable workspace for modification
+            this.workflowActionService.enableWorkflowModification();
+            // clear the current workflow
+            this.workflowActionService.reloadWorkflow(undefined);
+            // clear stack
+            this.undoRedoService.clearUndoStack();
+            this.undoRedoService.clearRedoStack();
+
+            this.message.error("You don't have access to this workflow, please log in with an appropriate account");
+          });
 
     } else {
       this.workflowPersistService
@@ -345,14 +354,18 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     console.log(newOperators);
 
     let newOperatorPositions: { [key: string]: Point } = {};
+    let lowestY = 0;
     for (const [operatorID, point] of Object.entries(workflowsToCombine[0].content.operatorPositions)){
       newOperatorPositions[this.execution.vId + "-" + operatorID] = point;
+      if (point.y > lowestY) {
+        lowestY = point.y;
+      }
     }
 
     for (const [operatorID, point] of Object.entries(workflowsToCombine[1].content.operatorPositions)){
       let newPoint: Point = {
         x: point.x,
-        y: point.y + 450, //get the dimension of the paper and add half of that to this
+        y: point.y + lowestY + 40, //get the dimension of the paper and add half of that to this
       };
       newOperatorPositions[this.execution_to_compare.vId + "-" + operatorID] = newPoint;
     }
@@ -388,6 +401,17 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       newLinks.push(newLink);
     });
 
+    let newComments: CommentBox[] = [...workflowsToCombine[0].content.commentBoxes];
+
+    workflowsToCombine[1].content.commentBoxes.forEach(comment => {
+      return {
+        ...comment,
+        commentBoxPosition: {
+          ...comment.commentBoxPosition,
+          y: comment.commentBoxPosition.y + lowestY + 40,
+        }
+      };
+    });
 
     let workflowcontent: WorkflowContent = {
       operators: newOperators,
@@ -395,7 +419,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       links: newLinks,
       groups:   workflowsToCombine[0].content.groups, //fix this
       breakpoints: workflowsToCombine[0].content.breakpoints, //fix this
-      commentBoxes: new Array<CommentBox>()
+      commentBoxes: newComments
     };
 
     let workflowmetadata: WorkflowMetadata = {
