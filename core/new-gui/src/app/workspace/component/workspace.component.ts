@@ -5,7 +5,7 @@ import { environment } from "../../../environments/environment";
 import { Version } from "../../../environments/version";
 import { UserService } from "../../common/service/user/user.service";
 import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
-import { Workflow } from "../../common/type/workflow";
+import {Workflow, WorkflowContent} from "../../common/type/workflow";
 import { SchemaPropagationService } from "../service/dynamic-schema/schema-propagation/schema-propagation.service";
 import { SourceTablesService } from "../service/dynamic-schema/source-tables/source-tables.service";
 import { OperatorMetadataService } from "../service/operator-metadata/operator-metadata.service";
@@ -25,6 +25,9 @@ import { WorkflowCollabService } from "../service/workflow-collab/workflow-colla
 import { UserProjectService } from "src/app/dashboard/service/user-project/user-project.service";
 import { WorkflowExecutionsService } from "../../dashboard/service/workflow-executions/workflow-executions.service";
 import { WorkflowExecutionsEntry } from "../../dashboard/type/workflow-executions-entry";
+import {Breakpoint, CommentBox, OperatorLink, OperatorPredicate, Point} from "../types/workflow-common.interface";
+import {PlainGroup} from "../service/workflow-graph/model/operator-group";
+import {WorkflowMetadata} from "../../dashboard/type/workflow-metadata.interface";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
@@ -46,6 +49,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public execution_flag: boolean = false;
   public execution = <WorkflowExecutionsEntry>{};
   public wid: number = 0;
+  public comparison_flag: boolean = false;
+  public execution_to_compare: WorkflowExecutionsEntry = <WorkflowExecutionsEntry>{};
 
   constructor(
     private userService: UserService,
@@ -73,6 +78,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     if (this.router.getCurrentNavigation()?.extras.state?.execution) {
       this.execution_flag = true;
       this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
+      this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+    }else if(this.router.getCurrentNavigation()?.extras.state?.executions){
+      this.comparison_flag = true;
+      // console.log(this.router.getCurrentNavigation()?.extras.state?.executions);
+      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[0]);
+      this.execution_to_compare = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[1]);
       this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
     }
   }
@@ -117,7 +128,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.resetAsNewWorkflow();
 
     if (this.userSystemEnabled) {
-      if (!this.execution_flag) {
+      if (!this.comparison_flag && !this.execution_flag) {
         this.registerReEstablishWebsocketUponWIdChange();
       }
     } else {
@@ -185,12 +196,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
     // if display particular execution is true
     if (this.execution_flag) {
+      console.log("execution vid",this.execution.vId);
       this.workflowExecutionService
         .retrieveWorkflowByExecution(wid, this.execution.vId)
         .pipe(untilDestroyed(this))
         .subscribe(
           (workflow: Workflow) => {
-            this.workflowExecutionService.displayWorkflowExecution(workflow, this.execution);
+            this.workflowExecutionService.displayWorkflowExecution(workflow);
             // send execution request to backend through websocket
             this.workflowWebsocketService.openExecutionWebsocket(
               this.execution.eId,
@@ -207,6 +219,21 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             this.message.error("You don't have access to this workflow, please log in with an appropriate account");
           }
         );
+    } else if (this.comparison_flag) {
+      console.log("vids", this.execution.vId," ", this.execution_to_compare.vId);
+      let workflowsToCombine: Workflow[] = [];
+      this.workflowExecutionService
+        .retrieveWorkflowByExecutions(wid, this.execution.vId, this.execution_to_compare.vId)
+        .pipe(untilDestroyed(this))
+        .subscribe((workflow:Workflow)=> {
+          // this.workflowExecutionService.displayWorkflowExecution(workflow);
+          console.log(workflow);
+          workflowsToCombine.push(workflow);
+          if (workflowsToCombine.length == 2) {
+            this.combineAndDisplayWorkflows(workflowsToCombine);
+          }
+        });
+
     } else {
       this.workflowPersistService
         .retrieveWorkflow(wid)
@@ -294,5 +321,95 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         this.workflowWebsocketService.reopenWebsocket(wid);
         this.workflowCollabService.reopenWebsocket(wid);
       });
+  }
+
+  private combineAndDisplayWorkflows(workflowsToCombine: Workflow[]) {
+    let newOperators: OperatorPredicate[] = [];
+
+
+    workflowsToCombine[0].content.operators.forEach(operator => {
+      let newOperator = {
+        ...operator,
+        operatorID: this.execution.vId + "-" + operator.operatorID,
+      };
+      newOperators.push(newOperator);
+    });
+
+    workflowsToCombine[1].content.operators.forEach(operator => {
+      let newOperator = {
+        ...operator,
+        operatorID: this.execution_to_compare.vId + "-" + operator.operatorID,
+      };
+      newOperators.push(newOperator);
+    });
+    console.log(newOperators);
+
+    let newOperatorPositions: { [key: string]: Point } = {};
+    for (const [operatorID, point] of Object.entries(workflowsToCombine[0].content.operatorPositions)){
+      newOperatorPositions[this.execution.vId + "-" + operatorID] = point;
+    }
+
+    for (const [operatorID, point] of Object.entries(workflowsToCombine[1].content.operatorPositions)){
+      let newPoint: Point = {
+        x: point.x,
+        y: point.y + 450, //get the dimension of the paper and add half of that to this
+      };
+      newOperatorPositions[this.execution_to_compare.vId + "-" + operatorID] = newPoint;
+    }
+
+    let newLinks: OperatorLink[] = [];
+    workflowsToCombine[0].content.links.forEach(link => {
+        let newLink = {
+        ...link,
+        source: {
+          ...link.source,
+          operatorID: this.execution.vId + "-" + link.source.operatorID,
+        },
+        target: {
+          ...link.target,
+          operatorID: this.execution.vId + "-" + link.target.operatorID,
+        }
+      };
+      newLinks.push(newLink);
+    });
+
+    workflowsToCombine[1].content.links.forEach(link => {
+      let newLink = {
+        ...link,
+        source: {
+          ...link.source,
+          operatorID: this.execution_to_compare.vId + "-" + link.source.operatorID,
+        },
+        target: {
+          ...link.target,
+          operatorID: this.execution_to_compare.vId + "-" + link.target.operatorID,
+        }
+      };
+      newLinks.push(newLink);
+    });
+
+
+    let workflowcontent: WorkflowContent = {
+      operators: newOperators,
+      operatorPositions: newOperatorPositions,
+      links: newLinks,
+      groups:   workflowsToCombine[0].content.groups, //fix this
+      breakpoints: workflowsToCombine[0].content.breakpoints, //fix this
+      commentBoxes: new Array<CommentBox>()
+    };
+
+    let workflowmetadata: WorkflowMetadata = {
+      name: workflowsToCombine[0].name,
+      wid: workflowsToCombine[0].wid,
+      creationTime: Math.max(...workflowsToCombine.map(workflow => <number>workflow.creationTime)),
+      lastModifiedTime: Math.max(...workflowsToCombine.map(workflow => <number>workflow.lastModifiedTime)),
+    };
+
+    let newWorkflow: Workflow = {
+      content: workflowcontent,
+      ...workflowmetadata,
+    };
+    console.log(newWorkflow);
+    this.workflowExecutionService.displayWorkflowExecution(newWorkflow);
   }
 }
