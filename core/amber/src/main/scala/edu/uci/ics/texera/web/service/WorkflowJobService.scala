@@ -30,7 +30,7 @@ class WorkflowJobService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  val stateStore = new JobStateStore()
+  val stateStore = new JobStateStore(workflowContext.executionID.toInt)
   val workflowInfo: WorkflowInfo = createWorkflowInfo()
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
   val workflow: Workflow = workflowCompiler.amberWorkflow(

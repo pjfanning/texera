@@ -10,10 +10,9 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{
   OperatorStatistics,
-  OperatorStatisticsUpdateEvent,
-  TexeraWebSocketEvent
+  OperatorStatisticsUpdateEvent
 }
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.{JobStateStore, StatStorage}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
 
 class JobStatsService(
@@ -36,6 +35,8 @@ class JobStatsService(
                 stats.inputCount,
                 stats.outputCount
               )
+              StatStorage.saveWorkflowOpStats(stateStore.eId, x._1, res)
+
               (x._1, res)
           })
         )
