@@ -35,7 +35,7 @@ class JobStatsService(
                 stats.inputCount,
                 stats.outputCount
               )
-              StatStorage.insertOrUpdate(stateStore.eId, x._1, res)
+              StatStorage.saveWorkflowOpStats(stateStore.eId, x._1, res)
 
               (x._1, res)
           })

@@ -9,7 +9,6 @@ import { UserProjectSectionComponent } from "./dashboard/component/feature-conta
 import { UserProjectListComponent } from "./dashboard/component/feature-container/user-project-list/user-project-list.component";
 
 import { WorkspaceComponent } from "./workspace/component/workspace.component";
-import { NavigationComponent } from "./workspace/component/navigation/navigation.component";
 
 /*
  *  This file defines the url path
@@ -27,10 +26,6 @@ const routes: Routes = [
   {
     path: "executions/:eid",
     component: WorkspaceComponent,
-  },
-  {
-    path: "executions/:eid",
-    component: NavigationComponent,
   },
 ];
 

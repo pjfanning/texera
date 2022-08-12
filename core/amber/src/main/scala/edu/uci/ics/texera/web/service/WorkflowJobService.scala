@@ -33,7 +33,7 @@ class WorkflowJobService(
 
   val stateStore = new JobStateStore(workflowContext.executionID.toInt)
   val workflowInfo: WorkflowInfo = createWorkflowInfo(workflowInfoRaw)
-  var workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
+  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(workflowInfo)
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
     resultService.opResultStorage,
