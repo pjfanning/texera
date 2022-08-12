@@ -6,6 +6,7 @@ import {
   WebOutputMode,
   WorkflowResultUpdateEvent,
   OperatorStatsUpdate,
+  LogicalLink,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
 import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
@@ -26,6 +27,13 @@ import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo }
 export interface RegisterWIdRequest
   extends Readonly<{
     wId: number;
+  }> {}
+
+export interface RegisterEIdRequest
+  extends Readonly<{
+    eId: number;
+    operators: LogicalOperator[];
+    links: LogicalLink[];
   }> {}
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
@@ -139,6 +147,7 @@ export type WorkflowStateInfo = Readonly<{
 
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
+  RegisterEIdRequest: RegisterEIdRequest;
   AddBreakpointRequest: BreakpointInfo;
   CacheStatusUpdateRequest: CacheStatusUpdateRequest;
   HeartBeatRequest: {};

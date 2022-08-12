@@ -93,7 +93,6 @@
           </th>
         </tr>
       </thead>
-
       <tbody>
         <tr *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
           <td nzEllipsis>
@@ -107,6 +106,9 @@
               [nzTheme]="(row.bookmarked || currentlyHoveredExecution === row) ? 'fill' : 'outline'"
               (click)="onBookmarkToggle(row)"
             ></i>
+          </td>
+          <td nzEllipsis>
+            <i nz-icon nzType="eye" class="view-icon" (click)="jumpToWorkflow(row)" nzTheme="outline"></i>
           </td>
           <td nzEllipsis>
             <nz-avatar

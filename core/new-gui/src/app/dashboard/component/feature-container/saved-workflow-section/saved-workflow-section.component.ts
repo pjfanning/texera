@@ -131,6 +131,12 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public userProjectsList: ReadonlyArray<UserProject> = []; // list of projects accessible by user
   public userProjectsDropdown: { pid: number; name: string; checked: boolean }[] = [];
   public projectFilterList: number[] = []; // for filter by project mode, track which projects are selected
+  public isSearchByProject: boolean = false; // track searching mode user currently selects
+  public returnFromExecutionDisplay: boolean = false;
+
+  /* empty template workflow/dashboardWorkflowEntry for reopen execution table*/
+  public wid: number = 0;
+  public name: string = "";
 
   constructor(
     private http: HttpClient,
@@ -141,10 +147,20 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
     private operatorMetadataService: OperatorMetadataService,
     private modalService: NgbModal,
     private router: Router
-  ) {}
+  ) {
+    if (this.router.getCurrentNavigation()?.extras.state?.wid) {
+      this.returnFromExecutionDisplay = true;
+      this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+      this.name = this.router.getCurrentNavigation()?.extras.state?.name;
+    }
+  }
 
   ngOnInit() {
     this.registerDashboardWorkflowEntriesRefresh();
+    /* if detected return from particular execution display, reopen execution table */
+    if (this.returnFromExecutionDisplay) {
+      this.onClickGetWorkflowExecutions(this.wid, this.name);
+    }
     this.searchParameterBackendSetup();
   }
 
@@ -173,13 +189,13 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   /**
    * open the workflow executions page
    */
-  public onClickGetWorkflowExecutions({ workflow }: DashboardWorkflowEntry): void {
+  public onClickGetWorkflowExecutions(wid: number, name: string): void {
     const modalRef = this.modalService.open(NgbdModalWorkflowExecutionsComponent, {
       size: "lg",
       windowClass: "modal-xl",
     });
-    modalRef.componentInstance.workflow = workflow;
-    modalRef.componentInstance.workflowName = workflow.name;
+    modalRef.componentInstance.wid = wid;
+    modalRef.componentInstance.workflowName = name;
   }
 
   /**
