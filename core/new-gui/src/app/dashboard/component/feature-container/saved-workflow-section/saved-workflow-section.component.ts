@@ -24,7 +24,6 @@ import { OperatorMetadataService } from "src/app/workspace/service/operator-meta
 import { DeletePromptComponent } from "../../delete-prompt/delete-prompt.component";
 import { HttpClient } from "@angular/common/http";
 import { AppSettings } from "src/app/common/app-setting";
-import { jsonCast } from "src/app/common/util/storage";
 import { Workflow, WorkflowContent } from "../../../../common/type/workflow";
 import { NzUploadFile } from "ng-zorro-antd/upload";
 import { saveAs } from "file-saver";
