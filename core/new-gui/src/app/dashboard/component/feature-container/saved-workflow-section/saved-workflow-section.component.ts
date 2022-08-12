@@ -136,22 +136,8 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public returnFromExecutionDisplay: boolean = false;
 
   /* empty template workflow/dashboardWorkflowEntry for reopen execution table*/
-  public emptyWorkflow: Workflow = {
-    name: "",
-    wid: 0,
-    creationTime: 0,
-    lastModifiedTime: 0,
-    content: jsonCast<WorkflowContent>(
-      " {\"operators\":[],\"operatorPositions\":{},\"links\":[],\"groups\":[],\"breakpoints\":{}}"
-    ),
-  };
-  public emptyDashboardEntry: DashboardWorkflowEntry = {
-    isOwner: true,
-    accessLevel: "",
-    workflow: this.emptyWorkflow,
-    projectIDs: [],
-    ownerName: "",
-  };
+  public wid: number = 0;
+  public name: string = "";
 
   constructor(
     private http: HttpClient,
@@ -165,7 +151,8 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   ) {
     if (this.router.getCurrentNavigation()?.extras.state?.wid) {
       this.returnFromExecutionDisplay = true;
-      this.emptyDashboardEntry.workflow.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+      this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
+      this.name = this.router.getCurrentNavigation()?.extras.state?.name;
     }
   }
 
@@ -173,7 +160,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
     this.registerDashboardWorkflowEntriesRefresh();
     /* if detected return from particular execution display, reopen execution table */
     if (this.returnFromExecutionDisplay) {
-      this.onClickGetWorkflowExecutions(this.emptyDashboardEntry);
+      this.onClickGetWorkflowExecutions(this.wid, this.name);
     }
     this.searchParameterBackendSetup();
   }
@@ -203,13 +190,13 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   /**
    * open the workflow executions page
    */
-  public onClickGetWorkflowExecutions({ workflow }: DashboardWorkflowEntry): void {
+  public onClickGetWorkflowExecutions(wid: number, name: string): void {
     const modalRef = this.modalService.open(NgbdModalWorkflowExecutionsComponent, {
       size: "lg",
       windowClass: "modal-xl",
     });
-    modalRef.componentInstance.workflow = workflow;
-    modalRef.componentInstance.workflowName = workflow.name;
+    modalRef.componentInstance.wid = wid;
+    modalRef.componentInstance.workflowName = name;
   }
 
   /**

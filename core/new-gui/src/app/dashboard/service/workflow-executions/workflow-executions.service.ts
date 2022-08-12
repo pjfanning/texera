@@ -64,9 +64,9 @@ export class WorkflowExecutionsService {
   }
 
   public displayWorkflowExecution(workflow: Workflow) {
-    // disable the undoredo service because reloading the workflow is considered an action
+    // disable the undo/redo service because reloading the workflow is considered an action
     this.undoRedoService.disableWorkFlowModification();
-    // enable modidification to reload workflow
+    // enable modification to reload workflow
     this.workflowActionService.enableWorkflowModification();
     // reload the read only workflow version on the paper
     this.workflowActionService.reloadWorkflow(workflow);
@@ -85,8 +85,9 @@ export class WorkflowExecutionsService {
   }
 
   public closeParticularExecutionDisplay(): void {
-    var wid = this.workflowActionService.getWorkflow().wid;
     this.setDisplayParticularExecution(false);
-    this.router.navigate(["/dashboard/workflow"], { state: { wid: wid } });
+    this.router.navigate(["/dashboard/workflow"], {
+      state: { name: this.workflowActionService.getWorkflow().name, wid: this.workflowActionService.getWorkflow().wid },
+    });
   }
 }

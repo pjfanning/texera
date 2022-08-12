@@ -2,7 +2,6 @@ import { Component, Input, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NgbModal, NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { from } from "rxjs";
-import { Workflow } from "../../../../../common/type/workflow";
 import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-entry";
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
 import { ExecutionState } from "../../../../../workspace/types/execute-workflow.interface";
@@ -22,7 +21,7 @@ const MAX_USERNAME_SIZE = 5;
   styleUrls: ["./ngbd-modal-workflow-executions.component.scss"],
 })
 export class NgbdModalWorkflowExecutionsComponent implements OnInit {
-  @Input() workflow!: Workflow;
+  @Input() wid!: number;
   @Input() workflowName!: string;
 
   public workflowExecutionsDisplayedList: WorkflowExecutionsEntry[] | undefined;
@@ -113,11 +112,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
    * calls the service to display the workflow executions on the table
    */
   displayWorkflowExecutions(): void {
-    if (this.workflow === undefined || this.workflow.wid === undefined) {
+    if (this.wid === undefined) {
       return;
     }
     this.workflowExecutionsService
-      .retrieveWorkflowExecutions(this.workflow.wid)
+      .retrieveWorkflowExecutions(this.wid)
       .pipe(untilDestroyed(this))
       .subscribe(workflowExecutions => {
         this.allExecutionEntries = workflowExecutions;
@@ -151,7 +150,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   }
 
   onBookmarkToggle(row: WorkflowExecutionsEntry) {
-    if (this.workflow.wid === undefined) return;
+    if (this.wid === undefined) return;
     const wasPreviouslyBookmarked = row.bookmarked;
 
     // Update bookmark state locally.
@@ -159,7 +158,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
 
     // Update on the server.
     this.workflowExecutionsService
-      .setIsBookmarked(this.workflow.wid, row.eId, !wasPreviouslyBookmarked)
+      .setIsBookmarked(this.wid, row.eId, !wasPreviouslyBookmarked)
       .pipe(untilDestroyed(this))
       .subscribe({
         error: (_: unknown) => (row.bookmarked = wasPreviouslyBookmarked),
@@ -176,9 +175,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     from(modalRef.result)
       .pipe(untilDestroyed(this))
       .subscribe((confirmToDelete: boolean) => {
-        if (confirmToDelete && this.workflow.wid !== undefined) {
+        if (confirmToDelete && this.wid !== undefined) {
           this.workflowExecutionsService
-            .deleteWorkflowExecutions(this.workflow.wid, row.eId)
+            .deleteWorkflowExecutions(this.wid, row.eId)
             .pipe(untilDestroyed(this))
             .subscribe({
               complete: () => {
@@ -195,7 +194,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   /* rename a single execution */
 
   confirmUpdateWorkflowExecutionsCustomName(row: WorkflowExecutionsEntry, name: string, index: number): void {
-    if (this.workflow.wid === undefined) {
+    if (this.wid === undefined) {
       return;
     }
     // if name doesn't change, no need to call API
@@ -207,7 +206,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
 
     this.workflowExecutionsService
-      .updateWorkflowExecutionsName(this.workflow.wid, row.eId, name)
+      .updateWorkflowExecutionsName(this.wid, row.eId, name)
       .pipe(untilDestroyed(this))
       .subscribe(() => {
         if (this.workflowExecutionsDisplayedList === undefined) {
@@ -286,7 +285,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   jumpToWorkflow(execution: WorkflowExecutionsEntry) {
     this.activeModal.close();
     this.router.navigate([`/executions/${execution.eId}`], {
-      state: { execution: JSON.stringify(execution), wid: this.workflow.wid },
+      state: { execution: JSON.stringify(execution), wid: this.wid },
     });
   }
 
