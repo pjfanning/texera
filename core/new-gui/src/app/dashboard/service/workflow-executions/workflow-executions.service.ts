@@ -8,7 +8,6 @@ import { filter, map } from "rxjs/operators";
 import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/util/workflow-util.service";
 import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 import { UndoRedoService } from "src/app/workspace/service/undo-redo/undo-redo.service";
-import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 import { Router } from "@angular/router";
 
 export const WORKFLOW_EXECUTIONS_API_BASE_URL = `${AppSettings.getApiEndpoint()}/executions`;
@@ -22,7 +21,6 @@ export class WorkflowExecutionsService {
     private http: HttpClient,
     private workflowActionService: WorkflowActionService,
     private undoRedoService: UndoRedoService,
-    private workflowPersistService: WorkflowPersistService,
     private router: Router
   ) {}
 
@@ -58,11 +56,24 @@ export class WorkflowExecutionsService {
     });
   }
 
-  public displayWorkflowExecution(wid: number, vid: number): Observable<Workflow> {
+  public retrieveWorkflowByExecution(wid: number, vid: number): Observable<Workflow> {
     return this.http.get<Workflow>(`${WORKFLOW_VERSIONS_API_BASE_URL}/${wid}/${vid}`).pipe(
       filter((workflow: Workflow) => workflow != null),
       map(WorkflowUtilService.parseWorkflowInfo)
     );
+  }
+
+  public displayWorkflowExecution(workflow: Workflow) {
+    // disable the undoredo service because reloading the workflow is considered an action
+    this.undoRedoService.disableWorkFlowModification();
+    // enable modidification to reload workflow
+    this.workflowActionService.enableWorkflowModification();
+    // reload the read only workflow version on the paper
+    this.workflowActionService.reloadWorkflow(workflow);
+    // set display particular execution flag true
+    this.setDisplayParticularExecution(true);
+    // disable modifications because it is read only
+    this.workflowActionService.disableWorkflowModification();
   }
 
   public getDisplayParticularExecutionStream(): Observable<boolean> {

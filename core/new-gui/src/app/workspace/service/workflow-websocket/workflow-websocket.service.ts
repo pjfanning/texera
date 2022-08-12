@@ -121,7 +121,7 @@ export class WorkflowWebsocketService {
           ),
           delayWhen(_ => timer(WS_RECONNECT_INTERVAL_MS)), // reconnect after delay
           tap(_ => {
-            this.send("RegisterEIdRequest", { eId, operators, links }); // re-register wid
+            this.send("RegisterEIdRequest", { eId, operators, links }); // register execution details
             this.send("HeartBeatRequest", {}); // try to send heartbeat immediately after reconnect
           })
         )
@@ -132,7 +132,7 @@ export class WorkflowWebsocketService {
       this.webSocketResponseSubject.next(event as TexeraWebsocketEvent)
     );
 
-    // send wid registration and recover frontend state
+    // send execution details registration and recover frontend state
     this.send("RegisterEIdRequest", { eId, operators, links });
 
     // refresh connection status
