@@ -101,7 +101,7 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(_ => (this.isConnected = true));
   }
 
-  public openExecutionWebsocket(eId: number, workflowGraph: WorkflowGraphReadonly) {
+  public openExecutionWebsocket(eId: number, workflowGraph: WorkflowGraphReadonly, comparisonFlag: boolean) {
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(workflowGraph);
     const operators = logicalPlan.operators;
     const links = logicalPlan.links;
@@ -121,7 +121,7 @@ export class WorkflowWebsocketService {
           ),
           delayWhen(_ => timer(WS_RECONNECT_INTERVAL_MS)), // reconnect after delay
           tap(_ => {
-            this.send("RegisterEIdRequest", { eId, operators, links }); // register execution details
+            this.send("RegisterEIdRequest", { eId, operators, links, comparisonFlag }); // register execution details
             this.send("HeartBeatRequest", {}); // try to send heartbeat immediately after reconnect
           })
         )
@@ -133,7 +133,7 @@ export class WorkflowWebsocketService {
     );
 
     // send execution details registration and recover frontend state
-    this.send("RegisterEIdRequest", { eId, operators, links });
+    this.send("RegisterEIdRequest", { eId, operators, links, comparisonFlag });
 
     // refresh connection status
     this.websocketEvent().subscribe(_ => (this.isConnected = true));

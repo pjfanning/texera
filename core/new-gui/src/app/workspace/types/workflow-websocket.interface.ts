@@ -34,6 +34,7 @@ export interface RegisterEIdRequest
     eId: number;
     operators: LogicalOperator[];
     links: LogicalLink[];
+    comparisonFlag: boolean;
   }> {}
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
