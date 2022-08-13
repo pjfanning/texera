@@ -7,4 +7,5 @@ import scala.collection.mutable
 
 case class RegisterEIdRequest (eId: Int,
                                operators: mutable.MutableList[OperatorDescriptor],
-                               links: mutable.MutableList[OperatorLink]) extends TexeraWebSocketRequest
+                               links: mutable.MutableList[OperatorLink],
+                               comparisonFlag: Boolean) extends TexeraWebSocketRequest
