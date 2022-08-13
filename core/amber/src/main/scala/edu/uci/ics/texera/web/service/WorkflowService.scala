@@ -71,6 +71,7 @@ object WorkflowService {
           retrievedWorkflowService.status = maptoAggregatedState(execution.getStatus)
           retrievedWorkflowService.vId = execution.getVid.intValue()
           retrievedWorkflowService.executionID = request.eId
+          retrievedWorkflowService.comparisonFlag = request.comparisonFlag
           val workflowInfo = WorkflowInfo(request.operators, request.links, mutable.MutableList())
           val job = new WorkflowJobService(
             new WorkflowContext(
@@ -93,7 +94,7 @@ object WorkflowService {
             retrievedWorkflowService.resultService.progressiveResults.put(
               sink,
               new ProgressiveResultService(
-                workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
+                if (retrievedWorkflowService.comparisonFlag) workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc] else workflowDAG.operators.get(sink.split("_")(2)).get.asInstanceOf[ProgressiveSinkOpDesc]
               )
             )
           })
@@ -146,7 +147,7 @@ object WorkflowService {
               retrievedWorkflowService.resultService.progressiveResults.put(
                 sink,
                 new ProgressiveResultService(
-                  workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
+                  if (retrievedWorkflowService.comparisonFlag) workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc] else workflowDAG.operators.get(sink.split("_")(2)).get.asInstanceOf[ProgressiveSinkOpDesc]
                 )
               )
             })
