@@ -229,6 +229,7 @@ class WorkflowService(
   var vId: Int = -1
   var executionID: Long = -1 // for every new execution,
   // reset it so that the value doesn't carry over across executions
+  var comparisonFlag: Boolean = false
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
@@ -248,7 +249,7 @@ class WorkflowService(
     resultService.progressiveResults.map {
       case (id, service) =>
         (
-          id,
+          if (comparisonFlag) vId+"_"+id else id,
           service.convertWebResultUpdate(
             service.sink.getStorage.getCount.toInt,
             service.sink.getStorage.getCount.toInt
