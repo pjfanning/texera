@@ -94,7 +94,7 @@ object WorkflowService {
             retrievedWorkflowService.resultService.progressiveResults.put(
               sink,
               new ProgressiveResultService(
-                if (retrievedWorkflowService.comparisonFlag) workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc] else workflowDAG.operators.get(sink.split("_")(2)).get.asInstanceOf[ProgressiveSinkOpDesc]
+                workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
               )
             )
           })
@@ -147,7 +147,7 @@ object WorkflowService {
               retrievedWorkflowService.resultService.progressiveResults.put(
                 sink,
                 new ProgressiveResultService(
-                  if (retrievedWorkflowService.comparisonFlag) workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc] else workflowDAG.operators.get(sink.split("_")(2)).get.asInstanceOf[ProgressiveSinkOpDesc]
+                  workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
                 )
               )
             })
