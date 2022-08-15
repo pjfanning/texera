@@ -28,7 +28,7 @@ import { WorkflowExecutionsEntry } from "../../dashboard/type/workflow-execution
 import {Breakpoint, CommentBox, OperatorLink, OperatorPredicate, Point} from "../types/workflow-common.interface";
 import {PlainGroup} from "../service/workflow-graph/model/operator-group";
 import {WorkflowMetadata} from "../../dashboard/type/workflow-metadata.interface";
-
+import {WORKFLOW_EDITOR_JOINTJS_ID} from "./workflow-editor/workflow-editor.component";
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
 @UntilDestroy()
@@ -196,7 +196,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
     // if display particular execution is true
     if (this.execution_flag) {
-      console.log("execution vid",this.execution.vId);
       this.workflowExecutionService
         .retrieveWorkflowByExecution(wid, this.execution.vId)
         .pipe(untilDestroyed(this))
@@ -225,7 +224,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         .retrieveWorkflowByExecutions(wid, this.execution.vId, this.execution_to_compare.vId)
         .pipe(untilDestroyed(this))
         .subscribe((workflow:Workflow)=> {
-          console.log(workflow);
+
           workflowsToCombine.push(workflow);
           if (workflowsToCombine.length == 2) {
             this.combineAndDisplayWorkflows(workflowsToCombine);
@@ -334,12 +333,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
   private combineAndDisplayWorkflows(workflowsToCombine: Workflow[]) {
     let newOperators: OperatorPredicate[] = [];
-
+    const paperHeight: number = document.getElementById(WORKFLOW_EDITOR_JOINTJS_ID)!.clientHeight; //this is the css height, not the same unit as Point?
 
     workflowsToCombine[0].content.operators.forEach(operator => {
       let newOperator = {
         ...operator,
-        operatorID: this.execution.vId + "-" + operator.operatorID,
+        operatorID: this.execution.eId + "-" + operator.operatorID,
       };
       newOperators.push(newOperator);
     });
@@ -347,55 +346,51 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     workflowsToCombine[1].content.operators.forEach(operator => {
       let newOperator = {
         ...operator,
-        operatorID: this.execution_to_compare.vId + "-" + operator.operatorID,
+        operatorID: this.execution_to_compare.eId + "-" + operator.operatorID,
       };
       newOperators.push(newOperator);
     });
-    console.log(newOperators);
 
     let newOperatorPositions: { [key: string]: Point } = {};
-    let lowestY = 0;
     for (const [operatorID, point] of Object.entries(workflowsToCombine[0].content.operatorPositions)){
-      newOperatorPositions[this.execution.vId + "-" + operatorID] = point;
-      if (point.y > lowestY) {
-        lowestY = point.y;
-      }
+      newOperatorPositions[this.execution.eId + "-" + operatorID] = point;
     }
 
     for (const [operatorID, point] of Object.entries(workflowsToCombine[1].content.operatorPositions)){
       let newPoint: Point = {
         x: point.x,
-        y: point.y + lowestY + 40, //get the dimension of the paper and add half of that to this
+        y: point.y + paperHeight/2,
       };
-      newOperatorPositions[this.execution_to_compare.vId + "-" + operatorID] = newPoint;
+      newOperatorPositions[this.execution_to_compare.eId + "-" + operatorID] = newPoint;
     }
 
     let newLinks: OperatorLink[] = [];
     workflowsToCombine[0].content.links.forEach(link => {
         let newLink = {
-        ...link,
+        linkID: this.execution.eId + "-" + link.linkID,
         source: {
           ...link.source,
-          operatorID: this.execution.vId + "-" + link.source.operatorID,
+          operatorID: this.execution.eId + "-" + link.source.operatorID,
         },
         target: {
           ...link.target,
-          operatorID: this.execution.vId + "-" + link.target.operatorID,
+          operatorID: this.execution.eId + "-" + link.target.operatorID,
         }
       };
       newLinks.push(newLink);
     });
+    console.log(newLinks);
 
     workflowsToCombine[1].content.links.forEach(link => {
       let newLink = {
-        ...link,
+        linkID: this.execution_to_compare.eId + "-" + link.linkID,
         source: {
           ...link.source,
-          operatorID: this.execution_to_compare.vId + "-" + link.source.operatorID,
+          operatorID: this.execution_to_compare.eId + "-" + link.source.operatorID,
         },
         target: {
           ...link.target,
-          operatorID: this.execution_to_compare.vId + "-" + link.target.operatorID,
+          operatorID: this.execution_to_compare.eId + "-" + link.target.operatorID,
         }
       };
       newLinks.push(newLink);
@@ -408,7 +403,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         ...comment,
         commentBoxPosition: {
           ...comment.commentBoxPosition,
-          y: comment.commentBoxPosition.y + lowestY + 40,
+          y: comment.commentBoxPosition.y + paperHeight/2,
         }
       };
     });
@@ -417,8 +412,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       operators: newOperators,
       operatorPositions: newOperatorPositions,
       links: newLinks,
-      groups:   workflowsToCombine[0].content.groups, //fix this
-      breakpoints: workflowsToCombine[0].content.breakpoints, //fix this
+      groups:   workflowsToCombine[0].content.groups,
+      breakpoints: workflowsToCombine[0].content.breakpoints,
       commentBoxes: newComments
     };
 
