@@ -70,12 +70,7 @@ object WorkflowService {
     retrieveExecution(request.eId, request.operators, request.links)
   }
 
-  /*
-   * Function retrieves executions from storage
-   * @return list of workflow services
-   */
-  /**
-   * Function retrieves an execution from storage
+   * Function retrieves executions from storage for comparison
    * @return
    */
   def retrieveExecutionsToCompare(request: CompareEIdExecutionRequest): (WorkflowService, WorkflowService) = {
