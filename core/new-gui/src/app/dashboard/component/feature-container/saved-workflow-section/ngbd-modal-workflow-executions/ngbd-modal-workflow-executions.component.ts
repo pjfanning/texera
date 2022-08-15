@@ -36,6 +36,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     "Last Status Updated Time",
     "Status",
     "",
+    "",
   ];
   /*Tooltip for each header in execution table*/
   public executionTooltip: Record<string, string> = {
@@ -93,6 +94,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   ]);
   public showORhide: boolean[] = [false, false, false, false];
   public avatarColors: { [key: string]: string } = {};
+  public setOfExpandedIndex: Set<number> = new Set<number>();
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -318,6 +320,15 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     const b = Math.floor(Math.random() * MAX_RGB);
     return "rgba(" + r + "," + g + "," + b + ",0.8)";
   }
+
+  updateExpandedSet(index: number, expanded: boolean): void {
+    if (expanded) {
+      this.setOfExpandedIndex.add(index);
+    } else {
+      this.setOfExpandedIndex.delete(index);
+    }
+  }
+
 
   public searchInputOnChange(value: string): void {
     const searchConditionsSet = [...new Set(value.trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g))];
