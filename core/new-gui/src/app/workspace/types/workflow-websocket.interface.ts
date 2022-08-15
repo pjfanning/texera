@@ -36,6 +36,15 @@ export interface RegisterEIdRequest
     links: LogicalLink[];
   }> {}
 
+export interface CompareEIdExecutionRequest
+  extends Readonly<{
+    eId1: number;
+    eId2: number;
+    operators1: LogicalOperator[];
+    operators2: LogicalOperator[];
+    links: LogicalLink[];
+  }> {}
+
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
 
 export interface TexeraConstraintViolation
@@ -148,6 +157,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   RegisterEIdRequest: RegisterEIdRequest;
+  CompareEIdExecutionRequest: CompareEIdExecutionRequest;
   AddBreakpointRequest: BreakpointInfo;
   CacheStatusUpdateRequest: CacheStatusUpdateRequest;
   HeartBeatRequest: {};

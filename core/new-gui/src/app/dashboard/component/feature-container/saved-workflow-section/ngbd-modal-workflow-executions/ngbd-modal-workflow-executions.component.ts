@@ -276,6 +276,15 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     });
   }
 
+  jumpToCompare(): void {
+    this.activeModal.close();
+    let indices: number[] = [...this.checkedRowIndices];
+    let executions: string[] = [JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[0]]), JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[1]])];
+    this.router.navigate([`/compare/${this.workflowExecutionsDisplayedList?.[0].eId}/${this.workflowExecutionsDisplayedList?.[1].eId}`], {
+      state: { executions: executions, wid: this.workflow.wid },
+    });
+  }
+
   public searchInputOnChange(value: string): void {
     const searchConditionsSet = [...new Set(value.trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g))];
     searchConditionsSet.forEach((condition, index) => {
@@ -421,13 +430,4 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
-  jumpToCompare(): void {
-    this.activeModal.close();
-    let indices: number[] = [...this.checkedRowIndices];
-    let executions: string[] = [JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[0]]), JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[1]])];
-    // console.log(executions);
-    this.router.navigate([`/compare/${this.workflowExecutionsDisplayedList?.[0].eId}/${this.workflowExecutionsDisplayedList?.[1].eId}`], {
-      state: { executions: executions, wid: this.workflow.wid },
-    });
-  }
 }

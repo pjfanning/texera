@@ -81,7 +81,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
     }else if(this.router.getCurrentNavigation()?.extras.state?.executions){
       this.comparison_flag = true;
-      // console.log(this.router.getCurrentNavigation()?.extras.state?.executions);
       this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[0]);
       this.execution_to_compare = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[1]);
       this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
@@ -176,6 +175,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           this.userService.isLogin() &&
           this.workflowPersistService.isWorkflowPersistEnabled() &&
           this.workflowCollabService.isLockGranted() &&
+          !this.comparison_flag &&
           !this.execution_flag
         ) {
           this.workflowPersistService
@@ -223,13 +223,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       this.workflowExecutionService
         .retrieveWorkflowByExecutions(wid, this.execution.vId, this.execution_to_compare.vId)
         .pipe(untilDestroyed(this))
-        .subscribe((workflow:Workflow)=> {
-
+        .subscribe(
+          (workflow:Workflow)=> {
           workflowsToCombine.push(workflow);
           if (workflowsToCombine.length == 2) {
             this.combineAndDisplayWorkflows(workflowsToCombine);
           }
-        },
+          },
           () => {
             // enable workspace for modification
             this.workflowActionService.enableWorkflowModification();
@@ -253,6 +253,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             this.workflowActionService.enableWorkflowModification();
             // load the fetched workflow
             this.workflowActionService.reloadWorkflow(workflow);
+            console.log("default loading", workflow);
             // clear stack
             this.undoRedoService.clearUndoStack();
             this.undoRedoService.clearRedoStack();
@@ -326,14 +327,15 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       )
       .pipe(untilDestroyed(this))
       .subscribe(wid => {
-        this.workflowWebsocketService.reopenWebsocket(wid);
+        this.workflowWebsocketService.openWebsocket(wid);
         this.workflowCollabService.reopenWebsocket(wid);
       });
   }
 
   private combineAndDisplayWorkflows(workflowsToCombine: Workflow[]) {
     let newOperators: OperatorPredicate[] = [];
-    const paperHeight: number = document.getElementById(WORKFLOW_EDITOR_JOINTJS_ID)!.clientHeight; //this is the css height, not the same unit as Point?
+    const paperHeight: number = document.getElementById(WORKFLOW_EDITOR_JOINTJS_ID)!.clientHeight;
+    //this height does not have the same unit as Point?
 
     workflowsToCombine[0].content.operators.forEach(operator => {
       let newOperator = {
@@ -352,14 +354,18 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     });
 
     let newOperatorPositions: { [key: string]: Point } = {};
+    let lowest = 0;
     for (const [operatorID, point] of Object.entries(workflowsToCombine[0].content.operatorPositions)){
       newOperatorPositions[this.execution.eId + "-" + operatorID] = point;
+      if (point.y > lowest) {
+        lowest = point.y;
+      }
     }
 
     for (const [operatorID, point] of Object.entries(workflowsToCombine[1].content.operatorPositions)){
       let newPoint: Point = {
         x: point.x,
-        y: point.y + paperHeight/2,
+        y: point.y + paperHeight/2 + lowest,
       };
       newOperatorPositions[this.execution_to_compare.eId + "-" + operatorID] = newPoint;
     }
@@ -403,7 +409,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         ...comment,
         commentBoxPosition: {
           ...comment.commentBoxPosition,
-          y: comment.commentBoxPosition.y + paperHeight/2,
+          y: comment.commentBoxPosition.y + paperHeight/2 + lowest,
         }
       };
     });
@@ -428,7 +434,13 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       content: workflowcontent,
       ...workflowmetadata,
     };
-    console.log(newWorkflow);
+
     this.workflowExecutionService.displayWorkflowExecution(newWorkflow);
+
+    this.workflowWebsocketService.openExecutionCompareWebsocket(
+      this.execution.eId,
+      this.execution_to_compare.eId,
+      this.workflowActionService.getTexeraGraph()
+    );
   }
 }
