@@ -279,6 +279,19 @@ class WorkflowService(
     }.toMap
   }
 
+  def getComparisonResultUpdateMessage(): Map[String, WebResultUpdate] = {
+    resultService.progressiveResults.map {
+      case (id, service) =>
+        (
+          executionID.toString+"_"+id,
+          service.convertWebResultUpdate(
+            service.sink.getStorage.getCount.toInt,
+            service.sink.getStorage.getCount.toInt
+          )
+        )
+    }.toMap
+  }
+
   def getWorkflowStatsMessage(eId: Int): Map[String, OperatorStatistics]= {
     StatStorage.getWorkflowOpsStats(eId)
   }

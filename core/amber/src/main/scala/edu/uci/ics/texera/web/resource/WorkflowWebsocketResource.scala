@@ -80,7 +80,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           send(
             session,
             WebResultUpdateEvent(
-              workflowState.getResultUpdateMessage().++(workflowState_to_compare.getResultUpdateMessage())
+              workflowState.getComparisonResultUpdateMessage().++(workflowState_to_compare.getComparisonResultUpdateMessage())
             )
           )
         case wIdRequest: RegisterWIdRequest =>
