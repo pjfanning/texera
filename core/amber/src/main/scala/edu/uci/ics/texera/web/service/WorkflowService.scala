@@ -7,7 +7,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutio
 import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource.{ExecutionContent, getExecutionById, getLatestExecution}
-import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, RegisterEIdRequest, WorkflowExecuteRequest, WorkflowKillRequest}
+import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, CompareEIdExecutionRequest, RegisterEIdRequest, WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.getLatestVersion
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
@@ -18,7 +18,8 @@ import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResourc
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
-import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, WorkflowInfo}
+import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, OperatorLink, WorkflowInfo}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -66,38 +67,59 @@ object WorkflowService {
    * @return
    */
   def retrieveExecution(request: RegisterEIdRequest): WorkflowService = {
-    val execution: WorkflowExecutions = getExecutionById(UInteger.valueOf(request.eId))
-          val retrievedWorkflowService = new WorkflowService(Some(execution.getUid), execution.getWid.intValue(), cleanUpDeadlineInSeconds)
-          retrievedWorkflowService.status = maptoAggregatedState(execution.getStatus)
-          retrievedWorkflowService.vId = execution.getVid.intValue()
-          retrievedWorkflowService.executionID = request.eId
-          val workflowInfo = WorkflowInfo(request.operators, request.links, mutable.MutableList())
-          val job = new WorkflowJobService(
-            new WorkflowContext(
-              String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet),
-              Some(execution.getUid),
-              retrievedWorkflowService.vId,
-              execution.getWid.intValue(),
-              request.eId
-            ),
-            retrievedWorkflowService.wsInput,
-            retrievedWorkflowService.operatorCache,
-            retrievedWorkflowService.resultService,
-            null,
-            retrievedWorkflowService.errorHandler,
-            workflowInfo
-          )
-          retrievedWorkflowService.jobService.onNext(job)
-          val workflowDAG = workflowInfo.toDAG
-          workflowDAG.getSinkOperators.foreach(sink => {
-            retrievedWorkflowService.resultService.progressiveResults.put(
-              sink,
-              new ProgressiveResultService(
-                workflowDAG.operators.get(sink).get.asInstanceOf[ProgressiveSinkOpDesc]
-              )
-            )
-          })
-          retrievedWorkflowService
+    retrieveExecution(request.eId, request.operators, request.links)
+  }
+
+  /*
+   * Function retrieves executions from storage
+   * @return list of workflow services
+   */
+  /**
+   * Function retrieves an execution from storage
+   * @return
+   */
+  def retrieveExecutionsToCompare(request: CompareEIdExecutionRequest): (WorkflowService, WorkflowService) = {
+    (retrieveExecution(request.eId1, request.operators1, request.links), retrieveExecution(request.eId2, request.operators2, request.links)) //WorkflowInfo doesn't do anything with the links
+  }
+
+
+  def retrieveExecution(
+    eId: Int,
+    operators: mutable.MutableList[OperatorDescriptor],
+    links: mutable.MutableList[OperatorLink]
+  ) : WorkflowService = {
+    val execution: WorkflowExecutions = getExecutionById(UInteger.valueOf(eId))
+    val retrievedWorkflowService = new WorkflowService(Some(execution.getUid), execution.getWid.intValue(), cleanUpDeadlineInSeconds)
+    retrievedWorkflowService.status = maptoAggregatedState(execution.getStatus)
+    retrievedWorkflowService.vId = execution.getVid.intValue()
+    retrievedWorkflowService.executionID = eId
+    val workflowInfo = WorkflowInfo(operators, links, mutable.MutableList())
+    val job = new WorkflowJobService(
+      new WorkflowContext(
+        String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet),
+        Some(execution.getUid),
+        retrievedWorkflowService.vId,
+        execution.getWid.intValue(),
+        eId
+      ),
+      retrievedWorkflowService.wsInput,
+      retrievedWorkflowService.operatorCache,
+      retrievedWorkflowService.resultService,
+      null,
+      retrievedWorkflowService.errorHandler,
+      workflowInfo
+    )
+    retrievedWorkflowService.jobService.onNext(job)
+    val workflowDAG = workflowInfo.toDAG
+    workflowDAG.getSinkOperators.foreach(sink => {
+      retrievedWorkflowService.resultService.progressiveResults.put(
+        sink,
+        new ProgressiveResultService(
+          workflowDAG.operators(sink).asInstanceOf[ProgressiveSinkOpDesc]
+        )
+      )
+    })
+    retrievedWorkflowService
   }
 
   /**
@@ -258,7 +280,12 @@ class WorkflowService(
   }
 
   def getWorkflowStatsMessage(eId: Int): Map[String, OperatorStatistics]= {
-    StatStorage.getOperatorStat(eId)
+    StatStorage.getWorkflowOpsStats(eId)
+  }
+
+  def getComparisonWorkflowStatsMessage(eId: Int): Map[String, OperatorStatistics]= {
+    val eIdToStat:Map[String, OperatorStatistics] = StatStorage.getWorkflowOpsStats(eId)
+    eIdToStat.map(x => executionID.toString+"_"+x._1 -> x._2)
   }
 
   def createWorkflowInfo(workflowContent: String): WorkflowInfo = {
