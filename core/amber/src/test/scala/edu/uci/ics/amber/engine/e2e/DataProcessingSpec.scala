@@ -59,7 +59,7 @@ class DataProcessingSpec
       WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
       context
     )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage, context)
   }
 
   def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {

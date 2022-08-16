@@ -224,15 +224,15 @@
                       <tbody>
                         <tr>
                           <td *ngFor="let row of testArray; let k=index;">
-                            <button 
+                            <button
                               nz-button
                               (click)="showRowDetails(convertrowDetailTableIndex(i, j, k))"
                             >
                               <span> Full Row </span>
                             </button>
                             <nz-modal
-                              [(nzVisible)]="showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]" 
-                              nzTitle="Entry Details" 
+                              [(nzVisible)]="showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]"
+                              nzTitle="Entry Details"
                               (nzOnOk)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
                               (nzOnCancel)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
                             >
@@ -273,6 +273,89 @@
             </nz-table>
           </tr>
         </ng-container>
+        <tr *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
+          <td nzEllipsis>
+            <input type="checkbox" />
+          </td>
+          <td nzEllipsis>
+            <i
+              nz-icon
+              nzType="star"
+              class="bookmark-icon"
+              [nzTheme]="(row.bookmarked || currentlyHoveredExecution === row) ? 'fill' : 'outline'"
+              (click)="onBookmarkToggle(row)"
+            ></i>
+          </td>
+          <td nzEllipsis>
+            <i nz-icon nzType="eye" class="view-icon" (click)="jumpToWorkflow(row)" nzTheme="outline"></i>
+          </td>
+          <td nzEllipsis>
+            <nz-avatar
+              [ngStyle]="{ 'background-color': setAvatarColor(row.userName) }"
+              [nzGap]="1"
+              [nzText]="abbreviate(row.userName || 'anonymous', false)"
+              nzSize="default"
+            ></nz-avatar>
+          </td>
+          <td nzEllipsis>
+            <label
+              class="execution-description"
+              *ngIf="workflowExecutionsIsEditingName.indexOf(i) === -1; else customeWorkflow "
+              class="workflow-name"
+              >{{ abbreviate(row.name, true) }}</label
+            >
+            <ng-template #customeWorkflow>
+              <input
+                #customName
+                (focusout)="confirmUpdateWorkflowExecutionsCustomName(row, customName.value, i)"
+                (keyup.enter)="confirmUpdateWorkflowExecutionsCustomName(row, customName.value, i)"
+                placeholder="{{ row.name }}"
+                value="{{ row.name }}"
+              />
+            </ng-template>
+            <button
+              (click)="workflowExecutionsIsEditingName.push(i)"
+              nz-button
+              nzSize="small"
+              nzType="text"
+              class="rename-icon"
+            >
+              <i
+                nz-icon
+                nzTheme="outline"
+                nz-tooltip
+                nzTooltipTitle='Rename Execution "{{row.name}}"'
+                nzTooltipPlacement="top"
+                nzType="edit"
+              ></i>
+            </button>
+          </td>
+          <td nzEllipsis>{{row.startingTime | date:'MM/dd/yyyy HH:mm:ss zzz'}}</td>
+          <td nzEllipsis>{{row.completionTime | date:'MM/dd/yyyy HH:mm:ss zzz'}}</td>
+          <td nzEllipsis>
+            <i
+              nz-icon
+              nzTheme="outline"
+              nz-tooltip
+              [nzTooltipTitle]="getExecutionStatus(row.status)[0]"
+              nzTooltipPlacement="top"
+              [nzType]="getExecutionStatus(row.status)[1]"
+              [ngStyle]="{'color': getExecutionStatus(row.status)[2]}"
+              class="status-icon"
+            ></i>
+          </td>
+          <td nzEllipsis>
+            <i
+              nz-icon
+              nzType="delete"
+              nz-tooltip
+              nzTooltipTitle='Delete the Execution "{{row.name}}"'
+              nzTooltipPlacement="top"
+              class="trash-icon"
+              (click)="onDelete(row)"
+            ></i>
+          </td>
+        </tr>
       </tbody>
     </nz-table>
   </div>

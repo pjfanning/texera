@@ -140,6 +140,36 @@
       }
     }
 
+    // name display for execution
+    .execution-name {
+      padding: 2px 8px 2px 8px;
+      margin: 0 8px 0 0;
+
+      display: inline-block;
+      min-width: 17ch;
+      font-size: 18px;
+      border: 0 none;
+      outline: none; // some user agent stylesheets add an outline that interferes
+
+      &:after {
+        color: grey;
+        font-style: italic;
+      }
+
+      &:empty:after {
+        // strange firefox bug (completely empty inline-block floats up?)
+        content: "\a0";
+      }
+
+      &:empty:not(:focus):after {
+        content: attr(placeholder);
+      }
+
+      &:focus {
+        box-shadow: 0 0 0px 2px #007bff;
+      }
+    }
+
     .save-state {
       font-size: 10px;
       color: royalblue;

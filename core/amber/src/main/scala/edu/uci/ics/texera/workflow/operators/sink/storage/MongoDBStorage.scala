@@ -1,7 +1,5 @@
 package edu.uci.ics.texera.workflow.operators.sink.storage
 
-import java.util
-
 import com.mongodb.client.model.Sorts
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoCursor, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
@@ -26,6 +24,23 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorageReader {
   val commitBatchSize: Int = AmberUtils.amberConfig.getInt("storage.mongodb.commit-batch-size")
   database.getCollection(id).drop()
 
+  val catalogCollectionName: String =
+    AmberUtils.amberConfig.getString("storage.mongodb.cleanup.catalog-collection-name")
+  val catalogCollection: MongoCollection[Document] = database.getCollection(catalogCollectionName)
+
+  /**
+    * this function adds every collection name of Mongo to a catalog so that we periodically clean it up
+    * @param collectionName name of the new collection to be added in the catalog
+    */
+  def createNewCollection(collectionName: String): Unit = {
+
+    val newCollectionEntry: Document = new Document()
+    newCollectionEntry.append("collectionName", collectionName)
+    newCollectionEntry.append("createdAt", System.currentTimeMillis())
+    catalogCollection.insertOne(newCollectionEntry)
+
+  }
+
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var client: MongoClient = _
     var uncommittedInsertions: mutable.HashSet[Tuple] = _
@@ -43,6 +58,10 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorageReader {
         collection.insertMany(uncommittedInsertions.map(_.asDocument()).toList.asJava)
         uncommittedInsertions.clear()
       }
+      createNewCollection(
+        id
+      ) // TODO we need to handle cases when the collection is created
+      //  but not closed gracefully, then it will be forever in disk
       client.close()
     }
 

@@ -1,22 +1,21 @@
 import { ComponentFixture, TestBed, waitForAsync } from "@angular/core/testing";
 import { MatDialogModule } from "@angular/material/dialog";
-
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { FormsModule } from "@angular/forms";
-
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
-import { HttpClientModule } from "@angular/common/http";
-
+import { HttpClientTestingModule } from "@angular/common/http/testing";
 import { NgbdModalWorkflowExecutionsComponent } from "./ngbd-modal-workflow-executions.component";
 import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-entry";
 import { Workflow, WorkflowContent } from "../../../../../common/type/workflow";
 import { jsonCast } from "../../../../../common/util/storage";
-import { NotificationService } from "../../../../../common/service/notification/notification.service";
+import { RouterTestingModule } from "@angular/router/testing";
+import { Router } from "@angular/router";
 
 describe("NgbModalWorkflowExecutionsComponent", () => {
   let component: NgbdModalWorkflowExecutionsComponent;
   let fixture: ComponentFixture<NgbdModalWorkflowExecutionsComponent>;
   let modalService: NgbActiveModal;
+  let router = { navigate: jasmine.createSpy("navigate") };
 
   const workflow: Workflow = {
     wid: 1,
@@ -128,8 +127,15 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     waitForAsync(() => {
       TestBed.configureTestingModule({
         declarations: [NgbdModalWorkflowExecutionsComponent],
-        providers: [NgbActiveModal, WorkflowExecutionsService],
-        imports: [MatDialogModule, FormsModule, HttpClientModule],
+        providers: [
+          NgbActiveModal,
+          WorkflowExecutionsService,
+          {
+            provide: Router,
+            useValue: router,
+          },
+        ],
+        imports: [MatDialogModule, FormsModule, HttpClientTestingModule, RouterTestingModule],
       }).compileComponents();
     })
   );
@@ -142,7 +148,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("executionNameFilterTest NoInput", () => {
-    component.workflow = workflow;
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
     component.paginatedExecutionEntries = component.allExecutionEntries;
@@ -155,7 +160,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("executionNameFilterTest correctName", () => {
-    component.workflow = workflow;
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
     component.paginatedExecutionEntries = component.allExecutionEntries;
@@ -168,7 +172,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("userNameFilterTest", () => {
-    component.workflow = workflow;
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
     component.paginatedExecutionEntries = component.allExecutionEntries;
@@ -181,20 +184,18 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("statusFilterTest", () => {
-    component.workflow = workflow;
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
     component.paginatedExecutionEntries = component.allExecutionEntries;
     component.fuse.setCollection(component.allExecutionEntries);
     component.workflowExecutionsDisplayedList = component.allExecutionEntries;
-    component.executionSearchValue = "status:Completed";
+    component.executionSearchValue = "status:completed";
     component.searchExecution();
     const filteredCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
     expect(filteredCase).toEqual([1, 2, 3]);
   });
 
-  it("filterComboTest", () => {
-    component.workflow = workflow;
+  it("filterComboTest1", () => {
     component.allExecutionEntries = [];
     component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
     component.paginatedExecutionEntries = component.allExecutionEntries;
@@ -206,8 +207,19 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
     expect(filteredCase).toEqual([1, 7]);
   });
 
+  it("filterComboTest2", () => {
+    component.allExecutionEntries = [];
+    component.allExecutionEntries = component.allExecutionEntries.concat(testExecutionEntries);
+    component.paginatedExecutionEntries = component.allExecutionEntries;
+    component.fuse.setCollection(component.allExecutionEntries);
+    component.workflowExecutionsDisplayedList = component.allExecutionEntries;
+    component.executionSearchValue = "user:texera status:completed";
+    component.searchExecution();
+    const filteredCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
+    expect(filteredCase).toEqual([1]);
+  });
+
   it("executionNameSortTest increasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.ascSort("Name");
@@ -217,7 +229,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("executionNameSortTest decreasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.dscSort("Name");
@@ -227,7 +238,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("userNameSortTest increasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.ascSort("Username");
@@ -237,7 +247,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("userNameSortTest decreasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.dscSort("Username");
@@ -247,7 +256,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("startingTimeSortTest increasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.ascSort("Starting Time");
@@ -257,7 +265,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("startingTimeSortTest decreasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.dscSort("Starting Time");
@@ -267,7 +274,6 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("updatingTimeSortTest increasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.ascSort("Last Status Updated Time");
@@ -277,12 +283,23 @@ describe("NgbModalWorkflowExecutionsComponent", () => {
   });
 
   it("updatingTimeSortTest decreasingOrder", () => {
-    component.workflow = workflow;
     component.workflowExecutionsDisplayedList = [];
     component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
     component.dscSort("Last Status Updated Time");
     const SortedCase = component.workflowExecutionsDisplayedList.map(item => item.eId);
     /* Order: Exe6, Exe7, Exe2, Exe1, Exe5, Exe4, Exe3*/
     expect(SortedCase).toEqual([6, 7, 2, 1, 5, 4, 3]);
+  });
+
+  /* test redirection to workspace */
+  it("redirection to workspace Test for view", () => {
+    component.wid = 1;
+    component.workflowExecutionsDisplayedList = [];
+    component.workflowExecutionsDisplayedList = component.workflowExecutionsDisplayedList.concat(testExecutionEntries);
+    var testExecution = component.workflowExecutionsDisplayedList[0];
+    component.jumpToWorkflow(testExecution);
+    expect(router.navigate).toHaveBeenCalledWith([`/executions/${testExecution.eId}`], {
+      state: { execution: JSON.stringify(testExecution), wid: 1 },
+    });
   });
 });

@@ -23,6 +23,10 @@ const routes: Routes = [
     path: "workflow/:id",
     component: WorkspaceComponent,
   },
+  {
+    path: "executions/:eid",
+    component: WorkspaceComponent,
+  },
 ];
 
 if (environment.userSystemEnabled) {
