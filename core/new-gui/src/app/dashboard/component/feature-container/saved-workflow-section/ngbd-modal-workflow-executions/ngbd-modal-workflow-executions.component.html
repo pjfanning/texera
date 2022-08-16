@@ -185,17 +185,90 @@
             <nz-table
               #basicTable
               [nzData]="workflowExecutionsDisplayedList"
-              [nzScroll]="{ x: '500px' }"
+              [nzShowPagination]="false"
+              [nzScroll]="{ x: '1000px' }"
             >
               <thead>
                 <tr>
-                  <th>Column</th>
+                  <th nzWidth="100px"> Sink Name </th>
+                  <th nzWidth="100px"> View Details </th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Row</td>
-                </tr>
+                <ng-container *ngFor="let row of hardCodedRows; let j=index;">
+                  <tr>
+                    <td nzEllipsis> {{row}} </td>
+                    <td
+                      [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))"
+                      (nzExpandChange)="updateSubExpandedSet(i, j, $event)"
+                    ></td>
+                  </tr>
+                  <tr [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))">
+                    <h5 class="sub-table-title"> Details </h5>
+                    <nz-table
+                      #detailTable
+                      [nzData]="workflowExecutionsDisplayedList"
+                      [nzShowPagination]="true"
+                      [nzScroll]="{ x: '1000px' }"
+                    >
+                      <thead>
+                        <tr>
+                          <th nzWidth="100px"> Show Row Details </th>
+                          <th nzWidth="100px"> Title </th>
+                          <th nzWidth="100px"> ID </th>
+                          <th nzWidth="100px"> Date </th>
+                          <th nzWidth="100px"> Creator </th>
+                          <th nzWidth="100px"> Workflow </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td *ngFor="let row of testArray; let k=index;">
+                            <button 
+                              nz-button
+                              (click)="showRowDetails(convertrowDetailTableIndex(i, j, k))"
+                            >
+                              <span> Full Row </span>
+                            </button>
+                            <nz-modal
+                              [(nzVisible)]="showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]" 
+                              nzTitle="Entry Details" 
+                              (nzOnOk)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
+                              (nzOnCancel)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
+                            >
+                              <ng-container *nzModalContent>
+                                <nz-table
+                                  #rowDetailTable
+                                  [nzData]="workflowExecutionsDisplayedList"
+                                  [nzShowPagination]="false"
+                                  [nzScroll]="{ x: '800px' }"
+                                >
+                                  <thead>
+                                    <tr>
+                                      <th nzWidth="70px"> Entry Key </th>
+                                      <th nzWidth="70px"> Data </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    <tr>
+                                      <td> Hello </td>
+                                      <td> World </td>
+                                    </tr>
+                                  </tbody>
+                                </nz-table>
+                              </ng-container>
+                            </nz-modal>
+                          </td>
+                          <td nzEllipsis> This could be the title of the Result </td>
+                          <td nzEllipsis> This could be the title of the Result </td>
+                          <td nzEllipsis> This could be the title of the Result </td>
+                          <td nzEllipsis> This could be the title of the Result </td>
+                          <td nzEllipsis> This could be the title of the Result </td>
+                        </tr>
+                      </tbody>
+                    </nz-table>
+                  </tr>
+                </ng-container>
               </tbody>
             </nz-table>
           </tr>

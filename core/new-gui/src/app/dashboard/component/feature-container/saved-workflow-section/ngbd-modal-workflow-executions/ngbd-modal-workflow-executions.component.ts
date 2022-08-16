@@ -9,10 +9,12 @@ import { ExecutionState } from "../../../../../workspace/types/execute-workflow.
 import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.component";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import Fuse from "fuse.js";
+// import test from "test.json";
 
 const MAX_TEXT_SIZE = 20;
 const MAX_RGB = 255;
 const MAX_USERNAME_SIZE = 5;
+const MAX_RESULT_VIEW = 10;
 
 @UntilDestroy()
 @Component({
@@ -76,6 +78,8 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public isAscSort: boolean = true;
   public currentPageIndex: number = 1;
   public pageSize: number = 10;
+  public rowDetailPageSize: number = 10;
+  public sinkSize: number = 10;
   public pageSizeOptions: number[] = [5, 10, 20, 30, 40];
   public numOfExecutions: number = 0;
   public paginatedExecutionEntries: WorkflowExecutionsEntry[] = [];
@@ -95,6 +99,16 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public showORhide: boolean[] = [false, false, false, false];
   public avatarColors: { [key: string]: string } = {};
   public setOfExpandedIndex: Set<number> = new Set<number>();
+  public setOfSubExpandedIndex: Set<number> = new Set<number>();
+  public showORhideFullDetail: boolean[] = [];
+  public hardCodedRows: string[] = [
+    "View Result 1",
+    "View Result 2",
+    "View Result 3",
+    "View Result 4",
+  ];
+  public testArray: string[] = ["1"];
+  public something = true;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -106,6 +120,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   ngOnInit(): void {
     // gets the workflow executions and display the runs in the table on the form
     this.displayWorkflowExecutions();
+    for (let i=0; i<this.pageSize*this.sinkSize*this.rowDetailPageSize; i++) {
+      this.showORhideFullDetail.push(false);
+    }
   }
 
   /**
@@ -115,6 +132,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     if (this.workflow === undefined || this.workflow.wid === undefined) {
       return;
     }
+    this.convertJson();
     this.workflowExecutionsService
       .retrieveWorkflowExecutions(this.workflow.wid)
       .pipe(untilDestroyed(this))
@@ -326,6 +344,38 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       this.setOfExpandedIndex.add(index);
     } else {
       this.setOfExpandedIndex.delete(index);
+    }
+  }
+
+  convertJson() {
+    // console.log(this.jsonRequest.charAt(131))
+    // let result = JSON.parse(this.jsonRequest);
+    // console.log(result);
+    // return result;
+  }
+
+  convertSubTableIndex(supIndex: number, subIndex: number): number {
+    return supIndex * MAX_RESULT_VIEW + subIndex;
+  }
+
+  convertrowDetailTableIndex(workflowIndex: number, sinkIndex: number, rowDetailIndex: number): number {
+    return workflowIndex * this.pageSize * this.rowDetailPageSize + sinkIndex * this.rowDetailPageSize + rowDetailIndex;
+  }
+
+  showRowDetails(rowDetailIndex: number) {
+    this.showORhideFullDetail[rowDetailIndex] = true;
+  }
+
+  closeRowDetail(rowDetailIndex: number) {
+    this.showORhideFullDetail[rowDetailIndex] = false;
+  }
+
+  updateSubExpandedSet(supIndex: number, subIndex:number, expanded: boolean): void {
+    let index = this.convertSubTableIndex(supIndex, subIndex);
+    if (expanded) {
+      this.setOfSubExpandedIndex.add(index);
+    } else {
+      this.setOfSubExpandedIndex.delete(index);
     }
   }
 
