@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnInit, Input } from "@angular/core";
 import { merge } from "rxjs";
 import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
 import { ResultPanelToggleService } from "../../service/result-panel-toggle/result-panel-toggle.service";
@@ -15,12 +15,14 @@ import { DebuggerFrameComponent } from "./debugger-frame/debugger-frame.componen
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+import { ResultComparisonTablesFrameComponent } from "./result-comparison-tables-frame/result-comparison-tables-frame.component";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
   | VisualizationFrameComponent
   | ConsoleFrameComponent
-  | DebuggerFrameComponent;
+  | DebuggerFrameComponent
+  | ResultComparisonTablesFrameComponent;
 
 export type ResultFrameComponentConfig = DynamicComponentConfig<ResultFrameComponent>;
 
@@ -35,6 +37,7 @@ export type ResultFrameComponentConfig = DynamicComponentConfig<ResultFrameCompo
   styleUrls: ["./result-panel.component.scss"],
 })
 export class ResultPanelComponent implements OnInit {
+  @Input() showComparisonPanel: boolean = false;
   frameComponentConfigs: Map<string, ResultFrameComponentConfig> = new Map();
 
   // the highlighted operator ID for display result table / visualization / breakpoint
@@ -164,8 +167,28 @@ export class ResultPanelComponent implements OnInit {
     if (!this.showResultPanel || !this.currentOperatorId) {
       return;
     }
+    console.log("rerenderresult panel function", this.showComparisonPanel);
+    if (this.showComparisonPanel) {
+      //TODO: pass in both IDs in DAG? or obtained through other means
+      let operatorId_to_compare = this.currentOperatorId; //placeholder
+      this.displayDifference(this.currentOperatorId, operatorId_to_compare);
+      const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
+      if (isPythonUdf(operator)) {
+        this.displayConsole(this.currentOperatorId);
 
-    if (this.currentOperatorId) {
+        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+          this.displayDebugger(this.currentOperatorId);
+        }
+      }
+      const operator_to_compare = this.workflowActionService.getTexeraGraph().getOperator(operatorId_to_compare);
+      if (isPythonUdf(operator_to_compare)) {
+        this.displayConsole(operatorId_to_compare);
+
+        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+          this.displayDebugger(operatorId_to_compare);
+        }
+      }
+    } else if (this.currentOperatorId) {
       this.displayResult(this.currentOperatorId);
       const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
       if (isPythonUdf(operator)) {
@@ -215,6 +238,27 @@ export class ResultPanelComponent implements OnInit {
       this.frameComponentConfigs.set("Result", {
         component: VisualizationFrameComponent,
         componentInputs: { operatorId },
+      });
+    }
+  }
+
+  displayDifference(operatorId: string, operatorId_to_compare: string) {
+    console.log("in comparison", this.showComparisonPanel, operatorId, operatorId_to_compare);
+    const resultService = this.workflowResultService.getResultService(operatorId);
+    const paginatedResultService = this.workflowResultService.getPaginatedResultService(operatorId);
+    const resultService1 = this.workflowResultService.getResultService(operatorId_to_compare);
+    const paginatedResultService1 = this.workflowResultService.getPaginatedResultService(operatorId_to_compare);
+    if (paginatedResultService && paginatedResultService1) {
+      // display table result if has paginated results
+      this.frameComponentConfigs.set("Comparison", { 
+        component: ResultComparisonTablesFrameComponent,
+        componentInputs: { operatorId, operatorId_to_compare},
+      });
+    } else if (resultService && resultService.getChartType() && resultService1 && resultService1.getChartType()) {
+      // display visualization result
+      this.frameComponentConfigs.set("Comparison", {
+        component: ResultComparisonTablesFrameComponent,
+        componentInputs: { operatorId, operatorId_to_compare},
       });
     }
   }

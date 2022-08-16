@@ -107,6 +107,7 @@ import { NzModalCommentBoxComponent } from "./workspace/component/workflow-edito
 import { NzCommentModule } from "ng-zorro-antd/comment";
 import { NgbdModalWorkflowExecutionsComponent } from "./dashboard/component/feature-container/saved-workflow-section/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
 import { DeletePromptComponent } from "./dashboard/component/delete-prompt/delete-prompt.component";
+import { ResultComparisonTablesFrameComponent } from './workspace/component/result-panel/result-comparison-tables-frame/result-comparison-tables-frame.component';
 
 registerLocaleData(en);
 
@@ -166,6 +167,7 @@ registerLocaleData(en);
     NgbdModalRemoveProjectFileComponent,
     NzModalCommentBoxComponent,
     DeletePromptComponent,
+    ResultComparisonTablesFrameComponent,
   ],
   imports: [
     BrowserModule,
