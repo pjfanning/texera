@@ -33,6 +33,13 @@ export class WorkflowExecutionsService {
     return this.http.get<WorkflowExecutionsEntry[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}`);
   }
 
+  /**
+   * retrieves the result for a particular execution from backend database
+   */
+  retrieveExecutionResult(wid: number, eid:number): Observable<WorkflowExecutionsEntry> {
+    return this.http.get<WorkflowExecutionsEntry>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${eid}`);
+  }
+
   setIsBookmarked(wid: number, eId: number, isBookmarked: boolean): Observable<Object> {
     return this.http.put(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/set_execution_bookmark`, {
       wid,

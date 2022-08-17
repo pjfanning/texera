@@ -104,6 +104,46 @@ class WorkflowExecutionsResource {
     executionsDao.update(execution)
   }
 
+
+  /** Retrive single result */
+  /*
+  @GET
+  @Path("/{wid}/{eid}")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  def retrieveResultOfExecution(
+      @PathParam("wid") wid: UInteger,
+      @PathParam("eid") eid: UInteger,
+      @Auth sessionUser: SessionUser
+  ): WorkflowExecutionEntry = {
+    val user = sessionUser.getUser
+    if (
+      !WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) &&
+      !WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
+    ) {
+      context
+      .select(
+        WORKFLOW_EXECUTIONS.EID,
+        WORKFLOW_EXECUTIONS.VID,
+        field(
+          context
+            .select(USER.NAME)
+            .from(USER)
+            .where(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
+        ),
+        WORKFLOW_EXECUTIONS.STARTING_TIME,
+        WORKFLOW_EXECUTIONS.COMPLETION_TIME,
+        WORKFLOW_EXECUTIONS.STATUS,
+        WORKFLOW_EXECUTIONS.RESULT,
+        WORKFLOW_EXECUTIONS.BOOKMARKED,
+        WORKFLOW_EXECUTIONS.NAME
+      )
+      .from(WORKFLOW_EXECUTIONS)
+      .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
+      .and(WORKFLOW_EXECUTIONS.EID.eq(eid))
+    }
+  }
+  */
+
   /** Determine if user is authorized to access the workflow, if not raise 401 */
   def validateUserCanAccessWorkflow(uid: UInteger, wid: UInteger): Unit = {
     if (

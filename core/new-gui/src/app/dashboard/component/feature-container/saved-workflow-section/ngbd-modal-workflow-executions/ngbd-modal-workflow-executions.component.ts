@@ -9,7 +9,7 @@ import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.comp
 import { Router } from "@angular/router";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import Fuse from "fuse.js";
-// import test from "test.json";
+
 
 const MAX_TEXT_SIZE = 20;
 const MAX_RGB = 255;
@@ -109,7 +109,8 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     "View Result 4",
   ];
   public testArray: string[] = ["1"];
-  public something = true;
+  public something = 22157700000;
+  public resultPre = "";
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -134,7 +135,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     if (this.wid === undefined) {
       return;
     }
-    this.convertJson();
+    // this.convertJson();
     this.workflowExecutionsService
       .retrieveWorkflowExecutions(this.wid)
       .pipe(untilDestroyed(this))
@@ -184,6 +185,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         error: (_: unknown) => (row.bookmarked = wasPreviouslyBookmarked),
       });
   }
+  
 
   /* delete a single execution */
 
@@ -348,9 +350,13 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     return "rgba(" + r + "," + g + "," + b + ",0.8)";
   }
 
-  updateExpandedSet(index: number, expanded: boolean): void {
+  updateExpandedSet(row: WorkflowExecutionsEntry, index: number, expanded: boolean): void {
     if (expanded) {
       this.setOfExpandedIndex.add(index);
+      if (row.result !== null) {
+        this.resultPre = row.result;
+      }
+      console.log(row.result);
     } else {
       this.setOfExpandedIndex.delete(index);
     }
@@ -386,6 +392,23 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     } else {
       this.setOfSubExpandedIndex.delete(index);
     }
+  }
+
+  digitFormatter(num: number, digits: number): string {
+    const lookup = [
+      { value: 1, symbol: "" },
+      { value: 1e3, symbol: "k" },
+      { value: 1e6, symbol: "M" },
+      { value: 1e9, symbol: "G" },
+      { value: 1e12, symbol: "T" },
+      { value: 1e15, symbol: "P" },
+      { value: 1e18, symbol: "E" }
+    ];
+    const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+    var item = lookup.slice().reverse().find(function(item) {
+      return num >= item.value;
+    });
+    return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
   }
 
 
