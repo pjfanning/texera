@@ -292,37 +292,39 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     newSchema: OperatorSchema
   ): void {
     const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
+    console.log("updateOperatorPropertiesOnSchemaChange: op", operator, "oldSchema", oldSchema, "newSchema", newSchema);
     // only handle projection operator now
     if (operator.operatorType === "ProjectionV2") {
-      if (!oldSchema.jsonSchema.properties || !newSchema.jsonSchema.properties) return;
+      // TODO: Simplify the checking
       if (
-        !(oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items ||
-        !(newSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items
+        !(
+          oldSchema.jsonSchema.properties &&
+          newSchema.jsonSchema.properties &&
+          ((oldSchema.jsonSchema.properties?.attributes as CustomJSONSchema7).items as CustomJSONSchema7).enum &&
+          ((newSchema.jsonSchema.properties?.attributes as CustomJSONSchema7).items as CustomJSONSchema7).enum
+        )
       )
         return;
-      if (!((oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7).enum) return;
-      const oldAttributeList = (
-        (oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7
-      ).enum as string[];
-      const newAttributeList = (
-        (newSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7
-      ).enum as string[];
+      const oldEnumList = ((oldSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7)
+        .enum as string[];
+      const newEnumList = ((newSchema.jsonSchema.properties.attributes as CustomJSONSchema7).items as CustomJSONSchema7)
+        .enum as string[];
       const attributeMapping = levenshtein(
-        oldAttributeList,
-        newAttributeList,
+        oldEnumList,
+        newEnumList,
         (_: any) => 1,
         (_: any) => 1,
         (a: string, b: string) => (a !== b ? 1 : 0)
       );
-      const attributes = operator.operatorProperties.attributes;
-      if (!attributes) return;
+      const oldAttributes = operator.operatorProperties.attributes;
+      if (!oldAttributes) return;
       let newAttributes: string[] = [];
-      console.log(attributes, attributeMapping.pairs());
+      // console.log(attributes, attributeMapping.pairs());
       const pairs = attributeMapping.pairs();
       // pair = [old attribute name, new attribute name]
       for (var i = 0; i < pairs.length; ++i) {
         const pair = pairs[i];
-        if (!pair[0] || (attributes.includes(pair[0]) && pair[1])) {
+        if (!pair[0] || (oldAttributes.includes(pair[0]) && pair[1])) {
           newAttributes.push(pair[1]);
         }
       }
@@ -459,21 +461,18 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       }
       // if we need to reorder the array, a custom template `dragablearray` is used
       if (mapSource?.autofill === "attributeNameReorderList") {
-        // console.log("mapSource", mapSource);
-        // console.log("mapField", mappedField);
         if (mappedField.type) {
           mappedField.type = "draggablearray";
         }
         // sort according to the reordered list
-        // could be more efficient?
-        if (this.formData && this.formData.attributes) {
-          const attributeList = mappedField.templateOptions?.options as any[]; // safe to do so?
+        if (this.formData && this.formData.attributes && mappedField.templateOptions?.options) {
+          const options = mappedField.templateOptions?.options as any[]; // safe to do so?
           for (var i = 0; i < this.formData.attributes.length; ++i) {
-            for (var j = 0; j < attributeList.length; ++j) {
-              if (attributeList[j].label === this.formData.attributes[i]) {
-                const temp = attributeList[j];
-                attributeList[j] = attributeList[i];
-                attributeList[i] = temp;
+            for (var j = 0; j < options.length; ++j) {
+              if (options[j].label === this.formData.attributes[i]) {
+                const temp = options[j];
+                options[j] = options[i];
+                options[i] = temp;
               }
             }
           }
