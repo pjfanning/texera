@@ -182,4 +182,53 @@ class WorkflowExecutionsResource {
     execution.setName(request.executionName)
     executionsDao.update(execution)
   }
+
+  /**
+   * This method returns the executions of a workflow given by its ID
+   *
+   * @return executions[]
+   */
+  @GET
+  @Path("/{result}")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def retrieveResult(
+    @PathParam("result") wid: String,
+    @Auth sessionUser: SessionUser
+  ): List[WorkflowExecutionEntry] = {
+    val user = sessionUser.getUser
+    Schema schema = new schema({
+
+    });
+    MongoDBStorage(result,)
+    Utils.objectmapper();
+    if (
+      WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) ||
+        WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
+    ) {
+      List()
+    } else {
+      context
+        .select(
+          WORKFLOW_EXECUTIONS.EID,
+          WORKFLOW_EXECUTIONS.VID,
+          field(
+            context
+              .select(USER.NAME)
+              .from(USER)
+              .where(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
+          ),
+          WORKFLOW_EXECUTIONS.STARTING_TIME,
+          WORKFLOW_EXECUTIONS.COMPLETION_TIME,
+          WORKFLOW_EXECUTIONS.STATUS,
+          WORKFLOW_EXECUTIONS.RESULT,
+          WORKFLOW_EXECUTIONS.BOOKMARKED,
+          WORKFLOW_EXECUTIONS.NAME
+        )
+        .from(WORKFLOW_EXECUTIONS)
+        .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
+        .fetchInto(classOf[WorkflowExecutionEntry])
+        .toList
+    }
+  }
+
 }
