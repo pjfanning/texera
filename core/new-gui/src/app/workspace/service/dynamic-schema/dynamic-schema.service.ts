@@ -151,7 +151,7 @@ export class DynamicSchemaService {
     this.dynamicSchemaMap.set(operatorID, dynamicSchema);
     // only emit event if the old dynamic schema is not present
     if (currentDynamicSchema) {
-      console.log("next!");
+      console.log("dynamic schema changed!");
       this.operatorDynamicSchemaChangedStream.next({
         operatorID: operatorID,
         oldSchema: currentDynamicSchema,
