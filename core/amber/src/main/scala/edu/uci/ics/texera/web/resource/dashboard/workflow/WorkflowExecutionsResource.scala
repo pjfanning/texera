@@ -6,6 +6,10 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.operators.sink.storage.{
+  MongoDBStorage,
+}
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
 import org.jooq.types.UInteger
@@ -192,43 +196,13 @@ class WorkflowExecutionsResource {
   @Path("/{result}")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def retrieveResult(
-    @PathParam("result") wid: String,
+    @PathParam("result") result: String,
     @Auth sessionUser: SessionUser
-  ): List[WorkflowExecutionEntry] = {
+  ): String = {
     val user = sessionUser.getUser
-    Schema schema = new schema({
-
-    });
-    MongoDBStorage(result,)
-    Utils.objectmapper();
-    if (
-      WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) ||
-        WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
-    ) {
-      List()
-    } else {
-      context
-        .select(
-          WORKFLOW_EXECUTIONS.EID,
-          WORKFLOW_EXECUTIONS.VID,
-          field(
-            context
-              .select(USER.NAME)
-              .from(USER)
-              .where(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
-          ),
-          WORKFLOW_EXECUTIONS.STARTING_TIME,
-          WORKFLOW_EXECUTIONS.COMPLETION_TIME,
-          WORKFLOW_EXECUTIONS.STATUS,
-          WORKFLOW_EXECUTIONS.RESULT,
-          WORKFLOW_EXECUTIONS.BOOKMARKED,
-          WORKFLOW_EXECUTIONS.NAME
-        )
-        .from(WORKFLOW_EXECUTIONS)
-        .where(WORKFLOW_EXECUTIONS.WID.eq(wid))
-        .fetchInto(classOf[WorkflowExecutionEntry])
-        .toList
-    }
+    val schema = new Schema();
+    val something = MongoDBStorage(result, schema);
+    val haha = something.getRange(1, 2);
+    val sss = haha[0];
   }
-
 }
