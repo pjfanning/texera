@@ -198,11 +198,10 @@ class WorkflowExecutionsResource {
   def retrieveResult(
     @PathParam("result") result: String,
     @Auth sessionUser: SessionUser
-  ): String = {
+  ): List[Unit] = {
     val user = sessionUser.getUser
-    val schema = new Schema();
-    val something = MongoDBStorage(result, schema);
-    val haha = something.getRange(1, 2);
-    val sss = haha[0];
+    val schema = new Schema()
+    val something = new MongoDBStorage(result, schema)
+    val haha = something.getRange(1, 2).toList
   }
 }

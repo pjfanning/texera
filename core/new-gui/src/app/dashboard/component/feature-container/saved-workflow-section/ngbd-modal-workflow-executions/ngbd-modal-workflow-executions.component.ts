@@ -213,6 +213,20 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       });
   }
 
+  retrieveResult(result: string) {
+    if (result === null) {
+      console.log("empty result key");
+    } else {
+      this.workflowExecutionsService
+      .retrieveExecutionResult(result)
+      .pipe(untilDestroyed(this))
+      .subscribe(resultString => {
+        console.log(resultString);
+      });
+    }
+  }
+
+
   /* rename a single execution */
 
   confirmUpdateWorkflowExecutionsCustomName(row: WorkflowExecutionsEntry, name: string, index: number): void {
