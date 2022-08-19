@@ -187,6 +187,7 @@ class WorkflowExecutionsResource {
     executionsDao.update(execution)
   }
 
+/*
   /**
    * This method returns the executions of a workflow given by its ID
    *
@@ -204,4 +205,5 @@ class WorkflowExecutionsResource {
     val something = new MongoDBStorage(result, schema)
     val haha = something.getRange(1, 2).toList
   }
+  */
 }

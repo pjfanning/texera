@@ -108,6 +108,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     "View Result 3",
     "View Result 4",
   ];
+  public resultRows: string[] = [];
   public testArray: string[] = ["1"];
   public something = 22157700000;
   public resultPre = "";
@@ -376,11 +377,14 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
-  convertJson() {
-    // console.log(this.jsonRequest.charAt(131))
-    // let result = JSON.parse(this.jsonRequest);
-    // console.log(result);
-    // return result;
+  getResultKeys(row: WorkflowExecutionsEntry) {
+    let resultRows = JSON.parse(row.result)["result"];
+    if (resultRows !== null) {
+      console.log(resultRows);
+      return resultRows;
+    } else {
+      console.log("empty result key");
+    }    
   }
 
   convertSubTableIndex(supIndex: number, subIndex: number): number {

@@ -98,7 +98,7 @@
         <ng-container *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
           <tr>
             <td nzEllipsis>
-              <input type="checkbox" />
+              <input type="checkbox" click="getResultKeys(row)"/>
             </td>
             <td nzEllipsis>
               <i
