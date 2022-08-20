@@ -6,7 +6,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.sink.storage.{
   MongoDBStorage,
 }
@@ -146,4 +146,36 @@ class WorkflowExecutionsResource {
     execution.setName(request.executionName)
     executionsDao.update(execution)
   }
+
+  /**
+   * This method returns the executions of a workflow given by its ID
+   *
+   * @return executions[]
+   */
+  @GET
+  @Path("/{wid}/{result}")/Users/geo/Documents/Java Workspace/texera/core/new-gui/src/app/workspace/component/result-panel/result-table-frame/result-table-frame.component.ts
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def retrieveResult(
+    @PathParam("wid") wid: UInteger,
+    @PathParam("result") result: String,
+    @Auth sessionUser: SessionUser
+  ): Long = {
+    val user = sessionUser.getUser
+    if (
+      WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) ||
+        WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
+    ) {
+      -1;
+    } else {
+      val schema = new Schema(
+        new Attribute( attributeName = "id", AttributeType.INTEGER),
+        new Attribute( attributeName = "date", AttributeType.INTEGER),
+        new Attribute( attributeName = "title", AttributeType.STRING),
+      )
+      val resultTable = new MongoDBStorage(result, schema)
+      val resultCount = resultTable.getCount;
+      resultCount
+    }
+  }
+
 }

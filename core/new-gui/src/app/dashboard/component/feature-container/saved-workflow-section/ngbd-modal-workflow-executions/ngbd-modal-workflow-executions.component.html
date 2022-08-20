@@ -98,7 +98,7 @@
         <ng-container *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
           <tr>
             <td nzEllipsis>
-              <input type="checkbox" click="getResultKeys(row)"/>
+              <input type="checkbox"/>
             </td>
             <td nzEllipsis>
               <i
@@ -181,6 +181,7 @@
             <td
               [nzExpand]="setOfExpandedIndex.has(i)"
               (nzExpandChange)="updateExpandedSet(row, i, $event)"
+              (click)="retrieveResult(row.result)"
             ></td>
           </tr>
           <tr [nzExpand]="setOfExpandedIndex.has(i)">
@@ -216,7 +217,6 @@
                     >
                       <thead>
                         <tr>
-                          <th nzWidth="100px"> Show Row Details </th>
                           <th nzWidth="100px"> Title </th>
                           <th nzWidth="100px"> ID </th>
                           <th nzWidth="100px"> Date </th>
@@ -226,41 +226,7 @@
                       </thead>
                       <tbody>
                         <tr>
-                          <td *ngFor="let row of testArray; let k=index;">
-                            <button
-                              nz-button
-                              (click)="showRowDetails(convertrowDetailTableIndex(i, j, k))"
-                            >
-                              <span> Full Row </span>
-                            </button>
-                            <nz-modal
-                              [(nzVisible)]="showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]"
-                              nzTitle="Entry Details"
-                              (nzOnOk)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
-                              (nzOnCancel)="closeRowDetail(convertrowDetailTableIndex(i, j, k))"
-                            >
-                              <ng-container *nzModalContent>
-                                <nz-table
-                                  #rowDetailTable
-                                  [nzData]="workflowExecutionsDisplayedList"
-                                  [nzShowPagination]="false"
-                                  [nzScroll]="{ x: '800px' }"
-                                >
-                                  <thead>
-                                    <tr>
-                                      <th nzWidth="70px"> Entry Key </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    <tr>
-                                      <td> {{retrieveResult(row.result)}} </td>
-                                    </tr>
-                                  </tbody>
-                                </nz-table>
-                              </ng-container>
-                            </nz-modal>
-                          </td>
-                          <td nzEllipsis> This could be the title of the Result </td>
+                          <td nzEllipsis (click)="showDataInfo()"> This could be the title of the Result </td>
                           <td nzEllipsis> This could be the title of the Result </td>
                           <td nzEllipsis> This could be the title of the Result </td>
                           <td nzEllipsis> This could be the title of the Result </td>

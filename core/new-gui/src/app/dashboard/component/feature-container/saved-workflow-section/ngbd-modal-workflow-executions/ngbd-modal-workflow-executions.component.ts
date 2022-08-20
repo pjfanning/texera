@@ -118,7 +118,7 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     private workflowExecutionsService: WorkflowExecutionsService,
     private modalService: NgbModal,
     private notificationService: NotificationService,
-    private router: Router
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -214,19 +214,19 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       });
   }
 
-  // retrieveResult(result: string) {
-  //   if (result === null) {
-  //     console.log("empty result key");
-  //   } else {
-  //     this.workflowExecutionsService
-  //     .retrieveExecutionResult(result)
-  //     .pipe(untilDestroyed(this))
-  //     .subscribe(resultString => {
-  //       console.log(resultString);
-  //     });
-  //   }
-  // }
-
+  retrieveResult(result: string) {
+    let resultKey = this.getResultKeys(result);
+    if (result === "null") {
+      console.log("empty result key");
+    } else {
+      this.workflowExecutionsService
+        .retrieveExecutionResultTable(this.wid, result)
+        .pipe(untilDestroyed(this))
+        .subscribe(resultString => {
+          console.log(resultString);
+      });
+    }
+  }
 
   /* rename a single execution */
 
@@ -368,22 +368,20 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   updateExpandedSet(row: WorkflowExecutionsEntry, index: number, expanded: boolean): void {
     if (expanded) {
       this.setOfExpandedIndex.add(index);
-      if (row.result !== null) {
-        this.resultPre = row.result;
-      }
-      console.log(row.result);
     } else {
       this.setOfExpandedIndex.delete(index);
     }
   }
 
-  getResultKeys(row: WorkflowExecutionsEntry) {
-    let resultRows = JSON.parse(row.result)["result"];
-    if (resultRows !== null) {
-      console.log(resultRows);
-      return resultRows;
+
+  getResultKeys(result: string): string {
+    if (result !== null) {
+      let resultKeyList = JSON.parse(result)["results"];
+      console.log(resultKeyList[0]);
+      return resultKeyList[0];
     } else {
       console.log("empty result key");
+      return "null";
     }    
   }
 
@@ -410,6 +408,37 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     } else {
       this.setOfSubExpandedIndex.delete(index);
     }
+  }
+
+  // TODO: Pass in an item from backend, and its a row of data
+  // for now just hardcoded it
+  showDataInfo() {
+    const rowTable = document.createElement("nz-modal");
+    rowTable.setAttribute("[(nzVisible)]", "showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]");
+    rowTable.setAttribute("nzTitle", "Entry Details");
+    rowTable.setAttribute("(nzOnOk)", "closeRowDetail(convertrowDetailTableIndex(i, j, k))");
+    rowTable.setAttribute("(nzOnCancel)", "closeRowDetail(convertrowDetailTableIndex(i, j, k))");
+    rowTable.innerHTML = `
+      <ng-container *nzModalContent>
+        <nz-table
+          #rowDetailTable
+          [nzData]="workflowExecutionsDisplayedList"
+          [nzShowPagination]="false"
+          [nzScroll]="{ x: '800px' }"
+        >
+          <thead>
+            <tr>
+              <th nzWidth="70px"> Entry Key </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td> haha </td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </ng-container>
+    `
   }
 
   digitFormatter(num: number, digits: number): string {
