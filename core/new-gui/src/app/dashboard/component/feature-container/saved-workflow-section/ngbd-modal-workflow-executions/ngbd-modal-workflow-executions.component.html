@@ -181,8 +181,8 @@
             <td
               [nzExpand]="setOfExpandedIndex.has(i)"
               (nzExpandChange)="updateExpandedSet(row, i, $event)"
-              (click)="retrieveResult(row.result)"
             ></td>
+            <!-- (click)="retrieveResult(row.result)" -->
           </tr>
           <tr [nzExpand]="setOfExpandedIndex.has(i)">
             <h5 class="sub-table-title"> View Result </h5>

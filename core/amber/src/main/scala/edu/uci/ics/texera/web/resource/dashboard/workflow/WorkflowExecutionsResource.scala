@@ -147,13 +147,14 @@ class WorkflowExecutionsResource {
     executionsDao.update(execution)
   }
 
+/*
   /**
    * This method returns the executions of a workflow given by its ID
    *
    * @return executions[]
    */
   @GET
-  @Path("/{wid}/{result}")/Users/geo/Documents/Java Workspace/texera/core/new-gui/src/app/workspace/component/result-panel/result-table-frame/result-table-frame.component.ts
+  @Path("/{wid}/{result}")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def retrieveResult(
     @PathParam("wid") wid: UInteger,
@@ -177,5 +178,5 @@ class WorkflowExecutionsResource {
       resultCount
     }
   }
-
+*/
 }

@@ -36,9 +36,9 @@ export class WorkflowExecutionsService {
   /**
    * retrieves the result table for a particular execution from mongo database
    */
-  retrieveExecutionResultTable(wid: number, result: String): Observable<number> {
-    return this.http.get<number>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${result}`);
-  }
+  // retrieveExecutionResultTable(wid: number, result: String): Observable<number> {
+  //   return this.http.get<number>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${result}`);
+  // }
 
   setIsBookmarked(wid: number, eId: number, isBookmarked: boolean): Observable<Object> {
     return this.http.put(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/set_execution_bookmark`, {

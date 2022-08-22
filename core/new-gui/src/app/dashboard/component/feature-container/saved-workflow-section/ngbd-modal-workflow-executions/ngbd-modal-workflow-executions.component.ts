@@ -214,19 +214,19 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       });
   }
 
-  retrieveResult(result: string) {
-    let resultKey = this.getResultKeys(result);
-    if (result === "null") {
-      console.log("empty result key");
-    } else {
-      this.workflowExecutionsService
-        .retrieveExecutionResultTable(this.wid, result)
-        .pipe(untilDestroyed(this))
-        .subscribe(resultString => {
-          console.log(resultString);
-      });
-    }
-  }
+  // retrieveResult(result: string) {
+  //   let resultKey = this.getResultKeys(result);
+  //   if (result === "null") {
+  //     console.log("empty result key");
+  //   } else {
+  //     this.workflowExecutionsService
+  //       .retrieveExecutionResultTable(this.wid, result)
+  //       .pipe(untilDestroyed(this))
+  //       .subscribe(resultString => {
+  //         console.log(resultString);
+  //     });
+  //   }
+  // }
 
   /* rename a single execution */
 
@@ -374,16 +374,16 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   }
 
 
-  getResultKeys(result: string): string {
-    if (result !== null) {
-      let resultKeyList = JSON.parse(result)["results"];
-      console.log(resultKeyList[0]);
-      return resultKeyList[0];
-    } else {
-      console.log("empty result key");
-      return "null";
-    }    
-  }
+  // getResultKeys(result: string): string {
+  //   if (result !== null) {
+  //     let resultKeyList = JSON.parse(result)["results"];
+  //     console.log(resultKeyList[0]);
+  //     return resultKeyList[0];
+  //   } else {
+  //     console.log("empty result key");
+  //     return "null";
+  //   }    
+  // }
 
   convertSubTableIndex(supIndex: number, subIndex: number): number {
     return supIndex * MAX_RESULT_VIEW + subIndex;
