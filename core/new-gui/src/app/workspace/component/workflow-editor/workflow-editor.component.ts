@@ -3,6 +3,9 @@ import * as joint from "jointjs";
 // if jQuery needs to be used: 1) use jQuery instead of `$`, and
 // 2) always add this import statement even if TypeScript doesn't show an error https://github.com/Microsoft/TypeScript/issues/22016
 import * as jQuery from "jquery";
+// import any jquery plugins after importing jQuery,
+// make sure to import even if TypeScript doesn't show an error
+import "jquery-contextmenu";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -27,6 +30,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { UndoRedoService } from "../../service/undo-redo/undo-redo.service";
 import { WorkflowCollabService } from "../../service/workflow-collab/workflow-collab.service";
 import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+
 
 // This type represents the copied operator and its information:
 // - operator: the copied operator itself, and its properties, etc.
@@ -160,6 +164,7 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     this.handleOperatorSuggestionHighlightEvent();
     this.dragDropService.registerWorkflowEditorDrop(this.WORKFLOW_EDITOR_JOINTJS_ID);
 
+    this.rightClickContextMenu();
     this.handleElementDelete();
     this.handleElementSelectAll();
     this.handleElementCopy();
@@ -603,11 +608,11 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
   }
 
   private rightClickContextMenu(): void {
-    const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
 
-    const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-
-    var isVisible = function (key: any, opt: { $trigger: { nodeName: string } }) {
+    var isVisible =  (key: any, opt: { $trigger: { nodeName: string } }) => {
+      const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+      const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+  
       if (highlightedOperatorIDs.length > 0 || highlightedGroupIDs.length > 0) {
         return true;
       } else {
@@ -616,10 +621,14 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     };
 
     jQuery(() => {
+
       jQuery.contextMenu({
         selector: ".texera-workspace-workflow-editor-body",
 
         callback: (key: any, options: any) => {
+          const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+          const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+      
           if (key == "copy") {
             this.clearCopiedElements();
             this.saveHighlighedElements();
