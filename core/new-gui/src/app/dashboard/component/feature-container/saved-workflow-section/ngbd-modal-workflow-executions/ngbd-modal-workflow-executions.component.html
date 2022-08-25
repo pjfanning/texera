@@ -199,12 +199,13 @@
                 </tr>
               </thead>
               <tbody>
-                <ng-container *ngFor="let row of hardCodedRows; let j=index;">
+                <ng-container *ngFor="let sink of getResultKeys(row.result); let j=index;">
                   <tr>
-                    <td nzEllipsis> {{row}} </td>
+                    <td nzEllipsis> View Result {{j+1}} </td>
                     <td
                       [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))"
                       (nzExpandChange)="updateSubExpandedSet(i, j, $event)"
+                      (click)="retrieveResult(sink)"
                     ></td>
                   </tr>
                   <tr [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))">
@@ -217,24 +218,17 @@
                     >
                       <thead>
                         <tr>
-                          <th nzWidth="100px"> Title </th>
-                          <th nzWidth="100px"> ID </th>
-                          <th nzWidth="100px"> Date </th>
-                          <th nzWidth="100px"> Creator </th>
-                          <th nzWidth="100px"> Workflow </th>
+                          <th nzWidth="100px" *ngFor="let column of getData(resultRow[sink], 'key')">{{column}}</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td nzEllipsis (click)="showDataInfo()"> This could be the title of the Result </td>
-                          <td nzEllipsis> This could be the title of the Result </td>
-                          <td nzEllipsis> This could be the title of the Result </td>
-                          <td nzEllipsis> This could be the title of the Result </td>
-                          <td nzEllipsis> This could be the title of the Result </td>
+                        <tr *ngFor="let row of testArray">
+                          <td nzEllipsis *ngFor="let cell of getData(resultRow[sink], 'value')">{{cell}}</td>
                         </tr>
                       </tbody>
                     </nz-table>
-                    <h6> Data Volumn: {{digitFormatter(500, 2)}} </h6>
+                    <!-- Data Volumn: {{digitFormatter(resultCount[sink], 2)}} -->
+                    <h6> Data Volumn: {{digitFormatter(something, 2)}} </h6>
                   </tr>
                 </ng-container>
               </tbody>

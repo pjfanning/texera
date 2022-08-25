@@ -10,6 +10,10 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType
 import edu.uci.ics.texera.workflow.operators.sink.storage.{
   MongoDBStorage,
 }
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoCursor, MongoDatabase}
+import edu.uci.ics.amber.engine.common.AmberUtils
+
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
 import org.jooq.types.UInteger
@@ -147,7 +151,7 @@ class WorkflowExecutionsResource {
     executionsDao.update(execution)
   }
 
-/*
+
   /**
    * This method returns the executions of a workflow given by its ID
    *
@@ -160,23 +164,37 @@ class WorkflowExecutionsResource {
     @PathParam("wid") wid: UInteger,
     @PathParam("result") result: String,
     @Auth sessionUser: SessionUser
-  ): Long = {
+  ): String = {
     val user = sessionUser.getUser
     if (
       WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) ||
         WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
     ) {
-      -1;
+      "Invlid User"
     } else {
+      //      val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
+      //      val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
+      //      val client: MongoClient = MongoClients.create(url)
+      //      val database: MongoDatabase = client.getDatabase(databaseName)
+//      new Attribute(attributeName = "id", AttributeType.INTEGER),
+//      new Attribute(attributeName = "date", AttributeType.INTEGER),
+//      new Attribute(attributeName = "title", AttributeType.STRING),
       val schema = new Schema(
-        new Attribute( attributeName = "id", AttributeType.INTEGER),
-        new Attribute( attributeName = "date", AttributeType.INTEGER),
-        new Attribute( attributeName = "title", AttributeType.STRING),
+        new Attribute("id", AttributeType.INTEGER),
+        new Attribute("date", AttributeType.INTEGER),
+        new Attribute("title", AttributeType.STRING),
+        new Attribute("status", AttributeType.INTEGER),
+        new Attribute("message", AttributeType.STRING),
+        new Attribute("type", AttributeType.STRING),
       )
+      //      val resultCount = database.getCollection(result).countDocuments()
+      //      val resultRow = database.getCollection(result)
       val resultTable = new MongoDBStorage(result, schema)
-      val resultCount = resultTable.getCount;
-      resultCount
+      val resultRow = resultTable.getRange(0, 1).map(oneRowArray => oneRowArray.asKeyValuePairJson()).toList
+      val resultRowJson = resultRow(0).toString()
+      resultRowJson
+      //    val resultCount = resultTable.getCount;
+      //    resultCount
     }
   }
-*/
 }
