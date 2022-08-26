@@ -217,15 +217,15 @@
                           <th
                             class="sample-row-title"
                             nzWidth="100px"
-                            *ngFor="let column of getData(resultRow[sink], 'key')"
+                            *ngFor="let column of getColumnName(resultRow[sink])"
                           >
-                            {{column}}
+                            {{column.split("_").join(" ")}}
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
-                          <td nzEllipsis *ngFor="let cell of getData(resultRow[sink], 'value')">
+                          <td nzEllipsis *ngFor="let cell of getData(resultRow[sink])">
                             {{cell !== null ? cell : "Null Data"}}
                           </td>
                         </tr>

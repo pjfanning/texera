@@ -376,21 +376,26 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
-  getData(row: string, outputType: string) {
+  getColumnName(row: string): string[] {
     if (row === null || row === undefined) {
       return [];
     } else {
       let resultRowJson = JSON.parse(row);
-      if (outputType === "key") {
-        if (Object.keys(resultRowJson) !== undefined) {
-          return Object.keys(resultRowJson);
-        }
-      } else if (outputType === "value") {
-        if (Object.values(resultRowJson) !== undefined) {
-          return Object.values(resultRowJson);
-        }
+      if (Object.keys(resultRowJson) !== undefined) {
+        return Object.keys(resultRowJson).slice(1);
       } else {
         return [];
+      }
+    }
+  }
+
+  getData(row: string) {
+    if (row === null || row === undefined) {
+      return [];
+    } else {
+      let resultRowJson = JSON.parse(row);
+      if (Object.values(resultRowJson) !== undefined) {
+        return Object.values(resultRowJson).slice(1);
       }
     }
   }
@@ -438,6 +443,14 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         return num >= item.value;
       });
     return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
+  }
+
+  splitCapitalize(header: string): string {
+    let resultString = header.split("_");
+    resultString.forEach(word => {
+      word = word.charAt(0).toUpperCase() + word.slice(1);
+    });
+    return resultString.join(" ");
   }
 
   public searchInputOnChange(value: string): void {

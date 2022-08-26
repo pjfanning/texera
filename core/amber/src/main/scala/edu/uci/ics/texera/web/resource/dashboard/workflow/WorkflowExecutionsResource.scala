@@ -8,11 +8,11 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutio
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.sink.storage.{MongoDBStorage}
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoCursor, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
 import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.texera.Utils
+import edu.uci.ics.texera.workflow.common.storage.{OpResultMongodbStorage}
 
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
@@ -171,19 +171,11 @@ class WorkflowExecutionsResource {
     ) {
       (-1, "Invlid User")
     } else {
-      val schema = new Schema(
-        new Attribute("text", AttributeType.STRING),
-        new Attribute("lang", AttributeType.STRING),
-        new Attribute("like_count", AttributeType.INTEGER),
-        new Attribute("user_pinned_tweet_id", AttributeType.LONG)
-      )
-      val resultTable = new MongoDBStorage(result, schema)
-      val resultRow =
-        resultTable.getRange(0, 1).map(oneRowArray => oneRowArray.asKeyValuePairJson()).toList
-      val resultRowJson = resultRow(0).toString()
-      val resultCount = resultTable.getCount
-      val something = (resultCount, resultRowJson)
-      something
+      val resultTable = new OpResultMongodbStorage(result)
+      val resultCount = resultTable.getCount()
+      val resultRowJson = resultTable.getSampleResultRow()
+      val resultStat = (resultCount, resultRowJson)
+      resultStat
     }
   }
 }
