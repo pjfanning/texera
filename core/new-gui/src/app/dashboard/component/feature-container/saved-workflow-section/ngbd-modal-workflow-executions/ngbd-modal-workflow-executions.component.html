@@ -98,7 +98,7 @@
         <ng-container *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
           <tr>
             <td nzEllipsis>
-              <input type="checkbox"/>
+              <input type="checkbox" />
             </td>
             <td nzEllipsis>
               <i
@@ -178,14 +178,10 @@
                 (click)="onDelete(row)"
               ></i>
             </td>
-            <td
-              [nzExpand]="setOfExpandedIndex.has(i)"
-              (nzExpandChange)="updateExpandedSet(row, i, $event)"
-            ></td>
-            <!-- (click)="retrieveResult(row.result)" -->
+            <td [nzExpand]="setOfExpandedIndex.has(i)" (nzExpandChange)="updateExpandedSet(row, i, $event)"></td>
           </tr>
           <tr [nzExpand]="setOfExpandedIndex.has(i)">
-            <h5 class="sub-table-title"> View Result </h5>
+            <h5 class="sub-table-title">View Result</h5>
             <nz-table
               #basicTable
               [nzData]="workflowExecutionsDisplayedList"
@@ -194,14 +190,14 @@
             >
               <thead>
                 <tr>
-                  <th nzWidth="100px"> Sink Name </th>
-                  <th nzWidth="100px"> View Details </th>
+                  <th nzWidth="100px">Sink Name</th>
+                  <th nzWidth="100px">View Details</th>
                 </tr>
               </thead>
               <tbody>
                 <ng-container *ngFor="let sink of getResultKeys(row.result); let j=index;">
                   <tr>
-                    <td nzEllipsis> View Result {{j+1}} </td>
+                    <td nzEllipsis>View Result {{j+1}}</td>
                     <td
                       [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))"
                       (nzExpandChange)="updateSubExpandedSet(i, j, $event)"
@@ -209,26 +205,33 @@
                     ></td>
                   </tr>
                   <tr [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))">
-                    <h5 class="sub-table-title"> Details </h5>
+                    <h5 class="sub-table-title">Sample Row</h5>
                     <nz-table
                       #detailTable
                       [nzData]="workflowExecutionsDisplayedList"
                       [nzShowPagination]="false"
-                      [nzScroll]="{ x: '1000px' }"
+                      [nzScroll]="{ x: '500px' }"
                     >
                       <thead>
                         <tr>
-                          <th nzWidth="100px" *ngFor="let column of getData(resultRow[sink], 'key')">{{column}}</th>
+                          <th
+                            class="sample-row-title"
+                            nzWidth="100px"
+                            *ngFor="let column of getData(resultRow[sink], 'key')"
+                          >
+                            {{column}}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr *ngFor="let row of testArray">
-                          <td nzEllipsis *ngFor="let cell of getData(resultRow[sink], 'value')">{{cell}}</td>
+                        <tr>
+                          <td nzEllipsis *ngFor="let cell of getData(resultRow[sink], 'value')">
+                            {{cell !== null ? cell : "Null Data"}}
+                          </td>
                         </tr>
                       </tbody>
                     </nz-table>
-                    <!-- Data Volumn: {{digitFormatter(resultCount[sink], 2)}} -->
-                    <h6> Data Volumn: {{digitFormatter(something, 2)}} </h6>
+                    <h6>Number of rows: {{digitFormatter(resultCount[sink], 2)}}</h6>
                   </tr>
                 </ng-container>
               </tbody>

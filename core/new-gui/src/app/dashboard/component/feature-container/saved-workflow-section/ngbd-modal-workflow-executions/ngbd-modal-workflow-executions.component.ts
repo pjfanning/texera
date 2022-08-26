@@ -10,7 +10,6 @@ import { Router } from "@angular/router";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import Fuse from "fuse.js";
 
-
 const MAX_TEXT_SIZE = 20;
 const MAX_RGB = 255;
 const MAX_USERNAME_SIZE = 5;
@@ -102,30 +101,21 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public setOfExpandedIndex: Set<number> = new Set<number>();
   public setOfSubExpandedIndex: Set<number> = new Set<number>();
   public showORhideFullDetail: boolean[] = [];
-  public hardCodedRows: string[] = [
-    "View Result 1",
-    "View Result 2",
-    "View Result 3",
-    "View Result 4",
-  ];
-  public resultRows: string[] = [];
-  public testArray: string[] = ["1"];
-  public something = 22157700000;
-  public resultCount: {[key: string]: number} = {};
-  public resultRow: {[key: string]: object} = {};
+  public resultCount: { [key: string]: number } = {};
+  public resultRow: { [key: string]: string } = {};
 
   constructor(
     public activeModal: NgbActiveModal,
     private workflowExecutionsService: WorkflowExecutionsService,
     private modalService: NgbModal,
     private notificationService: NotificationService,
-    private router: Router,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
     // gets the workflow executions and display the runs in the table on the form
     this.displayWorkflowExecutions();
-    for (let i=0; i<this.pageSize*this.sinkSize*this.rowDetailPageSize; i++) {
+    for (let i = 0; i < this.pageSize * this.sinkSize * this.rowDetailPageSize; i++) {
       this.showORhideFullDetail.push(false);
     }
   }
@@ -187,7 +177,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         error: (_: unknown) => (row.bookmarked = wasPreviouslyBookmarked),
       });
   }
-  
 
   /* delete a single execution */
 
@@ -216,7 +205,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   }
 
   retrieveResult(result: string) {
-    // let resultKey = this.getResultKeys(result);
     if (result === null) {
       console.log("empty result key");
     } else {
@@ -224,11 +212,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         .retrieveExecutionResultTable(this.wid, result)
         .pipe(untilDestroyed(this))
         .subscribe(resultInfo => {
-          this.resultRow[result] = resultInfo;
-          console.log(resultInfo);
-          // console.log(resultString);
-          console.log(this.resultRow);
-      });
+          this.resultCount[result] = resultInfo[0];
+          this.resultRow[result] = resultInfo[1];
+        });
     }
   }
 
@@ -377,33 +363,31 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
-
   getResultKeys(result: string): string[] {
     if (result !== null) {
       let resultKeyList = JSON.parse(result)["results"];
-      // console.log(resultKeyList);
       if (resultKeyList === null) {
         return [];
       } else {
         return resultKeyList;
       }
     } else {
-      // console.log("empty result key");
       return [];
-    }    
+    }
   }
 
-  getData(row: object, outputType: string) {
+  getData(row: string, outputType: string) {
     if (row === null || row === undefined) {
       return [];
     } else {
+      let resultRowJson = JSON.parse(row);
       if (outputType === "key") {
-        if (Object.keys(row) !== undefined) {
-          return Object.keys(row);
+        if (Object.keys(resultRowJson) !== undefined) {
+          return Object.keys(resultRowJson);
         }
       } else if (outputType === "value") {
-        if (Object.values(row) !== undefined) {
-          return Object.values(row);
+        if (Object.values(resultRowJson) !== undefined) {
+          return Object.values(resultRowJson);
         }
       } else {
         return [];
@@ -427,44 +411,13 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     this.showORhideFullDetail[rowDetailIndex] = false;
   }
 
-  updateSubExpandedSet(supIndex: number, subIndex:number, expanded: boolean): void {
+  updateSubExpandedSet(supIndex: number, subIndex: number, expanded: boolean): void {
     let index = this.convertSubTableIndex(supIndex, subIndex);
     if (expanded) {
       this.setOfSubExpandedIndex.add(index);
     } else {
       this.setOfSubExpandedIndex.delete(index);
     }
-  }
-
-  // TODO: Pass in an item from backend, and its a row of data
-  // for now just hardcoded it
-  showDataInfo() {
-    const rowTable = document.createElement("nz-modal");
-    rowTable.setAttribute("[(nzVisible)]", "showORhideFullDetail[convertrowDetailTableIndex(i, j, k)]");
-    rowTable.setAttribute("nzTitle", "Entry Details");
-    rowTable.setAttribute("(nzOnOk)", "closeRowDetail(convertrowDetailTableIndex(i, j, k))");
-    rowTable.setAttribute("(nzOnCancel)", "closeRowDetail(convertrowDetailTableIndex(i, j, k))");
-    rowTable.innerHTML = `
-      <ng-container *nzModalContent>
-        <nz-table
-          #rowDetailTable
-          [nzData]="workflowExecutionsDisplayedList"
-          [nzShowPagination]="false"
-          [nzScroll]="{ x: '800px' }"
-        >
-          <thead>
-            <tr>
-              <th nzWidth="70px"> Entry Key </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td> haha </td>
-            </tr>
-          </tbody>
-        </nz-table>
-      </ng-container>
-    `
   }
 
   digitFormatter(num: number, digits: number): string {
@@ -475,15 +428,17 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       { value: 1e9, symbol: "G" },
       { value: 1e12, symbol: "T" },
       { value: 1e15, symbol: "P" },
-      { value: 1e18, symbol: "E" }
+      { value: 1e18, symbol: "E" },
     ];
     const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
-    var item = lookup.slice().reverse().find(function(item) {
-      return num >= item.value;
-    });
+    var item = lookup
+      .slice()
+      .reverse()
+      .find(function (item) {
+        return num >= item.value;
+      });
     return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
   }
-
 
   public searchInputOnChange(value: string): void {
     const searchConditionsSet = [...new Set(value.trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g))];

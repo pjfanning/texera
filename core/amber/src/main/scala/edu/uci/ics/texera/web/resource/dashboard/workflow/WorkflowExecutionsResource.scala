@@ -7,12 +7,12 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecution
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
-import edu.uci.ics.texera.workflow.operators.sink.storage.{
-  MongoDBStorage,
-}
+import edu.uci.ics.texera.workflow.operators.sink.storage.{MongoDBStorage}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoCursor, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
+import com.fasterxml.jackson.databind.node.ObjectNode
+import edu.uci.ics.texera.Utils
 
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL.field
@@ -151,50 +151,39 @@ class WorkflowExecutionsResource {
     executionsDao.update(execution)
   }
 
-
   /**
-   * This method returns the executions of a workflow given by its ID
-   *
-   * @return executions[]
-   */
+    * This method returns the executions of a workflow given by its ID
+    *
+    * @return executions[]
+    */
   @GET
   @Path("/{wid}/{result}")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def retrieveResult(
-    @PathParam("wid") wid: UInteger,
-    @PathParam("result") result: String,
-    @Auth sessionUser: SessionUser
-  ): String = {
+      @PathParam("wid") wid: UInteger,
+      @PathParam("result") result: String,
+      @Auth sessionUser: SessionUser
+  ): (Long, String) = {
     val user = sessionUser.getUser
     if (
       WorkflowAccessResource.hasNoWorkflowAccess(wid, user.getUid) ||
-        WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
+      WorkflowAccessResource.hasNoWorkflowAccessRecord(wid, user.getUid)
     ) {
-      "Invlid User"
+      (-1, "Invlid User")
     } else {
-      //      val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
-      //      val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")
-      //      val client: MongoClient = MongoClients.create(url)
-      //      val database: MongoDatabase = client.getDatabase(databaseName)
-//      new Attribute(attributeName = "id", AttributeType.INTEGER),
-//      new Attribute(attributeName = "date", AttributeType.INTEGER),
-//      new Attribute(attributeName = "title", AttributeType.STRING),
       val schema = new Schema(
-        new Attribute("id", AttributeType.INTEGER),
-        new Attribute("date", AttributeType.INTEGER),
-        new Attribute("title", AttributeType.STRING),
-        new Attribute("status", AttributeType.INTEGER),
-        new Attribute("message", AttributeType.STRING),
-        new Attribute("type", AttributeType.STRING),
+        new Attribute("text", AttributeType.STRING),
+        new Attribute("lang", AttributeType.STRING),
+        new Attribute("like_count", AttributeType.INTEGER),
+        new Attribute("user_pinned_tweet_id", AttributeType.LONG)
       )
-      //      val resultCount = database.getCollection(result).countDocuments()
-      //      val resultRow = database.getCollection(result)
       val resultTable = new MongoDBStorage(result, schema)
-      val resultRow = resultTable.getRange(0, 1).map(oneRowArray => oneRowArray.asKeyValuePairJson()).toList
+      val resultRow =
+        resultTable.getRange(0, 1).map(oneRowArray => oneRowArray.asKeyValuePairJson()).toList
       val resultRowJson = resultRow(0).toString()
-      resultRowJson
-      //    val resultCount = resultTable.getCount;
-      //    resultCount
+      val resultCount = resultTable.getCount
+      val something = (resultCount, resultRowJson)
+      something
     }
   }
 }
