@@ -127,7 +127,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     if (this.wid === undefined) {
       return;
     }
-    // this.convertJson();
     this.workflowExecutionsService
       .retrieveWorkflowExecutions(this.wid)
       .pipe(untilDestroyed(this))

@@ -22,7 +22,7 @@ class MongoDBStorage(id: String, schema: Schema) extends SinkStorageReader {
   val client: MongoClient = MongoClients.create(url)
   val database: MongoDatabase = client.getDatabase(databaseName)
   val commitBatchSize: Int = AmberUtils.amberConfig.getInt("storage.mongodb.commit-batch-size")
-//  database.getCollection(id).drop()
+  database.getCollection(id).drop()
 
   val catalogCollectionName: String =
     AmberUtils.amberConfig.getString("storage.mongodb.cleanup.catalog-collection-name")
