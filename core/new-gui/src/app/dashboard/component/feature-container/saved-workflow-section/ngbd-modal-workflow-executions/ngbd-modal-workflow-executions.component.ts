@@ -78,8 +78,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public isAscSort: boolean = true;
   public currentPageIndex: number = 1;
   public pageSize: number = 10;
-  public rowDetailPageSize: number = 10;
-  public sinkSize: number = 10;
   public pageSizeOptions: number[] = [5, 10, 20, 30, 40];
   public numOfExecutions: number = 0;
   public paginatedExecutionEntries: WorkflowExecutionsEntry[] = [];
@@ -115,9 +113,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   ngOnInit(): void {
     // gets the workflow executions and display the runs in the table on the form
     this.displayWorkflowExecutions();
-    for (let i = 0; i < this.pageSize * this.sinkSize * this.rowDetailPageSize; i++) {
-      this.showORhideFullDetail.push(false);
-    }
   }
 
   /**
@@ -403,18 +398,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     return supIndex * MAX_RESULT_VIEW + subIndex;
   }
 
-  convertrowDetailTableIndex(workflowIndex: number, sinkIndex: number, rowDetailIndex: number): number {
-    return workflowIndex * this.pageSize * this.rowDetailPageSize + sinkIndex * this.rowDetailPageSize + rowDetailIndex;
-  }
-
-  showRowDetails(rowDetailIndex: number) {
-    this.showORhideFullDetail[rowDetailIndex] = true;
-  }
-
-  closeRowDetail(rowDetailIndex: number) {
-    this.showORhideFullDetail[rowDetailIndex] = false;
-  }
-
   updateSubExpandedSet(supIndex: number, subIndex: number, expanded: boolean): void {
     let index = this.convertSubTableIndex(supIndex, subIndex);
     if (expanded) {
@@ -442,14 +425,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         return num >= item.value;
       });
     return item ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol : "0";
-  }
-
-  splitCapitalize(header: string): string {
-    let resultString = header.split("_");
-    resultString.forEach(word => {
-      word = word.charAt(0).toUpperCase() + word.slice(1);
-    });
-    return resultString.join(" ");
   }
 
   public searchInputOnChange(value: string): void {

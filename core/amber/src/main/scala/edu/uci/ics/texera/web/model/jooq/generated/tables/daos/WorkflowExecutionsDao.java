@@ -125,13 +125,6 @@ public class WorkflowExecutionsDao extends DAOImpl<WorkflowExecutionsRecord, edu
     }
 
     /**
-     * Fetch a unique record that has <code>result = value</code>
-     */
-    public edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions fetchOneByResult(String value) {
-        return fetchOne(WorkflowExecutions.WORKFLOW_EXECUTIONS.RESULT, value);
-    }
-
-    /**
      * Fetch records that have <code>result IN (values)</code>
      */
     public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions> fetchByResult(String... values) {
