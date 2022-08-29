@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import {BehaviorSubject, Observable, Subject} from "rxjs";
+import { BehaviorSubject, Observable, Subject } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
 import { HttpClient } from "@angular/common/http";
 import { WorkflowExecutionsEntry } from "../../type/workflow-executions-entry";
@@ -65,12 +65,20 @@ export class WorkflowExecutionsService {
 
   public retrieveWorkflowByExecutions(wid: number, vid1: number, vid2: number): Observable<Workflow> {
     let subject: Subject<Workflow> = new Subject<Workflow>();
-    this.http.get<Workflow>(`${WORKFLOW_VERSIONS_API_BASE_URL}/${wid}/${vid1}`).pipe(
-      filter((workflow: Workflow) => workflow != null),
-      map(WorkflowUtilService.parseWorkflowInfo)).subscribe(val => subject.next(val));
-    this.http.get<Workflow>(`${WORKFLOW_VERSIONS_API_BASE_URL}/${wid}/${vid2}`).pipe(
-      filter((workflow: Workflow) => workflow != null),
-      map(WorkflowUtilService.parseWorkflowInfo)).subscribe(val => subject.next(val));
+    this.http
+      .get<Workflow>(`${WORKFLOW_VERSIONS_API_BASE_URL}/${wid}/${vid1}`)
+      .pipe(
+        filter((workflow: Workflow) => workflow != null),
+        map(WorkflowUtilService.parseWorkflowInfo)
+      )
+      .subscribe(val => subject.next(val));
+    this.http
+      .get<Workflow>(`${WORKFLOW_VERSIONS_API_BASE_URL}/${wid}/${vid2}`)
+      .pipe(
+        filter((workflow: Workflow) => workflow != null),
+        map(WorkflowUtilService.parseWorkflowInfo)
+      )
+      .subscribe(val => subject.next(val));
     return subject.asObservable();
   }
 

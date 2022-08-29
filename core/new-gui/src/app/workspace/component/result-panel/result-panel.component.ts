@@ -168,7 +168,7 @@ export class ResultPanelComponent implements OnInit {
       console.log("current highlighted operators: ", highlightedOperators);
       if (highlightedOperators.length == 1) {
         highlightedOperators.forEach(operatorId => {
-          if (operatorId.includes("SimpleSink")){
+          if (operatorId.includes("SimpleSink")) {
             this.eIdToSink.set(parseInt(operatorId.split("_")[0]), operatorId);
           }
         });
@@ -180,7 +180,7 @@ export class ResultPanelComponent implements OnInit {
         return;
       }
       this.displayDifference();
-     } else {
+    } else {
       const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
       const currentHighlightedOperator = highlightedOperators.length === 1 ? highlightedOperators[0] : undefined;
       if (this.currentOperatorId !== currentHighlightedOperator) {
@@ -250,8 +250,12 @@ export class ResultPanelComponent implements OnInit {
   }
 
   displayDifference() {
-    const paginatedResultService = this.workflowResultService.getPaginatedResultService(<string>this.eIdToSink.get(this.leftPanelEid));
-    const paginatedResultService1 = this.workflowResultService.getPaginatedResultService(<string>this.eIdToSink.get(this.rightPanelEid));
+    const paginatedResultService = this.workflowResultService.getPaginatedResultService(
+      <string>this.eIdToSink.get(this.leftPanelEid)
+    );
+    const paginatedResultService1 = this.workflowResultService.getPaginatedResultService(
+      <string>this.eIdToSink.get(this.rightPanelEid)
+    );
     const eIdToSink = this.eIdToSink;
     const leftPanelEid = this.leftPanelEid;
     const rightPanelEid = this.rightPanelEid;
@@ -261,9 +265,7 @@ export class ResultPanelComponent implements OnInit {
         componentInputs: { eIdToSink, leftPanelEid, rightPanelEid },
       });
     }
-
   }
-
 
   private static needRerenderOnStateChange(event: {
     previous: ExecutionStateInfo;

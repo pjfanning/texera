@@ -1,4 +1,12 @@
 <div class="texera-divided-frame">
-    <texera-result-table-frame class="texera-result-half-width-table-frame" *ngIf="eIdToSink.has(leftPanelEid)" [operatorId]="eIdToSink.get(leftPanelEid)"></texera-result-table-frame>
-    <texera-result-table-frame class="texera-result-half-width-table-frame" *ngIf="eIdToSink.has(rightPanelEid)" [operatorId]="eIdToSink.get(rightPanelEid)"></texera-result-table-frame>
+  <texera-result-table-frame
+    class="texera-result-half-width-table-frame"
+    *ngIf="eIdToSink.has(leftPanelEid)"
+    [operatorId]="eIdToSink.get(leftPanelEid)"
+  ></texera-result-table-frame>
+  <texera-result-table-frame
+    class="texera-result-half-width-table-frame"
+    *ngIf="eIdToSink.has(rightPanelEid)"
+    [operatorId]="eIdToSink.get(rightPanelEid)"
+  ></texera-result-table-frame>
 </div>
