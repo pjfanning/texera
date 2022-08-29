@@ -9,7 +9,12 @@ import {
   LogicalLink,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
-import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
+import {
+  BreakpointFaultedTuple,
+  BreakpointTriggerInfo,
+  OperatorPredicate,
+  PythonPrintTriggerInfo,
+} from "./workflow-common.interface";
 
 /**
  *  @fileOverview Type Definitions of WebSocket (Ws) API
@@ -32,6 +37,14 @@ export interface RegisterWIdRequest
 export interface RegisterEIdRequest
   extends Readonly<{
     eId: number;
+    operators: LogicalOperator[];
+    links: LogicalLink[];
+  }> {}
+
+export interface CompareEIdExecutionRequest
+  extends Readonly<{
+    eId1: number;
+    eId2: number;
     operators: LogicalOperator[];
     links: LogicalLink[];
   }> {}
@@ -148,6 +161,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   RegisterEIdRequest: RegisterEIdRequest;
+  CompareEIdExecutionRequest: CompareEIdExecutionRequest;
   AddBreakpointRequest: BreakpointInfo;
   CacheStatusUpdateRequest: CacheStatusUpdateRequest;
   HeartBeatRequest: {};

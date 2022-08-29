@@ -27,6 +27,10 @@ const routes: Routes = [
     path: "executions/:eid",
     component: WorkspaceComponent,
   },
+  {
+    path: "compare/:eid1/:eid2",
+    component: WorkspaceComponent,
+  },
 ];
 
 if (environment.userSystemEnabled) {

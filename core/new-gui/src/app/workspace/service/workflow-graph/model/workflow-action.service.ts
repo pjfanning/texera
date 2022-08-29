@@ -1048,7 +1048,7 @@ export class WorkflowActionService {
 
       const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
       workflowContent.operators.forEach(op => {
-        const opPosition = workflowContent.operatorPositions[op.operatorID];
+        let opPosition: Point = workflowContent.operatorPositions[op.operatorID];
         if (!opPosition) {
           throw new Error("position error");
         }

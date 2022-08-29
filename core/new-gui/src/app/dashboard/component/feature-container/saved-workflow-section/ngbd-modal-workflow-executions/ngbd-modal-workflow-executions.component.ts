@@ -95,6 +95,8 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public showORhide: boolean[] = [false, false, false, false];
   public avatarColors: { [key: string]: string } = {};
 
+  public checkedRowIndices: Set<number> = new Set<number>();
+
   constructor(
     public activeModal: NgbActiveModal,
     private workflowExecutionsService: WorkflowExecutionsService,
@@ -328,6 +330,21 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     return "rgba(" + r + "," + g + "," + b + ",0.8)";
   }
 
+  jumpToCompare(): void {
+    this.activeModal.close();
+    let indices: number[] = [...this.checkedRowIndices];
+    let executions: string[] = [
+      JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[0]]),
+      JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[1]]),
+    ];
+    this.router.navigate(
+      [`/compare/${this.workflowExecutionsDisplayedList?.[0].eId}/${this.workflowExecutionsDisplayedList?.[1].eId}`],
+      {
+        state: { executions: executions, wid: this.wid },
+      }
+    );
+  }
+
   public searchInputOnChange(value: string): void {
     const searchConditionsSet = [...new Set(value.trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g))];
     searchConditionsSet.forEach((condition, index) => {
@@ -462,5 +479,14 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       (this.currentPageIndex - 1) * this.pageSize,
       this.currentPageIndex * this.pageSize
     );
+  }
+
+  /* update the sets when checked status changes*/
+  onCheck(index: number, checked: Boolean): void {
+    if (checked) {
+      this.checkedRowIndices.add(index);
+    } else {
+      this.checkedRowIndices.delete(index);
+    }
   }
 }

@@ -73,14 +73,18 @@ class WorkflowWebsocketResource extends LazyLogging {
           sessionState.subscribe(workflowState)
         case comparisonRequest: CompareEIdExecutionRequest =>
           val (workflowState, workflowState_to_compare) = WorkflowService.retrieveExecutionsToCompare(comparisonRequest)
-          send(session, WorkflowStateEvent("Completed"))
+
           send(
-            session,OperatorStatisticsUpdateEvent(workflowState.getComparisonWorkflowStatsMessage(comparisonRequest.eId1).++(workflowState_to_compare.getComparisonWorkflowStatsMessage(comparisonRequest.eId2)))
+            session,OperatorStatisticsUpdateEvent(workflowState.getComparisonWorkflowStatsMessage(comparisonRequest.eId1)++workflowState_to_compare.getComparisonWorkflowStatsMessage(comparisonRequest.eId2))
           )
+
+          sessionState.subscribe(workflowState)
+          sessionState.subscribe(workflowState_to_compare)
+
           send(
             session,
             WebResultUpdateEvent(
-              workflowState.getComparisonResultUpdateMessage().++(workflowState_to_compare.getComparisonResultUpdateMessage())
+              workflowState.getComparisonResultUpdateMessage()++workflowState_to_compare.getComparisonResultUpdateMessage()
             )
           )
         case wIdRequest: RegisterWIdRequest =>
