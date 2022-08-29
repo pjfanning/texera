@@ -9,12 +9,7 @@ import {
   LogicalLink,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
-import {
-  BreakpointFaultedTuple,
-  BreakpointTriggerInfo,
-  OperatorPredicate,
-  PythonPrintTriggerInfo,
-} from "./workflow-common.interface";
+import { BreakpointFaultedTuple, BreakpointTriggerInfo, OperatorPredicate, PythonPrintTriggerInfo } from "./workflow-common.interface";
 
 /**
  *  @fileOverview Type Definitions of WebSocket (Ws) API

@@ -16,7 +16,7 @@ import { getWebsocketUrl } from "src/app/common/util/url";
 import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.service";
 import { WorkflowGraphReadonly } from "../workflow-graph/model/workflow-graph";
 import { operators } from "ajv/dist/compile/codegen";
-import { OperatorLink, OperatorPredicate } from "../../types/workflow-common.interface";
+import {OperatorLink, OperatorPredicate} from "../../types/workflow-common.interface";
 
 export const WS_HEARTBEAT_INTERVAL_MS = 10000;
 export const WS_RECONNECT_INTERVAL_MS = 3000;
@@ -140,7 +140,7 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(_ => (this.isConnected = true));
   }
 
-  public openExecutionCompareWebsocket(eId1: number, eId2: number, workflowGraph: WorkflowGraphReadonly) {
+  public openExecutionCompareWebsocket(eId1: number, eId2: number, workflowGraph:WorkflowGraphReadonly) {
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(workflowGraph);
     const operators = logicalPlan.operators;
     const links = logicalPlan.links;
@@ -160,7 +160,7 @@ export class WorkflowWebsocketService {
           ),
           delayWhen(_ => timer(WS_RECONNECT_INTERVAL_MS)), // reconnect after delay
           tap(_ => {
-            this.send("CompareEIdExecutionRequest", { eId1, eId2, operators, links }); // register comparison details
+            this.send("CompareEIdExecutionRequest", { eId1, eId2, operators, links}); // register comparison details
             this.send("HeartBeatRequest", {}); // try to send heartbeat immediately after reconnect
           })
         )
@@ -170,7 +170,7 @@ export class WorkflowWebsocketService {
     this.wsWithReconnectSubscription = wsWithReconnect.subscribe(event =>
       this.webSocketResponseSubject.next(event as TexeraWebsocketEvent)
     );
-    this.send("CompareEIdExecutionRequest", { eId1, eId2, operators, links });
+    this.send("CompareEIdExecutionRequest", { eId1, eId2, operators, links});
 
     // refresh connection status
     this.websocketEvent().subscribe(_ => (this.isConnected = true));

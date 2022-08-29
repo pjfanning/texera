@@ -23,13 +23,7 @@
   <texera-result-panel-toggle class="texera-result-panel-toggle-grid-container grid-container">
   </texera-result-panel-toggle>
 
-  <texera-result-panel
-    [showComparisonPanel]="comparison_flag"
-    [leftPanelEid]="this.execution.eId"
-    [rightPanelEid]="this.execution_to_compare.eId"
-    class="texera-result-panel-grid-container grid-container"
-  >
-  </texera-result-panel>
+  <texera-result-panel [showComparisonPanel]="comparison_flag" [leftPanelEid]="this.execution.eId" [rightPanelEid]="this.execution_to_compare.eId" class="texera-result-panel-grid-container grid-container"> </texera-result-panel>
   <div class="texera-git-commit-id">
     <span>Version 0.5.3 <br />Git hash: {{ gitCommitHash }}</span>
   </div>

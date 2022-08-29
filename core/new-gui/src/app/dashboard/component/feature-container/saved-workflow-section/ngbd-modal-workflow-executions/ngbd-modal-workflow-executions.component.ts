@@ -333,16 +333,10 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   jumpToCompare(): void {
     this.activeModal.close();
     let indices: number[] = [...this.checkedRowIndices];
-    let executions: string[] = [
-      JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[0]]),
-      JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[1]]),
-    ];
-    this.router.navigate(
-      [`/compare/${this.workflowExecutionsDisplayedList?.[0].eId}/${this.workflowExecutionsDisplayedList?.[1].eId}`],
-      {
-        state: { executions: executions, wid: this.wid },
-      }
-    );
+    let executions: string[] = [JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[0]]), JSON.stringify(this.workflowExecutionsDisplayedList?.[indices[1]])];
+    this.router.navigate([`/compare/${this.workflowExecutionsDisplayedList?.[0].eId}/${this.workflowExecutionsDisplayedList?.[1].eId}`], {
+      state: { executions: executions, wid: this.wid },
+    });
   }
 
   public searchInputOnChange(value: string): void {
@@ -482,11 +476,12 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   }
 
   /* update the sets when checked status changes*/
-  onCheck(index: number, checked: Boolean): void {
+  onCheck(index: number, checked: Boolean):void {
     if (checked) {
       this.checkedRowIndices.add(index);
     } else {
       this.checkedRowIndices.delete(index);
     }
   }
+
 }

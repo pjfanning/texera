@@ -1,6 +1,6 @@
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ResultComparisonTablesFrameComponent } from "./result-comparison-tables-frame.component";
+import { ResultComparisonTablesFrameComponent } from './result-comparison-tables-frame.component';
 
 describe("ResultComparisonTablesFrameComponent", () => {
   let component: ResultComparisonTablesFrameComponent;
@@ -8,8 +8,9 @@ describe("ResultComparisonTablesFrameComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ResultComparisonTablesFrameComponent],
-    }).compileComponents();
+      declarations: [ ResultComparisonTablesFrameComponent ]
+    })
+    .compileComponents();
   });
 
   beforeEach(() => {
