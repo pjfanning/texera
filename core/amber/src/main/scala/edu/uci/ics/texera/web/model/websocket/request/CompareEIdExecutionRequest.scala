@@ -7,6 +7,5 @@ import scala.collection.mutable
 
 case class CompareEIdExecutionRequest (eId1: Int,
                                        eId2: Int,
-                                       operators1: mutable.MutableList[OperatorDescriptor],
-                                       operators2: mutable.MutableList[OperatorDescriptor],
+                                       operators: mutable.MutableList[OperatorDescriptor],
                                        links: mutable.MutableList[OperatorLink]) extends TexeraWebSocketRequest

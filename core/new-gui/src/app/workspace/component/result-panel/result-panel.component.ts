@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnInit, Input } from "@angular/core";
 import { merge } from "rxjs";
 import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
 import { ResultPanelToggleService } from "../../service/result-panel-toggle/result-panel-toggle.service";
@@ -15,12 +15,14 @@ import { DebuggerFrameComponent } from "./debugger-frame/debugger-frame.componen
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+import { ResultComparisonTablesFrameComponent } from "./result-comparison-tables-frame/result-comparison-tables-frame.component";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
   | VisualizationFrameComponent
   | ConsoleFrameComponent
-  | DebuggerFrameComponent;
+  | DebuggerFrameComponent
+  | ResultComparisonTablesFrameComponent;
 
 export type ResultFrameComponentConfig = DynamicComponentConfig<ResultFrameComponent>;
 
@@ -35,10 +37,18 @@ export type ResultFrameComponentConfig = DynamicComponentConfig<ResultFrameCompo
   styleUrls: ["./result-panel.component.scss"],
 })
 export class ResultPanelComponent implements OnInit {
+  @Input() showComparisonPanel: boolean = false;
+  @Input() leftPanelEid: number = -1;
+  @Input() rightPanelEid: number = -1;
+
   frameComponentConfigs: Map<string, ResultFrameComponentConfig> = new Map();
 
   // the highlighted operator ID for display result table / visualization / breakpoint
   currentOperatorId?: string | undefined;
+
+  // the highlighted operator ID for the execution to be compared
+  currentOperatorIdForComparison?: string | undefined;
+  eIdToSink: Map<number, string> = new Map();
 
   showResultPanel: boolean = false;
   previewWorkflowVersion: boolean = false;
@@ -151,28 +161,48 @@ export class ResultPanelComponent implements OnInit {
     if (this.previewWorkflowVersion) {
       return;
     }
-    // update highlighted operator
-    const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    const currentHighlightedOperator = highlightedOperators.length === 1 ? highlightedOperators[0] : undefined;
-    if (this.currentOperatorId !== currentHighlightedOperator) {
-      // clear everything, prepare for state change
-      this.clearResultPanel();
-      this.currentOperatorId = currentHighlightedOperator;
-    }
-    // current result panel is closed or there is no operator highlighted, do nothing
-    this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
-    if (!this.showResultPanel || !this.currentOperatorId) {
-      return;
-    }
+    if (this.showComparisonPanel) {
+      const jointgraphwrapper = this.workflowActionService.getJointGraphWrapper();
+      // jointgraphwrapper.unhighlightAllOperators(); //temporary workaround for the bug that highglights all operators upon loading
+      const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+      console.log("current highlighted operators: ", highlightedOperators);
+      if (highlightedOperators.length == 1) {
+        highlightedOperators.forEach(operatorId => {
+          if (operatorId.includes("SimpleSink")){
+            this.eIdToSink.set(parseInt(operatorId.split("_")[0]), operatorId);
+          }
+        });
+      }
 
-    if (this.currentOperatorId) {
-      this.displayResult(this.currentOperatorId);
-      const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
-      if (isPythonUdf(operator)) {
-        this.displayConsole(this.currentOperatorId);
+      // current result panel is closed or there is no operator highlighted, do nothing
+      this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
+      if (!this.showResultPanel) {
+        return;
+      }
+      this.displayDifference();
+     } else {
+      const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+      const currentHighlightedOperator = highlightedOperators.length === 1 ? highlightedOperators[0] : undefined;
+      if (this.currentOperatorId !== currentHighlightedOperator) {
+        // clear everything, prepare for state change
+        this.clearResultPanel();
+        this.currentOperatorId = currentHighlightedOperator;
+      }
+      // current result panel is closed or there is no operator highlighted, do nothing
+      this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
+      if (!this.showResultPanel || !this.currentOperatorId) {
+        return;
+      }
 
-        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
-          this.displayDebugger(this.currentOperatorId);
+      if (this.currentOperatorId) {
+        this.displayResult(this.currentOperatorId);
+        const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
+        if (isPythonUdf(operator)) {
+          this.displayConsole(this.currentOperatorId);
+
+          if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+            this.displayDebugger(this.currentOperatorId);
+          }
         }
       }
     }
@@ -218,6 +248,22 @@ export class ResultPanelComponent implements OnInit {
       });
     }
   }
+
+  displayDifference() {
+    const paginatedResultService = this.workflowResultService.getPaginatedResultService(<string>this.eIdToSink.get(this.leftPanelEid));
+    const paginatedResultService1 = this.workflowResultService.getPaginatedResultService(<string>this.eIdToSink.get(this.rightPanelEid));
+    const eIdToSink = this.eIdToSink;
+    const leftPanelEid = this.leftPanelEid;
+    const rightPanelEid = this.rightPanelEid;
+    if (paginatedResultService || paginatedResultService1) {
+      this.frameComponentConfigs.set("Comparison", {
+        component: ResultComparisonTablesFrameComponent,
+        componentInputs: { eIdToSink, leftPanelEid, rightPanelEid },
+      });
+    }
+
+  }
+
 
   private static needRerenderOnStateChange(event: {
     previous: ExecutionStateInfo;
