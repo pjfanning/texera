@@ -5,7 +5,7 @@ import { environment } from "../../../environments/environment";
 import { Version } from "../../../environments/version";
 import { UserService } from "../../common/service/user/user.service";
 import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
-import {Workflow, WorkflowContent} from "../../common/type/workflow";
+import { Workflow } from "../../common/type/workflow";
 import { SchemaPropagationService } from "../service/dynamic-schema/schema-propagation/schema-propagation.service";
 import { SourceTablesService } from "../service/dynamic-schema/source-tables/source-tables.service";
 import { OperatorMetadataService } from "../service/operator-metadata/operator-metadata.service";
@@ -25,10 +25,7 @@ import { WorkflowCollabService } from "../service/workflow-collab/workflow-colla
 import { UserProjectService } from "src/app/dashboard/service/user-project/user-project.service";
 import { WorkflowExecutionsService } from "../../dashboard/service/workflow-executions/workflow-executions.service";
 import { WorkflowExecutionsEntry } from "../../dashboard/type/workflow-executions-entry";
-import {Breakpoint, CommentBox, OperatorLink, OperatorPredicate, Point} from "../types/workflow-common.interface";
-import {PlainGroup} from "../service/workflow-graph/model/operator-group";
-import {WorkflowMetadata} from "../../dashboard/type/workflow-metadata.interface";
-import {WORKFLOW_EDITOR_JOINTJS_ID} from "./workflow-editor/workflow-editor.component";
+
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
 @UntilDestroy()
@@ -49,8 +46,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public execution_flag: boolean = false;
   public execution = <WorkflowExecutionsEntry>{};
   public wid: number = 0;
-  public comparison_flag: boolean = false;
-  public execution_to_compare: WorkflowExecutionsEntry = <WorkflowExecutionsEntry>{};
 
   constructor(
     private userService: UserService,
@@ -78,11 +73,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     if (this.router.getCurrentNavigation()?.extras.state?.execution) {
       this.execution_flag = true;
       this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.execution);
-      this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
-    }else if(this.router.getCurrentNavigation()?.extras.state?.executions){
-      this.comparison_flag = true;
-      this.execution = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[0]);
-      this.execution_to_compare = JSON.parse(this.router.getCurrentNavigation()?.extras.state?.executions[1]);
       this.wid = this.router.getCurrentNavigation()?.extras.state?.wid;
     }
   }
@@ -127,7 +117,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     this.workflowActionService.resetAsNewWorkflow();
 
     if (this.userSystemEnabled) {
-      if (!this.comparison_flag && !this.execution_flag) {
+      if (!this.execution_flag) {
         this.registerReEstablishWebsocketUponWIdChange();
       }
     } else {
@@ -175,7 +165,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           this.userService.isLogin() &&
           this.workflowPersistService.isWorkflowPersistEnabled() &&
           this.workflowCollabService.isLockGranted() &&
-          !this.comparison_flag &&
           !this.execution_flag
         ) {
           this.workflowPersistService
@@ -218,30 +207,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
             this.message.error("You don't have access to this workflow, please log in with an appropriate account");
           }
         );
-    } else if (this.comparison_flag) {
-      let workflowsToCombine: Workflow[] = [];
-      this.workflowExecutionService
-        .retrieveWorkflowByExecutions(wid, this.execution.vId, this.execution_to_compare.vId)
-        .pipe(untilDestroyed(this))
-        .subscribe(
-          (workflow:Workflow)=> {
-          workflowsToCombine.push(workflow);
-          if (workflowsToCombine.length == 2) {
-            this.combineAndDisplayWorkflows(workflowsToCombine);
-            }
-          },
-          () => {
-            // enable workspace for modification
-            this.workflowActionService.enableWorkflowModification();
-            // clear the current workflow
-            this.workflowActionService.reloadWorkflow(undefined);
-            // clear stack
-            this.undoRedoService.clearUndoStack();
-            this.undoRedoService.clearRedoStack();
-
-            this.message.error("You don't have access to this workflow, please log in with an appropriate account");
-          });
-
     } else {
       this.workflowPersistService
         .retrieveWorkflow(wid)
@@ -326,118 +291,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       )
       .pipe(untilDestroyed(this))
       .subscribe(wid => {
-        this.workflowWebsocketService.openWebsocket(wid);
+        this.workflowWebsocketService.reopenWebsocket(wid);
         this.workflowCollabService.reopenWebsocket(wid);
       });
-  }
-
-  private combineAndDisplayWorkflows(workflowsToCombine: Workflow[]) {
-    let newOperators: OperatorPredicate[] = [];
-    const paperHeight: number = document.getElementById(WORKFLOW_EDITOR_JOINTJS_ID)!.clientHeight;
-    //this height does not have the same unit as Point?
-
-    workflowsToCombine[0].content.operators.forEach(operator => {
-      let newOperator = {
-        ...operator,
-        operatorID: this.execution.eId + "_" + operator.operatorID,
-      };
-      newOperators.push(newOperator);
-    });
-
-    workflowsToCombine[1].content.operators.forEach(operator => {
-      let newOperator = {
-        ...operator,
-        operatorID: this.execution_to_compare.eId + "_" + operator.operatorID,
-      };
-      newOperators.push(newOperator);
-    });
-
-    let newOperatorPositions: { [key: string]: Point } = {};
-    let lowest = 0;
-    for (const [operatorID, point] of Object.entries(workflowsToCombine[0].content.operatorPositions)){
-      newOperatorPositions[this.execution.eId + "_" + operatorID] = point;
-      if (point.y > lowest) {
-        lowest = point.y;
-      }
-    }
-
-    for (const [operatorID, point] of Object.entries(workflowsToCombine[1].content.operatorPositions)){
-      let newPoint: Point = {
-        x: point.x,
-        y: point.y + paperHeight/2 + lowest,
-      };
-      newOperatorPositions[this.execution_to_compare.eId + "_" + operatorID] = newPoint;
-    }
-
-    let newLinks: OperatorLink[] = [];
-    workflowsToCombine[0].content.links.forEach(link => {
-        let newLink = {
-        linkID: this.execution.eId + "_" + link.linkID,
-        source: {
-          ...link.source,
-          operatorID: this.execution.eId + "_" + link.source.operatorID,
-        },
-        target: {
-          ...link.target,
-          operatorID: this.execution.eId + "_" + link.target.operatorID,
-        }
-      };
-      newLinks.push(newLink);
-    });
-
-    workflowsToCombine[1].content.links.forEach(link => {
-      let newLink = {
-        linkID: this.execution_to_compare.eId + "_" + link.linkID,
-        source: {
-          ...link.source,
-          operatorID: this.execution_to_compare.eId + "_" + link.source.operatorID,
-        },
-        target: {
-          ...link.target,
-          operatorID: this.execution_to_compare.eId + "_" + link.target.operatorID,
-        }
-      };
-      newLinks.push(newLink);
-    });
-
-    let newComments: CommentBox[] = [...workflowsToCombine[0].content.commentBoxes];
-
-    workflowsToCombine[1].content.commentBoxes.forEach(comment => {
-      return {
-        ...comment,
-        commentBoxPosition: {
-          ...comment.commentBoxPosition,
-          y: comment.commentBoxPosition.y + paperHeight/2 + lowest,
-        }
-      };
-    });
-
-    let workflowcontent: WorkflowContent = {
-      operators: newOperators,
-      operatorPositions: newOperatorPositions,
-      links: newLinks,
-      groups:   workflowsToCombine[0].content.groups,
-      breakpoints: workflowsToCombine[0].content.breakpoints,
-      commentBoxes: newComments
-    };
-
-    let workflowmetadata: WorkflowMetadata = {
-      name: workflowsToCombine[0].name,
-      wid: workflowsToCombine[0].wid,
-      creationTime: Math.max(...workflowsToCombine.map(workflow => <number>workflow.creationTime)),
-      lastModifiedTime: Math.max(...workflowsToCombine.map(workflow => <number>workflow.lastModifiedTime)),
-    };
-
-    let newWorkflow: Workflow = {
-      content: workflowcontent,
-      ...workflowmetadata,
-    };
-
-    this.workflowExecutionService.displayWorkflowExecution(newWorkflow);
-    this.workflowWebsocketService.openExecutionCompareWebsocket(
-      this.execution.eId,
-      this.execution_to_compare.eId,
-      this.workflowActionService.getTexeraGraph(),
-    );
   }
 }

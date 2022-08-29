@@ -1,5 +1,5 @@
 <div class="saved-execution-container subsection-grid-container">
-  <nz-card class="workflow-section-title subsection-grid-container" [nzActions]="[actionCompare]">
+  <nz-card class="workflow-section-title subsection-grid-container">
     <button (click)="activeModal.dismiss('Cross click')" aria-label="Close" class="close" type="button">
       <span aria-hidden="true"> × </span>
     </button>
@@ -57,9 +57,6 @@
       ></nz-autocomplete>
     </nz-input-group>
   </nz-card>
-  <ng-template #actionCompare>
-    <i *ngIf="checkedRowIndices.size===2" nz-icon nzType="diff" nzTheme="outline" (click)="jumpToCompare()">Compare</i>
-  </ng-template>
   <div class="modal-body table-responsive">
     <nz-table
       *ngIf="workflowExecutionsDisplayedList"
@@ -98,7 +95,9 @@
       </thead>
       <tbody>
         <tr *ngFor="let row of workflowExecutionsDisplayedList; let i=index;">
-          <td nzEllipsis [nzChecked]="checkedRowIndices.has(i)" (nzCheckedChange)="onCheck(i, $event)"></td>
+          <td nzEllipsis>
+            <input type="checkbox" />
+          </td>
           <td nzEllipsis>
             <i
               nz-icon

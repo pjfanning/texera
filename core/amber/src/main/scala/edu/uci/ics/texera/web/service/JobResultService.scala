@@ -231,7 +231,7 @@ class JobResultService(
   def handleResultPagination(request: ResultPaginationRequest): TexeraWebSocketEvent = {
     // calculate from index (pageIndex starts from 1 instead of 0)
     val from = request.pageSize * (request.pageIndex - 1)
-    val opId = request.operatorID.replaceAll("^[0-9]{2}_", "") //if comparison - has eId appended
+    val opId = request.operatorID
     val paginationIterable =
       if (opResultStorage.contains(opId)) {
         opResultStorage.get(opId).getRange(from, from + request.pageSize)

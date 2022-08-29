@@ -19,7 +19,7 @@ import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService.maptoAggregatedState
 import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, OperatorLink, OperatorPort, WorkflowInfo}
+import edu.uci.ics.texera.workflow.common.workflow.{DBWorkflowToLogicalPlan, OperatorLink, WorkflowInfo}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -27,16 +27,11 @@ import org.jooq.types.UInteger
 
 import scala.collection.mutable
 
-
 object WorkflowService {
   private val wIdToWorkflowState = new ConcurrentHashMap[String, WorkflowService]()
   final val userSystemEnabled: Boolean = AmberUtils.amberConfig.getBoolean("user-sys.enabled")
   val cleanUpDeadlineInSeconds: Int =
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
-  // results across executions: (this might cause a problem because two different executions can have two sinks with the same IDs and different results?)
-  var opResultStorage: OpResultStorage = new OpResultStorage(
-    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
-  )
 
   def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
     uidOpt match {
@@ -80,59 +75,7 @@ object WorkflowService {
    * @return
    */
   def retrieveExecutionsToCompare(request: CompareEIdExecutionRequest): (WorkflowService, WorkflowService) = {
-    val eId1: Int = request.eId1
-    val eId2: Int = request.eId2
-    val operators:mutable.MutableList[OperatorDescriptor]  = request.operators
-    val links:mutable.MutableList[OperatorLink] = request.links
-
-    val (operatorsGroup1, linksGroup1, operatorsGroup2, linksGroup2) = splitDAG(eId1, operators, links)
-    val (newOperatorsGroups1, newLinksGroups1) = cleanUpDAG(eId1, operatorsGroup1, linksGroup1)
-    val (newOperatorsGroups2, newLinksGroups2) = cleanUpDAG(eId2, operatorsGroup2, linksGroup2)
-    (retrieveExecution(eId1, newOperatorsGroups1, newLinksGroups1), retrieveExecution(eId2, newOperatorsGroups2, newLinksGroups2))
-  }
-
-  def cleanUpDAG(eId: Int, operators: mutable.MutableList[OperatorDescriptor], links: mutable.MutableList[OperatorLink]): (mutable.MutableList[OperatorDescriptor], mutable.MutableList[OperatorLink]) = {
-    operators.foreach(operator => {
-      operator.operatorID = operator.operatorID.replaceAll(eId.toString+"_", "")
-    })
-    val newLinks = new mutable.MutableList[OperatorLink]()
-    links.foreach(link => {
-      newLinks += OperatorLink(OperatorPort(
-        link.origin.operatorID.replaceAll(eId.toString+"_", ""),
-        link.origin.portOrdinal,
-        link.origin.portName),
-        OperatorPort(
-          link.destination.operatorID.replaceAll(eId.toString+"_", ""),
-          link.destination.portOrdinal,
-          link.destination.portName)
-      )
-    }
-    )
-    (operators, newLinks)
-  }
-
-  def splitDAG(eId1: Int, operators:mutable.MutableList[OperatorDescriptor], links:mutable.MutableList[OperatorLink]) = {
-    val operatorsGroup1 = new mutable.MutableList[OperatorDescriptor]()
-    val operatorsGroup2 = new mutable.MutableList[OperatorDescriptor]()
-    val linksGroup1 = new mutable.MutableList[OperatorLink]()
-    val linksGroup2 = new mutable.MutableList[OperatorLink]()
-    operators.foreach(operator => {
-      if (operator.operatorID.startsWith(eId1.toString)) {
-        operatorsGroup1+=operator
-      } else{
-        operatorsGroup2+=operator
-      }
-    })
-
-    links.foreach(link => {
-      if (link.origin.operatorID.startsWith(eId1.toString)) {
-        linksGroup1+=link
-      } else{
-        linksGroup2+=link
-      }
-    })
-
-    (operatorsGroup1, linksGroup1, operatorsGroup2, linksGroup2)
+    (retrieveExecution(request.eId1, request.operators1, request.links), retrieveExecution(request.eId2, request.operators2, request.links)) //WorkflowInfo doesn't do anything with the links
   }
 
 
@@ -278,6 +221,10 @@ class WorkflowService(
     cleanUpTimeout: Int
 ) extends SubscriptionManager
     with LazyLogging {
+  // state across execution:
+  var opResultStorage: OpResultStorage = new OpResultStorage(
+    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
+  )
   private val errorSubject = BehaviorSubject.create[TexeraWebSocketEvent]().toSerialized
   val errorHandler: Throwable => Unit = { t =>
     {
@@ -293,11 +240,11 @@ class WorkflowService(
   var status: WorkflowAggregatedState = WorkflowAggregatedState.UNINITIALIZED
   val stateStore = new WorkflowStateStore()
   val resultService: JobResultService =
-    new JobResultService(WorkflowService.opResultStorage, stateStore)
+    new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
-    new ResultExportService(WorkflowService.opResultStorage, UInteger.valueOf(wId))
+    new ResultExportService(opResultStorage, UInteger.valueOf(wId))
   val operatorCache: WorkflowCacheService =
-    new WorkflowCacheService(WorkflowService.opResultStorage, stateStore, wsInput)
+    new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
   var vId: Int = -1
   var executionID: Long = -1 // for every new execution,
@@ -306,7 +253,7 @@ class WorkflowService(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
     () => {
-      WorkflowService.opResultStorage.close()
+      opResultStorage.close()
       WorkflowService.wIdToWorkflowState.remove(mkWorkflowStateId(wId, uidOpt))
       wsInput.onNext(WorkflowKillRequest(), None)
       unsubscribeAll()
