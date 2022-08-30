@@ -17,11 +17,13 @@ class OpResultMongodbStorage(id: String) {
   val database: MongoDatabase = client.getDatabase(databaseName)
   val collection: MongoCollection[Document] = database.getCollection(id)
 
+  // Get the number of result rows from mongodb
   def getCount(): Long = {
     val resultCount = collection.countDocuments()
     resultCount
   }
 
+  // Get the sample row information from mongodb
   def getSampleResultRow(): String = {
     val resultRow = collection.find().first().toJson()
     resultRow

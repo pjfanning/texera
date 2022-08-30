@@ -178,7 +178,7 @@
                 (click)="onDelete(row)"
               ></i>
             </td>
-            <td [nzExpand]="setOfExpandedIndex.has(i)" (nzExpandChange)="updateExpandedSet(row, i, $event)"></td>
+            <td [nzExpand]="setOfExpandedIndex.has(i)" (nzExpandChange)="updateExpandedSet(i, $event)"></td>
           </tr>
           <tr [nzExpand]="setOfExpandedIndex.has(i)">
             <h5 class="sub-table-title">View Result</h5>

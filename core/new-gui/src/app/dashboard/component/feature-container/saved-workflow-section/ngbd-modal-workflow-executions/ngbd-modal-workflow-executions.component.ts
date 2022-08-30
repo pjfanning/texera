@@ -13,6 +13,7 @@ import Fuse from "fuse.js";
 const MAX_TEXT_SIZE = 20;
 const MAX_RGB = 255;
 const MAX_USERNAME_SIZE = 5;
+//  assume user has max of 10 sinks
 const MAX_RESULT_VIEW = 10;
 
 @UntilDestroy()
@@ -198,6 +199,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       });
   }
 
+  /*
+    retrieve the result info tuple from BE and store them into two objects with result key as the key
+  */
   retrieveResult(result: string) {
     if (result === null) {
       console.log("empty result key");
@@ -349,7 +353,12 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     return "rgba(" + r + "," + g + "," + b + ",0.8)";
   }
 
-  updateExpandedSet(row: WorkflowExecutionsEntry, index: number, expanded: boolean): void {
+  /**
+   * Use setOfExpandedIndex to manipulate the expanding of the table
+   * @param index the index of execution in the execution table
+   * @param expanded true for expanding and false for closing
+   */
+  updateExpandedSet(index: number, expanded: boolean): void {
     if (expanded) {
       this.setOfExpandedIndex.add(index);
     } else {
@@ -357,6 +366,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
+  /**
+   *
+   * @param result the result key list as a string extracted from WorkflowExecutionsEntry
+   * @return a list of result keys as string if result string pased in is not null
+   */
   getResultKeys(result: string): string[] {
     if (result !== null) {
       let resultKeyList = JSON.parse(result)["results"];
@@ -370,6 +384,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
+  /**
+   *
+   * @param row the row information passed from BE
+   * @return a list of column names as string
+   */
   getColumnName(row: string): string[] {
     if (row === null || row === undefined) {
       return [];
@@ -383,6 +402,11 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
+  /**
+   *
+   * @param row the row information passed from BE
+   * @return a list of data as unknown
+   */
   getData(row: string) {
     if (row === null || row === undefined) {
       return [];
@@ -390,14 +414,29 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       let resultRowJson = JSON.parse(row);
       if (Object.values(resultRowJson) !== undefined) {
         return Object.values(resultRowJson).slice(1);
+      } else {
+        return [];
       }
     }
   }
 
+  /**
+   * A hash function to store the subexpandable table index
+   * @param supIndex the index of the expandable table in the execution table
+   * @param subIndex the index of the subexpandable table under the super expandable table
+   * @return the index of subexpandable table as a number
+   */
   convertSubTableIndex(supIndex: number, subIndex: number): number {
     return supIndex * MAX_RESULT_VIEW + subIndex;
   }
 
+  /**
+   *
+   * @param supIndex the index of the expandable table in the execution table
+   * @param subIndex the index of the subexpandable table under the super expandable table
+   * @param expanded true for expanding and false for closing
+   * @return the index of subexpandable table as a number
+   */
   updateSubExpandedSet(supIndex: number, subIndex: number, expanded: boolean): void {
     let index = this.convertSubTableIndex(supIndex, subIndex);
     if (expanded) {
@@ -407,6 +446,12 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     }
   }
 
+  /**
+   *
+   * @param num the number of rows the assigned sink has
+   * @param digits the digits of the number to show if num is greater than 1000
+   * @return the formatted number as a string
+   */
   digitFormatter(num: number, digits: number): string {
     const lookup = [
       { value: 1, symbol: "" },
@@ -417,7 +462,9 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       { value: 1e15, symbol: "P" },
       { value: 1e18, symbol: "E" },
     ];
+    // regular expression to count how many "three digits" combo exists in the num param
     const rx = /\.0+$|(\.[0-9]*[1-9])0+$/;
+    // catrgorize the num to the lookup, and item represents the (value, symbol) pair
     var item = lookup
       .slice()
       .reverse()

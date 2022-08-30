@@ -152,9 +152,9 @@ class WorkflowExecutionsResource {
   }
 
   /**
-    * This method returns the executions of a workflow given by its ID
+    * This method returns the information of an execution given by its result key
     *
-    * @return executions[]
+    * @return [resultCount, sampleRowInfo]
     */
   @GET
   @Path("/{wid}/{result}")

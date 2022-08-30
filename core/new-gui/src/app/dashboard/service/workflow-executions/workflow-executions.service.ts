@@ -34,7 +34,7 @@ export class WorkflowExecutionsService {
   }
 
   /**
-   * retrieves the result table for a particular execution from mongo database
+   * retrieves the resultCount and sampleRowInfo for a particular execution from mongo database
    */
   retrieveExecutionResultTable(wid: number, result: String): Observable<[number, string]> {
     return this.http.get<[number, string]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${result}`);
