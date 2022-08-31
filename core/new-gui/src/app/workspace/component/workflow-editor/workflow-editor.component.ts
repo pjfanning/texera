@@ -52,6 +52,7 @@ type CopiedGroup = {
   pastedGroupIDs: string[];
 };
 
+//added this type to hold a record of the id's for the operators currently in thhe workspace
 type activeOperators = {
   activeIDs: readonly string[];
   disableStatus: boolean;
