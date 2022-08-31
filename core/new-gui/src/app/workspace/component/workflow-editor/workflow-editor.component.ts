@@ -3,6 +3,9 @@ import * as joint from "jointjs";
 // if jQuery needs to be used: 1) use jQuery instead of `$`, and
 // 2) always add this import statement even if TypeScript doesn't show an error https://github.com/Microsoft/TypeScript/issues/22016
 import * as jQuery from "jquery";
+// import any jquery plugins after importing jQuery,
+// make sure to import even if TypeScript doesn't show an error
+import "jquery-contextmenu";
 import { fromEvent, merge, Subject } from "rxjs";
 import { NzModalCommentBoxComponent } from "./comment-box-modal/nz-modal-comment-box.component";
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
@@ -27,6 +30,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { UndoRedoService } from "../../service/undo-redo/undo-redo.service";
 import { WorkflowCollabService } from "../../service/workflow-collab/workflow-collab.service";
 import { WorkflowVersionService } from "../../../dashboard/service/workflow-version/workflow-version.service";
+
 
 // This type represents the copied operator and its information:
 // - operator: the copied operator itself, and its properties, etc.
@@ -162,8 +166,6 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
     this.handlePaperMouseZoom();
     this.handleOperatorSuggestionHighlightEvent();
     this.dragDropService.registerWorkflowEditorDrop(this.WORKFLOW_EDITOR_JOINTJS_ID);
-
-    this.rightClickContextMenu();
 
     this.handleElementDelete();
     this.handleElementSelectAll();
@@ -605,104 +607,6 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
         const op = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
         this.jointUIService.changeOperatorJointDisplayName(op, this.getJointPaper(), newDisplayName);
       });
-  }
-
-  private rightClickContextMenu(): void {
-    const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-
-    const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-
-    var isVisible = function (key: any, opt: { $trigger: { nodeName: string } }) {
-      if (highlightedOperatorIDs.length > 0 || highlightedGroupIDs.length > 0) {
-        return true;
-      } else {
-        return false;
-      }
-    };
-
-    jQuery(() => {
-      $.contextMenu({
-        selector: ".texera-workspace-workflow-editor-body",
-
-        callback: (key: any, options: any) => {
-          if (key == "copy") {
-            this.clearCopiedElements();
-            this.saveHighlighedElements();
-          } else if (key == "paste") {
-            if (this.copiedOperators.size > 0 || this.copiedGroups.size > 0) {
-              const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
-              const links: OperatorLink[] = [];
-              const groups: Group[] = [];
-              const positions: Point[] = [];
-
-              this.copiedOperators = new Map<string, CopiedOperator>(
-                Array.from<any>(this.copiedOperators).sort((first, second) => first[1].layer - second[1].layer)
-              );
-
-              this.copiedOperators.forEach((copiedOperator: { operator: any }, operatorID: any) => {
-                const newOperator = this.copyOperator(copiedOperator.operator);
-                const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
-                operatorsAndPositions.push({
-                  op: newOperator,
-                  pos: newOperatorPosition,
-                });
-                positions.push(newOperatorPosition);
-              });
-
-              this.copiedGroups.forEach((copiedGroup: { group: any; position: any }, groupID: any) => {
-                const newGroup = this.copyGroup(copiedGroup.group);
-
-                const oldPosition = copiedGroup.position;
-                const newPosition = this.calcGroupPosition(newGroup.groupID, groupID, positions);
-                positions.push(newPosition);
-
-                const delta = {
-                  x: newPosition.x - oldPosition.x,
-                  y: newPosition.y - oldPosition.y,
-                };
-
-                newGroup.operators.forEach(
-                  (operatorInfo: { position: { x: number; y: number }; operator: any }, operatorID: any) => {
-                    operatorInfo.position.x += delta.x;
-                    operatorInfo.position.y += delta.x;
-
-                    operatorsAndPositions.push({
-                      op: operatorInfo.operator,
-                      pos: operatorInfo.position,
-                    });
-                  }
-                );
-
-                newGroup.links.forEach((linkInfo: { link: OperatorLink }, operatorID: any) => {
-                  links.push(linkInfo.link);
-                });
-
-                groups.push(newGroup);
-              });
-
-              this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, new Map());
-            }
-          } else if (key == "cut") {
-            this.clearCopiedElements();
-            this.saveHighlighedElements();
-            this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, [], highlightedGroupIDs);
-          } else if (key == "delete") {
-            this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, [], highlightedGroupIDs);
-          }
-          if (highlightedOperatorIDs.length == 0 || highlightedGroupIDs.length == 0) {
-          }
-          //var m = "clicked: " + key;
-          //alert(m); '
-          return true;
-        },
-        items: {
-          copy: { name: "Copy", icon: "copy", visible: isVisible },
-          paste: { name: "Paste", icon: "paste" },
-          cut: { name: "Cut", icon: "cut", visible: isVisible },
-          delete: { name: "Delete", icon: "delete", visible: isVisible },
-        },
-      });
-    });
   }
 
   private handleHighlightMouseDBClickInput(): void {
@@ -1383,67 +1287,69 @@ export class WorkflowEditorComponent implements AfterViewInit, OnDestroy {
         filter(event => this.interactive)
       )
       .pipe(untilDestroyed(this))
-      .subscribe(() => {
-        // if there is something to paste
-        if (this.copiedOperators.size > 0 || this.copiedGroups.size > 0) {
-          const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
-          const links: OperatorLink[] = [];
-          const groups: Group[] = [];
-          const positions: Point[] = [];
+      .subscribe(() => this.performPasteOperation());
+  }
 
-          // sort operators by layer
-          this.copiedOperators = new Map<string, CopiedOperator>(
-            Array.from(this.copiedOperators).sort((first, second) => first[1].layer - second[1].layer)
-          );
+  private performPasteOperation() {
+    if (!(this.copiedOperators.size > 0 || this.copiedGroups.size > 0)) {
+      return;
+    }
+    const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
+    const links: OperatorLink[] = [];
+    const groups: Group[] = [];
+    const positions: Point[] = [];
 
-          // make copies of each operator, and calculate their positions when pasted
-          this.copiedOperators.forEach((copiedOperator, operatorID) => {
-            const newOperator = this.copyOperator(copiedOperator.operator);
-            const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
-            operatorsAndPositions.push({
-              op: newOperator,
-              pos: newOperatorPosition,
-            });
-            positions.push(newOperatorPosition);
-          });
+    // sort operators by layer
+    this.copiedOperators = new Map<string, CopiedOperator>(
+      Array.from(this.copiedOperators).sort((first, second) => first[1].layer - second[1].layer)
+    );
 
-          // make copies of each group, push each group's internal operators and calculated positions to operatorsAndPositions
-          this.copiedGroups.forEach((copiedGroup, groupID) => {
-            const newGroup = this.copyGroup(copiedGroup.group);
-
-            const oldPosition = copiedGroup.position;
-            const newPosition = this.calcGroupPosition(newGroup.groupID, groupID, positions);
-            positions.push(newPosition);
-
-            // delta between old position and new to apply to the copied group's operators
-            const delta = {
-              x: newPosition.x - oldPosition.x,
-              y: newPosition.y - oldPosition.y,
-            };
-
-            newGroup.operators.forEach((operatorInfo, operatorID) => {
-              operatorInfo.position.x += delta.x;
-              operatorInfo.position.y += delta.x;
-
-              operatorsAndPositions.push({
-                op: operatorInfo.operator,
-                pos: operatorInfo.position,
-              });
-            });
-
-            // add links from group to list of all links to be added
-            newGroup.links.forEach((linkInfo, operatorID) => {
-              links.push(linkInfo.link);
-            });
-
-            // add group to list of all groups to be added
-            groups.push(newGroup);
-          });
-
-          // actually add all operators, links, groups to the workflow
-          this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, new Map());
-        }
+    // make copies of each operator, and calculate their positions when pasted
+    this.copiedOperators.forEach((copiedOperator, operatorID) => {
+      const newOperator = this.copyOperator(copiedOperator.operator);
+      const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
+      operatorsAndPositions.push({
+        op: newOperator,
+        pos: newOperatorPosition,
       });
+      positions.push(newOperatorPosition);
+    });
+
+    // make copies of each group, push each group's internal operators and calculated positions to operatorsAndPositions
+    this.copiedGroups.forEach((copiedGroup, groupID) => {
+      const newGroup = this.copyGroup(copiedGroup.group);
+
+      const oldPosition = copiedGroup.position;
+      const newPosition = this.calcGroupPosition(newGroup.groupID, groupID, positions);
+      positions.push(newPosition);
+
+      // delta between old position and new to apply to the copied group's operators
+      const delta = {
+        x: newPosition.x - oldPosition.x,
+        y: newPosition.y - oldPosition.y,
+      };
+
+      newGroup.operators.forEach((operatorInfo, operatorID) => {
+        operatorInfo.position.x += delta.x;
+        operatorInfo.position.y += delta.x;
+
+        operatorsAndPositions.push({
+          op: operatorInfo.operator,
+          pos: operatorInfo.position,
+        });
+      });
+
+      // add links from group to list of all links to be added
+      newGroup.links.forEach((linkInfo, operatorID) => {
+        links.push(linkInfo.link);
+      });
+
+      // add group to list of all groups to be added
+      groups.push(newGroup);
+    });
+
+    // actually add all operators, links, groups to the workflow
+    this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, new Map());
   }
 
   /**
