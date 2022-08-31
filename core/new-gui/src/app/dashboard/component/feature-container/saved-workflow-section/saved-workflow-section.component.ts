@@ -10,7 +10,7 @@ import {
 import { NgbdModalWorkflowShareAccessComponent } from "./ngbd-modal-share-access/ngbd-modal-workflow-share-access.component";
 import { NgbdModalAddProjectWorkflowComponent } from "../user-project-list/user-project-section/ngbd-modal-add-project-workflow/ngbd-modal-add-project-workflow.component";
 import { NgbdModalRemoveProjectWorkflowComponent } from "../user-project-list/user-project-section/ngbd-modal-remove-project-workflow/ngbd-modal-remove-project-workflow.component";
-import { DashboardWorkflowEntry } from "../../../type/dashboard-workflow-entry";
+import { DashboardWorkflowEntry, SortMethod } from "../../../type/dashboard-workflow-entry";
 import { UserService } from "../../../../common/service/user/user.service";
 import { UserProjectService } from "../../../service/user-project/user-project.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -27,6 +27,7 @@ import { AppSettings } from "src/app/common/app-setting";
 import { Workflow, WorkflowContent } from "../../../../common/type/workflow";
 import { NzUploadFile } from "ng-zorro-antd/upload";
 import { saveAs } from "file-saver";
+import * as JSZip from "jszip";
 
 export const ROUTER_WORKFLOW_BASE_URL = "/workflow";
 export const ROUTER_WORKFLOW_CREATE_NEW_URL = "/";
@@ -92,7 +93,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
 
   public masterFilterList: string[] = [];
 
-  /* variables for workflow editing / search */
+  /* variables for workflow editing / search / sort */
   // virtual scroll requires replacing the entire array reference in order to update view
   // see https://github.com/angular/components/issues/14635
   public dashboardWorkflowEntries: ReadonlyArray<DashboardWorkflowEntry> = [];
@@ -115,7 +116,10 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   ]);
   public workflowSearchValue: string = "";
   private defaultWorkflowName: string = "Untitled Workflow";
+
   public searchCriteria: string[] = ["owner", "id", "ctime", "operator", "project"];
+  public sortMethod = SortMethod.EditTimeDesc;
+
   // whether tracking metadata information about executions is enabled
   public workflowExecutionsTrackingEnabled: boolean = environment.workflowExecutionsTrackingEnabled;
 
@@ -128,6 +132,8 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public userProjectsList: ReadonlyArray<UserProject> = []; // list of projects accessible by user
   public userProjectsDropdown: { pid: number; name: string; checked: boolean }[] = [];
   public projectFilterList: number[] = []; // for filter by project mode, track which projects are selected
+  public downloadListWorkflow = new Map<number, string>();
+  public zip = new JSZip();
 
   constructor(
     private http: HttpClient,
@@ -172,8 +178,8 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
    */
   public onClickGetWorkflowExecutions({ workflow }: DashboardWorkflowEntry): void {
     const modalRef = this.modalService.open(NgbdModalWorkflowExecutionsComponent, {
-      size: "lg",
-      windowClass: "modal-xl",
+      size: "xl",
+      modalDialogClass: "modal-dialog-centered",
     });
     modalRef.componentInstance.workflow = workflow;
     modalRef.componentInstance.workflowName = workflow.name;
@@ -631,9 +637,30 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   /**
+   * Sort the workflows according to the sortMethod variable
+   */
+  public sortWorkflows(): void {
+    switch (this.sortMethod) {
+      case SortMethod.NameAsc:
+        this.ascSort();
+        break;
+      case SortMethod.NameDesc:
+        this.dscSort();
+        break;
+      case SortMethod.EditTimeDesc:
+        this.lastSort();
+        break;
+      case SortMethod.CreateTimeDesc:
+        this.dateSort();
+        break;
+    }
+  }
+
+  /**
    * sort the workflow by name in ascending order
    */
   public ascSort(): void {
+    this.sortMethod = SortMethod.NameAsc;
     this.dashboardWorkflowEntries = this.dashboardWorkflowEntries
       .slice()
       .sort((t1, t2) => t1.workflow.name.toLowerCase().localeCompare(t2.workflow.name.toLowerCase()));
@@ -643,33 +670,36 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
    * sort the project by name in descending order
    */
   public dscSort(): void {
+    this.sortMethod = SortMethod.NameDesc;
     this.dashboardWorkflowEntries = this.dashboardWorkflowEntries
       .slice()
       .sort((t1, t2) => t2.workflow.name.toLowerCase().localeCompare(t1.workflow.name.toLowerCase()));
   }
 
   /**
-   * sort the project by create time
+   * sort the project by creating time in descending order
    */
   public dateSort(): void {
+    this.sortMethod = SortMethod.CreateTimeDesc;
     this.dashboardWorkflowEntries = this.dashboardWorkflowEntries
       .slice()
       .sort((left, right) =>
         left.workflow.creationTime !== undefined && right.workflow.creationTime !== undefined
-          ? left.workflow.creationTime - right.workflow.creationTime
+          ? right.workflow.creationTime - left.workflow.creationTime
           : 0
       );
   }
 
   /**
-   * sort the project by last modified time
+   * sort the project by last modified time in descending order
    */
   public lastSort(): void {
+    this.sortMethod = SortMethod.EditTimeDesc;
     this.dashboardWorkflowEntries = this.dashboardWorkflowEntries
       .slice()
       .sort((left, right) =>
         left.workflow.lastModifiedTime !== undefined && right.workflow.lastModifiedTime !== undefined
-          ? left.workflow.lastModifiedTime - right.workflow.lastModifiedTime
+          ? right.workflow.lastModifiedTime - left.workflow.lastModifiedTime
           : 0
       );
   }
@@ -680,48 +710,6 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   public onClickCreateNewWorkflowFromDashboard(): void {
     this.router.navigate([`${ROUTER_WORKFLOW_CREATE_NEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
   }
-
-  /**
-   * Verify Uploaded file name and upload the file
-   */
-  public onClickUploadExistingWorkflowFromLocal = (file: NzUploadFile): boolean => {
-    var reader = new FileReader();
-    reader.readAsText(file as unknown as Blob);
-    reader.onload = () => {
-      try {
-        const result = reader.result;
-        if (typeof result !== "string") {
-          throw new Error("Incorrect format: file is not a string");
-        }
-        const workflowContent = JSON.parse(result) as WorkflowContent;
-        const fileExtensionIndex = file.name.lastIndexOf(".");
-        var workflowName: string;
-        if (fileExtensionIndex === -1) {
-          workflowName = file.name;
-        } else {
-          workflowName = file.name.substring(0, fileExtensionIndex);
-        }
-        if (workflowName.trim() === "") {
-          workflowName = DEFAULT_WORKFLOW_NAME;
-        }
-        this.workflowPersistService
-          .createWorkflow(workflowContent, workflowName)
-          .pipe(untilDestroyed(this))
-          .subscribe({
-            next: uploadedWorkflow => {
-              this.dashboardWorkflowEntries = [...this.dashboardWorkflowEntries, uploadedWorkflow];
-            },
-            error: (err: unknown) => alert(err),
-          });
-      } catch (error) {
-        this.notificationService.error(
-          "An error occurred when importing the workflow. Please import a workflow json file."
-        );
-        console.error(error);
-      }
-    };
-    return false;
-  };
 
   /**
    * duplicate the current workflow. A new record will appear in frontend
@@ -802,7 +790,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
    * jump to the target workflow canvas
    */
   public jumpToWorkflow({ workflow: { wid } }: DashboardWorkflowEntry): void {
-    this.router.navigate([`${ROUTER_WORKFLOW_BASE_URL}/${wid}`]).then(null);
+    window.open(`${ROUTER_WORKFLOW_BASE_URL}/${wid}`);
   }
 
   /**
@@ -823,6 +811,8 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
         } else {
           this.clearDashboardWorkflowEntries();
         }
+        this.zip = new JSZip();
+        this.downloadListWorkflow = new Map<number, string>();
       });
   }
 
@@ -920,6 +910,7 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
 
     observable.pipe(untilDestroyed(this)).subscribe(dashboardWorkflowEntries => {
       this.dashboardWorkflowEntries = dashboardWorkflowEntries;
+      this.sortWorkflows();
       this.allDashboardWorkflowEntries = dashboardWorkflowEntries;
       this.fuse.setCollection(this.allDashboardWorkflowEntries);
       const newEntries = dashboardWorkflowEntries.map(e => e.workflow.name);
@@ -943,6 +934,12 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
   }
 
   private clearDashboardWorkflowEntries(): void {
+    for (let wid of this.downloadListWorkflow.keys()) {
+      const checkbox = document.getElementById(wid.toString()) as HTMLInputElement | null;
+      if (checkbox != null) {
+        checkbox.checked = false;
+      }
+    }
     this.dashboardWorkflowEntries = [];
   }
 
@@ -968,5 +965,138 @@ export class SavedWorkflowSectionComponent implements OnInit, OnChanges {
           entryIsEditingIndex => entryIsEditingIndex != index
         );
       });
+  }
+
+  /**
+   * Verify Uploaded file name and upload the file
+   */
+  public onClickUploadExistingWorkflowFromLocal = (file: NzUploadFile): boolean => {
+    const fileExtensionIndex = file.name.lastIndexOf(".");
+    if (file.name.substring(fileExtensionIndex) == ".zip") {
+      this.handleZipUploads(file as unknown as Blob);
+    } else {
+      this.handleFileUploads(file as unknown as Blob, file.name);
+    }
+    return false;
+  };
+
+  /**
+   * process .zip file uploads
+   */
+  private handleZipUploads(zipFile: Blob) {
+    let zip = new JSZip();
+    zip.loadAsync(zipFile).then(zip => {
+      zip.forEach((relativePath, file) => {
+        file.async("blob").then(content => {
+          this.handleFileUploads(content, relativePath);
+        });
+      });
+    });
+  }
+
+  /**
+   * Process .json file uploads
+   */
+  private handleFileUploads(file: Blob, name: string) {
+    let reader = new FileReader();
+    reader.readAsText(file);
+    reader.onload = () => {
+      try {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          throw new Error("Incorrect format: file is not a string");
+        }
+        const workflowContent = JSON.parse(result) as WorkflowContent;
+        const fileExtensionIndex = name.lastIndexOf(".");
+        let workflowName: string;
+        if (fileExtensionIndex === -1) {
+          workflowName = name;
+        } else {
+          workflowName = name.substring(0, fileExtensionIndex);
+        }
+        if (workflowName.trim() === "") {
+          workflowName = DEFAULT_WORKFLOW_NAME;
+        }
+        this.workflowPersistService
+          .createWorkflow(workflowContent, workflowName)
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: uploadedWorkflow => {
+              this.dashboardWorkflowEntries = [...this.dashboardWorkflowEntries, uploadedWorkflow];
+            },
+            error: (err: unknown) => alert(err),
+          });
+      } catch (error) {
+        this.notificationService.error(
+          "An error occurred when importing the workflow. Please import a workflow json file."
+        );
+      }
+    };
+  }
+
+  /**
+   * Download selected workflow as zip file
+   */
+  public onClickOpenDownloadZip() {
+    let dateTime = new Date();
+    let filename = "workflowExports-" + dateTime.toISOString() + ".zip";
+    this.zip.generateAsync({ type: "blob" }).then(function (content) {
+      saveAs(content, filename);
+    });
+  }
+
+  /**
+   * Adding the workflow as pending download zip file
+   */
+  public onClickAddToDownload(dashboardWorkflowEntry: DashboardWorkflowEntry, event: Event) {
+    if ((<HTMLInputElement>event.target).checked) {
+      const fileName = this.nameWorkflow(dashboardWorkflowEntry.workflow.name) + ".json";
+      if (dashboardWorkflowEntry.workflow.wid) {
+        if (!this.downloadListWorkflow.has(dashboardWorkflowEntry.workflow.wid)) {
+          this.downloadListWorkflow.set(dashboardWorkflowEntry.workflow.wid, fileName);
+          this.notificationService.success(
+            "Successfully added workflow " + dashboardWorkflowEntry.workflow.wid + " to download list."
+          );
+        }
+        this.workflowPersistService
+          .retrieveWorkflow(dashboardWorkflowEntry.workflow.wid)
+          .pipe(untilDestroyed(this))
+          .subscribe(data => {
+            const workflowCopy: Workflow = {
+              ...data,
+              wid: undefined,
+              creationTime: undefined,
+              lastModifiedTime: undefined,
+            };
+            const workflowJson = JSON.stringify(workflowCopy.content);
+            this.zip.file(fileName, workflowJson);
+          });
+      }
+    } else {
+      if (dashboardWorkflowEntry.workflow.wid) {
+        const existFileName = this.downloadListWorkflow.get(dashboardWorkflowEntry.workflow.wid) as string;
+        this.zip.file(existFileName, "remove").remove(existFileName);
+        this.downloadListWorkflow.delete(dashboardWorkflowEntry.workflow.wid);
+        this.notificationService.info(
+          "Workflow " + dashboardWorkflowEntry.workflow.wid + " removed from download list."
+        );
+      }
+    }
+  }
+
+  /**
+   * Resolve name conflict
+   */
+  private nameWorkflow(name: string) {
+    let count = 0;
+    const values = [...this.downloadListWorkflow.values()];
+    let copyName = name;
+    while (true) {
+      if (!values.includes(copyName + ".json")) {
+        return copyName;
+      } else {
+        copyName = name + "-" + ++count;
+      }
+    }
   }
 }
