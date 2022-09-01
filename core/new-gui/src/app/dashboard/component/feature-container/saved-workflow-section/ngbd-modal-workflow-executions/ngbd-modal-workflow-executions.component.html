@@ -205,7 +205,7 @@
                     ></td>
                   </tr>
                   <tr [nzExpand]="setOfSubExpandedIndex.has(convertSubTableIndex(i, j))">
-                    <h5 class="sub-table-title">Sample Row</h5>
+                    <h5 class="sub-table-title">Sample Row{{resultCount[sink] === 0 ? " is not Available" : ""}}</h5>
                     <nz-table
                       #detailTable
                       [nzData]="workflowExecutionsDisplayedList"

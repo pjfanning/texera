@@ -393,10 +393,14 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     if (row === null || row === undefined) {
       return [];
     } else {
-      let resultRowJson = JSON.parse(row);
-      if (Object.keys(resultRowJson) !== undefined) {
-        return Object.keys(resultRowJson).slice(1);
-      } else {
+      try {
+        let resultRowJson = JSON.parse(row);
+        if (Object.keys(resultRowJson) !== undefined) {
+          return Object.keys(resultRowJson).slice(1);
+        } else {
+          return [];
+        }
+      } catch (error) {
         return [];
       }
     }
@@ -411,10 +415,14 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     if (row === null || row === undefined) {
       return [];
     } else {
-      let resultRowJson = JSON.parse(row);
-      if (Object.values(resultRowJson) !== undefined) {
-        return Object.values(resultRowJson).slice(1);
-      } else {
+      try {
+        let resultRowJson = JSON.parse(row);
+        if (Object.values(resultRowJson) !== undefined) {
+          return Object.values(resultRowJson).slice(1);
+        } else {
+          return [];
+        }
+      } catch (error) {
         return [];
       }
     }
