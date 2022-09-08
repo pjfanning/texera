@@ -230,7 +230,6 @@ class OperatorPaginationResultService {
       // fetch result data from server
       const requestID = uuid();
       const operatorID = this.operatorID;
-      console.log(`select Page flags iscomparison: ${isComparison} istopworkflow: ${isTopWorkflow}`);
       if (isComparison) {
         this.workflowWebsocketService.send("ComparisonResultPaginationRequest", {
           requestID,
