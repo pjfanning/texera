@@ -29,6 +29,8 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 })
 export class ResultTableFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
+  @Input() isComparison: boolean = false;
+  @Input() isTopWorkflow: Boolean = false;
 
   // display result table
   currentColumns?: TableColumn[];
@@ -73,6 +75,10 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    if (this.isComparison) {
+      this.workflowResultService.setComparisonParameters(true, this.isTopWorkflow);
+    }
+
     this.workflowResultService
       .getResultUpdateStream()
       .pipe(untilDestroyed(this))
@@ -190,7 +196,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     }
     this.isLoadingResult = true;
     paginatedResultService
-      .selectPage(this.currentPageIndex, DEFAULT_PAGE_SIZE)
+      .selectPage(this.currentPageIndex, DEFAULT_PAGE_SIZE, this.isComparison, this.isTopWorkflow)
       .pipe(untilDestroyed(this))
       .subscribe(pageData => {
         if (this.currentPageIndex === pageData.pageIndex) {

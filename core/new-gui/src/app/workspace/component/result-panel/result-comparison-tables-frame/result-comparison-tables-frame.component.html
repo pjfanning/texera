@@ -3,10 +3,14 @@
     class="texera-result-half-width-table-frame"
     *ngIf="eIdToSink.has(leftPanelEid)"
     [operatorId]="eIdToSink.get(leftPanelEid)"
+    [isComparison]="true"
+    [isTopWorkflow]="true"
   ></texera-result-table-frame>
   <texera-result-table-frame
     class="texera-result-half-width-table-frame"
     *ngIf="eIdToSink.has(rightPanelEid)"
     [operatorId]="eIdToSink.get(rightPanelEid)"
+    [isComparison]="true"
+    [isTopWorkflow]="false"
   ></texera-result-table-frame>
 </div>

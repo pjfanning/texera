@@ -56,6 +56,8 @@ class WorkflowWebsocketResource extends LazyLogging {
       .map(_.asInstanceOf[User].getUid)
     val sessionState = SessionState.getState(session.getId)
     val workflowStateOpt = sessionState.getCurrentWorkflowState
+    val comparisonWorkflowStateOpt = sessionState.getCurrentComparisonWorkflowState
+
     try {
       request match {
         case viewExecutionRequest: RegisterEIdRequest =>
@@ -78,15 +80,13 @@ class WorkflowWebsocketResource extends LazyLogging {
             session,OperatorStatisticsUpdateEvent(workflowState.getComparisonWorkflowStatsMessage(comparisonRequest.eId1)++workflowState_to_compare.getComparisonWorkflowStatsMessage(comparisonRequest.eId2))
           )
 
-          sessionState.subscribe(workflowState)
-          sessionState.subscribe(workflowState_to_compare)
-
           send(
             session,
             WebResultUpdateEvent(
               workflowState.getComparisonResultUpdateMessage()++workflowState_to_compare.getComparisonResultUpdateMessage()
             )
           )
+          sessionState.comparisonSubscribe(workflowState, workflowState_to_compare)
         case wIdRequest: RegisterWIdRequest =>
           // hack to refresh frontend run button state
           send(session, WorkflowStateEvent("Uninitialized"))
@@ -115,6 +115,19 @@ class WorkflowWebsocketResource extends LazyLogging {
           workflowStateOpt.foreach(state =>
             send(session, state.resultService.handleResultPagination(paginationRequest))
           )
+        case comparisonPaginationRequest: ComparisonResultPaginationRequest =>
+          println("--------------------")
+          println(comparisonPaginationRequest)
+          val paginationRequest = ResultPaginationRequest(comparisonPaginationRequest.requestID, comparisonPaginationRequest.operatorID, comparisonPaginationRequest.pageIndex, comparisonPaginationRequest.pageSize)
+          if (comparisonPaginationRequest.isTopWorkflow){
+            workflowStateOpt.foreach(state =>
+              send(session, state.resultService.handleResultPagination(paginationRequest))
+            )
+          }else{
+            comparisonWorkflowStateOpt.foreach(state =>
+              send(session, state.resultService.handleResultPagination(paginationRequest))
+            )
+          }
         case resultExportRequest: ResultExportRequest =>
           workflowStateOpt.foreach(state =>
             send(session, state.exportService.exportResult(uidOpt.get, resultExportRequest))

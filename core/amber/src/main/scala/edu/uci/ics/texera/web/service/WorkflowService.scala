@@ -33,10 +33,7 @@ object WorkflowService {
   final val userSystemEnabled: Boolean = AmberUtils.amberConfig.getBoolean("user-sys.enabled")
   val cleanUpDeadlineInSeconds: Int =
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
-  // results across executions: (this might cause a problem because two different executions can have two sinks with the same IDs and different results?)
-  var opResultStorage: OpResultStorage = new OpResultStorage(
-    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
-  )
+
 
   def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
     uidOpt match {
@@ -289,15 +286,19 @@ class WorkflowService(
       )
     }
   }
+  // results across executions: (this might cause a problem because two different executions can have two sinks with the same IDs and different results?)
+  var opResultStorage: OpResultStorage = new OpResultStorage(
+    AmberUtils.amberConfig.getString("storage.mode").toLowerCase
+  )
   val wsInput = new WebsocketInput(errorHandler)
   var status: WorkflowAggregatedState = WorkflowAggregatedState.UNINITIALIZED
   val stateStore = new WorkflowStateStore()
   val resultService: JobResultService =
-    new JobResultService(WorkflowService.opResultStorage, stateStore)
+    new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
-    new ResultExportService(WorkflowService.opResultStorage, UInteger.valueOf(wId))
+    new ResultExportService(opResultStorage, UInteger.valueOf(wId))
   val operatorCache: WorkflowCacheService =
-    new WorkflowCacheService(WorkflowService.opResultStorage, stateStore, wsInput)
+    new WorkflowCacheService(opResultStorage, stateStore, wsInput)
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
   var vId: Int = -1
   var executionID: Long = -1 // for every new execution,
@@ -306,7 +307,7 @@ class WorkflowService(
     s"uid=$uidOpt wid=$wId",
     cleanUpTimeout,
     () => {
-      WorkflowService.opResultStorage.close()
+      opResultStorage.close()
       WorkflowService.wIdToWorkflowState.remove(mkWorkflowStateId(wId, uidOpt))
       wsInput.onNext(WorkflowKillRequest(), None)
       unsubscribeAll()

@@ -29,11 +29,35 @@ export class WorkflowResultService {
   private resultUpdateStream = new Subject<Record<string, WebResultUpdate | undefined>>();
   private resultInitiateStream = new Subject<string>();
 
+  private _isComparison: Boolean = false;
+  private _isTopWorkflow: Boolean = false;
+
   constructor(private wsService: WorkflowWebsocketService) {
     this.wsService.subscribeToEvent("WebResultUpdateEvent").subscribe(event => this.handleResultUpdate(event.updates));
     this.wsService
       .subscribeToEvent("WorkflowAvailableResultEvent")
       .subscribe(event => this.handleCleanResultCache(event));
+  }
+
+  get isComparison(): Boolean {
+    return this._isComparison;
+  }
+
+  get isTopWorkflow(): Boolean {
+    return this._isTopWorkflow;
+  }
+
+  set isComparison(flag: Boolean) {
+    this._isComparison = flag;
+  }
+
+  set isTopWorkflow(flag: Boolean) {
+    this._isTopWorkflow = flag;
+  }
+
+  public setComparisonParameters(comparisonFlag: Boolean, isTopWorkflow: Boolean): void {
+    this._isComparison = comparisonFlag;
+    this._isTopWorkflow = isTopWorkflow;
   }
 
   public getResultUpdateStream(): Observable<Record<string, WebResultUpdate | undefined>> {
@@ -187,7 +211,7 @@ class OperatorPaginationResultService {
     return this.currentTotalNumTuples;
   }
 
-  public selectPage(pageIndex: number, pageSize: number): Observable<PaginatedResultEvent> {
+  public selectPage(pageIndex: number, pageSize: number, isComparison: Boolean, isTopWorkflow: Boolean): Observable<PaginatedResultEvent> {
     if (pageSize !== DEFAULT_PAGE_SIZE) {
       throw new Error("only support fixed page size right now");
     }
@@ -206,12 +230,24 @@ class OperatorPaginationResultService {
       // fetch result data from server
       const requestID = uuid();
       const operatorID = this.operatorID;
-      this.workflowWebsocketService.send("ResultPaginationRequest", {
-        requestID,
-        operatorID,
-        pageIndex,
-        pageSize,
-      });
+      console.log(`select Page flags iscomparison: ${isComparison} istopworkflow: ${isTopWorkflow}`);
+      if (isComparison) {
+        this.workflowWebsocketService.send("ComparisonResultPaginationRequest", {
+          requestID,
+          operatorID,
+          pageIndex,
+          pageSize,
+          isTopWorkflow,
+        });
+      }else {
+        this.workflowWebsocketService.send("ResultPaginationRequest", {
+          requestID,
+          operatorID,
+          pageIndex,
+          pageSize,
+        });
+      }
+      
       const pendingRequestSubject = new Subject<PaginatedResultEvent>();
       this.pendingRequests.set(requestID, pendingRequestSubject);
       return pendingRequestSubject;

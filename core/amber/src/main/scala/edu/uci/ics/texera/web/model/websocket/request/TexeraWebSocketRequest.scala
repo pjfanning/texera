@@ -23,7 +23,8 @@ import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEva
     new Type(value = classOf[WorkflowResumeRequest]),
     new Type(value = classOf[PythonExpressionEvaluateRequest]),
     new Type(value = classOf[RegisterEIdRequest]),
-    new Type(value = classOf[CompareEIdExecutionRequest])
+    new Type(value = classOf[CompareEIdExecutionRequest]),
+    new Type(value = classOf[ComparisonResultPaginationRequest])
   )
 )
 trait TexeraWebSocketRequest {}

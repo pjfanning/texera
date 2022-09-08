@@ -94,6 +94,14 @@ export type PaginationRequest = Readonly<{
   pageSize: number;
 }>;
 
+export type ComparisonPaginationRequest = Readonly<{
+  requestID: string;
+  operatorID: string;
+  pageIndex: number;
+  pageSize: number;
+  isTopWorkflow: Boolean
+}>;
+
 export type PaginatedResultEvent = Readonly<{
   requestID: string;
   operatorID: string;
@@ -168,6 +176,7 @@ export type TexeraWebsocketRequestTypeMap = {
   ModifyLogicRequest: ModifyOperatorLogic;
   ResultExportRequest: ResultExportRequest;
   ResultPaginationRequest: PaginationRequest;
+  ComparisonResultPaginationRequest: ComparisonPaginationRequest
   RetryRequest: {};
   SkipTupleRequest: SkipTuple;
   WorkflowExecuteRequest: LogicalPlan;
