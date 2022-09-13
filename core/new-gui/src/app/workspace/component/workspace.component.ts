@@ -16,6 +16,7 @@ import { WorkflowActionService } from "../service/workflow-graph/model/workflow-
 import { WorkflowWebsocketService } from "../service/workflow-websocket/workflow-websocket.service";
 import { NzMessageService } from "ng-zorro-antd/message";
 import { WorkflowConsoleService } from "../service/workflow-console/workflow-console.service";
+import { WorkflowVersionService } from "src/app/dashboard/service/workflow-version/workflow-version.service"; 
 import { debounceTime, distinctUntilChanged, filter, switchMap } from "rxjs/operators";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { OperatorCacheStatusService } from "../service/workflow-status/operator-cache-status.service";
@@ -64,6 +65,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private workflowPersistService: WorkflowPersistService,
     private workflowWebsocketService: WorkflowWebsocketService,
     private workflowActionService: WorkflowActionService,
+    private workflowVersionService: WorkflowVersionService,
     private workflowConsoleService: WorkflowConsoleService,
     private workflowCollabService: WorkflowCollabService,
     private location: Location,
@@ -434,6 +436,18 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     };
 
     this.workflowExecutionService.displayWorkflowExecution(newWorkflow);
+    const differentOpIDsList = this.workflowVersionService.getWorkflowsDifference(workflowsToCombine[0].content, workflowsToCombine[1].content); 
+    for (const key of Object.keys(differentOpIDsList)) {
+      const modifiedIdAry = differentOpIDsList[<keyof typeof differentOpIDsList>key];
+      modifiedIdAry?.forEach(
+        (opId: string, i:number) => {
+          modifiedIdAry[i] = this.execution_to_compare.eId + "_" + opId;
+        }
+      );
+    };
+
+    this.workflowVersionService.highlightOpVersionDiff(differentOpIDsList);
+
     this.workflowWebsocketService.openExecutionCompareWebsocket(
       this.execution.eId,
       this.execution_to_compare.eId,
