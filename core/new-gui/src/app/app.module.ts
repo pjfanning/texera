@@ -12,6 +12,7 @@ import { NgbModule, NgbPopoverModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
 import { FormlyMatDatepickerModule } from "@ngx-formly/material/datepicker";
+import { NgPipesModule } from "ngx-pipes";
 import { NzButtonModule } from "ng-zorro-antd/button";
 import { NzCollapseModule } from "ng-zorro-antd/collapse";
 import { NzDatePickerModule } from "ng-zorro-antd/date-picker";
@@ -23,16 +24,19 @@ import { NzIconModule } from "ng-zorro-antd/icon";
 import { NzInputModule } from "ng-zorro-antd/input";
 import { NzPopoverModule } from "ng-zorro-antd/popover";
 import { NzListModule } from "ng-zorro-antd/list";
+import { NzCalendarModule } from "ng-zorro-antd/calendar";
 import { NzMenuModule } from "ng-zorro-antd/menu";
 import { NzMessageModule } from "ng-zorro-antd/message";
 import { NzModalModule } from "ng-zorro-antd/modal";
 import { NzTableModule } from "ng-zorro-antd/table";
 import { NzToolTipModule } from "ng-zorro-antd/tooltip";
+import { NzCheckboxModule } from "ng-zorro-antd/checkbox";
 import { NzSelectModule } from "ng-zorro-antd/select";
 import { NzSliderModule } from "ng-zorro-antd/slider";
 import { NzSpaceModule } from "ng-zorro-antd/space";
 import { NzBadgeModule } from "ng-zorro-antd/badge";
 import { NzUploadModule } from "ng-zorro-antd/upload";
+import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { FileUploadModule } from "ng2-file-upload";
 import { NgxJsonViewerModule } from "ngx-json-viewer";
 import { ColorPickerModule } from "ngx-color-picker";
@@ -107,6 +111,7 @@ import { NzModalCommentBoxComponent } from "./workspace/component/workflow-edito
 import { NzCommentModule } from "ng-zorro-antd/comment";
 import { NgbdModalWorkflowExecutionsComponent } from "./dashboard/component/feature-container/saved-workflow-section/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
 import { DeletePromptComponent } from "./dashboard/component/delete-prompt/delete-prompt.component";
+import { ContextMenuComponent } from "./workspace/component/workflow-editor/context-menu/context-menu/context-menu.component";
 
 registerLocaleData(en);
 
@@ -166,6 +171,7 @@ registerLocaleData(en);
     NgbdModalRemoveProjectFileComponent,
     NzModalCommentBoxComponent,
     DeletePromptComponent,
+    ContextMenuComponent,
   ],
   imports: [
     BrowserModule,
@@ -205,10 +211,12 @@ registerLocaleData(en);
     NzListModule,
     NzInputModule,
     NzPopoverModule,
+    NzCalendarModule,
     NzMenuModule,
     NzMessageModule,
     NzCollapseModule,
     NzToolTipModule,
+    NzCheckboxModule,
     NzTableModule,
     NzModalModule,
     NzSelectModule,
@@ -216,6 +224,7 @@ registerLocaleData(en);
     NzSpaceModule,
     NzBadgeModule,
     NzUploadModule,
+    NzNoAnimationModule,
     NgxJsonViewerModule,
     MatDialogModule,
     NzCardModule,
@@ -229,6 +238,7 @@ registerLocaleData(en);
     NzPaginationModule,
     NzCommentModule,
     ColorPickerModule,
+    NgPipesModule,
   ],
   providers: [
     DatePipe,

@@ -39,25 +39,18 @@ object WorkflowService {
   val cleanUpDeadlineInSeconds: Int =
     AmberUtils.amberConfig.getInt("web-server.workflow-state-cleanup-in-seconds")
 
-  def mkWorkflowStateId(wId: Int, uidOpt: Option[UInteger]): String = {
-    uidOpt match {
-      case Some(user) =>
-        wId.toString
-      case None =>
-        // use a fixed wid for reconnection
-        "dummy wid"
-    }
+  def mkWorkflowStateId(wId: Int): String = {
+    wId.toString
   }
   def getOrCreate(
       wId: Int,
-      uidOpt: Option[UInteger],
       cleanupTimeout: Int = cleanUpDeadlineInSeconds
   ): WorkflowService = {
     wIdToWorkflowState.compute(
-      mkWorkflowStateId(wId, uidOpt),
+      mkWorkflowStateId(wId),
       (_, v) => {
         if (v == null) {
-          new WorkflowService(uidOpt, wId, cleanupTimeout)
+          new WorkflowService(wId, cleanupTimeout)
         } else {
           //if user system is not enabled, return v
           if (userSystemEnabled) {
@@ -71,7 +64,7 @@ object WorkflowService {
             ) {
               v
             } else {
-              new WorkflowService(uidOpt, wId, cleanupTimeout)
+              new WorkflowService(wId, cleanupTimeout)
             }
           } else {
             v
@@ -84,7 +77,6 @@ object WorkflowService {
 }
 
 class WorkflowService(
-    uidOpt: Option[UInteger],
     wId: Int,
     cleanUpTimeout: Int
 ) extends SubscriptionManager
@@ -115,11 +107,11 @@ class WorkflowService(
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
   var vId: Int = -1
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
-    s"uid=$uidOpt wid=$wId",
+    s"wid=$wId",
     cleanUpTimeout,
     () => {
       opResultStorage.close()
-      WorkflowService.wIdToWorkflowState.remove(mkWorkflowStateId(wId, uidOpt))
+      WorkflowService.wIdToWorkflowState.remove(mkWorkflowStateId(wId))
       wsInput.onNext(WorkflowKillRequest(), None)
       unsubscribeAll()
     }
@@ -161,7 +153,10 @@ class WorkflowService(
     )
   }
 
-  private[this] def createWorkflowContext(request: WorkflowExecuteRequest): WorkflowContext = {
+  private[this] def createWorkflowContext(
+      request: WorkflowExecuteRequest,
+      uidOpt: Option[UInteger]
+  ): WorkflowContext = {
     val jobID: String = String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet)
     if (WorkflowCacheService.isAvailable) {
       operatorCache.updateCacheStatus(
@@ -196,7 +191,7 @@ class WorkflowService(
       jobService.getValue.unsubscribeAll()
     }
     val job = new WorkflowJobService(
-      createWorkflowContext(req),
+      createWorkflowContext(req, uidOpt),
       wsInput,
       operatorCache,
       resultService,

@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{WORKFLOW, WORKFLOW_VERSION}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{WORKFLOW_VERSION}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowVersionDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Workflow, WorkflowVersion}
 import edu.uci.ics.texera.web.resource.dashboard.workflow.WorkflowVersionResource.{
@@ -49,8 +49,6 @@ object WorkflowVersionResource {
     val versions = context
       .select(WORKFLOW_VERSION.VID)
       .from(WORKFLOW_VERSION)
-      .leftJoin(WORKFLOW)
-      .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
       .where(WORKFLOW_VERSION.WID.eq(wid))
       .fetchInto(classOf[UInteger])
       .toList
@@ -126,7 +124,7 @@ object WorkflowVersionResource {
    * @param lowerBound lower bound of the version search range
    * @param UpperBound upper bound of the search range
    * @param wid workflow id
-   * @return a list of contents as strings
+   * @return true if no important changes has been made to the execution, return false otherwise
    */
   def isVersionInRangeUnimportant(
       lowerBound: UInteger,
@@ -308,8 +306,6 @@ class WorkflowVersionResource {
         context
           .select(WORKFLOW_VERSION.VID, WORKFLOW_VERSION.CREATION_TIME, WORKFLOW_VERSION.CONTENT)
           .from(WORKFLOW_VERSION)
-          .leftJoin(WORKFLOW)
-          .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
           .where(WORKFLOW_VERSION.WID.eq(wid))
           .fetchInto(classOf[WorkflowVersion])
           .toList
@@ -345,9 +341,7 @@ class WorkflowVersionResource {
       val versionEntries = context
         .select(WORKFLOW_VERSION.VID, WORKFLOW_VERSION.CREATION_TIME, WORKFLOW_VERSION.CONTENT)
         .from(WORKFLOW_VERSION)
-        .leftJoin(WORKFLOW)
-        .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
-        .where(WORKFLOW.WID.eq(wid).and(WORKFLOW_VERSION.VID.ge(vid)))
+        .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_VERSION.VID.ge(vid)))
         .fetchInto(classOf[WorkflowVersion])
         .toList
       // apply patch
