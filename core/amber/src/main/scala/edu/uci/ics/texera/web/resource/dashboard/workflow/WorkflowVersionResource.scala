@@ -37,7 +37,8 @@ object WorkflowVersionResource {
   private final val AGGREGATE_TIME_LIMIT_MILLSEC =
     AmberUtils.amberConfig.getInt("user-sys.version-time-limit-in-minutes") * 60000
   // list of Json keys in the diff patch that are considered UNimportant
-  private final val VERSION_UNIMPORTANCE_RULES = List("/operatorPositions/")
+  private final val VERSION_UNIMPORTANCE_RULES =
+    List("/operatorPositions/", "/commentBoxes/", "/comments/")
 
   /**
     * This function retrieves the latest version of a workflow
@@ -116,6 +117,31 @@ object WorkflowVersionResource {
     }
     workflowVersion.setContent(patch)
     workflowVersionDao.update(workflowVersion)
+  }
+
+  /*
+   * This function retrieves the content of versions from a specific workflow in a range
+   * @param lowerBound lower bound of the version search range
+   * @param UpperBound upper bound of the search range
+   * @param wid workflow id
+   * @return true if no important changes has been made to the execution, return false otherwise
+   */
+  def isVersionInRangeUnimportant(
+      lowerBound: UInteger,
+      UpperBound: UInteger,
+      wid: UInteger
+  ): Boolean = {
+    if (lowerBound == UpperBound) {
+      return true
+    }
+    val contents = context
+      .select(WORKFLOW_VERSION.CONTENT)
+      .from(WORKFLOW_VERSION)
+      .where(WORKFLOW_VERSION.WID.eq(wid))
+      .and(WORKFLOW_VERSION.VID.between(lowerBound).and(UpperBound))
+      .fetchInto(classOf[String])
+      .toList
+    contents.forall(content => !isVersionImportant(content))
   }
 
   /**
