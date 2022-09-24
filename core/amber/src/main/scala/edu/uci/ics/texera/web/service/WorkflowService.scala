@@ -64,7 +64,7 @@ object WorkflowService {
             ) {
               v
             } else {
-              new WorkflowService(uidOpt, wId, cleanupTimeout)
+              new WorkflowService(wId, cleanupTimeout)
             }
           } else {
             v

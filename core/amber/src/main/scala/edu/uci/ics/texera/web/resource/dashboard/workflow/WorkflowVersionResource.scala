@@ -124,7 +124,7 @@ object WorkflowVersionResource {
    * @param lowerBound lower bound of the version search range
    * @param UpperBound upper bound of the search range
    * @param wid workflow id
-   * @return a list of contents as strings
+   * @return true if no important changes has been made to the execution, return false otherwise
    */
   def isVersionInRangeUnimportant(
       lowerBound: UInteger,
