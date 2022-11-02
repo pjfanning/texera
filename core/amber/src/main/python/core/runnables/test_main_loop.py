@@ -44,7 +44,7 @@ from pytexera.udf.examples.echo_operator import EchoOperator
 logger.level("PRINT", no=38)
 
 
-class TestDataProcessor:
+class TestMainLoop:
     @pytest.fixture
     def command_sequence(self):
         return 1
@@ -165,16 +165,16 @@ class TestDataProcessor:
             with reraise:
                 main_loop.run()
 
-        dp_thread = Thread(target=wrapper, name="dp_thread")
-        yield dp_thread
+        main_loop_thread = Thread(target=wrapper, name="main_loop_thread")
+        yield main_loop_thread
 
     @pytest.mark.timeout(2)
-    def test_dp_thread_can_start(self, main_loop_thread):
+    def test_main_loop_thread_can_start(self, main_loop_thread):
         main_loop_thread.start()
         assert main_loop_thread.is_alive()
 
     @pytest.mark.timeout(2)
-    def test_dp_thread_can_process_messages(
+    def test_main_loop_thread_can_process_messages(
         self,
         mock_link,
         mock_receiver_actor,
