@@ -26,9 +26,11 @@ def is_concrete_operator(cls: type) -> bool:
     :param cls: a target class to be evaluated
     :return: bool
     """
-    return (inspect.isclass(cls) and issubclass(cls,
-                                                Operator) and not inspect.isabstract(
-        cls))
+    return (
+        inspect.isclass(cls)
+        and issubclass(cls, Operator)
+        and not inspect.isabstract(cls)
+    )
 
 
 class Option:
@@ -40,4 +42,3 @@ class Option:
 
     def get(self):
         return self.val
-
