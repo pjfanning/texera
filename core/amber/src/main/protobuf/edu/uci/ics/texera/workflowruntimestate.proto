@@ -63,10 +63,15 @@ message OperatorRuntimeStats{
   WorkflowAggregatedState state = 1;
   int64 input_count = 2;
   int64 output_count = 3;
+  map<string, WorkerRuntimeStats> worker_info = 4;
+
+}
+
+message WorkerRuntimeStats{
 }
 
 message JobStatsStore {
-  map<string,OperatorRuntimeStats> operator_info = 3;
+  map<string, OperatorRuntimeStats> operator_info = 3;
 }
 
 message JobMetadataStore{

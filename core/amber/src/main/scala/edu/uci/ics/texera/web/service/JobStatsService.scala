@@ -10,10 +10,10 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{
   OperatorStatistics,
-  OperatorStatisticsUpdateEvent,
-  TexeraWebSocketEvent
+  OperatorStatisticsUpdateEvent
 }
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.JobStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
 
 class JobStatsService(
@@ -29,14 +29,13 @@ class JobStatsService(
       if (newState.operatorInfo.toSet != oldState.operatorInfo.toSet) {
         Iterable(
           OperatorStatisticsUpdateEvent(newState.operatorInfo.collect {
-            case x =>
-              val stats = x._2
+            case (operatorId: String, OperatorRuntimeStats(state, inputCount, outputCount, _)) =>
               val res = OperatorStatistics(
-                Utils.aggregatedStateToString(stats.state),
-                stats.inputCount,
-                stats.outputCount
+                Utils.aggregatedStateToString(state),
+                inputCount,
+                outputCount
               )
-              (x._1, res)
+              (operatorId, res)
           })
         )
       } else {

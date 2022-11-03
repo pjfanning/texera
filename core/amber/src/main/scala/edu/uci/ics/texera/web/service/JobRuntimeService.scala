@@ -1,27 +1,26 @@
 package edu.uci.ics.texera.web.service
 
-import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{
   TexeraWebSocketEvent,
   WorkflowExecutionErrorEvent,
-  WorkflowStateEvent
+  WorkflowStateEvent,
+  WorkflowWorkersUpdateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request.{
-  RemoveBreakpointRequest,
   SkipTupleRequest,
   WorkflowKillRequest,
   WorkflowPauseRequest,
   WorkflowResumeRequest
 }
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.JobStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
+import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 
 import scala.collection.mutable
 
@@ -48,6 +47,25 @@ class JobRuntimeService(
         outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
       }
       outputEvts
+    })
+  )
+
+  addSubscription(
+    stateStore.statsStore.registerDiffHandler((oldState, newState) => {
+      // update operators' workers.
+      newState.operatorInfo
+        .filter(
+          {
+            case (operatorId: String, opStats: OperatorRuntimeStats) =>
+              !oldState.operatorInfo.contains(operatorId) || (oldState.operatorInfo
+                .contains(operatorId) && oldState.operatorInfo(operatorId) != opStats)
+          }
+        )
+        .map({
+          case (operatorId: String, opStats: OperatorRuntimeStats) =>
+            WorkflowWorkersUpdateEvent(operatorId, opStats.workerInfo.keysIterator.toSeq)
+        })
+        .asInstanceOf[Iterable[TexeraWebSocketEvent]]
     })
   )
 

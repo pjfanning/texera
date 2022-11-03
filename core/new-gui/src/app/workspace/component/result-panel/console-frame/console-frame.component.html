@@ -13,8 +13,8 @@
 </nz-input-group>
 
 <ng-template #addOnBeforeTemplate>
-  <nz-select [ngModel]="targetWorker">
-    <nz-option [nzLabel]="'worker1'" [nzValue]="'worker1'"></nz-option>
-    <nz-option [nzLabel]="'worker2'" [nzValue]="'worker2'"></nz-option>
+  <nz-select [(ngModel)]="targetWorker">
+    <nz-option *ngFor="let worker of workers" [nzLabel]="worker" [nzValue]="worker"></nz-option>
+    <nz-option [nzLabel]="'All Workers'" [nzValue]="'All Workers'"></nz-option>
   </nz-select>
 </ng-template>

@@ -21,6 +21,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   // display print
   consoleMessages: ReadonlyArray<string> = [];
 
+  workers: readonly string[] = [];
   targetWorker: string = "All Workers";
   command: string = "";
 
@@ -79,6 +80,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     const breakpointTriggerInfo = this.executeWorkflowService.getBreakpointTriggerInfo();
 
     if (this.operatorId) {
+      // load worker ids
+      this.workers =
+        this.executeWorkflowService.getWorkerIds(this.operatorId)?.map(workerId => {
+          const tokens = workerId.split("-");
+          return "Worker " + tokens.at(tokens.length - 1) ?? "";
+        }) ?? [];
+
       // first display error messages if applicable
       if (this.operatorId === breakpointTriggerInfo?.operatorID) {
         // if we hit a breakpoint

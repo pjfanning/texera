@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.operators
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
-import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
   WorkerInfo,
   WorkerLayer,
@@ -16,11 +15,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
-import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  OperatorRuntimeStats,
+  WorkerRuntimeStats,
+  WorkflowAggregatedState
+}
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.asScalaSet
 
 object ShuffleType extends Enumeration {
   val HASH_BASED, RANGE_BASED, NONE =
@@ -61,7 +62,12 @@ abstract class OpExecConfig(val id: OperatorIdentity) extends Serializable {
     topology.layers.find(_.identifiers.contains(id)).get
 
   def getOperatorStatistics: OperatorRuntimeStats =
-    OperatorRuntimeStats(getState, getInputRowCount, getOutputRowCount)
+    OperatorRuntimeStats(
+      getState,
+      getInputRowCount,
+      getOutputRowCount,
+      getAllWorkers.map(_.name -> WorkerRuntimeStats()).toMap
+    )
 
   def getState: WorkflowAggregatedState = {
     val workerStates = getAllWorkerStates
