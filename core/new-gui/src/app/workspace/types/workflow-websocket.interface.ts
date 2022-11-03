@@ -119,6 +119,12 @@ export interface CacheStatusUpdateEvent
     cacheStatusMap: Record<string, OperatorResultCacheStatus>;
   }> {}
 
+export type PythonDebugCommandRequest = Readonly<{
+  operatorId: string;
+  workerId: string;
+  cmd: string;
+}>;
+
 export type PythonExpressionEvaluateRequest = Readonly<{
   expression: string;
   operatorId: string;
@@ -159,6 +165,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowPauseRequest: {};
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
+  PythonDebugCommandRequest: PythonDebugCommandRequest;
 };
 
 export type TexeraWebsocketEventTypeMap = {

@@ -7,3 +7,14 @@
 <div *ngFor="let message of consoleMessages">
   <div class="console-message">{{ message }}</div>
 </div>
+
+<nz-input-group nzCompact [nzAddOnBefore]="addOnBeforeTemplate">
+  <input type="text" nz-input [(ngModel)]="command" (keyup.enter)="submitCommand()" />
+</nz-input-group>
+
+<ng-template #addOnBeforeTemplate>
+  <nz-select [ngModel]="targetWorker">
+    <nz-option [nzLabel]="'worker1'" [nzValue]="'worker1'"></nz-option>
+    <nz-option [nzLabel]="'worker2'" [nzValue]="'worker2'"></nz-option>
+  </nz-select>
+</ng-template>

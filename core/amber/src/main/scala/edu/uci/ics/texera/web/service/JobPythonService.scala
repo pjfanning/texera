@@ -1,21 +1,29 @@
 package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.PythonPrintTriggered
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  PythonDebugEventTriggered,
+  PythonPrintTriggered
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonDebugCommandHandler.PythonDebugCommand
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
+import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{BreakpointTriggeredEvent, TexeraWebSocketEvent}
+import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonPrintTriggeredEvent
-import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
-import edu.uci.ics.texera.web.model.websocket.request.{RetryRequest, SkipTupleRequest}
+import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
+import edu.uci.ics.texera.web.model.websocket.request.python.{
+  PythonDebugCommandRequest,
+  PythonExpressionEvaluateRequest
+}
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.service.JobPythonService.bufferSize
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
-import edu.uci.ics.texera.web.workflowruntimestate.{EvaluatedValueList, PythonOperatorInfo}
+import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
+import edu.uci.ics.texera.web.workflowruntimestate.{EvaluatedValueList, PythonOperatorInfo}
+import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 
 import scala.collection.mutable
 
@@ -84,6 +92,29 @@ class JobPythonService(
     )
   }
 
+  private[this] def registerCallbackOnPythonDebugEvent(): Unit = {
+    addSubscription(
+      client
+        .registerCallback[PythonDebugEventTriggered]((evt: PythonDebugEventTriggered) => {
+          stateStore.pythonStore.updateState { jobInfo =>
+            val opInfo = jobInfo.operatorInfo.getOrElse(evt.operatorId, PythonOperatorInfo())
+            if (opInfo.consoleMessages.size < bufferSize) {
+              jobInfo.addOperatorInfo((evt.operatorId, opInfo.addConsoleMessages(evt.message)))
+            } else {
+              jobInfo.addOperatorInfo(
+                (
+                  evt.operatorId,
+                  opInfo.withConsoleMessages(
+                    opInfo.consoleMessages.drop(1) :+ evt.message
+                  )
+                )
+              )
+            }
+          }
+        })
+    )
+  }
+
   //Receive retry request
   addSubscription(wsInput.subscribe((req: RetryRequest, uidOpt) => {
     breakpointService.clearTriggeredBreakpoints()
@@ -92,6 +123,12 @@ class JobPythonService(
       RetryWorkflow(),
       _ => stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RUNNING))
     )
+  }))
+
+  //Receive debug command
+  addSubscription(wsInput.subscribe((req: PythonDebugCommandRequest, uidOpt) => {
+
+    client.sendAsync(PythonDebugCommand(req.operatorId, req.workerId, req.cmd))
   }))
 
   //Receive evaluate python expression

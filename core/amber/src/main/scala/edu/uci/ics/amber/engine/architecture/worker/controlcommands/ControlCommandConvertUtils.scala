@@ -2,8 +2,10 @@ package edu.uci.ics.amber.engine.architecture.worker.controlcommands
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonDebugEventHandler.PythonDebugEvent
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonPrintHandler.PythonPrint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
+import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.EvaluateExpressionHandler.EvaluateExpression
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyOperatorLogicHandler.ModifyOperatorLogic
@@ -67,6 +69,8 @@ object ControlCommandConvertUtils {
         EvaluateExpressionV2(expression)
       case QuerySelfWorkloadMetrics() =>
         QuerySelfWorkloadMetricsV2()
+      case DebugCommand(cmd) =>
+        DebugCommandV2(cmd)
       case _ =>
         throw new UnsupportedOperationException(
           s"V1 controlCommand $controlCommand cannot be converted to V2"
@@ -86,6 +90,8 @@ object ControlCommandConvertUtils {
       case PythonPrintV2(message) =>
         PythonPrint(message)
       case LinkCompletedV2(link) => LinkCompleted(link)
+      case PythonDebugEventV2(message) =>
+        PythonDebugEvent(message)
       case _ =>
         throw new UnsupportedOperationException(
           s"V2 controlCommand $controlCommand cannot be converted to V1"

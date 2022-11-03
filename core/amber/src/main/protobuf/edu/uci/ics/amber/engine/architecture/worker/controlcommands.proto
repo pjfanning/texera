@@ -77,6 +77,14 @@ message LinkCompletedV2 {
     common.LinkIdentity link_id = 1 [(scalapb.field).no_box = true];
 }
 
+message DebugCommandV2 {
+    string cmd = 1;
+}
+
+message PythonDebugEventV2 {
+    string msg = 1;
+}
+
 message ControlCommandV2 {
     oneof sealed_value {
         StartWorkerV2 start_worker = 1;
@@ -103,6 +111,9 @@ message ControlCommandV2 {
         EvaluateExpressionV2 evaluate_expression = 25;
 
         QuerySelfWorkloadMetricsV2 query_self_workload_metrics = 41;
+
+        DebugCommandV2 debug_command = 81;
+        PythonDebugEventV2 debug_event = 82;
 
         WorkerExecutionCompletedV2 worker_execution_completed = 101;
     }

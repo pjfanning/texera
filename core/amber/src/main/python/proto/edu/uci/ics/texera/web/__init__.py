@@ -34,18 +34,6 @@ class WorkflowCacheStore(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class WorkflowResultStore(betterproto.Message):
-    operator_info: Dict[str, "OperatorResultMetadata"] = betterproto.map_field(
-        1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
-    )
-
-
-@dataclass(eq=False, repr=False)
-class OperatorResultMetadata(betterproto.Message):
-    tuple_count: int = betterproto.int32_field(1)
-
-
-@dataclass(eq=False, repr=False)
 class BreakpointFault(betterproto.Message):
     actor_path: str = betterproto.string_field(1)
     faulted_tuple: "BreakpointFaultBreakpointTuple" = betterproto.message_field(2)
@@ -112,6 +100,18 @@ class JobMetadataStore(betterproto.Message):
     state: "WorkflowAggregatedState" = betterproto.enum_field(1)
     error: str = betterproto.string_field(2)
     eid: int = betterproto.int64_field(3)
+
+
+@dataclass(eq=False, repr=False)
+class WorkflowResultStore(betterproto.Message):
+    operator_info: Dict[str, "OperatorResultMetadata"] = betterproto.map_field(
+        1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
+    )
+
+
+@dataclass(eq=False, repr=False)
+class OperatorResultMetadata(betterproto.Message):
+    tuple_count: int = betterproto.int32_field(1)
 
 
 from ...amber.engine.architecture import worker as __amber_engine_architecture_worker__

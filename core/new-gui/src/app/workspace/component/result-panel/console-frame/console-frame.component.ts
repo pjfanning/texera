@@ -4,6 +4,8 @@ import { BreakpointTriggerInfo } from "../../../types/workflow-common.interface"
 import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
+import { isDefined } from "../../../../common/util/predicate";
 
 @UntilDestroy()
 @Component({
@@ -19,9 +21,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   // display print
   consoleMessages: ReadonlyArray<string> = [];
 
+  targetWorker: string = "All Workers";
+  command: string = "";
+
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
-    private workflowConsoleService: WorkflowConsoleService
+    private workflowConsoleService: WorkflowConsoleService,
+    private workflowWebsocketService: WorkflowWebsocketService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -106,5 +112,15 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   displayConsoleMessages(operatorId: string) {
     this.consoleMessages = operatorId ? this.workflowConsoleService.getConsoleMessages(operatorId) || [] : [];
+  }
+
+  submitCommand() {
+    console.log("submitting the command" + this.command);
+    if (isDefined(this.operatorId))
+      this.workflowWebsocketService.send("PythonDebugCommandRequest", {
+        operatorId: this.operatorId,
+        workerId: this.targetWorker,
+        cmd: this.command,
+      });
   }
 }

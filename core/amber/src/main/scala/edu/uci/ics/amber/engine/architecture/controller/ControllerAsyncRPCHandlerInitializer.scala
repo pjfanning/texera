@@ -48,6 +48,8 @@ class ControllerAsyncRPCHandlerInitializer(
     with RetryWorkflowHandler
     with ModifyLogicHandler
     with EvaluatePythonExpressionHandler
+    with PythonDebugCommandHandler
+    with PythonDebugEventHandler
     with MonitoringHandler
     with SkewDetectionHandler
     with RegionsTimeSlotExpiredHandler {

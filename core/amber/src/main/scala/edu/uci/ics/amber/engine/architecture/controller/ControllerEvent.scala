@@ -28,6 +28,12 @@ object ControllerEvent {
       operatorID: String = null
   ) extends ControlCommand[Unit]
 
+  case class PythonDebugEventTriggered(
+      message: String,
+      operatorId: String,
+      workerId: String
+  ) extends ControlCommand[Unit]
+
   case class ReportCurrentProcessingTuple(
       operatorID: String,
       tuple: Array[(ITuple, ActorVirtualIdentity)]
