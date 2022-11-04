@@ -9,8 +9,9 @@ from core.util.runnable.runnable import Runnable
 
 
 class DataProcessor(Runnable):
-    def __init__(self, input_queue: Queue, output_queue: Queue, dp_condition,
-                 context: Context):
+    def __init__(
+        self, input_queue: Queue, output_queue: Queue, dp_condition, context: Context
+    ):
         self._input_queue = input_queue
         self._output_queue = output_queue
         self._operator = context.dp._operator
@@ -35,9 +36,10 @@ class DataProcessor(Runnable):
             try:
                 operator = self._operator.get()
                 output_iterator = (
-                    operator.process_tuple(tuple_, port) if isinstance(tuple_,
-                                                                       Tuple) else operator.on_finish(
-                        port))
+                    operator.process_tuple(tuple_, port)
+                    if isinstance(tuple_, Tuple)
+                    else operator.on_finish(port)
+                )
                 for output in output_iterator:
                     self._output_queue.put(None if output is None else Tuple(output))
                     self.context_switch()
