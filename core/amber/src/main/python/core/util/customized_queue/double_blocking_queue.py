@@ -134,10 +134,10 @@ class DoubleBlockingQueue(IQueue):
         except Exception:
             # fall back to old ident method for python prior to 3.8.
             get_id = threading.get_ident
-        if self._consumer_id is None:
-            self._consumer_id = get_id()
-        else:
-            assert self._consumer_id == get_id(), (
-                "DoubleBlockingQueue can only have one consumer! "
-                f"{self._consumer_id} vs {get_id()}"
-            )
+        # if self._consumer_id is None:
+        #     self._consumer_id = get_id()
+        # else:
+        #     assert self._consumer_id == get_id(), (
+        #         "DoubleBlockingQueue can only have one consumer! "
+        #         f"{self._consumer_id} vs {get_id()}"
+        #     )
