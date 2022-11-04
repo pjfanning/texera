@@ -13,12 +13,19 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonConsoleUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
-import edu.uci.ics.texera.web.model.websocket.request.python.{PythonDebugCommandRequest, PythonExpressionEvaluateRequest}
+import edu.uci.ics.texera.web.model.websocket.request.python.{
+  PythonDebugCommandRequest,
+  PythonExpressionEvaluateRequest
+}
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.service.JobPythonService.bufferSize
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
-import edu.uci.ics.texera.web.workflowruntimestate.{EvaluatedValueList, PythonOperatorInfo, PythonWorkerInfo}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  EvaluatedValueList,
+  PythonOperatorInfo,
+  PythonWorkerInfo
+}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 
 import scala.collection.mutable
@@ -29,11 +36,11 @@ object JobPythonService {
 }
 
 class JobPythonService(
-                        client: AmberClient,
-                        stateStore: JobStateStore,
-                        wsInput: WebsocketInput,
-                        breakpointService: JobBreakpointService
-                      ) extends SubscriptionManager {
+    client: AmberClient,
+    stateStore: JobStateStore,
+    wsInput: WebsocketInput,
+    breakpointService: JobBreakpointService
+) extends SubscriptionManager {
   registerCallbackOnPythonPrint()
 
   addSubscription(
@@ -48,12 +55,18 @@ class JobPythonService(
               info.workerInfo.foreach({
                 case (workerId, workerInfo) =>
                   val diff = if (oldInfo.workerInfo.contains(workerId)) {
-                    workerInfo.pythonConsoleMessage diff oldInfo.workerInfo(workerId).pythonConsoleMessage
+                    workerInfo.pythonConsoleMessage diff oldInfo
+                      .workerInfo(workerId)
+                      .pythonConsoleMessage
                   } else {
                     workerInfo.pythonConsoleMessage
                   }
                   if (diff.nonEmpty) {
-                    diff.foreach(s => output.append(PythonConsoleUpdateEvent(opId, workerId, s.timestamp, s.level, s.message)))
+                    diff.foreach(s =>
+                      output.append(
+                        PythonConsoleUpdateEvent(opId, workerId, s.timestamp, s.level, s.message)
+                      )
+                    )
                   }
 
               })
@@ -83,21 +96,42 @@ class JobPythonService(
               opInfo.addWorkerInfo((evt.workerId, PythonWorkerInfo()))
             }
             val workerInfo = opInfo.workerInfo.getOrElse(evt.workerId, PythonWorkerInfo())
-            val newMessage = new PythonConsoleMessageV2(evt.consoleMessage.timestamp, evt.consoleMessage.level, evt.consoleMessage.message)
+            val newMessage = new PythonConsoleMessageV2(
+              evt.consoleMessage.timestamp,
+              evt.consoleMessage.level,
+              evt.consoleMessage.message
+            )
             if (workerInfo.pythonConsoleMessage.size < bufferSize) {
-              jobInfo.addOperatorInfo((evt.operatorId, opInfo.addWorkerInfo((evt.workerId, workerInfo.addPythonConsoleMessage(newMessage)))))
+              jobInfo.addOperatorInfo(
+                (
+                  evt.operatorId,
+                  opInfo.addWorkerInfo(
+                    (evt.workerId, workerInfo.addPythonConsoleMessage(newMessage))
+                  )
+                )
+              )
             } else {
-              jobInfo.addOperatorInfo((evt.operatorId, opInfo.addWorkerInfo((evt.workerId, workerInfo.withPythonConsoleMessage(workerInfo.pythonConsoleMessage.drop(1) :+ newMessage)))))
+              jobInfo.addOperatorInfo(
+                (
+                  evt.operatorId,
+                  opInfo.addWorkerInfo(
+                    (
+                      evt.workerId,
+                      workerInfo.withPythonConsoleMessage(
+                        workerInfo.pythonConsoleMessage.drop(1) :+ newMessage
+                      )
+                    )
+                  )
+                )
+              )
             }
 
           }
 
-        }
-        )
+        })
     )
 
   }
-
 
   //Receive retry request
   addSubscription(wsInput.subscribe((req: RetryRequest, uidOpt) => {
@@ -111,22 +145,38 @@ class JobPythonService(
 
   //Receive debug command
   addSubscription(wsInput.subscribe((req: PythonDebugCommandRequest, uidOpt) => {
-    stateStore.pythonStore.updateState {
-      jobInfo =>
-        if (!jobInfo.operatorInfo.contains(req.operatorId)) {
-          jobInfo.addOperatorInfo((req.operatorId, PythonOperatorInfo()))
-        }
-        val opInfo = jobInfo.operatorInfo.getOrElse(req.operatorId, PythonOperatorInfo())
-        if (!opInfo.workerInfo.contains(req.workerId)) {
-          opInfo.addWorkerInfo((req.workerId, PythonWorkerInfo()))
-        }
-        val workerInfo = opInfo.workerInfo.getOrElse(req.workerId, PythonWorkerInfo())
-        val newMessage = new PythonConsoleMessageV2(Timestamp.defaultInstance, "COMMAND", req.cmd)
-        if (workerInfo.pythonConsoleMessage.size < bufferSize) {
-          jobInfo.addOperatorInfo((req.operatorId, opInfo.addWorkerInfo((req.workerId, workerInfo.addPythonConsoleMessage(newMessage)))))
-        } else {
-          jobInfo.addOperatorInfo((req.operatorId, opInfo.addWorkerInfo((req.workerId, workerInfo.withPythonConsoleMessage(workerInfo.pythonConsoleMessage.drop(1) :+ newMessage)))))
-        }
+    stateStore.pythonStore.updateState { jobInfo =>
+      if (!jobInfo.operatorInfo.contains(req.operatorId)) {
+        jobInfo.addOperatorInfo((req.operatorId, PythonOperatorInfo()))
+      }
+      val opInfo = jobInfo.operatorInfo.getOrElse(req.operatorId, PythonOperatorInfo())
+      if (!opInfo.workerInfo.contains(req.workerId)) {
+        opInfo.addWorkerInfo((req.workerId, PythonWorkerInfo()))
+      }
+      val workerInfo = opInfo.workerInfo.getOrElse(req.workerId, PythonWorkerInfo())
+      val newMessage = new PythonConsoleMessageV2(Timestamp.defaultInstance, "COMMAND", req.cmd)
+      if (workerInfo.pythonConsoleMessage.size < bufferSize) {
+        jobInfo.addOperatorInfo(
+          (
+            req.operatorId,
+            opInfo.addWorkerInfo((req.workerId, workerInfo.addPythonConsoleMessage(newMessage)))
+          )
+        )
+      } else {
+        jobInfo.addOperatorInfo(
+          (
+            req.operatorId,
+            opInfo.addWorkerInfo(
+              (
+                req.workerId,
+                workerInfo.withPythonConsoleMessage(
+                  workerInfo.pythonConsoleMessage.drop(1) :+ newMessage
+                )
+              )
+            )
+          )
+        )
+      }
     }
 
     client.sendAsync(PythonDebugCommand(req.operatorId, req.workerId, req.cmd))

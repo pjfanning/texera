@@ -20,7 +20,10 @@ class ModifyOperatorLogicHandler(Handler):
         # overwrite the internal state
         context.dp._operator.get().__dict__ = original_internal_state
 
-        logger.add(context.dp._print_log_handler, level="PRINT",
-                   filter=dict(inspect.getmembers(operator))['__module__'],
-                   format='{message}')
+        logger.add(
+            context.dp._print_log_handler,
+            level="PRINT",
+            filter=dict(inspect.getmembers(operator))["__module__"],
+            format="{message}",
+        )
         return None

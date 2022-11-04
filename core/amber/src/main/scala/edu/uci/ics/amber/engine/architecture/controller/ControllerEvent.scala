@@ -16,25 +16,23 @@ object ControllerEvent {
   case class WorkflowPaused() extends ControlCommand[Unit]
 
   case class WorkflowStatusUpdate(
-                                   operatorStatistics: Map[String, OperatorRuntimeStats]
-                                 ) extends ControlCommand[Unit]
+      operatorStatistics: Map[String, OperatorRuntimeStats]
+  ) extends ControlCommand[Unit]
 
   case class BreakpointTriggered(
-                                  report: mutable.HashMap[(ActorVirtualIdentity, FaultedTuple), Array[String]],
-                                  operatorID: String = null
-                                ) extends ControlCommand[Unit]
-
+      report: mutable.HashMap[(ActorVirtualIdentity, FaultedTuple), Array[String]],
+      operatorID: String = null
+  ) extends ControlCommand[Unit]
 
   case class PythonConsoleMessageTriggered(
-
-                                            operatorId: String,
-                                            workerId: String,
-                                            consoleMessage: PythonConsoleMessage
-                                          ) extends ControlCommand[Unit]
+      operatorId: String,
+      workerId: String,
+      consoleMessage: PythonConsoleMessage
+  ) extends ControlCommand[Unit]
 
   case class ReportCurrentProcessingTuple(
-                                           operatorID: String,
-                                           tuple: Array[(ITuple, ActorVirtualIdentity)]
-                                         ) extends ControlCommand[Unit]
+      operatorID: String,
+      tuple: Array[(ITuple, ActorVirtualIdentity)]
+  ) extends ControlCommand[Unit]
 
 }

@@ -15,9 +15,10 @@ def load_operator(code: str) -> type(Operator):
     """
     module_name = gen_uuid("udf")
     file_name = f"{module_name}.py"
-    with open(get_root().with_name(file_name), 'w') as file:
+    with open(get_root().with_name(file_name), "w") as file:
         file.write(code)
     import importlib
+
     sys.path.append(str(get_root()))
     operator_module = importlib.import_module(module_name)
     operators = list(filter(is_concrete_operator, operator_module.__dict__.values()))
@@ -31,9 +32,11 @@ def is_concrete_operator(cls: type) -> bool:
     :param cls: a target class to be evaluated
     :return: bool
     """
-    return (inspect.isclass(cls) and issubclass(cls,
-                                                Operator) and not inspect.isabstract(
-        cls))
+    return (
+        inspect.isclass(cls)
+        and issubclass(cls, Operator)
+        and not inspect.isabstract(cls)
+    )
 
 
 class Option:

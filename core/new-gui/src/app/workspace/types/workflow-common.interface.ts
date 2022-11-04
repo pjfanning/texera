@@ -91,9 +91,9 @@ export type BreakpointTriggerInfo = Readonly<{
 }>;
 
 export type PythonConsoleMessage = Readonly<{
-  operatorId: string,
-  workerId: string,
-  timestamp: string,
-  level: string,
+  operatorId: string;
+  workerId: string;
+  timestamp: string;
+  level: string;
   message: Readonly<string>;
 }>;

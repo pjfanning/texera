@@ -32,8 +32,8 @@ import scala.collection.mutable.ArrayBuffer
 
 object ControlCommandConvertUtils {
   def controlCommandToV2(
-                          controlCommand: ControlCommand[_]
-                        ): ControlCommandV2 = {
+      controlCommand: ControlCommand[_]
+  ): ControlCommandV2 = {
     controlCommand match {
       case StartWorker() =>
         StartWorkerV2()
@@ -79,8 +79,8 @@ object ControlCommandConvertUtils {
   }
 
   def controlCommandToV1(
-                          controlCommand: ControlCommandV2
-                        ): ControlCommand[_] = {
+      controlCommand: ControlCommandV2
+  ): ControlCommand[_] = {
     controlCommand match {
       case WorkerExecutionCompletedV2() =>
         WorkerExecutionCompleted()
@@ -97,11 +97,11 @@ object ControlCommandConvertUtils {
   }
 
   def controlReturnToV1(
-                         controlReturnV2: ControlReturnV2
-                       ): Any = {
+      controlReturnV2: ControlReturnV2
+  ): Any = {
     controlReturnV2.value match {
-      case Empty => Unit
-      case _: ControlReturnV2.Value.CurrentInputTupleInfo => null
+      case Empty                                                        => Unit
+      case _: ControlReturnV2.Value.CurrentInputTupleInfo               => null
       case selfWorkloadReturn: ControlReturnV2.Value.SelfWorkloadReturn =>
         // TODO: convert real samples back from PythonUDF.
         //  this is left hardcoded now since sampling is not currently enabled for PythonUDF.

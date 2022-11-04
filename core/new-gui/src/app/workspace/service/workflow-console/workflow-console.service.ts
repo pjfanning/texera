@@ -25,7 +25,8 @@ export class WorkflowConsoleService {
       .subscribeToEvent("PythonConsoleUpdateEvent")
       .subscribe((pythonConsoleMessage: PythonConsoleMessage) => {
         const operatorID = pythonConsoleMessage.operatorId;
-        const messages = this.consoleMessages.get(operatorID) || new RingBuffer<PythonConsoleMessage>(CONSOLE_BUFFER_SIZE);
+        const messages =
+          this.consoleMessages.get(operatorID) || new RingBuffer<PythonConsoleMessage>(CONSOLE_BUFFER_SIZE);
         messages.add(pythonConsoleMessage);
         this.consoleMessages.set(operatorID, messages);
         this.consoleMessagesUpdateStream.next();

@@ -1,12 +1,12 @@
-import {Component, Input, OnChanges, OnInit, SimpleChanges} from "@angular/core";
-import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
-import {BreakpointTriggerInfo, PythonConsoleMessage} from "../../../types/workflow-common.interface";
-import {ExecutionState} from "src/app/workspace/types/execute-workflow.interface";
-import {WorkflowConsoleService} from "../../../service/workflow-console/workflow-console.service";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
-import {isDefined} from "../../../../common/util/predicate";
-import {worker} from "monaco-editor";
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from "@angular/core";
+import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
+import { BreakpointTriggerInfo, PythonConsoleMessage } from "../../../types/workflow-common.interface";
+import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
+import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
+import { isDefined } from "../../../../common/util/predicate";
+import { worker } from "monaco-editor";
 
 @UntilDestroy()
 @Component({
@@ -31,8 +31,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowConsoleService: WorkflowConsoleService,
     private workflowWebsocketService: WorkflowWebsocketService
-  ) {
-  }
+  ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     this.operatorId = changes.operatorId?.currentValue;
@@ -78,7 +77,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     this.errorMessages = undefined;
   }
 
-  workerIdToAbbr(workerId:string) {
+  workerIdToAbbr(workerId: string) {
     const tokens = workerId.split("-");
     const abbr = "Worker-" + tokens.at(tokens.length - 1);
     this.workerAbbrToLongNameMapping.set(abbr, workerId);

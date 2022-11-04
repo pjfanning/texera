@@ -6,15 +6,20 @@ import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 
 object PythonConsoleUpdateEvent {
   def apply(event: ControllerEvent.PythonConsoleMessageTriggered): PythonConsoleUpdateEvent = {
-    PythonConsoleUpdateEvent(event.operatorId, event.workerId, event.consoleMessage.timestamp, event.consoleMessage.level, event.consoleMessage.message)
+    PythonConsoleUpdateEvent(
+      event.operatorId,
+      event.workerId,
+      event.consoleMessage.timestamp,
+      event.consoleMessage.level,
+      event.consoleMessage.message
+    )
   }
 }
 
 case class PythonConsoleUpdateEvent(
-
-                                     operatorId: String,
-                                     workerId: String,
-                                     timestamp: Timestamp,
-                                     level: String,
-                                     message: String
-                                   ) extends TexeraWebSocketEvent
+    operatorId: String,
+    workerId: String,
+    timestamp: Timestamp,
+    level: String,
+    message: String
+) extends TexeraWebSocketEvent

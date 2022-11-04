@@ -5,7 +5,9 @@
 </div>
 
 <div *ngFor="let entry of consoleMessages">
-  <div class="console-message">  <nz-tag>{{this.workerIdToAbbr(entry.workerId)}}</nz-tag>  <nz-tag>{{entry.level}}</nz-tag>{{  entry.message }}</div>
+  <div class="console-message">
+    <nz-tag>{{this.workerIdToAbbr(entry.workerId)}}</nz-tag> <nz-tag>{{entry.level}}</nz-tag>{{ entry.message }}
+  </div>
 </div>
 
 <nz-input-group nzCompact [nzAddOnBefore]="addOnBeforeTemplate">
