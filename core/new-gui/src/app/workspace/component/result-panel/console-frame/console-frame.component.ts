@@ -123,12 +123,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   submitCommand() {
-    console.log("submitting the command" + this.command);
-    if (isDefined(this.operatorId))
+    if (isDefined(this.operatorId)){
       this.workflowWebsocketService.send("PythonDebugCommandRequest", {
         operatorId: this.operatorId,
         workerId: this.targetWorker,
         cmd: this.command,
       });
+      this.command = "";
+    }
   }
 }
