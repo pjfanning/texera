@@ -1,11 +1,12 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from "@angular/core";
-import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo } from "../../../types/workflow-common.interface";
-import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
-import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import { isDefined } from "../../../../common/util/predicate";
+import {Component, Input, OnChanges, OnInit, SimpleChanges} from "@angular/core";
+import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
+import {BreakpointTriggerInfo, PythonConsoleMessage} from "../../../types/workflow-common.interface";
+import {ExecutionState} from "src/app/workspace/types/execute-workflow.interface";
+import {WorkflowConsoleService} from "../../../service/workflow-console/workflow-console.service";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
+import {isDefined} from "../../../../common/util/predicate";
+import {worker} from "monaco-editor";
 
 @UntilDestroy()
 @Component({
@@ -19,8 +20,9 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   errorMessages?: Readonly<Record<string, string>>;
 
   // display print
-  consoleMessages: ReadonlyArray<string> = [];
+  consoleMessages: ReadonlyArray<PythonConsoleMessage> = [];
 
+  workerAbbrToLongNameMapping = new Map();
   workers: readonly string[] = [];
   targetWorker: string = "All Workers";
   command: string = "";
@@ -29,7 +31,8 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowConsoleService: WorkflowConsoleService,
     private workflowWebsocketService: WorkflowWebsocketService
-  ) {}
+  ) {
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     this.operatorId = changes.operatorId?.currentValue;
@@ -75,6 +78,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     this.errorMessages = undefined;
   }
 
+  workerIdToAbbr(workerId:string) {
+    const tokens = workerId.split("-");
+    const abbr = "Worker-" + tokens.at(tokens.length - 1);
+    this.workerAbbrToLongNameMapping.set(abbr, workerId);
+    return abbr;
+  }
+
   renderConsole() {
     // try to fetch if we have breakpoint info
     const breakpointTriggerInfo = this.executeWorkflowService.getBreakpointTriggerInfo();
@@ -82,10 +92,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     if (this.operatorId) {
       // load worker ids
       this.workers =
-        this.executeWorkflowService.getWorkerIds(this.operatorId)?.map(workerId => {
-          const tokens = workerId.split("-");
-          return "Worker " + tokens.at(tokens.length - 1) ?? "";
-        }) ?? [];
+        this.executeWorkflowService.getWorkerIds(this.operatorId)?.map(workerId => this.workerIdToAbbr(workerId)) ?? [];
 
       // first display error messages if applicable
       if (this.operatorId === breakpointTriggerInfo?.operatorID) {
@@ -123,12 +130,21 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   submitCommand() {
-    if (isDefined(this.operatorId)){
-      this.workflowWebsocketService.send("PythonDebugCommandRequest", {
-        operatorId: this.operatorId,
-        workerId: this.targetWorker,
-        cmd: this.command,
-      });
+    if (isDefined(this.operatorId)) {
+      let workers = [];
+      if (this.targetWorker === "All Workers") {
+        workers = [...this.workers];
+      } else {
+        workers.push(this.targetWorker);
+      }
+      for (let worker of workers) {
+        this.workflowWebsocketService.send("PythonDebugCommandRequest", {
+          operatorId: this.operatorId,
+          workerId: this.workerAbbrToLongNameMapping.get(worker),
+          cmd: this.command,
+        });
+      }
+
       this.command = "";
     }
   }

@@ -2,6 +2,7 @@
 # sources: edu/uci/ics/amber/engine/architecture/worker/controlcommands.proto, edu/uci/ics/amber/engine/architecture/worker/controlreturns.proto, edu/uci/ics/amber/engine/architecture/worker/statistics.proto, edu/uci/ics/amber/engine/architecture/worker/workloadmetrics.proto
 # plugin: python-betterproto
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List
 
 import betterproto
@@ -166,8 +167,10 @@ class ReplayCurrentTupleV2(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class PythonPrintV2(betterproto.Message):
-    message: str = betterproto.string_field(1)
+class PythonConsoleMessageV2(betterproto.Message):
+    timestamp: datetime = betterproto.message_field(1)
+    level: str = betterproto.string_field(2)
+    message: str = betterproto.string_field(3)
 
 
 @dataclass(eq=False, repr=False)
@@ -188,11 +191,6 @@ class LinkCompletedV2(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class DebugCommandV2(betterproto.Message):
     cmd: str = betterproto.string_field(1)
-
-
-@dataclass(eq=False, repr=False)
-class PythonDebugEventV2(betterproto.Message):
-    msg: str = betterproto.string_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -228,7 +226,9 @@ class ControlCommandV2(betterproto.Message):
     modify_operator_logic: "ModifyOperatorLogicV2" = betterproto.message_field(
         22, group="sealed_value"
     )
-    python_print: "PythonPrintV2" = betterproto.message_field(23, group="sealed_value")
+    python_console_message: "PythonConsoleMessageV2" = betterproto.message_field(
+        23, group="sealed_value"
+    )
     replay_current_tuple: "ReplayCurrentTupleV2" = betterproto.message_field(
         24, group="sealed_value"
     )
@@ -240,9 +240,6 @@ class ControlCommandV2(betterproto.Message):
     )
     debug_command: "DebugCommandV2" = betterproto.message_field(
         81, group="sealed_value"
-    )
-    debug_event: "PythonDebugEventV2" = betterproto.message_field(
-        82, group="sealed_value"
     )
     worker_execution_completed: "WorkerExecutionCompletedV2" = (
         betterproto.message_field(101, group="sealed_value")

@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import { PythonConsoleUpdateInfo } from "../../types/workflow-common.interface";
+import { PythonConsoleMessage } from "../../types/workflow-common.interface";
 import { Subject } from "rxjs";
 import { Observable } from "rxjs";
 import { RingBuffer } from "ring-buffer-ts";
@@ -12,7 +12,7 @@ export const CONSOLE_BUFFER_SIZE = 100;
   providedIn: "root",
 })
 export class WorkflowConsoleService {
-  private consoleMessages: Map<string, RingBuffer<string>> = new Map();
+  private consoleMessages: Map<string, RingBuffer<PythonConsoleMessage>> = new Map();
   private consoleMessagesUpdateStream = new Subject<void>();
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService) {
@@ -23,10 +23,10 @@ export class WorkflowConsoleService {
   registerPythonPrintEventHandler() {
     this.workflowWebsocketService
       .subscribeToEvent("PythonConsoleUpdateEvent")
-      .subscribe((pythonConsoleUpdateInfo: PythonConsoleUpdateInfo) => {
-        const operatorID = pythonConsoleUpdateInfo.operatorID;
-        const messages = this.consoleMessages.get(operatorID) || new RingBuffer<string>(CONSOLE_BUFFER_SIZE);
-        messages.add(pythonConsoleUpdateInfo.message);
+      .subscribe((pythonConsoleMessage: PythonConsoleMessage) => {
+        const operatorID = pythonConsoleMessage.operatorId;
+        const messages = this.consoleMessages.get(operatorID) || new RingBuffer<PythonConsoleMessage>(CONSOLE_BUFFER_SIZE);
+        messages.add(pythonConsoleMessage);
         this.consoleMessages.set(operatorID, messages);
         this.consoleMessagesUpdateStream.next();
       });
@@ -40,7 +40,7 @@ export class WorkflowConsoleService {
     });
   }
 
-  getConsoleMessages(operatorID: string): ReadonlyArray<string> | undefined {
+  getConsoleMessages(operatorID: string): ReadonlyArray<PythonConsoleMessage> | undefined {
     return this.consoleMessages.get(operatorID)?.toArray();
   }
 

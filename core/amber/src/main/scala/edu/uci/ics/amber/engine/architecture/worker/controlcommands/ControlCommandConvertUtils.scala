@@ -2,8 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.controlcommands
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonDebugEventHandler.PythonDebugEvent
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonPrintHandler.PythonPrint
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonConsoleMessageHandler.PythonConsoleMessage
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.EvaluateExpressionHandler.EvaluateExpression
@@ -27,14 +26,14 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, Wor
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.JavaConverters._
 
 object ControlCommandConvertUtils {
   def controlCommandToV2(
-      controlCommand: ControlCommand[_]
-  ): ControlCommandV2 = {
+                          controlCommand: ControlCommand[_]
+                        ): ControlCommandV2 = {
     controlCommand match {
       case StartWorker() =>
         StartWorkerV2()
@@ -80,18 +79,16 @@ object ControlCommandConvertUtils {
   }
 
   def controlCommandToV1(
-      controlCommand: ControlCommandV2
-  ): ControlCommand[_] = {
+                          controlCommand: ControlCommandV2
+                        ): ControlCommand[_] = {
     controlCommand match {
       case WorkerExecutionCompletedV2() =>
         WorkerExecutionCompleted()
       case LocalOperatorExceptionV2(message) =>
         LocalOperatorException(null, new RuntimeException(message))
-      case PythonPrintV2(message) =>
-        PythonPrint(message)
+      case PythonConsoleMessageV2(timestamp, level, message) =>
+        PythonConsoleMessage(timestamp, level, message)
       case LinkCompletedV2(link) => LinkCompleted(link)
-      case PythonDebugEventV2(message) =>
-        PythonDebugEvent(message)
       case _ =>
         throw new UnsupportedOperationException(
           s"V2 controlCommand $controlCommand cannot be converted to V1"
@@ -100,11 +97,11 @@ object ControlCommandConvertUtils {
   }
 
   def controlReturnToV1(
-      controlReturnV2: ControlReturnV2
-  ): Any = {
+                         controlReturnV2: ControlReturnV2
+                       ): Any = {
     controlReturnV2.value match {
-      case Empty                                                        => Unit
-      case _: ControlReturnV2.Value.CurrentInputTupleInfo               => null
+      case Empty => Unit
+      case _: ControlReturnV2.Value.CurrentInputTupleInfo => null
       case selfWorkloadReturn: ControlReturnV2.Value.SelfWorkloadReturn =>
         // TODO: convert real samples back from PythonUDF.
         //  this is left hardcoded now since sampling is not currently enabled for PythonUDF.

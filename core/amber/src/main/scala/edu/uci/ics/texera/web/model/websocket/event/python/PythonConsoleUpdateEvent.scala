@@ -1,15 +1,20 @@
 package edu.uci.ics.texera.web.model.websocket.event.python
 
+import com.google.protobuf.timestamp.Timestamp
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 
 object PythonConsoleUpdateEvent {
-  def apply(event: ControllerEvent.PythonPrintTriggered): PythonConsoleUpdateEvent = {
-    PythonConsoleUpdateEvent(event.message, event.operatorID)
+  def apply(event: ControllerEvent.PythonConsoleMessageTriggered): PythonConsoleUpdateEvent = {
+    PythonConsoleUpdateEvent(event.operatorId, event.workerId, event.consoleMessage.timestamp, event.consoleMessage.level, event.consoleMessage.message)
   }
 }
 
 case class PythonConsoleUpdateEvent(
-    message: String,
-    operatorID: String
-) extends TexeraWebSocketEvent
+
+                                     operatorId: String,
+                                     workerId: String,
+                                     timestamp: Timestamp,
+                                     level: String,
+                                     message: String
+                                   ) extends TexeraWebSocketEvent

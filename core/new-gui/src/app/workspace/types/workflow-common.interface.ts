@@ -90,7 +90,10 @@ export type BreakpointTriggerInfo = Readonly<{
   operatorID: string;
 }>;
 
-export type PythonConsoleUpdateInfo = Readonly<{
+export type PythonConsoleMessage = Readonly<{
+  operatorId: string,
+  workerId: string,
+  timestamp: string,
+  level: string,
   message: Readonly<string>;
-  operatorID: string;
 }>;

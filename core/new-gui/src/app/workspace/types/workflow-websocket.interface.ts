@@ -8,7 +8,7 @@ import {
   OperatorStatsUpdate,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
-import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonConsoleUpdateInfo } from "./workflow-common.interface";
+import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonConsoleMessage } from "./workflow-common.interface";
 
 /**
  *  @fileOverview Type Definitions of WebSocket (Ws) API
@@ -182,7 +182,7 @@ export type TexeraWebsocketEventTypeMap = {
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
   BreakpointTriggeredEvent: BreakpointTriggerInfo;
-  PythonConsoleUpdateEvent: PythonConsoleUpdateInfo;
+  PythonConsoleUpdateEvent: PythonConsoleMessage;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
   WorkflowExecutionErrorEvent: WorkflowExecutionError;
