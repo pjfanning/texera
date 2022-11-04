@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import { PythonPrintTriggerInfo } from "../../types/workflow-common.interface";
+import { PythonConsoleUpdateInfo } from "../../types/workflow-common.interface";
 import { Subject } from "rxjs";
 import { Observable } from "rxjs";
 import { RingBuffer } from "ring-buffer-ts";
@@ -22,11 +22,11 @@ export class WorkflowConsoleService {
 
   registerPythonPrintEventHandler() {
     this.workflowWebsocketService
-      .subscribeToEvent("PythonPrintTriggeredEvent")
-      .subscribe((pythonPrintTriggerInfo: PythonPrintTriggerInfo) => {
-        const operatorID = pythonPrintTriggerInfo.operatorID;
+      .subscribeToEvent("PythonConsoleUpdateEvent")
+      .subscribe((pythonConsoleUpdateInfo: PythonConsoleUpdateInfo) => {
+        const operatorID = pythonConsoleUpdateInfo.operatorID;
         const messages = this.consoleMessages.get(operatorID) || new RingBuffer<string>(CONSOLE_BUFFER_SIZE);
-        messages.add(...pythonPrintTriggerInfo.message.split("\n").filter(msg => msg !== ""));
+        messages.add(pythonConsoleUpdateInfo.message);
         this.consoleMessages.set(operatorID, messages);
         this.consoleMessagesUpdateStream.next();
       });

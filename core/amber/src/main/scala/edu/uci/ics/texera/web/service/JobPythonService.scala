@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWor
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
-import edu.uci.ics.texera.web.model.websocket.event.python.PythonPrintTriggeredEvent
+import edu.uci.ics.texera.web.model.websocket.event.python.PythonConsoleUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
 import edu.uci.ics.texera.web.model.websocket.request.python.{PythonDebugCommandRequest, PythonExpressionEvaluateRequest}
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
@@ -45,7 +45,7 @@ class JobPythonService(
             if (info.consoleMessages.nonEmpty) {
               val diff = info.consoleMessages diff oldInfo.consoleMessages
               if (diff.nonEmpty) {
-                diff.foreach(s => output.append(PythonPrintTriggeredEvent(s, opId)))
+                diff.foreach(s => output.append(PythonConsoleUpdateEvent(s, opId)))
               }
             }
             info.evaluateExprResults.keys.filterNot(oldInfo.evaluateExprResults.contains).foreach {
