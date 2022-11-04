@@ -58,8 +58,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
                                                                         timestamp=datetime.datetime.now(),
                                                                         level="PRINT",
                                                                         message=msg))))
-        logger.add(self._print_log_handler, level="PRINT", filter="operators",
-                   format='{message}')
 
         self._data_input_queue = Queue()
         self._data_output_queue = Queue()

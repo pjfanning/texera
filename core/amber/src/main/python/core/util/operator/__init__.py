@@ -1,10 +1,9 @@
 import importlib.util
 import inspect
+import sys
 
 from core.models import Operator
-
-operators_module_spec = importlib.util.spec_from_loader("operators", loader=None)
-operators_module = importlib.util.module_from_spec(operators_module_spec)
+from core.util import gen_uuid, get_root
 
 
 def load_operator(code: str) -> type(Operator):
@@ -14,8 +13,14 @@ def load_operator(code: str) -> type(Operator):
             and only one Operator definition.
     :return: an Operator sub-class definition
     """
-    exec(code, operators_module.__dict__)
-    operators = list(filter(is_concrete_operator, operators_module.__dict__.values()))
+    module_name = gen_uuid("udf")
+    file_name = f"{module_name}.py"
+    with open(get_root().with_name(file_name), 'w') as file:
+        file.write(code)
+    import importlib
+    sys.path.append(str(get_root()))
+    operator_module = importlib.import_module(module_name)
+    operators = list(filter(is_concrete_operator, operator_module.__dict__.values()))
     assert len(operators) == 1, "There should be one and only one Operator defined"
     return operators[0]
 
@@ -26,11 +31,9 @@ def is_concrete_operator(cls: type) -> bool:
     :param cls: a target class to be evaluated
     :return: bool
     """
-    return (
-        inspect.isclass(cls)
-        and issubclass(cls, Operator)
-        and not inspect.isabstract(cls)
-    )
+    return (inspect.isclass(cls) and issubclass(cls,
+                                                Operator) and not inspect.isabstract(
+        cls))
 
 
 class Option:
