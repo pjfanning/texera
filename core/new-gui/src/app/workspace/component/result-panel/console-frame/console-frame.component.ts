@@ -1,12 +1,19 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from "@angular/core";
-import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo, PythonConsoleMessage } from "../../../types/workflow-common.interface";
-import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
-import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import { isDefined } from "../../../../common/util/predicate";
-import { worker } from "monaco-editor";
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+  ViewChild
+} from "@angular/core";
+import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
+import {BreakpointTriggerInfo, PythonConsoleMessage} from "../../../types/workflow-common.interface";
+import {ExecutionState} from "src/app/workspace/types/execute-workflow.interface";
+import {WorkflowConsoleService} from "../../../service/workflow-console/workflow-console.service";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
+import {isDefined} from "../../../../common/util/predicate";
+import {CdkVirtualScrollViewport} from "@angular/cdk/scrolling";
 
 @UntilDestroy()
 @Component({
@@ -16,6 +23,8 @@ import { worker } from "monaco-editor";
 })
 export class ConsoleFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
+  @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
+
   // display error message:
   errorMessages?: Readonly<Record<string, string>>;
 
@@ -30,12 +39,36 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowConsoleService: WorkflowConsoleService,
-    private workflowWebsocketService: WorkflowWebsocketService
-  ) {}
+    private workflowWebsocketService: WorkflowWebsocketService,
+  ) {
+  }
+
+  scrollToBottom() {
+
+    // this.viewPort?.scrollToIndex(this.consoleMessages.length*5, "smooth");
+    this.viewPort?.scrollTo({bottom: 0, behavior: "auto"});
+  }
+
+  statusMapping = new Map([
+    ["DEBUGGER", "warning"],
+    ["PRINT", "default"],
+    ["COMMAND", "processing"],
+  ])
+
+  workerColorMapping = new Map([
+    ["Worker-0", "lime"],
+    ["Worker-1", "cyan"],
+    ["Worker-2", "volcano"],
+    ["Worker-3", " orange"],
+
+
+  ])
+
 
   ngOnChanges(changes: SimpleChanges): void {
     this.operatorId = changes.operatorId?.currentValue;
     this.renderConsole();
+
   }
 
   ngOnInit(): void {
@@ -63,13 +96,18 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
         } else {
           // re-render the console, this may update the console with error messages or console messages
           this.renderConsole();
+
         }
       });
 
     this.workflowConsoleService
       .getConsoleMessageUpdateStream()
       .pipe(untilDestroyed(this))
-      .subscribe(_ => this.renderConsole());
+      .subscribe(_ => {
+        this.renderConsole();
+        // setTimeout(()=>this.scrollToBottom(), 200);
+        // this.scrollToBottom();
+      });
   }
 
   clearConsole() {
@@ -104,6 +142,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
       // always display console messages
       this.displayConsoleMessages(this.operatorId);
+
     }
   }
 
@@ -125,6 +164,17 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   displayConsoleMessages(operatorId: string) {
+    // function getDifference<T>(a: readonly T[], b: readonly T[]): T[] {
+    //   return a.filter((element) => {
+    //     return !b.includes(element);
+    //   });
+    // }
+    //
+    // console.log("calculating diff");
+    // const diff = getDifference(this.workflowConsoleService.getConsoleMessages(operatorId) || [], this.consoleMessages);
+    // console.log(diff);
+    // diff.forEach(msg => this.consoleMessages.push(msg));
+    // this.cdr.detectChanges();
     this.consoleMessages = operatorId ? this.workflowConsoleService.getConsoleMessages(operatorId) || [] : [];
   }
 

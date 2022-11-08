@@ -4,14 +4,22 @@
   </div>
 </div>
 
-<div *ngFor="let entry of consoleMessages">
-  <div class="console-message">
-    <nz-tag>{{this.workerIdToAbbr(entry.workerId)}}</nz-tag> <nz-tag>{{entry.level}}</nz-tag>{{ entry.message }}
-  </div>
-</div>
+<cdk-virtual-scroll-viewport itemSize="10" class="infinite-container">
+  <nz-list nzSize="small">
+    <nz-list-item *cdkVirtualFor="let entry of consoleMessages">
+    <span><nz-tag
+      [nzColor]="workerColorMapping.get(this.workerIdToAbbr(entry.workerId))"> {{this.workerIdToAbbr(entry.workerId)}}</nz-tag>  <nz-badge
+      [nzStatus]="statusMapping.get(entry.level)"></nz-badge> <span class="console-message">
+      {{ entry.message }}
+    </span>
+    </span>
+
+    </nz-list-item>
+  </nz-list>
+</cdk-virtual-scroll-viewport>
 
 <nz-input-group nzCompact [nzAddOnBefore]="addOnBeforeTemplate">
-  <input type="text" nz-input [(ngModel)]="command" (keyup.enter)="submitCommand()" />
+  <input type="text" nz-input [(ngModel)]="command" (keyup.enter)="submitCommand()"/>
 </nz-input-group>
 
 <ng-template #addOnBeforeTemplate>

@@ -9,6 +9,7 @@ from loguru import logger
 from overrides import overrides
 from pampy import match
 from pandas._libs.missing import checknull
+from pyarrow.util import find_free_port
 
 from core.architecture.managers.context import Context
 from core.architecture.managers.pause_manager import PauseType
@@ -25,7 +26,8 @@ from core.models import (
     Tuple,
 )
 from core.runnables.data_processor import DataProcessor
-from core.util import IQueue, StoppableQueueBlockingRunnable, get_one_of, set_one_of
+from core.util import IQueue, StoppableQueueBlockingRunnable, get_one_of, set_one_of, \
+    DoubleBlockingQueue
 from core.util.operator import Option
 from core.util.print_writer.print_log_handler import PrintLogHandler
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
@@ -77,7 +79,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             )
         )
 
-        self._data_input_queue = Queue()
+        self._data_input_queue = DoubleBlockingQueue(tuple)
         self._data_output_queue = Queue()
         self._dp_process_condition = threading.Condition()
         self.data_processor = DataProcessor(
@@ -86,6 +88,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self._dp_process_condition,
             self.context,
         )
+
+        self._tdb_port = find_free_port()
+
         threading.Thread(target=self.data_processor.run, daemon=True).start()
 
     def complete(self) -> None:
@@ -114,12 +119,13 @@ class MainLoop(StoppableQueueBlockingRunnable):
         lifecycle. Thus, this method's invocation could appear in any stage while
         processing a DataElement.
         """
+        self.check_pdb()
         while (
             not self._input_queue.main_empty() or self.context.pause_manager.is_paused()
         ):
             next_entry = self.interruptible_get()
             self._process_control_element(next_entry)
-
+        self.check_pdb()
     @overrides
     def pre_start(self) -> None:
         self.context.state_manager.assert_state(WorkerState.UNINITIALIZED)
@@ -214,7 +220,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         input_ = self._input_link_map[link]
 
         self._data_input_queue.put((tuple_, input_))
-
+        print("put data into data input queue", tuple_)
         self.data_processor._finished_current.clear()
         self._context_switch()
 
@@ -366,15 +372,21 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self.context.pause_manager.record_request(PauseType.USER_PAUSE, True)
             self.context.state_manager.transit_to(WorkerState.PAUSED)
             self._input_queue.disable_sub()
-            print("paused")
+            if self.data_processor.notifiable.is_set():
+                self._data_input_queue.put("set breakpoint")
+                self._context_switch()
 
-    def _resume(self) -> None:
+    def _resume(self, mode = 'c') -> None:
         """
         Resume the data processing.
         """
         if self.context.state_manager.confirm_state(WorkerState.PAUSED):
             self.context.pause_manager.record_request(PauseType.USER_PAUSE, False)
             if not self.context.pause_manager.is_paused():
+                if not self.data_processor.notifiable.is_set():
+                    logger.debug(f"sending command to pdb [{mode}]")
+                    self.data_processor.notifiable.set()
+                    self.data_processor.debug_input_queue.put(f"{mode}\n")
                 self.context.input_queue.enable_sub()
             self.context.state_manager.transit_to(WorkerState.RUNNING)
             print("resumed")
@@ -396,7 +408,13 @@ class MainLoop(StoppableQueueBlockingRunnable):
             if field_type == pyarrow.binary():
                 output_tuple[field_name] = b"pickle    " + pickle.dumps(field_value)
 
+    def check_pdb(self):
+        if not self.data_processor.notifiable.is_set():
+            self._pause()
+        else:
+            self._resume()
     def _context_switch(self):
-        with self._dp_process_condition:
-            self._dp_process_condition.notify()
-            self._dp_process_condition.wait()
+        if self.data_processor.notifiable.is_set():
+            with self._dp_process_condition:
+                self._dp_process_condition.notify()
+                self._dp_process_condition.wait()
