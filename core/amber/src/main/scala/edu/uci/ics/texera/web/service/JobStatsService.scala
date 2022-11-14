@@ -2,6 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowCompleted,
+  WorkflowRecoveryStatus,
   WorkflowStatusUpdate
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
@@ -46,6 +47,7 @@ class JobStatsService(
 
   private[this] def registerCallbacks(): Unit = {
     registerCallbackOnWorkflowStatusUpdate()
+    registerCallbackOnWorkflowRecoveryUpdate()
     registerCallbackOnWorkflowComplete()
     registerCallbackOnFatalError()
   }
@@ -56,6 +58,17 @@ class JobStatsService(
         .registerCallback[WorkflowStatusUpdate]((evt: WorkflowStatusUpdate) => {
           stateStore.statsStore.updateState { jobInfo =>
             jobInfo.withOperatorInfo(evt.operatorStatistics)
+          }
+        })
+    )
+  }
+
+  private[this] def registerCallbackOnWorkflowRecoveryUpdate(): Unit = {
+    addSubscription(
+      client
+        .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
+          stateStore.jobMetadataStore.updateState { jobMetadata =>
+            jobMetadata.withIsRecovering(evt.isRecovering)
           }
         })
     )
