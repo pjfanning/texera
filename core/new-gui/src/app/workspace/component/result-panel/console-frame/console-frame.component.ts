@@ -1,19 +1,12 @@
-import {
-  Component,
-  Input,
-  OnChanges,
-  OnInit,
-  SimpleChanges,
-  ViewChild
-} from "@angular/core";
-import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
-import {BreakpointTriggerInfo, PythonConsoleMessage} from "../../../types/workflow-common.interface";
-import {ExecutionState} from "src/app/workspace/types/execute-workflow.interface";
-import {WorkflowConsoleService} from "../../../service/workflow-console/workflow-console.service";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
-import {isDefined} from "../../../../common/util/predicate";
-import {CdkVirtualScrollViewport} from "@angular/cdk/scrolling";
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from "@angular/core";
+import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
+import { BreakpointTriggerInfo, PythonConsoleMessage } from "../../../types/workflow-common.interface";
+import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
+import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
+import { isDefined } from "../../../../common/util/predicate";
+import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 
 @UntilDestroy()
 @Component({
@@ -36,39 +29,61 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   targetWorker: string = "All Workers";
   command: string = "";
 
+  showTimestamp: boolean = true;
+
+  allChecked = false;
+  indeterminate = true;
+
+  checkOptions: Map<string, boolean> = new Map();
+
+  updateAllChecked(): void {
+    this.indeterminate = false;
+    if (this.allChecked) {
+      this.checkOptions = new Map(Array.from(this.checkOptions.keys()).map(worker => [worker, true]));
+    } else {
+      this.checkOptions = new Map(Array.from(this.checkOptions.keys()).map(worker => [worker, false]));
+    }
+  }
+
+  updateSingleChecked(): void {
+    if (Array.from(this.checkOptions.entries()).every(item => !item[1])) {
+      this.allChecked = false;
+      this.indeterminate = false;
+    } else if (Array.from(this.checkOptions.entries()).every(item => item[1])) {
+      this.allChecked = true;
+      this.indeterminate = false;
+    } else {
+      this.indeterminate = true;
+    }
+  }
+
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowConsoleService: WorkflowConsoleService,
-    private workflowWebsocketService: WorkflowWebsocketService,
-  ) {
-  }
+    private workflowWebsocketService: WorkflowWebsocketService
+  ) {}
 
   scrollToBottom() {
-
     // this.viewPort?.scrollToIndex(this.consoleMessages.length*5, "smooth");
-    this.viewPort?.scrollTo({bottom: 0, behavior: "auto"});
+    this.viewPort?.scrollTo({ bottom: 0, behavior: "auto" });
   }
 
   statusMapping = new Map([
     ["DEBUGGER", "warning"],
     ["PRINT", "default"],
     ["COMMAND", "processing"],
-  ])
+  ]);
 
   workerColorMapping = new Map([
     ["Worker-0", "lime"],
     ["Worker-1", "cyan"],
     ["Worker-2", "volcano"],
     ["Worker-3", " orange"],
-
-
-  ])
-
+  ]);
 
   ngOnChanges(changes: SimpleChanges): void {
     this.operatorId = changes.operatorId?.currentValue;
     this.renderConsole();
-
   }
 
   ngOnInit(): void {
@@ -96,7 +111,6 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
         } else {
           // re-render the console, this may update the console with error messages or console messages
           this.renderConsole();
-
         }
       });
 
@@ -130,6 +144,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       // load worker ids
       this.workers =
         this.executeWorkflowService.getWorkerIds(this.operatorId)?.map(workerId => this.workerIdToAbbr(workerId)) ?? [];
+      this.checkOptions = new Map(this.workers.map(worker => [worker, true]));
 
       // first display error messages if applicable
       if (this.operatorId === breakpointTriggerInfo?.operatorID) {
@@ -142,7 +157,6 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
       // always display console messages
       this.displayConsoleMessages(this.operatorId);
-
     }
   }
 

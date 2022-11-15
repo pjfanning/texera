@@ -65,15 +65,14 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.context = Context(self)
         self._async_rpc_server = AsyncRPCServer(output_queue, context=self.context)
         self._async_rpc_client = AsyncRPCClient(output_queue, context=self.context)
-        import datetime
 
         self._print_log_handler = PrintLogHandler(
-            lambda msg: self._async_rpc_client.send(
+            lambda x: self._async_rpc_client.send(
                 ActorVirtualIdentity(name="CONTROLLER"),
                 set_one_of(
                     ControlCommandV2,
                     PythonConsoleMessageV2(
-                        timestamp=datetime.datetime.now(), level="PRINT", message=msg
+                        timestamp=x[0], level="PRINT", message=x[1]
                     ),
                 ),
             )
