@@ -15,7 +15,11 @@ import edu.uci.ics.texera.web.model.websocket.request.{RetryRequest, SkipTupleRe
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.service.JobPythonService.bufferSize
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
-import edu.uci.ics.texera.web.workflowruntimestate.{EvaluatedValueList, PythonOperatorInfo, PythonWorkerInfo}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  EvaluatedValueList,
+  PythonOperatorInfo,
+  PythonWorkerInfo
+}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
 
 import scala.collection.mutable

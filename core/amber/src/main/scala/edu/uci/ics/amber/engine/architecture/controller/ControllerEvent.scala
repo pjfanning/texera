@@ -27,9 +27,9 @@ object ControllerEvent {
   ) extends ControlCommand[Unit]
 
   case class PythonConsoleMessageTriggered(
-                                            operatorId: String,
-                                            workerId: String,
-                                            consoleMessage: PythonConsoleMessage
+      operatorId: String,
+      workerId: String,
+      consoleMessage: PythonConsoleMessage
   ) extends ControlCommand[Unit]
 
   case class ReportCurrentProcessingTuple(
