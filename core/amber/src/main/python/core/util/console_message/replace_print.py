@@ -1,5 +1,6 @@
 import builtins
 import datetime
+import inspect
 from contextlib import redirect_stdout
 from io import StringIO
 
@@ -38,7 +39,9 @@ class replace_print:
                     PythonConsoleMessageV2(
                         timestamp=datetime.datetime.now(),
                         level="PRINT",
-                        source="test",
+                        source=f"{inspect.currentframe().f_back.f_globals['__name__']}"
+                        f":{inspect.currentframe().f_back.f_code.co_name}"
+                        f":{inspect.currentframe().f_back.f_lineno}",
                         message=complete_str,
                     )
                 )

@@ -26,7 +26,7 @@ trait PythonConsoleMessageHandler {
         PythonConsoleMessageTriggered(
           workflow.getOperator(sender).id.operator,
           sender.name,
-          PythonConsoleMessageV2(msg.timestamp, msg.level, msg.level, msg.message)
+          PythonConsoleMessageV2(msg.timestamp, msg.level, msg.source, msg.message)
         )
       )
     }
