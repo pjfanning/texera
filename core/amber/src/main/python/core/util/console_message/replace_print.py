@@ -32,7 +32,7 @@ class replace_print:
             with StringIO() as tmp_buf, redirect_stdout(tmp_buf):
                 self.builtins_print(*args, **kwargs)
                 complete_str = tmp_buf.getvalue()
-                self.buf.write(complete_str)
+                self.buf.add(complete_str)
 
         builtins.print = wrapped_print
 

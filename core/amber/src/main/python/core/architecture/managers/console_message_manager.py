@@ -5,8 +5,5 @@ class ConsoleMessageManager:
     def __init__(self):
         self.print_buf = TimedBuffer()
 
-    def has_message(self):
-        return not self.print_buf.is_empty()
-
     def get_messages(self, force_flush: bool = False):
-        return self.print_buf.output(force_flush)
+        return self.print_buf.get(force_flush)
