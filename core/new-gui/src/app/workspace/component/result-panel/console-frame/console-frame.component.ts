@@ -25,8 +25,9 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   showTimestamp: boolean = true;
 
-  statusMapping = new Map([["PRINT", "default"]]);
+  labelMapping = new Map([["PRINT", "default"]]);
 
+  // TODO: find a better way to generate different color for each worker.
   workerColorMapping = new Map([
     ["Worker-0", "lime"],
     ["Worker-1", "cyan"],
