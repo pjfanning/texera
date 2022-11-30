@@ -35,7 +35,7 @@ class JobPythonService(
     wsInput: WebsocketInput,
     breakpointService: JobBreakpointService
 ) extends SubscriptionManager {
-  registerCallbackOnPythonPrint()
+  registerCallbackOnPythonConsoleMessage()
 
   addSubscription(
     stateStore.pythonStore.registerDiffHandler((oldState, newState) => {
@@ -77,7 +77,7 @@ class JobPythonService(
     })
   )
 
-  private[this] def registerCallbackOnPythonPrint(): Unit = {
+  private[this] def registerCallbackOnPythonConsoleMessage(): Unit = {
     addSubscription(
       client
         .registerCallback[PythonConsoleMessageTriggered]((evt: PythonConsoleMessageTriggered) => {

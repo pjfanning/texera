@@ -17,10 +17,10 @@ export class WorkflowConsoleService {
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService) {
     this.registerAutoClearConsoleMessages();
-    this.registerPythonPrintEventHandler();
+    this.registerPythonConsoleUpdateEventHandler();
   }
 
-  registerPythonPrintEventHandler() {
+  registerPythonConsoleUpdateEventHandler() {
     this.workflowWebsocketService
       .subscribeToEvent("PythonConsoleUpdateEvent")
       .subscribe((pythonConsoleMessage: PythonConsoleMessage) => {
