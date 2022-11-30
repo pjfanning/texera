@@ -3,7 +3,6 @@ from threading import Thread
 import pandas
 import pyarrow
 import pytest
-from loguru import logger
 
 from core.models import (
     InputDataFrame,
