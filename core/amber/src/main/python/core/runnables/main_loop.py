@@ -31,7 +31,8 @@ from proto.edu.uci.ics.amber.engine.architecture.worker import (
     LocalOperatorExceptionV2,
     WorkerExecutionCompletedV2,
     WorkerState,
-    LinkCompletedV2, PythonConsoleMessageV2,
+    LinkCompletedV2,
+    PythonConsoleMessageV2,
 )
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -62,8 +63,12 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 ),
             )
         )
-        logger.add(self._print_log_handler, level="PRINT", filter="operators",
-                   format="{message}")
+        logger.add(
+            self._print_log_handler,
+            level="PRINT",
+            filter="operators",
+            format="{message}",
+        )
 
         self.data_processor = DataProcessor(self.context)
         threading.Thread(target=self.data_processor.run, daemon=True).start()
@@ -95,8 +100,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
         processing a DataElement.
         """
         while (
-                not self._input_queue.is_control_empty()
-                or self.context.pause_manager.is_paused()
+            not self._input_queue.is_control_empty()
+            or self.context.pause_manager.is_paused()
         ):
             next_entry = self.interruptible_get()
             self._process_control_element(next_entry)
@@ -125,7 +130,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         )
 
     def process_control_payload(
-            self, tag: ActorVirtualIdentity, payload: ControlPayloadV2
+        self, tag: ActorVirtualIdentity, payload: ControlPayloadV2
     ) -> None:
         """
         Process the given ControlPayload with the tag.
@@ -159,8 +164,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 self.cast_tuple_to_match_schema(output_tuple, schema)
                 self.context.statistics_manager.increase_output_tuple_count()
                 for (
-                        to,
-                        batch,
+                    to,
+                    batch,
                 ) in self.context.tuple_to_batch_converter.tuple_to_batch(output_tuple):
                     batch.schema = self.context.operator_manager.operator.output_schema
                     self._output_queue.put(DataElement(tag=to, payload=batch))
@@ -224,7 +229,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             )
 
     def _process_sender_change_marker(
-            self, sender_change_marker: SenderChangeMarker
+        self, sender_change_marker: SenderChangeMarker
     ) -> None:
         """
         Upon receipt of a SenderChangeMarker, change the current input link to the
@@ -323,7 +328,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         self._print_log_handler.flush()
         if self.context.state_manager.confirm_state(
-                WorkerState.RUNNING, WorkerState.READY
+            WorkerState.RUNNING, WorkerState.READY
         ):
             self.context.pause_manager.record_request(PauseType.USER_PAUSE, True)
             self.context.state_manager.transit_to(WorkerState.PAUSED)

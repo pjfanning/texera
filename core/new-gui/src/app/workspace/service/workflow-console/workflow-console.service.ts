@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import {PythonConsoleMessage } from "../../types/workflow-common.interface";
+import { PythonConsoleMessage } from "../../types/workflow-common.interface";
 import { Subject } from "rxjs";
 import { Observable } from "rxjs";
 import { RingBuffer } from "ring-buffer-ts";
