@@ -44,7 +44,7 @@ class ControllerAsyncRPCHandlerInitializer(
     with StartWorkflowHandler
     with LinkCompletedHandler
     with FatalErrorHandler
-    with PythonPrintHandler
+    with PythonConsoleMessageHandler
     with RetryWorkflowHandler
     with ModifyLogicHandler
     with EvaluatePythonExpressionHandler

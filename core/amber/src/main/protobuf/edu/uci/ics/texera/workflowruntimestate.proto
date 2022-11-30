@@ -3,6 +3,7 @@ syntax = "proto3";
 package edu.uci.ics.texera.web;
 
 import "edu/uci/ics/amber/engine/architecture/worker/controlreturns.proto";
+import "edu/uci/ics/amber/engine/architecture/worker/controlcommands.proto";
 import "scalapb/scalapb.proto";
 
 option (scalapb.options) = {
@@ -48,8 +49,12 @@ message EvaluatedValueList{
   repeated amber.engine.architecture.worker.EvaluatedValue values = 1;
 }
 
+message PythonWorkerInfo {
+  repeated amber.engine.architecture.worker.PythonConsoleMessageV2 python_console_message= 1;
+}
+
 message PythonOperatorInfo{
-  repeated string console_messages = 1;
+  map<string, PythonWorkerInfo> worker_info = 1;
   map<string,EvaluatedValueList> evaluate_expr_results = 2;
 }
 
@@ -57,15 +62,18 @@ message JobPythonStore{
   map<string, PythonOperatorInfo> operator_info = 1;
 }
 
+message WorkerRuntimeStats{
+}
 
 message OperatorRuntimeStats{
   WorkflowAggregatedState state = 1;
   int64 input_count = 2;
   int64 output_count = 3;
+  map<string, WorkerRuntimeStats> worker_info = 4;
 }
 
 message JobStatsStore {
-  map<string,OperatorRuntimeStats> operator_info = 3;
+  map<string, OperatorRuntimeStats> operator_info = 1;
 }
 
 message JobMetadataStore{
