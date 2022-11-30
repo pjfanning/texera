@@ -7,20 +7,20 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWor
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{BreakpointTriggeredEvent, TexeraWebSocketEvent}
+import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.PythonConsoleUpdateEvent
+import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
 import edu.uci.ics.texera.web.model.websocket.request.python.PythonExpressionEvaluateRequest
-import edu.uci.ics.texera.web.model.websocket.request.{RetryRequest, SkipTupleRequest}
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.service.JobPythonService.bufferSize
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.JobStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
 import edu.uci.ics.texera.web.workflowruntimestate.{
   EvaluatedValueList,
   PythonOperatorInfo,
   PythonWorkerInfo
 }
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
+import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 
 import scala.collection.mutable
 
