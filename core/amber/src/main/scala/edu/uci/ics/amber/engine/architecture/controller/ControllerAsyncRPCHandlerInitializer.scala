@@ -48,7 +48,8 @@ class ControllerAsyncRPCHandlerInitializer(
     with EvaluatePythonExpressionHandler
     with MonitoringHandler
     with SkewDetectionHandler
-    with RegionsTimeSlotExpiredHandler {
+    with RegionsTimeSlotExpiredHandler
+    with PythonDebugCommandHandler {
 
   var statusUpdateAskHandle: Option[Cancellable] = None
 
