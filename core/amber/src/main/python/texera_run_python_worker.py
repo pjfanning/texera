@@ -20,9 +20,6 @@ def init_loguru_logger(stream_log_level) -> None:
     # set up stream handler, which outputs to stderr
     logger.add(sys.stderr, level=stream_log_level)
 
-    # initialize a custom logger level for print to use
-    logger.level("PRINT", no=38)
-
 
 if __name__ == "__main__":
     init_loguru_logger(sys.argv[3])
