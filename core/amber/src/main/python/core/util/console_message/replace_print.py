@@ -33,6 +33,7 @@ class replace_print:
                 self.builtins_print(*args, **kwargs)
                 complete_str = tmp_buf.getvalue()
                 self.buf.write(complete_str)
+
         builtins.print = wrapped_print
 
     def __exit__(self, exc_type, exc_val, exc_tb):
