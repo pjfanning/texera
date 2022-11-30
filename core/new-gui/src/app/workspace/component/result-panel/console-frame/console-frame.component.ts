@@ -1,9 +1,10 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from "@angular/core";
+import {Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo } from "../../../types/workflow-common.interface";
+import {BreakpointTriggerInfo, PythonConsoleMessage} from "../../../types/workflow-common.interface";
 import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import {CdkVirtualScrollViewport} from "@angular/cdk/scrolling";
 
 @UntilDestroy()
 @Component({
@@ -13,11 +14,27 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 })
 export class ConsoleFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
+  @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
+  workerAbbrToLongNameMapping = new Map();
+
   // display error message:
   errorMessages?: Readonly<Record<string, string>>;
 
   // display print
-  consoleMessages: ReadonlyArray<string> = [];
+  consoleMessages: ReadonlyArray<PythonConsoleMessage> = [];
+
+  showTimestamp: boolean = true;
+
+  statusMapping = new Map([
+    ["PRINT", "default"],
+  ]);
+
+  workerColorMapping = new Map([
+    ["Worker-0", "lime"],
+    ["Worker-1", "cyan"],
+    ["Worker-2", "volcano"],
+    ["Worker-3", " orange"],
+  ]);
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -106,5 +123,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   displayConsoleMessages(operatorId: string) {
     this.consoleMessages = operatorId ? this.workflowConsoleService.getConsoleMessages(operatorId) || [] : [];
+    console.log("got messages", this.consoleMessages);
+  }
+
+  workerIdToAbbr(workerId: string) {
+    const tokens = workerId.split("-");
+    const abbr = "Worker-" + tokens.at(tokens.length - 1);
+    this.workerAbbrToLongNameMapping.set(abbr, workerId);
+    return abbr;
   }
 }
