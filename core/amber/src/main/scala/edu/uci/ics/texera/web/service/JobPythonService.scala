@@ -93,6 +93,7 @@ class JobPythonService(
             val newMessage = new PythonConsoleMessageV2(
               evt.consoleMessage.timestamp,
               evt.consoleMessage.level,
+              evt.consoleMessage.source,
               evt.consoleMessage.message
             )
             if (workerInfo.pythonConsoleMessage.size < bufferSize) {
