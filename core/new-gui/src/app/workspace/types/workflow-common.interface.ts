@@ -100,8 +100,7 @@ export type BreakpointTriggerInfo = Readonly<{
   operatorID: string;
 }>;
 
-export type PythonConsoleMessage = Readonly<{
-  operatorId: string;
+export type PythonWorkerConsoleMessage = Readonly<{
   workerId: string;
   timestamp: {
     nanos: number;
@@ -110,4 +109,9 @@ export type PythonConsoleMessage = Readonly<{
   level: string;
   source: string;
   message: string;
+}>;
+
+export type PythonConsoleUpdateEvent = Readonly<{
+  operatorId: string;
+  messages: ReadonlyArray<PythonWorkerConsoleMessage>;
 }>;

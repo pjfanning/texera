@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonConsoleMessageHandler.PythonConsoleMessage
+import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -29,7 +30,7 @@ object ControllerEvent {
   case class PythonConsoleMessageTriggered(
       operatorId: String,
       workerId: String,
-      consoleMessage: PythonConsoleMessage
+      consoleMessage: PythonConsoleMessageV2
   ) extends ControlCommand[Unit]
 
   case class ReportCurrentProcessingTuple(

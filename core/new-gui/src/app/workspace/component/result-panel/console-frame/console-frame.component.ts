@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo, PythonConsoleMessage } from "../../../types/workflow-common.interface";
+import { BreakpointTriggerInfo, PythonWorkerConsoleMessage } from "../../../types/workflow-common.interface";
 import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -21,7 +21,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   errorMessages?: Readonly<Record<string, string>>;
 
   // display print
-  consoleMessages: ReadonlyArray<PythonConsoleMessage> = [];
+  consoleMessages: ReadonlyArray<PythonWorkerConsoleMessage> = [];
 
   showTimestamp: boolean = true;
   showSource: boolean = true;

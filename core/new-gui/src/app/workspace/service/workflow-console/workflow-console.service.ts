@@ -1,6 +1,6 @@
 import { Injectable } from "@angular/core";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import { PythonConsoleMessage } from "../../types/workflow-common.interface";
+import { PythonWorkerConsoleMessage, PythonConsoleUpdateEvent } from "../../types/workflow-common.interface";
 import { Subject } from "rxjs";
 import { Observable } from "rxjs";
 import { RingBuffer } from "ring-buffer-ts";
@@ -12,7 +12,7 @@ export const CONSOLE_BUFFER_SIZE = 100;
   providedIn: "root",
 })
 export class WorkflowConsoleService {
-  private consoleMessages: Map<string, RingBuffer<PythonConsoleMessage>> = new Map();
+  private consoleMessages: Map<string, RingBuffer<PythonWorkerConsoleMessage>> = new Map();
   private consoleMessagesUpdateStream = new Subject<void>();
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService) {
@@ -23,12 +23,12 @@ export class WorkflowConsoleService {
   registerPythonConsoleUpdateEventHandler() {
     this.workflowWebsocketService
       .subscribeToEvent("PythonConsoleUpdateEvent")
-      .subscribe((pythonConsoleMessage: PythonConsoleMessage) => {
-        const operatorID = pythonConsoleMessage.operatorId;
+      .subscribe((pythonConsoleUpdateEvent: PythonConsoleUpdateEvent) => {
+        const operatorId = pythonConsoleUpdateEvent.operatorId;
         const messages =
-          this.consoleMessages.get(operatorID) || new RingBuffer<PythonConsoleMessage>(CONSOLE_BUFFER_SIZE);
-        messages.add(pythonConsoleMessage);
-        this.consoleMessages.set(operatorID, messages);
+          this.consoleMessages.get(operatorId) || new RingBuffer<PythonWorkerConsoleMessage>(CONSOLE_BUFFER_SIZE);
+        messages.add(...pythonConsoleUpdateEvent.messages);
+        this.consoleMessages.set(operatorId, messages);
         this.consoleMessagesUpdateStream.next();
       });
   }
@@ -41,7 +41,7 @@ export class WorkflowConsoleService {
     });
   }
 
-  getConsoleMessages(operatorID: string): ReadonlyArray<PythonConsoleMessage> | undefined {
+  getConsoleMessages(operatorID: string): ReadonlyArray<PythonWorkerConsoleMessage> | undefined {
     return this.consoleMessages.get(operatorID)?.toArray();
   }
 

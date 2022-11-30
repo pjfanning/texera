@@ -1,6 +1,9 @@
 import builtins
+import datetime
 from contextlib import redirect_stdout
 from io import StringIO
+
+from proto.edu.uci.ics.amber.engine.architecture.worker import PythonConsoleMessageV2
 
 
 class replace_print:
@@ -17,7 +20,6 @@ class replace_print:
     """
 
     def __init__(self, buf):
-
         # save a reference to the original builtin.print before we replace it.
         # it will always replace back when the context manager exits, with exception
         # or not.
@@ -32,7 +34,14 @@ class replace_print:
             with StringIO() as tmp_buf, redirect_stdout(tmp_buf):
                 self.builtins_print(*args, **kwargs)
                 complete_str = tmp_buf.getvalue()
-                self.buf.add(complete_str)
+                self.buf.add(
+                    PythonConsoleMessageV2(
+                        timestamp=datetime.datetime.now(),
+                        level="PRINT",
+                        source="test",
+                        message=complete_str,
+                    )
+                )
 
         builtins.print = wrapped_print
 
