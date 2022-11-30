@@ -11,13 +11,13 @@ class replace_print:
         self.builtins_print = builtins.print
 
     def __enter__(self):
-        def my_print(*args, **kwargs):
+        def wrapped_print(*args, **kwargs):
             with StringIO() as buf, redirect_stdout(buf):
                 self.builtins_print(*args, **kwargs)
                 message = buf.getvalue()
                 self.callback(message, *self.args, **self.kwargs)
 
-        builtins.print = my_print
+        builtins.print = wrapped_print
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         builtins.print = self.builtins_print
