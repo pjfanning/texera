@@ -24,6 +24,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   consoleMessages: ReadonlyArray<PythonConsoleMessage> = [];
 
   showTimestamp: boolean = true;
+  showSource: boolean = true;
 
   labelMapping = new Map([["PRINT", "default"]]);
 

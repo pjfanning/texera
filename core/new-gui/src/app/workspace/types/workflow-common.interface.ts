@@ -108,5 +108,6 @@ export type PythonConsoleMessage = Readonly<{
     seconds: number;
   };
   level: string;
-  message: Readonly<string>;
+  source: string;
+  message: string;
 }>;
