@@ -29,7 +29,6 @@ from core.util.print_writer.print_log_handler import PrintLogHandler
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
     ControlCommandV2,
     LocalOperatorExceptionV2,
-    PythonPrintV2,
     WorkerExecutionCompletedV2,
     WorkerState,
     LinkCompletedV2, PythonConsoleMessageV2,

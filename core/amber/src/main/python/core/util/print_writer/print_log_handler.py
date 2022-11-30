@@ -18,3 +18,20 @@ class SimpleBuffer:
             self._last_output_time = datetime.now()
             yield from self._buffer
             self._buffer.clear()
+
+    def __len__(self):
+        return len(self._buffer)
+
+class PrintLogHandler:
+    def __init__(self, callback):
+        self.callback = callback
+        self._buffer = SimpleBuffer()
+
+    def write(self, message: str):
+        self._buffer.add(message)
+        for msg in self._buffer.output():
+            self.callback(msg)
+
+    def flush(self):
+        for msg in self._buffer.output(flush=True):
+            self.callback(msg)
