@@ -50,7 +50,7 @@ message EvaluatedValueList{
 }
 
 message PythonWorkerInfo {
-  repeated amber.engine.architecture.worker.PythonConsoleMessageV2 python_console_message= 1;
+  repeated amber.engine.architecture.worker.PythonConsoleMessageV2 python_console_messages= 1;
 }
 
 message PythonOperatorInfo{

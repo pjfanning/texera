@@ -67,7 +67,7 @@ class EvaluatedValueList(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class PythonWorkerInfo(betterproto.Message):
-    python_console_message: List[
+    python_console_messages: List[
         "__amber_engine_architecture_worker__.PythonConsoleMessageV2"
     ] = betterproto.message_field(1)
 

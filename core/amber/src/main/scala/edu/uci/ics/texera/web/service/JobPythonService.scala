@@ -4,7 +4,6 @@ import com.twitter.util.{Await, Duration}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.PythonConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
-import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
@@ -49,11 +48,11 @@ class JobPythonService(
               info.workerInfo.foreach({
                 case (workerId, workerInfo) =>
                   val diff = if (oldInfo.workerInfo.contains(workerId)) {
-                    workerInfo.pythonConsoleMessage diff oldInfo
+                    workerInfo.pythonConsoleMessages diff oldInfo
                       .workerInfo(workerId)
-                      .pythonConsoleMessage
+                      .pythonConsoleMessages
                   } else {
-                    workerInfo.pythonConsoleMessage
+                    workerInfo.pythonConsoleMessages
                   }
                   output.append(PythonConsoleUpdateEvent(opId, workerId, diff))
               })
@@ -84,12 +83,12 @@ class JobPythonService(
             }
             val workerInfo = opInfo.workerInfo.getOrElse(evt.workerId, PythonWorkerInfo())
 
-            if (workerInfo.pythonConsoleMessage.size < bufferSize) {
+            if (workerInfo.pythonConsoleMessages.size < bufferSize) {
               jobInfo.addOperatorInfo(
                 (
                   evt.operatorId,
                   opInfo.addWorkerInfo(
-                    (evt.workerId, workerInfo.addPythonConsoleMessage(evt.consoleMessage))
+                    (evt.workerId, workerInfo.addPythonConsoleMessages(evt.consoleMessage))
                   )
                 )
               )
@@ -100,8 +99,8 @@ class JobPythonService(
                   opInfo.addWorkerInfo(
                     (
                       evt.workerId,
-                      workerInfo.withPythonConsoleMessage(
-                        workerInfo.pythonConsoleMessage.drop(1) :+ evt.consoleMessage
+                      workerInfo.withPythonConsoleMessages(
+                        workerInfo.pythonConsoleMessages.drop(1) :+ evt.consoleMessage
                       )
                     )
                   )
