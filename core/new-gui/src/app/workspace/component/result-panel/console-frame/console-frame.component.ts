@@ -1,12 +1,11 @@
 import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo, PythonWorkerConsoleMessage } from "../../../types/workflow-common.interface";
+import { BreakpointTriggerInfo, ConsoleMessage } from "../../../types/workflow-common.interface";
 import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
-import {isDefined} from "../../../../common/util/predicate";
-import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
+import { presetPalettes } from "@ant-design/colors";
 
 @UntilDestroy()
 @Component({
@@ -17,14 +16,15 @@ import {WorkflowWebsocketService} from "../../../service/workflow-websocket/work
 export class ConsoleFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
-  workerAbbrToLongNameMapping = new Map();
 
   // display error message:
   errorMessages?: Readonly<Record<string, string>>;
 
   // display print
-  consoleMessages: ReadonlyArray<PythonWorkerConsoleMessage> = [];
+  consoleMessages: ReadonlyArray<ConsoleMessage> = [];
 
+  // Configuration Menu items
+  // TODO: move Configuration Menu to a separate component
   showTimestamp: boolean = true;
   showSource: boolean = true;
 
@@ -33,14 +33,6 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   targetWorker: string = "All Workers";
 
   labelMapping = new Map([["PRINT", "default"]]);
-
-  // TODO: find a better way to generate different color for each worker.
-  workerColorMapping = new Map([
-    ["Worker-0", "lime"],
-    ["Worker-1", "cyan"],
-    ["Worker-2", "volcano"],
-    ["Worker-3", " orange"],
-  ]);
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -58,7 +50,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     this.registerAutoConsoleRerender();
   }
 
-  registerAutoConsoleRerender() {
+  registerAutoConsoleRerender(): void {
     this.executeWorkflowService
       .getExecutionStateStream()
       .pipe(untilDestroyed(this))
@@ -87,12 +79,12 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       .subscribe(_ => this.renderConsole());
   }
 
-  clearConsole() {
+  clearConsole(): void {
     this.consoleMessages = [];
     this.errorMessages = undefined;
   }
 
-  renderConsole() {
+  renderConsole(): void {
     // try to fetch if we have breakpoint info
     const breakpointTriggerInfo = this.executeWorkflowService.getBreakpointTriggerInfo();
 
@@ -111,7 +103,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     }
   }
 
-  displayBreakpoint(breakpointTriggerInfo: BreakpointTriggerInfo) {
+  displayBreakpoint(breakpointTriggerInfo: BreakpointTriggerInfo): void {
     const errorsMessages: Record<string, string> = {};
     breakpointTriggerInfo.report.forEach(r => {
       const splitPath = r.actorPath.split("/");
@@ -124,20 +116,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     this.errorMessages = errorsMessages;
   }
 
-  displayFault() {
+  displayFault(): void {
     this.errorMessages = this.executeWorkflowService.getErrorMessages();
   }
 
-  displayConsoleMessages(operatorId: string) {
+  displayConsoleMessages(operatorId: string): void {
     this.consoleMessages = operatorId ? this.workflowConsoleService.getConsoleMessages(operatorId) || [] : [];
     console.log("got messages", this.consoleMessages);
-  }
-
-  workerIdToAbbr(workerId: string) {
-    const tokens = workerId.split("-");
-    const abbr = "Worker-" + tokens.at(tokens.length - 1);
-    this.workerAbbrToLongNameMapping.set(abbr, workerId);
-    return abbr;
   }
 
   submitCommand() {
@@ -158,5 +143,27 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
       this.command = "";
     }
+  }
+
+  workerIdToAbbr(workerId: string): string {
+    return "Worker-" + this.getWorkerIndex(workerId);
+  }
+
+  getWorkerColor(workerIndex: number): string {
+    const presetPalettesSize = Object.keys(presetPalettes).length;
+
+    // exclude red (index 0) and volcano (index 1) as they look as warning/error.
+    // use *3 to diff colors between adjacent workers.
+    const colorKey = Object.keys(presetPalettes)[2 + ((workerIndex * 3) % (presetPalettesSize - 2))];
+
+    // use shade index >=6 as they are dark enough.
+    return presetPalettes[colorKey][
+      6 + ((Math.floor(workerIndex / presetPalettesSize) * 3) % (presetPalettes[colorKey].length - 6))
+    ];
+  }
+
+  getWorkerIndex(workerId: string): number {
+    const tokens = workerId.split("-");
+    return parseInt(tokens.at(tokens.length - 1) || "0");
   }
 }

@@ -156,19 +156,10 @@ object OperatorRuntimeStats extends scalapb.GeneratedMessageCompanion[edu.uci.ic
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = WorkflowruntimestateProto.javaDescriptor.getMessageTypes().get(8)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = WorkflowruntimestateProto.scalaDescriptor.messages(8)
-  def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = {
-    var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
-    (__number: @_root_.scala.unchecked) match {
-      case 4 => __out = edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry
-    }
-    __out
-  }
-  lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] =
-    Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]](
-      _root_.edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry
-    )
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = WorkflowruntimestateProto.javaDescriptor.getMessageTypes().get(7)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = WorkflowruntimestateProto.scalaDescriptor.messages(7)
+  def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = throw new MatchError(__number)
+  lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = {
     (__fieldNumber: @_root_.scala.unchecked) match {
       case 1 => edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
@@ -189,7 +180,7 @@ object OperatorRuntimeStats extends scalapb.GeneratedMessageCompanion[edu.uci.ic
       private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
       private[this] def __computeSerializedValue(): _root_.scala.Int = {
         var __size = 0
-        
+
         {
           val __value = key
           if (!__value.isEmpty) {
@@ -248,7 +239,7 @@ object OperatorRuntimeStats extends scalapb.GeneratedMessageCompanion[edu.uci.ic
       def companion = edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry
       // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.texera.web.OperatorRuntimeStats.WorkerInfoEntry])
   }
-  
+
   object WorkerInfoEntry extends scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry] {
     implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry] = this
     def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats.WorkerInfoEntry = {
@@ -314,7 +305,7 @@ object OperatorRuntimeStats extends scalapb.GeneratedMessageCompanion[edu.uci.ic
     )
     // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.texera.web.OperatorRuntimeStats.WorkerInfoEntry])
   }
-  
+
   implicit class OperatorRuntimeStatsLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats](_l) {
     def state: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState] = field(_.state)((c_, f_) => c_.copy(state = f_))
     def inputCount: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Long] = field(_.inputCount)((c_, f_) => c_.copy(inputCount = f_))
