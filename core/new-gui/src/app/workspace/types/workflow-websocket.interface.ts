@@ -140,6 +140,12 @@ export type PythonExpressionEvaluateResponse = Readonly<{
   values: EvaluatedValue[];
 }>;
 
+export type PythonDebugCommandRequest = Readonly<{
+  operatorId: string;
+  workerId: string;
+  cmd: string;
+}>;
+
 export type WorkflowStateInfo = Readonly<{
   state: ExecutionState;
 }>;
@@ -159,6 +165,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowPauseRequest: {};
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
+  PythonDebugCommandRequest: PythonDebugCommandRequest;
 };
 
 export type TexeraWebsocketEventTypeMap = {

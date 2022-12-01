@@ -48,3 +48,15 @@
     </nz-list-item>
   </cdk-virtual-scroll-viewport>
 </nz-list>
+
+
+<nz-input-group nzCompact [nzAddOnBefore]="addOnBeforeTemplate">
+  <input type="text" nz-input [(ngModel)]="command" (keyup.enter)="submitCommand()" />
+</nz-input-group>
+
+<ng-template #addOnBeforeTemplate>
+  <nz-select [(ngModel)]="targetWorker">
+    <nz-option *ngFor="let worker of workers" [nzLabel]="worker" [nzValue]="worker"></nz-option>
+    <nz-option [nzLabel]="'All Workers'" [nzValue]="'All Workers'"></nz-option>
+  </nz-select>
+</ng-template>

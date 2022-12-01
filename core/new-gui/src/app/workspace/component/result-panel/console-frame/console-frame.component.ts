@@ -5,6 +5,8 @@ import { ExecutionState } from "src/app/workspace/types/execute-workflow.interfa
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
+import {isDefined} from "../../../../common/util/predicate";
+import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
 
 @UntilDestroy()
 @Component({
@@ -26,6 +28,10 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   showTimestamp: boolean = true;
   showSource: boolean = true;
 
+  workers: readonly string[] = [];
+  command: string = "";
+  targetWorker: string = "All Workers";
+
   labelMapping = new Map([["PRINT", "default"]]);
 
   // TODO: find a better way to generate different color for each worker.
@@ -38,7 +44,8 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
-    private workflowConsoleService: WorkflowConsoleService
+    private workflowConsoleService: WorkflowConsoleService,
+    private workflowWebsocketService: WorkflowWebsocketService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -131,5 +138,25 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     const abbr = "Worker-" + tokens.at(tokens.length - 1);
     this.workerAbbrToLongNameMapping.set(abbr, workerId);
     return abbr;
+  }
+
+  submitCommand() {
+    if (isDefined(this.operatorId)) {
+      let workers = [];
+      if (this.targetWorker === "All Workers") {
+        workers = [...this.workers];
+      } else {
+        workers.push(this.targetWorker);
+      }
+      for (let worker of workers) {
+        this.workflowWebsocketService.send("PythonDebugCommandRequest", {
+          operatorId: this.operatorId,
+          workerId: this.workerAbbrToLongNameMapping.get(worker),
+          cmd: this.command,
+        });
+      }
+
+      this.command = "";
+    }
   }
 }
