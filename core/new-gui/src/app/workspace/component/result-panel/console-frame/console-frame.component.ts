@@ -6,6 +6,8 @@ import { WorkflowConsoleService } from "../../../service/workflow-console/workfl
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { presetPalettes } from "@ant-design/colors";
+import {isDefined} from "../../../../common/util/predicate";
+import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
 
 @UntilDestroy()
 @Component({
@@ -136,7 +138,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       for (let worker of workers) {
         this.workflowWebsocketService.send("PythonDebugCommandRequest", {
           operatorId: this.operatorId,
-          workerId: this.workerAbbrToLongNameMapping.get(worker),
+          workerId: worker,
           cmd: this.command,
         });
       }

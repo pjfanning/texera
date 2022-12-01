@@ -52,7 +52,7 @@
 
 <ng-template #addOnBeforeTemplate>
   <nz-select [(ngModel)]="targetWorker">
-    <nz-option *ngFor="let worker of workers" [nzLabel]="worker" [nzValue]="worker"></nz-option>
+    <nz-option *ngFor="let worker of workers" [nzLabel]="workerIdToAbbr(worker)" [nzValue]="worker"></nz-option>
     <nz-option [nzLabel]="'All Workers'" [nzValue]="'All Workers'"></nz-option>
   </nz-select>
 </ng-template>
