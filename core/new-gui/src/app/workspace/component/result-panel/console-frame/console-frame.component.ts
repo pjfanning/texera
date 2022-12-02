@@ -30,9 +30,11 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   showTimestamp: boolean = true;
   showSource: boolean = true;
 
+  // WorkerId Menu related items.
+  ALL_WORKERS: string = "All Workers";
   workerIds: readonly string[] = [];
   command: string = "";
-  targetWorker: string = "All Workers";
+  targetWorker: string = this.ALL_WORKERS;
 
   labelMapping = new Map([
     ["PRINT", "default"],
@@ -132,24 +134,24 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     console.log("got messages", this.consoleMessages);
   }
 
-  submitCommand() {
-    if (isDefined(this.operatorId)) {
-      let workers = [];
-      if (this.targetWorker === "All Workers") {
-        workers = [...this.workerIds];
-      } else {
-        workers.push(this.targetWorker);
-      }
-      for (let worker of workers) {
-        this.workflowWebsocketService.send("PythonDebugCommandRequest", {
-          operatorId: this.operatorId,
-          workerId: worker,
-          cmd: this.command,
-        });
-      }
-
-      this.command = "";
+  submitCommand(): void {
+    if (!isDefined(this.operatorId)) {
+      return;
     }
+    let workers = [];
+    if (this.targetWorker === this.ALL_WORKERS) {
+      workers = [...this.workerIds];
+    } else {
+      workers.push(this.targetWorker);
+    }
+    for (let worker of workers) {
+      this.workflowWebsocketService.send("PythonDebugCommandRequest", {
+        operatorId: this.operatorId,
+        workerId: worker,
+        cmd: this.command,
+      });
+    }
+    this.command = "";
   }
 
   workerIdToAbbr(workerId: string): string {
