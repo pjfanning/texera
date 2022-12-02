@@ -6,8 +6,8 @@ import { WorkflowConsoleService } from "../../../service/workflow-console/workfl
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { presetPalettes } from "@ant-design/colors";
-import {isDefined} from "../../../../common/util/predicate";
-import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
+import { isDefined } from "../../../../common/util/predicate";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
 
 @UntilDestroy()
 @Component({
@@ -30,7 +30,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   showTimestamp: boolean = true;
   showSource: boolean = true;
 
-  workers: readonly string[] = [];
+  workerIds: readonly string[] = [];
   command: string = "";
   targetWorker: string = "All Workers";
 
@@ -91,6 +91,8 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     const breakpointTriggerInfo = this.executeWorkflowService.getBreakpointTriggerInfo();
 
     if (this.operatorId) {
+      this.workerIds = this.executeWorkflowService.getWorkerIds(this.operatorId);
+
       // first display error messages if applicable
       if (this.operatorId === breakpointTriggerInfo?.operatorID) {
         // if we hit a breakpoint
@@ -131,7 +133,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     if (isDefined(this.operatorId)) {
       let workers = [];
       if (this.targetWorker === "All Workers") {
-        workers = [...this.workers];
+        workers = [...this.workerIds];
       } else {
         workers.push(this.targetWorker);
       }

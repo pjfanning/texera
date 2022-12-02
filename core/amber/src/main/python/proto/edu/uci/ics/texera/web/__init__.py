@@ -91,6 +91,11 @@ class JobPythonStore(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class WorkerList(betterproto.Message):
+    worker_id: List[str] = betterproto.string_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class OperatorRuntimeStats(betterproto.Message):
     state: "WorkflowAggregatedState" = betterproto.enum_field(1)
     input_count: int = betterproto.int64_field(2)
@@ -101,6 +106,9 @@ class OperatorRuntimeStats(betterproto.Message):
 class JobStatsStore(betterproto.Message):
     operator_info: Dict[str, "OperatorRuntimeStats"] = betterproto.map_field(
         1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
+    )
+    worker_list: Dict[str, "WorkerList"] = betterproto.map_field(
+        2, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
 
 

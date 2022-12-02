@@ -37,4 +37,5 @@ object ControllerEvent {
       tuple: Array[(ITuple, ActorVirtualIdentity)]
   ) extends ControlCommand[Unit]
 
+  case class WorkerAssigned(workerMapping: Map[String, Seq[String]]) extends ControlCommand[Unit]
 }
