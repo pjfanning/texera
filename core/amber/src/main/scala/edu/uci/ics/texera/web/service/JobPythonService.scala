@@ -128,7 +128,7 @@ class JobPythonService(
       addConsoleMessage(jobInfo, req.operatorId, newMessage)
     }
 
-    client.sendAsync(PythonDebugCommand(req.operatorId, req.workerId, req.cmd))
+    client.sendAsync(PythonDebugCommand(req.workerId, req.cmd))
 
   }))
 
