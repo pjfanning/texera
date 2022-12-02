@@ -11,12 +11,20 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.ConsoleUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
-import edu.uci.ics.texera.web.model.websocket.request.python.{PythonDebugCommandRequest, PythonExpressionEvaluateRequest}
+import edu.uci.ics.texera.web.model.websocket.request.python.{
+  PythonDebugCommandRequest,
+  PythonExpressionEvaluateRequest
+}
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
 import edu.uci.ics.texera.web.service.JobPythonService.bufferSize
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RESUMING, RUNNING}
-import edu.uci.ics.texera.web.workflowruntimestate.{ConsoleMessage, EvaluatedValueList, JobPythonStore, PythonOperatorInfo}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  ConsoleMessage,
+  EvaluatedValueList,
+  JobPythonStore,
+  PythonOperatorInfo
+}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 
 import scala.collection.mutable
@@ -27,11 +35,11 @@ object JobPythonService {
 }
 
 class JobPythonService(
-                        client: AmberClient,
-                        stateStore: JobStateStore,
-                        wsInput: WebsocketInput,
-                        breakpointService: JobBreakpointService
-                      ) extends SubscriptionManager {
+    client: AmberClient,
+    stateStore: JobStateStore,
+    wsInput: WebsocketInput,
+    breakpointService: JobBreakpointService
+) extends SubscriptionManager {
   registerCallbackOnPythonConsoleMessage()
 
   addSubscription(
@@ -60,14 +68,19 @@ class JobPythonService(
     addSubscription(
       client
         .registerCallback[ConsoleMessageTriggered]((evt: ConsoleMessageTriggered) => {
-          stateStore.pythonStore.updateState { jobInfo => addConsoleMessage(jobInfo, evt.operatorId, evt.consoleMessage)
+          stateStore.pythonStore.updateState { jobInfo =>
+            addConsoleMessage(jobInfo, evt.operatorId, evt.consoleMessage)
           }
         })
     )
 
   }
 
-  private[this] def addConsoleMessage(jobInfo: JobPythonStore, opId: String, consoleMessage: ConsoleMessage): JobPythonStore = {
+  private[this] def addConsoleMessage(
+      jobInfo: JobPythonStore,
+      opId: String,
+      consoleMessage: ConsoleMessage
+  ): JobPythonStore = {
     val opInfo = jobInfo.operatorInfo.getOrElse(opId, PythonOperatorInfo())
 
     if (opInfo.consoleMessages.size < bufferSize) {
@@ -124,7 +137,13 @@ class JobPythonService(
   //Receive debug command
   addSubscription(wsInput.subscribe((req: PythonDebugCommandRequest, uidOpt) => {
     stateStore.pythonStore.updateState { jobInfo =>
-      val newMessage = new ConsoleMessage(req.workerId, Timestamp.defaultInstance, "COMMAND", "USER-" + uidOpt.getOrElse("UNKNOWN"), req.cmd)
+      val newMessage = new ConsoleMessage(
+        req.workerId,
+        Timestamp.defaultInstance,
+        "COMMAND",
+        "USER-" + uidOpt.getOrElse("UNKNOWN"),
+        req.cmd
+      )
       addConsoleMessage(jobInfo, req.operatorId, newMessage)
     }
 
