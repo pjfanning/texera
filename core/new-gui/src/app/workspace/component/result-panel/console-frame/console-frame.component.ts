@@ -156,7 +156,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   workerIdToAbbr(workerId: string): string {
-    return "Worker-" + this.getWorkerIndex(workerId);
+    return "W" + this.getWorkerIndex(workerId);
   }
 
   getWorkerColor(workerIndex: number): string {
