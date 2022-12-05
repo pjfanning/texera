@@ -12,10 +12,11 @@
   color: red;
 }
 
-.infinite-container {
+.console-list-container {
   height: 200px;
   border: 1px solid #e8e8e8;
   border-radius: 2px;
+  overflow: auto;
 
   .console-message-entry {
     //border: purple solid;
