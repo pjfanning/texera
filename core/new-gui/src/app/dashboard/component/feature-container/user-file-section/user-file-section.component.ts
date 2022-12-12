@@ -1,9 +1,9 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { NgbdModalFileAddComponent } from "./ngbd-modal-file-add/ngbd-modal-file-add.component";
 import { UserFileService } from "../../../service/user-file/user-file.service";
-import { DashboardUserFileEntry, UserFile } from "../../../type/dashboard-user-file-entry";
+import { DashboardUserFileEntry, UserFile, SortMethod } from "../../../type/dashboard-user-file-entry";
 import { UserService } from "../../../../common/service/user/user.service";
 import { NgbdModalUserFileShareAccessComponent } from "./ngbd-modal-file-share-access/ngbd-modal-user-file-share-access.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -14,15 +14,13 @@ import Fuse from "fuse.js";
 import { DeletePromptComponent } from "../../delete-prompt/delete-prompt.component";
 import { from } from "rxjs";
 
-export const ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user-project";
-
 @UntilDestroy()
 @Component({
   selector: "texera-user-file-section",
   templateUrl: "./user-file-section.component.html",
   styleUrls: ["./user-file-section.component.scss"],
 })
-export class UserFileSectionComponent {
+export class UserFileSectionComponent implements OnInit {
   constructor(
     private modalService: NgbModal,
     private userProjectService: UserProjectService,
@@ -35,9 +33,10 @@ export class UserFileSectionComponent {
   ngOnInit() {
     this.registerDashboardFileEntriesRefresh();
   }
-  // variables for file editing / search
+  // variables for file editing / search / sort
   public dashboardUserFileEntries: ReadonlyArray<DashboardUserFileEntry> = [];
   public isEditingName: number[] = [];
+  public isEditingDescription: number[] = [];
   public userFileSearchValue: string = "";
   public filteredFilenames: Array<string> = new Array();
   public isTyping: boolean = false;
@@ -49,6 +48,7 @@ export class UserFileSectionComponent {
     minMatchCharLength: 1,
     keys: ["file.name"],
   });
+  public sortMethod: SortMethod = SortMethod.UploadTimeDesc;
 
   // variables for project color tags
   public userProjectsMap: ReadonlyMap<number, UserProject> = new Map(); // maps pid to its corresponding UserProject
@@ -59,6 +59,8 @@ export class UserFileSectionComponent {
   public userProjectsList: ReadonlyArray<UserProject> = []; // list of projects accessible by user
   public projectFilterList: number[] = []; // for filter by project mode, track which projects are selected
   public isSearchByProject: boolean = false; // track searching mode user currently selects
+
+  public readonly ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user-project";
 
   public openFileAddComponent() {
     const modalRef = this.modalService.open(NgbdModalFileAddComponent);
@@ -85,6 +87,7 @@ export class UserFileSectionComponent {
   }
 
   public getFileArray(): ReadonlyArray<DashboardUserFileEntry> {
+    this.sortFileEntries(); // default sorting
     const fileArray = this.dashboardUserFileEntries;
     if (!fileArray) {
       return [];
@@ -112,13 +115,15 @@ export class UserFileSectionComponent {
       .pipe(untilDestroyed(this))
       .subscribe((confirmToDelete: boolean) => {
         if (confirmToDelete && userFileEntry.file.fid !== undefined) {
-          this.userFileService.deleteDashboardUserFileEntry(userFileEntry).subscribe(
-            () => this.refreshDashboardFileEntries(),
-            (err: unknown) => {
-              // @ts-ignore // TODO: fix this with notification component
-              (err: unknown) => alert("Can't delete the file entry: " + err.error);
-            }
-          );
+          this.userFileService
+            .deleteDashboardUserFileEntry(userFileEntry)
+            .pipe(untilDestroyed(this))
+            .subscribe(
+              () => this.refreshDashboardFileEntries(),
+              (err: unknown) => {
+                alert("Can't delete the file entry: " + err);
+              }
+            );
         }
       });
   }
@@ -179,6 +184,30 @@ export class UserFileSectionComponent {
       .add(() => (this.isEditingName = this.isEditingName.filter(fileIsEditing => fileIsEditing != index)));
   }
 
+  public confirmUpdateFileCustomDescription(
+    dashboardUserFileEntry: DashboardUserFileEntry,
+    description: string,
+    index: number
+  ): void {
+    const {
+      file: { fid },
+    } = dashboardUserFileEntry;
+    this.userFileService
+      .updateFileDescription(fid, description)
+      .pipe(untilDestroyed(this))
+      .subscribe(
+        () => this.refreshDashboardFileEntries(),
+        (err: unknown) => {
+          // @ts-ignore
+          this.notificationService.error(err.error.message);
+          this.refreshDashboardFileEntries();
+        }
+      )
+      .add(
+        () => (this.isEditingDescription = this.isEditingDescription.filter(fileIsEditing => fileIsEditing != index))
+      );
+  }
+
   public toggleSearchMode(): void {
     this.isSearchByProject = !this.isSearchByProject;
 
@@ -186,13 +215,6 @@ export class UserFileSectionComponent {
     // if (this.isSearchByProject) {
     // } else {
     // }
-  }
-
-  /**
-   * navigate to individual project page
-   */
-  public jumpToProject({ pid }: UserProject): void {
-    this.router.navigate([`${ROUTER_USER_PROJECT_BASE_URL}/${pid}`]).then(null);
   }
 
   public removeFileFromProject(pid: number, fid: number): void {
@@ -258,9 +280,33 @@ export class UserFileSectionComponent {
   }
 
   /**
+   * Sort the files according to sortMethod variable
+   */
+  public sortFileEntries(): void {
+    switch (this.sortMethod) {
+      case SortMethod.NameAsc:
+        this.ascSort();
+        break;
+      case SortMethod.NameDesc:
+        this.dscSort();
+        break;
+      case SortMethod.SizeDesc:
+        this.sizeSort();
+        break;
+      case SortMethod.UploadTimeAsc:
+        this.timeSortAsc();
+        break;
+      case SortMethod.UploadTimeDesc:
+        this.timeSortDesc();
+        break;
+    }
+  }
+
+  /**
    * sort the workflow by owner name + file name in ascending order
    */
   public ascSort(): void {
+    this.sortMethod = SortMethod.NameAsc;
     this.dashboardUserFileEntries = this.dashboardUserFileEntries
       .slice()
       .sort((t1, t2) =>
@@ -272,6 +318,7 @@ export class UserFileSectionComponent {
    * sort the project by owner name + file name in descending order
    */
   public dscSort(): void {
+    this.sortMethod = SortMethod.NameDesc;
     this.dashboardUserFileEntries = this.dashboardUserFileEntries
       .slice()
       .sort((t1, t2) =>
@@ -283,10 +330,39 @@ export class UserFileSectionComponent {
    * sort the project by size in descending order
    */
   public sizeSort(): void {
+    this.sortMethod = SortMethod.SizeDesc;
     this.dashboardUserFileEntries = this.dashboardUserFileEntries
       .slice()
       .sort((left, right) =>
         left.file.size !== undefined && right.file.size !== undefined ? right.file.size - left.file.size : 0
+      );
+  }
+
+  /**
+   * sort the project by upload time in descending order
+   */
+  public timeSortDesc(): void {
+    this.sortMethod = SortMethod.UploadTimeDesc;
+    this.dashboardUserFileEntries = this.dashboardUserFileEntries
+      .slice()
+      .sort((left, right) =>
+        left.file.uploadTime !== undefined && right.file.uploadTime !== undefined
+          ? parseInt(right.file.uploadTime) - parseInt(left.file.uploadTime)
+          : 0
+      );
+  }
+
+  /**
+   * sort the project by upload time in ascending order
+   */
+  public timeSortAsc(): void {
+    this.sortMethod = SortMethod.UploadTimeAsc;
+    this.dashboardUserFileEntries = this.dashboardUserFileEntries
+      .slice()
+      .sort((left, right) =>
+        left.file.uploadTime !== undefined && right.file.uploadTime !== undefined
+          ? parseInt(left.file.uploadTime) - parseInt(right.file.uploadTime)
+          : 0
       );
   }
 }

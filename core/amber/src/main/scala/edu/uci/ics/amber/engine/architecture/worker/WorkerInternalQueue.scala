@@ -1,11 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   CONTROL_QUEUE,
   ControlElement,
   DATA_QUEUE,
-  EndMarker,
-  EndOfAllMarker,
   InputTuple,
   InternalQueueElement
 }
@@ -16,6 +16,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import lbmq.LinkedBlockingMultiQueue
 
+import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 object WorkerInternalQueue {
@@ -27,14 +28,10 @@ object WorkerInternalQueue {
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends InternalQueueElement
 
-  case class SenderChangeMarker(newUpstreamLink: LinkIdentity) extends InternalQueueElement
-
   case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
       extends InternalQueueElement
 
-  case object EndMarker extends InternalQueueElement
-
-  case object EndOfAllMarker extends InternalQueueElement
+  case class EndMarker(from: ActorVirtualIdentity) extends InternalQueueElement
 
 }
 
@@ -44,6 +41,7 @@ object WorkerInternalQueue {
 trait WorkerInternalQueue {
 
   private val lbmq = new LinkedBlockingMultiQueue[Int, InternalQueueElement]()
+  private val lock = new ReentrantLock()
 
   lbmq.addSubQueue(DATA_QUEUE, DATA_QUEUE)
   lbmq.addSubQueue(CONTROL_QUEUE, CONTROL_QUEUE)
@@ -51,6 +49,12 @@ trait WorkerInternalQueue {
   private val dataQueue = lbmq.getSubQueue(DATA_QUEUE)
 
   private val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE)
+
+  def pauseManager: PauseManager
+  // logging related variables:
+  def logManager: LogManager // require dp thread to have log manager
+  def recoveryQueue: RecoveryQueue // require dp thread to have recovery queue
+  protected lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   // the values in below maps are in tuples (not batches)
   private var inputTuplesPutInQueue =
@@ -75,25 +79,43 @@ trait WorkerInternalQueue {
         // do nothing
       }
     }
-    dataQueue.add(elem)
+    if (recoveryQueue.isReplayCompleted) {
+      // may have race condition with restoreInput which happens inside DP thread.
+      lock.lock()
+      dataQueue.add(elem)
+      lock.unlock()
+    } else {
+      recoveryQueue.add(elem)
+    }
   }
 
   def enqueueCommand(payload: ControlPayload, from: ActorVirtualIdentity): Unit = {
-    controlQueue.add(ControlElement(payload, from))
+    if (recoveryQueue.isReplayCompleted) {
+      // may have race condition with restoreInput which happens inside DP thread.
+      lock.lock()
+      controlQueue.add(ControlElement(payload, from))
+      lock.unlock()
+    } else {
+      recoveryQueue.add(ControlElement(payload, from))
+    }
   }
 
   def getElement: InternalQueueElement = {
-    val elem = lbmq.take()
-    if (Constants.flowControlEnabled) {
-      elem match {
-        case InputTuple(from, _) =>
-          inputTuplesTakenOutOfQueue(from) =
-            inputTuplesTakenOutOfQueue.getOrElseUpdate(from, 0L) + 1
-        case _ =>
-        // do nothing
+    if (recoveryQueue.isReplayCompleted) {
+      val elem = lbmq.take()
+      if (Constants.flowControlEnabled) {
+        elem match {
+          case InputTuple(from, _) =>
+            inputTuplesTakenOutOfQueue(from) =
+              inputTuplesTakenOutOfQueue.getOrElseUpdate(from, 0L) + 1
+          case _ =>
+          // do nothing
+        }
       }
+      elem
+    } else {
+      recoveryQueue.get()
     }
-    elem
   }
 
   def disableDataQueue(): Unit = {
@@ -112,6 +134,19 @@ trait WorkerInternalQueue {
 
   def getControlQueueLength: Int = controlQueue.size()
 
-  def isControlQueueEmpty: Boolean = controlQueue.isEmpty
+  def restoreInputs(): Unit = {
+    lock.lock()
+    recoveryQueue.drainAllStashedElements(dataQueue, controlQueue)
+    lock.unlock()
+  }
+
+  def isControlQueueNonEmptyOrPaused: Boolean = {
+    if (recoveryQueue.isReplayCompleted) {
+      determinantLogger.stepIncrement()
+      !controlQueue.isEmpty || pauseManager.isPaused()
+    } else {
+      recoveryQueue.isReadyToEmitNextControl
+    }
+  }
 
 }

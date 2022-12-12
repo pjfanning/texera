@@ -3,12 +3,11 @@ from overrides import overrides
 from pyarrow.lib import Table
 
 from core.models import (
-    ControlElement,
-    DataElement,
     InputDataFrame,
     EndOfUpstream,
     InternalQueue,
 )
+from core.models.internal_queue import DataElement, ControlElement
 from core.proxy import ProxyServer
 from core.util import Stoppable
 from core.util.runnable.runnable import Runnable
@@ -41,7 +40,6 @@ class NetworkReceiver(Runnable, Stoppable):
         # register the control handler to deserialize control messages.
         @logger.catch(reraise=True)
         def control_handler(message: bytes):
-            print("received", message)
             python_control_message = PythonControlMessage().parse(message)
             shared_queue.put(
                 ControlElement(

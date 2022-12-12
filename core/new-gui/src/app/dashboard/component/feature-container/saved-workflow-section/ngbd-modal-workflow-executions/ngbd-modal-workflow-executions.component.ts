@@ -1,7 +1,8 @@
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, Input, OnInit, AfterViewInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NgbModal, NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { from } from "rxjs";
+import * as c3 from "c3";
 import { Workflow } from "../../../../../common/type/workflow";
 import { WorkflowExecutionsEntry } from "../../../../type/workflow-executions-entry";
 import { WorkflowExecutionsService } from "../../../../service/workflow-executions/workflow-executions.service";
@@ -9,8 +10,12 @@ import { ExecutionState } from "../../../../../workspace/types/execute-workflow.
 import { DeletePromptComponent } from "../../../delete-prompt/delete-prompt.component";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
 import Fuse from "fuse.js";
-import { filter } from "lodash";
-import { defaultEnvironment } from "../../../../../../environments/environment.default";
+import { ChartType } from "src/app/workspace/types/visualization.interface";
+import { ceil } from "lodash";
+
+const MAX_TEXT_SIZE = 20;
+const MAX_RGB = 255;
+const MAX_USERNAME_SIZE = 5;
 
 @UntilDestroy()
 @Component({
@@ -18,7 +23,17 @@ import { defaultEnvironment } from "../../../../../../environments/environment.d
   templateUrl: "./ngbd-modal-workflow-executions.component.html",
   styleUrls: ["./ngbd-modal-workflow-executions.component.scss"],
 })
-export class NgbdModalWorkflowExecutionsComponent implements OnInit {
+export class NgbdModalWorkflowExecutionsComponent implements OnInit, AfterViewInit {
+  public static readonly USERNAME_PIE_CHART_ID = "#execution-userName-pie-chart";
+  public static readonly STATUS_PIE_CHART_ID = "#execution-status-pie-chart";
+  public static readonly VID_PIE_CHART_ID = "#execution-vid-pie-chart";
+  public static readonly PROCESS_TIME_BAR_CHART = "#execution-average-process-time-bar-chart";
+
+  public static readonly WIDTH = 300;
+  public static readonly HEIGHT = 300;
+
+  public static readonly BARCHARTSIZE = 600;
+
   @Input() workflow!: Workflow;
   @Input() workflowName!: string;
 
@@ -26,7 +41,6 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   public workflowExecutionsIsEditingName: number[] = [];
   public currentlyHoveredExecution: WorkflowExecutionsEntry | undefined;
   public executionsTableHeaders: string[] = [
-    "",
     "",
     "Username",
     "Name",
@@ -37,11 +51,24 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   ];
   /*Tooltip for each header in execution table*/
   public executionTooltip: Record<string, string> = {
-    Name: "Workflow Name",
-    Username: "The User Who Runs This Execution",
+    Name: "Execution Name",
+    Username: "The User Who Ran This Execution",
     "Starting Time": "Starting Time of Workflow Execution",
     "Last Status Updated Time": "Latest Status Updated Time of Workflow Execution",
     Status: "Current Status of Workflow Execution",
+    "Group Bookmarking": "Mark or Unmark the Selected Entries",
+    "Group Deletion": "Delete the Selected Entries",
+  };
+
+  /*custom column width*/
+  public customColumnWidth: Record<string, string> = {
+    "": "70px",
+    Name: "230px",
+    "Workflow Version Sample": "220px",
+    Username: "150px",
+    "Starting Time": "250px",
+    "Last Status Updated Time": "250px",
+    Status: "80px",
   };
 
   /** variables related to executions filtering
@@ -60,11 +87,10 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   });
 
   // Pagination attributes
-  public isAscSort: boolean = true;
-  public currentPageIndex: number = defaultEnvironment.defaultPageIndex;
-  public pageSize: number = defaultEnvironment.defaultPageSize;
-  public pageSizeOptions: number[] = defaultEnvironment.defaultPageSizeOptions;
-  public numOfExecutions: number = defaultEnvironment.defaultNumOfItems;
+  public currentPageIndex: number = 1;
+  public pageSize: number = 10;
+  public pageSizeOptions: number[] = [5, 10, 20, 30, 40];
+  public numOfExecutions: number = 0;
   public paginatedExecutionEntries: WorkflowExecutionsEntry[] = [];
 
   public searchCriteriaPathMapping: Map<string, string[]> = new Map([
@@ -79,6 +105,12 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
     ["completed", 3],
     ["aborted", 4],
   ]);
+  public showORhide: boolean[] = [false, false, false, false];
+  public avatarColors: { [key: string]: string } = {};
+  public checked: boolean = false;
+  public setOfEid = new Set<number>();
+  public setOfExecution = new Set<WorkflowExecutionsEntry>();
+  public averageProcessingTimeDivider: number = 10;
 
   constructor(
     public activeModal: NgbActiveModal,
@@ -90,6 +122,135 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
   ngOnInit(): void {
     // gets the workflow executions and display the runs in the table on the form
     this.displayWorkflowExecutions();
+  }
+
+  ngAfterViewInit() {
+    if (this.workflow === undefined || this.workflow.wid === undefined) {
+      return;
+    }
+    this.workflowExecutionsService
+      .retrieveWorkflowExecutions(this.workflow.wid)
+      .pipe(untilDestroyed(this))
+      .subscribe(workflowExecutions => {
+        // generate charts data
+        let userNameData: { [key: string]: [string, number] } = {};
+        const statusMap: { [key: number]: string } = {
+          0: "initializing",
+          1: "running",
+          2: "paused",
+          3: "completed",
+          4: "aborted",
+        };
+        let statusData: { [key: string]: [string, number] } = {};
+
+        workflowExecutions.forEach(execution => {
+          if (userNameData[execution.userName] === undefined) {
+            userNameData[execution.userName] = [execution.userName, 0];
+          }
+          userNameData[execution.userName][1] += 1;
+          if (statusData[statusMap[execution.status]] === undefined) {
+            statusData[statusMap[execution.status]] = [statusMap[execution.status], 0];
+          }
+          statusData[statusMap[execution.status]][1] += 1;
+        });
+
+        this.generatePieChart(
+          Object.values(userNameData),
+          ["user name"],
+          "Users who ran the execution",
+          NgbdModalWorkflowExecutionsComponent.USERNAME_PIE_CHART_ID
+        );
+
+        this.generatePieChart(
+          Object.values(statusData),
+          ["status"],
+          "Executions status",
+          NgbdModalWorkflowExecutionsComponent.STATUS_PIE_CHART_ID
+        );
+        // generate an average processing time bar chart
+        const processTimeData: Array<[string, ...c3.PrimitiveArray]> = [["processing time"]];
+        const processTimeCategory: string[] = [];
+        Object.entries(this.getBarChartProcessTimeData(workflowExecutions)).forEach(([eId, processTime]) => {
+          processTimeData[0].push(processTime);
+          processTimeCategory.push(eId);
+        });
+        this.generateBarChart(
+          processTimeData,
+          processTimeCategory,
+          "Execution Numbers",
+          "Average Processing Time (m)",
+          "Execution performance",
+          NgbdModalWorkflowExecutionsComponent.PROCESS_TIME_BAR_CHART
+        );
+      });
+  }
+
+  generatePieChart(
+    dataToDisplay: Array<[string, ...c3.PrimitiveArray]>,
+    category: string[],
+    title: string,
+    chart: string
+  ) {
+    c3.generate({
+      size: {
+        height: NgbdModalWorkflowExecutionsComponent.HEIGHT,
+        width: NgbdModalWorkflowExecutionsComponent.WIDTH,
+      },
+      data: {
+        columns: dataToDisplay,
+        type: ChartType.PIE,
+      },
+      axis: {
+        x: {
+          type: "category",
+          categories: category,
+        },
+      },
+      title: {
+        text: title,
+      },
+      bindto: chart,
+    });
+  }
+
+  generateBarChart(
+    dataToDisplay: Array<[string, ...c3.PrimitiveArray]>,
+    category: string[],
+    x_label: string,
+    y_label: string,
+    title: string,
+    chart: string
+  ) {
+    c3.generate({
+      size: {
+        height: NgbdModalWorkflowExecutionsComponent.BARCHARTSIZE,
+        width: NgbdModalWorkflowExecutionsComponent.BARCHARTSIZE,
+      },
+      data: {
+        columns: dataToDisplay,
+        type: ChartType.BAR,
+      },
+      axis: {
+        x: {
+          label: {
+            text: x_label,
+            position: "outer-right",
+          },
+          type: "category",
+          categories: category, // this categories contain the corresponding row eid
+        },
+        y: {
+          label: {
+            text: y_label,
+            position: "outer-top",
+          },
+        },
+      },
+      title: {
+        text: title,
+      },
+      bindto: chart,
+    });
   }
 
   /**
@@ -142,11 +303,29 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
 
     // Update on the server.
     this.workflowExecutionsService
-      .setIsBookmarked(this.workflow.wid, row.eId, !wasPreviouslyBookmarked)
+      .groupSetIsBookmarked(this.workflow.wid, [row.eId], wasPreviouslyBookmarked)
       .pipe(untilDestroyed(this))
       .subscribe({
         error: (_: unknown) => (row.bookmarked = wasPreviouslyBookmarked),
       });
+  }
+
+  setBookmarked(): void {
+    if (this.workflow.wid === undefined) return;
+    if (this.setOfExecution !== undefined) {
+      // isBookmarked: true if all the execution are bookmarked, false if there is one that is unbookmarked
+      const isBookmarked = !Array.from(this.setOfExecution).some(execution => {
+        return execution.bookmarked === null || execution.bookmarked === false;
+      });
+      // update the bookmark locally
+      this.setOfExecution.forEach(execution => {
+        execution.bookmarked = isBookmarked ? false : true;
+      });
+      this.workflowExecutionsService
+        .groupSetIsBookmarked(this.workflow.wid, Array.from(this.setOfEid), isBookmarked)
+        .pipe(untilDestroyed(this))
+        .subscribe({});
+    }
   }
 
   /* delete a single execution */
@@ -161,14 +340,42 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       .subscribe((confirmToDelete: boolean) => {
         if (confirmToDelete && this.workflow.wid !== undefined) {
           this.workflowExecutionsService
-            .deleteWorkflowExecutions(this.workflow.wid, row.eId)
+            .groupDeleteWorkflowExecutions(this.workflow.wid, [row.eId])
             .pipe(untilDestroyed(this))
             .subscribe({
               complete: () => {
                 this.allExecutionEntries?.splice(this.allExecutionEntries.indexOf(row), 1);
                 this.paginatedExecutionEntries?.splice(this.paginatedExecutionEntries.indexOf(row), 1);
-                this.workflowExecutionsDisplayedList?.splice(this.workflowExecutionsDisplayedList.indexOf(row), 1);
                 this.fuse.setCollection(this.paginatedExecutionEntries);
+              },
+            });
+        }
+      });
+  }
+
+  onGroupDelete() {
+    const modalRef = this.modalService.open(DeletePromptComponent);
+    let deletionName = `the ${this.setOfEid.size} executions`;
+    modalRef.componentInstance.deletionName = deletionName;
+    from(modalRef.result)
+      .pipe(untilDestroyed(this))
+      .subscribe((confirmToDelete: boolean) => {
+        if (confirmToDelete && this.workflow.wid !== undefined) {
+          this.workflowExecutionsService
+            .groupDeleteWorkflowExecutions(this.workflow.wid, Array.from(this.setOfEid))
+            .pipe(untilDestroyed(this))
+            .subscribe({
+              complete: () => {
+                this.allExecutionEntries = this.allExecutionEntries?.filter(
+                  execution => !Array.from(this.setOfExecution).includes(execution)
+                );
+                this.paginatedExecutionEntries = this.paginatedExecutionEntries?.filter(
+                  execution => !Array.from(this.setOfExecution).includes(execution)
+                );
+                this.workflowExecutionsDisplayedList = this.paginatedExecutionEntries;
+                this.fuse.setCollection(this.paginatedExecutionEntries);
+                this.setOfEid.clear();
+                this.setOfExecution.clear();
               },
             });
         }
@@ -263,6 +470,105 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
         .sort((exe1, exe2) =>
           exe1.completionTime < exe2.completionTime ? 1 : exe2.completionTime < exe1.completionTime ? -1 : 0
         );
+    }
+  }
+
+  /**
+   *
+   * @param name
+   * @param nameFlag true for execution name and false for username
+   */
+  abbreviate(name: string, nameFlag: boolean): string {
+    let maxLength = nameFlag ? MAX_TEXT_SIZE : MAX_USERNAME_SIZE;
+    if (name.length <= maxLength) {
+      return name;
+    } else {
+      return name.slice(0, maxLength);
+    }
+  }
+
+  onHit(column: string, index: number): void {
+    if (this.showORhide[index]) {
+      this.ascSort(column);
+    } else {
+      this.dscSort(column);
+    }
+    this.showORhide[index] = !this.showORhide[index];
+  }
+
+  setAvatarColor(userName: string): string {
+    if (userName in this.avatarColors) {
+      return this.avatarColors[userName];
+    } else {
+      this.avatarColors[userName] = this.getRandomColor();
+      return this.avatarColors[userName];
+    }
+  }
+
+  getRandomColor(): string {
+    const r = Math.floor(Math.random() * MAX_RGB);
+    const g = Math.floor(Math.random() * MAX_RGB);
+    const b = Math.floor(Math.random() * MAX_RGB);
+    return "rgba(" + r + "," + g + "," + b + ",0.8)";
+  }
+
+  /**
+   * Update the eId set to keep track of the status of the checkbox
+   * @param eId
+   * @param checked true if checked false if unchecked
+   */
+  updateEidSet(eId: number, checked: boolean): void {
+    if (checked) {
+      this.setOfEid.add(eId);
+    } else {
+      this.setOfEid.delete(eId);
+    }
+  }
+
+  /**
+   * Update the row set to keep track of the status of the checkbox
+   * @param row
+   * @param checked true if checked false if unchecked
+   */
+  updateRowSet(row: WorkflowExecutionsEntry, checked: boolean): void {
+    if (checked) {
+      this.setOfExecution.add(row);
+    } else {
+      this.setOfExecution.delete(row);
+    }
+  }
+
+  /**
+   * Mark all the checkboxes checked and check the status of the all check
+   * @param value true if we need to check all false if we need to uncheck all
+   */
+  onAllChecked(value: boolean): void {
+    if (this.paginatedExecutionEntries !== undefined) {
+      for (let execution of this.paginatedExecutionEntries) {
+        this.updateEidSet(execution.eId, value);
+        this.updateRowSet(execution, value);
+      }
+    }
+    this.refreshCheckedStatus();
+  }
+
+  /**
+   * Update the eId and row set, and check the status of the all check
+   * @param eId
+   * @param checked true if checked false if unchecked
+   */
+  onItemChecked(row: WorkflowExecutionsEntry, checked: boolean) {
+    this.updateEidSet(row.eId, checked);
+    this.updateRowSet(row, checked);
+    this.refreshCheckedStatus();
+  }
+
+  /**
+   * Check the status of the all check
+   */
+  refreshCheckedStatus(): void {
+    if (this.paginatedExecutionEntries !== undefined) {
+      this.checked = this.paginatedExecutionEntries.length === this.setOfEid.size;
     }
   }
 
@@ -400,5 +706,33 @@ export class NgbdModalWorkflowExecutionsComponent implements OnInit {
       (this.currentPageIndex - 1) * this.pageSize,
       this.currentPageIndex * this.pageSize
     );
+  }
+
+  getBarChartProcessTimeData(rows: WorkflowExecutionsEntry[]) {
+    let processTimeData: { [key: string]: number } = {};
+    let divider: number = ceil(rows.length / this.averageProcessingTimeDivider);
+    let tracker = 0;
+    let totProcessTime = 0;
+    let category = "";
+    let eIdToNumber = 1;
+    rows.forEach(execution => {
+      tracker++;
+
+      let processTime = execution.completionTime - execution.startingTime;
+      processTime = processTime / 60000;
+      totProcessTime += processTime;
+      if (tracker === 1) {
+        category += String(eIdToNumber);
+      }
+      if (tracker === divider) {
+        category += "-" + String(eIdToNumber);
+        processTimeData[category] = totProcessTime / divider;
+        tracker = 0;
+        totProcessTime = 0;
+        category = "";
+      }
+      eIdToNumber++;
+    });
+    return processTimeData;
   }
 }

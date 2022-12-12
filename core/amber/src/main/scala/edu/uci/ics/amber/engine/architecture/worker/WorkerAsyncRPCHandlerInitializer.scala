@@ -26,6 +26,7 @@ class WorkerAsyncRPCHandlerInitializer(
     val dataOutputPort: NetworkOutputPort[DataPayload],
     val tupleToBatchConverter: TupleToBatchConverter,
     val batchToTupleConverter: BatchToTupleConverter,
+    val upstreamLinkStatus: UpstreamLinkStatus,
     val pauseManager: PauseManager,
     val dataProcessor: DataProcessor,
     val operator: IOperatorExecutor,
@@ -54,6 +55,7 @@ class WorkerAsyncRPCHandlerInitializer(
     with PauseSkewMitigationHandler
     with BackpressureHandler
     with SaveSkewedWorkerInfoHandler
-    with AcceptMutableStateHandler {
+    with AcceptMutableStateHandler
+    with SchedulerTimeSlotEventHandler {
   var lastReportTime = 0L
 }

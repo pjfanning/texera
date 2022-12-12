@@ -17,7 +17,7 @@ import { OperatorCurrentTuples, TexeraWebsocketEvent } from "../../types/workflo
 import { isEqual } from "lodash-es";
 import { PAGINATION_INFO_STORAGE_KEY, ResultPaginationInfo } from "../../types/result-table.interface";
 import { sessionGetObject, sessionSetObject } from "../../../common/util/storage";
-import { WorkflowCollabService } from "../workflow-collab/workflow-collab.service";
+import { Version as version } from "src/environments/version";
 
 // TODO: change this declaration
 export const FORM_DEBOUNCE_TIME_MS = 150;
@@ -62,17 +62,26 @@ export class ExecuteWorkflowService {
   private executionTimeoutID: number | undefined;
   private clearTimeoutState: ExecutionState[] | undefined;
 
+  // TODO: move this to another service, or redesign how this
+  //   information is stored on the frontend.
+  private assignedWorkerIds: Map<string, readonly string[]> = new Map();
+
   constructor(
     private workflowActionService: WorkflowActionService,
-    private workflowWebsocketService: WorkflowWebsocketService,
-    private workflowCollabService: WorkflowCollabService
+    private workflowWebsocketService: WorkflowWebsocketService
   ) {
     if (environment.amberEngineEnabled) {
       workflowWebsocketService.websocketEvent().subscribe(event => {
-        // workflow status related event
-        const newState = this.handleExecutionEvent(event);
-        if (newState !== undefined) {
-          this.updateExecutionState(newState);
+        switch (event.type) {
+          case "WorkerAssignmentUpdateEvent":
+            this.assignedWorkerIds.set(event.operatorId, event.workerIds);
+            break;
+          default:
+            // workflow status related event
+            const newState = this.handleExecutionEvent(event);
+            if (newState !== undefined) {
+              this.updateExecutionState(newState);
+            }
         }
       });
     }
@@ -161,21 +170,30 @@ export class ExecuteWorkflowService {
     return undefined;
   }
 
-  public executeWorkflow(): void {
+  public executeWorkflow(executionName: string): void {
     if (environment.amberEngineEnabled) {
-      this.executeWorkflowAmberTexera();
+      this.executeWorkflowAmberTexera(executionName);
     } else {
       throw new Error("old texera engine not supported");
     }
   }
 
-  public executeWorkflowAmberTexera(): void {
+  public executeWorkflowAmberTexera(executionName: string): void {
     // get the current workflow graph
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     console.log(logicalPlan);
+    this.sendExecutionRequest(executionName, logicalPlan);
+  }
+
+  public sendExecutionRequest(executionName: string, logicalPlan: LogicalPlan): void {
+    const workflowExecuteRequest = {
+      executionName: executionName,
+      engineVersion: version.hash,
+      logicalPlan: logicalPlan,
+    };
     // wait for the form debounce to complete, then send
     window.setTimeout(() => {
-      this.workflowWebsocketService.send("WorkflowExecuteRequest", logicalPlan);
+      this.workflowWebsocketService.send("WorkflowExecuteRequest", workflowExecuteRequest);
     }, FORM_DEBOUNCE_TIME_MS);
     this.setExecutionTimeout(
       "submit workflow timeout",
@@ -358,10 +376,7 @@ export class ExecuteWorkflowService {
       case ExecutionState.Aborted:
       case ExecutionState.Uninitialized:
       case ExecutionState.BreakpointTriggered:
-        this.workflowActionService.toggleLockListen(true);
-        if (this.workflowCollabService.isLockGranted()) {
-          this.workflowActionService.enableWorkflowModification();
-        }
+        this.workflowActionService.enableWorkflowModification();
         return;
       case ExecutionState.Paused:
       case ExecutionState.Pausing:
@@ -369,7 +384,6 @@ export class ExecuteWorkflowService {
       case ExecutionState.Resuming:
       case ExecutionState.Running:
       case ExecutionState.Initializing:
-        this.workflowActionService.toggleLockListen(false);
         this.workflowActionService.disableWorkflowModification();
         return;
       default:
@@ -453,5 +467,9 @@ export class ExecuteWorkflowService {
       throw new Error("unhandled breakpoint data " + breakpointData);
     }
     return { operatorID, breakpoint };
+  }
+
+  public getWorkerIds(operatorId: string): ReadonlyArray<string> {
+    return this.assignedWorkerIds.get(operatorId) || [];
   }
 }

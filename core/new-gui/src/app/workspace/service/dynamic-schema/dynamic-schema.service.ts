@@ -40,8 +40,6 @@ export class DynamicSchemaService {
   // this stream is used to capture the event when the dynamic schema of an existing operator is changed
   private operatorDynamicSchemaChangedStream = new Subject<{
     operatorID: string;
-    oldSchema: OperatorSchema;
-    newSchema: OperatorSchema;
   }>();
 
   constructor(
@@ -60,7 +58,7 @@ export class DynamicSchemaService {
     this.workflowActionService
       .getTexeraGraph()
       .getOperatorDeleteStream()
-      .subscribe(event => this.dynamicSchemaMap.delete(event.deletedOperator.operatorID));
+      .subscribe(event => this.dynamicSchemaMap.delete(event.deletedOperatorID));
 
     // when a link is deleted, remove it from the dynamic schema map
     this.workflowActionService
@@ -83,10 +81,8 @@ export class DynamicSchemaService {
   /**
    * Returns the observable which outputs the operatorID of which the dynamic schema has changed.
    */
-  public getOperatorDynamicSchemaChangedStream(): Observable<{
+   public getOperatorDynamicSchemaChangedStream(): Observable<{
     operatorID: string;
-    oldSchema: OperatorSchema;
-    newSchema: OperatorSchema;
   }> {
     return this.operatorDynamicSchemaChangedStream.asObservable();
   }
@@ -96,6 +92,10 @@ export class DynamicSchemaService {
    */
   public getDynamicSchemaMap(): ReadonlyMap<string, OperatorSchema> {
     return this.dynamicSchemaMap;
+  }
+
+  public dynamicSchemaExists(operatorID: string): boolean {
+    return this.dynamicSchemaMap.has(operatorID);
   }
 
   /**
@@ -149,15 +149,7 @@ export class DynamicSchemaService {
     // console.log(dynamicSchema)
     // set the new dynamic schema
     this.dynamicSchemaMap.set(operatorID, dynamicSchema);
-    // only emit event if the old dynamic schema is not present
-    if (currentDynamicSchema) {
-      console.log("dynamic schema changed!");
-      this.operatorDynamicSchemaChangedStream.next({
-        operatorID: operatorID,
-        oldSchema: currentDynamicSchema,
-        newSchema: dynamicSchema,
-      });
-    }
+    this.operatorDynamicSchemaChangedStream.next({ operatorID });
   }
 
   /**

@@ -12,6 +12,7 @@ import { NgbModule, NgbPopoverModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
 import { FormlyMatDatepickerModule } from "@ngx-formly/material/datepicker";
+import { NgPipesModule } from "ngx-pipes";
 import { NzButtonModule } from "ng-zorro-antd/button";
 import { NzCollapseModule } from "ng-zorro-antd/collapse";
 import { NzDatePickerModule } from "ng-zorro-antd/date-picker";
@@ -23,16 +24,19 @@ import { NzIconModule } from "ng-zorro-antd/icon";
 import { NzInputModule } from "ng-zorro-antd/input";
 import { NzPopoverModule } from "ng-zorro-antd/popover";
 import { NzListModule } from "ng-zorro-antd/list";
+import { NzCalendarModule } from "ng-zorro-antd/calendar";
 import { NzMenuModule } from "ng-zorro-antd/menu";
 import { NzMessageModule } from "ng-zorro-antd/message";
 import { NzModalModule } from "ng-zorro-antd/modal";
 import { NzTableModule } from "ng-zorro-antd/table";
 import { NzToolTipModule } from "ng-zorro-antd/tooltip";
+import { NzCheckboxModule } from "ng-zorro-antd/checkbox";
 import { NzSelectModule } from "ng-zorro-antd/select";
 import { NzSliderModule } from "ng-zorro-antd/slider";
 import { NzSpaceModule } from "ng-zorro-antd/space";
 import { NzBadgeModule } from "ng-zorro-antd/badge";
 import { NzUploadModule } from "ng-zorro-antd/upload";
+import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { FileUploadModule } from "ng2-file-upload";
 import { NgxJsonViewerModule } from "ngx-json-viewer";
 import { ColorPickerModule } from "ngx-color-picker";
@@ -58,7 +62,6 @@ import { UserFileSectionComponent } from "./dashboard/component/feature-containe
 import { TopBarComponent } from "./dashboard/component/top-bar/top-bar.component";
 import { UserIconComponent } from "./dashboard/component/top-bar/user-icon/user-icon.component";
 import { UserAvatarComponent } from "./dashboard/component/user-avatar/user-avatar.component";
-import { UserLoginModalComponent } from "./dashboard/component/top-bar/user-icon/user-login/user-login-modal.component";
 import { CodeEditorDialogComponent } from "./workspace/component/code-editor-dialog/code-editor-dialog.component";
 import { CodeareaCustomTemplateComponent } from "./workspace/component/codearea-custom-template/codearea-custom-template.component";
 import { MiniMapComponent } from "./workspace/component/workflow-editor/mini-map/mini-map.component";
@@ -110,6 +113,17 @@ import { DeletePromptComponent } from "./dashboard/component/delete-prompt/delet
 import { DraggableArrayTypeComponent } from "./common/formly/draggable-array.type";
 import { DragDropModule } from "@angular/cdk/drag-drop";
 import { FormlySelectModule } from "@ngx-formly/core/select";
+import { ContextMenuComponent } from "./workspace/component/workflow-editor/context-menu/context-menu/context-menu.component";
+import { NzImageModule } from "ng-zorro-antd/image";
+import { CoeditorUserIconComponent } from "./workspace/component/navigation/coeditor-user-icon/coeditor-user-icon/coeditor-user-icon.component";
+import { InputAutoCompleteComponent } from "./workspace/component/input-autocomplete/input-autocomplete.component";
+import { CollabWrapperComponent } from "./common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
+import { NzSwitchModule } from "ng-zorro-antd/switch";
+import { HomeComponent } from "./home/component/home.component";
+import { NzLayoutModule } from "ng-zorro-antd/layout";
+import { AuthGuardService } from "./common/service/auth-guard/auth-guard.service";
+import { LocalLoginComponent } from "./home/component/login/local-login/local-login.component";
+import { GoogleLoginComponent } from "./home/component/login/google-login/google-login.component";
 
 registerLocaleData(en);
 
@@ -128,11 +142,11 @@ registerLocaleData(en);
     TopBarComponent,
     UserIconComponent,
     UserAvatarComponent,
+    LocalLoginComponent,
     FeatureBarComponent,
     FeatureContainerComponent,
     SavedWorkflowSectionComponent,
     NgbdModalAddWorkflowComponent,
-    UserLoginModalComponent,
     UserFileSectionComponent,
     NgbdModalFileAddComponent,
     RowModalComponent,
@@ -169,7 +183,14 @@ registerLocaleData(en);
     NgbdModalAddProjectFileComponent,
     NgbdModalRemoveProjectFileComponent,
     NzModalCommentBoxComponent,
+    GoogleLoginComponent,
+    LocalLoginComponent,
     DeletePromptComponent,
+    ContextMenuComponent,
+    CoeditorUserIconComponent,
+    InputAutoCompleteComponent,
+    CollabWrapperComponent,
+    HomeComponent,
   ],
   imports: [
     BrowserModule,
@@ -208,13 +229,16 @@ registerLocaleData(en);
     NzAutocompleteModule,
     NzIconModule,
     NzFormModule,
+    NzImageModule,
     NzListModule,
     NzInputModule,
     NzPopoverModule,
+    NzCalendarModule,
     NzMenuModule,
     NzMessageModule,
     NzCollapseModule,
     NzToolTipModule,
+    NzCheckboxModule,
     NzTableModule,
     NzModalModule,
     NzSelectModule,
@@ -222,6 +246,7 @@ registerLocaleData(en);
     NzSpaceModule,
     NzBadgeModule,
     NzUploadModule,
+    NzNoAnimationModule,
     NgxJsonViewerModule,
     MatDialogModule,
     NzCardModule,
@@ -235,8 +260,12 @@ registerLocaleData(en);
     NzPaginationModule,
     NzCommentModule,
     ColorPickerModule,
+    NgPipesModule,
+    NzSwitchModule,
+    NzLayoutModule,
   ],
   providers: [
+    AuthGuardService,
     DatePipe,
     UserService,
     UserFileService,

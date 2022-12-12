@@ -34,6 +34,13 @@ class PythonUDFOpDescV2 extends OperatorDescriptor {
         "#     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:\n" +
         "#         yield tuple_\n" +
         "# \n" +
+        "# class ProcessBatchOperator(UDFBatchOperator):\n" +
+        "#     BATCH_SIZE = 10 # must be a positive integer\n" +
+        "# \n" +
+        "#     @overrides\n" +
+        "#     def process_batch(self, batch: Batch, port: int) -> Iterator[Optional[BatchLike]]:\n" +
+        "#         yield batch\n" +
+        "# \n" +
         "# class ProcessTableOperator(UDFTableOperator):\n" +
         "# \n" +
         "#     @overrides\n" +
@@ -71,7 +78,9 @@ class PythonUDFOpDescV2 extends OperatorDescriptor {
       "User-defined function operator in Python script",
       OperatorGroupConstants.UDF_GROUP,
       asScalaBuffer(singletonList(new InputPort("", true))).toList,
-      asScalaBuffer(singletonList(new OutputPort(""))).toList
+      asScalaBuffer(singletonList(new OutputPort(""))).toList,
+      true,
+      true
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {

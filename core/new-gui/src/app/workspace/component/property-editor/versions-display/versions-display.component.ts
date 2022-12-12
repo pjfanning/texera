@@ -24,7 +24,7 @@ export const WORKFLOW_VERSIONS_API_BASE_URL = "version";
 export class VersionsListDisplayComponent implements OnInit {
   public versionsList: WorkflowVersionCollapsableEntry[] | undefined;
 
-  public versionTableHeaders: string[] = ["Version#", "Timestamp"];
+  public versionTableHeaders: string[] = ["", "Version#", "Timestamp"];
 
   constructor(
     private http: HttpClient,

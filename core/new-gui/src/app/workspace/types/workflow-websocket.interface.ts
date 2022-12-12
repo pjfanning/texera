@@ -8,7 +8,7 @@ import {
   OperatorStatsUpdate,
 } from "./execute-workflow.interface";
 import { IndexableObject } from "./result-table.interface";
-import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo } from "./workflow-common.interface";
+import { BreakpointFaultedTuple, BreakpointTriggerInfo, ConsoleUpdateEvent } from "./workflow-common.interface";
 
 /**
  *  @fileOverview Type Definitions of WebSocket (Ws) API
@@ -26,6 +26,13 @@ import { BreakpointFaultedTuple, BreakpointTriggerInfo, PythonPrintTriggerInfo }
 export interface RegisterWIdRequest
   extends Readonly<{
     wId: number;
+  }> {}
+
+export interface WorkflowExecuteRequest
+  extends Readonly<{
+    executionName: string;
+    engineVersion: string;
+    logicalPlan: LogicalPlan;
   }> {}
 
 export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
@@ -133,6 +140,17 @@ export type PythonExpressionEvaluateResponse = Readonly<{
   values: EvaluatedValue[];
 }>;
 
+export type WorkerAssignmentUpdateEvent = Readonly<{
+  operatorId: string;
+  workerIds: readonly string[];
+}>;
+
+export type DebugCommandRequest = Readonly<{
+  operatorId: string;
+  workerId: string;
+  cmd: string;
+}>;
+
 export type WorkflowStateInfo = Readonly<{
   state: ExecutionState;
 }>;
@@ -147,11 +165,12 @@ export type TexeraWebsocketRequestTypeMap = {
   ResultPaginationRequest: PaginationRequest;
   RetryRequest: {};
   SkipTupleRequest: SkipTuple;
-  WorkflowExecuteRequest: LogicalPlan;
+  WorkflowExecuteRequest: WorkflowExecuteRequest;
   WorkflowKillRequest: {};
   WorkflowPauseRequest: {};
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
+  DebugCommandRequest: DebugCommandRequest;
 };
 
 export type TexeraWebsocketEventTypeMap = {
@@ -163,7 +182,7 @@ export type TexeraWebsocketEventTypeMap = {
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
   BreakpointTriggeredEvent: BreakpointTriggerInfo;
-  PythonPrintTriggeredEvent: PythonPrintTriggerInfo;
+  ConsoleUpdateEvent: ConsoleUpdateEvent;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
   WorkflowExecutionErrorEvent: WorkflowExecutionError;
@@ -171,6 +190,7 @@ export type TexeraWebsocketEventTypeMap = {
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
+  WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
 };
 
 // helper type definitions to generate the request and event types
