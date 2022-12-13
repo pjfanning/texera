@@ -138,7 +138,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       if (this.listElement) {
         this.listElement.nativeElement.scrollTop = this.listElement.nativeElement.scrollHeight;
       }
-    }, 0)
+    }, 0);
   }
   submitDebugCommand(): void {
     if (!isDefined(this.operatorId)) {
