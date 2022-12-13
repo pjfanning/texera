@@ -161,9 +161,6 @@ class PythonWorkflowWorker(
         config.getString("python.log.streamHandler.level")
       )
     ).run(BasicIO.standard(false))
-
-    //wait until worker is up
-    Thread.sleep(2000)
   }
 
   /**
