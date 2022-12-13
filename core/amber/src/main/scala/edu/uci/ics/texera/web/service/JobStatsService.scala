@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkerAssigned,
+  WorkerAssignmentUpdate,
   WorkflowCompleted,
   WorkflowRecoveryStatus,
   WorkflowStatusUpdate
@@ -13,7 +13,7 @@ import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.{
   OperatorStatistics,
   OperatorStatisticsUpdateEvent,
-  WorkflowWorkersUpdateEvent
+  WorkerAssignmentUpdateEvent
 }
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.OperatorWorkerMapping
@@ -54,7 +54,7 @@ class JobStatsService(
       if (newState.operatorWorkerMapping != oldState.operatorWorkerMapping) {
         newState.operatorWorkerMapping
           .map { opToWorkers =>
-            WorkflowWorkersUpdateEvent(opToWorkers.operatorId, opToWorkers.workerIds)
+            WorkerAssignmentUpdateEvent(opToWorkers.operatorId, opToWorkers.workerIds)
           }
       } else {
         Iterable()
@@ -84,7 +84,7 @@ class JobStatsService(
   private[this] def registerCallbackOnWorkerAssignedUpdate(): Unit = {
     addSubscription(
       client
-        .registerCallback[WorkerAssigned]((evt: WorkerAssigned) => {
+        .registerCallback[WorkerAssignmentUpdate]((evt: WorkerAssignmentUpdate) => {
           stateStore.statsStore.updateState { jobInfo =>
             jobInfo.withOperatorWorkerMapping(
               evt.workerMapping

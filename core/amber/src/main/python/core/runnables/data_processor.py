@@ -1,5 +1,4 @@
 import sys
-from pdb import Pdb
 from threading import Event
 
 from loguru import logger
@@ -15,10 +14,6 @@ class DataProcessor(Runnable, Stoppable):
     def __init__(self, context: Context):
         self._running = Event()
         self._context = context
-        self._debugger = Pdb(
-            stdin=self._context.debug_manager.debug_in,
-            stdout=self._context.debug_manager.debug_out,
-        )
 
     def run(self) -> None:
         with self._context.tuple_processing_manager.context_switch_condition:
@@ -29,7 +24,7 @@ class DataProcessor(Runnable, Stoppable):
             self.process_tuple()
             self._switch_context()
 
-    def process_tuple(self):
+    def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current
         while not finished_current.is_set():
 
@@ -57,7 +52,6 @@ class DataProcessor(Runnable, Stoppable):
                             None if output is None else Tuple(output)
                         )
                         self._switch_context()
-                        self._check_debug_command()
 
                 # current tuple finished successfully
                 finished_current.set()
@@ -67,21 +61,28 @@ class DataProcessor(Runnable, Stoppable):
                 self._context.exception_manager.set_exception_info(sys.exc_info())
             finally:
                 self._switch_context()
-                self._check_debug_command()
 
-    def _switch_context(self):
+    def _switch_context(self) -> None:
+        """
+        Notify the MainLoop thread and wait here until being switched back.
+        """
         with self._context.tuple_processing_manager.context_switch_condition:
             self._context.tuple_processing_manager.context_switch_condition.notify()
             self._context.tuple_processing_manager.context_switch_condition.wait()
-            logger.info("in dp")
+        self._post_switch_context_checks()
 
-    def _check_debug_command(self):
-        if (
-            not self._context.debug_manager.is_waiting_on_command()
-            and self._context.debug_manager.has_debug_command()
-        ):
-            logger.info("bring up pdb")
-            self._debugger.set_trace()
+    def _check_and_process_debug_command(self) -> None:
+        """
+        If a debug command is available, invokes the debugger from this frame.
+        """
+        if self._context.debug_manager.has_debug_command():
+            # Let debugger trace from the current frame.
+            # This line will also trigger cmdloop in the debugger.
+            # This line has no side effects on the current debugger state.
+            self._context.debug_manager.debugger.set_trace()
+
+    def _post_switch_context_checks(self):
+        self._check_and_process_debug_command()
 
     def stop(self):
         self._running.clear()

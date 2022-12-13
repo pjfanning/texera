@@ -161,6 +161,26 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     this.command = "";
   }
 
+  submitDebugCommand(): void {
+    if (!isDefined(this.operatorId)) {
+      return;
+    }
+    let workers = [];
+    if (this.targetWorker === this.ALL_WORKERS) {
+      workers = [...this.workerIds];
+    } else {
+      workers.push(this.targetWorker);
+    }
+    for (let worker of workers) {
+      this.workflowWebsocketService.send("DebugCommandRequest", {
+        operatorId: this.operatorId,
+        workerId: worker,
+        cmd: this.command,
+      });
+    }
+    this.command = "";
+  }
+
   workerIdToAbbr(workerId: string): string {
     return "W" + this.getWorkerIndex(workerId);
   }

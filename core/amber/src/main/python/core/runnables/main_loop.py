@@ -75,19 +75,19 @@ class MainLoop(StoppableQueueBlockingRunnable):
         )
         self.context.close()
 
-    def check_and_process_control(self) -> None:
+    def _check_and_process_control(self) -> None:
         """
         Check if there exists any ControlElement(s) in the input_queue, if so, take and
         process them one by one.
 
         This is used very frequently as we want to prioritize the process of
-        ControlElement, and will be invoked many times during a DataElement's processing
-        lifecycle. Thus, this method's invocation could appear in any stage while
-        processing a DataElement.
+        ControlElement, and will be invoked many times during a DataElement's
+        processing lifecycle. Thus, this method's invocation could appear in any
+        stage while processing a DataElement.
         """
         while (
-                not self._input_queue.is_control_empty()
-                or self.context.pause_manager.is_paused()
+            not self._input_queue.is_control_empty()
+            or self.context.pause_manager.is_paused()
         ):
             next_entry = self.interruptible_get()
             self._process_control_element(next_entry)
@@ -116,7 +116,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         )
 
     def process_control_payload(
-            self, tag: ActorVirtualIdentity, payload: ControlPayloadV2
+        self, tag: ActorVirtualIdentity, payload: ControlPayloadV2
     ) -> None:
         """
         Process the given ControlPayload with the tag.
@@ -144,14 +144,14 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self.context.statistics_manager.increase_input_tuple_count()
 
         for output_tuple in self.process_tuple_with_udf():
-            self.check_and_process_control()
+            self._check_and_process_control()
             if output_tuple is not None:
                 schema = self.context.operator_manager.operator.output_schema
                 self.cast_tuple_to_match_schema(output_tuple, schema)
                 self.context.statistics_manager.increase_output_tuple_count()
                 for (
-                        to,
-                        batch,
+                    to,
+                    batch,
                 ) in self.context.tuple_to_batch_converter.tuple_to_batch(output_tuple):
                     batch.schema = self.context.operator_manager.operator.output_schema
                     self._output_queue.put(DataElement(tag=to, payload=batch))
@@ -168,11 +168,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         finished_current.clear()
 
         while not finished_current.is_set():
-            self.check_and_process_control()
-            yield self.context.tuple_processing_manager.get_output_tuple()
+            self._check_and_process_control()
             self._switch_context()
-            self._check_and_report_print()
-            self._check_and_report_exception()
+            yield self.context.tuple_processing_manager.get_output_tuple()
 
     def report_exception(self, exc_info: ExceptionInfo) -> None:
         """
@@ -197,7 +195,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
     def _process_tuple(self, tuple_: Union[Tuple, InputExhausted]) -> None:
         self.context.tuple_processing_manager.current_input_tuple = tuple_
         self.process_input_tuple()
-        self.check_and_process_control()
+        self._check_and_process_control()
 
     def _process_input_exhausted(self, input_exhausted: InputExhausted):
         self._process_tuple(input_exhausted)
@@ -213,7 +211,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             )
 
     def _process_sender_change_marker(
-            self, sender_change_marker: SenderChangeMarker
+        self, sender_change_marker: SenderChangeMarker
     ) -> None:
         """
         Upon receipt of a SenderChangeMarker, change the current input link to the
@@ -237,7 +235,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for to, batch in self.context.tuple_to_batch_converter.emit_end_of_upstream():
             batch.schema = self.context.operator_manager.operator.output_schema
             self._output_queue.put(DataElement(tag=to, payload=batch))
-            self.check_and_process_control()
+            self._check_and_process_control()
         self.complete()
 
     def _process_data_element(self, data_element: DataElement) -> None:
@@ -310,10 +308,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         Pause the data processing.
         """
-        logger.info("pausing dp " + str(threading.current_thread()))
         self._check_and_report_print(force_flush=True)
         if self.context.state_manager.confirm_state(
-                WorkerState.RUNNING, WorkerState.READY
+            WorkerState.RUNNING, WorkerState.READY
         ):
             self.context.pause_manager.record_request(PauseType.USER_PAUSE, True)
             self._input_queue.disable_data()
@@ -323,7 +320,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         Resume the data processing.
         """
-        logger.info("resuming dp " + str(threading.current_thread()))
         if self.context.state_manager.confirm_state(WorkerState.PAUSED):
             self.context.pause_manager.record_request(PauseType.USER_PAUSE, False)
             if not self.context.pause_manager.is_paused():
@@ -356,37 +352,47 @@ class MainLoop(StoppableQueueBlockingRunnable):
             ),
         )
 
-    def _switch_context(self):
-        logger.info("in switch context " + str(threading.current_thread()))
-        if not self.context.debug_manager.is_waiting_on_command():
-            # normal execution mode, switch to dp
-            with self.context.tuple_processing_manager.context_switch_condition:
-                self.context.tuple_processing_manager.context_switch_condition.notify()
-                self.context.tuple_processing_manager.context_switch_condition.wait()
-                logger.info("in main loop")
+    def _switch_context(self) -> None:
+        """
+        Notify the DataProcessor thread and wait here until being switched back.
+        """
+        with self.context.tuple_processing_manager.context_switch_condition:
+            self.context.tuple_processing_manager.context_switch_condition.notify()
+            self.context.tuple_processing_manager.context_switch_condition.wait()
+        self._post_switch_context_checks()
 
-        logger.info("check and report debug event " + str(threading.current_thread()))
+    def _check_and_report_debug_event(self) -> None:
         if self.context.debug_manager.has_debug_event():
             debug_event = self.context.debug_manager.get_debug_event()
-            logger.info("report debug event to UI " + debug_event)
-            for each_line in debug_event.split("(Pdb)"):
-                each_line = each_line.strip()
-                if each_line:
-                    self._send_console_message(
-                        PythonConsoleMessageV2(
-                            timestamp=datetime.datetime.now(),
-                            msg_type="DEBUGGER",
-                            source="(Pdb)",
-                            message=each_line,
-                        )
-                    )
+            self._send_console_message(
+                PythonConsoleMessageV2(
+                    timestamp=datetime.datetime.now(),
+                    msg_type="DEBUGGER",
+                    source="(Pdb)",
+                    message=debug_event,
+                )
+            )
             self._pause_dp()
 
-    def _check_and_report_exception(self):
+    def _check_and_report_exception(self) -> None:
         if self.context.exception_manager.has_exception():
             self.report_exception(self.context.exception_manager.get_exc_info())
             self._pause_dp()
 
-    def _check_and_report_print(self, force_flush=False):
+    def _check_and_report_print(self, force_flush=False) -> None:
         for msg in self.context.console_message_manager.get_messages(force_flush):
             self._send_console_message(msg)
+
+    def _post_switch_context_checks(self) -> None:
+        """
+        Post callback for switch context.
+
+        One step in DataProcessor could produce some results, which includes
+            - print messages
+            - Debug Event
+            - Exception
+        We check and report them each time coming back from DataProcessor.
+        """
+        self._check_and_report_print()
+        self._check_and_report_debug_event()
+        self._check_and_report_exception()

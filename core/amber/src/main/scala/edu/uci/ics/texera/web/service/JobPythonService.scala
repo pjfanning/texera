@@ -4,7 +4,7 @@ import com.google.protobuf.timestamp.Timestamp
 import com.twitter.util.{Await, Duration}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonDebugCommandHandler.PythonDebugCommand
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
@@ -12,7 +12,7 @@ import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.event.python.ConsoleUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.RetryRequest
 import edu.uci.ics.texera.web.model.websocket.request.python.{
-  PythonDebugCommandRequest,
+  DebugCommandRequest,
   PythonExpressionEvaluateRequest
 }
 import edu.uci.ics.texera.web.model.websocket.response.python.PythonExpressionEvaluateResponse
@@ -125,6 +125,7 @@ class JobPythonService(
         )
       )
     })
+
     // TODO: remove the following hack after fixing the frontend
     // currently frontend is not prepared for re-receiving the eval-expr messages
     // so we add it to the state and remove it from the state immediately
@@ -135,7 +136,7 @@ class JobPythonService(
   }))
 
   //Receive debug command
-  addSubscription(wsInput.subscribe((req: PythonDebugCommandRequest, uidOpt) => {
+  addSubscription(wsInput.subscribe((req: DebugCommandRequest, uidOpt) => {
     stateStore.pythonStore.updateState { jobInfo =>
       val newMessage = new ConsoleMessage(
         req.workerId,
@@ -147,7 +148,7 @@ class JobPythonService(
       addConsoleMessage(jobInfo, req.operatorId, newMessage)
     }
 
-    client.sendAsync(PythonDebugCommand(req.workerId, req.cmd))
+    client.sendAsync(DebugCommand(req.workerId, req.cmd))
 
   }))
 

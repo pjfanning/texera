@@ -1,55 +1,63 @@
 from __future__ import annotations
 
-from threading import Condition, current_thread
+from threading import Condition
 from types import TracebackType
-from typing import IO, Type, AnyStr, Iterator, Iterable
-
-from loguru import logger
+from typing import IO, Type, AnyStr, Iterator, Iterable, Optional
 
 
 class SingleBlockingIO(IO):
+    """
+    An implementation of single-element IO that can be blocked on reading.
+
+    Some highlights:
+    - The IO only has one value.
+    - Each write() will append to the value.
+    - Each flush() will make the value readable resets the value to be written next.
+    - Each readline() will fetch the value and clear the IO.
+    - When there is no value to read, it blocks in readline() until there is a value.
+    """
+
     def __init__(self, condition: Condition):
-        self.value = None
-        self.condition = condition
-        self.is_waiting_on_read: bool = False
+        self.value: Optional[str] = None
+        self.buf: str = ""
+        self.condition: Condition = condition
 
-    def write(self, v):
-        if self.value is None:
-            self.value = ""
+    def write(self, s: str) -> None:
+        """
+        Writes a partial string, append to the buffer.
+        :param s: a string.
+        :return:
+        """
+        self.buf += s
 
-        self.value += v
-        logger.info("Now value is:" + repr(self.value))
-
-    def flush(self, blocking=False):
-        logger.info("calling flush " + str(current_thread()))
+    def flush(self) -> None:
+        """
+        Denotes the end of buffer, adds a "\n" to complete the string.
+        Flushes the completed string in the buffer to value.
+        Resets the buffer to accept the next complete string.
+        :return:
+        """
         self.write("\n")
-        logger.info(
-            "done with flush " + str(current_thread()) + ": " + repr(self.value)
-        )
-        if blocking:
-            with self.condition:
-                self.condition.notify()
-                logger.info("waiting after flush " + str(current_thread()))
-                self.condition.wait()
-                logger.info("back into after flush " + str(current_thread()))
+        self.value, self.buf = self.buf, ""
 
-    def readline(self, limit=None):
-        logger.info("calling readline " + str(current_thread()))
+    def readline(self, limit=None) -> str:
+        """
+        Fetches a string value by removing it from the IO. It blocks the current
+        thread until there is a valid string to fetch.
+        :param limit: parent's API, not implemented here. It is always None.
+        :return str: A completed string value.
+        """
         try:
             with self.condition:
-                if self.value is None:
-                    logger.info("waiting on read " + str(current_thread()))
-                    self.is_waiting_on_read = True
+
+                # keeps waiting until a value is available
+                while self.value is None:
                     self.condition.notify()
                     self.condition.wait()
-                    logger.info("back into read " + str(current_thread()))
-                    self.is_waiting_on_read = False
-                logger.info(
-                    "done with read " + str(current_thread()) + ": " + repr(self.value)
-                )
+
+                # noinspection PyTypeChecker
                 return self.value
         finally:
-            logger.info("set value to None")
             self.value = None
 
     ####################################################################################
@@ -101,9 +109,9 @@ class SingleBlockingIO(IO):
         pass
 
     def __exit__(
-            self,
-            __t: Type[BaseException] | None,
-            __value: BaseException | None,
-            __traceback: TracebackType | None,
+        self,
+        __t: Type[BaseException] | None,
+        __value: BaseException | None,
+        __traceback: TracebackType | None,
     ) -> bool | None:
         pass
