@@ -9,6 +9,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   WorkflowIdentity
 }
 import edu.uci.ics.amber.engine.operators.OpExecConfig
+import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
@@ -82,6 +83,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
     // create and save OpExecConfigs for the operators
     val inputSchemaMap = propagateWorkflowSchema()
     val amberOperators: mutable.Map[OperatorIdentity, OpExecConfig] = mutable.Map()
+    val pythonOperators: mutable.Set[OpExecConfig] = mutable.Set()
     workflowInfo.operators.foreach(o => {
       val inputSchemas: Array[Schema] =
         if (!o.isInstanceOf[SourceOperatorDescriptor])
@@ -100,6 +102,11 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
       }
       val amberOperator: OpExecConfig =
         o.operatorExecutor(OperatorSchemaInfo(inputSchemas, outputSchemas))
+      if (o.operatorInfo.operatorGroupName == OperatorGroupConstants.UDF_GROUP) {
+        // Currently, all UDFs are python operators.
+        // TODO: change this if we add UDFs for other languages.
+        pythonOperators.add(amberOperator)
+      }
       amberOperators.put(amberOperator.id, amberOperator)
     })
 
@@ -141,6 +148,7 @@ class WorkflowCompiler(val workflowInfo: WorkflowInfo, val context: WorkflowCont
 
     new Workflow(
       workflowId,
+      pythonOperators,
       amberOperators,
       outLinksImmutable,
       pipelinedRegionsDAG

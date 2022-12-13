@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Workflow(
     workflowId: WorkflowIdentity,
+    pythonOperators: mutable.Set[OpExecConfig],
     operatorToOpExecConfig: mutable.Map[OperatorIdentity, OpExecConfig],
     outLinks: Map[OperatorIdentity, Set[OperatorIdentity]],
     pipelinedRegionsDAG: DirectedAcyclicGraph[PipelinedRegion, DefaultEdge]
@@ -42,7 +43,6 @@ class Workflow(
   // The following data structures are updated when the operator is built (buildOperator())
   // by scheduler and the worker identities are available.
   val workerToLayer = new mutable.HashMap[ActorVirtualIdentity, WorkerLayer]()
-  val workerToOperatorExec = new mutable.HashMap[ActorVirtualIdentity, () => IOperatorExecutor]()
 
   instantiateAndStoreLinkInformation()
 
@@ -272,12 +272,8 @@ class Workflow(
 
   def getLink(linkID: LinkIdentity): LinkStrategy = idToLink(linkID)
 
-  def getPythonWorkers: Iterable[ActorVirtualIdentity] =
-    workerToOperatorExec
-      .filter({
-        case (_: ActorVirtualIdentity, operatorExecutor: IOperatorExecutor) =>
-          operatorExecutor.isInstanceOf[PythonUDFOpExecV2]
-      }) map { case (workerId: ActorVirtualIdentity, _: IOperatorExecutor) => workerId }
+  def isWorkerOfPythonOperator(actorVirtualIdentity: ActorVirtualIdentity): Boolean =
+    pythonOperators.contains(getOperator(actorVirtualIdentity))
 
   def getOperatorToWorkers: Iterable[(OperatorIdentity, Seq[ActorVirtualIdentity])] = {
     getAllOperatorIds.map(opId => {
@@ -289,36 +285,6 @@ class Workflow(
   ): Array[ActorVirtualIdentity] = {
     operators.flatMap(opId => operatorToOpExecConfig(opId).getAllWorkers)
   }
-
-  def getPythonOperators(fromOperatorsList: Array[OperatorIdentity]): Array[OperatorIdentity] = {
-    fromOperatorsList.filter(opId =>
-      operatorToOpExecConfig(opId).getAllWorkers.size > 0 && operatorToOpExecConfig(
-        opId
-      ).getAllWorkers.forall(wid => workerToOperatorExec(wid).isInstanceOf[PythonUDFOpExecV2])
-    )
-  }
-
-  def getPythonWorkerToOperatorExec(
-      pythonOperators: Array[OperatorIdentity]
-  ): Iterable[(ActorVirtualIdentity, PythonUDFOpExecV2)] = {
-    val allWorkers = pythonOperators
-      .map(opId => operatorToOpExecConfig(opId).getAllWorkers)
-      .flatten
-    workerToOperatorExec
-      .filter({
-        case (id: ActorVirtualIdentity, operatorExecutor: IOperatorExecutor) =>
-          allWorkers.contains(id)
-      })
-      .asInstanceOf[Iterable[(ActorVirtualIdentity, PythonUDFOpExecV2)]]
-  }
-
-  def getPythonWorkerToOperatorExec: Iterable[(ActorVirtualIdentity, PythonUDFOpExecV2)] =
-    workerToOperatorExec
-      .filter({
-        case (_: ActorVirtualIdentity, operatorExecutor: IOperatorExecutor) =>
-          operatorExecutor.isInstanceOf[PythonUDFOpExecV2]
-      })
-      .asInstanceOf[Iterable[(ActorVirtualIdentity, PythonUDFOpExecV2)]]
 
   def isCompleted: Boolean =
     operatorToOpExecConfig.values.forall(op => op.getState == WorkflowAggregatedState.COMPLETED)

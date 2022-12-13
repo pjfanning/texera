@@ -50,7 +50,6 @@ class WorkflowScheduler(
   // track of those already built
   private val builtOperators = new mutable.HashSet[OperatorIdentity]()
   private val openedOperators = new mutable.HashSet[OperatorIdentity]()
-  private val initializedPythonOperators = new mutable.HashSet[OperatorIdentity]()
   private val activatedLink = new mutable.HashSet[LinkIdentity]()
 
   private val constructingRegions = new mutable.HashSet[PipelinedRegionIdentity]()
@@ -154,7 +153,6 @@ class WorkflowScheduler(
           ctx,
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
-          workflow.workerToOperatorExec,
           controllerConf.supportFaultTolerance
         )
       })
@@ -173,7 +171,6 @@ class WorkflowScheduler(
           ctx,
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
-          workflow.workerToOperatorExec,
           controllerConf.supportFaultTolerance
         )
       })
@@ -187,52 +184,12 @@ class WorkflowScheduler(
             ctx,
             workflow.getInlinksIdsToWorkerLayer(layer.id),
             workflow.workerToLayer,
-            workflow.workerToOperatorExec,
             controllerConf.supportFaultTolerance
           )
         })
         layers = operatorInLinks.filter(x => !x._1.isBuilt && x._2.forall(_.isBuilt)).keys
       }
     }
-  }
-
-  private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
-    val allOperatorsInRegion =
-      region.getOperators() ++ region.blockingDowstreamOperatorsInOtherRegions
-    val uninitializedPythonOperators = workflow.getPythonOperators(
-      allOperatorsInRegion.filter(opId => !initializedPythonOperators.contains(opId))
-    )
-    Future
-      .collect(
-        // initialize python operator code
-        workflow
-          .getPythonWorkerToOperatorExec(
-            uninitializedPythonOperators
-          )
-          .map {
-            case (workerID: ActorVirtualIdentity, pythonOperatorExec: PythonUDFOpExecV2) =>
-              asyncRPCClient.send(
-                InitializeOperatorLogic(
-                  pythonOperatorExec.getCode,
-                  workflow
-                    .getInlinksIdsToWorkerLayer(workflow.workerToLayer(workerID).id)
-                    .toArray,
-                  pythonOperatorExec.isInstanceOf[ISourceOperatorExecutor],
-                  pythonOperatorExec.getOutputSchema
-                ),
-                workerID
-              )
-          }
-          .toSeq
-      )
-      .onSuccess(_ =>
-        uninitializedPythonOperators.foreach(opId => initializedPythonOperators.add(opId))
-      )
-      .onFailure((err: Throwable) => {
-        logger.error("Failure when sending Python UDF code", err)
-        // report error to frontend
-        asyncRPCClient.sendToClient(FatalError(err))
-      })
   }
 
   private def activateAllLinks(region: PipelinedRegion): Future[Seq[Unit]] = {
@@ -319,7 +276,6 @@ class WorkflowScheduler(
       )
     )
     Future(())
-      .flatMap(_ => initializePythonOperators(region))
       .flatMap(_ => activateAllLinks(region))
       .flatMap(_ => openAllOperators(region))
       .flatMap(_ => startRegion(region))

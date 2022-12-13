@@ -29,7 +29,7 @@ trait RetryWorkflowHandler {
             // find workers who received local operator exception
             .flatMap(operator => operator.caughtLocalExceptions.keys)
             // currently only support retry for PythonWorker, thus filter them
-            .filter(worker => workflow.getPythonWorkers.toSeq.contains(worker))
+            .filter(worker => workflow.isWorkerOfPythonOperator(worker))
             .map(worker => send(ReplayCurrentTuple(), worker))
             .toSeq
         )

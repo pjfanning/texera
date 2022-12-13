@@ -4,15 +4,21 @@ import akka.actor.{ActorRef, Props}
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
+import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
+  ControlInvocation,
+  IgnoreReply,
+  ReturnInvocation
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.texera.Utils
+import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
 
 import java.io.IOException
 import java.net.ServerSocket
@@ -42,7 +48,18 @@ class PythonWorkflowWorker(
       allUpstreamLinkIds,
       false
     ) {
-
+  pythonProxyClient.enqueueCommand(
+    ControlInvocation(
+      IgnoreReply,
+      InitializeOperatorLogic(
+        operatorExecutor.asInstanceOf[PythonUDFOpExecV2].getCode,
+        allUpstreamLinkIds.toArray,
+        operatorExecutor.isInstanceOf[ISourceOperatorExecutor],
+        operatorExecutor.asInstanceOf[PythonUDFOpExecV2].getOutputSchema
+      )
+    ),
+    SELF
+  )
   // Input/Output port used in between Python and Java processes.
   private lazy val inputPortNum: Int = getFreeLocalPort
   private lazy val outputPortNum: Int = getFreeLocalPort
