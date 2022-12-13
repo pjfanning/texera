@@ -153,6 +153,7 @@ class WorkflowScheduler(
           ctx,
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
+          workflow.isPythonOperator(opExecConfig),
           controllerConf.supportFaultTolerance
         )
       })
@@ -171,6 +172,7 @@ class WorkflowScheduler(
           ctx,
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
+          workflow.isPythonOperator(opExecConfig),
           controllerConf.supportFaultTolerance
         )
       })
@@ -184,6 +186,7 @@ class WorkflowScheduler(
             ctx,
             workflow.getInlinksIdsToWorkerLayer(layer.id),
             workflow.workerToLayer,
+            workflow.isPythonOperator(opExecConfig),
             controllerConf.supportFaultTolerance
           )
         })

@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
   returnInvocationToV1
 }
 import edu.uci.ics.amber.engine.common.ambermessage._
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.noReplyNeeded
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import org.apache.arrow.flight._
@@ -30,11 +31,12 @@ private class AmberProducer(
         val pythonControlMessage = PythonControlMessage.parseFrom(action.getBody)
         pythonControlMessage.payload match {
           case returnInvocation: ReturnInvocationV2 =>
-            controlOutputPort.sendTo(
-              to = pythonControlMessage.tag,
-              payload = returnInvocationToV1(returnInvocation)
-            )
-
+            if (!noReplyNeeded(returnInvocation.originalCommandId)) {
+              controlOutputPort.sendTo(
+                to = pythonControlMessage.tag,
+                payload = returnInvocationToV1(returnInvocation)
+              )
+            }
           case controlInvocation: ControlInvocationV2 =>
             controlOutputPort.sendTo(
               to = pythonControlMessage.tag,

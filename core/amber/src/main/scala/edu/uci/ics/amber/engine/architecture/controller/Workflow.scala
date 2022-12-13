@@ -275,6 +275,9 @@ class Workflow(
   def isWorkerOfPythonOperator(actorVirtualIdentity: ActorVirtualIdentity): Boolean =
     pythonOperators.contains(getOperator(actorVirtualIdentity))
 
+  def isPythonOperator(opExecConfig: OpExecConfig): Boolean =
+    pythonOperators.contains(opExecConfig)
+
   def getOperatorToWorkers: Iterable[(OperatorIdentity, Seq[ActorVirtualIdentity])] = {
     getAllOperatorIds.map(opId => {
       (opId, getAllWorkersForOperators(Array(opId)).toSeq)

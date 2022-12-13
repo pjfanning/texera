@@ -69,21 +69,22 @@ class WorkerLayer(
       context: ActorContext,
       allUpstreamLinkIds: Set[LinkIdentity],
       workerToLayer: mutable.HashMap[ActorVirtualIdentity, WorkerLayer],
+      createPythonWorker: Boolean,
       supportFaultTolerance: Boolean
   ): Unit = {
     deployStrategy.initialize(deploymentFilter.filter(prev, all, context.self.path.address))
     workers = ListMap((0 until numWorkers).map { i =>
-      val opExecFunc: () => IOperatorExecutor = () => initIOperatorExecutor(i)
       val workerId: ActorVirtualIdentity =
         ActorVirtualIdentity(s"Worker:WF${id.workflow}-${id.operator}-${id.layerID}-$i")
       val address: Address = deployStrategy.next()
       val actorGen = (address: Address) => {
         val actorRef = context.actorOf(
-          if (opExecFunc.isInstanceOf[PythonUDFOpExecV2]) {
+          if (createPythonWorker) {
             PythonWorkflowWorker
               .props(
                 workerId,
-                opExecFunc,
+                i,
+                initIOperatorExecutor,
                 parentNetworkCommunicationActorRef,
                 allUpstreamLinkIds
               )
@@ -92,7 +93,8 @@ class WorkerLayer(
             WorkflowWorker
               .props(
                 workerId,
-                opExecFunc,
+                i,
+                initIOperatorExecutor,
                 parentNetworkCommunicationActorRef,
                 allUpstreamLinkIds,
                 supportFaultTolerance

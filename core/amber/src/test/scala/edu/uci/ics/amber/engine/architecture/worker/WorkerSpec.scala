@@ -61,7 +61,7 @@ class WorkerSpec
     val mockTupleToBatchConverter = mock[TupleToBatchConverter]
     val identifier1 = ActorVirtualIdentity("worker-1")
     val identifier2 = ActorVirtualIdentity("worker-2")
-    val mockOpExecutor = () =>
+    val mockOpExecutor = (_: Int) =>
       new IOperatorExecutor {
         override def open(): Unit = println("opened!")
 
@@ -83,6 +83,7 @@ class WorkerSpec
       TestActorRef(
         new WorkflowWorker(
           identifier1,
+          0,
           mockOpExecutor,
           NetworkSenderActorRef(null),
           Set(mockTag),
@@ -109,7 +110,7 @@ class WorkerSpec
     val probe = TestProbe()
     val idMap = mutable.HashMap[ActorVirtualIdentity, ActorRef]()
     val identifier1 = ActorVirtualIdentity("worker-1")
-    val mockOpExecutor = () =>
+    val mockOpExecutor = (_: Int) =>
       new IOperatorExecutor {
         override def open(): Unit = println("opened!")
 
@@ -126,6 +127,7 @@ class WorkerSpec
     val worker = TestActorRef(
       new WorkflowWorker(
         identifier1,
+        0,
         mockOpExecutor,
         NetworkSenderActorRef(probe.ref),
         Set(),
