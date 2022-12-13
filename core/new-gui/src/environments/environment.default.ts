@@ -31,7 +31,7 @@ export const defaultEnvironment = {
   /**
    * whether export execution result is supported
    */
-  exportExecutionResultEnabled: false,
+  exportExecutionResultEnabled: true,
 
   /**
    * Whether automatically correcting attribute name on change is enabled

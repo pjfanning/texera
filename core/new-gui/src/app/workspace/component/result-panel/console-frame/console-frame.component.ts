@@ -133,34 +133,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   displayConsoleMessages(operatorId: string): void {
     this.consoleMessages = operatorId ? this.workflowConsoleService.getConsoleMessages(operatorId) || [] : [];
-    console.log("got messages", this.consoleMessages);
+
     setTimeout(() => {
       if (this.listElement) {
         this.listElement.nativeElement.scrollTop = this.listElement.nativeElement.scrollHeight;
       }
     }, 0)
   }
-
-  submitCommand(): void {
-    if (!isDefined(this.operatorId)) {
-      return;
-    }
-    let workers = [];
-    if (this.targetWorker === this.ALL_WORKERS) {
-      workers = [...this.workerIds];
-    } else {
-      workers.push(this.targetWorker);
-    }
-    for (let worker of workers) {
-      this.workflowWebsocketService.send("PythonDebugCommandRequest", {
-        operatorId: this.operatorId,
-        workerId: worker,
-        cmd: this.command,
-      });
-    }
-    this.command = "";
-  }
-
   submitDebugCommand(): void {
     if (!isDefined(this.operatorId)) {
       return;
