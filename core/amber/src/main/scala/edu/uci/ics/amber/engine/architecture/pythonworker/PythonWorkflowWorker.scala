@@ -23,7 +23,7 @@ import scala.sys.process.{BasicIO, Process}
 object PythonWorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
-      op: IOperatorExecutor,
+      op: () => IOperatorExecutor,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       allUpstreamLinkIds: Set[LinkIdentity]
   ): Props =
@@ -32,7 +32,7 @@ object PythonWorkflowWorker {
 
 class PythonWorkflowWorker(
     actorId: ActorVirtualIdentity,
-    operator: IOperatorExecutor,
+    operator: () => IOperatorExecutor,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
     allUpstreamLinkIds: Set[LinkIdentity]
 ) extends WorkflowWorker(

@@ -50,7 +50,7 @@ import scala.concurrent.duration._
 object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
-      op: IOperatorExecutor,
+      op: () => IOperatorExecutor,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       allUpstreamLinkIds: Set[LinkIdentity],
       supportFaultTolerance: Boolean
@@ -70,11 +70,12 @@ object WorkflowWorker {
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
-    operator: IOperatorExecutor,
+    operatorFunc: () => IOperatorExecutor,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
     allUpstreamLinkIds: Set[LinkIdentity],
     supportFaultTolerance: Boolean
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
+  lazy val operatorExecutor: IOperatorExecutor = operatorFunc()
   lazy val recoveryQueue = new RecoveryQueue(logStorage.getReader)
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]

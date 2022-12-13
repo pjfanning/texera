@@ -61,18 +61,19 @@ class WorkerSpec
     val mockTupleToBatchConverter = mock[TupleToBatchConverter]
     val identifier1 = ActorVirtualIdentity("worker-1")
     val identifier2 = ActorVirtualIdentity("worker-2")
-    val mockOpExecutor = new IOperatorExecutor {
-      override def open(): Unit = println("opened!")
+    val mockOpExecutor = () =>
+      new IOperatorExecutor {
+        override def open(): Unit = println("opened!")
 
-      override def close(): Unit = println("closed!")
+        override def close(): Unit = println("closed!")
 
-      override def processTuple(
-          tuple: Either[ITuple, InputExhausted],
-          input: LinkIdentity,
-          pauseManager: PauseManager,
-          asyncRPCClient: AsyncRPCClient
-      ): Iterator[(ITuple, Option[LinkIdentity])] = ???
-    }
+        override def processTuple(
+            tuple: Either[ITuple, InputExhausted],
+            input: LinkIdentity,
+            pauseManager: PauseManager,
+            asyncRPCClient: AsyncRPCClient
+        ): Iterator[(ITuple, Option[LinkIdentity])] = ???
+      }
 
     val mockTag = LinkIdentity(null, null)
 
@@ -108,18 +109,19 @@ class WorkerSpec
     val probe = TestProbe()
     val idMap = mutable.HashMap[ActorVirtualIdentity, ActorRef]()
     val identifier1 = ActorVirtualIdentity("worker-1")
-    val mockOpExecutor = new IOperatorExecutor {
-      override def open(): Unit = println("opened!")
+    val mockOpExecutor = () =>
+      new IOperatorExecutor {
+        override def open(): Unit = println("opened!")
 
-      override def close(): Unit = println("closed!")
+        override def close(): Unit = println("closed!")
 
-      override def processTuple(
-          tuple: Either[ITuple, InputExhausted],
-          input: LinkIdentity,
-          pauseManager: PauseManager,
-          asyncRPCClient: AsyncRPCClient
-      ): Iterator[(ITuple, Option[LinkIdentity])] = { return Iterator() }
-    }
+        override def processTuple(
+            tuple: Either[ITuple, InputExhausted],
+            input: LinkIdentity,
+            pauseManager: PauseManager,
+            asyncRPCClient: AsyncRPCClient
+        ): Iterator[(ITuple, Option[LinkIdentity])] = { return Iterator() }
+      }
 
     val worker = TestActorRef(
       new WorkflowWorker(

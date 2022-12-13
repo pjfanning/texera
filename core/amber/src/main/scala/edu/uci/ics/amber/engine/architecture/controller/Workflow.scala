@@ -42,7 +42,7 @@ class Workflow(
   // The following data structures are updated when the operator is built (buildOperator())
   // by scheduler and the worker identities are available.
   val workerToLayer = new mutable.HashMap[ActorVirtualIdentity, WorkerLayer]()
-  val workerToOperatorExec = new mutable.HashMap[ActorVirtualIdentity, IOperatorExecutor]()
+  val workerToOperatorExec = new mutable.HashMap[ActorVirtualIdentity, () => IOperatorExecutor]()
 
   instantiateAndStoreLinkInformation()
 
