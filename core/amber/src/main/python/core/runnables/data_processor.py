@@ -26,9 +26,9 @@ class DataProcessor(Runnable, Stoppable):
 
     def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current
-        while not finished_current.is_set():
+        try:
+            while not finished_current.is_set():
 
-            try:
                 operator = self._context.operator_manager.operator
                 tuple_ = self._context.tuple_processing_manager.current_input_tuple
                 link = self._context.tuple_processing_manager.current_input_link
@@ -56,11 +56,12 @@ class DataProcessor(Runnable, Stoppable):
                 # current tuple finished successfully
                 finished_current.set()
 
-            except Exception as err:
-                logger.exception(err)
-                self._context.exception_manager.set_exception_info(sys.exc_info())
-            finally:
-                self._switch_context()
+        except Exception as err:
+            logger.exception(err)
+            self._context.exception_manager.set_exception_info(sys.exc_info())
+        finally:
+            self._context.debug_manager.check_and_swap_for_static_breakpoints()
+            self._switch_context()
 
     def _switch_context(self) -> None:
         """

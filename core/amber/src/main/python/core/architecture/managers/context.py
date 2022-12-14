@@ -43,8 +43,11 @@ class Context:
         self.batch_to_tuple_converter = BatchToTupleConverter()
         self.console_message_manager = ConsoleMessageManager()
         self.debug_manager = DebugManager(
-            self.tuple_processing_manager.context_switch_condition
+            self.tuple_processing_manager.context_switch_condition,
+            self.operator_manager
         )
+
 
     def close(self):
         self.operator_manager.close()
+
