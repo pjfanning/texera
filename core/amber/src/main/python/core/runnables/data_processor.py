@@ -60,7 +60,6 @@ class DataProcessor(Runnable, Stoppable):
             logger.exception(err)
             self._context.exception_manager.set_exception_info(sys.exc_info())
         finally:
-            self._context.debug_manager.check_and_swap_for_static_breakpoints()
             self._switch_context()
 
     def _switch_context(self) -> None:
