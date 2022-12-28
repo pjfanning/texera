@@ -72,7 +72,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
                 new PythonUDFSourceOpExecV2(code, operatorSchemaInfo.outputSchemas()[0]);
         Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
         if (workers > 1) {
-            return new OneToOneOpExecConfig(operatorIdentifier(),exec, workers, mapAsScalaMap(Collections.emptyMap()));
+            return new OneToOneOpExecConfig(operatorIdentifier(), exec, workers, mapAsScalaMap(Collections.emptyMap()));
         } else {
             return new ManyToOneOpExecConfig(operatorIdentifier(), exec, mapAsScalaMap(Collections.emptyMap()));
         }
