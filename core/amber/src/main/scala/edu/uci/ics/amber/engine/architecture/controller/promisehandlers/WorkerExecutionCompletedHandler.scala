@@ -46,6 +46,8 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (workflow.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
+            interactionHistory
+              .append(s"${(System.currentTimeMillis() - workflowStartTimeStamp) / 1000}s")
             sendToClient(WorkflowReplayInfo(interactionHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()

@@ -157,7 +157,6 @@ class WorkflowService(
     if (jobService.getValue != null) {
 //      //unsubscribe all
 //      jobService.getValue.unsubscribeAll()
-      jobService.getValue.client.replayExecution(1)
       return
     }
 
