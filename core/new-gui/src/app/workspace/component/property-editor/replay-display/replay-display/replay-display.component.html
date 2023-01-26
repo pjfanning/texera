@@ -1,0 +1,13 @@
+<nz-timeline>
+  <nz-timeline-item *ngFor="let timepoint of replay.history; index as i;">
+    <div
+      [style]="{
+        'padding-bottom': (i === replay.history.length ? 10 : 
+        (replay.history[i + 1] - replay.history[i])) * 3 + 'px',
+        'margin-bottom': '0px'
+        }"
+      (click)="replay.selectReplayPoint(i)">
+      <p [style]="{'cursor': 'pointer'}">{{timepoint}}s</p>
+    </div>
+  </nz-timeline-item>
+</nz-timeline>

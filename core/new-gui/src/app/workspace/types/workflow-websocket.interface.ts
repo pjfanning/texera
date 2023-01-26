@@ -145,6 +145,10 @@ export type WorkerAssignmentUpdateEvent = Readonly<{
   workerIds: readonly string[];
 }>;
 
+export type WorkflowInteractionHistoryEvent = Readonly<{
+  history: readonly number[];
+}>;
+
 export type DebugCommandRequest = Readonly<{
   operatorId: string;
   workerId: string;
@@ -171,6 +175,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
   DebugCommandRequest: DebugCommandRequest;
+  WorkflowReplayRequest: { replayPos: number };
 };
 
 export type TexeraWebsocketEventTypeMap = {
@@ -191,6 +196,7 @@ export type TexeraWebsocketEventTypeMap = {
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
   WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
+  WorkflowInteractionHistoryEvent: WorkflowInteractionHistoryEvent;
 };
 
 // helper type definitions to generate the request and event types

@@ -27,6 +27,7 @@ import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { OperatorMenuService } from "../../service/operator-menu/operator-menu.service";
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
+import { ReplayWorkflowService } from "../../service/execute-workflow/replay-workflow.service";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -84,6 +85,7 @@ export class NavigationComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public workflowVersionService: WorkflowVersionService,
+    public workflowReplayService: ReplayWorkflowService,
     public userService: UserService,
     private datePipe: DatePipe,
     public workflowResultExportService: WorkflowResultExportService,

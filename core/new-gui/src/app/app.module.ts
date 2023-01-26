@@ -29,6 +29,7 @@ import { NzMenuModule } from "ng-zorro-antd/menu";
 import { NzMessageModule } from "ng-zorro-antd/message";
 import { NzModalModule } from "ng-zorro-antd/modal";
 import { NzTableModule } from "ng-zorro-antd/table";
+import { NzTimelineModule } from "ng-zorro-antd/timeline";
 import { NzToolTipModule } from "ng-zorro-antd/tooltip";
 import { NzCheckboxModule } from "ng-zorro-antd/checkbox";
 import { NzSelectModule } from "ng-zorro-antd/select";
@@ -121,6 +122,7 @@ import { NzLayoutModule } from "ng-zorro-antd/layout";
 import { AuthGuardService } from "./common/service/auth-guard/auth-guard.service";
 import { LocalLoginComponent } from "./home/component/login/local-login/local-login.component";
 import { GoogleLoginComponent } from "./home/component/login/google-login/google-login.component";
+import { ReplayDisplayComponent } from "./workspace/component/property-editor/replay-display/replay-display/replay-display.component";
 
 registerLocaleData(en);
 
@@ -187,6 +189,7 @@ registerLocaleData(en);
     InputAutoCompleteComponent,
     CollabWrapperComponent,
     HomeComponent,
+    ReplayDisplayComponent,
   ],
   imports: [
     BrowserModule,
@@ -234,6 +237,7 @@ registerLocaleData(en);
     NzToolTipModule,
     NzCheckboxModule,
     NzTableModule,
+    NzTimelineModule,
     NzModalModule,
     NzSelectModule,
     NzSliderModule,
