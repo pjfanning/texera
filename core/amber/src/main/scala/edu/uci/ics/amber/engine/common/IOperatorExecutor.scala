@@ -23,4 +23,6 @@ trait IOperatorExecutor {
 
   def getParam(query: String): String = { null }
 
+  def getStateInformation: String = ""
+
 }

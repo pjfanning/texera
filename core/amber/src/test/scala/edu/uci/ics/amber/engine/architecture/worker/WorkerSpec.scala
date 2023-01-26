@@ -87,7 +87,8 @@ class WorkerSpec
           new mutable.HashMap[LinkIdentity, Int](),
           NetworkSenderActorRef(null),
           Set(mockTag),
-          false
+          false,
+          -1
         ) {
           override lazy val batchProducer: TupleToBatchConverter = mockTupleToBatchConverter
           override lazy val controlOutputPort: NetworkOutputPort[ControlPayload] =
@@ -131,7 +132,8 @@ class WorkerSpec
         new mutable.HashMap[LinkIdentity, Int](),
         NetworkSenderActorRef(probe.ref),
         Set(),
-        false
+        false,
+        -1
       )
     )
 

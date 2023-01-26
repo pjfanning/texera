@@ -37,8 +37,10 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       .drop(desc.offset.getOrElse(0))
       .map(row => {
         try {
-          val parsedFields: Array[Object] =
+          val parsedFields: Array[Object] = {
+            Thread.sleep(20)
             AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
+          }
           Tuple.newBuilder(schema).addSequentially(parsedFields).build
         } catch {
           case _: Throwable => null
@@ -75,5 +77,9 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
     if (inputReader != null) {
       inputReader.close()
     }
+  }
+
+  override def getStateInformation: String = {
+    s"nextRow is $nextRow"
   }
 }

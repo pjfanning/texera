@@ -17,6 +17,8 @@ import edu.uci.ics.amber.engine.common.rpc.{
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 class ControllerAsyncRPCHandlerInitializer(
@@ -52,9 +54,11 @@ class ControllerAsyncRPCHandlerInitializer(
     with DebugCommandHandler {
 
   var statusUpdateAskHandle: Option[Cancellable] = None
-
+  var numPauses = 0
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
+  var interactionHistory: mutable.ArrayBuffer[String] = new ArrayBuffer[String]()
+  val workflowStartTimeStamp: Long = System.currentTimeMillis()
 
   def enableStatusUpdate(): Unit = {
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {

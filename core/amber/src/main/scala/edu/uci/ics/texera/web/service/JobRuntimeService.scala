@@ -2,7 +2,10 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowPaused
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowPaused,
+  WorkflowReplayInfo
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
@@ -12,6 +15,7 @@ import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{
   TexeraWebSocketEvent,
   WorkflowExecutionErrorEvent,
+  WorkflowInteractionHistoryEvent,
   WorkflowStateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request.{
@@ -19,6 +23,7 @@ import edu.uci.ics.texera.web.model.websocket.request.{
   SkipTupleRequest,
   WorkflowKillRequest,
   WorkflowPauseRequest,
+  WorkflowReplayRequest,
   WorkflowResumeRequest
 }
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
@@ -53,9 +58,31 @@ class JobRuntimeService(
       if (newState.error != oldState.error && newState.error != null) {
         outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
       }
+      if (newState.interactionHistory != oldState.interactionHistory) {
+        outputEvts.append(WorkflowInteractionHistoryEvent(newState.interactionHistory))
+      }
       outputEvts
     })
   )
+
+  addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
+    if (!stateStore.jobMetadataStore.getState.isReplaying) {
+      stateStore.jobMetadataStore.updateState(jobMetadata =>
+        jobMetadata.withInteractionHistory(evt.history)
+      )
+    }
+  }))
+
+  addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
+    if (stateStore.jobMetadataStore.getState.currentReplayPos != req.replayPos) {
+      val requireRestart =
+        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.currentReplayPos > req.replayPos
+      stateStore.jobMetadataStore.updateState(state => {
+        state.withCurrentReplayPos(req.replayPos).withIsReplaying(true)
+      })
+      client.replayExecution(req.replayPos, requireRestart)
+    }
+  }))
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {

@@ -6,7 +6,11 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{NotifyFailedNode, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ContinueReplayTo,
+  NotifyFailedNode,
+  WorkflowRecoveryMessage
+}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{
   ClosureRequest,
   CommandRequest,
@@ -82,6 +86,20 @@ class AmberClient(
       Future[Any](())
     } else {
       (clientActor ? WorkflowRecoveryMessage(CLIENT, NotifyFailedNode(address))).asTwitter()
+    }
+  }
+
+  def replayExecution(index: Int, restart: Boolean): Future[Any] = {
+    if (!isActive) {
+      Future[Any](())
+    } else {
+      val res = if (restart) {
+        controllerConfig.replayRequest = index
+        (clientActor ? InitializeRequest(workflow, controllerConfig)).asTwitter()
+      } else {
+        (clientActor ? WorkflowRecoveryMessage(CLIENT, ContinueReplayTo(index))).asTwitter()
+      }
+      res
     }
   }
 

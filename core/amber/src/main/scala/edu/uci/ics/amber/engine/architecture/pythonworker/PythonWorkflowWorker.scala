@@ -56,7 +56,8 @@ class PythonWorkflowWorker(
       outputToOrdinalMapping,
       parentNetworkCommunicationActorRef,
       allUpstreamLinkIds,
-      false
+      false,
+      -1
     ) {
 
   // Input/Output port used in between Python and Java processes.

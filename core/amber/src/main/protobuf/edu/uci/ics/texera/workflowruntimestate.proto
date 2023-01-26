@@ -87,4 +87,7 @@ message JobMetadataStore{
   string error = 2;
   int64 eid = 3;
   bool is_recovering = 4;
+  bool is_replaying = 5;
+  int32 current_replay_pos = 6;
+  repeated string interaction_history = 7;
 }

@@ -138,6 +138,7 @@ class WorkflowJobService(
 
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
+    client.shutdown()
     jobBreakpointService.unsubscribeAll()
     jobRuntimeService.unsubscribeAll()
     jobPythonService.unsubscribeAll()

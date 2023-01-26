@@ -39,7 +39,9 @@ private[client] class ClientActor extends Actor {
 
   override def receive: Receive = {
     case InitializeRequest(workflow, controllerConfig) =>
-      assert(controller == null)
+      if (controller != null) {
+        controller ! PoisonPill
+      }
       controller = context.actorOf(Controller.props(workflow, controllerConfig))
       sender ! Ack
     case ClosureRequest(closure) =>

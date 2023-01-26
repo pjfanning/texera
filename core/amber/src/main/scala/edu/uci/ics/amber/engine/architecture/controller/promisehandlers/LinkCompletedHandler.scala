@@ -24,16 +24,20 @@ trait LinkCompletedHandler {
 
   registerHandler { (msg: LinkCompleted, sender) =>
     {
-      // get the target link from workflow
-      val link = workflow.getLink(msg.linkID)
-      link.incrementCompletedReceiversCount()
-      if (link.isCompleted) {
-        scheduler
-          .onLinkCompletion(LinkIdentity(link.from.id, link.to.id))
-          .flatMap(_ => Future.Unit)
-      } else {
-        // if the link is not completed yet, do nothing
+      if (msg.linkID == null) {
         Future(())
+      } else {
+        // get the target link from workflow
+        val link = workflow.getLink(msg.linkID)
+        link.incrementCompletedReceiversCount()
+        if (link.isCompleted) {
+          scheduler
+            .onLinkCompletion(LinkIdentity(link.from.id, link.to.id))
+            .flatMap(_ => Future.Unit)
+        } else {
+          // if the link is not completed yet, do nothing
+          Future(())
+        }
       }
     }
   }

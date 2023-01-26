@@ -1,7 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowCompleted,
+  WorkflowReplayInfo
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
@@ -43,6 +46,7 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (workflow.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
+            sendToClient(WorkflowReplayInfo(interactionHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()
             disableMonitoring()

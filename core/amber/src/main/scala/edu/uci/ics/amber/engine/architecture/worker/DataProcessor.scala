@@ -35,7 +35,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Li
 import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{ExecutorService, Executors, Future}
+import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future}
 import scala.collection.mutable
 
 class DataProcessor( // dependencies:
@@ -58,6 +58,14 @@ class DataProcessor( // dependencies:
     val outputToOrdinalMapping: mutable.Map[LinkIdentity, Int]
 ) extends WorkerInternalQueue
     with AmberLogging {
+
+  var pauseIndex = -1
+  var numPauses = 0
+  def setPauseIndex(index: Int): Unit = {
+    pauseIndex = index
+  }
+  val releaseFlag = new CompletableFuture[Int]()
+
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private var dpThread: Future[_] = _
@@ -222,6 +230,11 @@ class DataProcessor( // dependencies:
       pauseManager.recordRequest(PauseType.UserPause, true)
       disableDataQueue()
       stateManager.transitTo(PAUSED)
+      numPauses += 1
+      if (pauseIndex == numPauses) {
+        recoveryManager.notifyReplayStatus()
+        pauseIndex = releaseFlag.get()
+      }
     } else {
       outputTupleCount += 1
       val outLinks = getOutputLinkByPort(outputPortOpt)

@@ -40,7 +40,8 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging")
+      AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging"),
+      -1
     )
 }
 
@@ -48,7 +49,8 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
-    var supportFaultTolerance: Boolean
+    var supportFaultTolerance: Boolean,
+    var replayRequest: Int
 )
 
 object Controller {
@@ -81,6 +83,7 @@ class Controller(
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   var statusUpdateAskHandle: Cancellable = _
+  var replayRequestIndex = controllerConfig.replayRequest
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
@@ -152,6 +155,11 @@ class Controller(
   def acceptRecoveryMessages: Receive = {
     case recoveryMsg: WorkflowRecoveryMessage =>
       recoveryMsg.payload match {
+        case ContinueReplayTo(index) =>
+          replayRequestIndex = index
+          globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
+          workflow.getAllLayers.flatMap(_.workers).map(_._2).foreach(info => info.ref ! recoveryMsg)
+          self ! controlMessagesToRecover.next()
         case UpdateRecoveryStatus(isRecovering) =>
           logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
           globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)
@@ -180,7 +188,7 @@ class Controller(
           }
           logger.info("Global Recovery: triggering worker respawn")
           infoIter.foreach { info =>
-            val ref = workflow.getWorkerLayer(info.id).recover(info.id, deployNodes.head)
+            val ref = workflow.getWorkerLayer(info.id).recover(info.id, deployNodes.head, -1)
             logger.info("Global Recovery: respawn " + info.id)
             val vidSet = infoIter.map(_.id).toSet
             // wait for some secs to re-send output
@@ -222,13 +230,17 @@ class Controller(
       d match {
         case ProcessControlMessage(controlPayload, from) =>
           handleControlPayload(from, controlPayload)
-          if (!controlMessagesToRecover.hasNext) {
-            logManager.terminate()
-            logStorage.cleanPartiallyWrittenLogFile()
-            logManager.setupWriter(logStorage.getWriter)
+          if (
+            !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numPauses
+          ) {
+            if (!controlMessagesToRecover.hasNext) {
+              logManager.terminate()
+              logStorage.cleanPartiallyWrittenLogFile()
+              logManager.setupWriter(logStorage.getWriter)
+              unstashAll()
+              context.become(running)
+            }
             globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-            unstashAll()
-            context.become(running)
           } else {
             self ! controlMessagesToRecover.next()
           }
@@ -271,17 +283,17 @@ class Controller(
     }
     logger.info("Controller start to shutdown")
     logManager.terminate()
-    if (workflow.isCompleted) {
-      workflow.getAllWorkers.foreach { workerId =>
-        DeterminantLogStorage
-          .getLogStorage(
-            controllerConfig.supportFaultTolerance,
-            WorkflowWorker.getWorkerLogName(workerId)
-          )
-          .deleteLog()
-      }
-      logStorage.deleteLog()
-    }
+//    if (workflow.isCompleted) {
+//      workflow.getAllWorkers.foreach { workerId =>
+//        DeterminantLogStorage
+//          .getLogStorage(
+//            controllerConfig.supportFaultTolerance,
+//            WorkflowWorker.getWorkerLogName(workerId)
+//          )
+//          .deleteLog()
+//      }
+    //logStorage.deleteLog()
+//    }
     logger.info("stopped successfully!")
   }
 }

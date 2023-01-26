@@ -66,6 +66,10 @@ trait PauseHandler {
           sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
           // send paused to frontend
           sendToClient(WorkflowPaused())
+          numPauses += 1
+          interactionHistory.append(
+            s"${(System.currentTimeMillis() - workflowStartTimeStamp) / 1000}s"
+          )
           disableStatusUpdate() // to be enabled in resume
           disableMonitoring()
           disableSkewHandling()

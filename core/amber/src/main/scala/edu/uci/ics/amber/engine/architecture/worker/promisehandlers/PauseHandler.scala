@@ -19,6 +19,11 @@ trait PauseHandler {
       pauseManager.recordRequest(PauseType.UserPause, true)
       dataProcessor.disableDataQueue()
       stateManager.transitTo(PAUSED)
+      dataProcessor.numPauses += 1
+      if (dataProcessor.numPauses == dataProcessor.pauseIndex) {
+        dataProcessor.recoveryManager.notifyReplayStatus()
+        dataProcessor.pauseIndex = dataProcessor.releaseFlag.get()
+      }
     }
     stateManager.getCurrentState
   }

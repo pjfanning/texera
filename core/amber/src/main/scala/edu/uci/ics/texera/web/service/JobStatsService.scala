@@ -113,7 +113,7 @@ class JobStatsService(
     addSubscription(
       client
         .registerCallback[WorkflowCompleted]((evt: WorkflowCompleted) => {
-          client.shutdown()
+          // client.shutdown()
           stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(COMPLETED))
         })
     )

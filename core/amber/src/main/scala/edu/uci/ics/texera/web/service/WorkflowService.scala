@@ -155,8 +155,10 @@ class WorkflowService(
 
   def initJobService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
     if (jobService.getValue != null) {
-      //unsubscribe all
-      jobService.getValue.unsubscribeAll()
+//      //unsubscribe all
+//      jobService.getValue.unsubscribeAll()
+      jobService.getValue.client.replayExecution(1)
+      return
     }
 
     val job = new WorkflowJobService(

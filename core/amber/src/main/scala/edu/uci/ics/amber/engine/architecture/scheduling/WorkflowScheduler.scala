@@ -155,7 +155,8 @@ class WorkflowScheduler(
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
           workflow.workerToOperatorExec,
-          controllerConf.supportFaultTolerance
+          controllerConf.supportFaultTolerance,
+          controllerConf.replayRequest
         )
       })
     } else {
@@ -174,7 +175,8 @@ class WorkflowScheduler(
           workflow.getInlinksIdsToWorkerLayer(workerLayer.id),
           workflow.workerToLayer,
           workflow.workerToOperatorExec,
-          controllerConf.supportFaultTolerance
+          controllerConf.supportFaultTolerance,
+          controllerConf.replayRequest
         )
       })
       layers = operatorInLinks.filter(x => x._2.forall(_.isBuilt)).keys
@@ -188,7 +190,8 @@ class WorkflowScheduler(
             workflow.getInlinksIdsToWorkerLayer(layer.id),
             workflow.workerToLayer,
             workflow.workerToOperatorExec,
-            controllerConf.supportFaultTolerance
+            controllerConf.supportFaultTolerance,
+            controllerConf.replayRequest
           )
         })
         layers = operatorInLinks.filter(x => !x._1.isBuilt && x._2.forall(_.isBuilt)).keys

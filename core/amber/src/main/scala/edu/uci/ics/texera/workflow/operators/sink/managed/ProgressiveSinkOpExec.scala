@@ -17,6 +17,8 @@ class ProgressiveSinkOpExec(
     val storage: SinkStorageWriter
 ) extends ISinkOperatorExecutor {
 
+  var numTupleIntoStorage = 0
+
   override def open(): Unit = storage.open()
 
   override def close(): Unit = storage.close()
@@ -32,6 +34,7 @@ class ProgressiveSinkOpExec(
             updateSetSnapshot(t.asInstanceOf[Tuple])
           case SET_DELTA =>
             storage.putOne(t.asInstanceOf[Tuple])
+            numTupleIntoStorage += 1
         }
       case Right(_) => // skip
     }
@@ -47,4 +50,7 @@ class ProgressiveSinkOpExec(
     }
   }
 
+  override def getStateInformation: String = {
+    s"number of tuple into the storage is ${numTupleIntoStorage}"
+  }
 }

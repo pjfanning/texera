@@ -28,6 +28,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPTh
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
+  ContinueReplayTo,
   ControlPayload,
   CreditRequest,
   DataPayload,
@@ -55,7 +56,8 @@ object WorkflowWorker {
       outputToOrdinalMapping: mutable.Map[LinkIdentity, Int],
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       allUpstreamLinkIds: Set[LinkIdentity],
-      supportFaultTolerance: Boolean
+      supportFaultTolerance: Boolean,
+      recoverToPauseIndex: Int
   ): Props =
     Props(
       new WorkflowWorker(
@@ -65,7 +67,8 @@ object WorkflowWorker {
         outputToOrdinalMapping,
         parentNetworkCommunicationActorRef,
         allUpstreamLinkIds,
-        supportFaultTolerance
+        supportFaultTolerance,
+        recoverToPauseIndex
       )
     )
 
@@ -79,7 +82,8 @@ class WorkflowWorker(
     outputToOrdinalMapping: mutable.Map[LinkIdentity, Int],
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
     allUpstreamLinkIds: Set[LinkIdentity],
-    supportFaultTolerance: Boolean
+    supportFaultTolerance: Boolean,
+    recoverToPauseIndex: Int
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
   lazy val recoveryQueue = new RecoveryQueue(logStorage.getReader)
   lazy val pauseManager: PauseManager = wire[PauseManager]
@@ -103,6 +107,7 @@ class WorkflowWorker(
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
   }
+  dataProcessor.setPauseIndex(recoverToPauseIndex)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -124,6 +129,9 @@ class WorkflowWorker(
       recoveryManager.registerOnStart(() =>
         context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
       )
+      recoveryManager.setNotifyReplayCallback(() =>
+        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+      )
       recoveryManager.registerOnEnd(() =>
         context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
       )
@@ -136,6 +144,9 @@ class WorkflowWorker(
 
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+      case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
+        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+        dataProcessor.releaseFlag.complete(index)
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),
