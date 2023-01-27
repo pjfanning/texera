@@ -1,5 +1,9 @@
-<nz-timeline>
-  <nz-timeline-item *ngFor="let timepoint of replay.history; index as i;">
+<nz-timeline  
+[nzPending]="replay.replayStarted && !replay.replayEnded ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
+  <nz-timeline-item 
+  *ngFor="let timepoint of replay.history; index as i;"
+  [nzColor]="replay.selectedIndex === i ? 'green': 'blue'"
+  >
     <div
       [style]="{
         'padding-bottom': (i === replay.history.length ? 10 :
