@@ -90,4 +90,5 @@ message JobMetadataStore{
   bool is_replaying = 5;
   int32 current_replay_pos = 6;
   repeated int32 interaction_history = 7;
+  string operator_info_str = 8;
 }

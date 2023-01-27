@@ -29,12 +29,12 @@ class ProgressiveSinkOpExec(
   ): Unit = {
     tuple match {
       case Left(t) =>
+        numTupleIntoStorage += 1
         outputMode match {
           case SET_SNAPSHOT =>
             updateSetSnapshot(t.asInstanceOf[Tuple])
           case SET_DELTA =>
             storage.putOne(t.asInstanceOf[Tuple])
-            numTupleIntoStorage += 1
         }
       case Right(_) => // skip
     }

@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
@@ -26,7 +26,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER,
 
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object ControllerConfig {
   def default: ControllerConfig =
@@ -161,6 +161,10 @@ class Controller(
   def acceptRecoveryMessages: Receive = {
     case recoveryMsg: WorkflowRecoveryMessage =>
       recoveryMsg.payload match {
+        case GetOperatorInternalState() =>
+          Future.sequence(workflow.getAllLayers.flatMap(_.workers).map(_._2).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
+            asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
+          })
         case ContinueReplay(index) =>
           isReplaying = true
           if(index.nonEmpty){

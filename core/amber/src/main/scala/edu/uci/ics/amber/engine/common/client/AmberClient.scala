@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, InterruptReplay, NotifyFailedNode, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -93,6 +93,15 @@ class AmberClient(
       res
     }
   }
+
+  def getOperatorInfo(): Unit = {
+    if (!isActive) {
+      Future[Any](())
+    } else {
+        clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
+    }
+  }
+
 
   def interruptReplay(): Future[Any] ={
     if (!isActive) {

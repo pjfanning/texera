@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowPaused, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
@@ -10,8 +10,8 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
-import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowAdditionalOperatorInfoRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -49,6 +49,9 @@ class JobRuntimeService(
       if (newState.interactionHistory != oldState.interactionHistory) {
         outputEvts.append(WorkflowInteractionHistoryEvent(newState.interactionHistory))
       }
+      if (newState.operatorInfoStr != oldState.operatorInfoStr) {
+        outputEvts.append(WorkflowAdditionalOperatorInfoEvent(newState.operatorInfoStr))
+      }
       outputEvts
     })
   )
@@ -83,9 +86,17 @@ class JobRuntimeService(
     throw new RuntimeException("skipping tuple is temporarily disabled")
   }))
 
+  addSubscription(wsInput.subscribe((req: WorkflowAdditionalOperatorInfoRequest, uidOpt) => {
+    client.getOperatorInfo()
+  }))
+
   // Receive Paused from Amber
   addSubscription(client.registerCallback[WorkflowPaused]((evt: WorkflowPaused) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSED))
+  }))
+
+  addSubscription(client.registerCallback[AdditionalOperatorInfo]((evt: AdditionalOperatorInfo) => {
+    stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withOperatorInfoStr(evt.data))
   }))
 
   // Receive Pause

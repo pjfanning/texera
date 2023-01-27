@@ -13,7 +13,8 @@ final case class JobMetadataStore(
     isRecovering: _root_.scala.Boolean = false,
     isReplaying: _root_.scala.Boolean = false,
     currentReplayPos: _root_.scala.Int = 0,
-    interactionHistory: _root_.scala.Seq[_root_.scala.Int] = _root_.scala.Seq.empty
+    interactionHistory: _root_.scala.Seq[_root_.scala.Int] = _root_.scala.Seq.empty,
+    operatorInfoStr: _root_.scala.Predef.String = ""
     ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[JobMetadataStore] {
     private[this] def interactionHistorySerializedSize = {
       if (__interactionHistorySerializedSizeField == 0) __interactionHistorySerializedSizeField = {
@@ -74,6 +75,13 @@ final case class JobMetadataStore(
         val __localsize = interactionHistorySerializedSize
         __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(__localsize) + __localsize
       }
+      
+      {
+        val __value = operatorInfoStr
+        if (!__value.isEmpty) {
+          __size += _root_.com.google.protobuf.CodedOutputStream.computeStringSize(8, __value)
+        }
+      };
       __size
     }
     override def serializedSize: _root_.scala.Int = {
@@ -126,6 +134,12 @@ final case class JobMetadataStore(
         _output__.writeUInt32NoTag(interactionHistorySerializedSize)
         interactionHistory.foreach(_output__.writeInt32NoTag)
       };
+      {
+        val __v = operatorInfoStr
+        if (!__v.isEmpty) {
+          _output__.writeString(8, __v)
+        }
+      };
     }
     def withState(__v: edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState): JobMetadataStore = copy(state = __v)
     def withError(__v: _root_.scala.Predef.String): JobMetadataStore = copy(error = __v)
@@ -137,6 +151,7 @@ final case class JobMetadataStore(
     def addInteractionHistory(__vs: _root_.scala.Int*): JobMetadataStore = addAllInteractionHistory(__vs)
     def addAllInteractionHistory(__vs: Iterable[_root_.scala.Int]): JobMetadataStore = copy(interactionHistory = interactionHistory ++ __vs)
     def withInteractionHistory(__v: _root_.scala.Seq[_root_.scala.Int]): JobMetadataStore = copy(interactionHistory = __v)
+    def withOperatorInfoStr(__v: _root_.scala.Predef.String): JobMetadataStore = copy(operatorInfoStr = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -164,6 +179,10 @@ final case class JobMetadataStore(
           if (__t != 0) __t else null
         }
         case 7 => interactionHistory
+        case 8 => {
+          val __t = operatorInfoStr
+          if (__t != "") __t else null
+        }
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
@@ -176,6 +195,7 @@ final case class JobMetadataStore(
         case 5 => _root_.scalapb.descriptors.PBoolean(isReplaying)
         case 6 => _root_.scalapb.descriptors.PInt(currentReplayPos)
         case 7 => _root_.scalapb.descriptors.PRepeated(interactionHistory.iterator.map(_root_.scalapb.descriptors.PInt(_)).toVector)
+        case 8 => _root_.scalapb.descriptors.PString(operatorInfoStr)
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
@@ -193,6 +213,7 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     var __isReplaying: _root_.scala.Boolean = false
     var __currentReplayPos: _root_.scala.Int = 0
     val __interactionHistory: _root_.scala.collection.immutable.VectorBuilder[_root_.scala.Int] = new _root_.scala.collection.immutable.VectorBuilder[_root_.scala.Int]
+    var __operatorInfoStr: _root_.scala.Predef.String = ""
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
@@ -220,6 +241,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
           }
           _input__.popLimit(oldLimit)
         }
+        case 66 =>
+          __operatorInfoStr = _input__.readStringRequireUtf8()
         case tag => _input__.skipField(tag)
       }
     }
@@ -230,7 +253,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
         isRecovering = __isRecovering,
         isReplaying = __isReplaying,
         currentReplayPos = __currentReplayPos,
-        interactionHistory = __interactionHistory.result()
+        interactionHistory = __interactionHistory.result(),
+        operatorInfoStr = __operatorInfoStr
     )
   }
   implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore] = _root_.scalapb.descriptors.Reads{
@@ -243,7 +267,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
         isRecovering = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Boolean]).getOrElse(false),
         isReplaying = __fieldsMap.get(scalaDescriptor.findFieldByNumber(5).get).map(_.as[_root_.scala.Boolean]).getOrElse(false),
         currentReplayPos = __fieldsMap.get(scalaDescriptor.findFieldByNumber(6).get).map(_.as[_root_.scala.Int]).getOrElse(0),
-        interactionHistory = __fieldsMap.get(scalaDescriptor.findFieldByNumber(7).get).map(_.as[_root_.scala.Seq[_root_.scala.Int]]).getOrElse(_root_.scala.Seq.empty)
+        interactionHistory = __fieldsMap.get(scalaDescriptor.findFieldByNumber(7).get).map(_.as[_root_.scala.Seq[_root_.scala.Int]]).getOrElse(_root_.scala.Seq.empty),
+        operatorInfoStr = __fieldsMap.get(scalaDescriptor.findFieldByNumber(8).get).map(_.as[_root_.scala.Predef.String]).getOrElse("")
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
@@ -263,7 +288,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     isRecovering = false,
     isReplaying = false,
     currentReplayPos = 0,
-    interactionHistory = _root_.scala.Seq.empty
+    interactionHistory = _root_.scala.Seq.empty,
+    operatorInfoStr = ""
   )
   implicit class JobMetadataStoreLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore](_l) {
     def state: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState] = field(_.state)((c_, f_) => c_.copy(state = f_))
@@ -273,6 +299,7 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     def isReplaying: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Boolean] = field(_.isReplaying)((c_, f_) => c_.copy(isReplaying = f_))
     def currentReplayPos: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.currentReplayPos)((c_, f_) => c_.copy(currentReplayPos = f_))
     def interactionHistory: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[_root_.scala.Int]] = field(_.interactionHistory)((c_, f_) => c_.copy(interactionHistory = f_))
+    def operatorInfoStr: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.operatorInfoStr)((c_, f_) => c_.copy(operatorInfoStr = f_))
   }
   final val STATE_FIELD_NUMBER = 1
   final val ERROR_FIELD_NUMBER = 2
@@ -281,6 +308,7 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
   final val IS_REPLAYING_FIELD_NUMBER = 5
   final val CURRENT_REPLAY_POS_FIELD_NUMBER = 6
   final val INTERACTION_HISTORY_FIELD_NUMBER = 7
+  final val OPERATOR_INFO_STR_FIELD_NUMBER = 8
   def of(
     state: edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState,
     error: _root_.scala.Predef.String,
@@ -288,7 +316,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     isRecovering: _root_.scala.Boolean,
     isReplaying: _root_.scala.Boolean,
     currentReplayPos: _root_.scala.Int,
-    interactionHistory: _root_.scala.Seq[_root_.scala.Int]
+    interactionHistory: _root_.scala.Seq[_root_.scala.Int],
+    operatorInfoStr: _root_.scala.Predef.String
   ): _root_.edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore = _root_.edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore(
     state,
     error,
@@ -296,7 +325,8 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     isRecovering,
     isReplaying,
     currentReplayPos,
-    interactionHistory
+    interactionHistory,
+    operatorInfoStr
   )
   // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.texera.web.JobMetadataStore])
 }

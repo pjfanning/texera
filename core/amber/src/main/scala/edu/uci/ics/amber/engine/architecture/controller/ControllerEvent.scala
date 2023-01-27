@@ -20,6 +20,8 @@ object ControllerEvent {
 
   case class WorkflowStateUpdate(aggState:WorkflowAggregatedState) extends ControlCommand[Unit]
 
+  case class AdditionalOperatorInfo(data:String) extends ControlCommand[Unit]
+
   case class WorkflowStatusUpdate(
       operatorStatistics: Map[String, OperatorRuntimeStats]
   ) extends ControlCommand[Unit]

@@ -14,6 +14,8 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   var parser: CsvParser = _
 
   var nextRow: Array[String] = _
+  var sumLen: Array[Int] = _
+  var numRowOutputted = 0
 
   override def produceTexeraTuple(): Iterator[Tuple] = {
 
@@ -28,6 +30,12 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
       override def next(): Array[String] = {
         val ret = nextRow
+        var idx = 0
+        for (elem <- nextRow) {
+          sumLen(idx) += elem.length
+          idx+=1
+        }
+        numRowOutputted+=1
         nextRow = null
         ret
       }
@@ -65,7 +73,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
     csvSetting.setMaxCharsPerColumn(-1)
     csvSetting.setFormat(csvFormat)
     csvSetting.setHeaderExtractionEnabled(desc.hasHeader)
-
+    sumLen = Array.fill(schema.getAttributes.size())(0)
     parser = new CsvParser(csvSetting)
     parser.beginParsing(inputReader)
   }
@@ -80,6 +88,6 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getStateInformation: String = {
-    s"nextRow is $nextRow"
+    s"average length of each field in byte: ${sumLen.map(i => i/numRowOutputted).mkString(",")}"
   }
 }

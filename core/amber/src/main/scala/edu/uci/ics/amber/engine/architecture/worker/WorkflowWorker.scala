@@ -15,7 +15,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogN
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, ResendOutputTo, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -124,6 +124,8 @@ class WorkflowWorker(
 
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+      case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
+        sender ! actorId+": "+operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
         recoveryQueue.setReplayTo(index, true)

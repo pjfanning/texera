@@ -11,10 +11,15 @@ export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_rep
 export class ReplayWorkflowService {
   public history: readonly number[] = [];
   private displayWorkflowReplay = new Subject<string>();
+  public operatorInfo: string = "";
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
       this.history = e.history;
+    });
+
+    workflowWebsocketService.subscribeToEvent("WorkflowAdditionalOperatorInfoEvent").subscribe(e =>{
+      this.operatorInfo = e.data;
     });
   }
 
@@ -29,5 +34,9 @@ export class ReplayWorkflowService {
   public selectReplayPoint(index: number): void {
     this.workflowWebsocketService.send("WorkflowReplayRequest", { replayPos: index });
     this.notification.info("replaying time point " + this.history[index] + "s");
+  }
+
+  public clickButton():void {
+    this.workflowWebsocketService.send("WorkflowAdditionalOperatorInfoRequest", {});
   }
 }
