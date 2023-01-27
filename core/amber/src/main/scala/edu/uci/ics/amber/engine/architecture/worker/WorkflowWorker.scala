@@ -125,7 +125,7 @@ class WorkflowWorker(
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
-        sender ! actorId+": "+operator.getStateInformation
+        sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
         recoveryQueue.setReplayTo(index, true)

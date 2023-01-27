@@ -252,6 +252,7 @@ class Controller(
         !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numPauses
       ) {
         isReplaying = false
+        globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
         if (!controlMessagesToRecover.hasNext) {
           logManager.terminate()
           logStorage.cleanPartiallyWrittenLogFile()
@@ -329,7 +330,7 @@ class Controller(
 
   override def receive: Receive = {
     if (replayRequestIndex > 0) {
-      // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
+      globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
       // val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
       // controlInputPort.overwriteFIFOState(fifoState)
       // self ! controlMessagesToRecover.next()

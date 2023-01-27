@@ -88,6 +88,6 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getStateInformation: String = {
-    s"average length of each field in byte: ${sumLen.map(i => i/numRowOutputted).mkString(",")}"
+    s"Scan: average length of each field in byte: ${sumLen.map(i => i/numRowOutputted).mkString(",")}"
   }
 }
