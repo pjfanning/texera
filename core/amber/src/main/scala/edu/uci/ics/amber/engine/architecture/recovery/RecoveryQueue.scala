@@ -1,24 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.architecture.logging.{
-  ProcessControlMessage,
-  SenderActorChange,
-  StepDelta,
-  TerminateSignal,
-  TimeStamp
-}
+import edu.uci.ics.amber.engine.architecture.logging.{ProcessControlMessage, SenderActorChange, StepDelta, TerminateSignal, TimeStamp}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  ControlElement,
-  EndMarker,
-  InputTuple,
-  InternalQueueElement
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, EndMarker, InputTuple, InternalQueueElement}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import lbmq.LinkedBlockingMultiQueue
 
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -29,11 +18,21 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
   private val controlMessages = mutable
     .HashMap[ActorVirtualIdentity, mutable.Queue[ControlElement]]()
   private var step = 0L
+  var totalStep = 0L
   private var targetVId: ActorVirtualIdentity = _
   private var cleaned = false
   private val callbacksOnEnd = new ArrayBuffer[() => Unit]()
   private var endCallbackTriggered = false
   private var nextRecordToEmit: InternalQueueElement = _
+
+  private var replayTo = -1L
+  def setReplayTo(dest: Long, unblock:Boolean): Unit = {
+    replayTo = dest
+    if(unblock){
+      releaseFlag.complete()
+    }
+  }
+  var releaseFlag = new CompletableFuture[Unit]()
 
   // calling it first to get nextRecordToEmit ready
   // we assume the log has the following structure:
@@ -45,7 +44,7 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
   }
 
   def isReplayCompleted: Boolean = {
-    val res = !records.hasNext
+    val res = !records.hasNext && nextRecordToEmit == null
     if (res && !endCallbackTriggered) {
       endCallbackTriggered = true
       callbacksOnEnd.foreach(callback => callback())
@@ -102,6 +101,16 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
   }
 
   def isReadyToEmitNextControl: Boolean = {
+    if(step == 0){
+      return true
+    }
+    totalStep += 1
+    if (replayTo == totalStep) {
+      println("reach total step at "+replayTo+" step = "+step)
+      releaseFlag.get()
+      releaseFlag = new CompletableFuture[Unit]()
+      println("exit total step at "+replayTo)
+    }
     step -= 1
     step == 0
   }
@@ -124,6 +133,16 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
   }
 
   def get(): InternalQueueElement = {
+    if(step != 0){
+      totalStep += 1
+      if (replayTo == totalStep) {
+        println("reach total step at "+replayTo+" step = "+step)
+        releaseFlag.get()
+        releaseFlag = new CompletableFuture[Unit]()
+        println("exit total step at "+replayTo)
+      }
+      step -= 1
+    }
     if (step > 0) {
       //wait until input[targetVId] available
       inputMapping
@@ -131,6 +150,7 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
         .take()
     } else {
       val res = nextRecordToEmit
+      nextRecordToEmit = null
       processInternalEventsTillNextControl()
       res
     }

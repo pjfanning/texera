@@ -59,13 +59,6 @@ class DataProcessor( // dependencies:
 ) extends WorkerInternalQueue
     with AmberLogging {
 
-  var pauseIndex = -1
-  var numPauses = 0
-  def setPauseIndex(index: Int): Unit = {
-    pauseIndex = index
-  }
-  val releaseFlag = new CompletableFuture[Int]()
-
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private var dpThread: Future[_] = _
@@ -230,11 +223,6 @@ class DataProcessor( // dependencies:
       pauseManager.recordRequest(PauseType.UserPause, true)
       disableDataQueue()
       stateManager.transitTo(PAUSED)
-      numPauses += 1
-      if (pauseIndex == numPauses) {
-        recoveryManager.notifyReplayStatus()
-        pauseIndex = releaseFlag.get()
-      }
     } else {
       outputTupleCount += 1
       val outLinks = getOutputLinkByPort(outputPortOpt)
@@ -288,6 +276,7 @@ class DataProcessor( // dependencies:
           asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
           stateManager.transitTo(COMPLETED)
         }
+        processControlCommandsDuringExecution() // necessary for trigger correct recovery
       case ControlElement(payload, from) =>
         processControlCommand(payload, from)
     }
@@ -382,6 +371,7 @@ class DataProcessor( // dependencies:
     determinantLogger.logDeterminant(ProcessControlMessage(payload, from))
     payload match {
       case invocation: ControlInvocation =>
+        //logger.info("current total step = "+totalSteps+" recovery step = "+recoveryQueue.totalStep)
         asyncRPCServer.logControlInvocation(invocation, from)
         asyncRPCServer.receive(invocation, from)
       case ret: ReturnInvocation =>

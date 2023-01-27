@@ -57,10 +57,14 @@ class ControllerAsyncRPCHandlerInitializer(
   var numPauses = 0
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
-  var interactionHistory: mutable.ArrayBuffer[String] = new ArrayBuffer[String]()
+  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])] = new ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])]()
   val workflowStartTimeStamp: Long = System.currentTimeMillis()
+  var suppressStatusUpdate = false
 
   def enableStatusUpdate(): Unit = {
+    if(suppressStatusUpdate){
+      return
+    }
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
       statusUpdateAskHandle = Option(
         actorContext.system.scheduler.scheduleAtFixedRate(
@@ -77,6 +81,9 @@ class ControllerAsyncRPCHandlerInitializer(
   }
 
   def enableMonitoring(): Unit = {
+    if(suppressStatusUpdate){
+      return
+    }
     if (
       Constants.monitoringEnabled && controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
     ) {
@@ -95,6 +102,9 @@ class ControllerAsyncRPCHandlerInitializer(
   }
 
   def enableSkewHandling(): Unit = {
+    if(suppressStatusUpdate){
+      return
+    }
     if (
       Constants.reshapeSkewHandlingEnabled && controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
     ) {

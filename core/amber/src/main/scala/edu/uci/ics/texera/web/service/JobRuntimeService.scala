@@ -2,30 +2,16 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowPaused,
-  WorkflowReplayInfo
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowPaused, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowExecutionErrorEvent,
-  WorkflowInteractionHistoryEvent,
-  WorkflowStateEvent
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  RemoveBreakpointRequest,
-  SkipTupleRequest,
-  WorkflowKillRequest,
-  WorkflowPauseRequest,
-  WorkflowReplayRequest,
-  WorkflowResumeRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -38,6 +24,8 @@ class JobRuntimeService(
     breakpointService: JobBreakpointService
 ) extends SubscriptionManager
     with LazyLogging {
+
+  val replayPoints = mutable.ArrayBuffer[Map[ActorVirtualIdentity, Long]]()
 
   addSubscription(
     stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
@@ -67,20 +55,26 @@ class JobRuntimeService(
 
   addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
     if (!stateStore.jobMetadataStore.getState.isReplaying) {
+      replayPoints.clear()
+      evt.history.foreach{
+        case (i, identityToLong) =>
+          replayPoints.append(identityToLong.toMap)
+      }
       stateStore.jobMetadataStore.updateState(jobMetadata =>
-        jobMetadata.withInteractionHistory(evt.history)
+        jobMetadata.withInteractionHistory(evt.history.map(_._1)).withCurrentReplayPos(-1)
       )
     }
   }))
 
   addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
-    if (stateStore.jobMetadataStore.getState.currentReplayPos != req.replayPos) {
+    val reqPos = req.replayPos
+    if (stateStore.jobMetadataStore.getState.currentReplayPos != reqPos) {
       val requireRestart =
-        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.currentReplayPos > req.replayPos
+        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.currentReplayPos > reqPos
       stateStore.jobMetadataStore.updateState(state => {
-        state.withCurrentReplayPos(req.replayPos).withIsReplaying(true)
+        state.withCurrentReplayPos(reqPos).withIsReplaying(true)
       })
-      client.replayExecution(req.replayPos, requireRestart)
+      client.replayExecution(replayPoints(reqPos), requireRestart)
     }
   }))
 
@@ -102,13 +96,24 @@ class JobRuntimeService(
 
   // Receive Resume
   addSubscription(wsInput.subscribe((req: WorkflowResumeRequest, uidOpt) => {
+    if(stateStore.jobMetadataStore.getState.isReplaying){
+      client.interruptReplay().onSuccess(ret =>{
+        stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
+        doResume()
+      })
+    }else{
+      doResume()
+    }
+  }))
+
+  def doResume(): Unit ={
     breakpointService.clearTriggeredBreakpoints()
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RESUMING))
     client.sendAsyncWithCallback[Unit](
       ResumeWorkflow(),
       _ => stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RUNNING))
     )
-  }))
+  }
 
   // Receive Kill
   addSubscription(wsInput.subscribe((req: WorkflowKillRequest, uidOpt) => {

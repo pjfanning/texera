@@ -1,11 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 
 object ResumeHandler {
   final case class ResumeWorkflow() extends ControlCommand[Unit]
@@ -31,6 +32,7 @@ trait ResumeHandler {
         }.toSeq)
         .map { _ =>
           // update frontend status
+          sendToClient(WorkflowStateUpdate(RUNNING))
           sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
           enableStatusUpdate() //re-enabled it since it is disabled in pause
           enableMonitoring()

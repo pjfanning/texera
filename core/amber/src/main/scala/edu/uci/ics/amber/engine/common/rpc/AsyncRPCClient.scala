@@ -98,13 +98,13 @@ class AsyncRPCClient(
   }
 
   def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
-    if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-      return
-    }
+//    if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
+//      return
+//    }
     if (ret.controlReturn != null) {
-      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
-        return
-      }
+//      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
+//        return
+//      }
       logger.info(
         s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
       )

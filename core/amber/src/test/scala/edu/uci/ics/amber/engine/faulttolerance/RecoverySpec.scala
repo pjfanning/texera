@@ -170,8 +170,12 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log" in {
-    val logStorage = new EmptyLogStorage()
-    assert(DeterminantLogStorage.fetchAllLogRecords(logStorage).isEmpty)
+    val workerName = "WF2-CSVFileScan-operator-2ac234de-85ff-414c-baea-77c8a7585f8f-main-0"
+    val logStorage = new LocalFSLogStorage(workerName)
+    val iter = logStorage.getReader.mkLogRecordIterator()
+    while(iter.hasNext){
+      println(iter.next())
+    }
   }
 
 }

@@ -1,19 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  ReportCurrentProcessingTuple,
-  WorkflowPaused,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.GetReplayAlignmentHandler
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import scala.collection.mutable
 
@@ -31,6 +30,9 @@ trait PauseHandler {
 
   registerHandler { (msg: PauseWorkflow, sender) =>
     {
+      disableStatusUpdate() // to be enabled in resume
+      disableMonitoring()
+      disableSkewHandling()
       Future
         .collect(workflow.getAllOperators.map { operator =>
           // create a buffer for the current input tuple
@@ -62,18 +64,24 @@ trait PauseHandler {
             }
         }.toSeq)
         .map { ret =>
-          // update frontend workflow status
-          sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
-          // send paused to frontend
-          sendToClient(WorkflowPaused())
-          numPauses += 1
-          interactionHistory.append(
-            s"${(System.currentTimeMillis() - workflowStartTimeStamp) / 1000}s"
-          )
-          disableStatusUpdate() // to be enabled in resume
-          disableMonitoring()
-          disableSkewHandling()
-        }
+          Future
+            .collect(workflow.getAllWorkers.map{
+              worker => send(GetReplayAlignment(), worker).map{
+                alignment => (worker, alignment)
+              }
+            }.toSeq).map{
+            alignments =>
+              // update frontend workflow status
+              sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
+              // send paused to frontend
+              sendToClient(WorkflowPaused())
+              numPauses += 1
+              val time = ((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt
+              interactionHistory.append(
+                (time, alignments.toMap +(CONTROLLER -> numPauses))
+              )
+          }
+        }.unit
     }
   }
 

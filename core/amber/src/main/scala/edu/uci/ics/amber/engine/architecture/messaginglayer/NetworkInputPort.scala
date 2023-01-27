@@ -48,6 +48,10 @@ class NetworkInputPort[T](
     }
   }
 
+  def increaseFIFOSeqNum(id:ActorVirtualIdentity): Unit ={
+    idToOrderingEnforcers.getOrElseUpdate(id, new OrderingEnforcer[T]()).current+=1
+  }
+
   def getStashedMessageCount(): Long = {
     if (idToOrderingEnforcers.size == 0) { return 0 }
     idToOrderingEnforcers.values.map(ordEnforcer => ordEnforcer.ofoMap.size).sum

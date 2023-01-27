@@ -40,6 +40,9 @@ trait QueryWorkerStatisticsHandler {
     // wait for all workers to reply before notifying frontend
     Future
       .collect(requests)
-      .map(_ => sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus)))
+      .map(_ => {
+        println("collected worker stats")
+        sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
+      })
   })
 }

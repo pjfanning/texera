@@ -42,7 +42,7 @@ class WorkerLayer(
   var workers: ListMap[ActorVirtualIdentity, WorkerInfo] =
     ListMap[ActorVirtualIdentity, WorkerInfo]()
 
-  private val workerActorGen = mutable.HashMap[ActorVirtualIdentity, (Address, Int) => ActorRef]()
+  private val workerActorGen = mutable.HashMap[ActorVirtualIdentity, (Address,  Long) => ActorRef]()
 
   def startAfter(link: LinkIdentity): Unit = {
     startDependencies.add(link)
@@ -73,7 +73,7 @@ class WorkerLayer(
       workerToLayer: mutable.HashMap[ActorVirtualIdentity, WorkerLayer],
       workerToOperatorExec: mutable.HashMap[ActorVirtualIdentity, IOperatorExecutor],
       supportFaultTolerance: Boolean,
-      replayRequest: Int
+      replayRequest: Map[ActorVirtualIdentity, Long]
   ): Unit = {
     deployStrategy.initialize(deploymentFilter.filter(prev, all, context.self.path.address))
     workers = ListMap((0 until numWorkers).map { i =>
@@ -82,7 +82,7 @@ class WorkerLayer(
         ActorVirtualIdentity(s"Worker:WF${id.workflow}-${id.operator}-${id.layerID}-$i")
       val address: Address = deployStrategy.next()
       workerToOperatorExec(workerId) = operatorExecutor
-      val actorGen = (address: Address, replayRequest: Int) => {
+      val actorGen = (address: Address, replayTo: Long) => {
         val actorRef = context.actorOf(
           if (operatorExecutor.isInstanceOf[PythonUDFOpExecV2]) {
             PythonWorkflowWorker
@@ -105,7 +105,7 @@ class WorkerLayer(
                 parentNetworkCommunicationActorRef,
                 allUpstreamLinkIds,
                 supportFaultTolerance,
-                replayRequest
+                replayTo
               )
               .withDeploy(Deploy(scope = RemoteScope(address)))
           }
@@ -113,7 +113,11 @@ class WorkerLayer(
         parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(workerId, actorRef))
         actorRef
       }
-      val ref = actorGen(address, replayRequest)
+      val ref = actorGen(address, if(replayRequest.nonEmpty){
+        replayRequest(workerId)
+      }else{
+        -1
+      })
       workerActorGen(workerId) = actorGen
       workerToLayer(workerId) = this
       workerId -> WorkerInfo(
@@ -128,9 +132,9 @@ class WorkerLayer(
   def recover(
       actorVirtualIdentity: ActorVirtualIdentity,
       address: Address,
-      index: Int
+      index: Map[ActorVirtualIdentity, Long]
   ): ActorRef = {
-    val newRef = workerActorGen(actorVirtualIdentity)(address, index)
+    val newRef = workerActorGen(actorVirtualIdentity)(address, index(actorVirtualIdentity))
     workers(actorVirtualIdentity).ref = newRef
     newRef
   }

@@ -8,36 +8,14 @@ import akka.pattern.ask
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef,
-  ResendFeasibility,
-  SendRequest
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
-  NetworkInputPort,
-  NetworkOutputPort,
-  TupleToBatchConverter
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef, ResendFeasibility, SendRequest}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
 import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplayTo,
-  ControlPayload,
-  CreditRequest,
-  DataPayload,
-  ResendOutputTo,
-  UpdateRecoveryStatus,
-  WorkflowControlMessage,
-  WorkflowDataMessage,
-  WorkflowRecoveryMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, ResendOutputTo, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -57,7 +35,7 @@ object WorkflowWorker {
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       allUpstreamLinkIds: Set[LinkIdentity],
       supportFaultTolerance: Boolean,
-      recoverToPauseIndex: Int
+      recoverToPauseIndex: Long
   ): Props =
     Props(
       new WorkflowWorker(
@@ -83,7 +61,7 @@ class WorkflowWorker(
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
     allUpstreamLinkIds: Set[LinkIdentity],
     supportFaultTolerance: Boolean,
-    recoverToPauseIndex: Int
+    replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
   lazy val recoveryQueue = new RecoveryQueue(logStorage.getReader)
   lazy val pauseManager: PauseManager = wire[PauseManager]
@@ -107,7 +85,9 @@ class WorkflowWorker(
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
   }
-  dataProcessor.setPauseIndex(recoverToPauseIndex)
+
+  logger.info("set replay to "+replayTo)
+  recoveryQueue.setReplayTo(replayTo, false)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -126,14 +106,14 @@ class WorkflowWorker(
 
   override def receive: Receive = {
     if (!recoveryQueue.isReplayCompleted) {
-      recoveryManager.registerOnStart(() =>
-        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+      recoveryManager.registerOnStart(() =>{}
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
       )
-      recoveryManager.setNotifyReplayCallback(() =>
-        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+      recoveryManager.setNotifyReplayCallback(() =>{}
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
       )
-      recoveryManager.registerOnEnd(() =>
-        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+      recoveryManager.registerOnEnd(() =>{}
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
       )
       val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
       controlInputPort.overwriteFIFOState(fifoState)
@@ -145,8 +125,8 @@ class WorkflowWorker(
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
-        context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
-        dataProcessor.releaseFlag.complete(index)
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+        recoveryQueue.setReplayTo(index, true)
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),

@@ -54,7 +54,8 @@ trait WorkerInternalQueue {
   // logging related variables:
   def logManager: LogManager // require dp thread to have log manager
   def recoveryQueue: RecoveryQueue // require dp thread to have recovery queue
-  protected lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
+  lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
+  var totalSteps = 0L
 
   // the values in below maps are in tuples (not batches)
   private var inputTuplesPutInQueue =
@@ -112,9 +113,14 @@ trait WorkerInternalQueue {
           // do nothing
         }
       }
+      totalSteps += 1
+      println(s"${totalSteps}: "+elem)
+      determinantLogger.stepIncrement()
       elem
     } else {
-      recoveryQueue.get()
+      val elem = recoveryQueue.get()
+      println(s"${recoveryQueue.totalStep}: "+elem)
+      elem
     }
   }
 
@@ -142,10 +148,17 @@ trait WorkerInternalQueue {
 
   def isControlQueueNonEmptyOrPaused: Boolean = {
     if (recoveryQueue.isReplayCompleted) {
-      determinantLogger.stepIncrement()
-      !controlQueue.isEmpty || pauseManager.isPaused()
+      val res = !controlQueue.isEmpty || pauseManager.isPaused()
+      if(!res){
+        totalSteps += 1
+        determinantLogger.stepIncrement()
+      }
+      println(s"${totalSteps}: check control")
+      res
     } else {
-      recoveryQueue.isReadyToEmitNextControl
+      val res = recoveryQueue.isReadyToEmitNextControl
+      println(s"${recoveryQueue.totalStep}: check control")
+      res
     }
   }
 

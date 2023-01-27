@@ -1,13 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowCompleted,
-  WorkflowReplayInfo
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
@@ -33,7 +31,9 @@ trait WorkerExecutionCompletedHandler {
   registerHandler { (msg: WorkerExecutionCompleted, sender) =>
     {
       assert(sender.isInstanceOf[ActorVirtualIdentity])
-
+      disableStatusUpdate()
+      disableMonitoring()
+      disableSkewHandling()
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion
@@ -46,14 +46,11 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (workflow.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
-            interactionHistory
-              .append(s"${(System.currentTimeMillis() - workflowStartTimeStamp) / 1000}s")
-            sendToClient(WorkflowReplayInfo(interactionHistory))
-            sendToClient(WorkflowCompleted())
-            disableStatusUpdate()
-            disableMonitoring()
-            disableSkewHandling()
-            Future.Done
+                interactionHistory
+                  .append((((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt, Map.empty))
+                sendToClient(WorkflowReplayInfo(interactionHistory))
+                sendToClient(WorkflowCompleted())
+            Future.Unit
           } else {
             scheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
           }

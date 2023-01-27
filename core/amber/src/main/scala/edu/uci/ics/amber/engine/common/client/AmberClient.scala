@@ -6,17 +6,8 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplayTo,
-  NotifyFailedNode,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, InterruptReplay, NotifyFailedNode, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -89,17 +80,25 @@ class AmberClient(
     }
   }
 
-  def replayExecution(index: Int, restart: Boolean): Future[Any] = {
+  def replayExecution(posMap:Map[ActorVirtualIdentity, Long], restart: Boolean): Future[Any] = {
     if (!isActive) {
       Future[Any](())
     } else {
       val res = if (restart) {
-        controllerConfig.replayRequest = index
+        controllerConfig.replayRequest = posMap
         (clientActor ? InitializeRequest(workflow, controllerConfig)).asTwitter()
       } else {
-        (clientActor ? WorkflowRecoveryMessage(CLIENT, ContinueReplayTo(index))).asTwitter()
+        (clientActor ? WorkflowRecoveryMessage(CLIENT, ContinueReplay(posMap))).asTwitter()
       }
       res
+    }
+  }
+
+  def interruptReplay(): Future[Any] ={
+    if (!isActive) {
+      Future[Any](())
+    } else {
+      (clientActor ? WorkflowRecoveryMessage(CLIENT, InterruptReplay())).asTwitter()
     }
   }
 
