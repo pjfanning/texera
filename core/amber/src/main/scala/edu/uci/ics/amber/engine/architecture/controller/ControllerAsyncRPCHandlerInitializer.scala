@@ -124,6 +124,7 @@ class ControllerAsyncRPCHandlerInitializer(
 
   def disableStatusUpdate(): Unit = {
     if (statusUpdateAskHandle.nonEmpty) {
+      println("status update disabled")
       statusUpdateAskHandle.get.cancel()
       statusUpdateAskHandle = Option.empty
     }

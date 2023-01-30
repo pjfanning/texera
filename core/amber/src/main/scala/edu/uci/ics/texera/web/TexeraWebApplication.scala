@@ -44,11 +44,11 @@ import scala.annotation.tailrec
 object TexeraWebApplication {
 
   def createAmberRuntime(
-      workflow: Workflow,
+      workflowGen: () => Workflow,
       conf: ControllerConfig,
       errorHandler: Throwable => Unit
   ): AmberClient = {
-    new AmberClient(actorSystem, workflow, conf, errorHandler)
+    new AmberClient(actorSystem, workflowGen, conf, errorHandler)
   }
 
   def scheduleCallThroughActorSystem(delay: FiniteDuration)(call: => Unit): Cancellable = {

@@ -30,10 +30,12 @@ trait WorkerExecutionCompletedHandler {
 
   registerHandler { (msg: WorkerExecutionCompleted, sender) =>
     {
+      if (workflow.isCompleted) {
+        disableStatusUpdate()
+        disableMonitoring()
+        disableSkewHandling()
+      }
       assert(sender.isInstanceOf[ActorVirtualIdentity])
-      disableStatusUpdate()
-      disableMonitoring()
-      disableSkewHandling()
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion

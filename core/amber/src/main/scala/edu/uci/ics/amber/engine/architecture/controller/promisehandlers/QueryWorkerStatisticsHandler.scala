@@ -27,7 +27,7 @@ trait QueryWorkerStatisticsHandler {
   registerHandler((msg: ControllerInitiateQueryStatistics, sender) => {
     // send to specified workers (or all workers by default)
     val workers = msg.filterByWorkers.getOrElse(workflow.getAllWorkers).toList
-
+    println("send control to workers #worker = "+workers.length)
     // send QueryStatistics message
     val requests = workers.map(worker =>
       // must immediately update worker state and stats after reply

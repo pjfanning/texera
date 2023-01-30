@@ -57,7 +57,10 @@ class WorkflowJobService(
   // Runtime starts from here:
   var client: AmberClient =
     TexeraWebApplication.createAmberRuntime(
-      workflow,
+      () => workflowCompiler.amberWorkflow(
+        WorkflowIdentity(workflowContext.jobId),
+        resultService.opResultStorage
+      ),
       controllerConfig,
       errorHandler
     )

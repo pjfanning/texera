@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 
 class AmberClient(
     system: ActorSystem,
-    workflow: Workflow,
+    workflowGen: () => Workflow,
     controllerConfig: ControllerConfig,
     errorHandler: Throwable => Unit
 ) {
@@ -32,7 +32,7 @@ class AmberClient(
   private val registeredObservables = new mutable.HashMap[Class[_], Observable[_]]()
   @volatile private var isActive = true
 
-  Await.result(clientActor ? InitializeRequest(workflow, controllerConfig), 10.seconds)
+  Await.result(clientActor ? InitializeRequest(workflowGen(), controllerConfig), 10.seconds)
 
   def shutdown(): Unit = {
     if (isActive) {
@@ -86,7 +86,7 @@ class AmberClient(
     } else {
       val res = if (restart) {
         controllerConfig.replayRequest = posMap
-        (clientActor ? InitializeRequest(workflow, controllerConfig)).asTwitter()
+        (clientActor ? InitializeRequest(workflowGen(), controllerConfig)).asTwitter()
       } else {
         (clientActor ? WorkflowRecoveryMessage(CLIENT, ContinueReplay(posMap))).asTwitter()
       }

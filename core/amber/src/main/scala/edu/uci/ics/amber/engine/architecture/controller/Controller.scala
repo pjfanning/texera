@@ -169,6 +169,7 @@ class Controller(
           isReplaying = true
           if(index.nonEmpty){
             replayRequestIndex = index(CONTROLLER)
+            controllerConfig.replayRequest = index
             // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
             workflow.getAllLayers.flatMap(_.workers).map(_._2).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(index(info.id))))
           }else{

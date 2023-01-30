@@ -114,12 +114,12 @@ trait WorkerInternalQueue {
         }
       }
       totalSteps += 1
-      println(s"${totalSteps}: "+elem)
+      //println(s"${totalSteps}: "+elem)
       determinantLogger.stepIncrement()
       elem
     } else {
       val elem = recoveryQueue.get()
-      println(s"${recoveryQueue.totalStep}: "+elem)
+      //println(s"${recoveryQueue.totalStep}: "+elem)
       elem
     }
   }
@@ -153,11 +153,11 @@ trait WorkerInternalQueue {
         totalSteps += 1
         determinantLogger.stepIncrement()
       }
-      println(s"${totalSteps}: check control")
+      //println(s"${totalSteps}: check control")
       res
     } else {
       val res = recoveryQueue.isReadyToEmitNextControl
-      println(s"${recoveryQueue.totalStep}: check control")
+      //println(s"${recoveryQueue.totalStep}: check control")
       res
     }
   }
