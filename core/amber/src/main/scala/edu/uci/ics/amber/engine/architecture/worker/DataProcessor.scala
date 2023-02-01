@@ -273,6 +273,8 @@ class DataProcessor( // dependencies:
         }
       case ControlElement(payload, from) =>
         processControlCommand(payload, from)
+      case epochMarker @ InputEpochMarker(_, _) =>
+        processEpochMarker(epochMarker)
     }
   }
 
@@ -370,6 +372,20 @@ class DataProcessor( // dependencies:
       case ret: ReturnInvocation =>
         asyncRPCClient.logControlReply(ret, from)
         asyncRPCClient.fulfillPromise(ret)
+    }
+  }
+
+  private[this] def processEpochMarker(epochMarker: InputEpochMarker): Unit = {
+    val dest = epochMarker.epochMarker.dest
+    val controlCommand = epochMarker.epochMarker.msg
+    if (controlCommand.nonEmpty) {
+      this.asyncRPCServer.receive(
+        ControlInvocation(AsyncRPCClient.IgnoreReply, controlCommand.get),
+        actorId
+      )
+    }
+    if (dest.nonEmpty && dest.get != opExecConfig.id) {
+      this.outputManager.emitEpochMarker(epochMarker.epochMarker)
     }
   }
 

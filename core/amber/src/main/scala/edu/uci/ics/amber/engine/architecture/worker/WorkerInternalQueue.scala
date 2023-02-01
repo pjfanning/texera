@@ -2,18 +2,12 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  CONTROL_QUEUE,
-  ControlElement,
-  DATA_QUEUE,
-  InputTuple,
-  InternalQueueElement
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_QUEUE, ControlElement, DATA_QUEUE, InputTuple, InternalQueueElement}
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream, EpochMarker}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import lbmq.LinkedBlockingMultiQueue
 
 import java.util.concurrent.locks.ReentrantLock
@@ -32,6 +26,8 @@ object WorkerInternalQueue {
       extends InternalQueueElement
 
   case class EndMarker(from: ActorVirtualIdentity) extends InternalQueueElement
+
+  case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker) extends InternalQueueElement
 
 }
 

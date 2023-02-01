@@ -1,8 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputTuple}
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream, EpochMarker}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
@@ -32,6 +32,8 @@ class BatchToTupleConverter(
         }
       case EndOfUpstream() =>
         workerInternalQueue.appendElement(EndMarker(from))
+      case EpochMarker(dest) =>
+        workerInternalQueue.appendElement(InputEpochMarker(from, dest))
       case other =>
         throw new NotImplementedError()
     }

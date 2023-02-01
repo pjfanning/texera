@@ -33,6 +33,8 @@ message ControlPayloadV2 {
 message PythonDataHeader {
     common.ActorVirtualIdentity tag = 1 [(scalapb.field).no_box = true];
     bool is_end = 2;
+    bool is_epoch = 3;
+    common.LayerIdentity epoch_dest = 4 [(scalapb.field).no_box = true];
 }
 
 message PythonControlMessage {

@@ -1,15 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import akka.actor.{ActorContext, Cancellable}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
-  FlushNetworkBuffer,
-  getBatchSize,
-  toPartitioner
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{FlushNetworkBuffer, getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InputEpochMarker
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.DataPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -104,6 +101,14 @@ class OutputManager(
     val bucketIndex = partitioner.getBucketIndex(tuple)
     val destination = partitioner.allReceivers(bucketIndex)
     networkOutputBuffers((outputPort, destination)).addTuple(tuple)
+  }
+
+  def emitEpochMarker(epochMarker: EpochMarker): Unit = {
+    // flush all network buffers of this operator, emit epoch marker to network
+    networkOutputBuffers.foreach(kv => {
+      kv._2.flush()
+      kv._2.addEpochMarker(epochMarker)
+    })
   }
 
   /**

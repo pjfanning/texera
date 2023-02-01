@@ -1,8 +1,16 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
 
 sealed trait DataPayload extends Serializable {}
+
+final case class EpochMarker(
+    id: Int,
+  dest: Option[LayerIdentity],
+  msg: Option[ControlCommand[_]]
+) extends DataPayload
 
 final case class EndOfUpstream() extends DataPayload
 
