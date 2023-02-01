@@ -12,16 +12,18 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
 import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.CheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
+import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
@@ -79,8 +81,10 @@ class WorkflowWorker(
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
-  val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
+  val rpcHandlerInitializer: WorkerAsyncRPCHandlerInitializer =
     wire[WorkerAsyncRPCHandlerInitializer]
+
+  rpcHandlerInitializer.setNetworkSender(networkCommunicationActor)
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
@@ -124,6 +128,10 @@ class WorkflowWorker(
 
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+      case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
+        val syncFuture = new CompletableFuture[Unit]()
+        dataProcessor.enqueueCommand(ControlInvocation(AsyncRPCClient.IgnoreReplyAndDoNotLog, TakeCheckpoint(syncFuture)), SELF)
+        syncFuture.get()
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>

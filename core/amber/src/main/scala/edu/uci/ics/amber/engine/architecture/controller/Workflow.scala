@@ -5,17 +5,13 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{WorkerInfo, 
 import edu.uci.ics.amber.engine.architecture.linksemantics._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
+import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.operators.{OpExecConfig, ShuffleType, SinkOpExecConfig}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
+import edu.uci.ics.texera.workflow.common.workflow.OperatorLink
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 
@@ -45,6 +41,29 @@ class Workflow(
   val workerToOperatorExec = new mutable.HashMap[ActorVirtualIdentity, IOperatorExecutor]()
 
   instantiateAndStoreLinkInformation()
+
+  def getDAG:DirectedAcyclicGraph[ActorVirtualIdentity, (ActorVirtualIdentity, ActorVirtualIdentity)] = {
+    val dag =
+      new DirectedAcyclicGraph[ActorVirtualIdentity, (ActorVirtualIdentity,ActorVirtualIdentity)](classOf[(ActorVirtualIdentity,ActorVirtualIdentity)])
+    workerToLayer.keys.foreach{
+     x => dag.addVertex(x)
+    }
+    idToLink.values.foreach{
+      case one: AllToOne =>
+        one.from.identifiers.foreach(worker => dag.addEdge(worker, one.to.identifiers.head))
+      case one: OneToOne =>
+        one.from.identifiers.indices.foreach(i =>
+          dag.addEdge(one.from.identifiers(i), one.to.identifiers(i))
+        )
+      case other =>
+        other.from.identifiers.indices.foreach(i =>
+          other.to.identifiers.indices.foreach(j =>
+            dag.addEdge(other.from.identifiers(i), other.to.identifiers(j))
+          )
+        )
+    }
+    dag
+  }
 
   private def instantiateAndStoreLinkInformation(): Unit = {
     getAllOperators.foreach(opExecConfig => {

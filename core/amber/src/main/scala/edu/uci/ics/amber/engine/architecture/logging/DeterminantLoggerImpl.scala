@@ -30,4 +30,8 @@ class DeterminantLoggerImpl extends DeterminantLogger {
     tempLogs.append(StepDelta(step))
     step = 0L
   }
+
+  override def stepDecrement(): Unit = {
+    step -= 1
+  }
 }

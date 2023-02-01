@@ -76,6 +76,8 @@ object NetworkCommunicationActor {
   final case class PollForCredit(to: ActorVirtualIdentity)
 
   final case class ResendFeasibility(isOk: Boolean)
+
+  final case object GetMessageInQueue
 }
 
 /** This actor handles the transformation from identifier to actorRef
@@ -250,7 +252,7 @@ class NetworkCommunicationActor(parentRef: ActorRef, val actorId: ActorVirtualId
   }
 
   def sendMessagesAndReceiveAcks: Receive = {
-    case SendRequest(id, msg) =>
+    case sr@SendRequest(id, msg) =>
       val msgToForward = flowControl.getMessageToForward(id, msg)
       if (msgToForward.nonEmpty) {
         forwardMessageFromFlowControl(id, msgToForward.get)
@@ -299,6 +301,8 @@ class NetworkCommunicationActor(parentRef: ActorRef, val actorId: ActorVirtualId
             sendOrGetActorRef(actorID, msg)
           }
       }
+    case GetMessageInQueue =>
+      sender ! idToCongestionControls.map(x => (x._1,x._2.getInTransitMessages)).toArray
     case ResendOutputTo(dest, ref) =>
       logger.info("received resend request to " + dest)
       sender ! ResendFeasibility(sentMessages != null)
@@ -329,7 +333,7 @@ class NetworkCommunicationActor(parentRef: ActorRef, val actorId: ActorVirtualId
       // to trigger discover mechanism
       if (messageIDToIdentity.contains(msg.messageId)) {
         val actorID = messageIDToIdentity(msg.messageId)
-        logger.warn(s"actor for $actorID might have crashed or failed")
+        logger.warn(s"actor for $actorID might have crashed or failed, msg: $msg")
         if (parentRef != null) {
           fetchActorRefMappingFromParent(actorID)
         }

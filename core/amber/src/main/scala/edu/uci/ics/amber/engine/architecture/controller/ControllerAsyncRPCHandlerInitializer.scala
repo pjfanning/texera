@@ -54,7 +54,7 @@ class ControllerAsyncRPCHandlerInitializer(
     with DebugCommandHandler {
 
   var statusUpdateAskHandle: Option[Cancellable] = None
-  var numPauses = 0
+  var numControl = 0
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
   var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])] = new ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])]()

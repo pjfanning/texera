@@ -4,13 +4,15 @@ import akka.actor.{Address, Cancellable, PoisonPill, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
+import com.twitter.concurrent.Offer.never.?
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
 import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
@@ -23,6 +25,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, Re
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
+import org.apache.commons.lang3.SerializationUtils
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -161,6 +164,21 @@ class Controller(
   def acceptRecoveryMessages: Receive = {
     case recoveryMsg: WorkflowRecoveryMessage =>
       recoveryMsg.payload match {
+        case TakeGlobalCheckpoint() =>
+          // save output messages first
+          val chkpt = new SavedCheckpoint()
+          chkpt.saveMessages(
+            Await.result((networkCommunicationActor.ref ? GetMessageInQueue), 5.seconds)
+              .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]])
+          // follow topological order
+          val iter = workflow.getDAG.iterator()
+          while(iter.hasNext){
+            val worker = iter.next()
+            Await.result(workflow.getWorkerInfo(worker).ref ? WorkflowRecoveryMessage(CONTROLLER, TakeLocalCheckpoint()), 10.seconds)
+          }
+          // finalize checkpoint
+          CheckpointHolder.workflows(rpcHandlerInitializer.numControl) = SerializationUtils.clone(workflow)
+          CheckpointHolder.checkpoints.getOrElseUpdate(CONTROLLER, new mutable.HashMap[Long, SavedCheckpoint]())(rpcHandlerInitializer.numControl) = chkpt
         case GetOperatorInternalState() =>
           Future.sequence(workflow.getAllLayers.flatMap(_.workers).map(_._2).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
@@ -250,7 +268,7 @@ class Controller(
           handleControlPayload(from, controlPayload)
       }
       if (
-        !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numPauses
+        !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numControl
       ) {
         isReplaying = false
         globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
@@ -303,6 +321,7 @@ class Controller(
       case other =>
         throw new WorkflowRuntimeException(s"unhandled control message: $other")
     }
+    rpcHandlerInitializer.numControl+=1
   }
 
   def recovering: Receive = {

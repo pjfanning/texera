@@ -75,10 +75,9 @@ trait PauseHandler {
               sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
               // send paused to frontend
               sendToClient(WorkflowPaused())
-              numPauses += 1
               val time = ((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt
               interactionHistory.append(
-                (time, alignments.toMap +(CONTROLLER -> numPauses))
+                (time, alignments.toMap +(CONTROLLER -> numControl))
               )
           }
         }.unit
