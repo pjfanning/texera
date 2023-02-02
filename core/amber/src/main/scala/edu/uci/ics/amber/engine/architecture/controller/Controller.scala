@@ -14,9 +14,8 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
-import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, RecoveryQueue}
+import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, ReplayGate}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException

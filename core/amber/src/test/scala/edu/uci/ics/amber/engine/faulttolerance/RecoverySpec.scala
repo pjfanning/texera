@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.architecture.logging.{
   SenderActorChange,
   StepDelta
 }
-import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
@@ -151,7 +151,7 @@ class RecoverySpec
     writer.close()
     var upstream: ActorVirtualIdentity = null
     var stepAccumulated = 0
-    val recoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue = new ReplayGate(logStorage.getReader)
     determinants.foreach {
       case StepDelta(steps) =>
         stepAccumulated += steps.toInt

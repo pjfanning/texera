@@ -10,7 +10,8 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef, ResendFeasibility, SendRequest}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
-import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.ControlElement
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.CheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
@@ -65,7 +66,7 @@ class WorkflowWorker(
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
-  lazy val recoveryQueue = new RecoveryQueue(logStorage.getReader)
+  lazy val replayGate = new ReplayGate(logStorage.getReader)
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
@@ -91,7 +92,7 @@ class WorkflowWorker(
   }
 
   logger.info("set replay to "+replayTo)
-  recoveryQueue.setReplayTo(replayTo, false)
+  replayGate.setReplayTo(replayTo, false)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -109,7 +110,7 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    if (!recoveryQueue.isReplayCompleted) {
+    if (!replayGate.recoveryCompleted) {
       recoveryManager.registerOnStart(() =>{}
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
       )
@@ -136,7 +137,7 @@ class WorkflowWorker(
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
-        recoveryQueue.setReplayTo(index, true)
+        replayGate.setReplayTo(index, true)
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),
@@ -172,7 +173,7 @@ class WorkflowWorker(
     // let dp thread process it
     controlPayload match {
       case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
-        dataProcessor.enqueueCommand(controlCommand, from)
+        replayGate.addControl(ControlElement(controlCommand, from))
       case _ =>
         throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
     }
@@ -191,9 +192,9 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     val shutdown = ShutdownDPThread()
-    dataProcessor.enqueueCommand(
-      ControlInvocation(AsyncRPCClient.IgnoreReply, shutdown),
-      SELF
+    replayGate.addControl(
+      ControlElement(ControlInvocation(AsyncRPCClient.IgnoreReply, shutdown),
+      SELF)
     )
     shutdown.completed.get()
     logger.info("stopped!")

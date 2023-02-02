@@ -15,7 +15,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkOutputPort,
   TupleToBatchConverter
 }
-import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
+import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, ReplayGate}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -135,7 +135,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val operator = mock[OperatorExecutor]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val asyncRPCServer: AsyncRPCServer = null
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
@@ -177,7 +177,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val operator = mock[OperatorExecutor]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
     val outputOrdinalMapping: mutable.Map[LinkIdentity, Int] = new mutable.HashMap()
@@ -230,7 +230,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val operator = mock[OperatorExecutor]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
     val outputOrdinalMapping: mutable.Map[LinkIdentity, Int] = new mutable.HashMap()
@@ -264,7 +264,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val operator = mock[OperatorExecutor]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
     val outputOrdinalMapping: mutable.Map[LinkIdentity, Int] = new mutable.HashMap()
@@ -300,7 +300,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val batchToTupleConverter = mock[BatchToTupleConverter]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
     val outputOrdinalMapping: mutable.Map[LinkIdentity, Int] = new mutable.HashMap()
@@ -361,7 +361,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
-    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryQueue: ReplayGate = new ReplayGate(logStorage.getReader)
     val recoveryManager = new LocalRecoveryManager()
     val inputOrdinalMapping: Map[LinkIdentity, Int] = Map()
     val outputOrdinalMapping: mutable.Map[LinkIdentity, Int] = new mutable.HashMap()

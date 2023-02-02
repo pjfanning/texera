@@ -14,8 +14,8 @@ trait GetReplayAlignmentHandler {
   this: WorkerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: GetReplayAlignment, _) =>
-    println("record total step at "+dataProcessor.totalSteps)
-    dataProcessor.totalSteps+1
+    println("record total step at "+dataProcessor.totalValidStep)
+    dataProcessor.totalValidStep+1
   }
 
 }

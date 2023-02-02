@@ -5,33 +5,32 @@ import scala.collection.mutable
 class DeterminantLoggerImpl extends DeterminantLogger {
 
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
-  private var step = 0L
+  private var last = 0L
+  private var cur = 0L
 
-  def stepIncrement(): Unit = {
-    step += 1
+  def updateStep(currentStep:Long):Unit = {
+    cur = currentStep
   }
 
-  def logDeterminant(inMemDeterminant: InMemDeterminant): Unit = {
-    pushStepDelta()
+  def logDeterminant(inMemDeterminant: InMemDeterminant, currentStep: Long): Unit = {
+    pushStepDelta(currentStep - last)
+    cur = currentStep
+    last = currentStep
     tempLogs.append(inMemDeterminant)
   }
 
   def drainCurrentLogRecords(): Array[InMemDeterminant] = {
-    pushStepDelta()
+    pushStepDelta(cur - last)
     val result = tempLogs.toArray
     tempLogs.clear()
     result
   }
 
-  private def pushStepDelta(): Unit = {
-    if (step == 0L) {
+  private def pushStepDelta(delta: Long): Unit = {
+    if (delta <= 1L) {
       return
     }
-    tempLogs.append(StepDelta(step))
-    step = 0L
+    tempLogs.append(StepDelta(delta - 1))
   }
 
-  override def stepDecrement(): Unit = {
-    step -= 1
-  }
 }

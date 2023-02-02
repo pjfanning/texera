@@ -1,5 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{EndMarker, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputTuple}
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
@@ -9,7 +11,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class BatchToTupleConverter(
-    workerInternalQueue: WorkerInternalQueue
+    replayGate:ReplayGate
 ) {
 
   /** This method handles various data payloads and put different
@@ -28,10 +30,10 @@ class BatchToTupleConverter(
     dataPayload match {
       case DataFrame(payload) =>
         payload.foreach { i =>
-          workerInternalQueue.appendElement(InputTuple(from, i))
+          replayGate.addData(InputTuple(from, i))
         }
       case EndOfUpstream() =>
-        workerInternalQueue.appendElement(EndMarker(from))
+        replayGate.addData(EndMarker(from))
       case other =>
         throw new NotImplementedError()
     }

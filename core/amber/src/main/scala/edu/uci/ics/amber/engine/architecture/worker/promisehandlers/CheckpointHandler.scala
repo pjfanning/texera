@@ -24,10 +24,6 @@ trait CheckpointHandler {
 
   registerHandler { (msg: TakeCheckpoint, _) =>
 
-    // negate the effect of this control message
-    dataProcessor.totalSteps -= 1
-    dataProcessor.determinantLogger.stepDecrement()
-
     // create checkpoint
     val chkpt = new SavedCheckpoint()
     chkpt.saveThread(dataProcessor)
