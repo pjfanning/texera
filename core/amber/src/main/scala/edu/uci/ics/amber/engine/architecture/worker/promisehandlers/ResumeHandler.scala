@@ -16,9 +16,6 @@ trait ResumeHandler {
   registerHandler { (msg: ResumeWorker, sender) =>
     if (stateManager.getCurrentState == PAUSED) {
       pauseManager.recordRequest(PauseType.UserPause, false)
-      if (!pauseManager.isPaused()) {
-        dataProcessor.enableDataQueue()
-      }
       stateManager.transitTo(RUNNING)
     }
     stateManager.getCurrentState

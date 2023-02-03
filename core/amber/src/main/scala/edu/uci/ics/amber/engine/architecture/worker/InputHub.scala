@@ -1,16 +1,16 @@
-package edu.uci.ics.amber.engine.architecture.recovery
+package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.logging.{ProcessControlMessage, SenderActorChange, StepDelta, TerminateSignal, TimeStamp}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{ControlElement, DataElement, EndMarker, InputTuple}
-import edu.uci.ics.amber.engine.architecture.worker.ProactiveDeque
+import edu.uci.ics.amber.engine.architecture.logging._
+import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataElement], controlDeque:ProactiveDeque[ControlElement]) {
+class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
   private val records = logReader.mkLogRecordIterator()
   private val inputMapping = mutable
     .HashMap[ActorVirtualIdentity, LinkedBlockingQueue[DataElement]]()
@@ -19,14 +19,24 @@ class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataE
   private var step = 0L
   private var targetVId: ActorVirtualIdentity = _
   private val callbacksOnEnd = new ArrayBuffer[() => Unit]()
-  var recoveryCompleted: Boolean = !records.hasNext
   private var nextControlToEmit: ControlElement = _
-
   private var replayTo = -1L
+
+  val dataDeque = new ProactiveDeque[DataElement]({
+    case InputTuple(from, _) => creditMonitor.increaseCredit(from)
+    case other => //pass
+  }, {
+    case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
+    case other => //pass
+  })
+  val controlDeque = new ProactiveDeque[ControlElement]()
+  val internalDeque = new ProactiveDeque[InternalCommand]()
+  var recoveryCompleted: Boolean = !records.hasNext
+
   def setReplayTo(dest: Long, unblock:Boolean): Unit = {
     replayTo = dest
     if(unblock){
-      releaseFlag.complete()
+      releaseFlag.complete(())
     }
   }
   var releaseFlag = new CompletableFuture[Unit]()
@@ -38,6 +48,10 @@ class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataE
 
   def registerOnEnd(callback: () => Unit): Unit = {
     callbacksOnEnd.append(callback)
+  }
+
+  def addInternal(elem:InternalCommand): Unit ={
+    internalDeque.enqueue(elem)
   }
 
   def addData(elem: DataElement): Unit = {
@@ -55,6 +69,8 @@ class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataE
           inputMapping
             .getOrElseUpdate(from, new LinkedBlockingQueue[DataElement]())
             .put(EndMarker(from))
+        case _ =>
+          // pass
       }
     }
   }
@@ -98,7 +114,8 @@ class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataE
     }
     if(totalValidStep == replayTo){
       // replay point reached
-      releaseFlag.get()
+      // use internal command no operation to trigger replay again
+      return
     }
     val res = !records.hasNext && nextControlToEmit == null
     if (res && !recoveryCompleted) {
@@ -137,5 +154,8 @@ class ReplayGate(logReader: DeterminantLogReader, dataDeque:ProactiveDeque[DataE
       }
     }
   }
+
+  def getDataQueueLength: Int = dataDeque.size()
+  def getControlQueueLength: Int = controlDeque.size()
 
 }

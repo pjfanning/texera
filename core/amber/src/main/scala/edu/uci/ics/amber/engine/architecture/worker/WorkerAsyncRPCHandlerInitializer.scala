@@ -25,6 +25,7 @@ class WorkerAsyncRPCHandlerInitializer(
     val breakpointManager: BreakpointManager,
     val stateManager: WorkerStateManager,
     val actorContext: ActorContext,
+    val inputHub: InputHub,
     source: AsyncRPCClient,
     receiver: AsyncRPCServer
 ) extends AsyncRPCHandlerInitializer(source, receiver)
@@ -39,7 +40,6 @@ class WorkerAsyncRPCHandlerInitializer(
     with StartHandler
     with UpdateInputLinkingHandler
     with AssignLocalBreakpointHandler
-    with ShutdownDPThreadHandler
     with MonitoringHandler
     with SendImmutableStateOrNotifyHelperHandler
     with AcceptImmutableStateHandler

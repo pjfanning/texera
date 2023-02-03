@@ -28,8 +28,8 @@ trait MonitoringHandler {
   registerHandler { (msg: QuerySelfWorkloadMetrics, sender) =>
     try {
       val workloadMetrics = SelfWorkloadMetrics(
-        dataProcessor.getDataQueueLength,
-        dataProcessor.getControlQueueLength,
+        inputHub.getDataQueueLength,
+        inputHub.getControlQueueLength,
         dataInputPort.getStashedMessageCount(),
         controlInputPort.getStashedMessageCount()
       )

@@ -1,17 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{EndMarker, InputTuple}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.InputHub
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 class BatchToTupleConverter(
-    replayGate:ReplayGate
+    replayGate:InputHub,
 ) {
 
   /** This method handles various data payloads and put different
@@ -39,13 +34,13 @@ class BatchToTupleConverter(
     }
   }
 
-  /**
-    * This method is used by flow control logic. It returns the number of credits available for this particular sender
-    * worker.
-    * @param sender the worker sending the network message
-    * @return
-    */
-  def getSenderCredits(sender: ActorVirtualIdentity): Int =
-    workerInternalQueue.getSenderCredits(sender)
+//  /**
+//    * This method is used by flow control logic. It returns the number of credits available for this particular sender
+//    * worker.
+//    * @param sender the worker sending the network message
+//    * @return
+//    */
+//  def getSenderCredits(sender: ActorVirtualIdentity): Int =
+//    creditMonitor.getSenderCredits(sender)
 
 }

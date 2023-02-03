@@ -5,26 +5,17 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage,
-  LocalFSLogStorage
-}
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  ProcessControlMessage,
-  SenderActorChange,
-  StepDelta
-}
-import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, SenderActorChange, StepDelta}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{ControlElement, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.InputHub
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ReturnInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
@@ -151,7 +142,9 @@ class RecoverySpec
     writer.close()
     var upstream: ActorVirtualIdentity = null
     var stepAccumulated = 0
-    val recoveryQueue = new ReplayGate(logStorage.getReader)
+    val creditMonitor = new CreditMonitor()
+    val inputHub = new InputHub(logStorage.getReader, creditMonitor)
+    var currentStep = 0L
     determinants.foreach {
       case StepDelta(steps) =>
         stepAccumulated += steps.toInt
@@ -159,12 +152,18 @@ class RecoverySpec
         upstream = actorVirtualIdentity
       case ProcessControlMessage(controlPayload, from) =>
         if (stepAccumulated > 0) {
-          recoveryQueue.add(InputTuple(upstream, ITuple(1, 2, 3)))
-          val elem = recoveryQueue.get()
-          (1 until stepAccumulated).foreach(_ => assert(!recoveryQueue.isReadyToEmitNextControl))
-          assert(recoveryQueue.isReadyToEmitNextControl)
+          (0 until stepAccumulated).foreach{
+            _ =>
+              inputHub.addData(InputTuple(upstream, ITuple(1, 2, 3)))
+              inputHub.prepareInput(currentStep)
+              currentStep += 1
+              assert(inputHub.dataDeque.dequeue() == InputTuple(upstream, ITuple(1, 2, 3)))
+              assert(inputHub.controlDeque.size() == 0)
+          }
         }
-        assert(recoveryQueue.get() == ControlElement(controlPayload, from))
+        inputHub.prepareInput(currentStep)
+        assert(inputHub.controlDeque.size() == 1)
+        assert(inputHub.controlDeque.dequeue() == ControlElement(controlPayload, from))
     }
     logStorage.deleteLog()
   }

@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import java.util
 import java.util.concurrent.CompletableFuture
 
-class ProactiveDeque[T] {
+class ProactiveDeque[T](preEnqueue:T => Unit = null, postDequeue: T => Unit = null){
 
   val queue = new util.ArrayDeque[T]()
   var availableFuture:CompletableFuture[Unit] = new CompletableFuture[Unit]()
@@ -11,18 +11,25 @@ class ProactiveDeque[T] {
   def addFirst(t:T): Unit ={
     synchronized {
       queue.addFirst(t)
-      availableFuture.complete()
+      availableFuture.complete(())
     }
   }
 
   def dequeue(): T ={
-    queue.pollFirst()
+    val result = queue.pollFirst()
+    if(postDequeue != null){
+      postDequeue(result)
+    }
+    result
   }
 
   def enqueue(t:T):Unit = {
     synchronized{
+      if(preEnqueue != null){
+        preEnqueue(t)
+      }
       queue.addLast(t)
-      availableFuture.complete()
+      availableFuture.complete(())
     }
   }
 

@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
+import edu.uci.ics.amber.engine.architecture.worker.{WorkerAsyncRPCHandlerInitializer, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -72,7 +72,7 @@ class PythonWorkflowWorker(
     new PythonProxyServer(inputPortNum, controlOutputPort, dataOutputPort, actorId)
 
   // TODO: find a better way to send Error log to frontend.
-  override val rpcHandlerInitializer: AsyncRPCHandlerInitializer = null
+  override val rpcHandlerInitializer: WorkerAsyncRPCHandlerInitializer = null
 
   val pythonSrcDirectory: Path = Utils.amberHomePath
     .resolve("src")

@@ -1,25 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import akka.actor.SupervisorStrategy.Stop
-import akka.actor.{ActorRef, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.actor.Props
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import akka.pattern.ask
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef, ResendFeasibility, SendRequest}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
-import edu.uci.ics.amber.engine.architecture.recovery.ReplayGate
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.ControlElement
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, Shutdown}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.CheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
@@ -66,7 +59,8 @@ class WorkflowWorker(
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
-  lazy val replayGate = new ReplayGate(logStorage.getReader)
+  val creditMonitor = new CreditMonitor()
+  lazy val replayGate = new InputHub(logStorage.getReader,creditMonitor)
   lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
@@ -97,7 +91,7 @@ class WorkflowWorker(
   override def getLogName: String = getWorkerLogName(actorId)
 
   def getSenderCredits(sender: ActorVirtualIdentity) = {
-    tupleProducer.getSenderCredits(sender)
+    creditMonitor.getSenderCredits(sender)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -131,7 +125,7 @@ class WorkflowWorker(
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
         val syncFuture = new CompletableFuture[Unit]()
-        dataProcessor.enqueueCommand(ControlInvocation(AsyncRPCClient.IgnoreReplyAndDoNotLog, TakeCheckpoint(syncFuture)), SELF)
+        replayGate.addInternal(Checkpoint(networkCommunicationActor.ref, syncFuture))
         syncFuture.get()
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
@@ -191,12 +185,9 @@ class WorkflowWorker(
 
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
-    val shutdown = ShutdownDPThread()
-    replayGate.addControl(
-      ControlElement(ControlInvocation(AsyncRPCClient.IgnoreReply, shutdown),
-      SELF)
-    )
-    shutdown.completed.get()
+    val syncFuture = new CompletableFuture[Unit]()
+    replayGate.addInternal(Shutdown(syncFuture))
+    syncFuture.get()
     logger.info("stopped!")
   }
 

@@ -22,9 +22,12 @@ class UpstreamLinkStatus(allUpstreamLinkIds: Set[LinkIdentity]) {
     upstreamMap.getOrElseUpdate(input, new mutable.HashSet[ActorVirtualIdentity]()).add(identifier)
   }
 
-  def markWorkerEOF(identifier: ActorVirtualIdentity): Unit = {
+  def markWorkerEOF(identifier: ActorVirtualIdentity, link:LinkIdentity): Unit = {
     if (identifier != null) {
       endReceivedFromWorkers.add(identifier)
+      if (upstreamMap(link).subsetOf(endReceivedFromWorkers)) {
+        completedLinkIds.add(link)
+      }
     }
   }
 
@@ -32,11 +35,7 @@ class UpstreamLinkStatus(allUpstreamLinkIds: Set[LinkIdentity]) {
     if (link == null) {
       return true // special case for source operator
     }
-    if (upstreamMap(link).subsetOf(endReceivedFromWorkers)) {
-      completedLinkIds.add(link)
-      return true
-    }
-    false
+    completedLinkIds.contains(link)
   }
 
   def isAllEOF: Boolean = completedLinkIds.equals(allUpstreamLinkIds)

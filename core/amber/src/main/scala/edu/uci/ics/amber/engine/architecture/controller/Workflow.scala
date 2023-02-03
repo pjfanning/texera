@@ -23,7 +23,7 @@ class Workflow(
     operatorToOpExecConfig: mutable.Map[OperatorIdentity, OpExecConfig],
     outLinks: Map[OperatorIdentity, Set[OperatorIdentity]],
     pipelinedRegionsDAG: DirectedAcyclicGraph[PipelinedRegion, DefaultEdge]
-) {
+) extends java.io.Serializable {
   // The following data structures are created when workflow object is created.
   private val inLinks: Map[OperatorIdentity, Set[OperatorIdentity]] =
     AmberUtils.reverseMultimap(outLinks)

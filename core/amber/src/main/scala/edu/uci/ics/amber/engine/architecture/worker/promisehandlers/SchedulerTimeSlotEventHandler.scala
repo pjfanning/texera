@@ -18,12 +18,8 @@ trait SchedulerTimeSlotEventHandler {
   registerHandler { (msg: SchedulerTimeSlotEvent, _) =>
     if (msg.timeSlotExpired) {
       pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, true)
-      dataProcessor.disableDataQueue()
     } else {
       pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, false)
-      if (!pauseManager.isPaused()) {
-        dataProcessor.enableDataQueue()
-      }
     }
   }
 

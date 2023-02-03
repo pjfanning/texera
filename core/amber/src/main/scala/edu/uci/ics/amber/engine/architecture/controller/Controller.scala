@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
-import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, ReplayGate}
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -303,10 +303,10 @@ class Controller(
       controlPayload: ControlPayload
   ): Unit = {
     if(from == CLIENT || from == SELF || from == CONTROLLER){
-      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
+      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from),0)
     }else{
       //logger.info("only save sender information for "+ controlPayload+" from "+from)
-      determinantLogger.logDeterminant(SenderActorChange(from))
+      determinantLogger.logDeterminant(SenderActorChange(from),0)
     }
     controlPayload match {
       // use control input port to pass control messages
