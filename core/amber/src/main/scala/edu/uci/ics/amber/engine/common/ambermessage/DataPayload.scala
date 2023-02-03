@@ -8,8 +8,8 @@ sealed trait DataPayload extends Serializable {}
 
 final case class EpochMarker(
     id: Int,
-  dest: Option[LayerIdentity],
-  msg: Option[ControlCommand[_]]
+  destination: Option[LayerIdentity],
+  command: Option[ControlCommand[_]]
 ) extends DataPayload
 
 final case class EndOfUpstream() extends DataPayload

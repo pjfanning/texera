@@ -8,24 +8,14 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  LogManager,
-  ProcessControlMessage,
-  SenderActorChange
-}
+import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -273,8 +263,8 @@ class DataProcessor( // dependencies:
         }
       case ControlElement(payload, from) =>
         processControlCommand(payload, from)
-      case epochMarker @ InputEpochMarker(_, _) =>
-        processEpochMarker(epochMarker)
+      case InputEpochMarker(from, epochMarker) =>
+        processEpochMarker(from, epochMarker)
     }
   }
 
@@ -375,17 +365,20 @@ class DataProcessor( // dependencies:
     }
   }
 
-  private[this] def processEpochMarker(epochMarker: InputEpochMarker): Unit = {
-    val dest = epochMarker.epochMarker.dest
-    val controlCommand = epochMarker.epochMarker.msg
-    if (controlCommand.nonEmpty) {
-      this.asyncRPCServer.receive(
-        ControlInvocation(AsyncRPCClient.IgnoreReply, controlCommand.get),
-        actorId
-      )
-    }
-    if (dest.nonEmpty && dest.get != opExecConfig.id) {
-      this.outputManager.emitEpochMarker(epochMarker.epochMarker)
+  private[this] def processEpochMarker(from: ActorVirtualIdentity, marker: EpochMarker): Unit = {
+    upstreamLinkStatus.markEpochMarker(from, marker)
+    if (upstreamLinkStatus.epochMarkerComplete(marker.id)) {
+      // invoke control commands carried with the epoch marker
+      if (marker.command.nonEmpty) {
+        this.asyncRPCServer.receive(
+          ControlInvocation(AsyncRPCClient.IgnoreReply, marker.command.get),
+          actorId
+        )
+      }
+      // if this operator is not the final destination of the marker, pass it downstream
+      if (marker.destination.nonEmpty && marker.destination.get != opExecConfig.id) {
+        this.outputManager.emitEpochMarker(marker)
+      }
     }
   }
 

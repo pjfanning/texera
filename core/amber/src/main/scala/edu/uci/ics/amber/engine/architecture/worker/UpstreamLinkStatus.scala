@@ -1,6 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InputEpochMarker
+import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
@@ -31,6 +33,18 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     if (identifier != null) {
       endReceivedFromWorkers.add(identifier)
     }
+  }
+
+  def markEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker): Unit = {
+    val markerId = epochMarker.id
+    epochMarkerReceived.update(markerId, epochMarkerReceived(markerId) + from)
+  }
+
+  def epochMarkerComplete(markerId: Int): Boolean =
+    epochMarkerReceived(markerId) == allUncompletedSenders
+
+  def allUncompletedSenders: Set[ActorVirtualIdentity] = {
+    upstreamMap.filterKeys(k => ! completedLinkIds.contains(k)).values.flatten.toSet
   }
 
   def isLinkEOF(link: LinkIdentity): Boolean = {
