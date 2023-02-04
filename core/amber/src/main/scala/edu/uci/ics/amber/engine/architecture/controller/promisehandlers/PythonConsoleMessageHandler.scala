@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.google.protobuf.timestamp.Timestamp
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonConsoleMessageHandler.PythonConsoleMessage
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2
@@ -20,7 +20,7 @@ object PythonConsoleMessageHandler {
 }
 
 trait PythonConsoleMessageHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: Controller =>
   registerHandler { (msg: PythonConsoleMessage, sender) =>
     {
       // report the print message to the frontend

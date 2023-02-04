@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
@@ -15,7 +15,7 @@ object WorkerExecutionStartedHandler {
   * possible sender: worker
   */
 trait WorkerExecutionStartedHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: Controller =>
 
   registerHandler { (msg: WorkerStateUpdated, sender) =>
     {

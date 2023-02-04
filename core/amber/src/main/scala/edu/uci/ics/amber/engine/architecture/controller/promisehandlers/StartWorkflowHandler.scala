@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -19,11 +19,11 @@ object StartWorkflowHandler {
   * possible sender: client
   */
 trait StartWorkflowHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: Controller =>
 
   registerHandler { (msg: StartWorkflow, sender) =>
     {
-      scheduler
+      workflowScheduler
         .startWorkflow()
         .map(_ => {
           sendToClient(WorkflowStateUpdate(RUNNING))

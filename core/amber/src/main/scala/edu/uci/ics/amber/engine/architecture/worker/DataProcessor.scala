@@ -1,8 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import akka.actor.ActorRef
+import akka.actor.{ActorContext, ActorRef}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
-import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -10,17 +9,10 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  LogManager,
-  ProcessControlMessage,
-  SenderActorChange
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
-import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, TupleToBatchConverter}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
@@ -68,12 +60,7 @@ object DataProcessor{
 class DataProcessor( // meta dependencies:
                      val operator: IOperatorExecutor, // core logic
                      val opExecConfig: OpExecConfig,
-                     val actorId: ActorVirtualIdentity,
-                     val allUpstreamLinkIds: Set[LinkIdentity],
-                     val inputToOrdinalMapping: Map[LinkIdentity, Int],
-                     //  use two different types for the wire library to do dependency injection
-                     // temporary workaround, will be refactored soon
-                     val outputToOrdinalMapping: mutable.Map[LinkIdentity, Int]
+                     val actorId: ActorVirtualIdentity
 ) extends DataProcessorRPCHandlerInitializer with AmberLogging with java.io.Serializable {
 
   // outer dependencies
@@ -81,16 +68,19 @@ class DataProcessor( // meta dependencies:
   protected var logStorage: DeterminantLogStorage = _
   protected var logManager: LogManager = _
   protected var recoveryManager: LocalRecoveryManager = _
+  protected var actorContext: ActorContext = _
 
   def initialize(
   inputHub: InputHub,
   logStorage: DeterminantLogStorage,
   logManager: LogManager,
-  recoveryManager: LocalRecoveryManager): Unit ={
+  recoveryManager: LocalRecoveryManager,
+  actorContext: ActorContext): Unit ={
     this.inputHub = inputHub
     this.logStorage = logStorage
     this.logManager = logManager
     this.recoveryManager = recoveryManager
+    this.actorContext = actorContext
   }
 
   def outputDataPayload(

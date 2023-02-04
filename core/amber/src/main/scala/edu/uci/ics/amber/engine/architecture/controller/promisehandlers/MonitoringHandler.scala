@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
@@ -18,7 +18,7 @@ object MonitoringHandler {
 }
 
 trait MonitoringHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: Controller =>
   var previousCallFinished = true
 
   def updateWorkloadSamples(
@@ -70,9 +70,9 @@ trait MonitoringHandler {
         send(QuerySelfWorkloadMetrics(), worker).map({
           case (metrics, samples) => {
             workflow.getOperator(worker).getWorkerWorkloadInfo(worker).dataInputWorkload =
-              metrics.unprocessedDataInputQueueSize + metrics.stashedDataInputQueueSize
+              metrics.unprocessedDataInputQueueSize
             workflow.getOperator(worker).getWorkerWorkloadInfo(worker).controlInputWorkload =
-              metrics.unprocessedControlInputQueueSize + metrics.stashedControlInputQueueSize
+              metrics.unprocessedControlInputQueueSize
             updateWorkloadSamples(worker, samples)
           }
         })

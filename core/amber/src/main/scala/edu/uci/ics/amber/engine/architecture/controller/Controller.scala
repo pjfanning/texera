@@ -10,16 +10,18 @@ import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, Saved
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage._
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -74,12 +76,24 @@ class Controller(
       CONTROLLER,
       parentNetworkCommunicationActorRef,
       controllerConfig.supportFaultTolerance
-    ) {
+    ) with ControllerAsyncRPCHandlerInitializer {
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayloadOuter)
+
+  def outputControlPayload(
+                            to: ActorVirtualIdentity,
+                            self: ActorVirtualIdentity,
+                            seqNum: Long,
+                            payload: ControlPayload
+                          ): Unit = {
+    val msg = WorkflowControlMessage(self, seqNum, payload)
+    logManager.sendCommitted(SendRequest(to, msg))
+  }
+  lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
+    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
+  }
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
-  var statusUpdateAskHandle: Cancellable = _
   var replayRequestIndex = {
     if(controllerConfig.replayRequest.nonEmpty){
       controllerConfig.replayRequest(CONTROLLER)
@@ -90,6 +104,11 @@ class Controller(
   private val controlMessages = mutable
     .HashMap[ActorVirtualIdentity, mutable.Queue[ProcessControlMessage]]()
   private var currentHead: ActorVirtualIdentity = null
+
+  protected val asyncRPCClient = wire[AsyncRPCClient]
+  protected val asyncRPCServer = wire[AsyncRPCServer]
+
+  var numControl = 0
   val controlMessagesToRecover: Iterator[InMemDeterminant] = {
     logStorage.getReader.mkLogRecordIterator()
   }
@@ -124,9 +143,6 @@ class Controller(
       workflow,
       controllerConfig
     )
-
-  val rpcHandlerInitializer: ControllerAsyncRPCHandlerInitializer =
-    wire[ControllerAsyncRPCHandlerInitializer]
 
   // register controller itself and client
   networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))
@@ -180,10 +196,10 @@ class Controller(
             }
           }
           // finalize checkpoint
-          CheckpointHolder.addWorkflow(rpcHandlerInitializer.numControl,SerializationUtils.clone(workflow))
-          CheckpointHolder.addCheckpoint(CONTROLLER, rpcHandlerInitializer.numControl,chkpt)
+          CheckpointHolder.addWorkflow(numControl,SerializationUtils.clone(workflow))
+          CheckpointHolder.addCheckpoint(CONTROLLER, numControl,chkpt)
         case GetOperatorInternalState() =>
-          Future.sequence(workflow.getAllLayers.flatMap(_.workers).map(_._2).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
+          Future.sequence(workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
           })
         case ContinueReplay(index) =>
@@ -192,11 +208,11 @@ class Controller(
             replayRequestIndex = index(CONTROLLER)
             controllerConfig.replayRequest = index
             // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-            workflow.getAllLayers.flatMap(_.workers).map(_._2).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(index(info.id))))
+            workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(index(info.id))))
           }else{
             replayRequestIndex = 99999
             // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-            workflow.getAllLayers.flatMap(_.workers).map(_._2).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(9999999)))
+            workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(9999999)))
           }
           invokeReplay()
         case UpdateRecoveryStatus(isRecovering) =>
@@ -248,7 +264,7 @@ class Controller(
 
   def checkIfReplayCompleted(): Boolean ={
     if (
-      !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numControl
+      !controlMessagesToRecover.hasNext || replayRequestIndex == numControl
     ) {
       isReplaying = false
       globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
@@ -323,7 +339,7 @@ class Controller(
       //logger.info("only save sender information for "+ controlPayload+" from "+from)
       determinantLogger.logDeterminant(SenderActorChange(from))
     }
-    rpcHandlerInitializer.numControl+=1
+    numControl+=1
     controlPayload match {
       // use control input port to pass control messages
       case invocation: ControlInvocation =>
@@ -336,7 +352,7 @@ class Controller(
       case other =>
         throw new WorkflowRuntimeException(s"unhandled control message: $other")
     }
-    println(s"processed ${rpcHandlerInitializer.numControl}")
+    println(s"processed ${numControl}")
   }
 
   def recovering: Receive = {
@@ -370,7 +386,7 @@ class Controller(
       // controlInputPort.overwriteFIFOState(fifoState)
       // self ! controlMessagesToRecover.next()
       isReplaying = true
-      rpcHandlerInitializer.suppressStatusUpdate = true
+      suppressStatusUpdate = true
       invokeReplay()
       forwardResendRequest orElse acceptRecoveryMessages orElse recovering
     } else {
@@ -380,7 +396,7 @@ class Controller(
 
   override def postStop(): Unit = {
     if (statusUpdateAskHandle != null) {
-      statusUpdateAskHandle.cancel()
+      statusUpdateAskHandle.get.cancel()
     }
     logger.info("Controller start to shutdown")
     logManager.terminate()

@@ -21,16 +21,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
-class ControllerAsyncRPCHandlerInitializer(
-    val actorContext: ActorContext,
-    val actorId: ActorVirtualIdentity,
-    val controlOutputPort: NetworkOutputPort[ControlPayload],
-    val workflow: Workflow,
-    val controllerConfig: ControllerConfig,
-    val scheduler: WorkflowScheduler,
-    source: AsyncRPCClient,
-    receiver: AsyncRPCServer
-) extends AsyncRPCHandlerInitializer(source, receiver)
+trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
     with AmberLogging
     with LinkWorkersHandler
     with AssignBreakpointHandler
@@ -53,8 +44,9 @@ class ControllerAsyncRPCHandlerInitializer(
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler {
 
+  this: Controller =>
+
   var statusUpdateAskHandle: Option[Cancellable] = None
-  var numControl = 0
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
   var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])] = new ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])]()
@@ -67,15 +59,15 @@ class ControllerAsyncRPCHandlerInitializer(
     }
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
       statusUpdateAskHandle = Option(
-        actorContext.system.scheduler.scheduleAtFixedRate(
+        context.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
-          actorContext.self,
+          context.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateQueryStatistics()
           )
-        )(actorContext.dispatcher)
+        )(context.dispatcher)
       )
     }
   }
@@ -88,15 +80,15 @@ class ControllerAsyncRPCHandlerInitializer(
       Constants.monitoringEnabled && controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
     ) {
       monitoringHandle = Option(
-        actorContext.system.scheduler.scheduleAtFixedRate(
+        context.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.monitoringIntervalMs.get, MILLISECONDS),
-          actorContext.self,
+          context.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateMonitoring()
           )
-        )(actorContext.dispatcher)
+        )(context.dispatcher)
       )
     }
   }
@@ -109,15 +101,15 @@ class ControllerAsyncRPCHandlerInitializer(
       Constants.reshapeSkewHandlingEnabled && controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
     ) {
       workflowReshapeState.skewDetectionHandle = Option(
-        actorContext.system.scheduler.scheduleAtFixedRate(
+        context.system.scheduler.scheduleAtFixedRate(
           Constants.reshapeSkewDetectionInitialDelayInMs.milliseconds,
           FiniteDuration.apply(controllerConfig.skewDetectionIntervalMs.get, MILLISECONDS),
-          actorContext.self,
+          context.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateSkewDetection()
           )
-        )(actorContext.dispatcher)
+        )(context.dispatcher)
       )
     }
   }

@@ -13,7 +13,7 @@ import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan) {
+class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan) extends java.io.Serializable {
 
   // The following data structures are updated when the operator is built (buildOperator())
   // by scheduler and the worker identities are available.
@@ -22,10 +22,8 @@ class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan)
   def getDAG:DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge] = {
     val dag =
       new DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge](classOf[DefaultEdge])
-    workerToLayer.keys.foreach{
-      x => dag.addVertex(x)
-    }
-    idToLink.values.foreach{
+    physicalPlan.operators.flatMap(_.workers.keys).foreach(worker => dag.addVertex(worker))
+    physicalPlan.linkStrategies.values.foreach{
       case one: AllToOne =>
         one.from.identifiers.foreach(worker => dag.addEdge(worker, one.to.identifiers.head))
       case one: OneToOne =>

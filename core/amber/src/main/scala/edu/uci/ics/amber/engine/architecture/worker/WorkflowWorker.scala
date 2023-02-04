@@ -5,8 +5,9 @@ import akka.util.Timeout
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, NoOperation, Shutdown}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
@@ -54,6 +55,8 @@ class WorkflowWorker(
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
+  lazy val operator: IOperatorExecutor =
+    workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   logger.info(s"Worker:$actorId = ${context.self}")
   val creditMonitor = new CreditMonitor()
   lazy val inputHub = new InputHub(logStorage.getReader,creditMonitor)
