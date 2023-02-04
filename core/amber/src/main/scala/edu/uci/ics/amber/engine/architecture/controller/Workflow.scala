@@ -42,9 +42,9 @@ class Workflow(
 
   instantiateAndStoreLinkInformation()
 
-  def getDAG:DirectedAcyclicGraph[ActorVirtualIdentity, (ActorVirtualIdentity, ActorVirtualIdentity)] = {
+  def getDAG:DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge] = {
     val dag =
-      new DirectedAcyclicGraph[ActorVirtualIdentity, (ActorVirtualIdentity,ActorVirtualIdentity)](classOf[(ActorVirtualIdentity,ActorVirtualIdentity)])
+      new DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge](classOf[DefaultEdge])
     workerToLayer.keys.foreach{
      x => dag.addVertex(x)
     }

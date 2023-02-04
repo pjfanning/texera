@@ -181,6 +181,7 @@ export type TexeraWebsocketRequestTypeMap = {
   DebugCommandRequest: DebugCommandRequest;
   WorkflowReplayRequest: { replayPos: number };
   WorkflowAdditionalOperatorInfoRequest: {};
+  WorkflowCheckpointRequest: {};
 };
 
 

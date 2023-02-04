@@ -19,8 +19,8 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
   private var step = 0L
   private var targetVId: ActorVirtualIdentity = _
   private val callbacksOnEnd = new ArrayBuffer[() => Unit]()
-  private var nextControlToEmit: ControlElement = _
   private var replayTo = -1L
+  private var nextControlToEmit: ControlElement = _
 
   val dataDeque = new ProactiveDeque[DataElement]({
     case InputTuple(from, _) => creditMonitor.increaseCredit(from)
@@ -35,13 +35,8 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
 
   def setReplayTo(dest: Long, unblock:Boolean): Unit = {
     replayTo = dest
-    if(unblock){
-      releaseFlag.complete(())
-    }
   }
-  var releaseFlag = new CompletableFuture[Unit]()
 
-  // calling it first to get nextRecordToEmit ready
   // we assume the log has the following structure:
   // Ctrl -> [StepDelta] -> Ctrl -> [StepDelta] -> EOF|Ctrl
   processInternalEventsTillNextControl()
@@ -108,14 +103,14 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
   }
 
 
-  def prepareInput(totalValidStep: Long): Unit ={
+  def prepareInput(totalValidStep: Long, outputAvailable: Boolean): Boolean ={
     if(recoveryCompleted){
-      return
+      return false
     }
     if(totalValidStep == replayTo){
       // replay point reached
       // use internal command no operation to trigger replay again
-      return
+      return true
     }
     val res = !records.hasNext && nextControlToEmit == null
     if (res && !recoveryCompleted) {
@@ -129,12 +124,22 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
     if(!recoveryCompleted){
       if(step > 0){
         step -= 1
-        val data = inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
-        dataDeque.enqueue(data)
+        println(s"current step = $step")
+        fetchDataFromUpstream(outputAvailable)
       }else if(step == 0){
         controlDeque.enqueue(nextControlToEmit)
+        nextControlToEmit = null
         processInternalEventsTillNextControl()
       }
+    }
+    false
+  }
+
+  def fetchDataFromUpstream(outputAvailable:Boolean): Unit ={
+    if(!outputAvailable && dataDeque.size() == 0) {
+      println(s"waiting on ${targetVId}")
+      val data = inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
+      dataDeque.enqueue(data)
     }
   }
 

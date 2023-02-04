@@ -173,11 +173,15 @@ class Controller(
           val iter = workflow.getDAG.iterator()
           while(iter.hasNext){
             val worker = iter.next()
-            Await.result(workflow.getWorkerInfo(worker).ref ? WorkflowRecoveryMessage(CONTROLLER, TakeLocalCheckpoint()), 10.seconds)
+            val alignment = Await.result(workflow.getWorkerInfo(worker).ref ? WorkflowRecoveryMessage(CONTROLLER, TakeLocalCheckpoint()), 10.seconds).asInstanceOf[Long]
+            if(!CheckpointHolder.hasCheckpoint(worker,alignment)){
+              // put placeholder
+              CheckpointHolder.addCheckpoint(worker,alignment,new SavedCheckpoint())
+            }
           }
           // finalize checkpoint
-          CheckpointHolder.workflows(rpcHandlerInitializer.numControl) = SerializationUtils.clone(workflow)
-          CheckpointHolder.checkpoints.getOrElseUpdate(CONTROLLER, new mutable.HashMap[Long, SavedCheckpoint]())(rpcHandlerInitializer.numControl) = chkpt
+          CheckpointHolder.addWorkflow(rpcHandlerInitializer.numControl,SerializationUtils.clone(workflow))
+          CheckpointHolder.addCheckpoint(CONTROLLER, rpcHandlerInitializer.numControl,chkpt)
         case GetOperatorInternalState() =>
           Future.sequence(workflow.getAllLayers.flatMap(_.workers).map(_._2).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
@@ -242,6 +246,25 @@ class Controller(
   }
 
 
+  def checkIfReplayCompleted(): Boolean ={
+    if (
+      !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numControl
+    ) {
+      isReplaying = false
+      globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
+      if (!controlMessagesToRecover.hasNext) {
+        logManager.terminate()
+        logStorage.cleanPartiallyWrittenLogFile()
+        logManager.setupWriter(logStorage.getWriter)
+        unstashAll()
+        context.become(running)
+      }
+      return true
+    }
+    false
+  }
+
+
   def invokeReplay(): Unit = {
     if(currentHead != null){
       if (controlMessages.contains(currentHead) && controlMessages(currentHead).nonEmpty) {
@@ -250,6 +273,9 @@ class Controller(
         handleControlPayload(elem.from, elem.controlPayload)
         currentHead = null
       }
+    }
+    if(checkIfReplayCompleted()){
+      return
     }
     while (currentHead == null) {
       controlMessagesToRecover.next() match {
@@ -266,18 +292,7 @@ class Controller(
           controlInputPort.increaseFIFOSeqNum(from)
           handleControlPayload(from, controlPayload)
       }
-      if (
-        !controlMessagesToRecover.hasNext || replayRequestIndex == rpcHandlerInitializer.numControl
-      ) {
-        isReplaying = false
-        globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-        if (!controlMessagesToRecover.hasNext) {
-          logManager.terminate()
-          logStorage.cleanPartiallyWrittenLogFile()
-          logManager.setupWriter(logStorage.getWriter)
-          unstashAll()
-          context.become(running)
-        }
+      if(checkIfReplayCompleted()){
         return
       }
     }
@@ -303,11 +318,12 @@ class Controller(
       controlPayload: ControlPayload
   ): Unit = {
     if(from == CLIENT || from == SELF || from == CONTROLLER){
-      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from),0)
+      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
     }else{
       //logger.info("only save sender information for "+ controlPayload+" from "+from)
-      determinantLogger.logDeterminant(SenderActorChange(from),0)
+      determinantLogger.logDeterminant(SenderActorChange(from))
     }
+    rpcHandlerInitializer.numControl+=1
     controlPayload match {
       // use control input port to pass control messages
       case invocation: ControlInvocation =>
@@ -320,7 +336,7 @@ class Controller(
       case other =>
         throw new WorkflowRuntimeException(s"unhandled control message: $other")
     }
-    rpcHandlerInitializer.numControl+=1
+    println(s"processed ${rpcHandlerInitializer.numControl}")
   }
 
   def recovering: Receive = {

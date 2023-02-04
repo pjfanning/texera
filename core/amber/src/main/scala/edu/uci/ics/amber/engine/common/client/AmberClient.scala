@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -80,25 +80,26 @@ class AmberClient(
     }
   }
 
-  def replayExecution(posMap:Map[ActorVirtualIdentity, Long], restart: Boolean): Future[Any] = {
-    if (!isActive) {
-      Future[Any](())
-    } else {
-      val res = if (restart) {
+  def replayExecution(posMap:Map[ActorVirtualIdentity, Long], restart: Boolean): Unit = {
+    if(isActive){
+      if (restart) {
         controllerConfig.replayRequest = posMap
-        (clientActor ? InitializeRequest(workflowGen(), controllerConfig)).asTwitter()
+        clientActor ! InitializeRequest(workflowGen(), controllerConfig)
       } else {
-        (clientActor ? WorkflowRecoveryMessage(CLIENT, ContinueReplay(posMap))).asTwitter()
+        clientActor ! WorkflowRecoveryMessage(CLIENT, ContinueReplay(posMap))
       }
-      res
+    }
+  }
+
+  def takeGlobalCheckpoint(): Unit ={
+    if(isActive){
+      clientActor ! WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint())
     }
   }
 
   def getOperatorInfo(): Unit = {
-    if (!isActive) {
-      Future[Any](())
-    } else {
-        clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
+    if(isActive){
+      clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
     }
   }
 

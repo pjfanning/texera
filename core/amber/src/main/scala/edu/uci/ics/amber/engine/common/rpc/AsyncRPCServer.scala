@@ -42,7 +42,7 @@ object AsyncRPCServer {
 class AsyncRPCServer(
     controlOutputEndpoint: NetworkOutputPort[ControlPayload],
     val actorId: ActorVirtualIdentity
-) extends AmberLogging {
+) extends AmberLogging with Serializable {
 
   // all handlers
   protected var handlers: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]] =

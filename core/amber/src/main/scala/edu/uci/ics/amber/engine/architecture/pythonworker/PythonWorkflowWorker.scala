@@ -2,9 +2,11 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import akka.actor.{ActorRef, Props}
 import com.typesafe.config.{Config, ConfigFactory}
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.worker.{WorkerAsyncRPCHandlerInitializer, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInitializer, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -68,11 +70,13 @@ class PythonWorkflowWorker(
   private lazy val clientThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private lazy val pythonProxyClient: PythonProxyClient =
     new PythonProxyClient(outputPortNum, actorId)
+  private lazy val dataOutputPort: NetworkOutputPort[DataPayload] =
+  new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
+  private lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
+    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
+  }
   private lazy val pythonProxyServer: PythonProxyServer =
     new PythonProxyServer(inputPortNum, controlOutputPort, dataOutputPort, actorId)
-
-  // TODO: find a better way to send Error log to frontend.
-  override val rpcHandlerInitializer: WorkerAsyncRPCHandlerInitializer = null
 
   val pythonSrcDirectory: Path = Utils.amberHomePath
     .resolve("src")
@@ -107,6 +111,26 @@ class PythonWorkflowWorker(
       case _ =>
         logger.error(s"unhandled control payload: $controlPayload")
     }
+  }
+
+  def outputDataPayload(
+                         to: ActorVirtualIdentity,
+                         self: ActorVirtualIdentity,
+                         seqNum: Long,
+                         payload: DataPayload
+                       ): Unit = {
+    val msg = WorkflowDataMessage(self, seqNum, payload)
+    logManager.sendCommitted(SendRequest(to, msg))
+  }
+
+  def outputControlPayload(
+                            to: ActorVirtualIdentity,
+                            self: ActorVirtualIdentity,
+                            seqNum: Long,
+                            payload: ControlPayload
+                          ): Unit = {
+    val msg = WorkflowControlMessage(self, seqNum, payload)
+    logManager.sendCommitted(SendRequest(to, msg))
   }
 
   override def postStop(): Unit = {

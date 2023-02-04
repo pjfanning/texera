@@ -12,8 +12,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
   GetActorRef,
   NetworkSenderActorRef,
   RegisterActorRef,
-  ResendFeasibility,
-  SendRequest
+  ResendFeasibility
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkCommunicationActor,
@@ -27,11 +26,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   ResendOutputTo,
   WorkflowControlMessage
 }
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 abstract class WorkflowActor(
@@ -41,10 +35,6 @@ abstract class WorkflowActor(
 ) extends Actor
     with Stash
     with AmberLogging {
-  lazy val controlOutputPort: NetworkOutputPort[ControlPayload] =
-    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
-  lazy val asyncRPCClient: AsyncRPCClient = wire[AsyncRPCClient]
-  lazy val asyncRPCServer: AsyncRPCServer = wire[AsyncRPCServer]
   val networkCommunicationActor: NetworkSenderActorRef = NetworkSenderActorRef(
     // create a network communication actor on the same machine as the WorkflowActor itself
     context.actorOf(
@@ -62,22 +52,9 @@ abstract class WorkflowActor(
   } else {
     logManager.setupWriter(new EmptyLogStorage().getWriter)
   }
-  // this variable cannot be lazy
-  // because it should be initialized with the actor itself
-  val rpcHandlerInitializer: AsyncRPCHandlerInitializer
 
   // Get log file name
   def getLogName: String = "worker-actor"
-
-  def outputControlPayload(
-      to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      seqNum: Long,
-      payload: ControlPayload
-  ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
-    logManager.sendCommitted(SendRequest(to, msg))
-  }
 
   def forwardResendRequest: Receive = {
     case resend: ResendOutputTo =>

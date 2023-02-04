@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.{PauseType, WorkerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer, PauseType}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptMutableStateHandler.AcceptMutableState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -26,12 +26,11 @@ object AcceptMutableStateHandler {
 }
 
 trait AcceptMutableStateHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessor =>
 
   registerHandler { (cmd: AcceptMutableState, sender) =>
     try {
-      val canResume = dataProcessor
-        .getOperatorExecutor()
+      val canResume = operator
         .asInstanceOf[SortPartitionOpExec]
         .mergeIntoStoredTuplesList(cmd.tuples, cmd.totalMessagesToExpect)
 
@@ -39,9 +38,8 @@ trait AcceptMutableStateHandler {
         // All tuples have been received. The worker is paused due to operator logic
         // and not due to user pressing pause
         pauseManager.recordRequest(PauseType.OperatorLogicPause, false)
-        dataProcessor.setCurrentOutputIterator(
-          dataProcessor
-            .getOperatorExecutor()
+        setCurrentOutputIterator(
+         operator
             .asInstanceOf[SortPartitionOpExec]
             .sortTuples()
         )

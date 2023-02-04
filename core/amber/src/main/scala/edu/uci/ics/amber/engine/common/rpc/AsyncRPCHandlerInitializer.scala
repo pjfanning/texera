@@ -32,10 +32,10 @@ import scala.reflect.ClassTag
   * @param ctrlSource
   * @param ctrlReceiver
   */
-class AsyncRPCHandlerInitializer(
-    ctrlSource: AsyncRPCClient,
-    ctrlReceiver: AsyncRPCServer
-) {
+trait AsyncRPCHandlerInitializer {
+
+  protected def asyncRPCClient: AsyncRPCClient
+  protected def asyncRPCServer: AsyncRPCServer
 
   /** register a sync handler for one type of control command
     * note that register handler allows multiple handlers for a control message and uses the latest handler.
@@ -54,7 +54,7 @@ class AsyncRPCHandlerInitializer(
   private def registerImpl(
       newHandler: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]]
   ): Unit = {
-    ctrlReceiver.registerHandler(newHandler)
+    asyncRPCServer.registerHandler(newHandler)
   }
 
   /** register an async handler for one type of control command
@@ -73,15 +73,15 @@ class AsyncRPCHandlerInitializer(
   }
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
-    ctrlSource.send(cmd, to)
+    asyncRPCClient.send(cmd, to)
   }
 
   def execute[T](cmd: ControlCommand[T], sender: ActorVirtualIdentity): Future[T] = {
-    ctrlReceiver.execute((cmd, sender)).asInstanceOf[Future[T]]
+    asyncRPCServer.execute((cmd, sender)).asInstanceOf[Future[T]]
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
-    ctrlSource.sendToClient(cmd)
+    asyncRPCClient.sendToClient(cmd)
   }
 
 }

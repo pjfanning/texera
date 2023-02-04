@@ -14,7 +14,7 @@ export class ReplayWorkflowService {
   private displayWorkflowReplay = new Subject<string>();
   public operatorInfo: string = "";
   public selectedIndex = -1;
-  
+
   public replayStarted = false;
   public replayEnded = false;
 
@@ -26,7 +26,7 @@ export class ReplayWorkflowService {
     workflowWebsocketService.subscribeToEvent("WorkflowAdditionalOperatorInfoEvent").subscribe(e =>{
       this.operatorInfo = e.data;
     });
-    this.history = [1,5, 20, 30, 40]
+    this.history = [1,5, 20, 30, 40];
 
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(e => {
       if (e.state === ExecutionState.Paused || e.state === ExecutionState.Completed) {
@@ -56,5 +56,9 @@ export class ReplayWorkflowService {
 
   public clickButton():void {
     this.workflowWebsocketService.send("WorkflowAdditionalOperatorInfoRequest", {});
+  }
+
+  public clickButton2():void {
+    this.workflowWebsocketService.send("WorkflowCheckpointRequest", {});
   }
 }

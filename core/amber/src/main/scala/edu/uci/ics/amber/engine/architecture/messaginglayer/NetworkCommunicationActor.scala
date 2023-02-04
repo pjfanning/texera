@@ -4,15 +4,11 @@ import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import akka.pattern.StatusReply.Ack
 import akka.util.Timeout
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  CreditRequest,
-  ResendOutputTo,
-  WorkflowControlMessage,
-  WorkflowMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{CreditRequest, ResendOutputTo, WorkflowControlMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -46,8 +42,6 @@ object NetworkCommunicationActor {
       }
     }
   }
-
-  final case class SendRequest(id: ActorVirtualIdentity, message: WorkflowMessage)
 
   /** Identifier <-> ActorRef related messages
     */
@@ -252,7 +246,7 @@ class NetworkCommunicationActor(parentRef: ActorRef, val actorId: ActorVirtualId
   }
 
   def sendMessagesAndReceiveAcks: Receive = {
-    case sr@SendRequest(id, msg) =>
+    case SendRequest(id, msg) =>
       val msgToForward = flowControl.getMessageToForward(id, msg)
       if (msgToForward.nonEmpty) {
         forwardMessageFromFlowControl(id, msgToForward.get)

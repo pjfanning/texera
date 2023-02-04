@@ -1,6 +1,6 @@
-<nz-timeline  
+<nz-timeline
 [nzPending]="replay.replayStarted && !replay.replayEnded ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
-  <nz-timeline-item 
+  <nz-timeline-item
   *ngFor="let timepoint of replay.history; index as i;"
   [nzColor]="replay.selectedIndex === i ? 'green': 'blue'"
   >
@@ -16,6 +16,9 @@
   </nz-timeline-item>
 </nz-timeline>
 
+<button mat-stroked-button (click)="replay.clickButton2()">
+  Take Global Checkpoint
+</button>
 
 <button mat-stroked-button (click)="replay.clickButton()">
   Request Operator Info

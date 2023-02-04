@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptImmutableStateHandler.AcceptImmutableState
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SaveSkewedWorkerInfoHandler.SaveSkewedWorkerInfo
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutableStateOrNotifyHelperHandler.SendImmutableStateOrNotifyHelper
@@ -32,10 +32,10 @@ object SendImmutableStateOrNotifyHelperHandler {
 }
 
 trait SendImmutableStateOrNotifyHelperHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessor =>
 
   registerHandler { (cmd: SendImmutableStateOrNotifyHelper, sender) =>
-    dataProcessor.getOperatorExecutor() match {
+    operator match {
       case joinOpExec: HashJoinOpExec[_] =>
         // Returns true if the build table was replicated successfully in case of HashJoin.
         try {

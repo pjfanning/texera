@@ -155,13 +155,13 @@ class RecoverySpec
           (0 until stepAccumulated).foreach{
             _ =>
               inputHub.addData(InputTuple(upstream, ITuple(1, 2, 3)))
-              inputHub.prepareInput(currentStep)
+              inputHub.prepareInput(currentStep, false)
               currentStep += 1
               assert(inputHub.dataDeque.dequeue() == InputTuple(upstream, ITuple(1, 2, 3)))
               assert(inputHub.controlDeque.size() == 0)
           }
         }
-        inputHub.prepareInput(currentStep)
+        inputHub.prepareInput(currentStep, false)
         assert(inputHub.controlDeque.size() == 1)
         assert(inputHub.controlDeque.dequeue() == ControlElement(controlPayload, from))
     }
@@ -169,7 +169,7 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log" in {
-    val workerName = "WF2-CSVFileScan-operator-2ac234de-85ff-414c-baea-77c8a7585f8f-main-0"
+    val workerName = "WF1-SimpleSink-operator-ff39f567-fbc9-4808-b941-a9fcd5c9ad02-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     val iter = logStorage.getReader.mkLogRecordIterator()
     while(iter.hasNext){

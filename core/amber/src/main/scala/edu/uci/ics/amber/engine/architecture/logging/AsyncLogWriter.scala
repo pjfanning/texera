@@ -1,24 +1,39 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import com.google.common.collect.Queues
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{GetMessageInQueueSync, LogWriterOutputMessage, SendRequest}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.SendRequest
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage}
 import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util
 import java.util.concurrent.CompletableFuture
 import scala.collection.JavaConverters._
-import scala.util.control.Breaks.{break, breakable}
+import scala.concurrent.Await
+import akka.pattern.ask
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
+
+import scala.concurrent.duration.DurationInt
+
+object AsyncLogWriter{
+  sealed trait LogWriterOutputMessage
+
+  final case class SendRequest(id: ActorVirtualIdentity, message: WorkflowMessage) extends LogWriterOutputMessage
+
+  final case class GetMessageInQueueSync(sync:CompletableFuture[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]) extends LogWriterOutputMessage
+}
+
 
 class AsyncLogWriter(
     networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
     writer: DeterminantLogWriter
 ) extends Thread {
-  private val drained = new util.ArrayList[Either[InMemDeterminant, SendRequest]]()
+  private val drained = new util.ArrayList[Either[InMemDeterminant, LogWriterOutputMessage]]()
   private val writerQueue =
-    Queues.newLinkedBlockingQueue[Either[InMemDeterminant, SendRequest]]()
+    Queues.newLinkedBlockingQueue[Either[InMemDeterminant, LogWriterOutputMessage]]()
   private var stopped = false
   private val logInterval =
     AmberUtils.amberConfig.getLong("fault-tolerance.log-flush-interval-ms")
@@ -31,7 +46,7 @@ class AsyncLogWriter(
     })
   }
 
-  def putOutput(output: SendRequest): Unit = {
+  def putOutput(output: LogWriterOutputMessage): Unit = {
     assert(!stopped)
     writerQueue.put(Right(output))
   }
@@ -67,9 +82,15 @@ class AsyncLogWriter(
     drainedScala
       .filter(_.isLeft)
       .map(_.left.get)
-      .foreach(x => writer.writeLogRecord(x))
+      .foreach{
+        case TerminateSignal => stop = true
+        case other => writer.writeLogRecord(other)
+      }
     writer.flush()
-    drainedScala.filter(_.isRight).foreach(x => networkCommunicationActor ! x.right.get)
+    drainedScala.filter(_.isRight).map(_.right.get).foreach{
+      case GetMessageInQueueSync(sync) => sync.complete(Await.result(networkCommunicationActor.ref ? GetMessageInQueue, 5.seconds).asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]])
+      case x: SendRequest => networkCommunicationActor ! x
+    }
     drained.clear()
     stop
   }

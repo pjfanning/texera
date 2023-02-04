@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorContext
 
 case class InputExhausted()
 
-trait IOperatorExecutor {
+trait IOperatorExecutor extends Serializable {
 
   def open(): Unit
 

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.EndMarker
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, RUNNING}
@@ -14,7 +14,7 @@ object StartHandler {
 }
 
 trait StartHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessor =>
 
   registerHandler { (msg: StartWorker, sender) =>
     if (operator.isInstanceOf[ISourceOperatorExecutor]) {

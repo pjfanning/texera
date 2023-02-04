@@ -1,15 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  LocalFSLogStorage
-}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, LocalFSLogStorage}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.SendRequest
-import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage}
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import akka.pattern.ask
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{GetMessageInQueueSync, SendRequest}
+
+import java.util.concurrent.CompletableFuture
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 //In-mem formats:
 sealed trait InMemDeterminant
@@ -40,6 +43,8 @@ trait LogManager {
 
   def sendCommitted(sendRequest: SendRequest): Unit
 
+  def getUnackedMessages():Array[(ActorVirtualIdentity,Iterable[NetworkMessage])]
+
   def terminate(): Unit
 
 }
@@ -52,12 +57,14 @@ class EmptyLogManagerImpl(
   override def getDeterminantLogger: DeterminantLogger = new EmptyDeterminantLogger()
 
   override def sendCommitted(
-      sendRequest: NetworkCommunicationActor.SendRequest
+      sendRequest: SendRequest
   ): Unit = {
     networkCommunicationActor ! sendRequest
   }
 
   override def terminate(): Unit = {}
+
+  override def getUnackedMessages(): Array[(ActorVirtualIdentity,Iterable[NetworkMessage])] = Await.result(networkCommunicationActor.ref ? GetMessageInQueue, 5.seconds).asInstanceOf[Array[(ActorVirtualIdentity,Iterable[NetworkMessage])]]
 }
 
 class LogManagerImpl(
@@ -84,4 +91,9 @@ class LogManagerImpl(
     writer.terminate()
   }
 
+  override def getUnackedMessages(): Array[(ActorVirtualIdentity, Iterable[NetworkMessage])] = {
+    val future = new CompletableFuture[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]()
+    writer.putOutput(GetMessageInQueueSync(future))
+    future.get()
+  }
 }

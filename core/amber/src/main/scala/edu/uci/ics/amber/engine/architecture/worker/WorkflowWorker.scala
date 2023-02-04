@@ -5,10 +5,11 @@ import akka.util.Timeout
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef, ResendFeasibility, SendRequest}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort, NetworkOutputPort, TupleToBatchConverter}
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, Shutdown}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, NoOperation, Shutdown}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
@@ -59,34 +60,24 @@ class WorkflowWorker(
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
+  logger.info(s"Worker:$actorId = ${context.self}")
   val creditMonitor = new CreditMonitor()
-  lazy val replayGate = new InputHub(logStorage.getReader,creditMonitor)
-  lazy val pauseManager: PauseManager = wire[PauseManager]
-  lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
-  lazy val dataProcessor: DataProcessor = wire[DataProcessor]
+  lazy val inputHub = new InputHub(logStorage.getReader,creditMonitor)
   lazy val dataInputPort: NetworkInputPort[DataPayload] =
     new NetworkInputPort[DataPayload](this.actorId, this.handleDataPayload)
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayload)
-  lazy val dataOutputPort: NetworkOutputPort[DataPayload] =
-    new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
-  lazy val batchProducer: TupleToBatchConverter = wire[TupleToBatchConverter]
   lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
-  lazy val breakpointManager: BreakpointManager = wire[BreakpointManager]
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
-  val workerStateManager: WorkerStateManager = new WorkerStateManager()
-  val rpcHandlerInitializer: WorkerAsyncRPCHandlerInitializer =
-    wire[WorkerAsyncRPCHandlerInitializer]
-
-  rpcHandlerInitializer.setNetworkSender(networkCommunicationActor)
+  lazy val dataProcessor: DataProcessor = wire[DataProcessor]
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
   }
 
   logger.info("set replay to "+replayTo)
-  replayGate.setReplayTo(replayTo, false)
+  inputHub.setReplayTo(replayTo, false)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -97,14 +88,10 @@ class WorkflowWorker(
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     super.preRestart(reason, message)
     logger.error(s"Encountered fatal error, worker is shutting done.", reason)
-    asyncRPCClient.send(
-      FatalError(reason),
-      CONTROLLER
-    )
   }
 
   override def receive: Receive = {
-    if (!replayGate.recoveryCompleted) {
+    if (!inputHub.recoveryCompleted) {
       recoveryManager.registerOnStart(() =>{}
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
       )
@@ -124,14 +111,14 @@ class WorkflowWorker(
   def receiveAndProcessMessages: Receive =
     forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
-        val syncFuture = new CompletableFuture[Unit]()
-        replayGate.addInternal(Checkpoint(networkCommunicationActor.ref, syncFuture))
-        syncFuture.get()
+        val syncFuture = new CompletableFuture[Long]()
+        inputHub.addInternal(Checkpoint(networkCommunicationActor.ref, syncFuture))
+        sender ! syncFuture.get()
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
-        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
-        replayGate.setReplayTo(index, true)
+        inputHub.setReplayTo(index, true)
+        inputHub.addInternal(NoOperation)
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),
@@ -167,26 +154,17 @@ class WorkflowWorker(
     // let dp thread process it
     controlPayload match {
       case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
-        replayGate.addControl(ControlElement(controlCommand, from))
+        inputHub.addControl(ControlElement(controlCommand, from))
       case _ =>
         throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
     }
   }
 
-  def outputDataPayload(
-      to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      seqNum: Long,
-      payload: DataPayload
-  ): Unit = {
-    val msg = WorkflowDataMessage(self, seqNum, payload)
-    logManager.sendCommitted(SendRequest(to, msg))
-  }
 
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     val syncFuture = new CompletableFuture[Unit]()
-    replayGate.addInternal(Shutdown(syncFuture))
+    inputHub.addInternal(Shutdown(None, syncFuture))
     syncFuture.get()
     logger.info("stopped!")
   }

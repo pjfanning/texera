@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -23,22 +23,20 @@ object MonitoringHandler {
   * possible sender: controller(by ControllerInitiateMonitoring)
   */
 trait MonitoringHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessor =>
 
   registerHandler { (msg: QuerySelfWorkloadMetrics, sender) =>
     try {
       val workloadMetrics = SelfWorkloadMetrics(
         inputHub.getDataQueueLength,
-        inputHub.getControlQueueLength,
-        dataInputPort.getStashedMessageCount(),
-        controlInputPort.getStashedMessageCount()
+        inputHub.getControlQueueLength
       )
-      val samples = tupleToBatchConverter.getWorkloadHistory()
+      val samples = batchProducer.getWorkloadHistory()
       (workloadMetrics, samples)
     } catch {
       case exception: Exception =>
         (
-          SelfWorkloadMetrics(-1, -1, -1, -1),
+          SelfWorkloadMetrics(-1, -1),
           List[Map[ActorVirtualIdentity, List[Long]]]()
         )
     }

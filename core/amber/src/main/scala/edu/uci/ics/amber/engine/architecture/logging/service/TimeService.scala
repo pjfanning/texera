@@ -7,7 +7,7 @@ class TimeService(determinantLogger: DeterminantLogger) {
   def getCurrentTime: Long = {
     // Add recovery logic later
     val time = System.currentTimeMillis()
-    determinantLogger.logDeterminant(TimeStamp(time),0)
+    determinantLogger.logDeterminant(TimeStamp(time))
     time
   }
 

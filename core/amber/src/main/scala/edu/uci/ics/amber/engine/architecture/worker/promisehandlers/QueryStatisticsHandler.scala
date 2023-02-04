@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
-import edu.uci.ics.amber.engine.architecture.worker.{WorkerAsyncRPCHandlerInitializer, WorkerResult}
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer, WorkerResult}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.{Constants, ISinkOperatorExecutor}
 
@@ -11,7 +11,7 @@ object QueryStatisticsHandler {
 }
 
 trait QueryStatisticsHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: DataProcessor =>
 
   registerHandler { (msg: QueryStatistics, sender) =>
     // report internal queue length if the gap > 30s
@@ -24,7 +24,7 @@ trait QueryStatisticsHandler {
     }
 
     // collect input and output row count
-    val (in, out) = dataProcessor.collectStatistics()
+    val (in, out) = collectStatistics()
 
     // sink operator doesn't output to downstream so internal count is 0
     // but for user-friendliness we show its input count as output count
