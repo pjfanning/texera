@@ -15,7 +15,7 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import java.util.concurrent.CompletableFuture
@@ -26,22 +26,18 @@ import scala.concurrent.duration._
 object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
-      op: IOperatorExecutor,
-      inputToOrdinalMapping: Map[LinkIdentity, Int],
-      outputToOrdinalMapping: mutable.Map[LinkIdentity, Int],
+      workerIndex: Int,
+      workerLayer: OpExecConfig,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      allUpstreamLinkIds: Set[LinkIdentity],
       supportFaultTolerance: Boolean,
       recoverToPauseIndex: Long
   ): Props =
     Props(
       new WorkflowWorker(
         id,
-        op,
-        inputToOrdinalMapping,
-        outputToOrdinalMapping,
+        workerIndex: Int,
+        workerLayer: OpExecConfig,
         parentNetworkCommunicationActorRef,
-        allUpstreamLinkIds,
         supportFaultTolerance,
         recoverToPauseIndex
       )
@@ -52,11 +48,9 @@ object WorkflowWorker {
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
-    operator: IOperatorExecutor,
-    inputToOrdinalMapping: Map[LinkIdentity, Int],
-    outputToOrdinalMapping: mutable.Map[LinkIdentity, Int],
+    workerIndex: Int,
+    workerLayer: OpExecConfig,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-    allUpstreamLinkIds: Set[LinkIdentity],
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
@@ -109,7 +103,7 @@ class WorkflowWorker(
   }
 
   def receiveAndProcessMessages: Receive =
-    forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+    acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
         val syncFuture = new CompletableFuture[Long]()
         inputHub.addInternal(Checkpoint(networkCommunicationActor.ref, syncFuture))
@@ -142,6 +136,11 @@ class WorkflowWorker(
       case other =>
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }
+
+  def acceptDirectInvocations: Receive = {
+    case invocation: ControlInvocation =>
+      this.handleControlPayload(SELF, invocation)
+  }
 
   def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
     tupleProducer.processDataPayload(from, dataPayload)

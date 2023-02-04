@@ -2,12 +2,22 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logging.{
+  LogManager,
+  ProcessControlMessage,
+  SenderActorChange
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
+import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, TupleToBatchConverter}
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
@@ -57,6 +67,7 @@ object DataProcessor{
 
 class DataProcessor( // meta dependencies:
                      val operator: IOperatorExecutor, // core logic
+                     val opExecConfig: OpExecConfig,
                      val actorId: ActorVirtualIdentity,
                      val allUpstreamLinkIds: Set[LinkIdentity],
                      val inputToOrdinalMapping: Map[LinkIdentity, Int],
@@ -122,7 +133,7 @@ class DataProcessor( // meta dependencies:
   // 7. state manager
   lazy protected val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
-  lazy protected val batchProducer: TupleToBatchConverter = new TupleToBatchConverter(actorId, dataOutputPort)
+  lazy protected val outputManager: OutputManager = new OutputManager(actorId, dataOutputPort)
 
   /**
     * Map from Identifier to input number. Used to convert the Identifier
@@ -203,15 +214,16 @@ class DataProcessor( // meta dependencies:
   def getInputPort(identifier: ActorVirtualIdentity): Int = {
     val inputLink = getInputLink(identifier)
     if (inputLink == null) 0
-    else if (!inputToOrdinalMapping.contains(inputLink)) 0
-    else inputToOrdinalMapping(inputLink)
+    else if (!opExecConfig.inputToOrdinalMapping.contains(inputLink)) 0
+    else opExecConfig.inputToOrdinalMapping(inputLink)
   }
 
-  def getOutputLinkByPort(outputPort: Option[Int]): Option[List[LinkIdentity]] = {
-    if (outputPort.isEmpty)
-      return Option.empty
-    val outLinks = outputToOrdinalMapping.filter(p => p._2 == outputPort.get).keys.toList
-    Option.apply(outLinks)
+  def getOutputLinkByPort(outputPort: Option[Int]): List[LinkIdentity] = {
+    if (outputPort.isEmpty) {
+      opExecConfig.outputToOrdinalMapping.keySet.toList
+    } else {
+      opExecConfig.outputToOrdinalMapping.filter(p => p._2 == outputPort.get).keys.toList
+    }
   }
 
   def getOperatorExecutor(): IOperatorExecutor = operator
@@ -286,17 +298,12 @@ class DataProcessor( // meta dependencies:
     val (outputTuple, outputPortOpt) = out
     if (breakpointManager.evaluateTuple(outputTuple)) {
       pauseManager.recordRequest(PauseType.UserPause, true)
+      outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
       stateManager.transitTo(PAUSED)
     } else {
       outputTupleCount += 1
       val outLinks = getOutputLinkByPort(outputPortOpt)
-      if (outLinks.isEmpty) {
-        batchProducer.passTupleToDownstream(outputTuple, Option.empty)
-      } else {
-        outLinks.get.foreach(outLink => {
-          batchProducer.passTupleToDownstream(outputTuple, Option.apply(outLink))
-        })
-      }
+      outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link))
     }
   }
 
@@ -308,6 +315,7 @@ class DataProcessor( // meta dependencies:
       case InputTuple(from, tuple) =>
         if (stateManager.getCurrentState == READY) {
           stateManager.transitTo(RUNNING)
+          outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
           asyncRPCClient.fireAndForget(
             WorkerStateUpdated(stateManager.getCurrentState),
             CONTROLLER
@@ -335,10 +343,11 @@ class DataProcessor( // meta dependencies:
       case FinalizeLink(link) =>
         asyncRPCClient.fireAndForget(LinkCompleted(link), CONTROLLER)
       case FinalizeOperator() =>
-        batchProducer.emitEndOfUpstream()
+        outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
         logger.info(s"$operator completed")
         operator.close() // close operator
+        outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
         stateManager.transitTo(COMPLETED)
         asyncRPCClient.fireAndForget(WorkerExecutionCompleted(), CONTROLLER)
     }
