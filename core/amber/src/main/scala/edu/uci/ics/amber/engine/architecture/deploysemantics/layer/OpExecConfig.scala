@@ -317,7 +317,11 @@ case class OpExecConfig(
             this,
             parentNetworkCommunicationActorRef,
             controllerConf.supportFaultTolerance,
-            controllerConf.replayRequest(workerId)
+            if(controllerConf.replayRequest.contains(workerId)){
+              controllerConf.replayRequest(workerId)
+            }else{
+              -1
+            }
           )
         }
         workerToActorProps(workerId) = workflowWorker

@@ -30,9 +30,6 @@ trait WorkerExecutionCompletedHandler {
 
   registerHandler { (msg: WorkerExecutionCompleted, sender) =>
     {
-      disableStatusUpdate()
-      disableMonitoring()
-      disableSkewHandling()
       assert(sender.isInstanceOf[ActorVirtualIdentity])
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
@@ -46,15 +43,16 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (workflow.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
-                interactionHistory
-                  .append((((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt, Map.empty))
-                sendToClient(WorkflowReplayInfo(interactionHistory))
-                sendToClient(WorkflowCompleted())
+            interactionHistory
+              .append((((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt, Map.empty))
+            sendToClient(WorkflowReplayInfo(interactionHistory))
+            sendToClient(WorkflowCompleted())
+            disableStatusUpdate()
+            disableMonitoring()
+            disableSkewHandling()
+            println("workflow completed!!!!!!!!!!!!!!")
             Future.Unit
           } else {
-            enableSkewHandling()
-            enableMonitoring()
-            enableStatusUpdate()
             workflowScheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
           }
         })

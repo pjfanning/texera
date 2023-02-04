@@ -25,7 +25,8 @@ trait DataProcessorRPCHandlerInitializer extends AsyncRPCHandlerInitializer
     with SaveSkewedWorkerInfoHandler
     with AcceptMutableStateHandler
     with SchedulerTimeSlotEventHandler
-    with GetReplayAlignmentHandler {
+    with GetReplayAlignmentHandler
+    with FlushNetworkBufferHandler {
   this: DataProcessor => // Force it to be a data processor
   var lastReportTime = 0L
 }

@@ -47,7 +47,7 @@ class RecoverySpec
   }
 
   "Kryo" should "serialize nested determinant correctly" in {
-    val selfworkload = SelfWorkloadMetrics(1, 1, 1, 1)
+    val selfworkload = SelfWorkloadMetrics(1, 1)
     val buffer = ArrayBuffer[mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]]()
     val m = mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]()
     m(ActorVirtualIdentity("1")) = ArrayBuffer[Long](1, 2, 3, 4)

@@ -131,8 +131,8 @@ class DataProcessor( // meta dependencies:
     * We also keep track of the upstream actors so that we can emit
     * EndOfAllMarker when all upstream actors complete their job
     */
-  protected val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
-  protected val determinantLogger = logManager.getDeterminantLogger
+  lazy protected val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
+  lazy protected val determinantLogger = logManager.getDeterminantLogger
 
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.
@@ -141,9 +141,9 @@ class DataProcessor( // meta dependencies:
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
   protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
-  protected val dataQueue = inputHub.dataDeque
-  protected val controlQueue = inputHub.controlDeque
-  protected val internalQueue = inputHub.internalDeque
+  lazy protected val dataQueue = inputHub.dataDeque
+  lazy protected val controlQueue = inputHub.controlDeque
+  lazy protected val internalQueue = inputHub.internalDeque
   protected var totalValidStep = 0L
 
   // initialize dp thread upon construction

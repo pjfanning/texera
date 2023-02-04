@@ -68,6 +68,7 @@ class WorkflowWorker(
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
+  dataProcessor.initialize(inputHub, logStorage, logManager, recoveryManager, context)
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))

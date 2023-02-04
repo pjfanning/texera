@@ -22,7 +22,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
-    with AmberLogging
     with LinkWorkersHandler
     with AssignBreakpointHandler
     with WorkerExecutionCompletedHandler
@@ -58,6 +57,7 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
       return
     }
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
+      println("status update enabled")
       statusUpdateAskHandle = Option(
         context.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,

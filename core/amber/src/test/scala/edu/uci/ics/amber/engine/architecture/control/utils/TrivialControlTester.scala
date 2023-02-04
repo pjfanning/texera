@@ -3,27 +3,39 @@ package edu.uci.ics.amber.engine.architecture.control.utils
 import akka.actor.ActorRef
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkMessage,
-  NetworkSenderActorRef
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
-) extends WorkflowActor(id, parentNetworkCommunicationActorRef, false) {
+) extends WorkflowActor(id, parentNetworkCommunicationActorRef, false) with TesterAsyncRPCHandlerInitializer {
 
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](id, this.handleControlPayloadWithTryCatch)
-  override val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
-    wire[TesterAsyncRPCHandlerInitializer]
+
+  def outputControlPayload(
+                            to: ActorVirtualIdentity,
+                            self: ActorVirtualIdentity,
+                            seqNum: Long,
+                            payload: ControlPayload
+                          ): Unit = {
+    val msg = WorkflowControlMessage(self, seqNum, payload)
+    logManager.sendCommitted(SendRequest(to, msg))
+  }
+  lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
+    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
+  }
+
+  val asyncRPCServer: AsyncRPCServer = wire[AsyncRPCServer]
+  val asyncRPCClient: AsyncRPCClient = wire[AsyncRPCClient]
 
   override def receive: Receive = {
     disallowActorRefRelatedMessages orElse {

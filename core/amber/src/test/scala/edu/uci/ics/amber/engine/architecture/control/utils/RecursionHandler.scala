@@ -9,12 +9,12 @@ object RecursionHandler {
 }
 
 trait RecursionHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TrivialControlTester =>
 
   registerHandler { (r: Recursion, sender) =>
     if (r.i < 5) {
       println(r.i)
-      send(Recursion(r.i + 1), myID).map { res =>
+      send(Recursion(r.i + 1), actorId).map { res =>
         println(res)
         r.i.toString
       }

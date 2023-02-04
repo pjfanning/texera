@@ -20,6 +20,7 @@ trait StartHandler {
     if (operator.isInstanceOf[ISourceOperatorExecutor]) {
       stateManager.assertState(READY)
       stateManager.transitTo(RUNNING)
+      outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
       inputHub.addData(EndMarker(null))
       stateManager.getCurrentState
     } else {

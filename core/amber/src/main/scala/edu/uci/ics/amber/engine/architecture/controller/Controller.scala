@@ -105,8 +105,8 @@ class Controller(
     .HashMap[ActorVirtualIdentity, mutable.Queue[ProcessControlMessage]]()
   private var currentHead: ActorVirtualIdentity = null
 
-  protected val asyncRPCClient = wire[AsyncRPCClient]
-  protected val asyncRPCServer = wire[AsyncRPCServer]
+  protected lazy val asyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
+  protected lazy val asyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
 
   var numControl = 0
   val controlMessagesToRecover: Iterator[InMemDeterminant] = {
@@ -395,7 +395,7 @@ class Controller(
   }
 
   override def postStop(): Unit = {
-    if (statusUpdateAskHandle != null) {
+    if (statusUpdateAskHandle != null && statusUpdateAskHandle.isDefined) {
       statusUpdateAskHandle.get.cancel()
     }
     logger.info("Controller start to shutdown")

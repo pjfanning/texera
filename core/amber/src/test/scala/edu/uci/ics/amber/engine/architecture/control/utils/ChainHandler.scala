@@ -10,12 +10,12 @@ object ChainHandler {
 }
 
 trait ChainHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TrivialControlTester =>
 
   registerHandler { (x: Chain, sender) =>
-    println(s"chained $myID")
+    println(s"chained $actorId")
     if (x.nexts.isEmpty) {
-      Future(myID)
+      Future(actorId)
     } else {
       send(Chain(x.nexts.drop(1)), x.nexts.head).map { x =>
         println(s"chain returns from $x")
