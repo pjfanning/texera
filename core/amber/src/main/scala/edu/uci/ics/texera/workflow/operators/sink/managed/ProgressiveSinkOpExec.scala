@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
+import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
@@ -53,6 +54,21 @@ class ProgressiveSinkOpExec(
 
   override def getStateInformation: String = {
     s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
+  }
+
+  override def serializeState(
+                      currentIteratorState: Iterator[(ITuple, Option[Int])],
+                      serializer: Serialization
+                    ): SerializedState = {
+    null
+  }
+
+  override def deserializeState(
+                        serializedState: SerializedState,
+                        deserializer: Serialization
+                      ): Iterator[(ITuple, Option[Int])] = {
+    open()
+    Iterator.empty
   }
 
 }

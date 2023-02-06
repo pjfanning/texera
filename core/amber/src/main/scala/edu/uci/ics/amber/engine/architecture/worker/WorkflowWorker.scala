@@ -4,54 +4,21 @@ import akka.actor.Props
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
-  CreditMonitor,
-  NetworkInputPort
-}
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  Checkpoint,
-  ControlElement,
-  DataElement,
-  InputTuple,
-  InternalCommand,
-  NoOperation,
-  Shutdown
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, NoOperation, Shutdown}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplay,
-  ContinueReplayTo,
-  ControlPayload,
-  CreditRequest,
-  DataPayload,
-  GetOperatorInternalState,
-  ResendOutputTo,
-  TakeLocalCheckpoint,
-  UpdateRecoveryStatus,
-  WorkflowControlMessage,
-  WorkflowDataMessage,
-  WorkflowRecoveryMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
@@ -124,6 +91,7 @@ class WorkflowWorker(
   override def receive: Receive = {
     // add restore operator state code.
     val checkpointOpt = CheckpointHolder.findLastCheckpointOf(actorId, replayTo)
+    var outputIter:Iterator[(ITuple, Option[Int])] = null
     if (checkpointOpt.isDefined) {
       val serialization = SerializationExtension(context.system)
       dataInputPort.setFIFOState(checkpointOpt.get.load("dataFifoState").toObject(serialization))
@@ -131,13 +99,13 @@ class WorkflowWorker(
         checkpointOpt.get.load("controlFifoState").toObject(serialization)
       )
       inputHub = checkpointOpt.get.load("inputHubState").toObject(serialization)
-      operator.deserializeState(checkpointOpt.get.load("operatorState"), serialization)
+      outputIter = operator.deserializeState(checkpointOpt.get.load("operatorState"), serialization)
       dataProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
     }
     inputHub.setLogRecords(logStorage.getReader.mkLogRecordIterator())
     dataProcessor.initialize(
       operator,
-      null,
+      outputIter,
       inputHub,
       logStorage,
       logManager,

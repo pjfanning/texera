@@ -1,6 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
+import akka.serialization.Serialization
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
+import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Schema}
@@ -89,5 +92,21 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   override def getStateInformation: String = {
     s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowOutputted).mkString(",")}"
+  }
+
+  override def serializeState(
+                      currentIteratorState: Iterator[(ITuple, Option[Int])],
+                      serializer: Serialization
+                    ): SerializedState = {
+    SerializedState.fromObject(Int.box(numRowOutputted), serializer)
+  }
+
+  override def deserializeState(
+                        serializedState: SerializedState,
+                        deserializer: Serialization
+                      ): Iterator[(ITuple, Option[Int])] = {
+    open()
+    numRowOutputted = serializedState.toObject(deserializer)
+    produceTexeraTuple().drop(numRowOutputted).map(tuple => (tuple, Option.empty))
   }
 }
