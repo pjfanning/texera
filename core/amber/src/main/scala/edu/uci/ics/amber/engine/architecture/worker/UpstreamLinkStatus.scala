@@ -25,7 +25,7 @@ class UpstreamLinkStatus(ordinalMapping: OrdinalMapping) extends Serializable {
     upstreamMap.getOrElseUpdate(input, new mutable.HashSet[ActorVirtualIdentity]()).add(identifier)
   }
 
-  def markWorkerEOF(identifier: ActorVirtualIdentity, link:LinkIdentity): Unit = {
+  def markWorkerEOF(identifier: ActorVirtualIdentity, link: LinkIdentity): Unit = {
     if (identifier != null) {
       endReceivedFromWorkers.add(identifier)
       if (upstreamMap(link).subsetOf(endReceivedFromWorkers)) {

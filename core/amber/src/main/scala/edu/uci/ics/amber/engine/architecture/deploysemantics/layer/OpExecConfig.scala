@@ -5,15 +5,34 @@ import akka.remote.RemoteScope
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
+  AddressInfo,
+  LocationPreference,
+  PreferController,
+  RoundRobinPreference
+}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkSenderActorRef,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
@@ -125,8 +144,11 @@ case class OpExecConfig(
   // creates a copy with an additional input operator specified on an input port
   def addInput(from: LayerIdentity, port: Int): OpExecConfig = {
     assert(port < this.inputPorts.size, s"cannot add input on port $port, all ports: $inputPorts")
-    this.copy(ordinalMapping = OrdinalMapping(
-      ordinalMapping.input + (LinkIdentity(from, this.id) -> port),ordinalMapping.output)
+    this.copy(ordinalMapping =
+      OrdinalMapping(
+        ordinalMapping.input + (LinkIdentity(from, this.id) -> port),
+        ordinalMapping.output
+      )
     )
   }
 
@@ -136,19 +158,26 @@ case class OpExecConfig(
       port < this.outputPorts.size,
       s"cannot add output on port $port, all ports: $outputPorts"
     )
-    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input,
-      ordinalMapping.output + (LinkIdentity(this.id, to) -> port))
+    this.copy(ordinalMapping =
+      OrdinalMapping(
+        ordinalMapping.input,
+        ordinalMapping.output + (LinkIdentity(this.id, to) -> port)
+      )
     )
   }
 
   // creates a copy with a removed input operator
   def removeInput(from: LayerIdentity): OpExecConfig = {
-    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input - LinkIdentity(from, this.id), ordinalMapping.output))
+    this.copy(ordinalMapping =
+      OrdinalMapping(ordinalMapping.input - LinkIdentity(from, this.id), ordinalMapping.output)
+    )
   }
 
   // creates a copy with a removed output operator
   def removeOutput(to: LayerIdentity): OpExecConfig = {
-    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input, ordinalMapping.output - LinkIdentity(this.id, to)))
+    this.copy(ordinalMapping =
+      OrdinalMapping(ordinalMapping.input, ordinalMapping.output - LinkIdentity(this.id, to))
+    )
   }
 
   // creates a copy with the new ID
@@ -168,10 +197,10 @@ case class OpExecConfig(
   }
 
   def identifiers: Array[ActorVirtualIdentity] = {
-    (0 until numWorkers).map{ i => identifier(i) }.toArray
+    (0 until numWorkers).map { i => identifier(i) }.toArray
   }
 
-  def identifier(i:Int):ActorVirtualIdentity = {
+  def identifier(i: Int): ActorVirtualIdentity = {
     VirtualIdentityUtils.createWorkerIdentity(id.workflow, id.operator, id.layerID, i)
   }
 
@@ -234,9 +263,9 @@ case class OpExecConfig(
             this,
             parentNetworkCommunicationActorRef,
             controllerConf.supportFaultTolerance,
-            if(controllerConf.replayRequest.contains(workerId)){
+            if (controllerConf.replayRequest.contains(workerId)) {
               controllerConf.replayRequest(workerId)
-            }else{
+            } else {
               -1
             }
           )
@@ -249,7 +278,13 @@ case class OpExecConfig(
       })
   }
 
-  def recover(actorId: ActorVirtualIdentity, address: Address, context: ActorContext, opExecution:OperatorExecution, parentNetworkCommunicationActorRef: NetworkSenderActorRef): ActorRef = {
+  def recover(
+      actorId: ActorVirtualIdentity,
+      address: Address,
+      context: ActorContext,
+      opExecution: OperatorExecution,
+      parentNetworkCommunicationActorRef: NetworkSenderActorRef
+  ): ActorRef = {
     val newRef =
       context.actorOf(workerToActorProps(actorId).withDeploy(Deploy(scope = RemoteScope(address))))
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(actorId, newRef))

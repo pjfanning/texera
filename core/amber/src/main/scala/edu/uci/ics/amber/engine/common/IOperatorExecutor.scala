@@ -27,11 +27,17 @@ trait IOperatorExecutor extends Serializable {
 
   def getStateInformation: String = ""
 
-  def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], serializer: Serialization):SerializedState = {
+  def serializeState(
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      serializer: Serialization
+  ): SerializedState = {
     null
   }
 
-  def deserializeState(serializedState: SerializedState, deserializer: Serialization):Iterator[(ITuple, Option[Int])] = {
+  def deserializeState(
+      serializedState: SerializedState,
+      deserializer: Serialization
+  ): Iterator[(ITuple, Option[Int])] = {
     null
   }
 

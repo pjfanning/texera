@@ -48,15 +48,15 @@ class NetworkInputPort[T](
     }
   }
 
-  def getFIFOState:Map[ActorVirtualIdentity, OrderingEnforcer[T]] = idToOrderingEnforcers.toMap
+  def getFIFOState: Map[ActorVirtualIdentity, OrderingEnforcer[T]] = idToOrderingEnforcers.toMap
 
-  def setFIFOState(fifoState:Map[ActorVirtualIdentity, OrderingEnforcer[T]]): Unit ={
+  def setFIFOState(fifoState: Map[ActorVirtualIdentity, OrderingEnforcer[T]]): Unit = {
     idToOrderingEnforcers.clear()
     idToOrderingEnforcers ++= fifoState
   }
 
-  def increaseFIFOSeqNum(id:ActorVirtualIdentity): Unit ={
-    idToOrderingEnforcers.getOrElseUpdate(id, new OrderingEnforcer[T]()).current+=1
+  def increaseFIFOSeqNum(id: ActorVirtualIdentity): Unit = {
+    idToOrderingEnforcers.getOrElseUpdate(id, new OrderingEnforcer[T]()).current += 1
   }
 
 }

@@ -8,12 +8,17 @@ object VirtualIdentityUtils {
 
   private val workerNamePattern: Regex = raw"Worker:WF(\w+)-(.+)-(\w+)-(\w+)".r
 
-  def createWorkerIdentity(workflow:String, operator:String,layer:String, workerId:Int): ActorVirtualIdentity ={
+  def createWorkerIdentity(
+      workflow: String,
+      operator: String,
+      layer: String,
+      workerId: Int
+  ): ActorVirtualIdentity = {
     ActorVirtualIdentity(s"Worker:WF$workflow-$operator-$layer-$workerId")
   }
 
-  def getOperator(workerId:ActorVirtualIdentity):LayerIdentity = {
-    workerId.name match{
+  def getOperator(workerId: ActorVirtualIdentity): LayerIdentity = {
+    workerId.name match {
       case workerNamePattern(workflow, operator, layer, _) =>
         LayerIdentity(workflow, operator, layer)
     }

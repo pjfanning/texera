@@ -21,7 +21,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
-trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
+trait ControllerAsyncRPCHandlerInitializer
+    extends AsyncRPCHandlerInitializer
     with LinkWorkersHandler
     with AssignBreakpointHandler
     with WorkerExecutionCompletedHandler
@@ -48,12 +49,13 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
   var statusUpdateAskHandle: Option[Cancellable] = None
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
-  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])] = new ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])]()
+  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])] =
+    new ArrayBuffer[(Int, Map[ActorVirtualIdentity, Long])]()
   val workflowStartTimeStamp: Long = System.currentTimeMillis()
   var suppressStatusUpdate = false
 
   def enableStatusUpdate(): Unit = {
-    if(suppressStatusUpdate){
+    if (suppressStatusUpdate) {
       return
     }
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
@@ -73,7 +75,7 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
   }
 
   def enableMonitoring(): Unit = {
-    if(suppressStatusUpdate){
+    if (suppressStatusUpdate) {
       return
     }
     if (
@@ -94,7 +96,7 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
   }
 
   def enableSkewHandling(): Unit = {
-    if(suppressStatusUpdate){
+    if (suppressStatusUpdate) {
       return
     }
     if (

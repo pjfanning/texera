@@ -13,7 +13,7 @@ class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec 
     new QueryParser(opDesc.attribute, analyzer).parse(opDesc.keyword)
   @transient lazy val memoryIndex: MemoryIndex = new MemoryIndex()
 
-  private var last_matched:Tuple = _
+  private var last_matched: Tuple = _
 
   this.setFilterFunc(this.findKeyword)
 
@@ -25,13 +25,14 @@ class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec 
       memoryIndex.addField(opDesc.attribute, fieldValue, analyzer)
       val isMatch = memoryIndex.search(query) > 0.0f
       memoryIndex.reset()
-      if(isMatch){
+      if (isMatch) {
         last_matched = tuple
       }
       isMatch
     }
   }
 
-  override def getStateInformation: String = "Keyword search: Last matched tuple = "+last_matched.getFields.toArray.mkString(",")
+  override def getStateInformation: String =
+    "Keyword search: Last matched tuple = " + last_matched.getFields.toArray.mkString(",")
 
 }

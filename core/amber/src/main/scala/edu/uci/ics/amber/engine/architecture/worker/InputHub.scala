@@ -10,10 +10,10 @@ import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class InputHub(creditMonitor: CreditMonitor) extends Serializable{
+class InputHub(creditMonitor: CreditMonitor) extends Serializable {
 
   @transient
-  private var records:Iterator[InMemDeterminant] = _
+  private var records: Iterator[InMemDeterminant] = _
   @transient
   var recoveryCompleted: Boolean = true
 
@@ -28,21 +28,24 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
   private var replayTo = -1L
   private var nextControlToEmit: ControlElement = _
 
-  val dataDeque = new ProactiveDeque[DataElement]({
-    case InputTuple(from, _) => creditMonitor.increaseCredit(from)
-    case other => //pass
-  }, {
-    case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
-    case other => //pass
-  })
+  val dataDeque = new ProactiveDeque[DataElement](
+    {
+      case InputTuple(from, _) => creditMonitor.increaseCredit(from)
+      case other               => //pass
+    },
+    {
+      case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
+      case other               => //pass
+    }
+  )
   val controlDeque = new ProactiveDeque[ControlElement]()
   val internalDeque = new ProactiveDeque[InternalCommand]()
 
-  def setReplayTo(dest: Long, unblock:Boolean): Unit = {
+  def setReplayTo(dest: Long, unblock: Boolean): Unit = {
     replayTo = dest
   }
 
-  def setLogRecords(records:Iterator[InMemDeterminant]): Unit ={
+  def setLogRecords(records: Iterator[InMemDeterminant]): Unit = {
     this.records = records.drop(numRecordsRead)
     recoveryCompleted = !records.hasNext
     // we assume the log has the following structure:
@@ -54,7 +57,7 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
     callbacksOnEnd.append(callback)
   }
 
-  def addInternal(elem:InternalCommand): Unit ={
+  def addInternal(elem: InternalCommand): Unit = {
     internalDeque.enqueue(elem)
   }
 
@@ -74,12 +77,12 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
             .getOrElseUpdate(from, new LinkedBlockingQueue[DataElement]())
             .put(EndMarker(from))
         case _ =>
-          // pass
+        // pass
       }
     }
   }
 
-  def addControl(control: ControlElement): Unit ={
+  def addControl(control: ControlElement): Unit = {
     synchronized {
       if (recoveryCompleted) {
         controlDeque.enqueue(control)
@@ -111,12 +114,11 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
     res
   }
 
-
-  def prepareInput(totalValidStep: Long, outputAvailable: Boolean): Boolean ={
-    if(recoveryCompleted){
+  def prepareInput(totalValidStep: Long, outputAvailable: Boolean): Boolean = {
+    if (recoveryCompleted) {
       return false
     }
-    if(totalValidStep == replayTo){
+    if (totalValidStep == replayTo) {
       // replay point reached
       // use internal command no operation to trigger replay again
       return true
@@ -130,12 +132,12 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
         callbacksOnEnd.foreach(callback => callback())
       }
     }
-    if(!recoveryCompleted){
-      if(step > 0){
+    if (!recoveryCompleted) {
+      if (step > 0) {
         step -= 1
         println(s"current step = $step")
         fetchDataFromUpstream(outputAvailable)
-      }else if(step == 0){
+      } else if (step == 0) {
         controlDeque.enqueue(nextControlToEmit)
         nextControlToEmit = null
         processInternalEventsTillNextControl()
@@ -144,10 +146,11 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable{
     false
   }
 
-  def fetchDataFromUpstream(outputAvailable:Boolean): Unit ={
-    if(!outputAvailable && dataDeque.size() == 0) {
+  def fetchDataFromUpstream(outputAvailable: Boolean): Unit = {
+    if (!outputAvailable && dataDeque.size() == 0) {
       println(s"waiting on ${targetVId}")
-      val data = inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
+      val data =
+        inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
       dataDeque.enqueue(data)
     }
   }

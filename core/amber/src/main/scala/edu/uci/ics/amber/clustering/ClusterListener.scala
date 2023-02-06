@@ -56,7 +56,9 @@ class ClusterListener extends Actor with AmberLogging {
         val futures = new ArrayBuffer[Future[Any]]
         WorkflowService.getAllWorkflowService.foreach { workflow =>
           val jobService = workflow.jobService.getValue
-          if (jobService != null && jobService.stateStore.jobMetadataStore.getState.state != COMPLETED) {
+          if (
+            jobService != null && jobService.stateStore.jobMetadataStore.getState.state != COMPLETED
+          ) {
             try {
               futures.append(jobService.client.notifyNodeFailure(member.address))
             } catch {

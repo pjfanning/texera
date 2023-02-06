@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.google.protobuf.timestamp.Timestamp
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PythonConsoleMessageHandler.PythonConsoleMessage
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2

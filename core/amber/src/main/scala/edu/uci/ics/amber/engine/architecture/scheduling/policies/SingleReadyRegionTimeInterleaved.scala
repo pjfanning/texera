@@ -55,7 +55,10 @@ class SingleReadyRegionTimeInterleaved(
       )
     } else {
       val completedLinks =
-        execution.completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
+        execution.completedLinksOfRegion.getOrElseUpdate(
+          region.get,
+          new mutable.HashSet[LinkIdentity]()
+        )
       completedLinks.add(linkId)
       execution.completedLinksOfRegion(region.get) = completedLinks
       checkRegionCompleted(region.get)

@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
@@ -71,8 +75,10 @@ trait MonitoringHandler {
           case (metrics, samples) => {
             execution.getOperatorExecution(worker).getWorkerWorkloadInfo(worker).dataInputWorkload =
               metrics.unprocessedDataInputQueueSize
-            execution.getOperatorExecution(worker).getWorkerWorkloadInfo(worker).controlInputWorkload =
-              metrics.unprocessedControlInputQueueSize
+            execution
+              .getOperatorExecution(worker)
+              .getWorkerWorkloadInfo(worker)
+              .controlInputWorkload = metrics.unprocessedControlInputQueueSize
             updateWorkloadSamples(worker, samples)
           }
         })

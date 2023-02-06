@@ -8,7 +8,9 @@ class SingleReadyRegion(workflow: Workflow) extends SchedulingPolicy(workflow) {
   override def getNextSchedulingWork(): Set[PipelinedRegion] = {
     if (
       (execution.scheduledRegions.isEmpty ||
-        execution.scheduledRegions.forall(execution.completedRegions.contains)) && regionsScheduleOrder.nonEmpty
+      execution.scheduledRegions.forall(
+        execution.completedRegions.contains
+      )) && regionsScheduleOrder.nonEmpty
     ) {
       val nextRegion = regionsScheduleOrder.head
       regionsScheduleOrder.remove(0)

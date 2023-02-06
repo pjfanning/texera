@@ -6,8 +6,20 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ContinueReplay,
+  GetOperatorInternalState,
+  InterruptReplay,
+  NotifyFailedNode,
+  TakeGlobalCheckpoint,
+  WorkflowRecoveryMessage
+}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{
+  ClosureRequest,
+  CommandRequest,
+  InitializeRequest,
+  ObservableRequest
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -80,8 +92,8 @@ class AmberClient(
     }
   }
 
-  def replayExecution(posMap:Map[ActorVirtualIdentity, Long], restart: Boolean): Unit = {
-    if(isActive){
+  def replayExecution(posMap: Map[ActorVirtualIdentity, Long], restart: Boolean): Unit = {
+    if (isActive) {
       if (restart) {
         controllerConfig.replayRequest = posMap
         clientActor ! InitializeRequest(workflowGen(), controllerConfig)
@@ -91,20 +103,19 @@ class AmberClient(
     }
   }
 
-  def takeGlobalCheckpoint(): Unit ={
-    if(isActive){
+  def takeGlobalCheckpoint(): Unit = {
+    if (isActive) {
       clientActor ! WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint())
     }
   }
 
   def getOperatorInfo(): Unit = {
-    if(isActive){
+    if (isActive) {
       clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
     }
   }
 
-
-  def interruptReplay(): Future[Any] ={
+  def interruptReplay(): Future[Any] = {
     if (!isActive) {
       Future[Any](())
     } else {

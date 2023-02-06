@@ -5,8 +5,17 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, SenderActorChange, StepDelta}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{
+  DeterminantLogStorage,
+  EmptyLogStorage,
+  LocalFSLogStorage
+}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  ProcessControlMessage,
+  SenderActorChange,
+  StepDelta
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{ControlElement, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.InputHub
@@ -153,13 +162,12 @@ class RecoverySpec
         upstream = actorVirtualIdentity
       case ProcessControlMessage(controlPayload, from) =>
         if (stepAccumulated > 0) {
-          (0 until stepAccumulated).foreach{
-            _ =>
-              inputHub.addData(InputTuple(upstream, ITuple(1, 2, 3)))
-              inputHub.prepareInput(currentStep, false)
-              currentStep += 1
-              assert(inputHub.dataDeque.dequeue() == InputTuple(upstream, ITuple(1, 2, 3)))
-              assert(inputHub.controlDeque.size() == 0)
+          (0 until stepAccumulated).foreach { _ =>
+            inputHub.addData(InputTuple(upstream, ITuple(1, 2, 3)))
+            inputHub.prepareInput(currentStep, false)
+            currentStep += 1
+            assert(inputHub.dataDeque.dequeue() == InputTuple(upstream, ITuple(1, 2, 3)))
+            assert(inputHub.controlDeque.size() == 0)
           }
         }
         inputHub.prepareInput(currentStep, false)
@@ -173,7 +181,7 @@ class RecoverySpec
     val workerName = "WF1-SimpleSink-operator-ff39f567-fbc9-4808-b941-a9fcd5c9ad02-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     val iter = logStorage.getReader.mkLogRecordIterator()
-    while(iter.hasNext){
+    while (iter.hasNext) {
       println(iter.next())
     }
   }

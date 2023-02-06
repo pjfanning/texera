@@ -2,7 +2,12 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler._
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor,
+  Workflow
+}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
 import edu.uci.ics.amber.engine.architecture.execution.{OperatorExecution, WorkflowExecution}
@@ -229,7 +234,11 @@ object SkewDetectionHandler {
     * Get the worker layer from the previous operator where the partitioning logic will be changed
     * by Reshape.
     */
-  def getPreviousWorkerLayer(opId: LayerIdentity, workflow: Workflow, execution:WorkflowExecution): OperatorExecution = {
+  def getPreviousWorkerLayer(
+      opId: LayerIdentity,
+      workflow: Workflow,
+      execution: WorkflowExecution
+  ): OperatorExecution = {
     val upstreamLayers = workflow.getUpStreamConnectedWorkerLayers(opId).values.toList
 
     if (workflow.getOperator(opId).opExecClass == classOf[HashJoinOpExec[_]]) {
@@ -238,7 +247,8 @@ object SkewDetectionHandler {
           val buildTableLinkId = layer.ordinalMapping.input.find(input => input._2 == 0).get._1
           layer.id != buildTableLinkId.from
         })
-        .get.id
+        .get
+        .id
       execution.getOperatorExecution(layerId)
     } else {
       // Should be sort operator
@@ -270,9 +280,9 @@ trait SkewDetectionHandler {
     * `skewedAndHelperWorkersList`.
     */
   private def implementFirstPhasePartitioning[T](
-                                                  prevWorkerLayer: OperatorExecution,
-                                                  skewedWorker: ActorVirtualIdentity,
-                                                  helperWorker: ActorVirtualIdentity
+      prevWorkerLayer: OperatorExecution,
+      skewedWorker: ActorVirtualIdentity,
+      helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
 
     val futures = new ArrayBuffer[Future[Boolean]]()
@@ -359,21 +369,21 @@ trait SkewDetectionHandler {
       workflowReshapeState.previousSkewDetectionCallFinished = false
       workflowReshapeState.detectionCallCount += 1
 
-      execution.getAllOperatorExecutions.foreach{
-        case (id,opExecution) => {
+      execution.getAllOperatorExecutions.foreach {
+        case (id, opExecution) => {
           if (
             opExecution.opExecClass == classOf[HashJoinOpExec[_]] ||
-              opExecution.opExecClass == classOf[SortPartitionOpExec]
+            opExecution.opExecClass == classOf[SortPartitionOpExec]
           ) {
             // Skew handling is only for hash-join operator for now.
             // 1: Find the skewed and helper worker that need first phase.
             val skewedAndHelperPairsForFirstPhase =
-            getSkewedAndHelperWorkersEligibleForFirstPhase(
-              opExecution.workerToWorkloadInfo,
-              workflowReshapeState.skewedToHelperMappingHistory,
-              workflowReshapeState.skewedToStateTransferOrIntimationDone,
-              workflowReshapeState.skewedAndHelperInFirstPhase
-            )
+              getSkewedAndHelperWorkersEligibleForFirstPhase(
+                opExecution.workerToWorkloadInfo,
+                workflowReshapeState.skewedToHelperMappingHistory,
+                workflowReshapeState.skewedToStateTransferOrIntimationDone,
+                workflowReshapeState.skewedAndHelperInFirstPhase
+              )
             skewedAndHelperPairsForFirstPhase.foreach(skewedHelperAndReplication =>
               logger.info(
                 s"Reshape ${workflow.getWorkflowId().id} #${workflowReshapeState.detectionCallCount}: First phase process begins - Skewed ${skewedHelperAndReplication._1
@@ -490,7 +500,11 @@ trait SkewDetectionHandler {
               val currSkewedWorker = sh._1
               val currHelperWorker = sh._2
               allPairsSecondPhaseFutures.append(
-                implementSecondPhasePartitioning(prevWorkerLayer, currSkewedWorker, currHelperWorker)
+                implementSecondPhasePartitioning(
+                  prevWorkerLayer,
+                  currSkewedWorker,
+                  currHelperWorker
+                )
                   .onSuccess(resultsFromPrevWorker => {
                     if (!resultsFromPrevWorker.contains(false)) {
                       workflowReshapeState.skewedAndHelperInSecondPhase(currSkewedWorker) =

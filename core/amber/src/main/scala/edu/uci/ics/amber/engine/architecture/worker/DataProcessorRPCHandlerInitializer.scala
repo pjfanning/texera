@@ -2,9 +2,14 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers._
 import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor}
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
+import edu.uci.ics.amber.engine.common.rpc.{
+  AsyncRPCClient,
+  AsyncRPCHandlerInitializer,
+  AsyncRPCServer
+}
 
-trait DataProcessorRPCHandlerInitializer extends AsyncRPCHandlerInitializer
+trait DataProcessorRPCHandlerInitializer
+    extends AsyncRPCHandlerInitializer
     with AmberLogging
     with OpenOperatorHandler
     with PauseHandler

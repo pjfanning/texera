@@ -1,11 +1,21 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowCompleted, WorkflowRecoveryStatus, WorkflowStateUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkerAssignmentUpdate,
+  WorkflowCompleted,
+  WorkflowRecoveryStatus,
+  WorkflowStateUpdate,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
-import edu.uci.ics.texera.web.model.websocket.event.{OperatorStatistics, OperatorStatisticsUpdateEvent, WorkerAssignmentUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  OperatorStatistics,
+  OperatorStatisticsUpdateEvent,
+  WorkerAssignmentUpdateEvent
+}
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.OperatorWorkerMapping
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}

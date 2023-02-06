@@ -1,7 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SaveSkewedWorkerInfoHandler.SaveSkewedWorkerInfo
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -25,8 +28,7 @@ trait SaveSkewedWorkerInfoHandler {
 
   registerHandler { (cmd: SaveSkewedWorkerInfo, sender) =>
     if (operator.isInstanceOf[SortPartitionOpExec]) {
-      operator.asInstanceOf[SortPartitionOpExec].skewedWorkerIdentity =
-        cmd.skewedWorkerId
+      operator.asInstanceOf[SortPartitionOpExec].skewedWorkerIdentity = cmd.skewedWorkerId
       Future.True
     } else {
       Future.False

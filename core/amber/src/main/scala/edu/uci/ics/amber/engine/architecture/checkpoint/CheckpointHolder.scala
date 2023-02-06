@@ -9,22 +9,30 @@ import scala.collection.mutable
 import scala.util.Try
 
 object CheckpointHolder {
-  private val checkpoints = new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
+  private val checkpoints =
+    new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
-  def hasCheckpoint(id:ActorVirtualIdentity, alignment: Long): Boolean = {
+  def hasCheckpoint(id: ActorVirtualIdentity, alignment: Long): Boolean = {
     checkpoints.contains(id) && checkpoints(id).contains(alignment)
   }
 
-  def findLastCheckpointOf(id:ActorVirtualIdentity, alignment:Long): Option[SavedCheckpoint] ={
-    if(checkpoints.contains(id)){
-      Try(checkpoints(id).map(x => (alignment - x._1, x._2)).filter(_._1 >= 0).minBy(_._1)._2).toOption
-    }else{
+  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[SavedCheckpoint] = {
+    if (checkpoints.contains(id)) {
+      Try(
+        checkpoints(id).map(x => (alignment - x._1, x._2)).filter(_._1 >= 0).minBy(_._1)._2
+      ).toOption
+    } else {
       None
     }
   }
 
-  def addCheckpoint(id:ActorVirtualIdentity, alignment:Long, checkpoint:SavedCheckpoint): Unit ={
-    checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) = checkpoint
+  def addCheckpoint(
+      id: ActorVirtualIdentity,
+      alignment: Long,
+      checkpoint: SavedCheckpoint
+  ): Unit = {
+    checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
+      checkpoint
     println(s"checkpoint stored for $id at alignment = $alignment")
   }
 }

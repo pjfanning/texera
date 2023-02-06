@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.{ActorContext, ActorRef}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -9,15 +13,31 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage, SenderActorChange}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  DeterminantLogger,
+  LogManager,
+  ProcessControlMessage,
+  SenderActorChange
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DataPayload,
+  WorkflowControlMessage,
+  WorkflowDataMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -33,13 +53,18 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import akka.serialization._
 
-object DataProcessor{
+object DataProcessor {
   // 4 kinds of elements can be accepted by internal queue
   sealed trait InternalCommand
 
-  case class Shutdown(reason:Option[Throwable], completionFuture:CompletableFuture[Unit]) extends InternalCommand
+  case class Shutdown(reason: Option[Throwable], completionFuture: CompletableFuture[Unit])
+      extends InternalCommand
 
-  case class Checkpoint(savedCheckpoint:SavedCheckpoint, serialization:Serialization, completionFuture:CompletableFuture[Long]) extends InternalCommand
+  case class Checkpoint(
+      savedCheckpoint: SavedCheckpoint,
+      serialization: Serialization,
+      completionFuture: CompletableFuture[Long]
+  ) extends InternalCommand
 
   case object NoOperation extends InternalCommand
 
@@ -51,20 +76,21 @@ object DataProcessor{
 
   case class EndMarker(from: ActorVirtualIdentity) extends DataElement
 
-  case class FinalizeLink(link:LinkIdentity) extends DataElement
+  case class FinalizeLink(link: LinkIdentity) extends DataElement
 
   case class FinalizeOperator() extends DataElement
 }
 
-
 class DataProcessor( // meta dependencies:
-                     val ordinalMapping: OrdinalMapping,
-                     val actorId: ActorVirtualIdentity
-) extends DataProcessorRPCHandlerInitializer with AmberLogging with Serializable {
+    val ordinalMapping: OrdinalMapping,
+    val actorId: ActorVirtualIdentity
+) extends DataProcessorRPCHandlerInitializer
+    with AmberLogging
+    with Serializable {
 
   // outer dependencies
   @transient
-  protected var inputHub:InputHub = _
+  protected var inputHub: InputHub = _
   @transient
   protected var logStorage: DeterminantLogStorage = _
   @transient
@@ -74,18 +100,19 @@ class DataProcessor( // meta dependencies:
   @transient
   protected var actorContext: ActorContext = _
   @transient
-  protected var operator:IOperatorExecutor = _
+  protected var operator: IOperatorExecutor = _
   @transient
   protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
 
   def initialize(
-  operator: IOperatorExecutor, // core logic
-  currentOutputIterator: Iterator[(ITuple, Option[Int])],
-  inputHub: InputHub,
-  logStorage: DeterminantLogStorage,
-  logManager: LogManager,
-  recoveryManager: LocalRecoveryManager,
-  actorContext: ActorContext): Unit ={
+      operator: IOperatorExecutor, // core logic
+      currentOutputIterator: Iterator[(ITuple, Option[Int])],
+      inputHub: InputHub,
+      logStorage: DeterminantLogStorage,
+      logManager: LogManager,
+      recoveryManager: LocalRecoveryManager,
+      actorContext: ActorContext
+  ): Unit = {
     this.operator = operator
     this.currentOutputIterator = currentOutputIterator
     this.inputHub = inputHub
@@ -96,21 +123,21 @@ class DataProcessor( // meta dependencies:
   }
 
   def outputDataPayload(
-                         to: ActorVirtualIdentity,
-                         self: ActorVirtualIdentity,
-                         seqNum: Long,
-                         payload: DataPayload
-                       ): Unit = {
+      to: ActorVirtualIdentity,
+      self: ActorVirtualIdentity,
+      seqNum: Long,
+      payload: DataPayload
+  ): Unit = {
     val msg = WorkflowDataMessage(self, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
   def outputControlPayload(
-                            to: ActorVirtualIdentity,
-                            self: ActorVirtualIdentity,
-                            seqNum: Long,
-                            payload: ControlPayload
-                          ): Unit = {
+      to: ActorVirtualIdentity,
+      self: ActorVirtualIdentity,
+      seqNum: Long,
+      payload: ControlPayload
+  ): Unit = {
     val msg = WorkflowControlMessage(self, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
@@ -163,11 +190,11 @@ class DataProcessor( // meta dependencies:
   @transient
   private var dpThread: Future[_] = _
   def start(): Unit = {
-    if(dpThreadExecutor != null){
+    if (dpThreadExecutor != null) {
       return
     }
     dpThreadExecutor = Executors.newSingleThreadExecutor
-    if(stateManager.getCurrentState == UNINITIALIZED){
+    if (stateManager.getCurrentState == UNINITIALIZED) {
       stateManager.transitTo(READY)
     }
     if (dpThread == null) {
@@ -252,12 +279,13 @@ class DataProcessor( // meta dependencies:
   def setCurrentTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
     currentInputTuple = tuple
   }
+
   /** process currentInputTuple through operator logic.
     * this function is only called by the DP thread
     *
     * @return an iterator of output tuples
     */
-  private[this] def processInputTuple(tuple:Either[ITuple,InputExhausted]):Unit = {
+  private[this] def processInputTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
     currentInputTuple = tuple
     try {
       currentOutputIterator = operator.processTuple(
@@ -312,7 +340,7 @@ class DataProcessor( // meta dependencies:
   }
 
   private[this] def handleDataElement(
-                                       dataElement: DataElement
+      dataElement: DataElement
   ): Unit = {
     determinantLogger.stepIncrement()
     dataElement match {
@@ -361,7 +389,7 @@ class DataProcessor( // meta dependencies:
     // main DP loop
     while (true) {
       val internalNotification = internalQueue.availableNotification()
-      if(internalNotification.isDone){
+      if (internalNotification.isDone) {
         handleInternalMessage(internalQueue.dequeue())
       }
       val outputAvailable = currentOutputIterator != null && currentOutputIterator.hasNext
@@ -398,16 +426,16 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  private[this] def handleInternalMessage(internalCommand: InternalCommand): Unit ={
+  private[this] def handleInternalMessage(internalCommand: InternalCommand): Unit = {
     internalCommand match {
       case DataProcessor.Shutdown(reason, completion) =>
         logManager.terminate()
         completion.complete(())
         dpThread.cancel(true) // interrupt
         dpThreadExecutor.shutdownNow() // destroy thread
-        if(reason.isEmpty){
+        if (reason.isEmpty) {
           throw new InterruptedException() // actively interrupt itself
-        }else{
+        } else {
           throw reason.get
         }
       case DataProcessor.Checkpoint(chkpt, serialization, completion) =>
@@ -416,13 +444,16 @@ class DataProcessor( // meta dependencies:
         chkpt.save("inputHubState", SerializedState.fromObject(inputHub, serialization))
         chkpt.save("operatorState", operator.serializeState(currentOutputIterator, serialization))
         chkpt.save("controlState", SerializedState.fromObject(this, serialization))
-        chkpt.save("outputMassages", SerializedState.fromObject(logManager.getUnackedMessages(), serialization))
+        chkpt.save(
+          "outputMassages",
+          SerializedState.fromObject(logManager.getUnackedMessages(), serialization)
+        )
         // push to storage
         CheckpointHolder.addCheckpoint(actorId, totalValidStep, chkpt)
         // completion
         completion.complete(totalValidStep)
       case DataProcessor.NoOperation =>
-        // do nothing
+      // do nothing
     }
   }
 

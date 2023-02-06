@@ -20,21 +20,18 @@ class CreditMonitor {
     )).toInt) / Constants.defaultBatchSize
   }
 
-  def increaseCredit(sender: ActorVirtualIdentity): Unit ={
-    if(inputTuplesPutInQueue.contains(sender)) {
+  def increaseCredit(sender: ActorVirtualIdentity): Unit = {
+    if (inputTuplesPutInQueue.contains(sender)) {
       inputTuplesPutInQueue(sender) += 1
-    }
-    else {
+    } else {
       inputTuplesPutInQueue(sender) = 1
     }
   }
 
-
-  def decreaseCredit(sender: ActorVirtualIdentity): Unit ={
-    if(inputTuplesTakenOutOfQueue.contains(sender)) {
+  def decreaseCredit(sender: ActorVirtualIdentity): Unit = {
+    if (inputTuplesTakenOutOfQueue.contains(sender)) {
       inputTuplesTakenOutOfQueue(sender) += 1
-    }
-    else {
+    } else {
       inputTuplesTakenOutOfQueue(sender) = 1
     }
   }

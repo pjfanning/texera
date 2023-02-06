@@ -14,13 +14,14 @@ import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan) extends java.io.Serializable {
+class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan)
+    extends java.io.Serializable {
 
-  def getDAG:DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge] = {
+  def getDAG: DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge] = {
     val dag =
       new DirectedAcyclicGraph[ActorVirtualIdentity, DefaultEdge](classOf[DefaultEdge])
     physicalPlan.operators.flatMap(_.identifiers).foreach(worker => dag.addVertex(worker))
-    physicalPlan.linkStrategies.values.foreach{
+    physicalPlan.linkStrategies.values.foreach {
       case one: AllToOne =>
         one.from.identifiers.foreach(worker => dag.addEdge(worker, one.to.identifiers.head))
       case one: OneToOne =>
@@ -120,7 +121,9 @@ class Workflow(val workflowId: WorkflowIdentity, val physicalPlan: PhysicalPlan)
   def getLink(linkID: LinkIdentity): LinkStrategy = physicalPlan.linkStrategies(linkID)
 
   def getPythonWorkers: Iterable[ActorVirtualIdentity] =
-    physicalPlan.operators.filter(operator => operator.opExecClass == classOf[PythonUDFOpExecV2]).flatMap(_.identifiers)
+    physicalPlan.operators
+      .filter(operator => operator.opExecClass == classOf[PythonUDFOpExecV2])
+      .flatMap(_.identifiers)
 
   def getOperatorToWorkers: Iterable[(LayerIdentity, Seq[ActorVirtualIdentity])] = {
     physicalPlan.allOperatorIds.map(opId => {

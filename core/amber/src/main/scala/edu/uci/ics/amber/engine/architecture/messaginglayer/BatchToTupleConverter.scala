@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, End
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 class BatchToTupleConverter(
-    replayGate:InputHub,
+    replayGate: InputHub
 ) {
 
   /** This method handles various data payloads and put different

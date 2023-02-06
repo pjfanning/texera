@@ -7,8 +7,8 @@ class DeterminantLoggerImpl extends DeterminantLogger {
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
   private var step = 0L
 
-  def stepIncrement():Unit = {
-    step +=1
+  def stepIncrement(): Unit = {
+    step += 1
   }
 
   def logDeterminant(inMemDeterminant: InMemDeterminant): Unit = {

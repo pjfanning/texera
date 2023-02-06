@@ -6,7 +6,12 @@ import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlExcept
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, IgnoreReply, IgnoreReplyAndDoNotLog, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
+  ControlInvocation,
+  IgnoreReply,
+  IgnoreReplyAndDoNotLog,
+  ReturnInvocation
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -55,12 +60,13 @@ object AsyncRPCClient {
 class AsyncRPCClient(
     controlOutputEndpoint: NetworkOutputPort[ControlPayload],
     val actorId: ActorVirtualIdentity
-) extends AmberLogging with Serializable {
+) extends AmberLogging
+    with Serializable {
 
   private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
 
-  def fireAndForget[T](cmd: ControlCommand[T], to: ActorVirtualIdentity):Unit = {
+  def fireAndForget[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Unit = {
     controlOutputEndpoint.sendTo(to, ControlInvocation(IgnoreReply, cmd))
   }
 

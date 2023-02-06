@@ -2,7 +2,11 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  AdditionalOperatorInfo,
+  WorkflowPaused,
+  WorkflowReplayInfo
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
@@ -10,8 +14,23 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
-import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowAdditionalOperatorInfoRequest, WorkflowCheckpointRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  WorkflowAdditionalOperatorInfoEvent,
+  WorkflowExecutionErrorEvent,
+  WorkflowInteractionHistoryEvent,
+  WorkflowStateEvent
+}
+import edu.uci.ics.texera.web.model.websocket.request.{
+  RemoveBreakpointRequest,
+  SkipTupleRequest,
+  WorkflowAdditionalOperatorInfoRequest,
+  WorkflowCheckpointRequest,
+  WorkflowKillRequest,
+  WorkflowPauseRequest,
+  WorkflowReplayRequest,
+  WorkflowResumeRequest
+}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -59,7 +78,7 @@ class JobRuntimeService(
   addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
     if (!stateStore.jobMetadataStore.getState.isReplaying) {
       replayPoints.clear()
-      evt.history.foreach{
+      evt.history.foreach {
         case (i, identityToLong) =>
           replayPoints.append(identityToLong.toMap)
       }
@@ -82,7 +101,7 @@ class JobRuntimeService(
   }))
 
   addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
-      client.takeGlobalCheckpoint()
+    client.takeGlobalCheckpoint()
   }))
 
   //Receive skip tuple
@@ -111,17 +130,19 @@ class JobRuntimeService(
 
   // Receive Resume
   addSubscription(wsInput.subscribe((req: WorkflowResumeRequest, uidOpt) => {
-    if(stateStore.jobMetadataStore.getState.isReplaying){
-      client.interruptReplay().onSuccess(ret =>{
-        stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
-        doResume()
-      })
-    }else{
+    if (stateStore.jobMetadataStore.getState.isReplaying) {
+      client
+        .interruptReplay()
+        .onSuccess(ret => {
+          stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
+          doResume()
+        })
+    } else {
       doResume()
     }
   }))
 
-  def doResume(): Unit ={
+  def doResume(): Unit = {
     breakpointService.clearTriggeredBreakpoints()
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RESUMING))
     client.sendAsyncWithCallback[Unit](

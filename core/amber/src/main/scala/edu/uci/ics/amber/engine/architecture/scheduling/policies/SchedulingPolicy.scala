@@ -5,7 +5,11 @@ import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -38,17 +42,21 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   @transient
   protected var execution: WorkflowExecution = _
 
-  def attachToExecution(execution:WorkflowExecution): Unit ={
+  def attachToExecution(execution: WorkflowExecution): Unit = {
     this.execution = execution
   }
 
   protected def isRegionCompleted(region: PipelinedRegion): Boolean = {
     workflow
       .getBlockingOutLinksOfRegion(region)
-      .subsetOf(execution.completedLinksOfRegion.getOrElse(region, new mutable.HashSet[LinkIdentity]())) &&
+      .subsetOf(
+        execution.completedLinksOfRegion.getOrElse(region, new mutable.HashSet[LinkIdentity]())
+      ) &&
     region
       .getOperators()
-      .forall(opId => execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.COMPLETED)
+      .forall(opId =>
+        execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.COMPLETED
+      )
   }
 
   protected def checkRegionCompleted(region: PipelinedRegion): Unit = {
@@ -103,7 +111,10 @@ abstract class SchedulingPolicy(workflow: Workflow) {
       )
     } else {
       val completedLinks =
-        execution.completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
+        execution.completedLinksOfRegion.getOrElseUpdate(
+          region.get,
+          new mutable.HashSet[LinkIdentity]()
+        )
       completedLinks.add(link)
       execution.completedLinksOfRegion(region.get) = completedLinks
       checkRegionCompleted(region.get)

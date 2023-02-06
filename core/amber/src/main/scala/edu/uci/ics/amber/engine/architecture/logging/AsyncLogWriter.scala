@@ -1,10 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import com.google.common.collect.Queues
-import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{GetMessageInQueueSync, LogWriterOutputMessage, SendRequest}
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{
+  GetMessageInQueueSync,
+  LogWriterOutputMessage,
+  SendRequest
+}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  GetMessageInQueue,
+  NetworkMessage
+}
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -18,14 +25,16 @@ import akka.remote.transport.ActorTransportAdapter.AskTimeout
 
 import scala.concurrent.duration.DurationInt
 
-object AsyncLogWriter{
+object AsyncLogWriter {
   sealed trait LogWriterOutputMessage
 
-  final case class SendRequest(id: ActorVirtualIdentity, message: WorkflowMessage) extends LogWriterOutputMessage
+  final case class SendRequest(id: ActorVirtualIdentity, message: WorkflowMessage)
+      extends LogWriterOutputMessage
 
-  final case class GetMessageInQueueSync(sync:CompletableFuture[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]) extends LogWriterOutputMessage
+  final case class GetMessageInQueueSync(
+      sync: CompletableFuture[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
+  ) extends LogWriterOutputMessage
 }
-
 
 class AsyncLogWriter(
     networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
@@ -82,13 +91,18 @@ class AsyncLogWriter(
     drainedScala
       .filter(_.isLeft)
       .map(_.left.get)
-      .foreach{
+      .foreach {
         case TerminateSignal => stop = true
-        case other => writer.writeLogRecord(other)
+        case other           => writer.writeLogRecord(other)
       }
     writer.flush()
-    drainedScala.filter(_.isRight).map(_.right.get).foreach{
-      case GetMessageInQueueSync(sync) => sync.complete(Await.result(networkCommunicationActor.ref ? GetMessageInQueue, 5.seconds).asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]])
+    drainedScala.filter(_.isRight).map(_.right.get).foreach {
+      case GetMessageInQueueSync(sync) =>
+        sync.complete(
+          Await
+            .result(networkCommunicationActor.ref ? GetMessageInQueue, 5.seconds)
+            .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
+        )
       case x: SendRequest => networkCommunicationActor ! x
     }
     drained.clear()

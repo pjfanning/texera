@@ -4,7 +4,10 @@ import akka.actor.{ActorContext, Address}
 import com.twitter.util.Future
 import com.typesafe.scalalogging.Logger
 import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkerAssignmentUpdate,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
@@ -22,7 +25,11 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
 import edu.uci.ics.amber.engine.common.{Constants, ISourceOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
@@ -41,11 +48,11 @@ class WorkflowScheduler(
     SchedulingPolicy.createPolicy(Constants.schedulingPolicyName, workflow, ctx)
 
   @transient
-  private var asyncRPCClient:AsyncRPCClient = _
+  private var asyncRPCClient: AsyncRPCClient = _
   @transient
-  private var execution:WorkflowExecution = _
+  private var execution: WorkflowExecution = _
 
-  def attachToExecution(execution:WorkflowExecution, asyncRPCClient:AsyncRPCClient): Unit ={
+  def attachToExecution(execution: WorkflowExecution, asyncRPCClient: AsyncRPCClient): Unit = {
     this.execution = execution
     this.asyncRPCClient = asyncRPCClient
     schedulingPolicy.attachToExecution(execution)
@@ -55,7 +62,10 @@ class WorkflowScheduler(
     doSchedulingWork(schedulingPolicy.startWorkflow(), availableNodes)
   }
 
-  def onWorkerCompletion(workerId: ActorVirtualIdentity, availableNodes: Array[Address]): Future[Seq[Unit]] = {
+  def onWorkerCompletion(
+      workerId: ActorVirtualIdentity,
+      availableNodes: Array[Address]
+  ): Future[Seq[Unit]] = {
     doSchedulingWork(schedulingPolicy.onWorkerCompletion(workerId), availableNodes)
   }
 
@@ -63,7 +73,10 @@ class WorkflowScheduler(
     doSchedulingWork(schedulingPolicy.onLinkCompletion(linkId), availableNodes)
   }
 
-  def onTimeSlotExpired(timeExpiredRegions: Set[PipelinedRegion], availableNodes: Array[Address]): Future[Seq[Unit]] = {
+  def onTimeSlotExpired(
+      timeExpiredRegions: Set[PipelinedRegion],
+      availableNodes: Array[Address]
+  ): Future[Seq[Unit]] = {
     val nextRegions = schedulingPolicy.onTimeSlotExpired()
     var regionsToPause: Set[PipelinedRegion] = Set()
     if (nextRegions.nonEmpty) {
@@ -91,7 +104,10 @@ class WorkflowScheduler(
       })
   }
 
-  private def doSchedulingWork(regions: Set[PipelinedRegion], availableNodes: Array[Address]): Future[Seq[Unit]] = {
+  private def doSchedulingWork(
+      regions: Set[PipelinedRegion],
+      availableNodes: Array[Address]
+  ): Future[Seq[Unit]] = {
     if (regions.nonEmpty) {
       Future.collect(regions.toArray.map(r => scheduleRegion(r, availableNodes)))
     } else {
@@ -108,7 +124,8 @@ class WorkflowScheduler(
           workflow.physicalPlan
             .getUpstream(op)
             .filter(upStreamOp =>
-              execution.builtOperators.contains(upStreamOp) && region.getOperators().contains(upStreamOp)
+              execution.builtOperators
+                .contains(upStreamOp) && region.getOperators().contains(upStreamOp)
             )
             .map(upStreamOp => (upStreamOp, workflow.getOperator(upStreamOp)))
             .toArray // Last layer of upstream operators in the same region.
@@ -227,7 +244,9 @@ class WorkflowScheduler(
       region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions
 
     allOperatorsInRegion
-      .filter(opId => execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.UNINITIALIZED)
+      .filter(opId =>
+        execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.UNINITIALIZED
+      )
       .foreach(opId => execution.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
 
@@ -299,7 +318,10 @@ class WorkflowScheduler(
 
   }
 
-  private def scheduleRegion(region: PipelinedRegion, availableNodes: Array[Address]): Future[Unit] = {
+  private def scheduleRegion(
+      region: PipelinedRegion,
+      availableNodes: Array[Address]
+  ): Future[Unit] = {
     if (execution.constructingRegions.contains(region.getId())) {
       return Future(())
     }

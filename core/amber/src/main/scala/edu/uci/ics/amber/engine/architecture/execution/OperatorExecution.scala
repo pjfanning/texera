@@ -2,18 +2,24 @@ package edu.uci.ics.amber.engine.architecture.execution
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{WorkerInfo, WorkerWorkloadInfo}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
 import scala.collection.mutable
 
-class OperatorExecution(numWorkers: Int, val opExecClass:Class[_]) {
+class OperatorExecution(numWorkers: Int, val opExecClass: Class[_]) {
 
   /*
- * Variables related to runtime information
- */
+   * Variables related to runtime information
+   */
 
   // workers of this operator
   private val workers: mutable.HashMap[ActorVirtualIdentity, WorkerInfo] =
@@ -30,7 +36,10 @@ class OperatorExecution(numWorkers: Int, val opExecClass:Class[_]) {
   def statistics: Array[WorkerStatistics] = workers.values.map(_.stats).toArray
 
   def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = {
-    workers.getOrElseUpdate(id, new WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0),null))
+    workers.getOrElseUpdate(
+      id,
+      new WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), null)
+    )
   }
 
   def getWorkerWorkloadInfo(id: ActorVirtualIdentity): WorkerWorkloadInfo = {

@@ -15,8 +15,8 @@ final case class ResendOutputTo(vid: ActorVirtualIdentity, ref: ActorRef) extend
 final case class NotifyFailedNode(addr: Address) extends RecoveryPayload
 
 // for replay prototype:
-final case class ContinueReplay(posMap:Map[ActorVirtualIdentity, Long]) extends RecoveryPayload
-final case class ContinueReplayTo(pos:Long) extends RecoveryPayload
+final case class ContinueReplay(posMap: Map[ActorVirtualIdentity, Long]) extends RecoveryPayload
+final case class ContinueReplayTo(pos: Long) extends RecoveryPayload
 final case class GetOperatorInternalState() extends RecoveryPayload
 final case class InterruptReplay() extends RecoveryPayload
 final case class PauseDuringReplay() extends RecoveryPayload

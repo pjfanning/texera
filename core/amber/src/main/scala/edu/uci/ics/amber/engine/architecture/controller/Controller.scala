@@ -5,14 +5,31 @@ import akka.pattern.ask
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  AdditionalOperatorInfo,
+  WorkflowRecoveryStatus
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  DeterminantLogger,
+  InMemDeterminant,
+  ProcessControlMessage,
+  SenderActorChange
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  GetMessageInQueue,
+  NetworkMessage,
+  NetworkSenderActorRef,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -74,7 +91,7 @@ class Controller(
 
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
-  private var controllerProcessor:ControllerProcessor = _
+  private var controllerProcessor: ControllerProcessor = _
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
@@ -124,7 +141,6 @@ class Controller(
       controllerProcessor.processRecoveryMessage(recoveryMsg)
   }
 
-
   def recovering: Receive = {
     case NetworkMessage(
           _,
@@ -151,39 +167,70 @@ class Controller(
 
   override def receive: Receive = {
     controllerProcessor = new ControllerProcessor()
-    controlInputPort = new NetworkInputPort[ControlPayload](this.actorId, controllerProcessor.handleControlPayloadOuter)
-    controllerProcessor.initialize(controlInputPort,workflow, workflowScheduler, logManager, logStorage, networkCommunicationActor, context, controllerConfig)
+    controlInputPort = new NetworkInputPort[ControlPayload](
+      this.actorId,
+      controllerProcessor.handleControlPayloadOuter
+    )
+    controllerProcessor.initialize(
+      controlInputPort,
+      workflow,
+      workflowScheduler,
+      logManager,
+      logStorage,
+      networkCommunicationActor,
+      context,
+      controllerConfig
+    )
     controllerProcessor.execution.initExecutionState(workflow)
     // load state if available
-    if(controllerConfig.replayRequest.nonEmpty){
+    if (controllerConfig.replayRequest.nonEmpty) {
       val alignment = controllerConfig.replayRequest(CONTROLLER)
       val checkpointOpt = CheckpointHolder.findLastCheckpointOf(CONTROLLER, alignment)
-      if(checkpointOpt.isDefined){
+      if (checkpointOpt.isDefined) {
         val serialization = SerializationExtension(context.system)
         // reload states:
         controllerProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
-        controlInputPort = new NetworkInputPort[ControlPayload](this.actorId, controllerProcessor.handleControlPayloadOuter)
+        controlInputPort = new NetworkInputPort[ControlPayload](
+          this.actorId,
+          controllerProcessor.handleControlPayloadOuter
+        )
         controlInputPort.setFIFOState(checkpointOpt.get.load("fifoState").toObject(serialization))
-        controllerProcessor.initialize(controlInputPort,workflow, workflowScheduler, logManager, logStorage, networkCommunicationActor, context, controllerConfig)
+        controllerProcessor.initialize(
+          controlInputPort,
+          workflow,
+          workflowScheduler,
+          logManager,
+          logStorage,
+          networkCommunicationActor,
+          context,
+          controllerConfig
+        )
         // restore workers:
         // re-assign actor refs:
         controllerProcessor.restoreWorkers()
         // re-send outputs:
-        checkpointOpt.get.load("outputMessages").toObject(serialization).asInstanceOf[Array[(ActorVirtualIdentity,Iterable[NetworkMessage])]].foreach{
-          case (id, iter) =>
-            iter.foreach{
-              msg => networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
-            }
-        }
+        checkpointOpt.get
+          .load("outputMessages")
+          .toObject(serialization)
+          .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
+          .foreach {
+            case (id, iter) =>
+              iter.foreach { msg =>
+                networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
+              }
+          }
       }
 //      val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
 //      controlInputPort.overwriteFIFOSeqNum(fifoState)
-      controllerProcessor.enterReplay(alignment, () => {
-        unstashAll()
-        context.become(running)
-      })
+      controllerProcessor.enterReplay(
+        alignment,
+        () => {
+          unstashAll()
+          context.become(running)
+        }
+      )
       forwardResendRequest orElse acceptRecoveryMessages orElse recovering
-    }else{
+    } else {
       running
     }
   }

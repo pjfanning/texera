@@ -1,6 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, DataProcessorRPCHandlerInitializer, PauseType}
+import edu.uci.ics.amber.engine.architecture.worker.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer,
+  PauseType
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptMutableStateHandler.AcceptMutableState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -39,7 +43,7 @@ trait AcceptMutableStateHandler {
         // and not due to user pressing pause
         pauseManager.recordRequest(PauseType.OperatorLogicPause, false)
         setCurrentOutputIterator(
-         operator
+          operator
             .asInstanceOf[SortPartitionOpExec]
             .sortTuples()
         )

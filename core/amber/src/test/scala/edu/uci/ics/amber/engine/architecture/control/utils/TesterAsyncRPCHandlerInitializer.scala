@@ -7,7 +7,8 @@ import edu.uci.ics.amber.engine.common.rpc.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-trait TesterAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
+trait TesterAsyncRPCHandlerInitializer
+    extends AsyncRPCHandlerInitializer
     with PingPongHandler
     with ChainHandler
     with MultiCallHandler

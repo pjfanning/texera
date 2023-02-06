@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -26,7 +30,7 @@ trait QueryWorkerStatisticsHandler {
   registerHandler((msg: ControllerInitiateQueryStatistics, sender) => {
     // send to specified workers (or all workers by default)
     val workers = msg.filterByWorkers.getOrElse(execution.getAllWorkers).toList
-    println("send control to workers #worker = "+workers.length)
+    println("send control to workers #worker = " + workers.length)
     // send QueryStatistics message
     val requests = workers.map(worker =>
       // must immediately update worker state and stats after reply

@@ -7,7 +7,10 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInitializer, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.{
+  DataProcessorRPCHandlerInitializer,
+  WorkflowWorker
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -62,7 +65,7 @@ class PythonWorkflowWorker(
   private lazy val pythonProxyClient: PythonProxyClient =
     new PythonProxyClient(outputPortNum, actorId)
   private lazy val dataOutputPort: NetworkOutputPort[DataPayload] =
-  new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
+    new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
   private lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
     new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
   }
@@ -105,21 +108,21 @@ class PythonWorkflowWorker(
   }
 
   def outputDataPayload(
-                         to: ActorVirtualIdentity,
-                         self: ActorVirtualIdentity,
-                         seqNum: Long,
-                         payload: DataPayload
-                       ): Unit = {
+      to: ActorVirtualIdentity,
+      self: ActorVirtualIdentity,
+      seqNum: Long,
+      payload: DataPayload
+  ): Unit = {
     val msg = WorkflowDataMessage(self, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
   def outputControlPayload(
-                            to: ActorVirtualIdentity,
-                            self: ActorVirtualIdentity,
-                            seqNum: Long,
-                            payload: ControlPayload
-                          ): Unit = {
+      to: ActorVirtualIdentity,
+      self: ActorVirtualIdentity,
+      seqNum: Long,
+      payload: ControlPayload
+  ): Unit = {
     val msg = WorkflowControlMessage(self, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
