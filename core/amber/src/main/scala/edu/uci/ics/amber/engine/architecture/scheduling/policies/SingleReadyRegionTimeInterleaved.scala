@@ -20,6 +20,8 @@ class SingleReadyRegionTimeInterleaved(
     ctx: ActorContext
 ) extends SchedulingPolicy(workflow) {
 
+  // CANNOT BE INCLUDED IN CHECKPOINT
+
   var currentlyExecutingRegions = new mutable.LinkedHashSet[PipelinedRegion]()
 
   override def checkRegionCompleted(region: PipelinedRegion): Unit = {
@@ -53,9 +55,9 @@ class SingleReadyRegionTimeInterleaved(
       )
     } else {
       val completedLinks =
-        completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
+        execution.completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
       completedLinks.add(linkId)
-      completedLinksOfRegion(region.get) = completedLinks
+      execution.completedLinksOfRegion(region.get) = completedLinks
       checkRegionCompleted(region.get)
     }
     if (isRegionCompleted(region.get)) {
@@ -71,11 +73,11 @@ class SingleReadyRegionTimeInterleaved(
         val nextRegion = regionsScheduleOrder.head
         val upstreamRegions =
           asScalaSet(workflow.physicalPlan.pipelinedRegionsDAG.getAncestors(nextRegion))
-        if (upstreamRegions.forall(completedRegions.contains)) {
-          assert(!scheduledRegions.contains(nextRegion))
+        if (upstreamRegions.forall(execution.completedRegions.contains)) {
+          assert(!execution.scheduledRegions.contains(nextRegion))
           currentlyExecutingRegions.add(nextRegion)
           regionsScheduleOrder.remove(0)
-          scheduledRegions.add(nextRegion)
+          execution.scheduledRegions.add(nextRegion)
         } else {
           break
         }
@@ -83,7 +85,7 @@ class SingleReadyRegionTimeInterleaved(
     }
     if (currentlyExecutingRegions.nonEmpty) {
       val nextToSchedule = currentlyExecutingRegions.head
-      if (!runningRegions.contains(nextToSchedule)) {
+      if (!execution.runningRegions.contains(nextToSchedule)) {
         // if `nextToSchedule` is not running right now.
         currentlyExecutingRegions.remove(nextToSchedule) // remove first element
         currentlyExecutingRegions.add(nextToSchedule) // add to end of list
@@ -95,7 +97,7 @@ class SingleReadyRegionTimeInterleaved(
   }
 
   override def addToRunningRegions(regions: Set[PipelinedRegion]): Unit = {
-    regions.foreach(r => runningRegions.add(r))
+    regions.foreach(r => execution.runningRegions.add(r))
     ctx.system.scheduler.scheduleOnce(
       FiniteDuration.apply(Constants.timeSlotExpirationDurationInMs, MILLISECONDS),
       ctx.self,

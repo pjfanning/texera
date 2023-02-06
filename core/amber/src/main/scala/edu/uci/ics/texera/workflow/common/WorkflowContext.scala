@@ -6,4 +6,4 @@ class WorkflowContext(
     var userId: Option[UInteger] = None,
     var wId: Int = -1,
     var executionID: Long = -1
-)
+) extends Serializable

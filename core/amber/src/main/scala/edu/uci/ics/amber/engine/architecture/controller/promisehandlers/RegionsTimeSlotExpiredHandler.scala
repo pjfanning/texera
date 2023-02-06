@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.Constants
@@ -22,15 +22,15 @@ object RegionsTimeSlotExpiredHandler {
   * possible sender: controller (scheduler)
   */
 trait RegionsTimeSlotExpiredHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: RegionsTimeSlotExpired, sender) =>
     {
       val notCompletedRegions =
-        msg.regions.diff(workflowScheduler.schedulingPolicy.getCompletedRegions())
+        msg.regions.diff(scheduler.schedulingPolicy.getCompletedRegions())
 
-      if (notCompletedRegions.subsetOf(workflowScheduler.schedulingPolicy.getRunningRegions())) {
-        workflowScheduler.onTimeSlotExpired(notCompletedRegions).flatMap(_ => Future.Unit)
+      if (notCompletedRegions.subsetOf(scheduler.schedulingPolicy.getRunningRegions())) {
+        scheduler.onTimeSlotExpired(notCompletedRegions, availableNodes).flatMap(_ => Future.Unit)
       } else {
         if (notCompletedRegions.nonEmpty) {
           // This shouldn't happen because the timer starts only after the regions have started

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyOperatorLogicHandler.ModifyOperatorLogic
@@ -24,7 +24,7 @@ object ModifyLogicHandler {
   * possible sender: controller, client
   */
 trait ModifyLogicHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: ModifyLogic, sender) =>
     {
@@ -41,7 +41,7 @@ trait ModifyLogicHandler {
           null
       }
       Future
-        .collect(operator.getAllWorkers.map { worker =>
+        .collect(operator.identifiers.map { worker =>
           send(modifyOperatorLogic, worker).onFailure((err: Throwable) => {
             logger.error("Failure when sending Python UDF code", err)
             // report error to frontend

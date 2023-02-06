@@ -1,15 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.{ActorContext, ActorRef}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
@@ -31,7 +31,7 @@ import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Futu
 import scala.collection.mutable
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-
+import akka.serialization._
 
 object DataProcessor{
   // 4 kinds of elements can be accepted by internal queue
@@ -39,7 +39,7 @@ object DataProcessor{
 
   case class Shutdown(reason:Option[Throwable], completionFuture:CompletableFuture[Unit]) extends InternalCommand
 
-  case class Checkpoint(networkSender:ActorRef, completionFuture:CompletableFuture[Long]) extends InternalCommand
+  case class Checkpoint(savedCheckpoint:SavedCheckpoint, serialization:Serialization, completionFuture:CompletableFuture[Long]) extends InternalCommand
 
   case object NoOperation extends InternalCommand
 
@@ -58,24 +58,36 @@ object DataProcessor{
 
 
 class DataProcessor( // meta dependencies:
-                     val operator: IOperatorExecutor, // core logic
-                     val opExecConfig: OpExecConfig,
+                     val ordinalMapping: OrdinalMapping,
                      val actorId: ActorVirtualIdentity
-) extends DataProcessorRPCHandlerInitializer with AmberLogging with java.io.Serializable {
+) extends DataProcessorRPCHandlerInitializer with AmberLogging with Serializable {
 
   // outer dependencies
+  @transient
   protected var inputHub:InputHub = _
+  @transient
   protected var logStorage: DeterminantLogStorage = _
+  @transient
   protected var logManager: LogManager = _
+  @transient
   protected var recoveryManager: LocalRecoveryManager = _
+  @transient
   protected var actorContext: ActorContext = _
+  @transient
+  protected var operator:IOperatorExecutor = _
+  @transient
+  protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
 
   def initialize(
+  operator: IOperatorExecutor, // core logic
+  currentOutputIterator: Iterator[(ITuple, Option[Int])],
   inputHub: InputHub,
   logStorage: DeterminantLogStorage,
   logManager: LogManager,
   recoveryManager: LocalRecoveryManager,
   actorContext: ActorContext): Unit ={
+    this.operator = operator
+    this.currentOutputIterator = currentOutputIterator
     this.inputHub = inputHub
     this.logStorage = logStorage
     this.logManager = logManager
@@ -132,7 +144,7 @@ class DataProcessor( // meta dependencies:
     * EndOfAllMarker when all upstream actors complete their job
     */
   lazy protected val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
-  lazy protected val determinantLogger = logManager.getDeterminantLogger
+  lazy protected val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.
@@ -140,18 +152,21 @@ class DataProcessor( // meta dependencies:
   protected var outputTupleCount = 0L
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
-  protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
-  lazy protected val dataQueue = inputHub.dataDeque
-  lazy protected val controlQueue = inputHub.controlDeque
-  lazy protected val internalQueue = inputHub.internalDeque
+  protected def dataQueue: ProactiveDeque[DataElement] = inputHub.dataDeque
+  protected def controlQueue: ProactiveDeque[ControlElement] = inputHub.controlDeque
+  protected def internalQueue: ProactiveDeque[InternalCommand] = inputHub.internalDeque
   protected var totalValidStep = 0L
 
   // initialize dp thread upon construction
   @transient
-  private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
+  private var dpThreadExecutor: ExecutorService = _
   @transient
   private var dpThread: Future[_] = _
   def start(): Unit = {
+    if(dpThreadExecutor != null){
+      return
+    }
+    dpThreadExecutor = Executors.newSingleThreadExecutor
     if(stateManager.getCurrentState == UNINITIALIZED){
       stateManager.transitTo(READY)
     }
@@ -204,19 +219,17 @@ class DataProcessor( // meta dependencies:
   def getInputPort(identifier: ActorVirtualIdentity): Int = {
     val inputLink = getInputLink(identifier)
     if (inputLink == null) 0
-    else if (!opExecConfig.inputToOrdinalMapping.contains(inputLink)) 0
-    else opExecConfig.inputToOrdinalMapping(inputLink)
+    else if (!ordinalMapping.input.contains(inputLink)) 0
+    else ordinalMapping.input(inputLink)
   }
 
   def getOutputLinkByPort(outputPort: Option[Int]): List[LinkIdentity] = {
     if (outputPort.isEmpty) {
-      opExecConfig.outputToOrdinalMapping.keySet.toList
+      ordinalMapping.output.keySet.toList
     } else {
-      opExecConfig.outputToOrdinalMapping.filter(p => p._2 == outputPort.get).keys.toList
+      ordinalMapping.output.filter(p => p._2 == outputPort.get).keys.toList
     }
   }
-
-  def getOperatorExecutor(): IOperatorExecutor = operator
 
   /** provide API for actor to get stats of this operator
     *
@@ -270,6 +283,7 @@ class DataProcessor( // meta dependencies:
     * this function is only called by the DP thread
     */
   private[this] def outputOneTuple(): Unit = {
+    outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
     determinantLogger.stepIncrement()
     var out: (ITuple, Option[Int]) = null
     try {
@@ -305,7 +319,6 @@ class DataProcessor( // meta dependencies:
       case InputTuple(from, tuple) =>
         if (stateManager.getCurrentState == READY) {
           stateManager.transitTo(RUNNING)
-          outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
           asyncRPCClient.fireAndForget(
             WorkerStateUpdated(stateManager.getCurrentState),
             CONTROLLER
@@ -397,11 +410,13 @@ class DataProcessor( // meta dependencies:
         }else{
           throw reason.get
         }
-      case DataProcessor.Checkpoint(networkSender, completion) =>
-        // create checkpoint
-        val chkpt = new SavedCheckpoint()
-        chkpt.saveThread(this)
-        chkpt.saveMessages(logManager.getUnackedMessages())
+      case DataProcessor.Checkpoint(chkpt, serialization, completion) =>
+        outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
+        // fill in checkpoint
+        chkpt.save("inputHubState", SerializedState.fromObject(inputHub, serialization))
+        chkpt.save("operatorState", operator.serializeState(currentOutputIterator, serialization))
+        chkpt.save("controlState", SerializedState.fromObject(this, serialization))
+        chkpt.save("outputMassages", SerializedState.fromObject(logManager.getUnackedMessages(), serialization))
         // push to storage
         CheckpointHolder.addCheckpoint(actorId, totalValidStep, chkpt)
         // completion

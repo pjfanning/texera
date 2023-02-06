@@ -16,11 +16,11 @@ class AllReadyRegions(workflow: Workflow) extends SchedulingPolicy(workflow) {
         val nextRegion = regionsScheduleOrder.head
         val upstreamRegions =
           asScalaSet(workflow.physicalPlan.pipelinedRegionsDAG.getAncestors(nextRegion))
-        if (upstreamRegions.forall(completedRegions.contains)) {
-          assert(!scheduledRegions.contains(nextRegion))
+        if (upstreamRegions.forall(execution.completedRegions.contains)) {
+          assert(!execution.scheduledRegions.contains(nextRegion))
           nextToSchedule.add(nextRegion)
           regionsScheduleOrder.remove(0)
-          scheduledRegions.add(nextRegion)
+          execution.scheduledRegions.add(nextRegion)
         } else {
           break
         }

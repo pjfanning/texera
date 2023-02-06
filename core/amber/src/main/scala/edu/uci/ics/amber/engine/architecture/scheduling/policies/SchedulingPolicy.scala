@@ -2,13 +2,10 @@ package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
 import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -38,40 +35,39 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   protected val regionsScheduleOrder: mutable.Buffer[PipelinedRegion] =
     new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer
 
-  // regions sent by the policy to be scheduled at least once
-  protected val scheduledRegions = new mutable.HashSet[PipelinedRegion]()
-  protected val completedRegions = new mutable.HashSet[PipelinedRegion]()
-  // regions currently running
-  protected val runningRegions = new mutable.HashSet[PipelinedRegion]()
-  protected val completedLinksOfRegion =
-    new mutable.HashMap[PipelinedRegion, mutable.HashSet[LinkIdentity]]()
+  @transient
+  protected var execution: WorkflowExecution = _
+
+  def attachToExecution(execution:WorkflowExecution): Unit ={
+    this.execution = execution
+  }
 
   protected def isRegionCompleted(region: PipelinedRegion): Boolean = {
     workflow
       .getBlockingOutLinksOfRegion(region)
-      .subsetOf(completedLinksOfRegion.getOrElse(region, new mutable.HashSet[LinkIdentity]())) &&
+      .subsetOf(execution.completedLinksOfRegion.getOrElse(region, new mutable.HashSet[LinkIdentity]())) &&
     region
       .getOperators()
-      .forall(opId => workflow.getOperator(opId).getState == WorkflowAggregatedState.COMPLETED)
+      .forall(opId => execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.COMPLETED)
   }
 
   protected def checkRegionCompleted(region: PipelinedRegion): Unit = {
     if (isRegionCompleted(region)) {
-      runningRegions.remove(region)
-      completedRegions.add(region)
+      execution.runningRegions.remove(region)
+      execution.completedRegions.add(region)
     }
   }
 
   protected def getRegion(workerId: ActorVirtualIdentity): Option[PipelinedRegion] = {
     val opId = workflow.getOperator(workerId).id
-    runningRegions.find(r => r.getOperators().contains(opId))
+    execution.runningRegions.find(r => r.getOperators().contains(opId))
   }
 
   /**
     * A link's region is the region of the source operator of the link.
     */
   protected def getRegion(link: LinkIdentity): Option[PipelinedRegion] = {
-    runningRegions.find(r => r.getOperators().contains(link.from))
+    execution.runningRegions.find(r => r.getOperators().contains(link.from))
   }
 
   // gets the ready regions that is not currently running
@@ -107,9 +103,9 @@ abstract class SchedulingPolicy(workflow: Workflow) {
       )
     } else {
       val completedLinks =
-        completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
+        execution.completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
       completedLinks.add(link)
-      completedLinksOfRegion(region.get) = completedLinks
+      execution.completedLinksOfRegion(region.get) = completedLinks
       checkRegionCompleted(region.get)
     }
     getNextSchedulingWork()
@@ -120,15 +116,15 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   }
 
   def addToRunningRegions(regions: Set[PipelinedRegion]): Unit = {
-    runningRegions ++= regions
+    execution.runningRegions ++= regions
   }
 
   def removeFromRunningRegion(regions: Set[PipelinedRegion]): Unit = {
-    runningRegions --= regions
+    execution.runningRegions --= regions
   }
 
-  def getRunningRegions(): Set[PipelinedRegion] = runningRegions.toSet
+  def getRunningRegions(): Set[PipelinedRegion] = execution.runningRegions.toSet
 
-  def getCompletedRegions(): Set[PipelinedRegion] = completedRegions.toSet
+  def getCompletedRegions(): Set[PipelinedRegion] = execution.completedRegions.toSet
 
 }

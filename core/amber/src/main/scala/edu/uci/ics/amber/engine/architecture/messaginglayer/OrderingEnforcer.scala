@@ -6,7 +6,7 @@ import scala.collection.mutable
 
 object OrderingEnforcer {
   def reorderMessage[V](
-      seqMap: mutable.AnyRefMap[ActorVirtualIdentity, OrderingEnforcer[V]],
+      seqMap: mutable.HashMap[ActorVirtualIdentity, OrderingEnforcer[V]],
       sender: ActorVirtualIdentity,
       seq: Long,
       payload: V
@@ -26,7 +26,7 @@ object OrderingEnforcer {
 /* The abstracted FIFO/exactly-once logic */
 class OrderingEnforcer[T] {
 
-  val ofoMap = new mutable.LongMap[T]
+  val ofoMap = new mutable.HashMap[Long, T]
   var current = 0L
 
   def setCurrent(value: Long): Unit = {

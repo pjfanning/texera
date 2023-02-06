@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState._
 // https://nrinaudo.github.io/scala-best-practices/adts/product_with_serializable.html
 
 class WorkerStateManager(initialState: WorkerState = UNINITIALIZED)
-    extends StateManager[WorkerState](
+    extends StateManager[WorkerState] (
       Map(
         UNINITIALIZED -> Set(READY),
         READY -> Set(PAUSED, RUNNING, COMPLETED),

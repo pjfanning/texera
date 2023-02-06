@@ -68,7 +68,7 @@ object OutputManager {
 class OutputManager(
     selfID: ActorVirtualIdentity,
     dataOutputPort: NetworkOutputPort[DataPayload]
-) {
+) extends Serializable {
 
   val partitioners = mutable.HashMap[LinkIdentity, Partitioner]()
 
@@ -123,7 +123,7 @@ class OutputManager(
 
 }
 
-class AdaptiveBatchingMonitor {
+class AdaptiveBatchingMonitor extends Serializable {
   var adaptiveBatchingHandle: Option[Cancellable] = None
 
   def enableAdaptiveBatching(context: ActorContext): Unit = {
@@ -146,6 +146,7 @@ class AdaptiveBatchingMonitor {
   def pauseAdaptiveBatching(): Unit = {
     if (adaptiveBatchingHandle.nonEmpty) {
       adaptiveBatchingHandle.get.cancel()
+      adaptiveBatchingHandle = None
     }
   }
 }

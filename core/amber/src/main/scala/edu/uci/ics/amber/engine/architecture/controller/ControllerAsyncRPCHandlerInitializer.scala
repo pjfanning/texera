@@ -43,7 +43,7 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler {
 
-  this: Controller =>
+  this: ControllerProcessor =>
 
   var statusUpdateAskHandle: Option[Cancellable] = None
   var monitoringHandle: Option[Cancellable] = None
@@ -59,15 +59,15 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
     if (controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
       println("status update enabled")
       statusUpdateAskHandle = Option(
-        context.system.scheduler.scheduleAtFixedRate(
+        actorContext.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
-          context.self,
+          actorContext.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateQueryStatistics()
           )
-        )(context.dispatcher)
+        )
       )
     }
   }
@@ -80,15 +80,15 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
       Constants.monitoringEnabled && controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
     ) {
       monitoringHandle = Option(
-        context.system.scheduler.scheduleAtFixedRate(
+        actorContext.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.monitoringIntervalMs.get, MILLISECONDS),
-          context.self,
+          actorContext.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateMonitoring()
           )
-        )(context.dispatcher)
+        )
       )
     }
   }
@@ -101,15 +101,15 @@ trait ControllerAsyncRPCHandlerInitializer extends AsyncRPCHandlerInitializer
       Constants.reshapeSkewHandlingEnabled && controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
     ) {
       workflowReshapeState.skewDetectionHandle = Option(
-        context.system.scheduler.scheduleAtFixedRate(
+        actorContext.system.scheduler.scheduleAtFixedRate(
           Constants.reshapeSkewDetectionInitialDelayInMs.milliseconds,
           FiniteDuration.apply(controllerConfig.skewDetectionIntervalMs.get, MILLISECONDS),
-          context.self,
+          actorContext.self,
           ControlInvocation(
             AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateSkewDetection()
           )
-        )(context.dispatcher)
+        )
       )
     }
   }

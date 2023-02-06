@@ -16,8 +16,8 @@ import scala.collection.mutable
 class NetworkOutputPort[T](
     selfID: ActorVirtualIdentity,
     val handler: (ActorVirtualIdentity, ActorVirtualIdentity, Long, T) => Unit
-) {
-  private val idToSequenceNums = new mutable.AnyRefMap[ActorVirtualIdentity, AtomicLong]()
+) extends Serializable {
+  private val idToSequenceNums = new mutable.HashMap[ActorVirtualIdentity, AtomicLong]()
   def sendTo(to: ActorVirtualIdentity, payload: T): Unit = {
     var receiverId = to
     if (to == SELF) {

@@ -1,10 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -26,7 +25,7 @@ object WorkerExecutionCompletedHandler {
   * possible sender: worker
   */
 trait WorkerExecutionCompletedHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: WorkerExecutionCompleted, sender) =>
     {
@@ -41,7 +40,7 @@ trait WorkerExecutionCompletedHandler {
         .collect(statsRequests)
         .flatMap(_ => {
           // if entire workflow is completed, clean up
-          if (workflow.isCompleted) {
+          if (execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
             interactionHistory
               .append((((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt, Map.empty))
@@ -53,7 +52,7 @@ trait WorkerExecutionCompletedHandler {
             println("workflow completed!!!!!!!!!!!!!!")
             Future.Unit
           } else {
-            workflowScheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
+            scheduler.onWorkerCompletion(sender, availableNodes).flatMap(_ => Future.Unit)
           }
         })
     }

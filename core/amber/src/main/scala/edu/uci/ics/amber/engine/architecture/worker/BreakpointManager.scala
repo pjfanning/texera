@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks
 
-class BreakpointManager(asyncRPCClient: AsyncRPCClient) {
+class BreakpointManager(asyncRPCClient: AsyncRPCClient) extends Serializable {
   private var breakpoints = new Array[LocalBreakpoint](0)
 
   def registerOrReplaceBreakpoint(breakpoint: LocalBreakpoint): Unit = {

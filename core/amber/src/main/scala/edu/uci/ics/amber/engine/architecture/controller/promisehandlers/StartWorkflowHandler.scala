@@ -1,10 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerProcessor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 
 import scala.collection.mutable
@@ -19,12 +19,12 @@ object StartWorkflowHandler {
   * possible sender: client
   */
 trait StartWorkflowHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: StartWorkflow, sender) =>
     {
-      workflowScheduler
-        .startWorkflow()
+      scheduler
+        .startWorkflow(availableNodes)
         .map(_ => {
           sendToClient(WorkflowStateUpdate(RUNNING))
           enableStatusUpdate()

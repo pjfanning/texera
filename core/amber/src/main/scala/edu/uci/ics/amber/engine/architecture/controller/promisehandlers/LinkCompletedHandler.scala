@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -20,7 +20,7 @@ object LinkCompletedHandler {
   * possible sender: worker
   */
 trait LinkCompletedHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: LinkCompleted, sender) =>
     {
@@ -28,11 +28,11 @@ trait LinkCompletedHandler {
         Future(())
       } else {
         // get the target link from workflow
-        val link = workflow.getLink(msg.linkID)
+        val link = execution.getLinkExecution(msg.linkID)
         link.incrementCompletedReceiversCount()
         if (link.isCompleted) {
-          workflowScheduler
-            .onLinkCompletion(LinkIdentity(link.from.id, link.to.id))
+          scheduler
+            .onLinkCompletion(msg.linkID, availableNodes)
             .flatMap(_ => Future.Unit)
         } else {
           // if the link is not completed yet, do nothing

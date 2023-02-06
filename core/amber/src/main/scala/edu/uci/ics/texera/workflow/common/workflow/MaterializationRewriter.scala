@@ -23,9 +23,9 @@ class MaterializationRewriter(
     var newPlan = physicalPlan
 
     val fromOpId = linkId.from
-    val fromOutputPort = physicalPlan.operatorMap(fromOpId).outputToOrdinalMapping(linkId)
+    val fromOutputPort = physicalPlan.operatorMap(fromOpId).ordinalMapping.output(linkId)
     val toOpId = linkId.to
-    val toInputPort = physicalPlan.operatorMap(toOpId).inputToOrdinalMapping(linkId)
+    val toInputPort = physicalPlan.operatorMap(toOpId).ordinalMapping.input(linkId)
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)

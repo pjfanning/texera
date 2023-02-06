@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
+import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.amber.engine.common.{ISinkOperatorExecutor, InputExhausted}
@@ -7,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 import edu.uci.ics.texera.workflow.common.{IncrementalOutputMode, ProgressiveUtils}
-import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageWriter, SinkStorageReader}
+import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
 
 import scala.collection.mutable
 
@@ -53,4 +54,5 @@ class ProgressiveSinkOpExec(
   override def getStateInformation: String = {
     s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
   }
+
 }

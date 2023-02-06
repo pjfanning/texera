@@ -6,7 +6,7 @@ object PauseManager {
   final case class ExecutionPaused()
 }
 
-class PauseManager {
+class PauseManager extends Serializable {
 
   private val pauseInvocations = new mutable.HashMap[PauseType.Value, Boolean]()
 

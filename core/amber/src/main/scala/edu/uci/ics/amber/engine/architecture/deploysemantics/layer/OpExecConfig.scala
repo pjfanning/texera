@@ -3,39 +3,23 @@ package edu.uci.ics.amber.engine.architecture.deploysemantics.layer
 import akka.actor.{ActorContext, ActorRef, Address, Deploy, Props}
 import akka.remote.RemoteScope
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
+import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
-  AddressInfo,
-  LocationPreference,
-  PreferController,
-  RoundRobinPreference
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
+import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
+import jdk.jfr.Recording
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -112,8 +96,7 @@ case class OpExecConfig(
     inputPorts: List[InputPort] = List(InputPort("")),
     outputPorts: List[OutputPort] = List(OutputPort("")),
     // mapping of all input/output operators connected on a specific input/output port index
-    inputToOrdinalMapping: Map[LinkIdentity, Int] = Map(),
-    outputToOrdinalMapping: Map[LinkIdentity, Int] = Map(),
+    ordinalMapping: OrdinalMapping = OrdinalMapping(),
     // input ports that are blocking
     blockingInputs: List[Int] = List(),
     // execution dependency of ports
@@ -127,19 +110,8 @@ case class OpExecConfig(
   def isPythonOperator(): Boolean =
     classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
 
-  /*
-   * Variables related to runtime information
-   */
-
-  // workers of this operator
-  var workers: Map[ActorVirtualIdentity, WorkerInfo] =
-    Map[ActorVirtualIdentity, WorkerInfo]()
   // actor props of each worker, it's not constructed as an actor yet for recovery purposes
   val workerToActorProps = new mutable.HashMap[ActorVirtualIdentity, Props]()
-
-  var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
-  var caughtLocalExceptions = new mutable.HashMap[ActorVirtualIdentity, Throwable]()
-  var workerToWorkloadInfo = new mutable.HashMap[ActorVirtualIdentity, WorkerWorkloadInfo]()
 
   /*
    * Helper functions related to compile-time operations
@@ -153,8 +125,8 @@ case class OpExecConfig(
   // creates a copy with an additional input operator specified on an input port
   def addInput(from: LayerIdentity, port: Int): OpExecConfig = {
     assert(port < this.inputPorts.size, s"cannot add input on port $port, all ports: $inputPorts")
-    this.copy(inputToOrdinalMapping =
-      inputToOrdinalMapping + (LinkIdentity(from, this.id) -> port)
+    this.copy(ordinalMapping = OrdinalMapping(
+      ordinalMapping.input + (LinkIdentity(from, this.id) -> port),ordinalMapping.output)
     )
   }
 
@@ -164,19 +136,19 @@ case class OpExecConfig(
       port < this.outputPorts.size,
       s"cannot add output on port $port, all ports: $outputPorts"
     )
-    this.copy(outputToOrdinalMapping =
-      outputToOrdinalMapping + (LinkIdentity(this.id, to) -> port)
+    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input,
+      ordinalMapping.output + (LinkIdentity(this.id, to) -> port))
     )
   }
 
   // creates a copy with a removed input operator
   def removeInput(from: LayerIdentity): OpExecConfig = {
-    this.copy(inputToOrdinalMapping = inputToOrdinalMapping - LinkIdentity(from, this.id))
+    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input - LinkIdentity(from, this.id), ordinalMapping.output))
   }
 
   // creates a copy with a removed output operator
   def removeOutput(to: LayerIdentity): OpExecConfig = {
-    this.copy(outputToOrdinalMapping = outputToOrdinalMapping - LinkIdentity(this.id, to))
+    this.copy(ordinalMapping = OrdinalMapping(ordinalMapping.input, ordinalMapping.output - LinkIdentity(this.id, to)))
   }
 
   // creates a copy with the new ID
@@ -187,7 +159,7 @@ case class OpExecConfig(
 
   // returns all input links on a specific input port
   def getInputLinks(portIndex: Int): List[LinkIdentity] = {
-    inputToOrdinalMapping.filter(p => p._2 == portIndex).keys.toList
+    ordinalMapping.input.filter(p => p._2 == portIndex).keys.toList
   }
 
   // returns all the input operators on a specific input port
@@ -195,12 +167,20 @@ case class OpExecConfig(
     getInputLinks(portIndex).map(link => link.from)
   }
 
+  def identifiers: Array[ActorVirtualIdentity] = {
+    (0 until numWorkers).map{ i => identifier(i) }.toArray
+  }
+
+  def identifier(i:Int):ActorVirtualIdentity = {
+    VirtualIdentityUtils.createWorkerIdentity(id.workflow, id.operator, id.layerID, i)
+  }
+
   /**
     * Tells whether the input on this link is blocking i.e. the operator doesn't output anything till this link
     * outputs all its tuples
     */
   def isInputBlocking(input: LinkIdentity): Boolean = {
-    inputToOrdinalMapping.get(input).exists(port => blockingInputs.contains(port))
+    ordinalMapping.input.get(input).exists(port => blockingInputs.contains(port))
   }
 
   /**
@@ -210,8 +190,8 @@ case class OpExecConfig(
   def getInputProcessingOrder(): Array[LinkIdentity] = {
     val dependencyDag = new DirectedAcyclicGraph[LinkIdentity, DefaultEdge](classOf[DefaultEdge])
     dependency.foreach(dep => {
-      val prevInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._2).get._1
-      val nextInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._1).get._1
+      val prevInOrder = ordinalMapping.input.find(pair => pair._2 == dep._2).get._1
+      val nextInOrder = ordinalMapping.input.find(pair => pair._2 == dep._1).get._1
       if (!dependencyDag.containsVertex(prevInOrder)) {
         dependencyDag.addVertex(prevInOrder)
       }
@@ -233,81 +213,18 @@ case class OpExecConfig(
    * Functions related to runtime operations
    */
 
-  def assignBreakpoint(breakpoint: GlobalBreakpoint[_]): Array[ActorVirtualIdentity] = {
-    identifiers
-  }
-
-  def isBuilt: Boolean = workers.nonEmpty
-
-  def identifiers: Array[ActorVirtualIdentity] = workers.values.map(_.id).toArray
-
-  def states: Array[WorkerState] = workers.values.map(_.state).toArray
-
-  def statistics: Array[WorkerStatistics] = workers.values.map(_.stats).toArray
-
-  def getAllWorkers: Iterable[ActorVirtualIdentity] = workers.keys
-
-  def getWorker(id: ActorVirtualIdentity): WorkerInfo = {
-    workers(id)
-  }
-
-  def getWorkerWorkloadInfo(id: ActorVirtualIdentity): WorkerWorkloadInfo = {
-    if (!workerToWorkloadInfo.contains(id)) {
-      workerToWorkloadInfo(id) = WorkerWorkloadInfo(0L, 0L)
-    }
-    workerToWorkloadInfo(id)
-  }
-
-  def setAllWorkerState(state: WorkerState): Unit = {
-    (0 until numWorkers).foreach(states.update(_, state))
-  }
-
-  def getOperatorStatistics: OperatorRuntimeStats =
-    OperatorRuntimeStats(getState, getInputRowCount, getOutputRowCount)
-
-  def getState: WorkflowAggregatedState = {
-    val workerStates = getAllWorkerStates
-    if (workerStates.isEmpty) {
-      return WorkflowAggregatedState.UNINITIALIZED
-    }
-    if (workerStates.forall(_ == COMPLETED)) {
-      return WorkflowAggregatedState.COMPLETED
-    }
-    if (workerStates.exists(_ == RUNNING)) {
-      return WorkflowAggregatedState.RUNNING
-    }
-    val unCompletedWorkerStates = workerStates.filter(_ != COMPLETED)
-    if (unCompletedWorkerStates.forall(_ == UNINITIALIZED)) {
-      WorkflowAggregatedState.UNINITIALIZED
-    } else if (unCompletedWorkerStates.forall(_ == PAUSED)) {
-      WorkflowAggregatedState.PAUSED
-    } else if (unCompletedWorkerStates.forall(_ == READY)) {
-      WorkflowAggregatedState.READY
-    } else {
-      WorkflowAggregatedState.UNKNOWN
-    }
-  }
-
-  def getAllWorkerStates: Iterable[WorkerState] = states
-
-  def getInputRowCount: Long = statistics.map(_.inputTupleCount).sum
-
-  def getOutputRowCount: Long = statistics.map(_.outputTupleCount).sum
-
   def build(
       addressInfo: AddressInfo,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       context: ActorContext,
-      workerToLayer: mutable.HashMap[ActorVirtualIdentity, OpExecConfig],
+      opExecution: OperatorExecution,
       controllerConf: ControllerConfig
   ): Unit = {
-    workers = (0 until numWorkers)
-      .map(i => {
-        val workerId: ActorVirtualIdentity =
-          ActorVirtualIdentity(s"Worker:WF${id.workflow}-${id.operator}-${id.layerID}-$i")
+    (0 until numWorkers)
+      .foreach(i => {
+        val workerId: ActorVirtualIdentity = identifier(i)
         val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
         val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
-
         val workflowWorker = if (this.isPythonOperator()) {
           PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
         } else {
@@ -327,26 +244,16 @@ case class OpExecConfig(
         workerToActorProps(workerId) = workflowWorker
         val ref =
           context.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
-
-        parentNetworkCommunicationActorRef ! RegisterActorRef(workerId, ref)
-        workerToLayer(workerId) = this
-        (
-          workerId,
-          WorkerInfo(
-            workerId,
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            ref
-          )
-        )
+        parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(workerId, ref))
+        opExecution.getWorkerInfo(workerId).ref = ref
       })
-      .toMap
   }
 
-  def recover(actorId: ActorVirtualIdentity, address: Address, context: ActorContext): ActorRef = {
+  def recover(actorId: ActorVirtualIdentity, address: Address, context: ActorContext, opExecution:OperatorExecution, parentNetworkCommunicationActorRef: NetworkSenderActorRef): ActorRef = {
     val newRef =
       context.actorOf(workerToActorProps(actorId).withDeploy(Deploy(scope = RemoteScope(address))))
-    workers(actorId).ref = newRef
+    parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(actorId, newRef))
+    opExecution.getWorkerInfo(actorId).ref = newRef
     newRef
   }
 }

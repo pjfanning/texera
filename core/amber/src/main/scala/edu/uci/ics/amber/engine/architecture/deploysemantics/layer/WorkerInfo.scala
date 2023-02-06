@@ -9,5 +9,5 @@ case class WorkerInfo(
     id: ActorVirtualIdentity,
     var state: WorkerState,
     var stats: WorkerStatistics,
-    var ref: ActorRef
+    @transient var ref: ActorRef
 )

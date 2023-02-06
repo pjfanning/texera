@@ -1,13 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
 
-class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
+class UpstreamLinkStatus(ordinalMapping: OrdinalMapping) extends Serializable {
 
-  val allUpstreamLinkIds: Set[LinkIdentity] = opExecConfig.inputToOrdinalMapping.keySet
+  val allUpstreamLinkIds: Set[LinkIdentity] = ordinalMapping.input.keySet
 
   /**
     * The scheduler may not schedule the entire workflow at once. Consider a 2-phase hash join where the first

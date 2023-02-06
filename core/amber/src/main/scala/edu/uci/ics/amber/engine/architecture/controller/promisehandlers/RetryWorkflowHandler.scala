@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetryWorkflowHandler.RetryWorkflow
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ReplayCurrentTupleHandler.ReplayCurrentTuple
@@ -17,7 +17,7 @@ object RetryWorkflowHandler {
   * possible sender: controller, client
   */
 trait RetryWorkflowHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: RetryWorkflow, sender) =>
     {
@@ -27,7 +27,7 @@ trait RetryWorkflowHandler {
         .collect(
           workflow.getAllOperators
             // find workers who received local operator exception
-            .flatMap(operator => operator.caughtLocalExceptions.keys)
+            .flatMap(operator => execution.getOperatorExecution(operator.id).caughtLocalExceptions.keys)
             // currently only support retry for PythonWorker, thus filter them
             .filter(worker => workflow.getPythonWorkers.toSeq.contains(worker))
             .map(worker => send(ReplayCurrentTuple(), worker))

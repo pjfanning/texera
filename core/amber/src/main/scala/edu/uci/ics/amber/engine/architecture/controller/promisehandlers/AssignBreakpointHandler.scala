@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.LocalBreakpoint
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AssignLocalBreakpointHandler.AssignLocalBreakpoint
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -21,7 +21,7 @@ object AssignBreakpointHandler {
   * possible sender: controller, client
   */
 trait AssignBreakpointHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: AssignGlobalBreakpoint[_], sender) =>
     {
@@ -33,9 +33,11 @@ trait AssignBreakpointHandler {
       val operator = operators.last
 
       // attach the breakpoint
-      operator.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
+      val opExecution = execution.getOperatorExecution(operator.id)
+      opExecution.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
+
       // get target workers from the operator given a breakpoint
-      val targetWorkers = operator.assignBreakpoint(msg.breakpoint)
+      val targetWorkers = opExecution.assignBreakpoint(msg.breakpoint)
 
       val workersTobeAssigned: List[(ActorVirtualIdentity, LocalBreakpoint)] =
         msg.breakpoint.partition(targetWorkers).toList

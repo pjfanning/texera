@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
@@ -29,13 +29,12 @@ object LocalOperatorExceptionHandler {
   * possible sender: worker
   */
 trait LocalOperatorExceptionHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
   registerHandler { (msg: LocalOperatorException, sender) =>
     {
 
       // get the operator where the worker caught the local operator exception
-      val operator = workflow.getOperator(sender)
-      operator.caughtLocalExceptions.put(sender, msg.e)
+      execution.getOperatorExecution(sender).caughtLocalExceptions.put(sender, msg.e)
 
       // then pause the workflow
       execute(PauseWorkflow(), CONTROLLER)

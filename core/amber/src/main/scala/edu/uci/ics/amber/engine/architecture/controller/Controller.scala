@@ -2,31 +2,24 @@ package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.{Address, Cancellable, PoisonPill, Props}
 import akka.pattern.ask
+import akka.serialization.SerializationExtension
 import akka.util.Timeout
-import com.softwaremill.macwire.wire
-import com.twitter.concurrent.Offer.never.?
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, InMemDeterminant, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
-import org.apache.commons.lang3.SerializationUtils
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -76,69 +69,19 @@ class Controller(
       CONTROLLER,
       parentNetworkCommunicationActorRef,
       controllerConfig.supportFaultTolerance
-    ) with ControllerAsyncRPCHandlerInitializer {
-  lazy val controlInputPort: NetworkInputPort[ControlPayload] =
-    new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayloadOuter)
+    ) {
+  private var controlInputPort: NetworkInputPort[ControlPayload] = _
 
-  def outputControlPayload(
-                            to: ActorVirtualIdentity,
-                            self: ActorVirtualIdentity,
-                            seqNum: Long,
-                            payload: ControlPayload
-                          ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
-    logManager.sendCommitted(SendRequest(to, msg))
-  }
-  lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
-    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
-  }
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
-  var replayRequestIndex = {
-    if(controllerConfig.replayRequest.nonEmpty){
-      controllerConfig.replayRequest(CONTROLLER)
-    }else{
-      -1
-    }
-  }
-  private val controlMessages = mutable
-    .HashMap[ActorVirtualIdentity, mutable.Queue[ProcessControlMessage]]()
-  private var currentHead: ActorVirtualIdentity = null
-
-  protected lazy val asyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
-  protected lazy val asyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
-
-  var numControl = 0
-  val controlMessagesToRecover: Iterator[InMemDeterminant] = {
-    logStorage.getReader.mkLogRecordIterator()
-  }
-  var isReplaying = false
+  private var controllerProcessor:ControllerProcessor = _
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
-  val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
-  val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
-    () => {
-      logger.info("Start global recovery")
-      asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
-    },
-    () => {
-      logger.info("global recovery complete!")
-      asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
-    }
-  )
-
-  def availableNodes: Array[Address] =
-    Await
-      .result(context.actorSelection("/user/cluster-info") ? GetAvailableNodeAddresses, 5.seconds)
-      .asInstanceOf[Array[Address]]
-
   val workflowScheduler =
     new WorkflowScheduler(
-      availableNodes,
       networkCommunicationActor,
       context,
-      asyncRPCClient,
       logger,
       workflow,
       controllerConfig
@@ -152,7 +95,7 @@ class Controller(
     super.preRestart(reason, message)
     logger.error(s"Encountered fatal error, controller is shutting done.", reason)
     // report error to frontend
-    asyncRPCClient.sendToClient(FatalError(reason))
+    controllerProcessor.sendToClient(FatalError(reason))
   }
 
   def running: Receive = {
@@ -173,187 +116,14 @@ class Controller(
 
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      this.handleControlPayload(CLIENT, invocation)
+      controllerProcessor.handleControlPayload(CLIENT, invocation)
   }
 
   def acceptRecoveryMessages: Receive = {
     case recoveryMsg: WorkflowRecoveryMessage =>
-      recoveryMsg.payload match {
-        case TakeGlobalCheckpoint() =>
-          // save output messages first
-          val chkpt = new SavedCheckpoint()
-          chkpt.saveMessages(
-            Await.result((networkCommunicationActor.ref ? GetMessageInQueue), 5.seconds)
-              .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]])
-          // follow topological order
-          val iter = workflow.getDAG.iterator()
-          while(iter.hasNext){
-            val worker = iter.next()
-            val alignment = Await.result(workflow.getWorkerInfo(worker).ref ? WorkflowRecoveryMessage(CONTROLLER, TakeLocalCheckpoint()), 10.seconds).asInstanceOf[Long]
-            if(!CheckpointHolder.hasCheckpoint(worker,alignment)){
-              // put placeholder
-              CheckpointHolder.addCheckpoint(worker,alignment,new SavedCheckpoint())
-            }
-          }
-          // finalize checkpoint
-          CheckpointHolder.addWorkflow(numControl,SerializationUtils.clone(workflow))
-          CheckpointHolder.addCheckpoint(CONTROLLER, numControl,chkpt)
-        case GetOperatorInternalState() =>
-          Future.sequence(workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).map(info => info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState()))).onComplete(v => {
-            asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
-          })
-        case ContinueReplay(index) =>
-          isReplaying = true
-          if(index.nonEmpty){
-            replayRequestIndex = index(CONTROLLER)
-            controllerConfig.replayRequest = index
-            // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-            workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(index(info.id))))
-          }else{
-            replayRequestIndex = 99999
-            // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-            workflow.getAllWorkers.map(x => workflow.getWorkerInfo(x)).foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(9999999)))
-          }
-          invokeReplay()
-        case UpdateRecoveryStatus(isRecovering) =>
-          logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
-          globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)
-        case ResendOutputTo(vid, ref) =>
-          logger.warn(s"controller should not resend output to " + vid)
-        case NotifyFailedNode(addr) =>
-          if (!controllerConfig.supportFaultTolerance) {
-            // do not support recovery
-            throw new RuntimeException("Recovery not supported, abort.")
-          }
-          val deployNodes = availableNodes.filter(_ != self.path.address)
-          if (deployNodes.isEmpty) {
-            val error = new RuntimeException(
-              "Cannot recover failed workers! No available worker machines!"
-            )
-            asyncRPCClient.sendToClient(FatalError(error))
-            throw error
-          }
-          logger.info(
-            "Global Recovery: move all worker from " + addr + " to " + deployNodes.head
-          )
-          val infoIter = workflow.getAllWorkerInfoOfAddress(addr)
-          logger.info("Global Recovery: sent kill signal to workers on failed node")
-          infoIter.foreach { info =>
-            info.ref ! PoisonPill // in case we can still access the worker
-          }
-          logger.info("Global Recovery: triggering worker respawn")
-          infoIter.foreach { info =>
-            val ref = workflow.getOperator(info.id).recover(info.id, deployNodes.head, context)
-            logger.info("Global Recovery: respawn " + info.id)
-            val vidSet = infoIter.map(_.id).toSet
-            // wait for some secs to re-send output
-            logger.info("Global Recovery: triggering upstream resend for " + info.id)
-            workflow
-              .getDirectUpstreamWorkers(info.id)
-              .filter(x => !vidSet.contains(x))
-              .foreach { vid =>
-                logger.info("Global Recovery: trigger resend from " + vid + " to " + info.id)
-                workflow.getWorkerInfo(vid).ref ! ResendOutputTo(info.id, ref)
-              }
-            // let controller resend control messages immediately
-            networkCommunicationActor ! ResendOutputTo(info.id, ref)
-          }
-      }
+      controllerProcessor.processRecoveryMessage(recoveryMsg)
   }
 
-
-  def checkIfReplayCompleted(): Boolean ={
-    if (
-      !controlMessagesToRecover.hasNext || replayRequestIndex == numControl
-    ) {
-      isReplaying = false
-      globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-      if (!controlMessagesToRecover.hasNext) {
-        logManager.terminate()
-        logStorage.cleanPartiallyWrittenLogFile()
-        logManager.setupWriter(logStorage.getWriter)
-        unstashAll()
-        context.become(running)
-      }
-      return true
-    }
-    false
-  }
-
-
-  def invokeReplay(): Unit = {
-    if(currentHead != null){
-      if (controlMessages.contains(currentHead) && controlMessages(currentHead).nonEmpty) {
-        logger.info("get current head from "+currentHead)
-        val elem = controlMessages(currentHead).dequeue()
-        handleControlPayload(elem.from, elem.controlPayload)
-        currentHead = null
-      }
-    }
-    if(checkIfReplayCompleted()){
-      return
-    }
-    while (currentHead == null) {
-      controlMessagesToRecover.next() match {
-        case SenderActorChange(sender) =>
-          if (controlMessages.contains(sender) && controlMessages(sender).nonEmpty) {
-            logger.info("already have current head of "+sender)
-            val elem = controlMessages(sender).dequeue()
-            handleControlPayload(elem.from, elem.controlPayload)
-          } else {
-            logger.info("set current head to "+sender)
-            currentHead = sender
-          }
-        case ProcessControlMessage(controlPayload, from) =>
-          controlInputPort.increaseFIFOSeqNum(from)
-          handleControlPayload(from, controlPayload)
-      }
-      if(checkIfReplayCompleted()){
-        return
-      }
-    }
-  }
-
-
-  def handleControlPayloadOuter(from: ActorVirtualIdentity,
-                                controlPayload: ControlPayload){
-    if(isReplaying){
-      logger.info("received "+controlPayload+" from "+from)
-      controlMessages
-        .getOrElseUpdate(from, new mutable.Queue[ProcessControlMessage]())
-        .enqueue(ProcessControlMessage(controlPayload, from))
-      invokeReplay()
-    }else{
-      logger.info("normal processing of "+controlPayload)
-      handleControlPayload(from, controlPayload)
-    }
-  }
-
-  def handleControlPayload(
-      from: ActorVirtualIdentity,
-      controlPayload: ControlPayload
-  ): Unit = {
-    if(from == CLIENT || from == SELF || from == CONTROLLER){
-      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
-    }else{
-      //logger.info("only save sender information for "+ controlPayload+" from "+from)
-      determinantLogger.logDeterminant(SenderActorChange(from))
-    }
-    numControl+=1
-    controlPayload match {
-      // use control input port to pass control messages
-      case invocation: ControlInvocation =>
-        assert(from.isInstanceOf[ActorVirtualIdentity])
-        asyncRPCServer.logControlInvocation(invocation, from)
-        asyncRPCServer.receive(invocation, from)
-      case ret: ReturnInvocation =>
-        asyncRPCClient.logControlReply(ret, from)
-        asyncRPCClient.fulfillPromise(ret)
-      case other =>
-        throw new WorkflowRuntimeException(s"unhandled control message: $other")
-    }
-    println(s"processed ${numControl}")
-  }
 
   def recovering: Receive = {
     case NetworkMessage(
@@ -361,7 +131,7 @@ class Controller(
           WorkflowControlMessage(from, seqNum, ControlInvocation(_, FatalError(err)))
         ) =>
       // fatal error during recovery, fail
-      asyncRPCClient.sendToClient(FatalError(err))
+      controllerProcessor.sendToClient(FatalError(err))
       // re-throw the error to fail the actor
       throw err
     case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
@@ -380,25 +150,47 @@ class Controller(
   }
 
   override def receive: Receive = {
-    if (replayRequestIndex > 0) {
-      globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-      // val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
-      // controlInputPort.overwriteFIFOState(fifoState)
-      // self ! controlMessagesToRecover.next()
-      isReplaying = true
-      suppressStatusUpdate = true
-      invokeReplay()
+    controllerProcessor = new ControllerProcessor()
+    controlInputPort = new NetworkInputPort[ControlPayload](this.actorId, controllerProcessor.handleControlPayloadOuter)
+    controllerProcessor.initialize(controlInputPort,workflow, workflowScheduler, logManager, logStorage, networkCommunicationActor, context, controllerConfig)
+    controllerProcessor.execution.initExecutionState(workflow)
+    // load state if available
+    if(controllerConfig.replayRequest.nonEmpty){
+      val alignment = controllerConfig.replayRequest(CONTROLLER)
+      val checkpointOpt = CheckpointHolder.findLastCheckpointOf(CONTROLLER, alignment)
+      if(checkpointOpt.isDefined){
+        val serialization = SerializationExtension(context.system)
+        // reload states:
+        controllerProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
+        controlInputPort = new NetworkInputPort[ControlPayload](this.actorId, controllerProcessor.handleControlPayloadOuter)
+        controlInputPort.setFIFOState(checkpointOpt.get.load("fifoState").toObject(serialization))
+        controllerProcessor.initialize(controlInputPort,workflow, workflowScheduler, logManager, logStorage, networkCommunicationActor, context, controllerConfig)
+        // restore workers:
+        // re-assign actor refs:
+        controllerProcessor.restoreWorkers()
+        // re-send outputs:
+        checkpointOpt.get.load("outputMessages").toObject(serialization).asInstanceOf[Array[(ActorVirtualIdentity,Iterable[NetworkMessage])]].foreach{
+          case (id, iter) =>
+            iter.foreach{
+              msg => networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
+            }
+        }
+      }
+//      val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
+//      controlInputPort.overwriteFIFOSeqNum(fifoState)
+      controllerProcessor.enterReplay(alignment, () => {
+        unstashAll()
+        context.become(running)
+      })
       forwardResendRequest orElse acceptRecoveryMessages orElse recovering
-    } else {
+    }else{
       running
     }
   }
 
   override def postStop(): Unit = {
-    if (statusUpdateAskHandle != null && statusUpdateAskHandle.isDefined) {
-      statusUpdateAskHandle.get.cancel()
-    }
     logger.info("Controller start to shutdown")
+    controllerProcessor.terminate()
     logManager.terminate()
 //    if (workflow.isCompleted) {
 //      workflow.getAllWorkers.foreach { workerId =>

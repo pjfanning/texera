@@ -143,7 +143,8 @@ class RecoverySpec
     var upstream: ActorVirtualIdentity = null
     var stepAccumulated = 0
     val creditMonitor = new CreditMonitor()
-    val inputHub = new InputHub(logStorage.getReader, creditMonitor)
+    val inputHub = new InputHub(creditMonitor)
+    inputHub.setLogRecords(logStorage.getReader.mkLogRecordIterator())
     var currentStep = 0L
     determinants.foreach {
       case StepDelta(steps) =>

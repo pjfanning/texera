@@ -15,7 +15,7 @@ object StateManager {
   case class InvalidTransitionException(message: String) extends WorkflowRuntimeException(message)
 }
 
-class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) {
+class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) extends Serializable {
 
   private val stateStack = mutable.Stack[T]()
   @volatile private var currentState: T = initialState

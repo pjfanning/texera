@@ -57,7 +57,7 @@ class AsyncRPCClient(
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging with Serializable {
 
-  private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()
+  private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
 
   def fireAndForget[T](cmd: ControlCommand[T], to: ActorVirtualIdentity):Unit = {

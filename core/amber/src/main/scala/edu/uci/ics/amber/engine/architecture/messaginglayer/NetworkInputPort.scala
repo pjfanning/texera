@@ -14,7 +14,7 @@ class NetworkInputPort[T](
 ) extends AmberLogging {
 
   private val idToOrderingEnforcers =
-    new mutable.AnyRefMap[ActorVirtualIdentity, OrderingEnforcer[T]]()
+    new mutable.HashMap[ActorVirtualIdentity, OrderingEnforcer[T]]()
 
   def handleMessage(
       sender: ActorRef,
@@ -40,12 +40,19 @@ class NetworkInputPort[T](
     }
   }
 
-  def overwriteFIFOState(fifoState: Map[ActorVirtualIdentity, Long]): Unit = {
-    fifoState.foreach {
+  def overwriteFIFOSeqNum(seqMap: Map[ActorVirtualIdentity, Long]): Unit = {
+    seqMap.foreach {
       case (identity, l) =>
         val entry = idToOrderingEnforcers.getOrElseUpdate(identity, new OrderingEnforcer[T]())
         entry.setCurrent(l)
     }
+  }
+
+  def getFIFOState:Map[ActorVirtualIdentity, OrderingEnforcer[T]] = idToOrderingEnforcers.toMap
+
+  def setFIFOState(fifoState:Map[ActorVirtualIdentity, OrderingEnforcer[T]]): Unit ={
+    idToOrderingEnforcers.clear()
+    idToOrderingEnforcers ++= fifoState
   }
 
   def increaseFIFOSeqNum(id:ActorVirtualIdentity): Unit ={

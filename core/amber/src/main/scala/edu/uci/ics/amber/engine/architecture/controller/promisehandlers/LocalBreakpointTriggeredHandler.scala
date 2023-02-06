@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalBreakpointTriggeredHandler.LocalBreakpointTriggered
@@ -29,13 +29,13 @@ object LocalBreakpointTriggeredHandler {
   * possible sender: worker
   */
 trait LocalBreakpointTriggeredHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler { (msg: LocalBreakpointTriggered, sender) =>
     {
       // get the operator where the worker triggers breakpoint
-      val targetOp = workflow.getOperator(sender)
-      val opID = targetOp.id.operator
+      val targetOp = execution.getOperatorExecution(sender)
+      val opId = workflow.getOperator(sender).id
       // get global breakpoints given local breakpoints
       val unResolved = msg.localBreakpoints
         .filter {
@@ -57,7 +57,7 @@ trait LocalBreakpointTriggeredHandler {
         // first pause the workers, then get their local breakpoints
         Future
           .collect(
-            targetOp.getAllWorkers.map { worker =>
+            targetOp.identifiers.map { worker =>
               send(PauseWorker(), worker).flatMap { ret =>
                 send(QueryAndRemoveBreakpoints(unResolved), worker)
               }
@@ -82,7 +82,7 @@ trait LocalBreakpointTriggeredHandler {
                   .map { gbp =>
                     // attach new version if not resolved
                     execute(
-                      AssignGlobalBreakpoint(gbp, targetOp.id.operator),
+                      AssignGlobalBreakpoint(gbp, opId.operator),
                       CONTROLLER
                     )
                   }
@@ -103,7 +103,7 @@ trait LocalBreakpointTriggeredHandler {
                     .unit
                 } else {
                   // other wise, report to frontend and pause entire workflow
-                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID))
+                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opId.operator))
                   execute(PauseWorkflow(), CONTROLLER)
                 }
               }

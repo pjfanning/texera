@@ -10,8 +10,14 @@ import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
-  private val records = logReader.mkLogRecordIterator()
+class InputHub(creditMonitor: CreditMonitor) extends Serializable{
+
+  @transient
+  private var records:Iterator[InMemDeterminant] = _
+  @transient
+  var recoveryCompleted: Boolean = true
+
+  private var numRecordsRead: Int = 0
   private val inputMapping = mutable
     .HashMap[ActorVirtualIdentity, LinkedBlockingQueue[DataElement]]()
   private val controlMessages = mutable
@@ -31,15 +37,18 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
   })
   val controlDeque = new ProactiveDeque[ControlElement]()
   val internalDeque = new ProactiveDeque[InternalCommand]()
-  var recoveryCompleted: Boolean = !records.hasNext
 
   def setReplayTo(dest: Long, unblock:Boolean): Unit = {
     replayTo = dest
   }
 
-  // we assume the log has the following structure:
-  // Ctrl -> [StepDelta] -> Ctrl -> [StepDelta] -> EOF|Ctrl
-  processInternalEventsTillNextControl()
+  def setLogRecords(records:Iterator[InMemDeterminant]): Unit ={
+    this.records = records.drop(numRecordsRead)
+    recoveryCompleted = !records.hasNext
+    // we assume the log has the following structure:
+    // Ctrl -> [StepDelta] -> Ctrl -> [StepDelta] -> EOF|Ctrl
+    processInternalEventsTillNextControl()
+  }
 
   def registerOnEnd(callback: () => Unit): Unit = {
     callbacksOnEnd.append(callback)
@@ -144,7 +153,7 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
   }
 
   private def processInternalEventsTillNextControl(): Unit = {
-    var stop = false
+    var stop = step > 0 || nextControlToEmit != null
     while (records.hasNext && !stop) {
       records.next() match {
         case StepDelta(steps) =>
@@ -157,6 +166,7 @@ class InputHub(logReader: DeterminantLogReader, creditMonitor: CreditMonitor) {
         case TimeStamp(value) => ???
         case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")
       }
+      numRecordsRead += 1
     }
   }
 

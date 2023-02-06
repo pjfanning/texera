@@ -11,13 +11,8 @@ abstract class LinkStrategy(
 ) extends Serializable {
 
   val id: LinkIdentity = LinkIdentity(from.id, to.id)
-  private var currentCompletedCount = 0
 
-  def incrementCompletedReceiversCount(): Unit = currentCompletedCount += 1
-
-  def isCompleted: Boolean = currentCompletedCount == totalReceiversCount
-
-  def totalReceiversCount: Long = to.numWorkers
+  def totalReceiversCount: Int = to.numWorkers
 
   // returns Iterable of (sender, link id, sender's partitioning, set of receivers)
   def getPartitioning

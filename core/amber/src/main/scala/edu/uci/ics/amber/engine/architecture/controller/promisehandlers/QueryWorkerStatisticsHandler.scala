@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -21,18 +21,19 @@ object QueryWorkerStatisticsHandler {
   * possible sender: controller(by statusUpdateAskHandle)
   */
 trait QueryWorkerStatisticsHandler {
-  this: Controller =>
+  this: ControllerProcessor =>
 
   registerHandler((msg: ControllerInitiateQueryStatistics, sender) => {
     // send to specified workers (or all workers by default)
-    val workers = msg.filterByWorkers.getOrElse(workflow.getAllWorkers).toList
+    val workers = msg.filterByWorkers.getOrElse(execution.getAllWorkers).toList
     println("send control to workers #worker = "+workers.length)
     // send QueryStatistics message
     val requests = workers.map(worker =>
       // must immediately update worker state and stats after reply
       send(QueryStatistics(), worker).map(res => {
-        workflow.getOperator(worker).getWorker(worker).state = res.workerState
-        workflow.getOperator(worker).getWorker(worker).stats = res
+        val workerInfo = execution.getOperatorExecution(worker).getWorkerInfo(worker)
+        workerInfo.state = res.workerState
+        workerInfo.stats = res
       })
     )
 
@@ -41,7 +42,7 @@ trait QueryWorkerStatisticsHandler {
       .collect(requests)
       .map(_ => {
         println("collected worker stats")
-        sendToClient(WorkflowStatusUpdate(workflow.getWorkflowStatus))
+        sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
       })
   })
 }

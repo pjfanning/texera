@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorLogging, Address, ExtendedActorSystem}
 import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, Member}
 import com.twitter.util.{Await, Future}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.texera.web.service.WorkflowService
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.ABORTED
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -56,7 +56,7 @@ class ClusterListener extends Actor with AmberLogging {
         val futures = new ArrayBuffer[Future[Any]]
         WorkflowService.getAllWorkflowService.foreach { workflow =>
           val jobService = workflow.jobService.getValue
-          if (jobService != null && !jobService.workflow.isCompleted) {
+          if (jobService != null && jobService.stateStore.jobMetadataStore.getState.state != COMPLETED) {
             try {
               futures.append(jobService.client.notifyNodeFailure(member.address))
             } catch {

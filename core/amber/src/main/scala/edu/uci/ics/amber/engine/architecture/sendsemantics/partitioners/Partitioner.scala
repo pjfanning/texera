@@ -18,7 +18,7 @@ class NetworkOutputBuffer(
     val to: ActorVirtualIdentity,
     val dataOutputPort: NetworkOutputPort[DataPayload],
     val batchSize: Int = Constants.defaultBatchSize
-) {
+) extends Serializable {
 
   var buffer = new ArrayBuffer[ITuple]()
 

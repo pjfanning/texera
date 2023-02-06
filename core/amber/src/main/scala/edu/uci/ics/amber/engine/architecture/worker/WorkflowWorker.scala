@@ -1,11 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.Props
+import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{Checkpoint, ControlElement, DataElement, InputTuple, InternalCommand, NoOperation, Shutdown}
@@ -55,27 +57,24 @@ class WorkflowWorker(
     supportFaultTolerance: Boolean,
     replayTo: Long
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
+  val ordinalMapping: OrdinalMapping = workerLayer.ordinalMapping
+  var dataProcessor: DataProcessor = wire[DataProcessor]
   lazy val operator: IOperatorExecutor =
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   logger.info(s"Worker:$actorId = ${context.self}")
-  val creditMonitor = new CreditMonitor()
-  lazy val inputHub = new InputHub(logStorage.getReader,creditMonitor)
   lazy val dataInputPort: NetworkInputPort[DataPayload] =
     new NetworkInputPort[DataPayload](this.actorId, this.handleDataPayload)
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayload)
   lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
+  val creditMonitor = new CreditMonitor()
+  var inputHub = new InputHub(creditMonitor)
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
-  lazy val dataProcessor: DataProcessor = wire[DataProcessor]
-  dataProcessor.initialize(inputHub, logStorage, logManager, recoveryManager, context)
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
   }
-
-  logger.info("set replay to "+replayTo)
-  inputHub.setReplayTo(replayTo, false)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -89,6 +88,21 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
+    // add restore operator state code.
+    val checkpointOpt = CheckpointHolder.findLastCheckpointOf(actorId, replayTo)
+    if(checkpointOpt.isDefined){
+      val serialization = SerializationExtension(context.system)
+      dataInputPort.setFIFOState(checkpointOpt.get.load("dataFifoState").toObject(serialization))
+      controlInputPort.setFIFOState(checkpointOpt.get.load("controlFifoState").toObject(serialization))
+      inputHub = checkpointOpt.get.load("inputHubState").toObject(serialization)
+      operator.deserializeState(checkpointOpt.get.load("operatorState"), serialization)
+      dataProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
+    }
+    inputHub.setLogRecords(logStorage.getReader.mkLogRecordIterator())
+    dataProcessor.initialize(operator, null, inputHub, logStorage, logManager, recoveryManager, context)
+    logger.info("set replay to "+replayTo)
+    inputHub.setReplayTo(replayTo, false)
+
     if (!inputHub.recoveryCompleted) {
       recoveryManager.registerOnStart(() =>{}
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
@@ -100,7 +114,7 @@ class WorkflowWorker(
         // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
       )
       val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
-      controlInputPort.overwriteFIFOState(fifoState)
+      controlInputPort.overwriteFIFOSeqNum(fifoState)
     }
     dataProcessor.start()
     receiveAndProcessMessages
@@ -110,7 +124,11 @@ class WorkflowWorker(
     acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
         val syncFuture = new CompletableFuture[Long]()
-        inputHub.addInternal(Checkpoint(networkCommunicationActor.ref, syncFuture))
+        val chkpt = new SavedCheckpoint()
+        val serialization = SerializationExtension(context.system)
+        chkpt.save("dataFifoState", SerializedState.fromObject(dataInputPort.getFIFOState, serialization))
+        chkpt.save("controlFifoState", SerializedState.fromObject(controlInputPort.getFIFOState, serialization))
+        inputHub.addInternal(Checkpoint(chkpt, serialization, syncFuture))
         sender ! syncFuture.get()
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
