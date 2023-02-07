@@ -1,4 +1,5 @@
 import sys
+import time
 from threading import Event
 
 from loguru import logger
@@ -20,6 +21,9 @@ class DataProcessor(Runnable, Stoppable):
             self._context.tuple_processing_manager.context_switch_condition.wait()
         self._running.set()
         self._switch_context()
+        self.run_speed_log = open(f"run_speed"
+                                  f"{self._context.operator_manager.root.name}.csv",
+                                  "w")
         while self._running.is_set():
             self.process_tuple()
             self._switch_context()
@@ -29,6 +33,71 @@ class DataProcessor(Runnable, Stoppable):
         while not finished_current.is_set():
 
             try:
+                logger.info(self._context.statistics_manager.get_statistics()[0])
+                start_time = time.time()
+
+                # plain for loop:
+                if self._context.statistics_manager.get_statistics()[0] == 10:
+                    m = self._context.operator_manager.operator_module_name
+                    self._context.debug_manager.put_debug_command(
+                        f"b {m}:14, 'doesnotexist' in tuple_['text'] and s == -1")
+                    self._switch_context()
+
+                # # udf1:
+                # if self._context.statistics_manager.get_statistics()[0] == 10:
+                #     m = self._context.operator_manager.operator_module_name
+                #     self._context.debug_manager.put_debug_command(
+                #         f"b {m}:20, 'doesnotexist' in tuple_['text'] and item == -1")
+                #     self._switch_context()
+
+                # # udf2:
+                # if self._context.statistics_manager.get_statistics()[0] == 10:
+                #     m = self._context.operator_manager.operator_module_name
+                #     self._context.debug_manager.put_debug_command(
+                #         f"b {m}:14, 'doesnotexist' in tuple_['text'] and pos == -1")
+                #     self._switch_context()
+
+                # # udf3:
+                # if self._context.statistics_manager.get_statistics()[0] == 10:
+                #     m = self._context.operator_manager.operator_module_name
+                #     self._context.debug_manager.put_debug_command(
+                #         f"b {m}:13, 'doesnotexist' in tuple_['text'] and doc['positive'] == "
+                #         f"-1")
+                #     self._switch_context()
+
+                # # op1-impl1
+                # if isinstance(
+                #         self._context.tuple_processing_manager.current_input_tuple,
+                #         Tuple
+                # ) :
+                #     if 'doesnotexist' not in \
+                #         self._context.tuple_processing_manager.current_input_tuple[
+                #             'text']:
+                #
+                #         self._context.debug_manager.debugger.do_disable("1")
+                #     else:
+                #         self._context.debug_manager.debugger.do_enable("1")
+                #
+
+                # #op2-impl2
+                # if isinstance(
+                #         self._context.tuple_processing_manager.current_input_tuple,
+                #         Tuple
+                # ) :
+                #     if 'doesnotexist' not in \
+                #         self._context.tuple_processing_manager.current_input_tuple[
+                #             'text']:
+                #
+                #         self._context.debug_manager.debugger.clear_all_breaks()
+                #         # logger.info(self._context.debug_manager.debugger.breaks)
+                #
+                #     else:
+                #         logger.info("add breakpoint back")
+                #         m = self._context.operator_manager.operator_module_name
+                #         self._context.debug_manager.debugger.do_break(
+                #             f"{m}:13, 'doesnotexist' in tuple_['text'] and doc["
+                #             f"'positive'] == -1")
+
                 operator = self._context.operator_manager.operator
                 tuple_ = self._context.tuple_processing_manager.current_input_tuple
                 link = self._context.tuple_processing_manager.current_input_link
@@ -55,7 +124,7 @@ class DataProcessor(Runnable, Stoppable):
 
                 # current tuple finished successfully
                 finished_current.set()
-
+                self.run_speed_log.write(f"{(time.time() - start_time) * 1000}\n")
             except Exception as err:
                 logger.exception(err)
                 self._context.exception_manager.set_exception_info(sys.exc_info())
@@ -75,7 +144,7 @@ class DataProcessor(Runnable, Stoppable):
         """
         If a debug command is available, invokes the debugger from this frame.
         """
-        if self._context.debug_manager.has_debug_command():
+        while self._context.debug_manager.has_debug_command():
             # Let debugger trace from the current frame.
             # This line will also trigger cmdloop in the debugger.
             # This line has no side effects on the current debugger state.
@@ -86,3 +155,4 @@ class DataProcessor(Runnable, Stoppable):
 
     def stop(self):
         self._running.clear()
+        self.run_speed_log.close()

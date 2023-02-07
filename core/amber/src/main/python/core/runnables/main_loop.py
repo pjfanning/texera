@@ -57,6 +57,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         threading.Thread(
             target=self.data_processor.run, daemon=True, name="data_processor_thread"
         ).start()
+        self.breakpoints_to_add = 1
 
     def complete(self) -> None:
         """
@@ -373,6 +374,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 )
             )
             self._pause_dp()
+            if self.breakpoints_to_add:
+                self.breakpoints_to_add -= 1
+                logger.info("putting c")
+                self.context.debug_manager.put_debug_command("c")
+                self._resume_dp()
 
     def _check_and_report_exception(self) -> None:
         if self.context.exception_manager.has_exception():

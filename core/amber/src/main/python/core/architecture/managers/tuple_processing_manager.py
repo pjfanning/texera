@@ -15,9 +15,19 @@ class TupleProcessingManager:
         self.current_output_tuple: Optional[Tuple] = None
         self.input_links: List[LinkIdentity] = list()
         self.input_link_map: MutableMapping[LinkIdentity, int] = dict()
-        self.context_switch_condition: Condition = Condition()
+        self._context_switch_condition: Condition = Condition()
+        self._context_switch_condition_with_no_pdb: Condition = Condition()
         self.finished_current: Event = Event()
+        self.with_pdb = True
 
     def get_output_tuple(self) -> Optional[Tuple]:
         ret, self.current_output_tuple = self.current_output_tuple, None
         return ret
+
+    @property
+    def context_switch_condition(self):
+        if self.with_pdb:
+            return self._context_switch_condition
+        else:
+            return self._context_switch_condition_with_no_pdb
+

@@ -1,6 +1,8 @@
 from pdb import Pdb
 from threading import Condition
 
+from loguru import logger
+
 from core.models.single_blocking_io import SingleBlockingIO
 
 
@@ -12,7 +14,6 @@ class DebugManager:
 
         # Customized prompt, we can design our prompt for the debugger.
         self.debugger.prompt = ""
-
     def has_debug_command(self) -> bool:
         return self._debug_in.value is not None
 
@@ -24,7 +25,9 @@ class DebugManager:
         Blocking gets for the next debug event.
         :return str: the fetched event, in string format.
         """
-        return self._debug_out.readline()
+        event = self._debug_out.readline()
+        logger.info("get an event " + event)
+        return event
 
     def put_debug_command(self, command: str) -> None:
         """
@@ -32,5 +35,6 @@ class DebugManager:
         :param command: the command to be put, in string format.
         :return:
         """
+        logger.info("put a command " + command)
         self._debug_in.write(command)
         self._debug_in.flush()
