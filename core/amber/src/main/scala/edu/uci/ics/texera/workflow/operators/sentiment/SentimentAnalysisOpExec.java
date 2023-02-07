@@ -21,6 +21,8 @@ public class SentimentAnalysisOpExec extends MapOpExec {
     private final SentimentAnalysisOpDesc opDesc;
     private final StanfordCoreNLPWrapper coreNlp;
     private final OperatorSchemaInfo operatorSchemaInfo;
+    private float sumSentiment = 0;
+    private int numProcessed = 0;
 
     public SentimentAnalysisOpExec(SentimentAnalysisOpDesc opDesc, OperatorSchemaInfo operatorSchemaInfo) {
         this.opDesc = opDesc;
@@ -37,6 +39,7 @@ public class SentimentAnalysisOpExec extends MapOpExec {
         String text = t.getField(opDesc.attribute()).toString();
         Annotation documentAnnotation = new Annotation(text);
         coreNlp.get().annotate(documentAnnotation);
+        numProcessed+=1;
         // mainSentiment is calculated by the sentiment class of the longest sentence
         int mainSentiment = 0;
         int longestSentenceLength = 0;
@@ -57,9 +60,14 @@ public class SentimentAnalysisOpExec extends MapOpExec {
         } else {
             sentiment = -1;
         }
-
+        sumSentiment += sentiment;
         return Tuple.newBuilder(operatorSchemaInfo.outputSchemas()[0]).add(t).add(opDesc.resultAttribute(), AttributeType.INTEGER, sentiment).build();
     }
 
+
+    @Override
+    public String getStateInformation(){
+        return "Sentiment Analysis: average sentiment = "+(sumSentiment/numProcessed);
+    }
 
 }

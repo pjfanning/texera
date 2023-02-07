@@ -16,6 +16,8 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable {
   private var records: Iterator[InMemDeterminant] = _
   @transient
   var recoveryCompleted: Boolean = true
+  @transient
+  private var callbacksOnEnd = new ArrayBuffer[() => Unit]()
 
   private var numRecordsRead: Int = 0
   private val inputMapping = mutable
@@ -24,7 +26,6 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable {
     .HashMap[ActorVirtualIdentity, mutable.Queue[ControlElement]]()
   private var step = 0L
   private var targetVId: ActorVirtualIdentity = _
-  private val callbacksOnEnd = new ArrayBuffer[() => Unit]()
   private var replayTo = -1L
   private var nextControlToEmit: ControlElement = _
 
@@ -54,6 +55,9 @@ class InputHub(creditMonitor: CreditMonitor) extends Serializable {
   }
 
   def registerOnEnd(callback: () => Unit): Unit = {
+    if(callbacksOnEnd == null){
+      callbacksOnEnd = new ArrayBuffer[() => Unit]()
+    }
     callbacksOnEnd.append(callback)
   }
 

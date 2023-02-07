@@ -49,7 +49,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       .map(row => {
         try {
           val parsedFields: Array[Object] = {
-            Thread.sleep(200)
+            Thread.sleep(20)
             AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
           }
           Tuple.newBuilder(schema).addSequentially(parsedFields).build
@@ -91,7 +91,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getStateInformation: String = {
-    s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowOutputted).mkString(",")}"
+    s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowOutputted).mkString(",")}, current Tuple = $nextRow"
   }
 
   override def serializeState(
@@ -107,6 +107,6 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
                       ): Iterator[(ITuple, Option[Int])] = {
     open()
     numRowOutputted = serializedState.toObject(deserializer)
-    produceTexeraTuple().drop(numRowOutputted).map(tuple => (tuple, Option.empty))
+    produceTexeraTuple().drop(numRowOutputted - 1).map(tuple => (tuple, Option.empty))
   }
 }

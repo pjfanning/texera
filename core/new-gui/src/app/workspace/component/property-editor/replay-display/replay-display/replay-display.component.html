@@ -24,5 +24,11 @@
   Request Operator Info
 </button>
 
-<p>{{replay.operatorInfo}}</p>
+<!-- <p>{{replay.operatorInfo}}</p> -->
 
+<nz-list nzItemLayout="vertical">
+  <nz-list-item *ngFor="let info of replay.operatorInfo;">
+    <p><b>{{info[0]}}</b> <br><p>
+    <p>{{info[1]}}</p>
+  </nz-list-item>
+</nz-list>

@@ -12,7 +12,7 @@ export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_rep
 export class ReplayWorkflowService {
   public history: readonly number[] = [];
   private displayWorkflowReplay = new Subject<string>();
-  public operatorInfo: string = "";
+  public operatorInfo: string[][] = [];
   public selectedIndex = -1;
 
   public replayStarted = false;
@@ -24,7 +24,7 @@ export class ReplayWorkflowService {
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowAdditionalOperatorInfoEvent").subscribe(e =>{
-      this.operatorInfo = e.data;
+      this.operatorInfo = e.data.split("\n").map(row => row.split(":"));
     });
     this.history = [1,5, 20, 30, 40];
 

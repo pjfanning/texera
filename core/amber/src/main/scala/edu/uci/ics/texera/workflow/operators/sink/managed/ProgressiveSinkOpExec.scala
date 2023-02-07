@@ -60,6 +60,7 @@ class ProgressiveSinkOpExec(
                       currentIteratorState: Iterator[(ITuple, Option[Int])],
                       serializer: Serialization
                     ): SerializedState = {
+    numTupleIntoStorage
     null
   }
 
