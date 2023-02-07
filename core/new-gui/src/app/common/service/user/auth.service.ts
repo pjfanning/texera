@@ -1,6 +1,6 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { from, interval, Observable, of, Subscription } from "rxjs";
+import { from, interval, Observable, Subscription } from "rxjs";
 import { AppSettings } from "../../app-setting";
 import { User, Role } from "../../type/user";
 import { timer } from "rxjs";
@@ -109,17 +109,21 @@ export class AuthService {
     }
 
     const role = this.jwtHelperService.decodeToken(token).role;
+    const sub = this.jwtHelperService.decodeToken(token).sub;
 
     if (this.inviteOnly && role == Role.INACTIVE) {
-      this.notificationService.error("Account pending approval!");
+      this.notificationService.loading("The account request of <b>" + sub + "</b> is received and pending.", {
+        nzDuration: 0,
+      });
       return this.logout();
     }
 
     this.registerAutoLogout();
     this.registerAutoRefreshToken();
     return {
-      uid: this.jwtHelperService.decodeToken(token).uid,
-      name: this.jwtHelperService.decodeToken(token).sub,
+      uid: this.jwtHelperService.decodeToken(token).userId,
+      name: sub,
+      email: this.jwtHelperService.decodeToken(token).email,
       googleId: this.jwtHelperService.decodeToken(token).googleId,
       role: role,
     };
