@@ -10,7 +10,10 @@ from core.models import (
     TableOperator,
     BatchOperator,
     TupleOperatorV2,
+
 )
+from core.architecture.managers.debug_manager import breakpoint
+
 
 __all__ = [
     "InputExhausted",
@@ -24,4 +27,5 @@ __all__ = [
     "TableOperator",
     "BatchOperator",
     "TupleOperatorV2",
+    "breakpoint"
 ]

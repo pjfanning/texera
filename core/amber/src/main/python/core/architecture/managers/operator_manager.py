@@ -1,6 +1,9 @@
+import ast
 import importlib
 import inspect
 import sys
+from bdb import Breakpoint
+
 import fs
 from pathlib import Path
 from typing import Tuple, Optional, Mapping
@@ -32,6 +35,9 @@ class OperatorManager:
         logger.info(f"Opening a tmp directory at {self.root}.")
         sys.path.append(str(self.root))
 
+        self.scheduled_updates = dict()
+        self.breakpoints_managed = set()
+
     def gen_module_file_name(self) -> Tuple[str, str]:
         """
         Generate a UUID to be used as udf source code file.
@@ -62,6 +68,7 @@ class OperatorManager:
             operator_module = importlib.reload(operator_module)
         else:
             operator_module = importlib.import_module(module_name)
+        self.operator_source_code = code
         self.operator_module_name = module_name
 
         operators = list(
@@ -87,13 +94,13 @@ class OperatorManager:
         """
 
         return (
-            inspect.isclass(cls)
-            and issubclass(cls, Operator)
-            and not inspect.isabstract(cls)
+                inspect.isclass(cls)
+                and issubclass(cls, Operator)
+                and not inspect.isabstract(cls)
         )
 
     def initialize_operator(
-        self, code: str, is_source: bool, output_schema: Mapping[str, str]
+            self, code: str, is_source: bool, output_schema: Mapping[str, str]
     ) -> None:
         """
         Initialize the operator logic with the given code. The output schema is
@@ -129,3 +136,27 @@ class OperatorManager:
         # TODO:
         #   it may be an interesting idea to preserve versions of code and versions
         #   of states whenever the operator logic is being updated.
+
+    def add_breakpoint(self, bp: Breakpoint):
+
+        lineno = bp.line
+        condition = bp.cond
+
+        old_code = self.operator_source_code.splitlines()
+        target_line = old_code[lineno - 1]
+        code_before = old_code[:lineno - 1]
+        code_after = old_code[lineno:]
+
+        indentation = " " * (len(target_line) - len(target_line.lstrip()))
+        bp_line = f"{indentation}{f'if {condition}:' if condition else ''}breakpoint()"
+
+        new_code = "\n".join(code_before + [bp_line, target_line] + code_after)
+        print(new_code, file=sys.stdout)
+        return new_code
+
+    def schedule_update_code(self, when: str, code: str, is_source: bool):
+        self.scheduled_updates[when] = (code, is_source)
+
+    def apply_available_code_update(self):
+        if self.scheduled_updates:
+            self.update_operator(*self.scheduled_updates["asap"])

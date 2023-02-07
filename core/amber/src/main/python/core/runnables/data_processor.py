@@ -30,9 +30,10 @@ class DataProcessor(Runnable, Stoppable):
 
     def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current
-        while not finished_current.is_set():
+        try:
+            while not finished_current.is_set():
 
-            try:
+
                 logger.info(self._context.statistics_manager.get_statistics()[0])
                 start_time = time.time()
 
@@ -125,11 +126,11 @@ class DataProcessor(Runnable, Stoppable):
                 # current tuple finished successfully
                 finished_current.set()
                 self.run_speed_log.write(f"{(time.time() - start_time) * 1000}\n")
-            except Exception as err:
-                logger.exception(err)
-                self._context.exception_manager.set_exception_info(sys.exc_info())
-            finally:
-                self._switch_context()
+        except Exception as err:
+            logger.exception(err)
+            self._context.exception_manager.set_exception_info(sys.exc_info())
+        finally:
+            self._switch_context()
 
     def _switch_context(self) -> None:
         """
