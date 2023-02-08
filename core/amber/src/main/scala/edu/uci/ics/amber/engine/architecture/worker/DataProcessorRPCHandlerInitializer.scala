@@ -31,7 +31,10 @@ trait DataProcessorRPCHandlerInitializer
     with AcceptMutableStateHandler
     with SchedulerTimeSlotEventHandler
     with GetReplayAlignmentHandler
-    with FlushNetworkBufferHandler {
+    with FlushNetworkBufferHandler
+    with NoOpHandler
+    with ShutdownDPHandler
+    with TakeCheckpointHandler {
   this: DataProcessor => // Force it to be a data processor
   var lastReportTime = 0L
 }

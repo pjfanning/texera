@@ -2,12 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler._
-import edu.uci.ics.amber.engine.architecture.controller.{
-  Controller,
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor,
-  Workflow
-}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
 import edu.uci.ics.amber.engine.architecture.execution.{OperatorExecution, WorkflowExecution}
@@ -15,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseSkewMit
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutableStateOrNotifyHelperHandler.SendImmutableStateOrNotifyHelper
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SharePartitionHandler.SharePartition
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionOpExec
@@ -28,7 +23,7 @@ object SkewDetectionHandler {
 
   final case class ControllerInitiateSkewDetection(
       filterByWorkers: List[ActorVirtualIdentity] = List()
-  ) extends ControlCommand[Unit]
+  ) extends ControlCommand[Unit] with SkipReply
 
   /**
     * worker is eligible for first phase if no mitigation has happened till now or

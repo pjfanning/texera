@@ -1,12 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{EndMarker, InputTuple}
-import edu.uci.ics.amber.engine.architecture.worker.InputHub
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.{RecoveryInternalQueueImpl, WorkerInternalQueue}
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 class BatchToTupleConverter(
-    replayGate: InputHub
+                             internalQueue: WorkerInternalQueue
 ) {
 
   /** This method handles various data payloads and put different
@@ -25,10 +25,10 @@ class BatchToTupleConverter(
     dataPayload match {
       case DataFrame(payload) =>
         payload.foreach { i =>
-          replayGate.addData(InputTuple(from, i))
+          internalQueue.enqueueData(InputTuple(from, i))
         }
       case EndOfUpstream() =>
-        replayGate.addData(EndMarker(from))
+        internalQueue.enqueueData(EndMarker(from))
       case other =>
         throw new NotImplementedError()
     }

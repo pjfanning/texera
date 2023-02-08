@@ -3,19 +3,14 @@ package edu.uci.ics.amber.engine.common.rpc
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
-  ControlInvocation,
-  IgnoreReply,
-  IgnoreReplyAndDoNotLog,
-  ReturnInvocation
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
+import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
 
 /** Motivation of having a separate module to handle control messages as RPCs:
@@ -38,15 +33,15 @@ import scala.collection.mutable
   */
 object AsyncRPCClient {
 
-  final val IgnoreReply = -1
-  final val IgnoreReplyAndDoNotLog = -2
-
-  def noReplyNeeded(id: Long): Boolean = id < 0
-
   /** The invocation of a control command
     * @param commandID
     * @param command
     */
+  object ControlInvocation{
+    def apply(controlCommand: ControlCommand[_] with SkipReply): ControlInvocation ={
+      ControlInvocation(-1, controlCommand)
+    }
+  }
   case class ControlInvocation(commandID: Long, command: ControlCommand[_]) extends ControlPayload
 
   /** The invocation of a return to a promise.
@@ -58,17 +53,16 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
-    val actorId: ActorVirtualIdentity
+                      controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+                      val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 
   private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
 
-  def fireAndForget[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Unit = {
-    controlOutputEndpoint.sendTo(to, ControlInvocation(IgnoreReply, cmd))
-  }
+
+  class Convertable[T, U](val convertFunc:ControlCommand[T] => U)
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
     val (p, id) = createPromise[T]()
@@ -77,6 +71,10 @@ class AsyncRPCClient(
     )
     controlOutputEndpoint.sendTo(to, ControlInvocation(id, cmd))
     p
+  }
+
+  def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit ={
+    controlOutputEndpoint.sendTo(to, ControlInvocation(cmd))
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
@@ -108,13 +106,7 @@ class AsyncRPCClient(
   }
 
   def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
-//    if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-//      return
-//    }
     if (ret.controlReturn != null) {
-//      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
-//        return
-//      }
       logger.info(
         s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
       )

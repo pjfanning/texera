@@ -1,11 +1,21 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
 import scala.collection.mutable
 
 class DeterminantLoggerImpl extends DeterminantLogger {
 
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
   private var step = 0L
+  private var currentSender:ActorVirtualIdentity = _
+
+  override def setCurrentSender(sender: ActorVirtualIdentity): Unit = {
+    if(currentSender != sender){
+      pushStepDelta()
+    }
+    currentSender = sender
+  }
 
   def stepIncrement(): Unit = {
     step += 1
@@ -27,7 +37,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
     if (step <= 0L) {
       return
     }
-    tempLogs.append(StepDelta(step))
+    tempLogs.append(StepDelta(currentSender, step))
     step = 0L
   }
 

@@ -49,8 +49,8 @@ trait MonitoringHandler {
   registerHandler { (msg: QuerySelfWorkloadMetrics, sender) =>
     try {
       val workloadMetrics = SelfWorkloadMetrics(
-        inputHub.getDataQueueLength,
-        inputHub.getControlQueueLength
+        internalQueue.getDataQueueLength,
+        internalQueue.getControlQueueLength
       )
 
       val samples = getWorkloadHistory(outputManager)

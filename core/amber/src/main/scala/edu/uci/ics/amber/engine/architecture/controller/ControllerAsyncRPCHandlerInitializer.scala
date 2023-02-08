@@ -65,10 +65,7 @@ trait ControllerAsyncRPCHandlerInitializer
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
           actorContext.self,
-          ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateQueryStatistics()
-          )
+          ControlInvocation(ControllerInitiateQueryStatistics())
         )
       )
     }
@@ -87,7 +84,6 @@ trait ControllerAsyncRPCHandlerInitializer
           FiniteDuration.apply(controllerConfig.monitoringIntervalMs.get, MILLISECONDS),
           actorContext.self,
           ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateMonitoring()
           )
         )
@@ -108,7 +104,6 @@ trait ControllerAsyncRPCHandlerInitializer
           FiniteDuration.apply(controllerConfig.skewDetectionIntervalMs.get, MILLISECONDS),
           actorContext.self,
           ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
             ControllerInitiateSkewDetection()
           )
         )

@@ -1,48 +1,20 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.{ActorContext, Address, PoisonPill}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  AdditionalOperatorInfo,
-  WorkflowRecoveryStatus
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  LogManager,
-  ProcessControlMessage,
-  SenderActorChange
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetMessageInQueue,
-  NetworkMessage,
-  NetworkSenderActorRef
-}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplay,
-  ContinueReplayTo,
-  ControlPayload,
-  GetOperatorInternalState,
-  NotifyFailedNode,
-  ResendOutputTo,
-  TakeGlobalCheckpoint,
-  TakeLocalCheckpoint,
-  UpdateRecoveryStatus,
-  WorkflowControlMessage,
-  WorkflowRecoveryMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, GetOperatorInternalState, NotifyFailedNode, ResendOutputTo, TakeGlobalCheckpoint, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -94,14 +66,14 @@ class ControllerProcessor
   private var onReplayComplete: () => Unit = _
 
   def initialize(
-      controlInput: NetworkInputPort[ControlPayload],
-      workflow: Workflow,
-      scheduler: WorkflowScheduler,
-      logManager: LogManager,
-      logStorage: DeterminantLogStorage,
-      networkSender: NetworkSenderActorRef,
-      actorContext: ActorContext,
-      controllerConfig: ControllerConfig
+                  controlInput: NetworkInputPort[ControlPayload],
+                  workflow: Workflow,
+                  scheduler: WorkflowScheduler,
+                  logManager: LogManager,
+                  logStorage: DeterminantLogStorage,
+                  networkSender: NetworkSenderActorRef,
+                  actorContext: ActorContext,
+                  controllerConfig: ControllerConfig
   ): Unit = {
     this.controlInput = controlInput
     this.workflow = workflow
@@ -206,7 +178,7 @@ class ControllerProcessor
     }
     while (currentHead == null) {
       controlMessagesToReplay.next() match {
-        case SenderActorChange(sender) =>
+        case StepDelta(sender,_) =>
           if (controlMessages.contains(sender) && controlMessages(sender).nonEmpty) {
             logger.info("already have current head of " + sender)
             val elem = controlMessages(sender).dequeue()
@@ -246,7 +218,7 @@ class ControllerProcessor
       determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
     } else {
       //logger.info("only save sender information for "+ controlPayload+" from "+from)
-      determinantLogger.logDeterminant(SenderActorChange(from))
+      determinantLogger.logDeterminant(StepDelta(from, 0))
     }
     numControlSteps += 1
     controlPayload match {

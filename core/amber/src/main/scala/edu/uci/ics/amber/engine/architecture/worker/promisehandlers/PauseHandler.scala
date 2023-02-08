@@ -22,6 +22,8 @@ trait PauseHandler {
     if (stateManager.confirmState(RUNNING, READY)) {
       pauseManager.recordRequest(PauseType.UserPause, true)
       stateManager.transitTo(PAUSED)
+      internalQueue.setDataQueueEnabled(false)
+      outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
     }
     stateManager.getCurrentState
   }

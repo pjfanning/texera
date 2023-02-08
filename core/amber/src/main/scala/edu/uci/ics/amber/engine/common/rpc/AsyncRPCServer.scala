@@ -7,12 +7,8 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptMutabl
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
-  ControlInvocation,
-  ReturnInvocation,
-  noReplyNeeded
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 /** Motivation of having a separate module to handle control messages as RPCs:
@@ -37,11 +33,17 @@ object AsyncRPCServer {
 
   trait ControlCommand[T]
 
+  trait SkipConsoleLog
+
+  trait SkipFaultTolerance
+
+  trait SkipReply
+
 }
 
 class AsyncRPCServer(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
-    val actorId: ActorVirtualIdentity
+                      controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+                      val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 
@@ -55,24 +57,23 @@ class AsyncRPCServer(
   ): Unit = {
     handlers =
       newHandler orElse handlers
-
   }
 
   def receive(control: ControlInvocation, senderID: ActorVirtualIdentity): Unit = {
     try {
       execute((control.command, senderID))
         .onSuccess { ret =>
-          returnResult(senderID, control.commandID, ret)
+          returnResult(senderID, control, ret)
         }
         .onFailure { err =>
           logger.error("Exception occurred", err)
-          returnResult(senderID, control.commandID, err)
+          returnResult(senderID, control, err)
         }
 
     } catch {
       case err: Throwable =>
         // if error occurs, return it to the sender.
-        returnResult(senderID, control.commandID, err)
+        returnResult(senderID, control, err)
 
       // if throw this exception right now, the above message might not be able
       // to be sent out. We do not throw for now.
@@ -81,22 +82,26 @@ class AsyncRPCServer(
   }
 
   def execute(cmd: (ControlCommand[_], ActorVirtualIdentity)): Future[_] = {
-    handlers(cmd)
+    if(handlers.isDefinedAt(cmd)){
+      handlers(cmd)
+    }else{
+      throw new RuntimeException(s"No handler registered for control message: ${cmd._1}")
+    }
   }
 
   @inline
-  private def returnResult(sender: ActorVirtualIdentity, id: Long, ret: Any): Unit = {
-    if (noReplyNeeded(id)) {
-      return
+  private def returnResult(sender: ActorVirtualIdentity, control: ControlInvocation, ret: Any): Unit = {
+    if(!control.command.isInstanceOf[SkipReply]) {
+      controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret))
+    }else{
+      if(ret.isInstanceOf[Throwable]){
+        throw ret.asInstanceOf[Throwable]
+      }
     }
-    controlOutputEndpoint.sendTo(sender, ReturnInvocation(id, ret))
   }
 
   def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
-    if (call.commandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-      return
-    }
-    if (call.command.isInstanceOf[QueryStatistics]) {
+    if (call.command.isInstanceOf[SkipConsoleLog]) {
       return
     }
     if (

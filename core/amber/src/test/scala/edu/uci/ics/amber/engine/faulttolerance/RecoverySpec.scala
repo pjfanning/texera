@@ -5,20 +5,11 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage,
-  LocalFSLogStorage
-}
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  ProcessControlMessage,
-  SenderActorChange,
-  StepDelta
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{ControlElement, InputTuple}
-import edu.uci.ics.amber.engine.architecture.worker.InputHub
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
+import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
@@ -86,8 +77,8 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(1),
-      StepDelta(29),
+      StepDelta(null,1),
+      StepDelta(ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),29),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
@@ -107,8 +98,8 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(1),
-      StepDelta(29),
+      StepDelta(null, 1),
+      StepDelta(ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"), 29),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
@@ -128,7 +119,6 @@ class RecoverySpec
     logStorage.deleteLog()
     val writer = logStorage.getWriter
     val determinants: Array[InMemDeterminant] = Array(
-      SenderActorChange(ActorVirtualIdentity("Upstream")),
       ProcessControlMessage(
         ReturnInvocation(16, WorkerStatistics(COMPLETED, 6, 2)),
         ActorVirtualIdentity(
@@ -139,8 +129,8 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(1),
-      StepDelta(29),
+      StepDelta(ActorVirtualIdentity("Upstream"),1),
+      StepDelta(ActorVirtualIdentity("Upstream"),29),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
@@ -151,34 +141,29 @@ class RecoverySpec
     writer.close()
     var upstream: ActorVirtualIdentity = null
     var stepAccumulated = 0
-    val creditMonitor = new CreditMonitor()
-    val inputHub = new InputHub(creditMonitor)
-    inputHub.setLogRecords(logStorage.getReader.mkLogRecordIterator())
+    val creditMonitor = new CreditMonitorImpl()
+    val inputHub = new RecoveryInternalQueueImpl(creditMonitor)
+    inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), null)
     var currentStep = 0L
     determinants.foreach {
-      case StepDelta(steps) =>
+      case StepDelta(from, steps) =>
         stepAccumulated += steps.toInt
-      case SenderActorChange(actorVirtualIdentity) =>
-        upstream = actorVirtualIdentity
+        upstream = from
       case ProcessControlMessage(controlPayload, from) =>
         if (stepAccumulated > 0) {
           (0 until stepAccumulated).foreach { _ =>
-            inputHub.addData(InputTuple(upstream, ITuple(1, 2, 3)))
-            inputHub.prepareInput(currentStep, false)
+            inputHub.enqueueData(InputTuple(upstream, ITuple(1, 2, 3)))
             currentStep += 1
-            assert(inputHub.dataDeque.dequeue() == InputTuple(upstream, ITuple(1, 2, 3)))
-            assert(inputHub.controlDeque.size() == 0)
+            assert(inputHub.take(currentStep) == InputTuple(upstream, ITuple(1, 2, 3)))
           }
         }
-        inputHub.prepareInput(currentStep, false)
-        assert(inputHub.controlDeque.size() == 1)
-        assert(inputHub.controlDeque.dequeue() == ControlElement(controlPayload, from))
+        assert(inputHub.take(currentStep) == ControlElement(controlPayload, from))
     }
     logStorage.deleteLog()
   }
 
   "Logreader" should "not read anything from empty log" in {
-    val workerName = "WF1-SimpleSink-operator-ff39f567-fbc9-4808-b941-a9fcd5c9ad02-main-0"
+    val workerName = "WF1-CSVFileScan-operator-53883010-0533-4d50-8f23-7d92ea9e23ab-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     val iter = logStorage.getReader.mkLogRecordIterator()
     while (iter.hasNext) {

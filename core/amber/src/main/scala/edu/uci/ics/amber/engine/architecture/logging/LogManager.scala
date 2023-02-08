@@ -25,8 +25,7 @@ import scala.concurrent.duration.DurationInt
 
 //In-mem formats:
 sealed trait InMemDeterminant
-case class SenderActorChange(actorVirtualIdentity: ActorVirtualIdentity) extends InMemDeterminant
-case class StepDelta(steps: Long) extends InMemDeterminant
+case class StepDelta(actorVirtualIdentity: ActorVirtualIdentity, steps: Long) extends InMemDeterminant
 case class ProcessControlMessage(controlPayload: ControlPayload, from: ActorVirtualIdentity)
     extends InMemDeterminant
 case class TimeStamp(value: Long) extends InMemDeterminant
