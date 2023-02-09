@@ -17,13 +17,9 @@ trait SchedulerTimeSlotEventHandler {
 
   registerHandler { (msg: SchedulerTimeSlotEvent, _) =>
     if (msg.timeSlotExpired) {
-      pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, true)
-      dataProcessor.internalQueue.disableDataQueue()
+      pauseManager.pause(PauseType.SchedulerTimeSlotExpiredPause)
     } else {
-      pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, false)
-      if (!pauseManager.isPaused()) {
-        dataProcessor.internalQueue.enableDataQueue()
-      }
+      pauseManager.resume(PauseType.SchedulerTimeSlotExpiredPause)
     }
   }
 

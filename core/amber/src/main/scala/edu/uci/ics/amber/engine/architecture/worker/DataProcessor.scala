@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.ActorContext
-import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -9,12 +8,22 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  LogManager,
+  ProcessControlMessage,
+  SenderActorChange
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -46,9 +55,8 @@ class DataProcessor( // dependencies:
     val opExecConfig: OpExecConfig
 ) extends AmberLogging {
 
-
+  val pauseManager: PauseManager = new PauseManager(this)
   val internalQueue = new WorkerInternalQueue(pauseManager, logManager, recoveryQueue)
-  val pauseManager: PauseManager = new PauseManager(internalQueue)
 
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
@@ -210,8 +218,7 @@ class DataProcessor( // dependencies:
 
     val (outputTuple, outputPortOpt) = out
     if (breakpointManager.evaluateTuple(outputTuple)) {
-      pauseManager.recordRequest(PauseType.UserPause, true)
-      internalQueue.disableDataQueue()
+      pauseManager.pause(PauseType.UserPause)
       outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
       stateManager.transitTo(PAUSED)
     } else {
@@ -257,14 +264,14 @@ class DataProcessor( // dependencies:
           outputManager.emitEndOfUpstream()
           // Send Completed signal to worker actor.
           logger.info(s"$operator completed")
-          internalQueue.disableDataQueue()
+//          internalQueue.disableDataQueue()
           operator.close() // close operator
           asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
           outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
           stateManager.transitTo(COMPLETED)
         }
       case ControlElement(from, payload) =>
-        processControlCommand(from, payload)
+        processControlCommand(payload, from)
       case InputEpochMarker(from, epochMarker) =>
         processEpochMarker(from, epochMarker)
     }
@@ -353,8 +360,8 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def processControlCommand(
-    from: ActorVirtualIdentity,
-    payload: ControlPayload
+      from: ActorVirtualIdentity,
+      payload: ControlPayload
   ): Unit = {
     logManager.getDeterminantLogger.logDeterminant(ProcessControlMessage(payload, from))
     payload match {

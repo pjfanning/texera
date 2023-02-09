@@ -19,11 +19,13 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     * the build part completes. Therefore, we have a `allUpstreamLinkIds` to track the number of actual upstream
     * links that a worker receives data from.
     */
-  private val upstreamMap = new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
+  private val upstreamMap =
+    new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
   private val completedLinkIds = new mutable.HashSet[LinkIdentity]()
 
-  private val epochMarkerReceived = new mutable.HashMap[Integer, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
+  private val epochMarkerReceived =
+    new mutable.HashMap[Integer, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamMap.update(input, upstreamMap(input) + identifier)
@@ -44,7 +46,7 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     epochMarkerReceived(markerId) == allUncompletedSenders
 
   def allUncompletedSenders: Set[ActorVirtualIdentity] = {
-    upstreamMap.filterKeys(k => ! completedLinkIds.contains(k)).values.flatten.toSet
+    upstreamMap.filterKeys(k => !completedLinkIds.contains(k)).values.flatten.toSet
   }
 
   def isLinkEOF(link: LinkIdentity): Boolean = {

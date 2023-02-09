@@ -25,12 +25,13 @@ object WorkerInternalQueue {
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends InternalQueueElement
 
-  case class ControlElement(from: ActorVirtualIdentity, payload: ControlPayload)
+  case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
       extends InternalQueueElement
 
   case class EndMarker(from: ActorVirtualIdentity) extends InternalQueueElement
 
-  case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker) extends InternalQueueElement
+  case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker)
+      extends InternalQueueElement
 
 }
 
@@ -38,17 +39,18 @@ object WorkerInternalQueue {
   * be a part of DP thread.
   */
 class WorkerInternalQueue(
-  val pauseManager: PauseManager,
-  val logManager: LogManager,
-  val recoveryQueue: RecoveryQueue) {
+    val pauseManager: PauseManager,
+    val logManager: LogManager,
+    val recoveryQueue: RecoveryQueue
+) {
 
   private[architecture] val lbmq = new LinkedBlockingMultiQueue[String, InternalQueueElement]()
   private[architecture] val lock = new ReentrantLock()
 
   lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
 
-  private[architecture] val dataQueues = new mutable.HashMap[String,
-    LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
+  private[architecture] val dataQueues =
+    new mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
   private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
 
   protected lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
@@ -60,8 +62,8 @@ class WorkerInternalQueue(
     new mutable.HashMap[ActorVirtualIdentity, Long]() // written by DP thread, read by main thread
 
   def registerInput(sender: ActorVirtualIdentity): Unit = {
-    val senderDataQueue = lbmq.addSubQueue(sender.name, DATA_QUEUE_PRIORITY)
-    dataQueues(sender.name) = senderDataQueue
+    lbmq.addSubQueue(sender.name, DATA_QUEUE_PRIORITY)
+    dataQueues(sender.name) = lbmq.getSubQueue(sender.name)
   }
 
   def getSenderCredits(sender: ActorVirtualIdentity): Int = {
@@ -95,10 +97,10 @@ class WorkerInternalQueue(
     if (recoveryQueue.isReplayCompleted) {
       // may have race condition with restoreInput which happens inside DP thread.
       lock.lock()
-      controlQueue.add(ControlElement(from, payload))
+      controlQueue.add(ControlElement(payload, from))
       lock.unlock()
     } else {
-      recoveryQueue.add(ControlElement(from, payload))
+      recoveryQueue.add(ControlElement(payload, from))
     }
   }
 
@@ -120,13 +122,13 @@ class WorkerInternalQueue(
     }
   }
 
-  def disableDataQueue(): Unit = {
-    dataQueues.values.foreach(q => q.enable(false))
-  }
-
-  def enableDataQueue(): Unit = {
-    dataQueues.values.foreach(q => q.enable(true))
-  }
+//  def disableAllDataQueues(): Unit = {
+//    dataQueues.values.foreach(q => q.enable(false))
+//  }
+//
+//  def enableAllDataQueues(): Unit = {
+//    dataQueues.values.foreach(q => q.enable(true))
+//  }
 
   def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
 

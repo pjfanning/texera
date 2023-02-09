@@ -6,25 +6,49 @@ import scala.collection.mutable
 
 class PauseManager(dataProcessor: DataProcessor) {
 
-  private val pauseInvocations = new mutable.HashMap[PauseType.Value, Boolean]()
+  private val globalPauses = new mutable.HashSet[PauseType.Value]()
+  private val specificInputPauses =
+    new mutable.HashMap[PauseType.Value, mutable.Set[ActorVirtualIdentity]]
+      with mutable.MultiMap[PauseType.Value, ActorVirtualIdentity]
 
-  def pause(pauseType: PauseType.Value, inputs: Option[List[ActorVirtualIdentity]] = None): Unit = {
-
+  def pause(pauseType: PauseType.Value): Unit = {
+    globalPauses.add(pauseType)
+    // disable all data queues
+    dataProcessor.internalQueue.dataQueues.values.foreach(q => q.enable(false))
   }
 
-  def resume(pauseType: PauseType.Value, inputs: Option[List[ActorVirtualIdentity]] = None): Unit = {
-
+  def pauseInputChannel(pauseType: PauseType.Value, inputs: List[ActorVirtualIdentity]): Unit = {
+    inputs.foreach(input => {
+      specificInputPauses.addBinding(pauseType, input)
+      // disable specified data queues
+      dataProcessor.internalQueue.dataQueues(input.name).enable(false)
+    })
   }
 
-  def recordRequest(pauseType: PauseType.Value, enablePause: Boolean): Unit = {
-    pauseInvocations(pauseType) = enablePause
-  }
+  def resume(pauseType: PauseType.Value): Unit = {
+    globalPauses.remove(pauseType)
+    specificInputPauses.remove(pauseType)
 
-  def getPauseStatusByType(pauseType: PauseType.Value): Boolean =
-    pauseInvocations.getOrElse(pauseType, false)
+    // still globally paused no action, don't need to resume anything
+    if (globalPauses.nonEmpty) {
+      return
+    }
+    // global pause is empty, specific input pause is also empty, resume all
+    if (specificInputPauses.isEmpty) {
+      dataProcessor.internalQueue.dataQueues.values.foreach(q => q.enable(true))
+      return
+    }
+    // need to resume specific input channels
+    val pausedChannels = specificInputPauses.values.flatten.map(id => id.name).toSet
+    dataProcessor.internalQueue.dataQueues.foreach(kv => {
+      if (!pausedChannels.contains(kv._1)) {
+        kv._2.enable(true)
+      }
+    })
+  }
 
   def isPaused(): Boolean = {
-    pauseInvocations.values.exists(isPaused => isPaused)
+    globalPauses.nonEmpty
   }
 
 }

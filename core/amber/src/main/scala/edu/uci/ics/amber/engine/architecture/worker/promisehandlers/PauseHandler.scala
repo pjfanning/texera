@@ -16,8 +16,7 @@ trait PauseHandler {
 
   registerHandler { (pause: PauseWorker, sender) =>
     if (stateManager.confirmState(RUNNING, READY)) {
-      pauseManager.recordRequest(PauseType.UserPause, true)
-      dataProcessor.internalQueue.disableDataQueue()
+      pauseManager.pause(PauseType.UserPause)
       stateManager.transitTo(PAUSED)
     }
     stateManager.getCurrentState

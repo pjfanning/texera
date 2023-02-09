@@ -47,7 +47,6 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterEach {
-  lazy val pauseManager: PauseManager = wire[PauseManager]
   val identifier: ActorVirtualIdentity = ActorVirtualIdentity("DP mock")
   lazy val mockDataInputHandler: (ActorVirtualIdentity, DataPayload) => Unit =
     mock[(ActorVirtualIdentity, DataPayload) => Unit]
@@ -145,26 +144,28 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val senderID = ActorVirtualIdentity("sender")
     val upstreamLinkStatus: UpstreamLinkStatus = new UpstreamLinkStatus(opExecConfig)
     val workerStateManager: WorkerStateManager = new WorkerStateManager(UNINITIALIZED)
+
+    val dp = wire[DataProcessor]
+    dp.registerInput(senderID, linkID)
+
     inAnyOrder {
       (outputManager.emitEndOfUpstream _).expects().anyNumberOfTimes()
       (asyncRPCClient.send[Unit] _).expects(*, *).anyNumberOfTimes()
       inSequence {
         (operator.open _).expects().once()
         tuples.foreach { x =>
-          (operator.processTuple _).expects(Left(x), 0, pauseManager, asyncRPCClient)
+          (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, asyncRPCClient)
         }
         (operator.processTuple _).expects(
           Right(InputExhausted()),
           0,
-          pauseManager,
+          dp.pauseManager,
           asyncRPCClient
         )
         (operator.close _).expects().once()
       }
     }
 
-    val dp = wire[DataProcessor]
-    dp.registerInput(senderID, linkID)
     dp.start()
     operator.open()
     Await.result(sendDataToDP(senderID, dp, tuples), 3.seconds)
@@ -187,6 +188,10 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val upstreamLinkStatus: UpstreamLinkStatus = new UpstreamLinkStatus(opExecConfig)
     val workerStateManager: WorkerStateManager = new WorkerStateManager(UNINITIALIZED)
     val asyncRPCServer: AsyncRPCServer = mock[AsyncRPCServer]
+
+    val dp: DataProcessor = wire[DataProcessor]
+    dp.registerInput(senderID, linkID)
+
     inAnyOrder {
       (asyncRPCServer.logControlInvocation _).expects(*, *).anyNumberOfTimes()
       (asyncRPCClient.send[Unit] _).expects(*, *).anyNumberOfTimes()
@@ -194,14 +199,14 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         (operator.open _).expects().once()
         inAnyOrder {
           tuples.map { x =>
-            (operator.processTuple _).expects(Left(x), 0, pauseManager, asyncRPCClient)
+            (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, asyncRPCClient)
           }
           (asyncRPCServer.receive _).expects(*, *).atLeastOnce() //process controls during execution
         }
         (operator.processTuple _).expects(
           Right(InputExhausted()),
           0,
-          pauseManager,
+          dp.pauseManager,
           asyncRPCClient
         )
         (asyncRPCServer.receive _)
@@ -214,8 +219,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         (operator.close _).expects().once()
       }
     }
-    val dp: DataProcessor = wire[DataProcessor]
-    dp.registerInput(senderID, linkID)
+
     dp.start()
     operator.open()
     val f1 = sendDataToDP(senderID, dp, tuples, 2)
@@ -240,6 +244,10 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val senderID = ActorVirtualIdentity("sender")
     val upstreamLinkStatus: UpstreamLinkStatus = new UpstreamLinkStatus(opExecConfig)
     val asyncRPCServer: AsyncRPCServer = mock[AsyncRPCServer]
+
+    val dp: DataProcessor = wire[DataProcessor]
+    dp.registerInput(senderID, linkID)
+
     inAnyOrder {
       (operator.open _).expects().once()
       (asyncRPCServer.logControlInvocation _).expects(*, *).anyNumberOfTimes()
@@ -247,8 +255,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       (asyncRPCServer.receive _).expects(*, *).repeat(3)
       (operator.close _).expects().once()
     }
-    val dp: DataProcessor = wire[DataProcessor]
-    dp.registerInput(senderID, linkID)
+
     dp.start()
     operator.open()
     Await.result(
@@ -274,6 +281,10 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val senderID = ActorVirtualIdentity("sender")
     val upstreamLinkStatus: UpstreamLinkStatus = new UpstreamLinkStatus(opExecConfig)
     val asyncRPCServer: AsyncRPCServer = mock[AsyncRPCServer]
+
+    val dp: DataProcessor = wire[DataProcessor]
+    dp.registerInput(senderID, linkID)
+
     inAnyOrder {
       (operator.open _).expects().once()
       (asyncRPCServer.logControlInvocation _).expects(*, *).anyNumberOfTimes()
@@ -281,8 +292,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       (asyncRPCServer.receive _).expects(*, *).repeat(3)
       (operator.close _).expects().once()
     }
-    val dp: DataProcessor = wire[DataProcessor]
-    dp.registerInput(senderID, linkID)
+
     dp.start()
     operator.open()
     Await.result(
@@ -311,10 +321,10 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (asyncRPCClient.send _).expects(*, *).anyNumberOfTimes()
     val asyncRPCServer: AsyncRPCServer = wire[AsyncRPCServer]
     val workerStateManager: WorkerStateManager = new WorkerStateManager(UNINITIALIZED)
+
     val dp: DataProcessor = wire[DataProcessor]
     dp.registerInput(senderID, linkID)
-    dp.start()
-    val handlerInitializer = wire[WorkerAsyncRPCHandlerInitializer]
+
     inSequence {
       (operator.processTuple _).expects(*, *, *, *).once()
       (mockControlOutputHandler.apply _).expects(*, *, *, *).repeat(4)
@@ -322,6 +332,8 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       (outputManager.emitEndOfUpstream _).expects().once()
       (operator.close _).expects().once()
     }
+
+    dp.start()
     operator.open()
     dp.internalQueue.appendElement(InputTuple(senderID, ITuple(1)))
     Thread.sleep(500)
@@ -350,7 +362,9 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         dp.internalQueue.appendElement(InputTuple(senderID, x))
       }
       assert(
-        dp.internalQueue.getSenderCredits(senderID) == Constants.unprocessedBatchesCreditLimitPerSender - 1
+        dp.internalQueue.getSenderCredits(
+          senderID
+        ) == Constants.unprocessedBatchesCreditLimitPerSender - 1
       )
       dp.internalQueue.appendElement(EndMarker(senderID))
     }(ExecutionContext.global)
@@ -397,7 +411,11 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     dp.registerInput(senderID, linkID)
     dp.start()
     operator.open()
-    assert(dp.internalQueue.getSenderCredits(senderID) == Constants.unprocessedBatchesCreditLimitPerSender)
+    assert(
+      dp.internalQueue.getSenderCredits(
+        senderID
+      ) == Constants.unprocessedBatchesCreditLimitPerSender
+    )
     Await.result(monitorCredits(senderID, dp, tuplesToSend), 3.seconds)
     dp.shutdown()
 

@@ -116,7 +116,7 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
         case SenderActorChange(actorVirtualIdentity) =>
           targetVId = actorVirtualIdentity
         case ProcessControlMessage(controlPayload, from) =>
-          nextRecordToEmit = ControlElement(from, controlPayload)
+          nextRecordToEmit = ControlElement(controlPayload, from)
           stop = true
         case TimeStamp(value) => ???
         case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")

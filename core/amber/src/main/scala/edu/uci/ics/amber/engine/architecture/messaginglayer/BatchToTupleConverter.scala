@@ -1,8 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, WorkerInternalQueue}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream, EpochMarker}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  EndMarker,
+  InputEpochMarker,
+  InputTuple
+}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  EpochMarker
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class BatchToTupleConverter(
