@@ -154,7 +154,7 @@ class WorkflowWorker(
     // let dp thread process it
     controlPayload match {
       case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
-        dataProcessor.internalQueue.enqueueCommand(controlCommand, from)
+        internalQueue.enqueueCommand(controlCommand, from)
       case _ =>
         throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
     }
@@ -173,7 +173,7 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     val shutdown = ShutdownDPThread()
-    dataProcessor.internalQueue.enqueueCommand(
+    internalQueue.enqueueCommand(
       ControlInvocation(AsyncRPCClient.IgnoreReply, shutdown),
       SELF
     )

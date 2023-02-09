@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, WorkerInternalQueue}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   EndMarker,
   InputEpochMarker,
@@ -14,11 +14,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-class BatchToTupleConverter(
-    workerInternalQueue: WorkerInternalQueue
-) {
-
-//  val workerInternalQueue: WorkerInternalQueue = dataProcessor.internalQueue
+class BatchToTupleConverter(workerInternalQueue: WorkerInternalQueue) {
 
   /** This method handles various data payloads and put different
     * element into the internal queue.

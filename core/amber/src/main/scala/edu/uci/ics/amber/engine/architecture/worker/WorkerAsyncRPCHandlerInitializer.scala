@@ -29,6 +29,7 @@ class WorkerAsyncRPCHandlerInitializer(
     val upstreamLinkStatus: UpstreamLinkStatus,
     val pauseManager: PauseManager,
     val dataProcessor: DataProcessor,
+    val internalQueue: WorkerInternalQueue,
     val operator: IOperatorExecutor,
     val breakpointManager: BreakpointManager,
     val stateManager: WorkerStateManager,

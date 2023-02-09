@@ -122,14 +122,6 @@ class WorkerInternalQueue(
     }
   }
 
-//  def disableAllDataQueues(): Unit = {
-//    dataQueues.values.foreach(q => q.enable(false))
-//  }
-//
-//  def enableAllDataQueues(): Unit = {
-//    dataQueues.values.foreach(q => q.enable(true))
-//  }
-
   def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
 
   def getControlQueueLength: Int = controlQueue.size()

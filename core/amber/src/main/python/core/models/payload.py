@@ -5,7 +5,6 @@ from typing import List
 from pyarrow.lib import Schema
 
 from core.models.tuple import Tuple
-from proto.edu.uci.ics.amber.engine.common import LayerIdentity
 
 
 @dataclass
@@ -27,8 +26,3 @@ class OutputDataFrame(DataPayload):
 @dataclass
 class EndOfUpstream(DataPayload):
     pass
-
-
-@dataclass
-class EpochMarker(DataPayload):
-    dest: LayerIdentity

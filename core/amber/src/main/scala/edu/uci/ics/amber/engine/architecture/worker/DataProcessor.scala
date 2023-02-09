@@ -271,7 +271,7 @@ class DataProcessor( // dependencies:
           stateManager.transitTo(COMPLETED)
         }
       case ControlElement(from, payload) =>
-        processControlCommand(payload, from)
+        processControlCommand(from, payload)
       case InputEpochMarker(from, epochMarker) =>
         processEpochMarker(from, epochMarker)
     }
@@ -356,12 +356,12 @@ class DataProcessor( // dependencies:
 
   private[this] def takeOneControlCommandAndProcess(): Unit = {
     val control = internalQueue.getElement.asInstanceOf[ControlElement]
-    processControlCommand(control.from, control.payload)
+    processControlCommand(control.payload, control.from)
   }
 
   private[this] def processControlCommand(
-      from: ActorVirtualIdentity,
-      payload: ControlPayload
+      payload: ControlPayload,
+      from: ActorVirtualIdentity
   ): Unit = {
     logManager.getDeterminantLogger.logDeterminant(ProcessControlMessage(payload, from))
     payload match {
