@@ -1,16 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
+import edu.uci.ics.amber.engine.architecture.worker.{DataProcessor, WorkerInternalQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream, EpochMarker}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class BatchToTupleConverter(
     workerInternalQueue: WorkerInternalQueue
 ) {
+
+//  val workerInternalQueue: WorkerInternalQueue = dataProcessor.internalQueue
 
   /** This method handles various data payloads and put different
     * element into the internal queue.
@@ -32,8 +31,8 @@ class BatchToTupleConverter(
         }
       case EndOfUpstream() =>
         workerInternalQueue.appendElement(EndMarker(from))
-      case EpochMarker(dest) =>
-        workerInternalQueue.appendElement(InputEpochMarker(from, dest))
+      case marker @ EpochMarker(_, _, _) =>
+        workerInternalQueue.appendElement(InputEpochMarker(from, marker))
       case other =>
         throw new NotImplementedError()
     }

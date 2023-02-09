@@ -18,7 +18,8 @@ trait QueryStatisticsHandler {
     val now = System.currentTimeMillis()
     if (now - lastReportTime > Constants.loggingQueueSizeInterval) {
       logger.info(
-        s"Data Queue Length = ${dataProcessor.getDataQueueLength}, Control Queue Length = ${dataProcessor.getControlQueueLength}"
+        s"Data Queue Length = ${dataProcessor.internalQueue.getDataQueueLength}, " +
+          s"Control Queue Length = ${dataProcessor.internalQueue.getControlQueueLength}"
       )
       lastReportTime = now
     }

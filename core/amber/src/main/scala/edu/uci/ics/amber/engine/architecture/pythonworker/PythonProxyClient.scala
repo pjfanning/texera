@@ -84,8 +84,8 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
         writeArrowStream(tuples, from, isEnd = false)
       case EndOfUpstream() =>
         writeArrowStream(mutable.Queue(), from, isEnd = true)
-      case EpochMarker(dest) =>
-        writeArrowStream(mutable.Queue(), from, isEnd = false, isEpoch = true, epochDest = dest)
+      case EpochMarker(id, dest, command) =>
+        writeArrowStream(mutable.Queue(), from, isEnd = false, isEpoch = true, epochDest = dest.orNull)
 
     }
   }

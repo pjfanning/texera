@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.ActorContext
+import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -32,7 +33,6 @@ class DataProcessor( // dependencies:
     operator: IOperatorExecutor, // core logic
     asyncRPCClient: AsyncRPCClient, // to send controls
     outputManager: OutputManager, // to send output tuples
-    val pauseManager: PauseManager, // to pause/resume
     breakpointManager: BreakpointManager, // to evaluate breakpoints
     stateManager: WorkerStateManager,
     upstreamLinkStatus: UpstreamLinkStatus,
@@ -44,8 +44,12 @@ class DataProcessor( // dependencies:
     val actorId: ActorVirtualIdentity,
     val actorContext: ActorContext, // context of this actor
     val opExecConfig: OpExecConfig
-) extends WorkerInternalQueue
-    with AmberLogging {
+) extends AmberLogging {
+
+
+  val internalQueue = new WorkerInternalQueue(pauseManager, logManager, recoveryQueue)
+  val pauseManager: PauseManager = new PauseManager(internalQueue)
+
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private var dpThread: Future[_] = _
@@ -66,7 +70,7 @@ class DataProcessor( // dependencies:
                 logManager.terminate()
                 logStorage.cleanPartiallyWrittenLogFile()
                 logManager.setupWriter(logStorage.getWriter)
-                restoreInputs()
+                internalQueue.restoreInputs()
                 logger.info("stashed inputs restored!")
               })
             }
@@ -97,6 +101,8 @@ class DataProcessor( // dependencies:
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     inputMap(identifier) = input
+    upstreamLinkStatus.registerInput(identifier, input)
+    internalQueue.registerInput(identifier)
   }
 
   def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = {
@@ -178,7 +184,7 @@ class DataProcessor( // dependencies:
       }
       if (pauseManager.getPauseStatusByType(PauseType.OperatorLogicPause)) {
         // if the operatorLogic decides to pause, we need to disable the data queue for this worker.
-        disableDataQueue()
+        internalQueue.disableDataQueue()
       }
     } catch safely {
       case e =>
@@ -209,7 +215,7 @@ class DataProcessor( // dependencies:
     val (outputTuple, outputPortOpt) = out
     if (breakpointManager.evaluateTuple(outputTuple)) {
       pauseManager.recordRequest(PauseType.UserPause, true)
-      disableDataQueue()
+      internalQueue.disableDataQueue()
       outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
       stateManager.transitTo(PAUSED)
     } else {
@@ -233,14 +239,14 @@ class DataProcessor( // dependencies:
           )
         }
         if (currentInputActor != from) {
-          determinantLogger.logDeterminant(SenderActorChange(from))
+          logManager.getDeterminantLogger.logDeterminant(SenderActorChange(from))
           currentInputActor = from
         }
         currentInputTuple = Left(tuple)
         handleInputTuple()
       case EndMarker(from) =>
         if (currentInputActor != from) {
-          determinantLogger.logDeterminant(SenderActorChange(from))
+          logManager.getDeterminantLogger.logDeterminant(SenderActorChange(from))
           currentInputActor = from
         }
         processControlCommandsDuringExecution() // necessary for trigger correct recovery
@@ -255,14 +261,14 @@ class DataProcessor( // dependencies:
           outputManager.emitEndOfUpstream()
           // Send Completed signal to worker actor.
           logger.info(s"$operator completed")
-          disableDataQueue()
+          internalQueue.disableDataQueue()
           operator.close() // close operator
           asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
           outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
           stateManager.transitTo(COMPLETED)
         }
-      case ControlElement(payload, from) =>
-        processControlCommand(payload, from)
+      case ControlElement(from, payload) =>
+        processControlCommand(from, payload)
       case InputEpochMarker(from, epochMarker) =>
         processEpochMarker(from, epochMarker)
     }
@@ -277,7 +283,7 @@ class DataProcessor( // dependencies:
     // main DP loop
     while (true) {
       // take the next data element from internal queue, blocks if not available.
-      internalQueueElementHandler(getElement)
+      internalQueueElementHandler(internalQueue.getElement)
     }
   }
 
@@ -340,21 +346,21 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def processControlCommandsDuringExecution(): Unit = {
-    while (isControlQueueNonEmptyOrPaused) {
+    while (internalQueue.isControlQueueNonEmptyOrPaused) {
       takeOneControlCommandAndProcess()
     }
   }
 
   private[this] def takeOneControlCommandAndProcess(): Unit = {
-    val control = getElement.asInstanceOf[ControlElement]
-    processControlCommand(control.payload, control.from)
+    val control = internalQueue.getElement.asInstanceOf[ControlElement]
+    processControlCommand(control.from, control.payload)
   }
 
   private[this] def processControlCommand(
-      payload: ControlPayload,
-      from: ActorVirtualIdentity
+    from: ActorVirtualIdentity,
+    payload: ControlPayload
   ): Unit = {
-    determinantLogger.logDeterminant(ProcessControlMessage(payload, from))
+    logManager.getDeterminantLogger.logDeterminant(ProcessControlMessage(payload, from))
     payload match {
       case invocation: ControlInvocation =>
         asyncRPCServer.logControlInvocation(invocation, from)
@@ -367,6 +373,7 @@ class DataProcessor( // dependencies:
 
   private[this] def processEpochMarker(from: ActorVirtualIdentity, marker: EpochMarker): Unit = {
     upstreamLinkStatus.markEpochMarker(from, marker)
+    internalQueue.dataQueues(from.name).enable(false)
     if (upstreamLinkStatus.epochMarkerComplete(marker.id)) {
       // invoke control commands carried with the epoch marker
       if (marker.command.nonEmpty) {

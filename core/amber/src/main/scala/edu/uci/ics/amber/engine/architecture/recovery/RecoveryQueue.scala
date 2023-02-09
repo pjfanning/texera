@@ -53,13 +53,14 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
     res
   }
 
-  def drainAllStashedElements(
-      dataQueue: LinkedBlockingMultiQueue[Int, InternalQueueElement]#SubQueue,
-      controlQueue: LinkedBlockingMultiQueue[Int, InternalQueueElement]#SubQueue
-  ): Unit = {
+  def drainAllStashedElements(internalQueue: WorkerInternalQueue): Unit = {
     if (!cleaned) {
-      getAllStashedInputs.foreach(dataQueue.add)
-      getAllStashedControls.foreach(controlQueue.add)
+      getAllStashedInputs.foreach(inputElem => {
+        internalQueue.dataQueues(inputElem.from.name).add(inputElem)
+      })
+      getAllStashedControls.foreach(controlElem => {
+        internalQueue.controlQueue.add(controlElem)
+      })
       cleaned = true
     }
   }
@@ -115,7 +116,7 @@ class RecoveryQueue(logReader: DeterminantLogReader) {
         case SenderActorChange(actorVirtualIdentity) =>
           targetVId = actorVirtualIdentity
         case ProcessControlMessage(controlPayload, from) =>
-          nextRecordToEmit = ControlElement(controlPayload, from)
+          nextRecordToEmit = ControlElement(from, controlPayload)
           stop = true
         case TimeStamp(value) => ???
         case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")

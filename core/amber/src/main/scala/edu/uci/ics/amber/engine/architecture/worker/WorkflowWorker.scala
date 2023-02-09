@@ -59,7 +59,6 @@ class WorkflowWorker(
   lazy val operator: IOperatorExecutor =
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   lazy val recoveryQueue = new RecoveryQueue(logStorage.getReader)
-  lazy val pauseManager: PauseManager = wire[PauseManager]
   lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   lazy val dataProcessor: DataProcessor = wire[DataProcessor]
   lazy val dataInputPort: NetworkInputPort[DataPayload] =
@@ -69,6 +68,8 @@ class WorkflowWorker(
   lazy val dataOutputPort: NetworkOutputPort[DataPayload] =
     new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
   lazy val outputManager: OutputManager = wire[OutputManager]
+  lazy val internalQueue: WorkerInternalQueue = dataProcessor.internalQueue
+  lazy val pauseManager: PauseManager = dataProcessor.pauseManager
   lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
   lazy val breakpointManager: BreakpointManager = wire[BreakpointManager]
   implicit val ec: ExecutionContext = context.dispatcher
@@ -153,7 +154,7 @@ class WorkflowWorker(
     // let dp thread process it
     controlPayload match {
       case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
-        dataProcessor.enqueueCommand(controlCommand, from)
+        dataProcessor.internalQueue.enqueueCommand(controlCommand, from)
       case _ =>
         throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
     }
@@ -172,7 +173,7 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     // shutdown dp thread by sending a command
     val shutdown = ShutdownDPThread()
-    dataProcessor.enqueueCommand(
+    dataProcessor.internalQueue.enqueueCommand(
       ControlInvocation(AsyncRPCClient.IgnoreReply, shutdown),
       SELF
     )

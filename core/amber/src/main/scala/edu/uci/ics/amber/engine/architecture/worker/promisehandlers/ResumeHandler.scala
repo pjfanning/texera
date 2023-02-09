@@ -17,7 +17,7 @@ trait ResumeHandler {
     if (stateManager.getCurrentState == PAUSED) {
       pauseManager.recordRequest(PauseType.UserPause, false)
       if (!pauseManager.isPaused()) {
-        dataProcessor.enableDataQueue()
+        dataProcessor.internalQueue.enableDataQueue()
       }
       stateManager.transitTo(RUNNING)
       outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)

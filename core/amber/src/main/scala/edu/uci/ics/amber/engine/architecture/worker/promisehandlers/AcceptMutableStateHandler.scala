@@ -39,7 +39,7 @@ trait AcceptMutableStateHandler {
         // All tuples have been received. The worker is paused due to operator logic
         // and not due to user pressing pause
         if (!pauseManager.isPaused()) {
-          dataProcessor.enableDataQueue()
+          dataProcessor.internalQueue.enableDataQueue()
         }
         pauseManager.recordRequest(PauseType.OperatorLogicPause, false)
         dataProcessor.setCurrentOutputIterator(

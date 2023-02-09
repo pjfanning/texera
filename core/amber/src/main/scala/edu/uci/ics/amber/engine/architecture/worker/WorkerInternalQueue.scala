@@ -1,28 +1,31 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
-import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_QUEUE, ControlElement, DATA_QUEUE, InputTuple, InternalQueueElement}
+import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataFrame, EndOfUpstream, EpochMarker}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import lbmq.LinkedBlockingMultiQueue
 
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 object WorkerInternalQueue {
-  final val DATA_QUEUE = 1
-  final val CONTROL_QUEUE = 0
+  final val DATA_QUEUE_PRIORITY = 1
+
+  final val CONTROL_QUEUE_KEY = "CONTROL_QUEUE"
+  final val CONTROL_QUEUE_PRIORITY = 0
 
   // 4 kinds of elements can be accepted by internal queue
-  sealed trait InternalQueueElement
+  sealed trait InternalQueueElement {
+    def from: ActorVirtualIdentity
+  }
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends InternalQueueElement
 
-  case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
+  case class ControlElement(from: ActorVirtualIdentity, payload: ControlPayload)
       extends InternalQueueElement
 
   case class EndMarker(from: ActorVirtualIdentity) extends InternalQueueElement
@@ -34,22 +37,20 @@ object WorkerInternalQueue {
 /** Inspired by the mailbox-ed thread, the internal queue should
   * be a part of DP thread.
   */
-trait WorkerInternalQueue {
+class WorkerInternalQueue(
+  val pauseManager: PauseManager,
+  val logManager: LogManager,
+  val recoveryQueue: RecoveryQueue) {
 
-  private val lbmq = new LinkedBlockingMultiQueue[Int, InternalQueueElement]()
-  private val lock = new ReentrantLock()
+  private[architecture] val lbmq = new LinkedBlockingMultiQueue[String, InternalQueueElement]()
+  private[architecture] val lock = new ReentrantLock()
 
-  lbmq.addSubQueue(DATA_QUEUE, DATA_QUEUE)
-  lbmq.addSubQueue(CONTROL_QUEUE, CONTROL_QUEUE)
+  lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
 
-  private val dataQueue = lbmq.getSubQueue(DATA_QUEUE)
+  private[architecture] val dataQueues = new mutable.HashMap[String,
+    LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
+  private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
 
-  private val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE)
-
-  def pauseManager: PauseManager
-  // logging related variables:
-  def logManager: LogManager // require dp thread to have log manager
-  def recoveryQueue: RecoveryQueue // require dp thread to have recovery queue
   protected lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   // the values in below maps are in tuples (not batches)
@@ -57,6 +58,11 @@ trait WorkerInternalQueue {
     new mutable.HashMap[ActorVirtualIdentity, Long]() // read and written by main thread
   @volatile private var inputTuplesTakenOutOfQueue =
     new mutable.HashMap[ActorVirtualIdentity, Long]() // written by DP thread, read by main thread
+
+  def registerInput(sender: ActorVirtualIdentity): Unit = {
+    val senderDataQueue = lbmq.addSubQueue(sender.name, DATA_QUEUE_PRIORITY)
+    dataQueues(sender.name) = senderDataQueue
+  }
 
   def getSenderCredits(sender: ActorVirtualIdentity): Int = {
     (Constants.unprocessedBatchesCreditLimitPerSender * Constants.defaultBatchSize - (inputTuplesPutInQueue
@@ -78,7 +84,7 @@ trait WorkerInternalQueue {
     if (recoveryQueue.isReplayCompleted) {
       // may have race condition with restoreInput which happens inside DP thread.
       lock.lock()
-      dataQueue.add(elem)
+      dataQueues(elem.from.name).add(elem)
       lock.unlock()
     } else {
       recoveryQueue.add(elem)
@@ -89,10 +95,10 @@ trait WorkerInternalQueue {
     if (recoveryQueue.isReplayCompleted) {
       // may have race condition with restoreInput which happens inside DP thread.
       lock.lock()
-      controlQueue.add(ControlElement(payload, from))
+      controlQueue.add(ControlElement(from, payload))
       lock.unlock()
     } else {
-      recoveryQueue.add(ControlElement(payload, from))
+      recoveryQueue.add(ControlElement(from, payload))
     }
   }
 
@@ -115,24 +121,20 @@ trait WorkerInternalQueue {
   }
 
   def disableDataQueue(): Unit = {
-    if (dataQueue.isEnabled) {
-      dataQueue.enable(false)
-    }
+    dataQueues.values.foreach(q => q.enable(false))
   }
 
   def enableDataQueue(): Unit = {
-    if (!dataQueue.isEnabled) {
-      dataQueue.enable(true)
-    }
+    dataQueues.values.foreach(q => q.enable(true))
   }
 
-  def getDataQueueLength: Int = dataQueue.size()
+  def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
 
   def getControlQueueLength: Int = controlQueue.size()
 
   def restoreInputs(): Unit = {
     lock.lock()
-    recoveryQueue.drainAllStashedElements(dataQueue, controlQueue)
+    recoveryQueue.drainAllStashedElements(this)
     lock.unlock()
   }
 

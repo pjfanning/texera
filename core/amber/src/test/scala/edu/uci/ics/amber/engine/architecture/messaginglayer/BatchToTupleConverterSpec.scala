@@ -25,14 +25,14 @@ class BatchToTupleConverterSpec extends AnyFlatSpec with MockFactory {
   val linkID1: LinkIdentity = LinkIdentity(null, null)
   val linkID2: LinkIdentity = LinkIdentity(LayerIdentity("", "", ""), null)
 
-  class TestWorkerInternalQueue extends WorkerInternalQueue {
-    val pauseManager = new PauseManager()
-    val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
-    val recoveryQueue = new RecoveryQueue(new EmptyLogStorage().getReader)
-    val recoveryManager: LocalRecoveryManager = new LocalRecoveryManager()
-  }
+//  class TestWorkerInternalQueue extends WorkerInternalQueue {
+//    val pauseManager = new PauseManager()
+//    val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
+//    val recoveryQueue = new RecoveryQueue(new EmptyLogStorage().getReader)
+//    val recoveryManager: LocalRecoveryManager = new LocalRecoveryManager()
+//  }
 
-  private val mockInternalQueue = mock[TestWorkerInternalQueue]
+  private val mockInternalQueue = mock[WorkerInternalQueue]
   private val fakeID = ActorVirtualIdentity("testReceiver")
 
   "tuple producer" should "break batch into tuples and output" in {

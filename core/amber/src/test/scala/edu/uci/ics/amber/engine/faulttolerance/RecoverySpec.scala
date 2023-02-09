@@ -164,7 +164,7 @@ class RecoverySpec
           (1 until stepAccumulated).foreach(_ => assert(!recoveryQueue.isReadyToEmitNextControl))
           assert(recoveryQueue.isReadyToEmitNextControl)
         }
-        assert(recoveryQueue.get() == ControlElement(controlPayload, from))
+        assert(recoveryQueue.get() == ControlElement(from, controlPayload))
     }
     logStorage.deleteLog()
   }

@@ -20,7 +20,7 @@ trait StartHandler {
     if (operator.isInstanceOf[ISourceOperatorExecutor]) {
       stateManager.assertState(READY)
       stateManager.transitTo(RUNNING)
-      dataProcessor.appendElement(EndMarker(null))
+      dataProcessor.internalQueue.appendElement(EndMarker(null))
       stateManager.getCurrentState
     } else {
       throw new WorkflowRuntimeException(

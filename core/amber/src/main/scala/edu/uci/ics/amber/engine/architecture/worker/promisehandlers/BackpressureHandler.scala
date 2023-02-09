@@ -18,11 +18,11 @@ trait BackpressureHandler {
   registerHandler { (msg: Backpressure, _) =>
     if (msg.enableBackpressure) {
       pauseManager.recordRequest(PauseType.BackpressurePause, true)
-      dataProcessor.disableDataQueue()
+      dataProcessor.internalQueue.disableDataQueue()
     } else {
       pauseManager.recordRequest(PauseType.BackpressurePause, false)
       if (!pauseManager.isPaused()) {
-        dataProcessor.enableDataQueue()
+        dataProcessor.internalQueue.enableDataQueue()
       }
     }
   }
