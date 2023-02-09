@@ -17,8 +17,8 @@ trait GetReplayAlignmentHandler {
   this: DataProcessor =>
 
   registerHandler { (msg: GetReplayAlignment, _) =>
-    println("record total step at " + totalValidStep+1)
-    totalValidStep+1
+    println("record total step at " + totalValidStep + 1)
+    totalValidStep + 1
   }
 
 }

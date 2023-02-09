@@ -16,8 +16,8 @@ import org.apache.arrow.util.AutoCloseables
 import scala.collection.mutable
 
 private class AmberProducer(
-                             controlOutputPort: NetworkOutputPort[ControlPayload],
-                             dataOutputPort: NetworkOutputPort[DataPayload]
+    controlOutputPort: NetworkOutputPort[ControlPayload],
+    dataOutputPort: NetworkOutputPort[DataPayload]
 ) extends NoOpFlightProducer {
 
   override def doAction(
@@ -88,10 +88,10 @@ private class AmberProducer(
 }
 
 class PythonProxyServer(
-                         portNumber: Int,
-                         controlOutputPort: NetworkOutputPort[ControlPayload],
-                         dataOutputPort: NetworkOutputPort[DataPayload],
-                         val actorId: ActorVirtualIdentity
+    portNumber: Int,
+    controlOutputPort: NetworkOutputPort[ControlPayload],
+    dataOutputPort: NetworkOutputPort[DataPayload],
+    val actorId: ActorVirtualIdentity
 ) extends Runnable
     with AutoCloseable
     with AmberLogging {

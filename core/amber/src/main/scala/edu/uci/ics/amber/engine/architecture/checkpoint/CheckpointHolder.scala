@@ -12,7 +12,7 @@ object CheckpointHolder {
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
-  def clear(): Unit ={
+  def clear(): Unit = {
     checkpoints.clear()
   }
 

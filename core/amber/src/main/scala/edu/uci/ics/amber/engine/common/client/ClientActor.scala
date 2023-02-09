@@ -6,9 +6,21 @@ import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
-import edu.uci.ics.amber.engine.common.ambermessage.{TakeGlobalCheckpoint, WorkflowControlMessage, WorkflowRecoveryMessage}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage
+}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  TakeGlobalCheckpoint,
+  WorkflowControlMessage,
+  WorkflowRecoveryMessage
+}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{
+  ClosureRequest,
+  CommandRequest,
+  InitializeRequest,
+  ObservableRequest
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 

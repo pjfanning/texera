@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.{ActorContext, ActorRef}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -9,14 +13,29 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  DeterminantLogger,
+  LogManager,
+  ProcessControlMessage
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DataPayload,
+  WorkflowControlMessage,
+  WorkflowDataMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -31,14 +50,19 @@ import scala.collection.mutable
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeLink, FinalizeOperator}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  ControlElement,
+  DataElement,
+  EndMarker,
+  InputTuple
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 import edu.uci.ics.amber.engine.common.tuple.amber.AmberTuple
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
-object DataProcessor{
+object DataProcessor {
 
-  class SpecialDataTuple extends ITuple{
+  class SpecialDataTuple extends ITuple {
     override def length: Int = 0
 
     override def get(i: Int): Any = null
@@ -49,7 +73,6 @@ object DataProcessor{
   case class FinalizeOperator() extends SpecialDataTuple
 
 }
-
 
 class DataProcessor( // meta dependencies:
     val ordinalMapping: OrdinalMapping,
@@ -75,13 +98,13 @@ class DataProcessor( // meta dependencies:
   protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
 
   def initialize(
-                  operator: IOperatorExecutor, // core logic
-                  currentOutputIterator: Iterator[(ITuple, Option[Int])],
-                  internalQueue: WorkerInternalQueue,
-                  logStorage: DeterminantLogStorage,
-                  logManager: LogManager,
-                  recoveryManager: LocalRecoveryManager,
-                  actorContext: ActorContext
+      operator: IOperatorExecutor, // core logic
+      currentOutputIterator: Iterator[(ITuple, Option[Int])],
+      internalQueue: WorkerInternalQueue,
+      logStorage: DeterminantLogStorage,
+      logManager: LogManager,
+      recoveryManager: LocalRecoveryManager,
+      actorContext: ActorContext
   ): Unit = {
     this.operator = operator
     this.currentOutputIterator = currentOutputIterator
@@ -151,13 +174,13 @@ class DataProcessor( // meta dependencies:
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
   protected var totalValidStep = 0L
-  private var specialTupleIterator = new Iterator[(ITuple, Option[Int])]{
+  private var specialTupleIterator = new Iterator[(ITuple, Option[Int])] {
     val queue = new mutable.Queue[(ITuple, Option[Int])]
     override def hasNext: Boolean = queue.nonEmpty
 
     override def next(): (ITuple, Option[Int]) = queue.dequeue()
 
-    def add(tuple:ITuple):Unit = {
+    def add(tuple: ITuple): Unit = {
       queue.enqueue((tuple, None))
     }
   }
@@ -357,10 +380,10 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  private[this] def appendSpecialTupleToOutputIter(): Unit ={
-    if(currentOutputIterator == null){
+  private[this] def appendSpecialTupleToOutputIter(): Unit = {
+    if (currentOutputIterator == null) {
       currentOutputIterator = specialTupleIterator
-    }else{
+    } else {
       currentOutputIterator ++= specialTupleIterator
     }
   }
@@ -370,20 +393,20 @@ class DataProcessor( // meta dependencies:
     // main DP loop
     while (true) {
       val outputAvailable = currentOutputIterator != null && currentOutputIterator.hasNext
-      if(outputAvailable && !pauseManager.isPaused()){
+      if (outputAvailable && !pauseManager.isPaused()) {
         internalQueue.peek(totalValidStep) match {
           case Some(value) =>
             value match {
               case _: DataElement =>
                 outputOneTuple()
-              case _:ControlElement =>
+              case _: ControlElement =>
                 val control = internalQueue.take(totalValidStep).asInstanceOf[ControlElement]
                 processControlCommand(control.payload, control.from)
             }
           case None =>
             outputOneTuple()
         }
-      }else{
+      } else {
         internalQueue.take(totalValidStep) match {
           case element: DataElement =>
             handleDataElement(element)
@@ -424,18 +447,18 @@ class DataProcessor( // meta dependencies:
   }
 
   private[this] def processControlCommand(
-                                           payload: ControlPayload,
-                                           from: ActorVirtualIdentity
+      payload: ControlPayload,
+      from: ActorVirtualIdentity
   ): Unit = {
     logger.info(s"process control $payload at step $totalValidStep")
     payload match {
       case invocation: ControlInvocation =>
-        if(!invocation.command.isInstanceOf[SkipFaultTolerance]){
+        if (!invocation.command.isInstanceOf[SkipFaultTolerance]) {
           determinantLogger.logDeterminant(ProcessControlMessage(invocation, from))
         }
         asyncRPCServer.logControlInvocation(invocation, from)
         asyncRPCServer.receive(invocation, from)
-        if(invocation.command.isInstanceOf[SkipFaultTolerance]){
+        if (invocation.command.isInstanceOf[SkipFaultTolerance]) {
           totalValidStep -= 1 // negate the effect, must do it after processing control message
         }
       case ret: ReturnInvocation =>

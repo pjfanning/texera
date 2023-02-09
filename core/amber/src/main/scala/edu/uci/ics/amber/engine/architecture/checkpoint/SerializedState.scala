@@ -17,7 +17,7 @@ case class SerializedState(bytes: Array[Byte], serializerId: Int, manifest: Stri
     serialization.deserialize(bytes, serializerId, manifest).get.asInstanceOf[T]
   }
 
-  def size(): Long ={
+  def size(): Long = {
     bytes.length
   }
 }

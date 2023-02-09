@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 abstract class DeterminantLogger extends Serializable {
 
-  def setCurrentSender(sender:ActorVirtualIdentity): Unit
+  def setCurrentSender(sender: ActorVirtualIdentity): Unit
 
   def stepIncrement(): Unit
 

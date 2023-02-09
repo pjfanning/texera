@@ -17,7 +17,8 @@ class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,
     val outputMode: IncrementalOutputMode,
     val storage: SinkStorageWriter
-) extends ISinkOperatorExecutor with CheckpointSupport {
+) extends ISinkOperatorExecutor
+    with CheckpointSupport {
 
   var numTupleIntoStorage = 0
 
@@ -56,14 +57,18 @@ class ProgressiveSinkOpExec(
     s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
+  override def serializeState(
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      checkpoint: SavedCheckpoint,
+      serializer: Serialization
+  ): Unit = {
     // do nothing.
   }
 
   override def deserializeState(
-                                   checkpoint:SavedCheckpoint,
-                                   deserializer: Serialization
-                                 ): Iterator[(ITuple, Option[Int])] = {
+      checkpoint: SavedCheckpoint,
+      deserializer: Serialization
+  ): Iterator[(ITuple, Option[Int])] = {
     open()
     Iterator.empty
   }

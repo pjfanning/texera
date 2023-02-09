@@ -5,14 +5,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-
-abstract class CreditMonitor extends Serializable{
+abstract class CreditMonitor extends Serializable {
   def getSenderCredits(sender: ActorVirtualIdentity): Int
   def increaseCredit(sender: ActorVirtualIdentity): Unit
   def decreaseCredit(sender: ActorVirtualIdentity): Unit
 }
 
-class CreditMonitorWithMaxCredit extends CreditMonitor{
+class CreditMonitorWithMaxCredit extends CreditMonitor {
   def getSenderCredits(sender: ActorVirtualIdentity): Int = {
     Constants.unprocessedBatchesCreditLimitPerSender
   }

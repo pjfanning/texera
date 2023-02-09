@@ -2,7 +2,12 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler._
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor,
+  Workflow
+}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
 import edu.uci.ics.amber.engine.architecture.execution.{OperatorExecution, WorkflowExecution}
@@ -23,7 +28,8 @@ object SkewDetectionHandler {
 
   final case class ControllerInitiateSkewDetection(
       filterByWorkers: List[ActorVirtualIdentity] = List()
-  ) extends ControlCommand[Unit] with SkipReply
+  ) extends ControlCommand[Unit]
+      with SkipReply
 
   /**
     * worker is eligible for first phase if no mitigation has happened till now or

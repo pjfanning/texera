@@ -5,8 +5,16 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{
+  DeterminantLogStorage,
+  EmptyLogStorage,
+  LocalFSLogStorage
+}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  ProcessControlMessage,
+  StepDelta
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
 import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
@@ -77,8 +85,11 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(null,1),
-      StepDelta(ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),29),
+      StepDelta(null, 1),
+      StepDelta(
+        ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),
+        29
+      ),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
@@ -99,7 +110,10 @@ class RecoverySpec
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
       StepDelta(null, 1),
-      StepDelta(ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"), 29),
+      StepDelta(
+        ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),
+        29
+      ),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
@@ -129,8 +143,8 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(ActorVirtualIdentity("Upstream"),1),
-      StepDelta(ActorVirtualIdentity("Upstream"),29),
+      StepDelta(ActorVirtualIdentity("Upstream"), 1),
+      StepDelta(ActorVirtualIdentity("Upstream"), 29),
       ProcessControlMessage(
         ReturnInvocation(9, (1, 2, 3, 4)),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")

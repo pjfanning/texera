@@ -3,7 +3,13 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.logging._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple, InternalElement}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  ControlElement,
+  DataElement,
+  EndMarker,
+  InputTuple,
+  InternalElement
+}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.ReplaceRecoveryQueue
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
@@ -18,7 +24,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   @transient
   private var records: Iterator[InMemDeterminant] = _
   @transient
-  private var actorContext:ActorContext = _
+  private var actorContext: ActorContext = _
   @transient
   private var orderedQueue: LinkedBlockingQueue[InternalElement] = _
 
@@ -63,11 +69,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   }
 
   private def loadDeterminant(): Unit = {
-    if(orderedQueue.isEmpty && step == 0 && records.hasNext) {
+    if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
       val n = records.next()
       println(s"read: ${n}")
       n match {
-        case StepDelta(sender,steps) =>
+        case StepDelta(sender, steps) =>
           targetVId = sender
           step = steps
         case ProcessControlMessage(controlPayload, from) =>
@@ -79,7 +85,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     }
   }
 
-  override def enqueueSystemCommand(control: AsyncRPCServer.ControlCommand[_] with AsyncRPCServer.SkipReply with AsyncRPCServer.SkipFaultTolerance): Unit = {
+  override def enqueueSystemCommand(
+      control: AsyncRPCServer.ControlCommand[_]
+        with AsyncRPCServer.SkipReply
+        with AsyncRPCServer.SkipFaultTolerance
+  ): Unit = {
     orderedQueue.put(ControlElement(ControlInvocation(control), SELF))
   }
 
@@ -105,21 +115,24 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     }
   }
 
-  override def peek(currentStep:Long): Option[InternalElement] = {
+  override def peek(currentStep: Long): Option[InternalElement] = {
     forwardRecoveryProgress(currentStep, false)
     Option(orderedQueue.peek())
   }
 
-  private def isRecoveryCompleted:Boolean = !records.hasNext && nextControlToEmit == null
+  private def isRecoveryCompleted: Boolean = !records.hasNext && nextControlToEmit == null
 
-  private def forwardRecoveryProgress(currentStep:Long, readInput:Boolean): Unit = {
+  private def forwardRecoveryProgress(currentStep: Long, readInput: Boolean): Unit = {
     if (replayTo != currentStep) {
       loadDeterminant()
       if (step > 0) {
         step -= 1
-        println(s"steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId")
+        println(
+          s"steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
+        )
         if (readInput) {
-          val data = inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
+          val data =
+            inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
           orderedQueue.put(data)
         }
       } else if (nextControlToEmit != null) {
@@ -129,10 +142,10 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     }
   }
 
-  override def take(currentStep:Long): InternalElement = {
+  override def take(currentStep: Long): InternalElement = {
     forwardRecoveryProgress(currentStep, true)
     val res = orderedQueue.take()
-    if(isRecoveryCompleted){
+    if (isRecoveryCompleted) {
       val syncFuture = new CompletableFuture[Unit]()
       actorContext.self ! ReplaceRecoveryQueue(syncFuture)
       syncFuture.get()

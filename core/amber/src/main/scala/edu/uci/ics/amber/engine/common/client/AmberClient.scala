@@ -107,7 +107,7 @@ class AmberClient(
   def takeGlobalCheckpoint(): Future[Any] = {
     if (isActive) {
       (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint())).asTwitter()
-    }else{
+    } else {
       Future(-1)
     }
   }

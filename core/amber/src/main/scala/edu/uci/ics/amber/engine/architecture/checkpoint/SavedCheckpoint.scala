@@ -14,7 +14,7 @@ class SavedCheckpoint {
     states(key)
   }
 
-  def size(): Long ={
+  def size(): Long = {
     states.filter(_._2 != null).map(_._2.size()).sum
   }
 

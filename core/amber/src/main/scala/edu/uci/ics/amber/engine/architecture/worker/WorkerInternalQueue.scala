@@ -1,19 +1,29 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_QUEUE, ControlElement, DATA_QUEUE, DataElement, InputTuple, InternalElement}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  CONTROL_QUEUE,
+  ControlElement,
+  DATA_QUEUE,
+  DataElement,
+  InputTuple,
+  InternalElement
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipFaultTolerance,
+  SkipReply
+}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import lbmq.LinkedBlockingMultiQueue
 
-
-object WorkerInternalQueue{
+object WorkerInternalQueue {
 
   final val DATA_QUEUE = 1
   final val CONTROL_QUEUE = 0
@@ -23,7 +33,8 @@ object WorkerInternalQueue{
 
   sealed trait DataElement extends InternalElement
 
-  case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity) extends InternalElement
+  case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
+      extends InternalElement
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends DataElement
 
@@ -31,24 +42,23 @@ object WorkerInternalQueue{
 
 }
 
-
-
-
 abstract class WorkerInternalQueue extends Serializable {
 
-  def enqueueSystemCommand(control: ControlCommand[_] with SkipReply with SkipFaultTolerance): Unit = {
+  def enqueueSystemCommand(
+      control: ControlCommand[_] with SkipReply with SkipFaultTolerance
+  ): Unit = {
     enqueueCommand(ControlElement(ControlInvocation(control), SELF))
   }
 
-  def enqueueCommand(control: ControlElement):Unit
+  def enqueueCommand(control: ControlElement): Unit
 
-  def enqueueData(elem: DataElement):Unit
+  def enqueueData(elem: DataElement): Unit
 
-  def peek(currentStep:Long):Option[InternalElement]
+  def peek(currentStep: Long): Option[InternalElement]
 
-  def take(currentStep:Long):InternalElement
+  def take(currentStep: Long): InternalElement
 
-  def setDataQueueEnabled(status:Boolean):Unit
+  def setDataQueueEnabled(status: Boolean): Unit
 
   def getDataQueueLength: Int
 
@@ -56,7 +66,7 @@ abstract class WorkerInternalQueue extends Serializable {
 
 }
 
-class WorkerInternalQueueImpl(creditMonitor:CreditMonitor) extends WorkerInternalQueue {
+class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
   private val lbmq = new LinkedBlockingMultiQueue[Int, InternalElement]()
 
   lbmq.addSubQueue(DATA_QUEUE, DATA_QUEUE)
@@ -70,19 +80,19 @@ class WorkerInternalQueueImpl(creditMonitor:CreditMonitor) extends WorkerInterna
   }
 
   override def enqueueData(elem: DataElement): Unit = {
-    elem match{
+    elem match {
       case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
       case other               => //pass
     }
     dataQueue.add(elem)
   }
 
-  override def peek(currentStep:Long): Option[InternalElement] = {
+  override def peek(currentStep: Long): Option[InternalElement] = {
     Option(lbmq.peek())
   }
 
-  override def take(currentStep:Long): InternalElement = {
-    lbmq.take() match{
+  override def take(currentStep: Long): InternalElement = {
+    lbmq.take() match {
       case elem @ InputTuple(from, _) =>
         creditMonitor.decreaseCredit(from)
         elem

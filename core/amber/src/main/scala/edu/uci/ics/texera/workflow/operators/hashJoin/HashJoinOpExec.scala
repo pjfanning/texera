@@ -21,7 +21,8 @@ class HashJoinOpExec[K](
     val probeAttributeName: String,
     val joinType: JoinType,
     val operatorSchemaInfo: OperatorSchemaInfo
-) extends OperatorExecutor with CheckpointSupport{
+) extends OperatorExecutor
+    with CheckpointSupport {
 
   val buildSchema: Schema = operatorSchemaInfo.inputSchemas(0)
   val probeSchema: Schema = operatorSchemaInfo.inputSchemas(1)
@@ -249,15 +250,32 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
-    checkpoint.save("currentIterator", SerializedState.fromObject(currentIteratorState.toArray, serializer))
+  override def serializeState(
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      checkpoint: SavedCheckpoint,
+      serializer: Serialization
+  ): Unit = {
+    checkpoint.save(
+      "currentIterator",
+      SerializedState.fromObject(currentIteratorState.toArray, serializer)
+    )
     checkpoint.save("hashMap", SerializedState.fromObject(buildTableHashMap, serializer))
-    checkpoint.save("isBuildTableFinished", SerializedState.fromObject(Boolean.box(isBuildTableFinished), serializer))
+    checkpoint.save(
+      "isBuildTableFinished",
+      SerializedState.fromObject(Boolean.box(isBuildTableFinished), serializer)
+    )
   }
 
-  override def deserializeState(checkpoint: SavedCheckpoint, deserializer: Serialization): Iterator[(ITuple, Option[Int])] = {
+  override def deserializeState(
+      checkpoint: SavedCheckpoint,
+      deserializer: Serialization
+  ): Iterator[(ITuple, Option[Int])] = {
     buildTableHashMap = checkpoint.load("hashMap").toObject(deserializer)
     isBuildTableFinished = checkpoint.load("isBuildTableFinished").toObject(deserializer)
-    checkpoint.load("currentIterator").toObject(deserializer).asInstanceOf[Array[(ITuple, Option[Int])]].toIterator
+    checkpoint
+      .load("currentIterator")
+      .toObject(deserializer)
+      .asInstanceOf[Array[(ITuple, Option[Int])]]
+      .toIterator
   }
 }

@@ -249,7 +249,14 @@ case class OpExecConfig(
     (0 until numWorkers)
       .foreach(i => {
         val workerId: ActorVirtualIdentity = identifier(i)
-        buildWorker(workerId, addressInfo, context, opExecution, parentNetworkCommunicationActorRef, controllerConf)
+        buildWorker(
+          workerId,
+          addressInfo,
+          context,
+          opExecution,
+          parentNetworkCommunicationActorRef,
+          controllerConf
+        )
       })
   }
 

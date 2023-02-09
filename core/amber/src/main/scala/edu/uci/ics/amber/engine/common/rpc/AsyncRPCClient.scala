@@ -37,8 +37,8 @@ object AsyncRPCClient {
     * @param commandID
     * @param command
     */
-  object ControlInvocation{
-    def apply(controlCommand: ControlCommand[_] with SkipReply): ControlInvocation ={
+  object ControlInvocation {
+    def apply(controlCommand: ControlCommand[_] with SkipReply): ControlInvocation = {
       ControlInvocation(-1, controlCommand)
     }
   }
@@ -53,16 +53,15 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-                      controlOutputEndpoint: NetworkOutputPort[ControlPayload],
-                      val actorId: ActorVirtualIdentity
+    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 
   private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
 
-
-  class Convertable[T, U](val convertFunc:ControlCommand[T] => U)
+  class Convertable[T, U](val convertFunc: ControlCommand[T] => U)
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
     val (p, id) = createPromise[T]()
@@ -73,7 +72,7 @@ class AsyncRPCClient(
     p
   }
 
-  def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit ={
+  def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit = {
     controlOutputEndpoint.sendTo(to, ControlInvocation(cmd))
   }
 

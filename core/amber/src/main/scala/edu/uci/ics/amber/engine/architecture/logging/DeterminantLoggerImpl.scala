@@ -8,10 +8,10 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
   private var step = 0L
-  private var currentSender:ActorVirtualIdentity = _
+  private var currentSender: ActorVirtualIdentity = _
 
   override def setCurrentSender(sender: ActorVirtualIdentity): Unit = {
-    if(currentSender != sender){
+    if (currentSender != sender) {
       pushStepDelta()
     }
     currentSender = sender

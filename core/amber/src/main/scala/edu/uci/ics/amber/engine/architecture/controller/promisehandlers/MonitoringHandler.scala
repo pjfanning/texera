@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
@@ -14,7 +18,8 @@ import scala.collection.mutable.ArrayBuffer
 object MonitoringHandler {
   final case class ControllerInitiateMonitoring(
       filterByWorkers: List[ActorVirtualIdentity] = List()
-  ) extends ControlCommand[Unit] with SkipReply
+  ) extends ControlCommand[Unit]
+      with SkipReply
 }
 
 trait MonitoringHandler {

@@ -8,7 +8,11 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatist
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipConsoleLog,
+  SkipReply
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 /** Motivation of having a separate module to handle control messages as RPCs:
@@ -42,8 +46,8 @@ object AsyncRPCServer {
 }
 
 class AsyncRPCServer(
-                      controlOutputEndpoint: NetworkOutputPort[ControlPayload],
-                      val actorId: ActorVirtualIdentity
+    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 
@@ -82,19 +86,23 @@ class AsyncRPCServer(
   }
 
   def execute(cmd: (ControlCommand[_], ActorVirtualIdentity)): Future[_] = {
-    if(handlers.isDefinedAt(cmd)){
+    if (handlers.isDefinedAt(cmd)) {
       handlers(cmd)
-    }else{
+    } else {
       throw new RuntimeException(s"No handler registered for control message: ${cmd._1}")
     }
   }
 
   @inline
-  private def returnResult(sender: ActorVirtualIdentity, control: ControlInvocation, ret: Any): Unit = {
-    if(!control.command.isInstanceOf[SkipReply]) {
+  private def returnResult(
+      sender: ActorVirtualIdentity,
+      control: ControlInvocation,
+      ret: Any
+  ): Unit = {
+    if (!control.command.isInstanceOf[SkipReply]) {
       controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret))
-    }else{
-      if(ret.isInstanceOf[Throwable]){
+    } else {
+      if (ret.isInstanceOf[Throwable]) {
         throw ret.asInstanceOf[Throwable]
       }
     }

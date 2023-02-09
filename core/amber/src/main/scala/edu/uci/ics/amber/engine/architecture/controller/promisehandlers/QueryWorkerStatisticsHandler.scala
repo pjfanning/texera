@@ -1,7 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.{
+  Controller,
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -12,7 +16,8 @@ object QueryWorkerStatisticsHandler {
 
   final case class ControllerInitiateQueryStatistics(
       filterByWorkers: Option[List[ActorVirtualIdentity]] = None
-  ) extends ControlCommand[Unit] with SkipReply
+  ) extends ControlCommand[Unit]
+      with SkipReply
 
 }
 

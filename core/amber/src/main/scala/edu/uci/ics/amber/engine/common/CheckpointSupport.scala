@@ -6,13 +6,13 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 
 trait CheckpointSupport {
   def serializeState(
-                      currentIteratorState: Iterator[(ITuple, Option[Int])],
-                      checkpoint:SavedCheckpoint,
-                      serializer: Serialization
-                    ): Unit
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      checkpoint: SavedCheckpoint,
+      serializer: Serialization
+  ): Unit
 
   def deserializeState(
-                        checkpoint:SavedCheckpoint,
-                        deserializer: Serialization
-                      ): Iterator[(ITuple, Option[Int])]
+      checkpoint: SavedCheckpoint,
+      deserializer: Serialization
+  ): Iterator[(ITuple, Option[Int])]
 }

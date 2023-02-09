@@ -1,20 +1,49 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.{ActorContext, ActorRef, Address, PoisonPill}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  AdditionalOperatorInfo,
+  WorkflowRecoveryStatus,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  LogManager,
+  ProcessControlMessage,
+  StepDelta
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  GetMessageInQueue,
+  NetworkMessage,
+  NetworkSenderActorRef
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, GetOperatorInternalState, NotifyFailedNode, ResendOutputTo, TakeGlobalCheckpoint, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ContinueReplay,
+  ContinueReplayTo,
+  ControlPayload,
+  GetOperatorInternalState,
+  NotifyFailedNode,
+  ResendOutputTo,
+  TakeGlobalCheckpoint,
+  TakeLocalCheckpoint,
+  UpdateRecoveryStatus,
+  WorkflowControlMessage,
+  WorkflowRecoveryMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -69,14 +98,14 @@ class ControllerProcessor
   private var onReplayComplete: () => Unit = _
 
   def initialize(
-                  controlInput: NetworkInputPort[ControlPayload],
-                  workflow: Workflow,
-                  scheduler: WorkflowScheduler,
-                  logManager: LogManager,
-                  logStorage: DeterminantLogStorage,
-                  networkSender: NetworkSenderActorRef,
-                  actorContext: ActorContext,
-                  controllerConfig: ControllerConfig
+      controlInput: NetworkInputPort[ControlPayload],
+      workflow: Workflow,
+      scheduler: WorkflowScheduler,
+      logManager: LogManager,
+      logStorage: DeterminantLogStorage,
+      networkSender: NetworkSenderActorRef,
+      actorContext: ActorContext,
+      controllerConfig: ControllerConfig
   ): Unit = {
     this.controlInput = controlInput
     this.workflow = workflow
@@ -109,20 +138,27 @@ class ControllerProcessor
   }
 
   def restoreWorkers(): Unit = {
-    Await.result(Future.sequence(execution.getAllWorkers.map { worker =>
-      workflow
-        .getOperator(worker)
-        .buildWorker(
-          worker,
-          AddressInfo(availableNodes, actorContext.self.path.address),
-          actorContext,
-          execution.getOperatorExecution(worker),
-          networkSender,
-          controllerConfig
-        )
-    }.map{
-      ref => ref ? CheckInitialized()
-    }), 600.seconds)
+    Await.result(
+      Future.sequence(
+        execution.getAllWorkers
+          .map { worker =>
+            workflow
+              .getOperator(worker)
+              .buildWorker(
+                worker,
+                AddressInfo(availableNodes, actorContext.self.path.address),
+                actorContext,
+                execution.getOperatorExecution(worker),
+                networkSender,
+                controllerConfig
+              )
+          }
+          .map { ref =>
+            ref ? CheckInitialized()
+          }
+      ),
+      600.seconds
+    )
   }
 
   // inner dependencies:
@@ -131,7 +167,9 @@ class ControllerProcessor
   }
   lazy protected val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
   lazy protected val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
-  lazy val execution = new WorkflowExecution(new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer)
+  lazy val execution = new WorkflowExecution(
+    new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer
+  )
   lazy protected val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
     () => {
       logger.info("Start global recovery")
@@ -188,7 +226,7 @@ class ControllerProcessor
     }
     while (currentHead == null) {
       controlMessagesToReplay.next() match {
-        case StepDelta(sender,_) =>
+        case StepDelta(sender, _) =>
           if (controlMessages.contains(sender) && controlMessages(sender).nonEmpty) {
             logger.info("already have current head of " + sender)
             val elem = controlMessages(sender).dequeue()
@@ -276,7 +314,7 @@ class ControllerProcessor
         val runningWorkers = execution.getAllWorkers.toSet
         while (iter.hasNext) {
           val worker = iter.next()
-          if(runningWorkers.contains(worker)){
+          if (runningWorkers.contains(worker)) {
             val alignment = Await
               .result(
                 execution
@@ -295,17 +333,19 @@ class ControllerProcessor
         // finalize checkpoint
         chkpt.save("controlState", SerializedState.fromObject(this, serialization))
         CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt)
-        logger.info(s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes")
-        logger.info(s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime)/1000f}s")
+        logger.info(
+          s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
+        )
+        logger.info(
+          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
+        )
         actorContext.sender() ! numControlSteps
       case GetOperatorInternalState() =>
         Future
           .sequence(
             execution.getAllWorkers
               .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-              .map(info =>
-                info.ref ? WorkflowRecoveryMessage(actorId, GetOperatorInternalState())
-              )
+              .map(info => info.ref ? WorkflowRecoveryMessage(actorId, GetOperatorInternalState()))
           )
           .onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
@@ -316,7 +356,8 @@ class ControllerProcessor
           execution.getAllWorkers
             .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
             .foreach(info =>
-              info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(index(info.id))))
+              info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(index(info.id)))
+            )
           setReplayTo(index(actorId))
         } else {
           execution.getAllWorkers
