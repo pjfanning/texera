@@ -19,11 +19,21 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   var nextRow: Array[String] = _
   var sumLen: Array[Int] = _
-  var numRowOutputted = 0
+  var numRowGenerated = 0
 
-  override def produceTexeraTuple(): Iterator[Tuple] = {
 
-    val rowIterator = new Iterator[Array[String]] {
+  class CSVSourceTupleIterator(iter:Iterator[Tuple]) extends Iterator[Tuple]{
+    override def hasNext: Boolean = iter.hasNext
+
+    override def next(): Tuple = {
+      numRowGenerated += 1
+      iter.next()
+    }
+  }
+
+
+  def mkRowIterator:Iterator[Array[String]] = {
+    new Iterator[Array[String]] {
       override def hasNext: Boolean = {
         if (nextRow != null) {
           return true
@@ -39,30 +49,32 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
           sumLen(idx) += elem.length
           idx += 1
         }
-        numRowOutputted += 1
         nextRow = null
         ret
       }
     }
+  }
 
-    var tupleIterator = rowIterator
-      .drop(desc.offset.getOrElse(0))
-      .map(row => {
-        try {
-          val parsedFields: Array[Object] = {
-            Thread.sleep(200)
-            AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
-          }
-          Tuple.newBuilder(schema).addSequentially(parsedFields).build
-        } catch {
-          case _: Throwable => null
+  def mkTupleIterator(iter:Iterator[Array[String]]): Iterator[Tuple] ={
+    iter.map(row => {
+      try {
+        val parsedFields: Array[Object] = {
+          Thread.sleep(200)
+          AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
         }
-      })
+        Tuple.newBuilder(schema).addSequentially(parsedFields).build
+      } catch {
+        case _: Throwable => null
+      }
+    })
       .filter(t => t != null)
+  }
 
+  override def produceTexeraTuple(): Iterator[Tuple] = {
+    var tupleIterator = mkTupleIterator(mkRowIterator
+      .drop(desc.offset.getOrElse(0)))
     if (desc.limit.isDefined) tupleIterator = tupleIterator.take(desc.limit.get)
-
-    tupleIterator
+    new CSVSourceTupleIterator(tupleIterator)
   }
 
   override def open(): Unit = {
@@ -91,7 +103,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getStateInformation: String = {
-    s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowOutputted).mkString(",")}, current Tuple = $nextRow"
+    s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowGenerated).mkString(",")}, current Tuple = $nextRow"
   }
 
   override def serializeState(
@@ -99,7 +111,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
                       checkpoint:SavedCheckpoint,
                       serializer: Serialization
                     ): Unit = {
-    checkpoint.save("numOutputRows", SerializedState.fromObject(Int.box(numRowOutputted), serializer))
+    checkpoint.save("numOutputRows", SerializedState.fromObject(Int.box(numRowGenerated), serializer))
   }
 
   override def deserializeState(
@@ -107,8 +119,10 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
                         deserializer: Serialization
                       ): Iterator[(ITuple, Option[Int])] = {
     open()
-    numRowOutputted = checkpoint.load("numOutputRows").toObject(deserializer)
-    desc.offset = Some(numRowOutputted)
-    produceTexeraTuple().map(tuple => (tuple, Option.empty))
+    numRowGenerated = checkpoint.load("numOutputRows").toObject(deserializer)
+    var tupleIterator = mkTupleIterator(mkRowIterator
+      .drop(desc.offset.getOrElse(0)+ numRowGenerated))
+    if (desc.limit.isDefined) tupleIterator = tupleIterator.take(desc.limit.get- numRowGenerated)
+    new CSVSourceTupleIterator(tupleIterator).map(tuple => (tuple, Option.empty))
   }
 }

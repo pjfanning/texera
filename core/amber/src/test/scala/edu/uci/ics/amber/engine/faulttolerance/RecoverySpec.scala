@@ -163,7 +163,7 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log" in {
-    val workerName = "WF1-CSVFileScan-operator-53883010-0533-4d50-8f23-7d92ea9e23ab-main-0"
+    val workerName = "WF1-CSVFileScan-operator-7b862423-1731-4824-ab4b-e6b6b8dfb30d-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     val iter = logStorage.getReader.mkLogRecordIterator()
     while (iter.hasNext) {

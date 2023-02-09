@@ -94,6 +94,7 @@ class AmberClient(
 
   def replayExecution(posMap: Map[ActorVirtualIdentity, Long], restart: Boolean): Unit = {
     if (isActive) {
+      println(s"received replay request posMap = $posMap restart = $restart")
       if (restart) {
         controllerConfig.replayRequest = posMap
         clientActor ! InitializeRequest(workflowGen(), controllerConfig)

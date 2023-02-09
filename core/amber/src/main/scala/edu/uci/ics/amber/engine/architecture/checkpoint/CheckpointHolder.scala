@@ -12,6 +12,10 @@ object CheckpointHolder {
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
+  def clear(): Unit ={
+    checkpoints.clear()
+  }
+
   def hasCheckpoint(id: ActorVirtualIdentity, alignment: Long): Boolean = {
     checkpoints.contains(id) && checkpoints(id).contains(alignment)
   }

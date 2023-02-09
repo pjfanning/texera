@@ -1,8 +1,8 @@
-import { Injectable } from "@angular/core";
-import { Observable, Subject } from "rxjs";
-import { NotificationService } from "src/app/common/service/notification/notification.service";
-import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import { ExecutionState } from "../../types/execute-workflow.interface";
+import {Injectable} from "@angular/core";
+import {Observable, Subject} from "rxjs";
+import {NotificationService} from "src/app/common/service/notification/notification.service";
+import {WorkflowWebsocketService} from "../workflow-websocket/workflow-websocket.service";
+import {ExecutionState} from "../../types/execute-workflow.interface";
 
 export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_replay";
 
@@ -35,6 +35,13 @@ export class ReplayWorkflowService {
           this.replayStarted = false;
           this.replayEnded = true;
         }
+      }else if(e.state === ExecutionState.Initializing){
+        this.history = [];
+        this.checkpointed = [];
+        this.selectedIndex = -1;
+        this.operatorInfo = [];
+        this.replayEnded = false;
+        this.replayStarted = false;
       }
     });
 

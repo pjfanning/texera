@@ -2,25 +2,13 @@ package edu.uci.ics.texera.web.service
 
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.common.AmberUtils
+
 import scala.collection.JavaConverters._
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowExecutionErrorEvent
-}
-import edu.uci.ics.texera.web.{
-  SubscriptionManager,
-  TexeraWebApplication,
-  WebsocketInput,
-  WorkflowLifecycleManager
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  CacheStatusUpdateRequest,
-  TexeraWebSocketRequest,
-  WorkflowExecuteRequest,
-  WorkflowKillRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowExecutionErrorEvent}
+import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput, WorkflowLifecycleManager}
+import edu.uci.ics.texera.web.model.websocket.request.{CacheStatusUpdateRequest, TexeraWebSocketRequest, WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
@@ -157,6 +145,7 @@ class WorkflowService(
     if (jobService.getValue != null) {
       //unsubscribe all
       jobService.getValue.unsubscribeAll()
+      CheckpointHolder.clear()
     }
 
     val job = new WorkflowJobService(

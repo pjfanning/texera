@@ -77,7 +77,7 @@ class JobRuntimeService(
     val reqPos = req.replayPos
     if (stateStore.jobMetadataStore.getState.currentReplayPos != reqPos) {
       val requireRestart =
-        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.currentReplayPos > reqPos
+        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.checkpointedStates.contains(reqPos) || stateStore.jobMetadataStore.getState.currentReplayPos > reqPos
       stateStore.jobMetadataStore.updateState(state => {
         state.withCurrentReplayPos(reqPos).withIsReplaying(true)
       })
