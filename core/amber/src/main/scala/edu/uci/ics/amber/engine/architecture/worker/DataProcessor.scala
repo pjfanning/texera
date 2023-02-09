@@ -8,22 +8,12 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  LogManager,
-  ProcessControlMessage,
-  SenderActorChange
-}
+import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -32,7 +22,7 @@ import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
@@ -84,11 +74,13 @@ class DataProcessor( // dependencies:
             }
             runDPThreadMainLogic()
           } catch safely {
-            case _: InterruptedException =>
+            case interrupt: InterruptedException =>
               // dp thread will stop here
               logger.info("DP Thread exits")
+              throw interrupt
             case err: Exception =>
               logger.error("DP Thread exists unexpectedly", err)
+              throw err
               asyncRPCClient.send(
                 FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err)),
                 CONTROLLER
@@ -107,6 +99,11 @@ class DataProcessor( // dependencies:
     */
   private val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
 
+  if (this.operator.isInstanceOf[ISourceOperatorExecutor]) {
+    // for source operator: add a self input channel just for sending the end marker
+    internalQueue.registerInput(this.actorId)
+  }
+
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     inputMap(identifier) = input
     upstreamLinkStatus.registerInput(identifier, input)
@@ -114,7 +111,7 @@ class DataProcessor( // dependencies:
   }
 
   def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = {
-    if (identifier != null) {
+    if (identifier != this.actorId) {
       inputMap(identifier)
     } else {
       null // special case for source operator
