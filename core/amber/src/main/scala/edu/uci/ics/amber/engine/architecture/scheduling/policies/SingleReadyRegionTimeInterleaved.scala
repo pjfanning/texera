@@ -72,14 +72,14 @@ class SingleReadyRegionTimeInterleaved(
 
   override def getNextSchedulingWork(): Set[PipelinedRegion] = {
     breakable {
-      while (regionsScheduleOrder.nonEmpty) {
-        val nextRegion = regionsScheduleOrder.head
+      while (execution.regionsScheduleOrder.nonEmpty) {
+        val nextRegion = execution.regionsScheduleOrder.head
         val upstreamRegions =
           asScalaSet(workflow.physicalPlan.pipelinedRegionsDAG.getAncestors(nextRegion))
         if (upstreamRegions.forall(execution.completedRegions.contains)) {
           assert(!execution.scheduledRegions.contains(nextRegion))
           currentlyExecutingRegions.add(nextRegion)
-          regionsScheduleOrder.remove(0)
+          execution.regionsScheduleOrder.remove(0)
           execution.scheduledRegions.add(nextRegion)
         } else {
           break
@@ -105,7 +105,6 @@ class SingleReadyRegionTimeInterleaved(
       FiniteDuration.apply(Constants.timeSlotExpirationDurationInMs, MILLISECONDS),
       ctx.self,
       ControlInvocation(
-        AsyncRPCClient.IgnoreReplyAndDoNotLog,
         RegionsTimeSlotExpired(regions)
       )
     )(ctx.dispatcher)

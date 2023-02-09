@@ -29,6 +29,9 @@ import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.CheckInitialized
+import org.jgrapht.traverse.TopologicalOrderIterator
+
+import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
 class ControllerProcessor
     extends ControllerAsyncRPCHandlerInitializer
@@ -128,7 +131,7 @@ class ControllerProcessor
   }
   lazy protected val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
   lazy protected val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
-  lazy val execution = new WorkflowExecution()
+  lazy val execution = new WorkflowExecution(new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer)
   lazy protected val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
     () => {
       logger.info("Start global recovery")

@@ -90,6 +90,7 @@ class DataProcessor( // meta dependencies:
     this.logManager = logManager
     this.recoveryManager = recoveryManager
     this.actorContext = actorContext
+    appendSpecialTupleToOutputIter()
   }
 
   def outputDataPayload(
@@ -150,6 +151,16 @@ class DataProcessor( // meta dependencies:
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
   protected var totalValidStep = 0L
+  private var specialTupleIterator = new Iterator[(ITuple, Option[Int])]{
+    val queue = new mutable.Queue[(ITuple, Option[Int])]
+    override def hasNext: Boolean = queue.nonEmpty
+
+    override def next(): (ITuple, Option[Int]) = queue.dequeue()
+
+    def add(tuple:ITuple):Unit = {
+      queue.enqueue((tuple, None))
+    }
+  }
 
   // initialize dp thread upon construction
   @transient
@@ -337,19 +348,20 @@ class DataProcessor( // meta dependencies:
         upstreamLinkStatus.markWorkerEOF(from, currentLink)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           processInputTuple(Right(InputExhausted()))
-          appendSpecialTupleToOutputIter(FinalizeLink(currentLink))
+          specialTupleIterator.add(FinalizeLink(currentLink))
         }
         if (upstreamLinkStatus.isAllEOF) {
-          appendSpecialTupleToOutputIter(FinalizeOperator())
+          specialTupleIterator.add(FinalizeOperator())
         }
+        appendSpecialTupleToOutputIter()
     }
   }
 
-  private[this] def appendSpecialTupleToOutputIter(dataTuple:ITuple): Unit ={
+  private[this] def appendSpecialTupleToOutputIter(): Unit ={
     if(currentOutputIterator == null){
-      currentOutputIterator = Iterator((dataTuple, None))
+      currentOutputIterator = specialTupleIterator
     }else{
-      currentOutputIterator ++= Iterator((dataTuple, None))
+      currentOutputIterator ++= specialTupleIterator
     }
   }
 

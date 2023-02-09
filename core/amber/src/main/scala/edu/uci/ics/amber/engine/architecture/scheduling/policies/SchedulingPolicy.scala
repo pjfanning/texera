@@ -36,9 +36,6 @@ object SchedulingPolicy {
 
 abstract class SchedulingPolicy(workflow: Workflow) {
 
-  protected val regionsScheduleOrder: mutable.Buffer[PipelinedRegion] =
-    new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer
-
   @transient
   protected var execution: WorkflowExecution = _
 

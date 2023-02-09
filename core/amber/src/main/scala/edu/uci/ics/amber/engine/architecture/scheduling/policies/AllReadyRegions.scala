@@ -12,14 +12,14 @@ class AllReadyRegions(workflow: Workflow) extends SchedulingPolicy(workflow) {
   override def getNextSchedulingWork(): Set[PipelinedRegion] = {
     val nextToSchedule: mutable.HashSet[PipelinedRegion] = new mutable.HashSet[PipelinedRegion]()
     breakable {
-      while (regionsScheduleOrder.nonEmpty) {
-        val nextRegion = regionsScheduleOrder.head
+      while (execution.regionsScheduleOrder.nonEmpty) {
+        val nextRegion = execution.regionsScheduleOrder.head
         val upstreamRegions =
           asScalaSet(workflow.physicalPlan.pipelinedRegionsDAG.getAncestors(nextRegion))
         if (upstreamRegions.forall(execution.completedRegions.contains)) {
           assert(!execution.scheduledRegions.contains(nextRegion))
           nextToSchedule.add(nextRegion)
-          regionsScheduleOrder.remove(0)
+          execution.regionsScheduleOrder.remove(0)
           execution.scheduledRegions.add(nextRegion)
         } else {
           break

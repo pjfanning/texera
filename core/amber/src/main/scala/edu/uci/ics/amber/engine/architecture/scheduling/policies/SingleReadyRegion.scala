@@ -10,10 +10,10 @@ class SingleReadyRegion(workflow: Workflow) extends SchedulingPolicy(workflow) {
       (execution.scheduledRegions.isEmpty ||
       execution.scheduledRegions.forall(
         execution.completedRegions.contains
-      )) && regionsScheduleOrder.nonEmpty
+      )) && execution.regionsScheduleOrder.nonEmpty
     ) {
-      val nextRegion = regionsScheduleOrder.head
-      regionsScheduleOrder.remove(0)
+      val nextRegion = execution.regionsScheduleOrder.head
+      execution.regionsScheduleOrder.remove(0)
       assert(!execution.scheduledRegions.contains(nextRegion))
       execution.scheduledRegions.add(nextRegion)
       return Set(nextRegion)
