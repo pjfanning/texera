@@ -2,7 +2,8 @@ package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
 import akka.serialization.Serialization
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
-import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
+import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.common.CheckpointSupport
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -11,7 +12,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Sche
 import java.io.{File, FileInputStream, InputStreamReader}
 
 class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
-    extends SourceOperatorExecutor {
+    extends SourceOperatorExecutor with CheckpointSupport{
   val schema: Schema = desc.inferSchema()
   var inputReader: InputStreamReader = _
   var parser: CsvParser = _
@@ -66,7 +67,6 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   override def open(): Unit = {
     inputReader = new InputStreamReader(new FileInputStream(new File(desc.filePath.get)))
-
     val csvFormat = new CsvFormat()
     csvFormat.setDelimiter(desc.customDelimiter.get.charAt(0))
     csvFormat.setComment(
@@ -96,17 +96,19 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   override def serializeState(
                       currentIteratorState: Iterator[(ITuple, Option[Int])],
+                      checkpoint:SavedCheckpoint,
                       serializer: Serialization
-                    ): SerializedState = {
-    SerializedState.fromObject(Int.box(numRowOutputted), serializer)
+                    ): Unit = {
+    checkpoint.save("numOutputRows", SerializedState.fromObject(Int.box(numRowOutputted), serializer))
   }
 
   override def deserializeState(
-                        serializedState: SerializedState,
+                        checkpoint:SavedCheckpoint,
                         deserializer: Serialization
                       ): Iterator[(ITuple, Option[Int])] = {
     open()
-    numRowOutputted = serializedState.toObject(deserializer)
-    produceTexeraTuple().drop(numRowOutputted - 1).map(tuple => (tuple, Option.empty))
+    numRowOutputted = checkpoint.load("numOutputRows").toObject(deserializer)
+    desc.offset = Some(numRowOutputted)
+    produceTexeraTuple().map(tuple => (tuple, Option.empty))
   }
 }

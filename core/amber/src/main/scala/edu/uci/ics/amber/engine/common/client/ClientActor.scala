@@ -2,26 +2,19 @@ package edu.uci.ics.amber.engine.common.client
 
 import akka.actor.{Actor, ActorRef, PoisonPill}
 import akka.pattern.StatusReply.Ack
+import akka.pattern.ask
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage
-}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  WorkflowControlMessage,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{TakeGlobalCheckpoint, WorkflowControlMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 // TODO: Rename or refactor it since it has mixed duties (send/receive messages, execute callbacks)
 private[client] object ClientActor {
@@ -80,6 +73,8 @@ private[client] class ClientActor extends Actor {
       if (handlers.isDefinedAt(command)) {
         handlers(command)
       }
+    case x @ WorkflowRecoveryMessage(_, _ @TakeGlobalCheckpoint()) =>
+      sender ! Await.result(controller ? x, 60.seconds)
     case x: WorkflowRecoveryMessage =>
       sender ! Ack
       controller ! x

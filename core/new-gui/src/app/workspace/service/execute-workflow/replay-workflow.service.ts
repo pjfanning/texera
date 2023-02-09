@@ -11,6 +11,7 @@ export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_rep
 })
 export class ReplayWorkflowService {
   public history: readonly number[] = [];
+  public checkpointed: readonly number[] = [];
   private displayWorkflowReplay = new Subject<string>();
   public operatorInfo: string[][] = [];
   public selectedIndex = -1;
@@ -35,7 +36,11 @@ export class ReplayWorkflowService {
           this.replayEnded = true;
         }
       }
-    })
+    });
+
+    workflowWebsocketService.subscribeToEvent("WorkflowCheckpointedEvent").subscribe(e => {
+      this.checkpointed = e.checkpointed;
+    });
   }
 
   public displayWorkflowReplayPanel(): void {

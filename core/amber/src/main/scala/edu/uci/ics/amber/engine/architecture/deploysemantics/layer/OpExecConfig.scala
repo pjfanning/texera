@@ -129,9 +129,6 @@ case class OpExecConfig(
   def isPythonOperator(): Boolean =
     classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
 
-  // actor props of each worker, it's not constructed as an actor yet for recovery purposes
-  val workerToActorProps = new mutable.HashMap[ActorVirtualIdentity, Props]()
-
   /*
    * Helper functions related to compile-time operations
    */
@@ -252,43 +249,41 @@ case class OpExecConfig(
     (0 until numWorkers)
       .foreach(i => {
         val workerId: ActorVirtualIdentity = identifier(i)
-        val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
-        val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
-        val workflowWorker = if (this.isPythonOperator()) {
-          PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
-        } else {
-          WorkflowWorker.props(
-            workerId,
-            i,
-            this,
-            parentNetworkCommunicationActorRef,
-            controllerConf.supportFaultTolerance,
-            if (controllerConf.replayRequest.contains(workerId)) {
-              controllerConf.replayRequest(workerId)
-            } else {
-              -1
-            }
-          )
-        }
-        workerToActorProps(workerId) = workflowWorker
-        val ref =
-          context.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
-        parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(workerId, ref))
-        opExecution.getWorkerInfo(workerId).ref = ref
+        buildWorker(workerId, addressInfo, context, opExecution, parentNetworkCommunicationActorRef, controllerConf)
       })
   }
 
-  def recover(
-      actorId: ActorVirtualIdentity,
-      address: Address,
+  def buildWorker(
+      workerId: ActorVirtualIdentity,
+      addressInfo: AddressInfo,
       context: ActorContext,
       opExecution: OperatorExecution,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef
+      parentNetworkCommunicationActorRef: NetworkSenderActorRef,
+      controllerConf: ControllerConfig
   ): ActorRef = {
-    val newRef =
-      context.actorOf(workerToActorProps(actorId).withDeploy(Deploy(scope = RemoteScope(address))))
-    parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(actorId, newRef))
-    opExecution.getWorkerInfo(actorId).ref = newRef
-    newRef
+    val i = VirtualIdentityUtils.getWorkerIndex(workerId)
+    val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
+    val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
+    val workflowWorker = if (this.isPythonOperator()) {
+      PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
+    } else {
+      WorkflowWorker.props(
+        workerId,
+        i,
+        this,
+        parentNetworkCommunicationActorRef,
+        controllerConf.supportFaultTolerance,
+        if (controllerConf.replayRequest.contains(workerId)) {
+          controllerConf.replayRequest(workerId)
+        } else {
+          -1
+        }
+      )
+    }
+    val ref =
+      context.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
+    parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(workerId, ref))
+    opExecution.getWorkerInfo(workerId).ref = ref
+    ref
   }
 }

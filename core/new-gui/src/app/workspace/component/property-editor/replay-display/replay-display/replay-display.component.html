@@ -2,7 +2,7 @@
 [nzPending]="replay.replayStarted && !replay.replayEnded ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
   <nz-timeline-item
   *ngFor="let timepoint of replay.history; index as i;"
-  [nzColor]="replay.selectedIndex === i ? 'green': 'blue'"
+  [nzColor]="replay.selectedIndex === i ? 'green': (replay.checkpointed.includes(i) ? 'blue':'gray')"
   >
     <div
       [style]="{

@@ -1,8 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import akka.actor.{ActorContext, Address, PoisonPill}
+import akka.actor.{ActorContext, ActorRef, Address, PoisonPill}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
@@ -28,7 +28,7 @@ import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
-import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.CheckInitialized
 
 class ControllerProcessor
     extends ControllerAsyncRPCHandlerInitializer
@@ -84,6 +84,7 @@ class ControllerProcessor
     this.actorContext = actorContext
     this.controllerConfig = controllerConfig
     this.logStorage = logStorage
+    asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
   }
 
   def availableNodes: Array[Address] =
@@ -105,17 +106,20 @@ class ControllerProcessor
   }
 
   def restoreWorkers(): Unit = {
-    execution.getAllWorkers.foreach { worker =>
+    Await.result(Future.sequence(execution.getAllWorkers.map { worker =>
       workflow
         .getOperator(worker)
-        .build(
+        .buildWorker(
+          worker,
           AddressInfo(availableNodes, actorContext.self.path.address),
-          networkSender,
           actorContext,
           execution.getOperatorExecution(worker),
+          networkSender,
           controllerConfig
         )
-    }
+    }.map{
+      ref => ref ? CheckInitialized()
+    }), 600.seconds)
   }
 
   // inner dependencies:
@@ -144,7 +148,10 @@ class ControllerProcessor
   private var currentHead: ActorVirtualIdentity = null
 
   def setReplayTo(targetStep: Long): Unit = {
-    replayToStep = targetStep
+    this.replayToStep = targetStep
+    isReplaying = true
+    suppressStatusUpdate = true
+    invokeReplay()
   }
 
   def checkIfReplayCompleted(): Boolean = {
@@ -214,7 +221,7 @@ class ControllerProcessor
       from: ActorVirtualIdentity,
       controlPayload: ControlPayload
   ): Unit = {
-    if (from == CLIENT || from == SELF || from == CONTROLLER) {
+    if (from == CLIENT || from == SELF || from == actorId) {
       determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
     } else {
       //logger.info("only save sender information for "+ controlPayload+" from "+from)
@@ -242,9 +249,11 @@ class ControllerProcessor
   }
 
   def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
+    // TODO: merge these to control messages?
     recoveryMsg.payload match {
       case TakeGlobalCheckpoint() =>
         // save output messages first
+        val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
         chkpt.save(
           "fifoState",
@@ -261,56 +270,57 @@ class ControllerProcessor
         )
         // follow topological order
         val iter = workflow.getDAG.iterator()
+        val runningWorkers = execution.getAllWorkers.toSet
         while (iter.hasNext) {
           val worker = iter.next()
-          val alignment = Await
-            .result(
-              execution
-                .getOperatorExecution(worker)
-                .getWorkerInfo(worker)
-                .ref ? WorkflowRecoveryMessage(CONTROLLER, TakeLocalCheckpoint()),
-              10.seconds
-            )
-            .asInstanceOf[Long]
-          if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
-            // put placeholder
-            CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint())
+          if(runningWorkers.contains(worker)){
+            val alignment = Await
+              .result(
+                execution
+                  .getOperatorExecution(worker)
+                  .getWorkerInfo(worker)
+                  .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint()),
+                10.seconds
+              )
+              .asInstanceOf[Long]
+            if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
+              // put placeholder
+              CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint())
+            }
           }
         }
         // finalize checkpoint
         chkpt.save("controlState", SerializedState.fromObject(this, serialization))
-        CheckpointHolder.addCheckpoint(CONTROLLER, numControlSteps, chkpt)
+        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt)
+        logger.info(s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes")
+        logger.info(s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime)/1000f}s")
+        actorContext.sender() ! numControlSteps
       case GetOperatorInternalState() =>
         Future
           .sequence(
             execution.getAllWorkers
               .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
               .map(info =>
-                info.ref ? WorkflowRecoveryMessage(CONTROLLER, GetOperatorInternalState())
+                info.ref ? WorkflowRecoveryMessage(actorId, GetOperatorInternalState())
               )
           )
           .onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
           })
       case ContinueReplay(index) =>
-        isReplaying = true
         if (index.nonEmpty) {
-          setReplayTo(index(CONTROLLER))
           controllerConfig.replayRequest = index
-          // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
           execution.getAllWorkers
             .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
             .foreach(info =>
-              info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(index(info.id)))
-            )
+              info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(index(info.id))))
+          setReplayTo(index(actorId))
         } else {
-          setReplayTo(-1)
-          // globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
           execution.getAllWorkers
             .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-            .foreach(info => info.ref ! WorkflowRecoveryMessage(CONTROLLER, ContinueReplayTo(-1)))
+            .foreach(info => info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(-1)))
+          setReplayTo(-1)
         }
-        invokeReplay()
       case UpdateRecoveryStatus(isRecovering) =>
         logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
         globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)
@@ -341,12 +351,13 @@ class ControllerProcessor
         infoIter.foreach { info =>
           val ref = workflow
             .getOperator(info.id)
-            .recover(
+            .buildWorker(
               info.id,
-              deployNodes.head,
+              AddressInfo(availableNodes, actorContext.self.path.address),
               actorContext,
               execution.getOperatorExecution(info.id),
-              networkSender
+              networkSender,
+              controllerConfig
             )
           logger.info("Global Recovery: respawn " + info.id)
           val vidSet = infoIter.map(_.id).toSet
@@ -369,12 +380,10 @@ class ControllerProcessor
   }
 
   def enterReplay(replayTo: Long, onReplayComplete: () => Unit): Unit = {
-    globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
+    globalRecoveryManager.markRecoveryStatus(actorId, isRecovering = true)
     this.onReplayComplete = onReplayComplete
-    this.replayToStep = replayTo
-    isReplaying = true
-    suppressStatusUpdate = true
-    invokeReplay()
+    restoreWorkers()
+    setReplayTo(replayTo)
   }
 
 }

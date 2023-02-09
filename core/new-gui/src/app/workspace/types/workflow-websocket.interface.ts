@@ -153,6 +153,10 @@ export type  WorkflowAdditionalOperatorInfoEvent = Readonly<{
   data: string;
 }>;
 
+export type WorkflowCheckpointedEvent = Readonly<{
+  checkpointed: readonly number[];
+}>;
+
 export type DebugCommandRequest = Readonly<{
   operatorId: string;
   workerId: string;
@@ -189,6 +193,7 @@ export type TexeraWebsocketEventTypeMap = {
   RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowStateEvent: WorkflowStateInfo;
+  WorkflowCheckpointedEvent: WorkflowCheckpointedEvent;
   WorkflowErrorEvent: WorkflowError;
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;

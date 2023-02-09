@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.Props
+import akka.pattern.StatusReply.Ack
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
@@ -10,11 +11,11 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, CreditMonitorImpl, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecoveryQueue, getWorkerLogName}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{CheckInitialized, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.NoOpHandler.NoOp
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.common.IOperatorExecutor
+import edu.uci.ics.amber.engine.common.{CheckpointSupport, IOperatorExecutor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -49,6 +50,9 @@ object WorkflowWorker {
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
   case class ReplaceRecoveryQueue(syncFuture:CompletableFuture[Unit])
+
+  case class CheckInitialized()
+
 }
 
 class WorkflowWorker(
@@ -90,10 +94,11 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    // add restore operator state code.
     val checkpointOpt = CheckpointHolder.findLastCheckpointOf(actorId, replayTo)
     var outputIter:Iterator[(ITuple, Option[Int])] = null
     if (checkpointOpt.isDefined) {
+      logger.info("checkpoint found, start loading")
+      val startLoadingTime = System.currentTimeMillis()
       //restore state from checkpoint: can be in either replaying or normal processing
       val serialization = SerializationExtension(context.system)
       dataInputPort.setFIFOState(checkpointOpt.get.load("dataFifoState").toObject(serialization))
@@ -101,8 +106,13 @@ class WorkflowWorker(
         checkpointOpt.get.load("controlFifoState").toObject(serialization)
       )
       inputQueue = checkpointOpt.get.load("inputHubState").toObject(serialization)
-      outputIter = operator.deserializeState(checkpointOpt.get.load("operatorState"), serialization)
+      operator match {
+        case support: CheckpointSupport =>
+          outputIter = support.deserializeState(checkpointOpt.get, serialization)
+        case _ =>
+      }
       dataProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
+      logger.info(s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime)/1000f}s")
     }else{
       // initialize state from scratch
       if(logStorage.isLogAvailableForRead){
@@ -150,7 +160,7 @@ class WorkflowWorker(
   }
 
   def receiveAndProcessMessages: Receive =
-    acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+    acceptInitializationMessage orElse acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case ReplaceRecoveryQueue(sync) =>
         val oldInputQueue = inputQueue.asInstanceOf[RecoveryInternalQueueImpl]
         inputQueue = new WorkerInternalQueueImpl(creditMonitor)
@@ -160,6 +170,7 @@ class WorkflowWorker(
         // unblock sync future on DP
         sync.complete(())
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
+        val startTime = System.currentTimeMillis()
         val syncFuture = new CompletableFuture[Long]()
         val chkpt = new SavedCheckpoint()
         val serialization = SerializationExtension(context.system)
@@ -173,6 +184,7 @@ class WorkflowWorker(
         )
         inputQueue.enqueueSystemCommand(TakeCheckpoint(chkpt, serialization, syncFuture))
         sender ! syncFuture.get()
+        logger.info(s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime)/1000f}s")
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
@@ -206,6 +218,11 @@ class WorkflowWorker(
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
       this.handleControlPayload(SELF, invocation)
+  }
+
+  def acceptInitializationMessage: Receive = {
+    case init: CheckInitialized =>
+      sender ! Ack
   }
 
   def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {

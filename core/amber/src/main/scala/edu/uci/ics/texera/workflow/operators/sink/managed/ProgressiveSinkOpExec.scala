@@ -1,10 +1,10 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
 import akka.serialization.Serialization
-import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
+import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
-import edu.uci.ics.amber.engine.common.{ISinkOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.{CheckpointSupport, ISinkOperatorExecutor, InputExhausted}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
@@ -17,7 +17,7 @@ class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,
     val outputMode: IncrementalOutputMode,
     val storage: SinkStorageWriter
-) extends ISinkOperatorExecutor {
+) extends ISinkOperatorExecutor with CheckpointSupport {
 
   var numTupleIntoStorage = 0
 
@@ -56,18 +56,14 @@ class ProgressiveSinkOpExec(
     s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
   }
 
-  override def serializeState(
-                      currentIteratorState: Iterator[(ITuple, Option[Int])],
-                      serializer: Serialization
-                    ): SerializedState = {
-    numTupleIntoStorage
-    null
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
+    // do nothing.
   }
 
   override def deserializeState(
-                        serializedState: SerializedState,
-                        deserializer: Serialization
-                      ): Iterator[(ITuple, Option[Int])] = {
+                                   checkpoint:SavedCheckpoint,
+                                   deserializer: Serialization
+                                 ): Iterator[(ITuple, Option[Int])] = {
     open()
     Iterator.empty
   }

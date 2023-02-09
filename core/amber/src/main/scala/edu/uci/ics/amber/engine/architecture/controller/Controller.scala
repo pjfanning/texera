@@ -5,38 +5,20 @@ import akka.pattern.ask
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  AdditionalOperatorInfo,
-  WorkflowRecoveryStatus
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowRecoveryStatus, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.logging.{
-  DeterminantLogger,
-  InMemDeterminant,
-  ProcessControlMessage,
-  SenderActorChange
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetMessageInQueue,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -187,6 +169,8 @@ class Controller(
       val alignment = controllerConfig.replayRequest(CONTROLLER)
       val checkpointOpt = CheckpointHolder.findLastCheckpointOf(CONTROLLER, alignment)
       if (checkpointOpt.isDefined) {
+        logger.info("checkpoint found, start loading")
+        val startLoadingTime = System.currentTimeMillis()
         val serialization = SerializationExtension(context.system)
         // reload states:
         controllerProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
@@ -205,9 +189,6 @@ class Controller(
           context,
           controllerConfig
         )
-        // restore workers:
-        // re-assign actor refs:
-        controllerProcessor.restoreWorkers()
         // re-send outputs:
         checkpointOpt.get
           .load("outputMessages")
@@ -219,9 +200,8 @@ class Controller(
                 networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
               }
           }
+        logger.info(s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime)/1000f}s")
       }
-//      val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
-//      controlInputPort.overwriteFIFOSeqNum(fifoState)
       controllerProcessor.enterReplay(
         alignment,
         () => {

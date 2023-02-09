@@ -1,9 +1,12 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
+import akka.serialization.Serialization
+import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.{CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -18,16 +21,13 @@ class HashJoinOpExec[K](
     val probeAttributeName: String,
     val joinType: JoinType,
     val operatorSchemaInfo: OperatorSchemaInfo
-) extends OperatorExecutor {
+) extends OperatorExecutor with CheckpointSupport{
 
   val buildSchema: Schema = operatorSchemaInfo.inputSchemas(0)
   val probeSchema: Schema = operatorSchemaInfo.inputSchemas(1)
   var isBuildTableFinished: Boolean = false
   var buildTableHashMap: mutable.HashMap[K, (ArrayBuffer[Tuple], Boolean)] = _
   var outputSchema: Schema = operatorSchemaInfo.outputSchemas(0)
-
-  var currentEntry: Iterator[Tuple] = _
-  var currentTuple: Tuple = _
 
   val buildTableTransferBatchSize = 4000
 
@@ -249,4 +249,15 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
+    checkpoint.save("currentIterator", SerializedState.fromObject(currentIteratorState.toArray, serializer))
+    checkpoint.save("hashMap", SerializedState.fromObject(buildTableHashMap, serializer))
+    checkpoint.save("isBuildTableFinished", SerializedState.fromObject(Boolean.box(isBuildTableFinished), serializer))
+  }
+
+  override def deserializeState(checkpoint: SavedCheckpoint, deserializer: Serialization): Iterator[(ITuple, Option[Int])] = {
+    buildTableHashMap = checkpoint.load("hashMap").toObject(deserializer)
+    isBuildTableFinished = checkpoint.load("isBuildTableFinished").toObject(deserializer)
+    checkpoint.load("currentIterator").toObject(deserializer).asInstanceOf[Array[(ITuple, Option[Int])]].toIterator
+  }
 }
