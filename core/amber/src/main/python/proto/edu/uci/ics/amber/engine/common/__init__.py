@@ -79,9 +79,17 @@ class ControlPayloadV2(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class EpochMarkerV2(betterproto.Message):
+    id: int = betterproto.int64_field(1)
+    destination: "LayerIdentity" = betterproto.message_field(2)
+    command: "ControlInvocationV2" = betterproto.message_field(3)
+
+
+@dataclass(eq=False, repr=False)
 class PythonDataHeader(betterproto.Message):
     tag: "ActorVirtualIdentity" = betterproto.message_field(1)
     is_end: bool = betterproto.bool_field(2)
+    epoch_marker: "EpochMarkerV2" = betterproto.message_field(3)
 
 
 @dataclass(eq=False, repr=False)

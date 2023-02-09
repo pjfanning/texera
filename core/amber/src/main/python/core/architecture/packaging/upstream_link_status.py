@@ -8,7 +8,7 @@ from core.models.tuple import InputExhausted
 from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity, LinkIdentity
 
 
-class BatchToTupleConverter:
+class UpstreamLinkStatus:
     SOURCE_STARTER = ActorVirtualIdentity("SOURCE_STARTER")
 
     def __init__(self):

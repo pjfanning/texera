@@ -8,12 +8,22 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  LogManager,
+  ProcessControlMessage,
+  SenderActorChange
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -22,7 +32,12 @@ import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.{
+  AmberLogging,
+  IOperatorExecutor,
+  ISourceOperatorExecutor,
+  InputExhausted
+}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
@@ -255,7 +270,9 @@ class DataProcessor( // dependencies:
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           currentInputTuple = Right(InputExhausted())
           handleInputTuple()
-          asyncRPCClient.send(LinkCompleted(currentLink), CONTROLLER)
+          if (currentLink != null) {
+            asyncRPCClient.send(LinkCompleted(currentLink), CONTROLLER)
+          }
         }
         if (upstreamLinkStatus.isAllEOF) {
           outputManager.emitEndOfUpstream()
@@ -373,7 +390,7 @@ class DataProcessor( // dependencies:
 
   private[this] def processEpochMarker(from: ActorVirtualIdentity, marker: EpochMarker): Unit = {
     upstreamLinkStatus.markEpochMarker(from, marker)
-    internalQueue.dataQueues(from.name).enable(false)
+    pauseManager.pauseInputChannel(PauseType.EpochMarker, List(from))
     if (upstreamLinkStatus.epochMarkerComplete(marker.id)) {
       // invoke control commands carried with the epoch marker
       if (marker.command.nonEmpty) {
@@ -386,6 +403,8 @@ class DataProcessor( // dependencies:
       if (marker.destination.nonEmpty && marker.destination.get != opExecConfig.id) {
         this.outputManager.emitEpochMarker(marker)
       }
+      // unblock input channels
+      pauseManager.resume(PauseType.EpochMarker)
     }
   }
 
