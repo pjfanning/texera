@@ -114,7 +114,6 @@ class ControllerProcessor
     this.actorContext = actorContext
     this.controllerConfig = controllerConfig
     this.logStorage = logStorage
-    execution.initialize(workflow)
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
   }
 
@@ -166,7 +165,7 @@ class ControllerProcessor
   }
   lazy protected val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
   lazy protected val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
-  lazy val execution = new WorkflowExecution()
+  lazy val execution = new WorkflowExecution(workflow)
   lazy protected val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
     () => {
       logger.info("Start global recovery")

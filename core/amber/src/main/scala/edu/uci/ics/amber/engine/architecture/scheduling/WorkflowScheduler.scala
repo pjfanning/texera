@@ -87,7 +87,7 @@ class WorkflowScheduler(
       .flatMap(_ => {
         val pauseFutures = new ArrayBuffer[Future[Unit]]()
         regionsToPause.foreach(stoppingRegion => {
-          schedulingPolicy.removeFromRunningRegion(Set(stoppingRegion))
+          schedulingPolicy.removeFromRunningRegion(Set(stoppingRegion).map(_.id))
           workflow
             .getAllWorkersOfRegion(stoppingRegion)
             .foreach(wid => {
@@ -250,7 +250,7 @@ class WorkflowScheduler(
       .foreach(opId => execution.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
 
-    if (!schedulingPolicy.getRunningRegions().contains(region)) {
+    if (!schedulingPolicy.getRunningRegions().contains(region.id)) {
       Future
         .collect(
           workflow
@@ -290,13 +290,13 @@ class WorkflowScheduler(
       .flatMap(_ => startRegion(region))
       .map(_ => {
         execution.constructingRegions.remove(region.getId())
-        schedulingPolicy.addToRunningRegions(Set(region))
+        schedulingPolicy.addToRunningRegions(Set(region.id))
         execution.startedRegions.add(region.getId())
       })
   }
 
   private def resumeRegion(region: PipelinedRegion): Future[Unit] = {
-    if (!schedulingPolicy.getRunningRegions().contains(region)) {
+    if (!schedulingPolicy.getRunningRegions().contains(region.id)) {
       Future
         .collect(
           workflow
@@ -308,7 +308,7 @@ class WorkflowScheduler(
             .toSeq
         )
         .map { _ =>
-          schedulingPolicy.addToRunningRegions(Set(region))
+          schedulingPolicy.addToRunningRegions(Set(region.id))
         }
     } else {
       throw new WorkflowRuntimeException(

@@ -12,11 +12,15 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
-class WorkflowExecution {
+class WorkflowExecution(@transient workflow: Workflow) {
 
-  private var linkExecutions: Map[LinkIdentity, LinkExecution] = _
-  private var operatorExecutions: Map[LayerIdentity, OperatorExecution]= _
-  var regionsScheduleOrder: mutable.Buffer[PipelinedRegion] = _
+  private val linkExecutions: Map[LinkIdentity, LinkExecution] = workflow.physicalPlan.linkStrategies.map { link =>
+    link._1 -> new LinkExecution(link._2.totalReceiversCount)
+  }
+  private val operatorExecutions: Map[LayerIdentity, OperatorExecution]= workflow.getAllOperators.map { opConf =>
+    opConf.id -> new OperatorExecution(opConf.numWorkers, opConf.opExecClass)
+  }.toMap
+  var regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity] = new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.map(_.id).toBuffer
 
   // Since one operator/link(i.e. links within an operator) can belong to multiple regions, we need to keep
   // track of those already built
@@ -29,29 +33,11 @@ class WorkflowExecution {
   val startedRegions = new mutable.HashSet[PipelinedRegionIdentity]()
 
   // regions sent by the policy to be scheduled at least once
-  val scheduledRegions = new mutable.HashSet[PipelinedRegion]()
-  val completedRegions = new mutable.HashSet[PipelinedRegion]()
+  val scheduledRegions = new mutable.HashSet[PipelinedRegionIdentity]()
+  val completedRegions = new mutable.HashSet[PipelinedRegionIdentity]()
   // regions currently running
-  val runningRegions = new mutable.HashSet[PipelinedRegion]()
-  val completedLinksOfRegion =
-    new mutable.HashMap[PipelinedRegion, mutable.HashSet[LinkIdentity]]()
-
-
-  def initialize(workflow:Workflow): Unit ={
-    if(linkExecutions==null){
-      linkExecutions = workflow.physicalPlan.linkStrategies.map { link =>
-        link._1 -> new LinkExecution(link._2.totalReceiversCount)
-      }
-    }
-    if(operatorExecutions == null){
-      operatorExecutions = workflow.getAllOperators.map { opConf =>
-        opConf.id -> new OperatorExecution(opConf.numWorkers, opConf.opExecClass)
-      }.toMap
-    }
-    if(regionsScheduleOrder == null){
-      regionsScheduleOrder = new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer
-    }
-  }
+  val runningRegions = new mutable.HashSet[PipelinedRegionIdentity]()
+  val completedLinksOfRegion = new mutable.HashMap[PipelinedRegionIdentity, mutable.HashSet[LinkIdentity]]()
 
   def getAllWorkers: Iterable[ActorVirtualIdentity] =
     operatorExecutions.values

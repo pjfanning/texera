@@ -16,7 +16,7 @@ class SingleReadyRegion(workflow: Workflow) extends SchedulingPolicy(workflow) {
       execution.regionsScheduleOrder.remove(0)
       assert(!execution.scheduledRegions.contains(nextRegion))
       execution.scheduledRegions.add(nextRegion)
-      return Set(nextRegion)
+      return Set(workflow.physicalPlan.getPipelinedRegion(nextRegion))
     }
     Set()
   }
