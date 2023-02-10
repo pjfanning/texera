@@ -2,11 +2,8 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  AdditionalOperatorInfo,
-  WorkflowPaused,
-  WorkflowReplayInfo
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowRecoveryStatus, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
@@ -15,24 +12,8 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowAdditionalOperatorInfoEvent,
-  WorkflowCheckpointedEvent,
-  WorkflowExecutionErrorEvent,
-  WorkflowInteractionHistoryEvent,
-  WorkflowStateEvent
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  RemoveBreakpointRequest,
-  SkipTupleRequest,
-  WorkflowAdditionalOperatorInfoRequest,
-  WorkflowCheckpointRequest,
-  WorkflowKillRequest,
-  WorkflowPauseRequest,
-  WorkflowReplayRequest,
-  WorkflowResumeRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowCheckpointedEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowAdditionalOperatorInfoRequest, WorkflowCheckpointRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -46,7 +27,7 @@ class JobRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  val replayPoints = mutable.ArrayBuffer[Map[ActorVirtualIdentity, Long]]()
+  var planner:ReplayPlanner = _
 
   addSubscription(
     stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
@@ -82,11 +63,12 @@ class JobRuntimeService(
 
   addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
     if (!stateStore.jobMetadataStore.getState.isReplaying) {
-      replayPoints.clear()
+      val replayPoints = mutable.ArrayBuffer[Map[ActorVirtualIdentity, Long]]()
       evt.history.foreach {
         case (i, identityToLong) =>
-          replayPoints.append(identityToLong.toMap)
+          replayPoints.append(identityToLong)
       }
+      planner = new ReplayPlanner(replayPoints.toArray)
       stateStore.jobMetadataStore.updateState(jobMetadata =>
         jobMetadata.withInteractionHistory(evt.history.map(_._1)).withCurrentReplayPos(-1)
       )
@@ -96,28 +78,48 @@ class JobRuntimeService(
   addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
     val reqPos = req.replayPos
     if (stateStore.jobMetadataStore.getState.currentReplayPos != reqPos) {
-      val requireRestart =
-        !stateStore.jobMetadataStore.getState.isReplaying || stateStore.jobMetadataStore.getState.checkpointedStates
-          .contains(reqPos) || stateStore.jobMetadataStore.getState.currentReplayPos > reqPos
       stateStore.jobMetadataStore.updateState(state => {
         state.withCurrentReplayPos(reqPos).withIsReplaying(true)
       })
-      client.replayExecution(replayPoints(reqPos), requireRestart)
+      planner.startPlanning(reqPos)
+      plannerNextStep()
     }
   }))
+
+
+  def plannerNextStep(): Unit ={
+    if(planner.hasNext){
+      planner.next() match {
+        case ReplayPlanner.CheckpointCurrentState() =>
+          client.takeGlobalCheckpoint()
+        case r @ ReplayPlanner.ReplayExecution(_,_) =>
+          client.replayExecution(r)
+      }
+    }
+  }
 
   addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
     client
       .takeGlobalCheckpoint()
       .onSuccess(idx => {
         if (idx != -1) {
-          val res = replayPoints.indexWhere(x => x.contains(CONTROLLER) && x(CONTROLLER) == idx)
+          val res = planner.addCheckpoint(idx)
           if (res != -1) {
             stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
           }
         }
+        plannerNextStep()
       })
   }))
+
+  addSubscription(
+    client
+      .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
+        if(!evt.isRecovering){
+          plannerNextStep()
+        }
+      })
+  )
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {

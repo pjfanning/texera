@@ -20,10 +20,15 @@ object CheckpointHolder {
     checkpoints.contains(id) && checkpoints(id).contains(alignment)
   }
 
-  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[SavedCheckpoint] = {
+  def getCheckpoint(id: ActorVirtualIdentity, alignment: Long):SavedCheckpoint ={
+    assert(hasCheckpoint(id, alignment))
+    checkpoints(id)(alignment)
+  }
+
+  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[Long] = {
     if (checkpoints.contains(id)) {
       Try(
-        checkpoints(id).map(x => (alignment - x._1, x._2)).filter(_._1 >= 0).minBy(_._1)._2
+        checkpoints(id).map(x => (alignment - x._1, x._1)).filter(_._1 >= 0).minBy(_._1)._2
       ).toOption
     } else {
       None

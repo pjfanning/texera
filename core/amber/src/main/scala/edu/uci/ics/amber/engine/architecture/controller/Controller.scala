@@ -1,20 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import akka.actor.{Address, Cancellable, PoisonPill, Props}
-import akka.pattern.ask
+import akka.actor.Props
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
-import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowRecoveryStatus,
-  WorkflowStatusUpdate
-}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
@@ -23,7 +13,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
   RegisterActorRef
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
-import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -31,7 +20,6 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -43,7 +31,7 @@ object ControllerConfig {
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
       AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging"),
-      Map.empty
+      WorkflowStateRestoreConfig.empty
     )
 }
 
@@ -52,7 +40,7 @@ final case class ControllerConfig(
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
     var supportFaultTolerance: Boolean,
-    var replayRequest: Map[ActorVirtualIdentity, Long]
+    var stateRestoreConfig: WorkflowStateRestoreConfig
 )
 
 object Controller {
@@ -159,49 +147,22 @@ class Controller(
   }
 
   override def receive: Receive = {
-    controllerProcessor = new ControllerProcessor()
-    controlInputPort = new NetworkInputPort[ControlPayload](
-      this.actorId,
-      controllerProcessor.handleControlPayloadOuter
-    )
-    controllerProcessor.initialize(
-      controlInputPort,
-      workflow,
-      workflowScheduler,
-      logManager,
-      logStorage,
-      networkCommunicationActor,
-      context,
-      controllerConfig
-    )
-    controllerProcessor.execution.initExecutionState(workflow)
-    // load state if available
-    if (controllerConfig.replayRequest.nonEmpty) {
-      val alignment = controllerConfig.replayRequest(CONTROLLER)
-      val checkpointOpt = CheckpointHolder.findLastCheckpointOf(CONTROLLER, alignment)
-      if (checkpointOpt.isDefined) {
+    // load from checkpoint if available
+    controllerConfig.stateRestoreConfig.controllerConf.fromCheckpoint match {
+      case Some(chkptAlignment) =>
         logger.info("checkpoint found, start loading")
+        val chkpt = CheckpointHolder.getCheckpoint(CONTROLLER, chkptAlignment)
         val startLoadingTime = System.currentTimeMillis()
         val serialization = SerializationExtension(context.system)
         // reload states:
-        controllerProcessor = checkpointOpt.get.load("controlState").toObject(serialization)
+        controllerProcessor = chkpt.load("controlState").toObject(serialization)
         controlInputPort = new NetworkInputPort[ControlPayload](
           this.actorId,
           controllerProcessor.handleControlPayloadOuter
         )
-        controlInputPort.setFIFOState(checkpointOpt.get.load("fifoState").toObject(serialization))
-        controllerProcessor.initialize(
-          controlInputPort,
-          workflow,
-          workflowScheduler,
-          logManager,
-          logStorage,
-          networkCommunicationActor,
-          context,
-          controllerConfig
-        )
+        controlInputPort.setFIFOState(chkpt.load("fifoState").toObject(serialization))
         // re-send outputs:
-        checkpointOpt.get
+        chkpt
           .load("outputMessages")
           .toObject(serialization)
           .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
@@ -214,17 +175,45 @@ class Controller(
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
         )
-      }
-      controllerProcessor.enterReplay(
-        alignment,
-        () => {
-          unstashAll()
-          context.become(running)
-        }
-      )
-      forwardResendRequest orElse acceptRecoveryMessages orElse recovering
-    } else {
-      running
+      case None =>
+        controllerProcessor = new ControllerProcessor()
+        controlInputPort = new NetworkInputPort[ControlPayload](
+          this.actorId,
+          controllerProcessor.handleControlPayloadOuter
+        )
+    }
+
+    // passing non-serialized controller state
+    controllerProcessor.initialize(
+      controlInputPort,
+      workflow,
+      workflowScheduler,
+      logManager,
+      logStorage,
+      networkCommunicationActor,
+      context,
+      controllerConfig
+    )
+
+    // restore workers:
+    logger.info("start to restore workers")
+    controllerProcessor.restoreWorkers()
+
+    // set replay alignment and start
+    controllerConfig.stateRestoreConfig.controllerConf.replayTo match {
+      case Some(replayAlignment) =>
+        controllerProcessor.enterReplay(
+          replayAlignment,
+          () => {
+            unstashAll()
+            context.become(running)
+          }
+        )
+        forwardResendRequest orElse acceptRecoveryMessages orElse recovering
+      case None =>
+        // interrupt replay if checkpoint was taken during replay
+        controllerProcessor.interruptReplay()
+        running
     }
   }
 

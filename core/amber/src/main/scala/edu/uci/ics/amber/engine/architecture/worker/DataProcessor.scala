@@ -173,8 +173,9 @@ class DataProcessor( // meta dependencies:
   protected var outputTupleCount = 0L
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
-  protected var totalValidStep = 0L
-  private var specialTupleIterator = new Iterator[(ITuple, Option[Int])] {
+  var totalValidStep = 0L
+
+  class SpecialTupleIterator extends Iterator[(ITuple, Option[Int])]{
     val queue = new mutable.Queue[(ITuple, Option[Int])]
     override def hasNext: Boolean = queue.nonEmpty
 
@@ -184,6 +185,7 @@ class DataProcessor( // meta dependencies:
       queue.enqueue((tuple, None))
     }
   }
+  private var specialTupleIterator = new SpecialTupleIterator()
 
   // initialize dp thread upon construction
   @transient

@@ -89,9 +89,7 @@ class ControllerProcessor
   @transient
   lazy protected implicit val executor = actorContext.dispatcher
   @transient
-  lazy protected val controlMessagesToReplay: Iterator[InMemDeterminant] = {
-    logStorage.getReader.mkLogRecordIterator().drop(numControlSteps.toInt)
-  }
+  protected var controlMessagesToReplay: Iterator[InMemDeterminant] = Iterator()
   @transient
   private lazy val serialization = SerializationExtension(actorContext.system)
   @transient
@@ -116,6 +114,7 @@ class ControllerProcessor
     this.actorContext = actorContext
     this.controllerConfig = controllerConfig
     this.logStorage = logStorage
+    execution.initialize(workflow)
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
   }
 
@@ -167,9 +166,7 @@ class ControllerProcessor
   }
   lazy protected val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
   lazy protected val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
-  lazy val execution = new WorkflowExecution(
-    new TopologicalOrderIterator(workflow.physicalPlan.pipelinedRegionsDAG).asScala.toBuffer
-  )
+  lazy val execution = new WorkflowExecution()
   lazy protected val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
     () => {
       logger.info("Start global recovery")
@@ -188,7 +185,7 @@ class ControllerProcessor
     .HashMap[ActorVirtualIdentity, mutable.Queue[ProcessControlMessage]]()
   private var currentHead: ActorVirtualIdentity = null
 
-  def setReplayTo(targetStep: Long): Unit = {
+  def setReplayToAndStartReplay(targetStep: Long): Unit = {
     this.replayToStep = targetStep
     isReplaying = true
     suppressStatusUpdate = true
@@ -350,21 +347,14 @@ class ControllerProcessor
           .onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
           })
-      case ContinueReplay(index) =>
-        if (index.nonEmpty) {
-          controllerConfig.replayRequest = index
-          execution.getAllWorkers
-            .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-            .foreach(info =>
-              info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(index(info.id)))
-            )
-          setReplayTo(index(actorId))
-        } else {
-          execution.getAllWorkers
-            .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-            .foreach(info => info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(-1)))
-          setReplayTo(-1)
-        }
+      case ContinueReplay(conf) =>
+        controllerConfig.stateRestoreConfig = conf
+        execution.getAllWorkers
+          .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
+          .foreach(info =>
+            info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(conf.workerConfs(info.id).replayTo.get))
+          )
+        setReplayToAndStartReplay(conf.controllerConf.replayTo.get)
       case UpdateRecoveryStatus(isRecovering) =>
         logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
         globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)
@@ -426,8 +416,16 @@ class ControllerProcessor
   def enterReplay(replayTo: Long, onReplayComplete: () => Unit): Unit = {
     globalRecoveryManager.markRecoveryStatus(actorId, isRecovering = true)
     this.onReplayComplete = onReplayComplete
-    restoreWorkers()
-    setReplayTo(replayTo)
+    controlMessagesToReplay = logStorage.getReader.mkLogRecordIterator().drop(numControlSteps.toInt)
+    setReplayToAndStartReplay(replayTo)
+  }
+
+  def interruptReplay(): Unit ={
+    controlMessagesToReplay = Iterator()
+    replayToStep = numControlSteps
+    assert(checkIfReplayCompleted())
+    this.onReplayComplete = null
+    replayToStep = -1
   }
 
 }

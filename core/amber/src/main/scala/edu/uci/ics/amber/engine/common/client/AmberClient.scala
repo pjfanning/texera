@@ -4,25 +4,14 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowStateRestoreConfig}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplay,
-  GetOperatorInternalState,
-  InterruptReplay,
-  NotifyFailedNode,
-  TakeGlobalCheckpoint,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import edu.uci.ics.texera.web.service.ReplayPlanner.ReplayExecution
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.{PublishSubject, Subject}
@@ -92,17 +81,20 @@ class AmberClient(
     }
   }
 
-  def replayExecution(posMap: Map[ActorVirtualIdentity, Long], restart: Boolean): Unit = {
+  def replayExecution(step:ReplayExecution): Unit = {
     if (isActive) {
-      println(s"received replay request posMap = $posMap restart = $restart")
-      if (restart) {
-        controllerConfig.replayRequest = posMap
+      println(s"received replay request conf = ${step.conf}")
+      if(!step.restart) {
+        println(s"replay request can use the current workflow state")
+        clientActor ! WorkflowRecoveryMessage(CLIENT, ContinueReplay(step.conf))
+      }else {
+        println(s"replay request requires a system restart")
+        controllerConfig.stateRestoreConfig = step.conf
         clientActor ! InitializeRequest(workflowGen(), controllerConfig)
-      } else {
-        clientActor ! WorkflowRecoveryMessage(CLIENT, ContinueReplay(posMap))
       }
     }
   }
+
 
   def takeGlobalCheckpoint(): Future[Any] = {
     if (isActive) {

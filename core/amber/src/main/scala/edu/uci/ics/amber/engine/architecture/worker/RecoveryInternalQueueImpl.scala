@@ -24,11 +24,10 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   @transient
   private var records: Iterator[InMemDeterminant] = _
   @transient
-  private var actorContext: ActorContext = _
+  private var onRecoveryComplete: () => Unit = _
   @transient
   private var orderedQueue: LinkedBlockingQueue[InternalElement] = _
 
-  private var numRecordsRead: Int = 0
   private val inputMapping = mutable
     .HashMap[ActorVirtualIdentity, LinkedBlockingQueue[DataElement]]()
   private val controlMessages = mutable
@@ -38,14 +37,30 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   private var replayTo = -1L
   private var nextControlToEmit: ControlElement = _
 
+  private var recordRead = 0L
+
   def setReplayTo(dest: Long): Unit = {
     replayTo = dest
   }
 
-  def initialize(records: Iterator[InMemDeterminant], actorContext: ActorContext): Unit = {
+  def initialize(records: Iterator[InMemDeterminant], currentDPStep: Long, onRecoveryCompleted: () => Unit): Unit = {
     this.orderedQueue = new LinkedBlockingQueue[InternalElement]()
-    this.actorContext = actorContext
-    this.records = records.drop(numRecordsRead)
+    this.onRecoveryComplete = onRecoveryCompleted
+    // restore replay progress by dropping some of the entries
+    val copiedRead = recordRead
+    recordRead = 0
+    var accumulatedSteps = 0L
+    this.records = records
+    while(accumulatedSteps < currentDPStep){
+      loadDeterminant()
+      accumulatedSteps += (if(step == 0) 1 else step)
+      step = 0
+    }
+    println(s"Internal Queue: accumulated step = $accumulatedSteps actual steps = $currentDPStep")
+    if(accumulatedSteps > currentDPStep){
+      step = accumulatedSteps - currentDPStep
+    }
+    println(s"Internal Queue: recovered read = $recordRead actual read = $copiedRead")
   }
 
   def getAllStashedInputs: Iterable[DataElement] = {
@@ -69,20 +84,18 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   }
 
   private def loadDeterminant(): Unit = {
-    if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
-      val n = records.next()
-      println(s"read: ${n}")
-      n match {
-        case StepDelta(sender, steps) =>
-          targetVId = sender
-          step = steps
-        case ProcessControlMessage(controlPayload, from) =>
-          nextControlToEmit = ControlElement(controlPayload, from)
-        case TimeStamp(value) => ???
-        case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")
-      }
-      numRecordsRead += 1
+    val n = records.next()
+    println(s"read: ${n}")
+    n match {
+      case StepDelta(sender, steps) =>
+        targetVId = sender
+        step = steps
+      case ProcessControlMessage(controlPayload, from) =>
+        nextControlToEmit = ControlElement(controlPayload, from)
+      case TimeStamp(value) => ???
+      case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")
     }
+    recordRead += 1
   }
 
   override def enqueueSystemCommand(
@@ -124,7 +137,9 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
 
   private def forwardRecoveryProgress(currentStep: Long, readInput: Boolean): Unit = {
     if (replayTo != currentStep) {
-      loadDeterminant()
+      if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
+        loadDeterminant()
+      }
       if (step > 0) {
         step -= 1
         println(
@@ -145,10 +160,8 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   override def take(currentStep: Long): InternalElement = {
     forwardRecoveryProgress(currentStep, true)
     val res = orderedQueue.take()
-    if (isRecoveryCompleted) {
-      val syncFuture = new CompletableFuture[Unit]()
-      actorContext.self ! ReplaceRecoveryQueue(syncFuture)
-      syncFuture.get()
+    if (isRecoveryCompleted && onRecoveryComplete != null) {
+      onRecoveryComplete()
     }
     res
   }

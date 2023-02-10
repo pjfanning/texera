@@ -20,4 +20,11 @@ case class PipelinedRegion(
   def containsOperator(opId: LayerIdentity): Boolean = {
     this.operators.contains(opId)
   }
+
+//  override def equals(obj: Any): Boolean = {
+//    if(!obj.isInstanceOf[PipelinedRegion]){
+//      return false
+//    }
+//    obj.asInstanceOf[PipelinedRegion].id == id
+//  }
 }

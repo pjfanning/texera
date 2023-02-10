@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
 import akka.actor.{ActorRef, Address}
+import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 sealed trait RecoveryPayload extends Serializable {}
@@ -15,8 +16,8 @@ final case class ResendOutputTo(vid: ActorVirtualIdentity, ref: ActorRef) extend
 final case class NotifyFailedNode(addr: Address) extends RecoveryPayload
 
 // for replay prototype:
-final case class ContinueReplay(posMap: Map[ActorVirtualIdentity, Long]) extends RecoveryPayload
-final case class ContinueReplayTo(pos: Long) extends RecoveryPayload
+final case class ContinueReplay(workflowStateRestoreConfig: WorkflowStateRestoreConfig) extends RecoveryPayload
+final case class ContinueReplayTo(replayTo:Long) extends RecoveryPayload
 final case class GetOperatorInternalState() extends RecoveryPayload
 final case class InterruptReplay() extends RecoveryPayload
 final case class PauseDuringReplay() extends RecoveryPayload

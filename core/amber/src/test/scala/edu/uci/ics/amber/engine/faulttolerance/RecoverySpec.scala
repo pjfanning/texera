@@ -1,20 +1,12 @@
 package edu.uci.ics.amber.engine.faulttolerance
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorContext, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage,
-  LocalFSLogStorage
-}
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  ProcessControlMessage,
-  StepDelta
-}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, StepDelta}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
 import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
@@ -157,7 +149,7 @@ class RecoverySpec
     var stepAccumulated = 0
     val creditMonitor = new CreditMonitorImpl()
     val inputHub = new RecoveryInternalQueueImpl(creditMonitor)
-    inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), null)
+    inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), 0, ()=> {})
     var currentStep = 0L
     determinants.foreach {
       case StepDelta(from, steps) =>
@@ -177,7 +169,7 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log" in {
-    val workerName = "WF1-CSVFileScan-operator-7b862423-1731-4824-ab4b-e6b6b8dfb30d-main-0"
+    val workerName = "WF1-CSVFileScan-operator-067a5053-ee9e-4ff6-a160-cf63c6fe054a-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     val iter = logStorage.getReader.mkLogRecordIterator()
     while (iter.hasNext) {
