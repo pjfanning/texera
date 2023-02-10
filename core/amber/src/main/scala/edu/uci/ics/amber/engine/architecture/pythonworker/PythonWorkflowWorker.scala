@@ -7,7 +7,11 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInitializer, StateRestoreConfig, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.{
+  DataProcessorRPCHandlerInitializer,
+  StateRestoreConfig,
+  WorkflowWorker
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -50,7 +54,7 @@ class PythonWorkflowWorker(
       workerLayer,
       parentNetworkCommunicationActorRef,
       false,
-      StateRestoreConfig(None,None)
+      StateRestoreConfig(None, None)
     ) {
 
   // Input/Output port used in between Python and Java processes.

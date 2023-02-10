@@ -20,7 +20,7 @@ object CheckpointHolder {
     checkpoints.contains(id) && checkpoints(id).contains(alignment)
   }
 
-  def getCheckpoint(id: ActorVirtualIdentity, alignment: Long):SavedCheckpoint ={
+  def getCheckpoint(id: ActorVirtualIdentity, alignment: Long): SavedCheckpoint = {
     assert(hasCheckpoint(id, alignment))
     checkpoints(id)(alignment)
   }

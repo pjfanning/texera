@@ -175,7 +175,7 @@ class DataProcessor( // meta dependencies:
   protected var currentInputActor: ActorVirtualIdentity = _
   var totalValidStep = 0L
 
-  class SpecialTupleIterator extends Iterator[(ITuple, Option[Int])]{
+  class SpecialTupleIterator extends Iterator[(ITuple, Option[Int])] {
     val queue = new mutable.Queue[(ITuple, Option[Int])]
     override def hasNext: Boolean = queue.nonEmpty
 

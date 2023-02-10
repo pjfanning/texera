@@ -5,8 +5,16 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{
+  DeterminantLogStorage,
+  EmptyLogStorage,
+  LocalFSLogStorage
+}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  ProcessControlMessage,
+  StepDelta
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
 import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, InputTuple}
@@ -149,7 +157,7 @@ class RecoverySpec
     var stepAccumulated = 0
     val creditMonitor = new CreditMonitorImpl()
     val inputHub = new RecoveryInternalQueueImpl(creditMonitor)
-    inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), 0, ()=> {})
+    inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), 0, () => {})
     var currentStep = 0L
     determinants.foreach {
       case StepDelta(from, steps) =>

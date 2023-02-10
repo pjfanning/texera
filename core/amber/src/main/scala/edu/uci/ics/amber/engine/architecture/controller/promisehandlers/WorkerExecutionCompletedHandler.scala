@@ -51,7 +51,10 @@ trait WorkerExecutionCompletedHandler {
             // after query result come back: send completed event, cleanup ,and kill workflow
             interactionHistory
               .append(
-                (((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt, execution.getAllWorkers.map(x => (x, -1L)).toMap + (CONTROLLER -> -1L))
+                (
+                  ((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt,
+                  execution.getAllWorkers.map(x => (x, -1L)).toMap + (CONTROLLER -> -1L)
+                )
               )
             sendToClient(WorkflowReplayInfo(interactionHistory))
             sendToClient(WorkflowCompleted())

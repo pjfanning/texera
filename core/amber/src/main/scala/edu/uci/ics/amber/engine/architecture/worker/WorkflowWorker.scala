@@ -157,24 +157,28 @@ class WorkflowWorker(
       case Some(replayTo) =>
         val queue = inputQueue match {
           case impl: RecoveryInternalQueueImpl => impl
-          case impl: WorkerInternalQueueImpl =>
+          case impl: WorkerInternalQueueImpl   =>
             // convert to replay queue if we have normal queue
             val newQueue = new RecoveryInternalQueueImpl(creditMonitor)
             inputQueue = newQueue
             newQueue
         }
-        queue.initialize(logStorage.getReader.mkLogRecordIterator(), dataProcessor.totalValidStep,()=>{
-          val syncFuture = new CompletableFuture[Unit]()
-          context.self ! ReplaceRecoveryQueue(syncFuture)
-          syncFuture.get()
-        })
+        queue.initialize(
+          logStorage.getReader.mkLogRecordIterator(),
+          dataProcessor.totalValidStep,
+          () => {
+            val syncFuture = new CompletableFuture[Unit]()
+            context.self ! ReplaceRecoveryQueue(syncFuture)
+            syncFuture.get()
+          }
+        )
         logger.info("set replay to " + replayTo)
         queue.setReplayTo(replayTo)
         recoveryManager.registerOnStart(() => {}
-          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
         )
         recoveryManager.setNotifyReplayCallback(() => {}
-          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
         )
         recoveryManager.Start()
         recoveryManager.registerOnEnd(() => {
@@ -192,7 +196,7 @@ class WorkflowWorker(
           case impl: RecoveryInternalQueueImpl =>
             replaceRecoveryQueue()
           case impl: WorkerInternalQueueImpl =>
-            // do nothing
+          // do nothing
         }
     }
     dataProcessor.initialize(
@@ -208,7 +212,7 @@ class WorkflowWorker(
     receiveAndProcessMessages
   }
 
-  def replaceRecoveryQueue(): Unit ={
+  def replaceRecoveryQueue(): Unit = {
     val oldInputQueue = inputQueue.asInstanceOf[RecoveryInternalQueueImpl]
     inputQueue = new WorkerInternalQueueImpl(creditMonitor)
     // add unprocessed inputs into new queue

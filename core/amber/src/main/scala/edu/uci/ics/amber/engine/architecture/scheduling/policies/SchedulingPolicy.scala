@@ -5,7 +5,11 @@ import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -62,14 +66,18 @@ abstract class SchedulingPolicy(workflow: Workflow) {
 
   protected def getRegion(workerId: ActorVirtualIdentity): Option[PipelinedRegion] = {
     val opId = workflow.getOperator(workerId).id
-    execution.runningRegions.find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(opId)).map(workflow.physicalPlan.getPipelinedRegion)
+    execution.runningRegions
+      .find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(opId))
+      .map(workflow.physicalPlan.getPipelinedRegion)
   }
 
   /**
     * A link's region is the region of the source operator of the link.
     */
   protected def getRegion(link: LinkIdentity): Option[PipelinedRegion] = {
-    execution.runningRegions.find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(link.from)).map(workflow.physicalPlan.getPipelinedRegion)
+    execution.runningRegions
+      .find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(link.from))
+      .map(workflow.physicalPlan.getPipelinedRegion)
   }
 
   // gets the ready regions that is not currently running

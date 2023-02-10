@@ -351,7 +351,10 @@ class ControllerProcessor
         execution.getAllWorkers
           .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
           .foreach(info =>
-            info.ref ! WorkflowRecoveryMessage(actorId, ContinueReplayTo(conf.workerConfs(info.id).replayTo.get))
+            info.ref ! WorkflowRecoveryMessage(
+              actorId,
+              ContinueReplayTo(conf.workerConfs(info.id).replayTo.get)
+            )
           )
         setReplayToAndStartReplay(conf.controllerConf.replayTo.get)
       case UpdateRecoveryStatus(isRecovering) =>
@@ -419,7 +422,7 @@ class ControllerProcessor
     setReplayToAndStartReplay(replayTo)
   }
 
-  def interruptReplay(): Unit ={
+  def interruptReplay(): Unit = {
     controlMessagesToReplay = Iterator()
     replayToStep = numControlSteps
     assert(checkIfReplayCompleted())

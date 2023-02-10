@@ -32,9 +32,19 @@ trait RegionsTimeSlotExpiredHandler {
   registerHandler { (msg: RegionsTimeSlotExpired, sender) =>
     {
       val notCompletedRegions =
-        msg.regions.diff(scheduler.schedulingPolicy.getCompletedRegions().map(workflow.physicalPlan.getPipelinedRegion))
+        msg.regions.diff(
+          scheduler.schedulingPolicy
+            .getCompletedRegions()
+            .map(workflow.physicalPlan.getPipelinedRegion)
+        )
 
-      if (notCompletedRegions.subsetOf(scheduler.schedulingPolicy.getRunningRegions().map(workflow.physicalPlan.getPipelinedRegion))) {
+      if (
+        notCompletedRegions.subsetOf(
+          scheduler.schedulingPolicy
+            .getRunningRegions()
+            .map(workflow.physicalPlan.getPipelinedRegion)
+        )
+      ) {
         scheduler.onTimeSlotExpired(notCompletedRegions, availableNodes).flatMap(_ => Future.Unit)
       } else {
         if (notCompletedRegions.nonEmpty) {

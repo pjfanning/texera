@@ -43,7 +43,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     replayTo = dest
   }
 
-  def initialize(records: Iterator[InMemDeterminant], currentDPStep: Long, onRecoveryCompleted: () => Unit): Unit = {
+  def initialize(
+      records: Iterator[InMemDeterminant],
+      currentDPStep: Long,
+      onRecoveryCompleted: () => Unit
+  ): Unit = {
     this.orderedQueue = new LinkedBlockingQueue[InternalElement]()
     this.onRecoveryComplete = onRecoveryCompleted
     // restore replay progress by dropping some of the entries
@@ -51,13 +55,13 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     recordRead = 0
     var accumulatedSteps = 0L
     this.records = records
-    while(accumulatedSteps < currentDPStep){
+    while (accumulatedSteps < currentDPStep) {
       loadDeterminant()
-      accumulatedSteps += (if(step == 0) 1 else step)
+      accumulatedSteps += (if (step == 0) 1 else step)
       step = 0
     }
     println(s"Internal Queue: accumulated step = $accumulatedSteps actual steps = $currentDPStep")
-    if(accumulatedSteps > currentDPStep){
+    if (accumulatedSteps > currentDPStep) {
       step = accumulatedSteps - currentDPStep
     }
     println(s"Internal Queue: recovered read = $recordRead actual read = $copiedRead")

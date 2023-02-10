@@ -2,7 +2,12 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowRecoveryStatus, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  AdditionalOperatorInfo,
+  WorkflowPaused,
+  WorkflowRecoveryStatus,
+  WorkflowReplayInfo
+}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
@@ -12,8 +17,24 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowCheckpointedEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowStateEvent}
-import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, SkipTupleRequest, WorkflowAdditionalOperatorInfoRequest, WorkflowCheckpointRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  WorkflowAdditionalOperatorInfoEvent,
+  WorkflowCheckpointedEvent,
+  WorkflowExecutionErrorEvent,
+  WorkflowInteractionHistoryEvent,
+  WorkflowStateEvent
+}
+import edu.uci.ics.texera.web.model.websocket.request.{
+  RemoveBreakpointRequest,
+  SkipTupleRequest,
+  WorkflowAdditionalOperatorInfoRequest,
+  WorkflowCheckpointRequest,
+  WorkflowKillRequest,
+  WorkflowPauseRequest,
+  WorkflowReplayRequest,
+  WorkflowResumeRequest
+}
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -27,7 +48,7 @@ class JobRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  var planner:ReplayPlanner = _
+  var planner: ReplayPlanner = _
 
   addSubscription(
     stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
@@ -86,13 +107,12 @@ class JobRuntimeService(
     }
   }))
 
-
-  def plannerNextStep(): Unit ={
-    if(planner.hasNext){
+  def plannerNextStep(): Unit = {
+    if (planner.hasNext) {
       planner.next() match {
         case ReplayPlanner.CheckpointCurrentState() =>
           client.takeGlobalCheckpoint()
-        case r @ ReplayPlanner.ReplayExecution(_,_) =>
+        case r @ ReplayPlanner.ReplayExecution(_, _) =>
           client.replayExecution(r)
       }
     }
@@ -115,7 +135,7 @@ class JobRuntimeService(
   addSubscription(
     client
       .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
-        if(!evt.isRecovering){
+        if (!evt.isRecovering) {
           plannerNextStep()
         }
       })

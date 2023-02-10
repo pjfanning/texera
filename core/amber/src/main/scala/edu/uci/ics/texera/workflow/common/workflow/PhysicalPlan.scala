@@ -4,7 +4,11 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.toOperatorIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -76,7 +80,7 @@ case class PhysicalPlan(
 
   def getLayer(layer: LayerIdentity): OpExecConfig = operatorMap(layer)
 
-  def getPipelinedRegion(id:PipelinedRegionIdentity): PipelinedRegion = pipelinedRegionMap(id)
+  def getPipelinedRegion(id: PipelinedRegionIdentity): PipelinedRegion = pipelinedRegionMap(id)
 
   def getUpstream(opID: LayerIdentity): List[LayerIdentity] = {
     dag.incomingEdgesOf(opID).asScala.map(e => dag.getEdgeSource(e)).toList
