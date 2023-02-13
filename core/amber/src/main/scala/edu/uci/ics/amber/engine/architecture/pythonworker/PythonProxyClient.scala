@@ -1,11 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
-import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.{ControlElement, ControlElementV2, DataElement}
+import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.{
+  ControlElement,
+  ControlElementV2,
+  DataElement
+}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{controlInvocationToV2, returnInvocationToV2}
+import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
+  controlInvocationToV2,
+  returnInvocationToV2
+}
 import edu.uci.ics.amber.engine.common.ambermessage.{PythonControlMessage, _}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, IgnoreReply, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
@@ -84,11 +91,6 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
         writeArrowStream(tuples, from, isEnd = false)
       case EndOfUpstream() =>
         writeArrowStream(mutable.Queue(), from, isEnd = true)
-      case EpochMarker(id, dest, cmd) =>
-        val controlInvocation = cmd.map(c => ControlInvocation(IgnoreReply, c))
-        val controlInvocationV2 = controlInvocation.map(c => controlInvocationToV2(c))
-        writeArrowStream(mutable.Queue(), from, isEnd = false,
-          EpochMarkerV2(id, dest.orNull, controlInvocationV2.orNull))
     }
   }
 
@@ -116,14 +118,13 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
   private def writeArrowStream(
       tuples: mutable.Queue[Tuple],
       from: ActorVirtualIdentity,
-      isEnd: Boolean,
-    epochMarker: EpochMarkerV2 = null
+      isEnd: Boolean
   ): Unit = {
 
     val schema = if (tuples.isEmpty) new Schema() else tuples.front.getSchema
-    val descriptor = FlightDescriptor.command(PythonDataHeader(from, isEnd, epochMarker).toByteArray)
+    val descriptor = FlightDescriptor.command(PythonDataHeader(from, isEnd).toByteArray)
     logger.info(
-      s"sending data with descriptor ${PythonDataHeader(from, isEnd, epochMarker)}, schema $schema, size of batch ${tuples.size}"
+      s"sending data with descriptor ${PythonDataHeader(from, isEnd)}, schema $schema, size of batch ${tuples.size}"
     )
     val flightListener = new SyncPutListener
     val schemaRoot = VectorSchemaRoot.create(ArrowUtils.fromTexeraSchema(schema), allocator)

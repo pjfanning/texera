@@ -3,12 +3,13 @@ package edu.uci.ics.amber.engine.common.ambermessage
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
+import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
 sealed trait DataPayload extends Serializable {}
 
 final case class EpochMarker(
-    id: Int,
-    destination: Option[LayerIdentity],
+    id: String,
+    scope: PhysicalPlan,
     command: Option[ControlCommand[_]]
 ) extends DataPayload
 

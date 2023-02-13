@@ -98,6 +98,16 @@ case class LogicalPlan(
     downstream.toList
   }
 
+  def opSchemaInfo(operatorID: String): OperatorSchemaInfo = {
+    val op = operatorMap(operatorID)
+    val inputSchemas: Array[Schema] =
+      if (!op.isInstanceOf[SourceOperatorDescriptor])
+        inputSchemaMap(op.operatorIdentifier).map(s => s.get).toArray
+      else Array()
+    val outputSchemas = outputSchemaMap(op.operatorIdentifier).toArray
+    OperatorSchemaInfo(inputSchemas, outputSchemas)
+  }
+
   def propagateWorkflowSchema(): (Map[OperatorIdentity, List[Option[Schema]]], List[Throwable]) = {
     // a map from an operator to the list of its input schema
     val inputSchemaMap =
@@ -201,14 +211,7 @@ case class LogicalPlan(
     var physicalPlan = PhysicalPlan(List(), List())
 
     operators.foreach(o => {
-      val inputSchemas: Array[Schema] =
-        if (!o.isInstanceOf[SourceOperatorDescriptor])
-          inputSchemaMap(o.operatorIdentifier).map(s => s.get).toArray
-        else Array()
-      val outputSchemas = outputSchemaMap(o.operatorIdentifier).toArray
-
-      var ops =
-        o.operatorExecutorMultiLayer(OperatorSchemaInfo(inputSchemas, outputSchemas))
+      var ops = o.operatorExecutorMultiLayer(opSchemaInfo(o.operatorID))
 
       // make sure the input/output ports of the physical operators are set properly
       val firstOp = ops.layersOfLogicalOperator(o.operatorIdentifier).head

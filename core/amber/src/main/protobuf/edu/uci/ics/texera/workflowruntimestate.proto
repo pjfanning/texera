@@ -88,3 +88,8 @@ message JobMetadataStore{
   int64 eid = 3;
   bool is_recovering = 4;
 }
+
+message JobReconfigurationStore {
+
+
+}

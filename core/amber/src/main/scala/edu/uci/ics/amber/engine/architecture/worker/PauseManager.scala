@@ -6,18 +6,18 @@ import scala.collection.mutable
 
 class PauseManager(dataProcessor: DataProcessor) {
 
-  private val globalPauses = new mutable.HashSet[PauseType.Value]()
+  private val globalPauses = new mutable.HashSet[PauseType]()
   private val specificInputPauses =
-    new mutable.HashMap[PauseType.Value, mutable.Set[ActorVirtualIdentity]]
-      with mutable.MultiMap[PauseType.Value, ActorVirtualIdentity]
+    new mutable.HashMap[PauseType, mutable.Set[ActorVirtualIdentity]]
+      with mutable.MultiMap[PauseType, ActorVirtualIdentity]
 
-  def pause(pauseType: PauseType.Value): Unit = {
+  def pause(pauseType: PauseType): Unit = {
     globalPauses.add(pauseType)
     // disable all data queues
     dataProcessor.internalQueue.dataQueues.values.foreach(q => q.enable(false))
   }
 
-  def pauseInputChannel(pauseType: PauseType.Value, inputs: List[ActorVirtualIdentity]): Unit = {
+  def pauseInputChannel(pauseType: PauseType, inputs: List[ActorVirtualIdentity]): Unit = {
     inputs.foreach(input => {
       specificInputPauses.addBinding(pauseType, input)
       // disable specified data queues
@@ -25,7 +25,7 @@ class PauseManager(dataProcessor: DataProcessor) {
     })
   }
 
-  def resume(pauseType: PauseType.Value): Unit = {
+  def resume(pauseType: PauseType): Unit = {
     globalPauses.remove(pauseType)
     specificInputPauses.remove(pauseType)
 

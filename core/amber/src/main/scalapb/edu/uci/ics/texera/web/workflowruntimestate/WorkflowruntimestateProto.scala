@@ -23,7 +23,8 @@ object WorkflowruntimestateProto extends _root_.scalapb.GeneratedFileObject {
       edu.uci.ics.texera.web.workflowruntimestate.OperatorWorkerMapping,
       edu.uci.ics.texera.web.workflowruntimestate.OperatorRuntimeStats,
       edu.uci.ics.texera.web.workflowruntimestate.JobStatsStore,
-      edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
+      edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore,
+      edu.uci.ics.texera.web.workflowruntimestate.JobReconfigurationStore
     )
   private lazy val ProtoBytes: _root_.scala.Array[Byte] =
       scalapb.Encoding.fromBase64(scala.collection.immutable.Seq(
@@ -66,9 +67,10 @@ object WorkflowruntimestateProto extends _root_.scalapb.GeneratedFileObject {
   2ViLk9wZXJhdG9yUnVudGltZVN0YXRzQgriPwcSBXZhbHVlUgV2YWx1ZToCOAEi2wEKEEpvYk1ldGFkYXRhU3RvcmUSUQoFc3Rhd
   GUYASABKA4yLy5lZHUudWNpLmljcy50ZXhlcmEud2ViLldvcmtmbG93QWdncmVnYXRlZFN0YXRlQgriPwcSBXN0YXRlUgVzdGF0Z
   RIgCgVlcnJvchgCIAEoCUIK4j8HEgVlcnJvclIFZXJyb3ISGgoDZWlkGAMgASgDQgjiPwUSA2VpZFIDZWlkEjYKDWlzX3JlY292Z
-  XJpbmcYBCABKAhCEeI/DhIMaXNSZWNvdmVyaW5nUgxpc1JlY292ZXJpbmcqlAEKF1dvcmtmbG93QWdncmVnYXRlZFN0YXRlEhEKD
-  VVOSU5JVElBTElaRUQQABIJCgVSRUFEWRABEgsKB1JVTk5JTkcQAhILCgdQQVVTSU5HEAMSCgoGUEFVU0VEEAQSDAoIUkVTVU1JT
-  kcQBRINCglDT01QTEVURUQQBhILCgdBQk9SVEVEEAcSCwoHVU5LTk9XThAIQgniPwZIAFgAeABiBnByb3RvMw=="""
+  XJpbmcYBCABKAhCEeI/DhIMaXNSZWNvdmVyaW5nUgxpc1JlY292ZXJpbmciGQoXSm9iUmVjb25maWd1cmF0aW9uU3RvcmUqlAEKF
+  1dvcmtmbG93QWdncmVnYXRlZFN0YXRlEhEKDVVOSU5JVElBTElaRUQQABIJCgVSRUFEWRABEgsKB1JVTk5JTkcQAhILCgdQQVVTS
+  U5HEAMSCgoGUEFVU0VEEAQSDAoIUkVTVU1JTkcQBRINCglDT01QTEVURUQQBhILCgdBQk9SVEVEEAcSCwoHVU5LTk9XThAIQgniP
+  wZIAFgAeABiBnByb3RvMw=="""
       ).mkString)
   lazy val scalaDescriptor: _root_.scalapb.descriptors.FileDescriptor = {
     val scalaProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(ProtoBytes)

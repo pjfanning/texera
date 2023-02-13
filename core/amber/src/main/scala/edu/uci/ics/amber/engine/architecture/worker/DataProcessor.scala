@@ -44,7 +44,8 @@ import java.util.concurrent.{ExecutorService, Executors, Future}
 import scala.collection.mutable
 
 class DataProcessor( // dependencies:
-    operator: IOperatorExecutor, // core logic
+    val workerIndex: Int,
+    var operator: IOperatorExecutor, // core logic
     asyncRPCClient: AsyncRPCClient, // to send controls
     outputManager: OutputManager, // to send output tuples
     breakpointManager: BreakpointManager, // to evaluate breakpoints
@@ -57,7 +58,7 @@ class DataProcessor( // dependencies:
     val recoveryQueue: RecoveryQueue,
     val actorId: ActorVirtualIdentity,
     val actorContext: ActorContext, // context of this actor
-    val opExecConfig: OpExecConfig
+    var opExecConfig: OpExecConfig
 ) extends AmberLogging {
 
   val pauseManager: PauseManager = new PauseManager(this)
@@ -230,7 +231,7 @@ class DataProcessor( // dependencies:
 
     val (outputTuple, outputPortOpt) = out
     if (breakpointManager.evaluateTuple(outputTuple)) {
-      pauseManager.pause(PauseType.UserPause)
+      pauseManager.pause(UserPause)
       outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
       stateManager.transitTo(PAUSED)
     } else {
@@ -389,10 +390,10 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def processEpochMarker(from: ActorVirtualIdentity, marker: EpochMarker): Unit = {
-    upstreamLinkStatus.markEpochMarker(from, marker)
-    pauseManager.pauseInputChannel(PauseType.EpochMarker, List(from))
-    if (upstreamLinkStatus.epochMarkerComplete(marker.id)) {
-      // invoke control commands carried with the epoch marker
+    pauseManager.pauseInputChannel(EpochMarkerPause(marker.id), List(from))
+    val epochMarkerCompleted = upstreamLinkStatus.markEpochMarker(from, marker)
+    if (epochMarkerCompleted) {
+      // invoke the control command carried with the epoch marker
       if (marker.command.nonEmpty) {
         this.asyncRPCServer.receive(
           ControlInvocation(AsyncRPCClient.IgnoreReply, marker.command.get),
@@ -400,11 +401,11 @@ class DataProcessor( // dependencies:
         )
       }
       // if this operator is not the final destination of the marker, pass it downstream
-      if (marker.destination.nonEmpty && marker.destination.get != opExecConfig.id) {
+      if (!marker.scope.sinkOperators.contains(opExecConfig.id)) {
         this.outputManager.emitEpochMarker(marker)
       }
       // unblock input channels
-      pauseManager.resume(PauseType.EpochMarker)
+      pauseManager.resume(EpochMarkerPause(marker.id))
     }
   }
 

@@ -21,14 +21,17 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     */
   private val upstreamMap =
     new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
+  private val upstreamMapReverse =
+    new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
   private val completedLinkIds = new mutable.HashSet[LinkIdentity]()
 
   private val epochMarkerReceived =
-    new mutable.HashMap[Integer, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
+    new mutable.HashMap[String, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamMap.update(input, upstreamMap(input) + identifier)
+    upstreamMapReverse.update(identifier, input)
   }
 
   def markWorkerEOF(identifier: ActorVirtualIdentity): Unit = {
@@ -37,13 +40,23 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     }
   }
 
-  def markEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker): Unit = {
+  // markers the arrival of an epoch marker,
+  // returns a boolean indicating if the epoch marker is completely received from all senders within scope
+  def markEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker): Boolean = {
     val markerId = epochMarker.id
     epochMarkerReceived.update(markerId, epochMarkerReceived(markerId) + from)
-  }
 
-  def epochMarkerComplete(markerId: Int): Boolean =
-    epochMarkerReceived(markerId) == allUncompletedSenders
+    // check if the epoch marker is completed
+    val sendersWithinScope = allUncompletedSenders.filter(sender =>
+      epochMarker.scope.links.contains(upstreamMapReverse(sender))
+    )
+    val epochMarkerCompleted = epochMarkerReceived(markerId) == sendersWithinScope
+    if (epochMarkerCompleted) {
+      epochMarkerReceived.remove(markerId) // clean up on epoch marker completion
+    }
+
+    epochMarkerCompleted
+  }
 
   def allUncompletedSenders: Set[ActorVirtualIdentity] = {
     upstreamMap.filterKeys(k => !completedLinkIds.contains(k)).values.flatten.toSet

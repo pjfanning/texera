@@ -17,7 +17,6 @@ object AmbermessageProto extends _root_.scalapb.GeneratedFileObject {
       edu.uci.ics.amber.engine.common.ambermessage.ControlInvocationV2,
       edu.uci.ics.amber.engine.common.ambermessage.ReturnInvocationV2,
       edu.uci.ics.amber.engine.common.ambermessage.ControlPayloadV2Message,
-      edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2,
       edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader,
       edu.uci.ics.amber.engine.common.ambermessage.PythonControlMessage
     )
@@ -36,16 +35,12 @@ object AmbermessageProto extends _root_.scalapb.GeneratedFileObject {
   mVkdS51Y2kuaWNzLmFtYmVyLmVuZ2luZS5jb21tb24uQ29udHJvbEludm9jYXRpb25WMkIW4j8TEhFjb250cm9sSW52b2NhdGlvb
   kgAUhFjb250cm9sSW52b2NhdGlvbhJ5ChFyZXR1cm5faW52b2NhdGlvbhgCIAEoCzIzLmVkdS51Y2kuaWNzLmFtYmVyLmVuZ2luZ
   S5jb21tb24uUmV0dXJuSW52b2NhdGlvblYyQhXiPxISEHJldHVybkludm9jYXRpb25IAFIQcmV0dXJuSW52b2NhdGlvbkIOCgxzZ
-  WFsZWRfdmFsdWUi8AEKDUVwb2NoTWFya2VyVjISFwoCaWQYASABKANCB+I/BBICaWRSAmlkEmUKC2Rlc3RpbmF0aW9uGAIgASgLM
-  i4uZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lLmNvbW1vbi5MYXllcklkZW50aXR5QhPiPxASC2Rlc3RpbmF0aW9u8AEBUgtkZXN0a
-  W5hdGlvbhJfCgdjb21tYW5kGAMgASgLMjQuZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lLmNvbW1vbi5Db250cm9sSW52b2NhdGlvb
-  lYyQg/iPwwSB2NvbW1hbmTwAQFSB2NvbW1hbmQi8wEKEFB5dGhvbkRhdGFIZWFkZXISVAoDdGFnGAEgASgLMjUuZWR1LnVjaS5pY
-  3MuYW1iZXIuZW5naW5lLmNvbW1vbi5BY3RvclZpcnR1YWxJZGVudGl0eUIL4j8IEgN0YWfwAQFSA3RhZxIhCgZpc19lbmQYAiABK
-  AhCCuI/BxIFaXNFbmRSBWlzRW5kEmYKDGVwb2NoX21hcmtlchgDIAEoCzIuLmVkdS51Y2kuaWNzLmFtYmVyLmVuZ2luZS5jb21tb
-  24uRXBvY2hNYXJrZXJWMkIT4j8QEgtlcG9jaE1hcmtlcvABAVILZXBvY2hNYXJrZXIiygEKFFB5dGhvbkNvbnRyb2xNZXNzYWdlE
-  lQKA3RhZxgBIAEoCzI1LmVkdS51Y2kuaWNzLmFtYmVyLmVuZ2luZS5jb21tb24uQWN0b3JWaXJ0dWFsSWRlbnRpdHlCC+I/CBIDd
-  GFn8AEBUgN0YWcSXAoHcGF5bG9hZBgCIAEoCzIxLmVkdS51Y2kuaWNzLmFtYmVyLmVuZ2luZS5jb21tb24uQ29udHJvbFBheWxvY
-  WRWMkIP4j8MEgdwYXlsb2Fk8AEBUgdwYXlsb2FkQgniPwZIAFgAeAFiBnByb3RvMw=="""
+  WFsZWRfdmFsdWUiiwEKEFB5dGhvbkRhdGFIZWFkZXISVAoDdGFnGAEgASgLMjUuZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lLmNvb
+  W1vbi5BY3RvclZpcnR1YWxJZGVudGl0eUIL4j8IEgN0YWfwAQFSA3RhZxIhCgZpc19lbmQYAiABKAhCCuI/BxIFaXNFbmRSBWlzR
+  W5kIsoBChRQeXRob25Db250cm9sTWVzc2FnZRJUCgN0YWcYASABKAsyNS5lZHUudWNpLmljcy5hbWJlci5lbmdpbmUuY29tbW9uL
+  kFjdG9yVmlydHVhbElkZW50aXR5QgviPwgSA3RhZ/ABAVIDdGFnElwKB3BheWxvYWQYAiABKAsyMS5lZHUudWNpLmljcy5hbWJlc
+  i5lbmdpbmUuY29tbW9uLkNvbnRyb2xQYXlsb2FkVjJCD+I/DBIHcGF5bG9hZPABAVIHcGF5bG9hZEIJ4j8GSABYAHgBYgZwcm90b
+  zM="""
       ).mkString)
   lazy val scalaDescriptor: _root_.scalapb.descriptors.FileDescriptor = {
     val scalaProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(ProtoBytes)

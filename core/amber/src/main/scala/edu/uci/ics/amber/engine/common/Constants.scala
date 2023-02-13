@@ -62,4 +62,8 @@ object Constants {
   var schedulingPolicyName: String = AmberUtils.amberConfig.getString("scheduling.policy-name")
   var timeSlotExpirationDurationInMs: Int =
     AmberUtils.amberConfig.getInt("scheduling.time-slot-expiration-duration-ms")
+
+  var enableTransactionalReconfiguration: Boolean =
+    AmberUtils.amberConfig.getBoolean("reconfiguration.enable-transactional-reconfiguration")
+
 }

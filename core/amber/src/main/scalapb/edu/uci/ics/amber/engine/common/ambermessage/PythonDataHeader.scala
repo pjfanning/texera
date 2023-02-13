@@ -8,8 +8,7 @@ package edu.uci.ics.amber.engine.common.ambermessage
 @SerialVersionUID(0L)
 final case class PythonDataHeader(
     tag: edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity,
-    isEnd: _root_.scala.Boolean,
-    epochMarker: edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2
+    isEnd: _root_.scala.Boolean
     ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PythonDataHeader] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
@@ -27,13 +26,6 @@ final case class PythonDataHeader(
         val __value = isEnd
         if (__value != false) {
           __size += _root_.com.google.protobuf.CodedOutputStream.computeBoolSize(2, __value)
-        }
-      };
-      
-      {
-        val __value = epochMarker
-        if (__value != edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance) {
-          __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(__value.serializedSize) + __value.serializedSize
         }
       };
       __size
@@ -61,18 +53,9 @@ final case class PythonDataHeader(
           _output__.writeBool(2, __v)
         }
       };
-      {
-        val __v = epochMarker
-        if (__v != edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance) {
-          _output__.writeTag(3, 2)
-          _output__.writeUInt32NoTag(__v.serializedSize)
-          __v.writeTo(_output__)
-        }
-      };
     }
     def withTag(__v: edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity): PythonDataHeader = copy(tag = __v)
     def withIsEnd(__v: _root_.scala.Boolean): PythonDataHeader = copy(isEnd = __v)
-    def withEpochMarker(__v: edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2): PythonDataHeader = copy(epochMarker = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -83,10 +66,6 @@ final case class PythonDataHeader(
           val __t = isEnd
           if (__t != false) __t else null
         }
-        case 3 => {
-          val __t = epochMarker
-          if (__t != edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance) __t else null
-        }
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
@@ -94,7 +73,6 @@ final case class PythonDataHeader(
       (__field.number: @_root_.scala.unchecked) match {
         case 1 => tag.toPMessage
         case 2 => _root_.scalapb.descriptors.PBoolean(isEnd)
-        case 3 => epochMarker.toPMessage
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
@@ -107,7 +85,6 @@ object PythonDataHeader extends scalapb.GeneratedMessageCompanion[edu.uci.ics.am
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader = {
     var __tag: _root_.scala.Option[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity] = _root_.scala.None
     var __isEnd: _root_.scala.Boolean = false
-    var __epochMarker: _root_.scala.Option[edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2] = _root_.scala.None
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
@@ -117,15 +94,12 @@ object PythonDataHeader extends scalapb.GeneratedMessageCompanion[edu.uci.ics.am
           __tag = _root_.scala.Some(__tag.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
         case 16 =>
           __isEnd = _input__.readBool()
-        case 26 =>
-          __epochMarker = _root_.scala.Some(__epochMarker.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
         case tag => _input__.skipField(tag)
       }
     }
     edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader(
         tag = __tag.getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.defaultInstance),
-        isEnd = __isEnd,
-        epochMarker = __epochMarker.getOrElse(edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance)
+        isEnd = __isEnd
     )
   }
   implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader] = _root_.scalapb.descriptors.Reads{
@@ -133,18 +107,16 @@ object PythonDataHeader extends scalapb.GeneratedMessageCompanion[edu.uci.ics.am
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
       edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader(
         tag = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity]).getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.defaultInstance),
-        isEnd = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Boolean]).getOrElse(false),
-        epochMarker = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2]).getOrElse(edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance)
+        isEnd = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Boolean]).getOrElse(false)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
-  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = AmbermessageProto.javaDescriptor.getMessageTypes().get(4)
-  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = AmbermessageProto.scalaDescriptor.messages(4)
+  def javaDescriptor: _root_.com.google.protobuf.Descriptors.Descriptor = AmbermessageProto.javaDescriptor.getMessageTypes().get(3)
+  def scalaDescriptor: _root_.scalapb.descriptors.Descriptor = AmbermessageProto.scalaDescriptor.messages(3)
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
       case 1 => __out = edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-      case 3 => __out = edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2
     }
     __out
   }
@@ -152,25 +124,20 @@ object PythonDataHeader extends scalapb.GeneratedMessageCompanion[edu.uci.ics.am
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
   lazy val defaultInstance = edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader(
     tag = edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity.defaultInstance,
-    isEnd = false,
-    epochMarker = edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2.defaultInstance
+    isEnd = false
   )
   implicit class PythonDataHeaderLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader](_l) {
     def tag: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity] = field(_.tag)((c_, f_) => c_.copy(tag = f_))
     def isEnd: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Boolean] = field(_.isEnd)((c_, f_) => c_.copy(isEnd = f_))
-    def epochMarker: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2] = field(_.epochMarker)((c_, f_) => c_.copy(epochMarker = f_))
   }
   final val TAG_FIELD_NUMBER = 1
   final val IS_END_FIELD_NUMBER = 2
-  final val EPOCH_MARKER_FIELD_NUMBER = 3
   def of(
     tag: edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity,
-    isEnd: _root_.scala.Boolean,
-    epochMarker: edu.uci.ics.amber.engine.common.ambermessage.EpochMarkerV2
+    isEnd: _root_.scala.Boolean
   ): _root_.edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader = _root_.edu.uci.ics.amber.engine.common.ambermessage.PythonDataHeader(
     tag,
-    isEnd,
-    epochMarker
+    isEnd
   )
   // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.PythonDataHeader])
 }

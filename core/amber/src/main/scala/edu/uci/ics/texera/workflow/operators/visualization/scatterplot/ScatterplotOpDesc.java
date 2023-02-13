@@ -75,7 +75,8 @@ public class ScatterplotOpDesc extends VisualizationOperator {
             numWorkers = 1;
         }
         return OpExecConfig.oneToOneLayer(this.operatorIdentifier(),
-                (OpExecFunc & Serializable) p -> new ScatterplotOpExec(this, operatorSchemaInfo));
+                (OpExecFunc & Serializable) p -> new ScatterplotOpExec(this, operatorSchemaInfo))
+                .withIsOneToManyOp(true);
     }
 
     @Override

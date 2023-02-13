@@ -61,6 +61,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOp
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 
 import java.util.UUID
+import scala.util.Try
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
@@ -174,6 +175,17 @@ abstract class OperatorDescriptor extends Serializable {
 
   def setContext(workflowContext: WorkflowContext): Unit = {
     this.context = workflowContext
+  }
+
+  def supportReconfiguration: Boolean = false
+
+  def runtimeReconfiguration(
+      newOpDesc: OperatorDescriptor,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): Try[OpExecConfig] = {
+    throw new UnsupportedOperationException(
+      "operator " + getClass.getSimpleName + " does not support reconfiguration"
+    )
   }
 
 }

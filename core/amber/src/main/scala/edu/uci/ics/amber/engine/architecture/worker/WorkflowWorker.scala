@@ -8,12 +8,16 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
   NetworkInputPort,
   NetworkOutputPort,
   OutputManager
 }
 import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  EndMarker,
+  InputEpochMarker,
+  InputTuple
+}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
@@ -70,7 +74,6 @@ class WorkflowWorker(
   lazy val outputManager: OutputManager = wire[OutputManager]
   lazy val internalQueue: WorkerInternalQueue = dataProcessor.internalQueue
   lazy val pauseManager: PauseManager = dataProcessor.pauseManager
-  lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
   lazy val breakpointManager: BreakpointManager = wire[BreakpointManager]
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
@@ -85,7 +88,7 @@ class WorkflowWorker(
   override def getLogName: String = getWorkerLogName(actorId)
 
   def getSenderCredits(sender: ActorVirtualIdentity) = {
-    tupleProducer.getSenderCredits(sender)
+    internalQueue.getSenderCredits(sender)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -144,7 +147,18 @@ class WorkflowWorker(
   }
 
   def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
-    tupleProducer.processDataPayload(from, dataPayload)
+    dataPayload match {
+      case DataFrame(payload) =>
+        payload.foreach { i =>
+          internalQueue.appendElement(InputTuple(from, i))
+        }
+      case EndOfUpstream() =>
+        internalQueue.appendElement(EndMarker(from))
+      case marker @ EpochMarker(_, _, _) =>
+        internalQueue.appendElement(InputEpochMarker(from, marker))
+      case _ =>
+        throw new NotImplementedError()
+    }
   }
 
   def handleControlPayload(

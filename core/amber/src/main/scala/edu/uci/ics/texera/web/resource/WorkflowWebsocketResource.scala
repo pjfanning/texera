@@ -37,13 +37,13 @@ class WorkflowWebsocketResource extends LazyLogging {
 
   @OnOpen
   def myOnOpen(session: Session, config: EndpointConfig): Unit = {
-    SessionState.setState(session.getId, new SessionState(session))
+    SessionState.addSession(session.getId, new SessionState(session))
     logger.info("connection open")
   }
 
   @OnClose
   def myOnClose(session: Session, cr: CloseReason): Unit = {
-    SessionState.removeState(session.getId)
+    SessionState.removeSession(session.getId)
   }
 
   @OnMessage
@@ -72,6 +72,13 @@ class WorkflowWebsocketResource extends LazyLogging {
           workflowStateOpt.foreach(state =>
             send(session, state.exportService.exportResult(uidOpt.get, resultExportRequest))
           )
+        case modifyLogicRequest: ModifyLogicRequest =>
+          if (workflowStateOpt.isDefined) {
+            val jobService = workflowStateOpt.get.jobService.getValue
+            val modifyLogicResponse =
+              jobService.jobReconfigurationService.modifyOperatorLogic(modifyLogicRequest)
+            send(session, modifyLogicResponse)
+          }
         case other =>
           workflowStateOpt match {
             case Some(workflow) => workflow.wsInput.onNext(other, uidOpt)

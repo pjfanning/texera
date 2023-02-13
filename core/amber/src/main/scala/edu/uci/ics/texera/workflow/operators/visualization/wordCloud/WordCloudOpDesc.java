@@ -76,13 +76,13 @@ public class WordCloudOpDesc extends VisualizationOperator {
         OpExecConfig partialLayer = OpExecConfig.oneToOneLayer(
                 this.operatorIdentifier(),
                 (OpExecFunc & Serializable) i -> new WordCloudOpPartialExec(textColumn)
-        ).withId(partialId);
+        ).withId(partialId).withIsOneToManyOp(true);
 
         LayerIdentity finalId = util.makeLayer(operatorIdentifier(), "global");
         OpExecConfig finalLayer = OpExecConfig.manyToOneLayer(
                 this.operatorIdentifier(),
                 (OpExecFunc & Serializable) i -> new WordCloudOpFinalExec(topN)
-        ).withId(finalId);
+        ).withId(finalId).withIsOneToManyOp(true);
 
         OpExecConfig[] layers = { partialLayer, finalLayer };
         LinkIdentity[] links = { new LinkIdentity(partialLayer.id(), finalLayer.id()) };

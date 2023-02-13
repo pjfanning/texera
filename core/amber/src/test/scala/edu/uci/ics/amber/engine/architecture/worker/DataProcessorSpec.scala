@@ -10,7 +10,6 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
   NetworkInputPort,
   NetworkOutputPort,
   OutputManager
@@ -310,7 +309,6 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0)
     (operator.open _).expects().once()
     val actorContext: ActorContext = null
-    val batchToTupleConverter = mock[BatchToTupleConverter]
     val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
     val logStorage: DeterminantLogStorage = new EmptyLogStorage()
     val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)

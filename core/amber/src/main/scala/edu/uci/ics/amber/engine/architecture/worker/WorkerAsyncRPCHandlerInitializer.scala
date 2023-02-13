@@ -2,7 +2,6 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  BatchToTupleConverter,
   NetworkInputPort,
   NetworkOutputPort,
   OutputManager
@@ -25,12 +24,11 @@ class WorkerAsyncRPCHandlerInitializer(
     val controlOutputPort: NetworkOutputPort[ControlPayload],
     val dataOutputPort: NetworkOutputPort[DataPayload],
     val outputManager: OutputManager,
-    val batchToTupleConverter: BatchToTupleConverter,
     val upstreamLinkStatus: UpstreamLinkStatus,
     val pauseManager: PauseManager,
     val dataProcessor: DataProcessor,
     val internalQueue: WorkerInternalQueue,
-    val operator: IOperatorExecutor,
+    var operator: IOperatorExecutor,
     val breakpointManager: BreakpointManager,
     val stateManager: WorkerStateManager,
     val actorContext: ActorContext,

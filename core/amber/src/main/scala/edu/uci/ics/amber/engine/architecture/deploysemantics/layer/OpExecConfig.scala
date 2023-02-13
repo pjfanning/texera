@@ -31,9 +31,17 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor}
+import edu.uci.ics.amber.engine.common.{
+  Constants,
+  IOperatorExecutor,
+  ISinkOperatorExecutor,
+  ISourceOperatorExecutor
+}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
+import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
+import edu.uci.ics.texera.workflow.common.operators.map.MapOpExec
+import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
@@ -117,11 +125,12 @@ case class OpExecConfig(
     // input ports that are blocking
     blockingInputs: List[Int] = List(),
     // execution dependency of ports
-    dependency: Map[Int, Int] = Map()
+    dependency: Map[Int, Int] = Map(),
+    isOneToManyOp: Boolean = false
 ) {
 
   // return the runtime class of the corresponding OperatorExecutor
-  lazy val opExecClass: Class[_] =
+  lazy val opExecClass: Class[_ <: IOperatorExecutor] =
     initIOperatorExecutor((0, this)).getClass
 
   def isPythonOperator(): Boolean =
@@ -184,6 +193,10 @@ case class OpExecConfig(
 
   // creates a copy with the number of workers specified
   def withNumWorkers(numWorkers: Int): OpExecConfig = this.copy(numWorkers = numWorkers)
+
+  // creates a copy with the specified property that whether this operator is one-to-many
+  def withIsOneToManyOp(isOneToManyOp: Boolean): OpExecConfig =
+    this.copy(isOneToManyOp = isOneToManyOp)
 
   // returns all input links on a specific input port
   def getInputLinks(portIndex: Int): List[LinkIdentity] = {
