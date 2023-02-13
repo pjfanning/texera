@@ -1,11 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.{ActorContext, ActorRef}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -13,29 +8,14 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  DeterminantLogger,
-  LogManager,
-  ProcessControlMessage
-}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ControlPayload,
-  DataPayload,
-  WorkflowControlMessage,
-  WorkflowDataMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -50,15 +30,9 @@ import scala.collection.mutable
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeLink, FinalizeOperator}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  ControlElement,
-  DataElement,
-  EndMarker,
-  InputTuple
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
-import edu.uci.ics.amber.engine.common.tuple.amber.AmberTuple
-import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 object DataProcessor {
 
@@ -77,25 +51,24 @@ object DataProcessor {
 class DataProcessor( // meta dependencies:
     val ordinalMapping: OrdinalMapping,
     val actorId: ActorVirtualIdentity
-) extends DataProcessorRPCHandlerInitializer
-    with AmberLogging
+) extends AmberLogging
     with Serializable {
 
   // outer dependencies
   @transient
-  protected var internalQueue: WorkerInternalQueue = _
+  private[promisehandlers] var internalQueue: WorkerInternalQueue = _
   @transient
-  protected var logStorage: DeterminantLogStorage = _
+  private[promisehandlers] var logStorage: DeterminantLogStorage = _
   @transient
-  protected var logManager: LogManager = _
+  private[promisehandlers] var logManager: LogManager = _
   @transient
-  protected var recoveryManager: LocalRecoveryManager = _
+  private[promisehandlers] var recoveryManager: LocalRecoveryManager = _
   @transient
-  protected var actorContext: ActorContext = _
+  private[promisehandlers] var actorContext: ActorContext = _
   @transient
-  protected var operator: IOperatorExecutor = _
+  private[promisehandlers] var operator: IOperatorExecutor = _
   @transient
-  protected var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
+  private[promisehandlers] var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
 
   def initialize(
       operator: IOperatorExecutor, // core logic
@@ -138,25 +111,25 @@ class DataProcessor( // meta dependencies:
 
   // inner dependencies
   // 1. Data Output
-  lazy protected val dataOutputPort: NetworkOutputPort[DataPayload] =
+  lazy private[promisehandlers] val dataOutputPort: NetworkOutputPort[DataPayload] =
     new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
   // 2. Control Output
-  lazy protected val controlOutputPort: NetworkOutputPort[ControlPayload] = {
+  lazy private[promisehandlers] val controlOutputPort: NetworkOutputPort[ControlPayload] = {
     new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
   }
   // 3. RPC Layer
-  lazy protected val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
-  lazy protected val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
+  lazy private[promisehandlers] val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
+  lazy private[promisehandlers] val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
   // 4. pause manager
-  lazy protected val pauseManager: PauseManager = wire[PauseManager]
+  lazy private[promisehandlers] val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
-  lazy protected val breakpointManager: BreakpointManager = wire[BreakpointManager]
+  lazy private[promisehandlers] val breakpointManager: BreakpointManager = wire[BreakpointManager]
   // 6. upstream links
-  lazy protected val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
+  lazy private[promisehandlers] val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   // 7. state manager
-  lazy protected val stateManager: WorkerStateManager = new WorkerStateManager()
+  lazy private[promisehandlers] val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
-  lazy protected val outputManager: OutputManager = new OutputManager(actorId, dataOutputPort)
+  lazy private[promisehandlers] val outputManager: OutputManager = new OutputManager(actorId, dataOutputPort)
 
   /**
     * Map from Identifier to input number. Used to convert the Identifier
@@ -164,8 +137,8 @@ class DataProcessor( // meta dependencies:
     * We also keep track of the upstream actors so that we can emit
     * EndOfAllMarker when all upstream actors complete their job
     */
-  lazy protected val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
-  lazy protected val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
+  lazy private[promisehandlers] val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
+  lazy private[promisehandlers] val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.

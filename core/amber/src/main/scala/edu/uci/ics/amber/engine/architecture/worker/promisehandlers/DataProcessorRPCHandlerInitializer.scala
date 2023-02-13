@@ -1,12 +1,8 @@
-package edu.uci.ics.amber.engine.architecture.worker
+package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers._
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor}
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor
+import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 
 trait DataProcessorRPCHandlerInitializer
     extends AsyncRPCHandlerInitializer
@@ -35,6 +31,6 @@ trait DataProcessorRPCHandlerInitializer
     with NoOpHandler
     with ShutdownDPHandler
     with TakeCheckpointHandler {
-  this: DataProcessor => // Force it to be a data processor
+  val dp:DataProcessor
   var lastReportTime = 0L
 }
