@@ -49,8 +49,8 @@ trait ControllerAsyncRPCHandlerInitializer
   var statusUpdateAskHandle: Option[Cancellable] = None
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
-  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long,Int,Int)])] =
-    new ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long,Int,Int)])]()
+  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])] =
+    new ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])]()
   var workflowStartTimeStamp: Long = System.currentTimeMillis()
   var workflowPauseStartTime: Long = 0L
   var suppressStatusUpdate = false

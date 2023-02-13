@@ -16,8 +16,8 @@ trait CheckpointSupport {
       deserializer: Serialization
   ): Iterator[(ITuple, Option[Int])]
 
-  def getEstimatedCheckpointTime:Int
+  def getEstimatedCheckpointTime: Int
 
-  def getEstimatedStateLoadTime:Int
+  def getEstimatedStateLoadTime: Int
 
 }

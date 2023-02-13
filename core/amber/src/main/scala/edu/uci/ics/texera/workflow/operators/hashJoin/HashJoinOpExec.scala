@@ -92,9 +92,9 @@ class HashJoinOpExec[K](
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             buildTableHashMap.getOrElse(key, (new ArrayBuffer[Tuple](), false))
-          if(buildTableHits.contains(key)){
+          if (buildTableHits.contains(key)) {
             buildTableHits(key) += 1
-          }else{
+          } else {
             buildTableHits(key) = 1
           }
           if (matchedTuples.isEmpty) {

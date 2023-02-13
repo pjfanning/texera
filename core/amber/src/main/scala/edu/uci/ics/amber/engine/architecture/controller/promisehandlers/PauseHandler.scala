@@ -89,7 +89,7 @@ trait PauseHandler {
               workflowPauseStartTime = System.currentTimeMillis()
               println(s"current paused numControl = $numControlSteps")
               interactionHistory.append(
-                (time, alignments.toMap + (CONTROLLER -> (numControlSteps,0,0)))
+                (time, alignments.toMap + (CONTROLLER -> (numControlSteps, 0, 0)))
               )
             }
         }

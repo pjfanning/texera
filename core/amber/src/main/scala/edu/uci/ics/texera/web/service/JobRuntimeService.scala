@@ -107,19 +107,21 @@ class JobRuntimeService(
     if (planner.hasNext) {
       planner.next() match {
         case ReplayPlanner.CheckpointCurrentState() =>
-          client.takeGlobalCheckpoint().onSuccess(idx => {
-            if (idx != -1) {
-              val res = planner.addCheckpoint(idx)
-              if (res != -1) {
-                stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
+          client
+            .takeGlobalCheckpoint()
+            .onSuccess(idx => {
+              if (idx != -1) {
+                val res = planner.addCheckpoint(idx)
+                if (res != -1) {
+                  stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
+                }
               }
-            }
-            plannerNextStep()
-          })
-        case r @ ReplayPlanner.ReplayExecution(_, _,_) =>
+              plannerNextStep()
+            })
+        case r @ ReplayPlanner.ReplayExecution(_, _, _) =>
           client.replayExecution(r)
       }
-    }else{
+    } else {
       stateStore.jobMetadataStore.updateState(state => {
         state.withIsRecovering(false).withIsReplaying(false)
       })

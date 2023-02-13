@@ -20,7 +20,7 @@ object ControllerEvent {
 
   case class WorkflowRecoveryStatus(isRecovering: Boolean) extends ControlCommand[Unit]
 
-  case class WorkflowReplayInfo(history: Seq[(Int, Map[ActorVirtualIdentity, (Long, Int,Int)])])
+  case class WorkflowReplayInfo(history: Seq[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])])
       extends ControlCommand[Unit]
 
   case class WorkflowStateUpdate(aggState: WorkflowAggregatedState) extends ControlCommand[Unit]
