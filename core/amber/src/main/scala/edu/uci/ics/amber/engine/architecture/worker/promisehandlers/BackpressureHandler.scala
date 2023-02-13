@@ -6,10 +6,19 @@ import edu.uci.ics.amber.engine.architecture.worker.{
   PauseType
 }
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipConsoleLog,
+  SkipFaultTolerance,
+  SkipReply
+}
 
 object BackpressureHandler {
-  final case class Backpressure(enableBackpressure: Boolean) extends ControlCommand[Unit]
+  final case class Backpressure(enableBackpressure: Boolean)
+      extends ControlCommand[Unit]
+      with SkipReply
+      with SkipConsoleLog
+      with SkipFaultTolerance
 }
 
 /** Get queue and other resource usage of this worker

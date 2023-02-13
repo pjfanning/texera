@@ -78,7 +78,7 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
     val interactionPointIdx =
       alignments.indexWhere(x => x.contains(CONTROLLER) && x(CONTROLLER) == controllerAlignment)
     checkpointed = checkpointed ++ Set(interactionPointIdx)
-    interactionPointIdx
+    interactionPointIdx - 1
   }
 
   private def createRestore(fromCheckpoint: Int, replayTo: Int): WorkflowStateRestoreConfig = {
@@ -139,7 +139,7 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
         requireRestart = false
       }
     }
-    if (cur != replayTo) {
+    if (cur != replayTo || requireRestart) {
       println(s"replay from $cur to $replayTo with restart = $requireRestart")
       stepsQueue.enqueue(ReplayExecution(requireRestart, createRestore(cur, replayTo), cur))
     }
@@ -233,13 +233,13 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
       for (k <- 1 to right) {
         var replayTimeAfterK = 0
         for (j <- k to right) {
-          replayTimeAfterK += loadCost(k) + getExpectedReplayTime(time, k, j)
+          replayTimeAfterK += loadCost(k + from) + getExpectedReplayTime(time, k + from, j + from)
         }
         val subProblemReplayTime = dp(k - 1)
         if (dp(right) >= subProblemReplayTime + replayTimeAfterK) {
-          val newSet = res(k - 1) ++ Set(k)
+          val newSet = res(k - 1) ++ Set(k + from)
           if (newSet.map(checkpointCost(_)).sum <= checkpointCostThreshold) {
-            dp(right) = subProblemReplayTime + replayTimeAfterK + checkpointCost(k)
+            dp(right) = subProblemReplayTime + replayTimeAfterK + checkpointCost(k + from)
             res(right) = newSet
           }
         }

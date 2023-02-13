@@ -98,7 +98,7 @@ class JobRuntimeService(
         state.withCurrentReplayPos(reqPos).withIsReplaying(true)
         state.withIsRecovering(true)
       })
-      planner.startPlanning(reqPos)
+      planner.startPlanning(reqPos + 1)
       plannerNextStep()
     }
   }))

@@ -146,7 +146,7 @@ class NetworkCommunicationActor(parentRef: ActorRef, val actorId: ActorVirtualId
       WorkflowControlMessage(
         actorId,
         nextSeqNumForMainActor,
-        ControlInvocation(AsyncRPCClient.IgnoreReply, Backpressure(backpressureEnable))
+        ControlInvocation(Backpressure(backpressureEnable))
       )
     )
     context.parent ! msgToSend
