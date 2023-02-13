@@ -83,13 +83,8 @@ class JobRuntimeService(
   )
 
   addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
-    if (!stateStore.jobMetadataStore.getState.isReplaying) {
-      val replayPoints = mutable.ArrayBuffer[Map[ActorVirtualIdentity, Long]]()
-      evt.history.foreach {
-        case (i, identityToLong) =>
-          replayPoints.append(identityToLong)
-      }
-      planner = new ReplayPlanner(replayPoints.toArray)
+    if (planner == null) {
+      planner = new ReplayPlanner(evt.history)
       stateStore.jobMetadataStore.updateState(jobMetadata =>
         jobMetadata.withInteractionHistory(evt.history.map(_._1)).withCurrentReplayPos(-1)
       )
@@ -101,6 +96,7 @@ class JobRuntimeService(
     if (stateStore.jobMetadataStore.getState.currentReplayPos != reqPos) {
       stateStore.jobMetadataStore.updateState(state => {
         state.withCurrentReplayPos(reqPos).withIsReplaying(true)
+        state.withIsRecovering(true)
       })
       planner.startPlanning(reqPos)
       plannerNextStep()
@@ -111,10 +107,22 @@ class JobRuntimeService(
     if (planner.hasNext) {
       planner.next() match {
         case ReplayPlanner.CheckpointCurrentState() =>
-          client.takeGlobalCheckpoint()
-        case r @ ReplayPlanner.ReplayExecution(_, _) =>
+          client.takeGlobalCheckpoint().onSuccess(idx => {
+            if (idx != -1) {
+              val res = planner.addCheckpoint(idx)
+              if (res != -1) {
+                stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
+              }
+            }
+            plannerNextStep()
+          })
+        case r @ ReplayPlanner.ReplayExecution(_, _,_) =>
           client.replayExecution(r)
       }
+    }else{
+      stateStore.jobMetadataStore.updateState(state => {
+        state.withIsRecovering(false).withIsReplaying(false)
+      })
     }
   }
 
@@ -128,7 +136,6 @@ class JobRuntimeService(
             stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
           }
         }
-        plannerNextStep()
       })
   }))
 

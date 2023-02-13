@@ -185,6 +185,7 @@ class ControllerProcessor
   private var currentHead: ActorVirtualIdentity = null
 
   def setReplayToAndStartReplay(targetStep: Long): Unit = {
+    globalRecoveryManager.markRecoveryStatus(actorId, isRecovering = true)
     this.replayToStep = targetStep
     isReplaying = true
     suppressStatusUpdate = true
@@ -416,7 +417,6 @@ class ControllerProcessor
   }
 
   def enterReplay(replayTo: Long, onReplayComplete: () => Unit): Unit = {
-    globalRecoveryManager.markRecoveryStatus(actorId, isRecovering = true)
     this.onReplayComplete = onReplayComplete
     controlMessagesToReplay = logStorage.getReader.mkLogRecordIterator().drop(numControlSteps.toInt)
     setReplayToAndStartReplay(replayTo)

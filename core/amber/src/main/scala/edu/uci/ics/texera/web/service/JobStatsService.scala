@@ -66,7 +66,7 @@ class JobStatsService(
   private[this] def registerCallbacks(): Unit = {
     registerCallbackOnWorkflowStatusUpdate()
     registerCallbackOnWorkerAssignedUpdate()
-    registerCallbackOnWorkflowRecoveryUpdate()
+//    registerCallbackOnWorkflowRecoveryUpdate()
     registerCallbackOnWorkflowComplete()
     registerCallbackOnFatalError()
     registerCallbackOnWorkflowStateUpdate()
@@ -100,16 +100,16 @@ class JobStatsService(
     )
   }
 
-  private[this] def registerCallbackOnWorkflowRecoveryUpdate(): Unit = {
-    addSubscription(
-      client
-        .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
-          stateStore.jobMetadataStore.updateState { jobMetadata =>
-            jobMetadata.withIsRecovering(evt.isRecovering)
-          }
-        })
-    )
-  }
+//  private[this] def registerCallbackOnWorkflowRecoveryUpdate(): Unit = {
+//    addSubscription(
+//      client
+//        .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
+//          stateStore.jobMetadataStore.updateState { jobMetadata =>
+//            jobMetadata.withIsRecovering(evt.isRecovering)
+//          }
+//        })
+//    )
+//  }
 
   private[this] def registerCallbackOnWorkflowStateUpdate(): Unit = {
     addSubscription(

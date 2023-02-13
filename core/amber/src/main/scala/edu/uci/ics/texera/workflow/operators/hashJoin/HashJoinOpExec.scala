@@ -29,6 +29,7 @@ class HashJoinOpExec[K](
   var isBuildTableFinished: Boolean = false
   var buildTableHashMap: mutable.HashMap[K, (ArrayBuffer[Tuple], Boolean)] = _
   var outputSchema: Schema = operatorSchemaInfo.outputSchemas(0)
+  var buildTableHits: mutable.HashMap[K, Int] = mutable.HashMap[K, Int]()
 
   val buildTableTransferBatchSize = 4000
 
@@ -91,7 +92,11 @@ class HashJoinOpExec[K](
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             buildTableHashMap.getOrElse(key, (new ArrayBuffer[Tuple](), false))
-
+          if(buildTableHits.contains(key)){
+            buildTableHits(key) += 1
+          }else{
+            buildTableHits(key) = 1
+          }
           if (matchedTuples.isEmpty) {
             // do not have a match with the probe tuple
             if (joinType != JoinType.RIGHT_OUTER && joinType != JoinType.FULL_OUTER) {
@@ -250,6 +255,10 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
+  override def getStateInformation: String = {
+    s"Join: Top-5 matched keys = ${buildTableHits.toSeq.sortBy(_._2).reverse.map(_._1).take(5)}"
+  }
+
   override def serializeState(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
       checkpoint: SavedCheckpoint,
@@ -258,6 +267,10 @@ class HashJoinOpExec[K](
     checkpoint.save(
       "currentIterator",
       SerializedState.fromObject(currentIteratorState.toArray, serializer)
+    )
+    checkpoint.save(
+      "buildTableHits",
+      SerializedState.fromObject(buildTableHits, serializer)
     )
     checkpoint.save("hashMap", SerializedState.fromObject(buildTableHashMap, serializer))
     checkpoint.save(
@@ -270,6 +283,7 @@ class HashJoinOpExec[K](
       checkpoint: SavedCheckpoint,
       deserializer: Serialization
   ): Iterator[(ITuple, Option[Int])] = {
+    buildTableHits = checkpoint.load("buildTableHits").toObject(deserializer)
     buildTableHashMap = checkpoint.load("hashMap").toObject(deserializer)
     isBuildTableFinished = checkpoint.load("isBuildTableFinished").toObject(deserializer)
     checkpoint
@@ -277,5 +291,13 @@ class HashJoinOpExec[K](
       .toObject(deserializer)
       .asInstanceOf[Array[(ITuple, Option[Int])]]
       .toIterator
+  }
+
+  override def getEstimatedStateLoadTime: Int = {
+    buildTableHashMap.size / 10
+  }
+
+  override def getEstimatedCheckpointTime: Int = {
+    buildTableHashMap.size / 10
   }
 }

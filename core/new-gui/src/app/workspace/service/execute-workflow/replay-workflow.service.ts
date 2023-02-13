@@ -17,7 +17,7 @@ export class ReplayWorkflowService {
   public selectedIndex = -1;
 
   public replayStarted = false;
-  public replayEnded = false;
+  public replayEnded = true;
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
@@ -40,7 +40,7 @@ export class ReplayWorkflowService {
         this.checkpointed = [];
         this.selectedIndex = -1;
         this.operatorInfo = [];
-        this.replayEnded = false;
+        this.replayEnded = true;
         this.replayStarted = false;
       }
     });
@@ -59,11 +59,15 @@ export class ReplayWorkflowService {
   }
 
   public selectReplayPoint(index: number): void {
-    this.selectedIndex = index;
-    this.replayStarted = true;
-    this.replayEnded = false;
-    this.workflowWebsocketService.send("WorkflowReplayRequest", { replayPos: index });
-    this.notification.info("replaying time point " + this.history[index] + "s");
+    if(this.replayEnded) {
+      this.selectedIndex = index;
+      this.replayStarted = true;
+      this.replayEnded = false;
+      this.workflowWebsocketService.send("WorkflowReplayRequest", {replayPos: index});
+      this.notification.info("replaying time point " + this.history[index] + "s");
+    }else{
+      this.notification.info("replaying in progress");
+    }
   }
 
   public clickButton():void {

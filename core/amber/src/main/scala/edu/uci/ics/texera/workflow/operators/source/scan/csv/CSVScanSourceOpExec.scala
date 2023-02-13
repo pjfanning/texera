@@ -105,7 +105,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getStateInformation: String = {
-    s"Scan: average length of each field in byte: ${sumLen.map(i => i / numRowGenerated).mkString(",")}, current Tuple = $nextRow"
+    s"Scan: average length of each field in byte = ${sumLen.map(i => i / numRowGenerated).mkString(",")}, current Tuple = $nextRow"
   }
 
   override def serializeState(
@@ -117,6 +117,10 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       "numOutputRows",
       SerializedState.fromObject(Int.box(numRowGenerated), serializer)
     )
+    checkpoint.save(
+      "sumLen",
+      SerializedState.fromObject(sumLen, serializer)
+    )
   }
 
   override def deserializeState(
@@ -124,6 +128,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       deserializer: Serialization
   ): Iterator[(ITuple, Option[Int])] = {
     open()
+    sumLen = checkpoint.load("sumLen").toObject(deserializer)
     numRowGenerated = checkpoint.load("numOutputRows").toObject(deserializer)
     var tupleIterator = mkTupleIterator(
       mkRowIterator
@@ -132,4 +137,8 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
     if (desc.limit.isDefined) tupleIterator = tupleIterator.take(desc.limit.get - numRowGenerated)
     new CSVSourceTupleIterator(tupleIterator).map(tuple => (tuple, Option.empty))
   }
+
+  override def getEstimatedCheckpointTime: Int = 0
+
+  override def getEstimatedStateLoadTime: Int = 1
 }

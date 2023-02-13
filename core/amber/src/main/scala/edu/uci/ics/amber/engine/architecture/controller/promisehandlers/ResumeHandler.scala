@@ -29,6 +29,7 @@ trait ResumeHandler {
   registerHandler { (msg: ResumeWorkflow, sender) =>
     {
 
+      workflowStartTimeStamp += System.currentTimeMillis() - workflowPauseStartTime
       // send all workers resume
       // resume message has no effect on non-paused workers
       Future

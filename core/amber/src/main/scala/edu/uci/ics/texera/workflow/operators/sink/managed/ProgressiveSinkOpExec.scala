@@ -62,7 +62,10 @@ class ProgressiveSinkOpExec(
       checkpoint: SavedCheckpoint,
       serializer: Serialization
   ): Unit = {
-    // do nothing.
+    checkpoint.save(
+      "numTupleIntoStorage",
+      SerializedState.fromObject(Int.box(numTupleIntoStorage), serializer)
+    )
   }
 
   override def deserializeState(
@@ -70,7 +73,11 @@ class ProgressiveSinkOpExec(
       deserializer: Serialization
   ): Iterator[(ITuple, Option[Int])] = {
     open()
+    numTupleIntoStorage = checkpoint.load("numTupleIntoStorage").toObject(deserializer)
     Iterator.empty
   }
 
+  override def getEstimatedCheckpointTime: Int = 0
+
+  override def getEstimatedStateLoadTime: Int = 1
 }

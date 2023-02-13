@@ -409,6 +409,7 @@ class DataProcessor( // meta dependencies:
             outputOneTuple()
         }
       } else {
+        // TODO: find and fix null bug here.
         internalQueue.take(totalValidStep) match {
           case element: DataElement =>
             handleDataElement(element)

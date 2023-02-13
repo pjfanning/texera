@@ -15,4 +15,9 @@ trait CheckpointSupport {
       checkpoint: SavedCheckpoint,
       deserializer: Serialization
   ): Iterator[(ITuple, Option[Int])]
+
+  def getEstimatedCheckpointTime:Int
+
+  def getEstimatedStateLoadTime:Int
+
 }

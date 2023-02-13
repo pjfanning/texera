@@ -53,7 +53,7 @@ trait WorkerExecutionCompletedHandler {
               .append(
                 (
                   ((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt,
-                  execution.getAllWorkers.map(x => (x, -1L)).toMap + (CONTROLLER -> -1L)
+                  execution.getAllWorkers.map(x => (x, (-1L, Int.MaxValue, Int.MaxValue))).toMap + (CONTROLLER -> (-1L, Int.MaxValue, Int.MaxValue))
                 )
               )
             sendToClient(WorkflowReplayInfo(interactionHistory))
