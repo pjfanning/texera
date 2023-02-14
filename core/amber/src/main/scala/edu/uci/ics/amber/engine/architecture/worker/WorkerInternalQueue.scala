@@ -9,7 +9,6 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   InputTuple,
   InternalElement
 }
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation

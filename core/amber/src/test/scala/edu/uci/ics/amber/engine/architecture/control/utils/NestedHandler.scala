@@ -11,12 +11,12 @@ object NestedHandler {
 }
 
 trait NestedHandler {
-  this: TrivialControlTester =>
+  this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (n: Nested, sender) =>
-    send(Pass("Hello"), actorId)
-      .flatMap(ret => send(Pass(ret + " "), actorId))
-      .flatMap(ret => send(Pass(ret + "World!"), actorId))
+    send(Pass("Hello"), tester.actorId)
+      .flatMap(ret => send(Pass(ret + " "), tester.actorId))
+      .flatMap(ret => send(Pass(ret + "World!"), tester.actorId))
   }
 
   registerHandler { (p: Pass, sender) =>

@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowStateUpdate,
   WorkflowStatusUpdate
 }
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager

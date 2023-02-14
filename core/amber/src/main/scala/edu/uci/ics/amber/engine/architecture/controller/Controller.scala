@@ -5,13 +5,10 @@ import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerProcessor
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -93,7 +90,7 @@ class Controller(
     super.preRestart(reason, message)
     logger.error(s"Encountered fatal error, controller is shutting done.", reason)
     // report error to frontend
-    controllerProcessor.sendToClient(FatalError(reason))
+    controllerProcessor.asyncRPCClient.sendToClient(FatalError(reason))
   }
 
   def running: Receive = {
@@ -128,7 +125,7 @@ class Controller(
           WorkflowControlMessage(from, seqNum, ControlInvocation(_, FatalError(err)))
         ) =>
       // fatal error during recovery, fail
-      controllerProcessor.sendToClient(FatalError(err))
+      controllerProcessor.asyncRPCClient.sendToClient(FatalError(err))
       // re-throw the error to fail the actor
       throw err
     case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>

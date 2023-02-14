@@ -2,8 +2,8 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ModifyLogicHandler.ModifyLogic
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity

@@ -13,7 +13,7 @@ object CollectHandler {
 }
 
 trait CollectHandler {
-  this: TrivialControlTester =>
+  this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (c: Collect, sender) =>
     println(s"start collecting numbers.")

@@ -23,8 +23,7 @@ import edu.uci.ics.amber.error.ErrorUtils.safely
 class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
-) extends WorkflowActor(id, parentNetworkCommunicationActorRef, false)
-    with TesterAsyncRPCHandlerInitializer {
+) extends WorkflowActor(id, parentNetworkCommunicationActorRef, false) {
 
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](id, this.handleControlPayloadWithTryCatch)

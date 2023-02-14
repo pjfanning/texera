@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -32,10 +33,7 @@ import scala.reflect.ClassTag
   * @param ctrlSource
   * @param ctrlReceiver
   */
-trait AsyncRPCHandlerInitializer {
-
-  protected def asyncRPCClient: AsyncRPCClient
-  protected def asyncRPCServer: AsyncRPCServer
+class AsyncRPCHandlerInitializer(asyncRPCClient: AsyncRPCClient,  asyncRPCServer: AsyncRPCServer) {
 
   /** register a sync handler for one type of control command
     * note that register handler allows multiple handlers for a control message and uses the latest handler.

@@ -12,12 +12,12 @@ object MultiCallHandler {
 }
 
 trait MultiCallHandler {
-  this: TrivialControlTester =>
+  this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (m: MultiCall, sender) =>
-    send(Chain(m.seq), actorId)
+    send(Chain(m.seq), tester.actorId)
       .flatMap(x => send(Recursion(1), x))
-      .flatMap(ret => send(Collect(m.seq.take(3)), actorId))
+      .flatMap(ret => send(Collect(m.seq.take(3)), tester.actorId))
   }
 
 }

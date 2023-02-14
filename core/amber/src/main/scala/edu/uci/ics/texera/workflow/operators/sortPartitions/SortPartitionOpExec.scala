@@ -1,8 +1,8 @@
 package edu.uci.ics.texera.workflow.operators.sortPartitions
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.worker.{PauseManager, PauseType}
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptMutableStateHandler.AcceptMutableState
+import edu.uci.ics.amber.engine.architecture.worker.processing.{PauseManager, PauseType}
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.AcceptMutableStateHandler.AcceptMutableState
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.{Constants, InputExhausted}

@@ -7,8 +7,8 @@ import edu.uci.ics.amber.engine.common.rpc.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-trait TesterAsyncRPCHandlerInitializer
-    extends AsyncRPCHandlerInitializer
+class TesterAsyncRPCHandlerInitializer(val tester:TrivialControlTester)
+    extends AsyncRPCHandlerInitializer(tester.asyncRPCClient, tester.asyncRPCServer)
     with PingPongHandler
     with ChainHandler
     with MultiCallHandler
@@ -16,5 +16,4 @@ trait TesterAsyncRPCHandlerInitializer
     with NestedHandler
     with RecursionHandler
     with ErrorHandler {
-  this: TrivialControlTester =>
 }
