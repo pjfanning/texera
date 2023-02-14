@@ -314,7 +314,7 @@ class DataProcessor( // meta dependencies:
           stateManager.transitTo(PAUSED)
         } else {
           outputTupleCount += 1
-          println(s"send output $outputTuple at step $totalValidStep")
+          // println(s"send output $outputTuple at step $totalValidStep")
           val outLinks = getOutputLinkByPort(outputPortOpt)
           outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link))
         }
@@ -324,7 +324,7 @@ class DataProcessor( // meta dependencies:
   private[this] def handleDataElement(
       dataElement: DataElement
   ): Unit = {
-    println(s"process input $dataElement at step $totalValidStep")
+    // println(s"process input $dataElement at step $totalValidStep")
     dataElement match {
       case InputTuple(from, tuple) =>
         if (stateManager.getCurrentState == READY) {
@@ -428,7 +428,7 @@ class DataProcessor( // meta dependencies:
       payload: ControlPayload,
       from: ActorVirtualIdentity
   ): Unit = {
-    logger.info(s"process control $payload at step $totalValidStep")
+    // logger.info(s"process control $payload at step $totalValidStep")
     payload match {
       case invocation: ControlInvocation =>
         if (!invocation.command.isInstanceOf[SkipFaultTolerance]) {

@@ -45,7 +45,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
         val ret = nextRow
         var idx = 0
         for (elem <- nextRow) {
-          sumLen(idx) += elem.length
+          sumLen(idx) += (if(elem != null){elem.length}else{0})
           idx += 1
         }
         nextRow = null
@@ -59,7 +59,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       .map(row => {
         try {
           val parsedFields: Array[Object] = {
-            Thread.sleep(200)
+            //Thread.sleep(200)
             AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
           }
           Tuple.newBuilder(schema).addSequentially(parsedFields).build
