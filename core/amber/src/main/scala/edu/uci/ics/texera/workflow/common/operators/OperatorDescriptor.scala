@@ -21,6 +21,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
+import edu.uci.ics.texera.workflow.operators.nn.DNNOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -29,10 +30,7 @@ import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{
-  TwitterFullArchiveSearchSourceOpDesc,
-  TwitterSearchSourceOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csvOld.CSVOldScanSourceOpDesc
@@ -45,11 +43,7 @@ import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDiffer
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.pythonV1.PythonUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonLambdaFunctionOpDesc,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonUDFOpDescV2}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
@@ -121,7 +115,8 @@ import java.util.UUID
     new Type(value = classOf[RedditSearchSourceOpDesc], name = "RedditSearch"),
     new Type(value = classOf[PythonLambdaFunctionOpDesc], name = "PythonLambdaFunction"),
     new Type(value = classOf[BulkDownloaderOpDesc], name = "BulkDownloader"),
-    new Type(value = classOf[URLFetcherOpDesc], name = "URLFetcher")
+    new Type(value = classOf[URLFetcherOpDesc], name = "URLFetcher"),
+    new Type(value = classOf[DNNOpDesc], name = "DeepNeuralNetwork")
   )
 )
 abstract class OperatorDescriptor extends Serializable {

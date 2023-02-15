@@ -2,6 +2,7 @@ package edu.uci.ics.texera.workflow.operators.linearregression;
 
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpExec;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
+import scala.collection.Iterable;
 import scala.collection.immutable.List;
 
 public class LinearRegressionOpExec extends MLModelOpExec{
@@ -31,7 +32,6 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   @Override
   public void predict(Tuple[] minibatch) {
     results = new Double[minibatch.length];
-
     int tIdx = 0;
     for(Tuple t: minibatch) {
       Double x = Double.valueOf(t.getField(xAttr));
@@ -67,5 +67,10 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     b_current = Math.round(b_current*100.0)/100.0;
 
     System.out.println("Epoch "+ currentEpoch() + " Learning Rate " + learningRate + ", Current w and b values are : " + w_current + " " + b_current);
+  }
+
+  @Override
+  public Tuple[] outputPrediction(Tuple[] allData) {
+    return allData;
   }
 }

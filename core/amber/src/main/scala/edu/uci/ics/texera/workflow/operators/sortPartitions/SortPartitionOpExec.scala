@@ -1,6 +1,5 @@
 package edu.uci.ics.texera.workflow.operators.sortPartitions
 
-import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.worker.processing.{PauseManager, PauseType}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.{Constants, InputExhausted}

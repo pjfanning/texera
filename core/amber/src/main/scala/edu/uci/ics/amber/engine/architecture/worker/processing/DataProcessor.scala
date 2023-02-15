@@ -296,6 +296,9 @@ class DataProcessor( // meta dependencies:
     if (out == null) return
 
     val (outputTuple, outputPortOpt) = out
+
+    if (outputTuple == null) return
+
     outputTuple match {
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
