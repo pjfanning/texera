@@ -1,8 +1,11 @@
 package edu.uci.ics.texera.workflow.common.operators.map
 
+import akka.serialization.Serialization
+import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.{CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -11,7 +14,7 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
   * Common operator executor of a map() function
   * A map() function transforms one input tuple to exactly one output tuple.
   */
-abstract class MapOpExec() extends OperatorExecutor with Serializable {
+abstract class MapOpExec() extends OperatorExecutor with Serializable with CheckpointSupport {
 
   var mapFunc: Tuple => Tuple = _
 
@@ -38,5 +41,18 @@ abstract class MapOpExec() extends OperatorExecutor with Serializable {
       case Left(t)  => Iterator(mapFunc(t))
       case Right(_) => Iterator()
     }
+  }
+
+  override def getEstimatedCheckpointTime: Int = 0
+
+  override def getEstimatedStateLoadTime: Int = 0
+
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
+    checkpoint.save("currentIter", SerializedState.fromObject(currentIteratorState.toArray, serializer))
+  }
+
+  override def deserializeState(checkpoint: SavedCheckpoint, deserializer: Serialization): Iterator[(ITuple, Option[Int])] = {
+    val arr:Array[(ITuple, Option[Int])] = checkpoint.load("currentIter").toObject(deserializer)
+    arr.toIterator
   }
 }
