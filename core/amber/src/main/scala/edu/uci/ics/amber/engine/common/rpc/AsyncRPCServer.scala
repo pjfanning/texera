@@ -112,15 +112,6 @@ class AsyncRPCServer(
     if (call.command.isInstanceOf[SkipConsoleLog]) {
       return
     }
-    if (
-      call.command.isInstanceOf[AcceptImmutableState] || call.command
-        .isInstanceOf[AcceptMutableState]
-    ) {
-      logger.info(
-        s"receive command: State from $sender (controlID: ${call.commandID}) for Reshape state transfer. Content of control message not printed to be succinct."
-      )
-      return
-    }
     logger.info(
       s"receive command: ${call.command} from $sender (controlID: ${call.commandID})"
     )

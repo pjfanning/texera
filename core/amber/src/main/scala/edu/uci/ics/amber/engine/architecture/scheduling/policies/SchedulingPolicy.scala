@@ -39,6 +39,10 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   @transient
   protected var execution: WorkflowExecution = _
 
+  protected val completedLinksOfRegion =
+    new mutable.HashMap[PipelinedRegion, mutable.Set[LinkIdentity]]
+      with mutable.MultiMap[PipelinedRegion, LinkIdentity]
+
   def attachToExecution(execution: WorkflowExecution): Unit = {
     this.execution = execution
   }
@@ -64,20 +68,20 @@ abstract class SchedulingPolicy(workflow: Workflow) {
     }
   }
 
-  protected def getRegion(workerId: ActorVirtualIdentity): Option[PipelinedRegion] = {
+  protected def getRegions(workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
     val opId = workflow.getOperator(workerId).id
     execution.runningRegions
-      .find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(opId))
-      .map(workflow.physicalPlan.getPipelinedRegion)
+      .filter(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(opId))
+      .map(workflow.physicalPlan.getPipelinedRegion).toSet
   }
 
   /**
     * A link's region is the region of the source operator of the link.
     */
-  protected def getRegion(link: LinkIdentity): Option[PipelinedRegion] = {
+  protected def getRegions(link: LinkIdentity): Set[PipelinedRegion] = {
     execution.runningRegions
-      .find(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(link.from))
-      .map(workflow.physicalPlan.getPipelinedRegion)
+      .filter(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(link.from))
+      .map(workflow.physicalPlan.getPipelinedRegion).toSet
   }
 
   // gets the ready regions that is not currently running
@@ -94,33 +98,15 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   }
 
   def onWorkerCompletion(workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
-    val region = getRegion(workerId)
-    if (region.isEmpty) {
-      throw new WorkflowRuntimeException(
-        s"WorkflowScheduler: Worker ${workerId} completed from a non-running region"
-      )
-    } else {
-      checkRegionCompleted(region.get.id)
-    }
+    val regions = getRegions(workerId)
+    regions.foreach(r => checkRegionCompleted(r))
     getNextSchedulingWork()
   }
 
   def onLinkCompletion(link: LinkIdentity): Set[PipelinedRegion] = {
-    val region = getRegion(link)
-    if (region.isEmpty) {
-      throw new WorkflowRuntimeException(
-        s"WorkflowScheduler: Link ${link.toString} completed from a non-running region"
-      )
-    } else {
-      val completedLinks =
-        execution.completedLinksOfRegion.getOrElseUpdate(
-          region.get.id,
-          new mutable.HashSet[LinkIdentity]()
-        )
-      completedLinks.add(link)
-      execution.completedLinksOfRegion(region.get.id) = completedLinks
-      checkRegionCompleted(region.get.id)
-    }
+    val regions = getRegions(link)
+    regions.foreach(r => completedLinksOfRegion.addBinding(r, link))
+    regions.foreach(r => checkRegionCompleted(r))
     getNextSchedulingWork()
   }
 

@@ -8,13 +8,13 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
 import edu.uci.ics.amber.engine.architecture.execution.{OperatorExecution, WorkflowExecution}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseSkewMitigationHandler.PauseSkewMitigation
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SendImmutableStateOrNotifyHelperHandler.SendImmutableStateOrNotifyHelper
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SendImmutableStateHandler.SendImmutableState
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SharePartitionHandler.SharePartition
 import edu.uci.ics.amber.engine.common.Constants
+import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec
-import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionOpExec
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -248,8 +248,10 @@ object SkewDetectionHandler {
         .id
       execution.getOperatorExecution(layerId)
     } else {
-      // Should be sort operator
-      execution.getOperatorExecution(upstreamLayers(0).id)
+      // sort operator (sort support in reshape is removed), this case shouldn't arise
+      throw new WorkflowRuntimeException(
+        s"Reshape: Previous worker layer called when current operator is not join!"
+      )
     }
   }
 
@@ -366,28 +368,24 @@ trait SkewDetectionHandler {
       workflowReshapeState.previousSkewDetectionCallFinished = false
       workflowReshapeState.detectionCallCount += 1
 
-      cp.execution.getAllOperatorExecutions.foreach {
-        case (id, opExecution) => {
-          if (
-            opExecution.opExecClass == classOf[HashJoinOpExec[_]] ||
-            opExecution.opExecClass == classOf[SortPartitionOpExec]
-          ) {
-            // Skew handling is only for hash-join operator for now.
-            // 1: Find the skewed and helper worker that need first phase.
-            val skewedAndHelperPairsForFirstPhase =
-              getSkewedAndHelperWorkersEligibleForFirstPhase(
-                opExecution.workerToWorkloadInfo,
-                workflowReshapeState.skewedToHelperMappingHistory,
-                workflowReshapeState.skewedToStateTransferOrIntimationDone,
-                workflowReshapeState.skewedAndHelperInFirstPhase
-              )
-            skewedAndHelperPairsForFirstPhase.foreach(skewedHelperAndReplication =>
-              logger.info(
-                s"Reshape ${cp.workflow.getWorkflowId().id} #${workflowReshapeState.detectionCallCount}: First phase process begins - Skewed ${skewedHelperAndReplication._1
-                  .toString()} :: Helper ${skewedHelperAndReplication._2
-                  .toString()} - Replication/Intimation required: ${skewedHelperAndReplication._3.toString()}"
-              )
+      workflow.getAllOperators.foreach(opConfig => {
+        if (opConfig.opExecClass == classOf[HashJoinOpExec[_]]) {
+          // Skew handling is only for hash-join operator for now.
+          // 1: Find the skewed and helper worker that need first phase.
+          val skewedAndHelperPairsForFirstPhase =
+            getSkewedAndHelperWorkersEligibleForFirstPhase(
+              opConfig.workerToWorkloadInfo,
+              workflowReshapeState.skewedToHelperMappingHistory,
+              workflowReshapeState.skewedToStateTransferOrIntimationDone,
+              workflowReshapeState.skewedAndHelperInFirstPhase
             )
+          skewedAndHelperPairsForFirstPhase.foreach(skewedHelperAndReplication =>
+            logger.info(
+              s"Reshape ${workflow.getWorkflowId().id} #${workflowReshapeState.detectionCallCount}: First phase process begins - Skewed ${skewedHelperAndReplication._1
+                .toString()} :: Helper ${skewedHelperAndReplication._2
+                .toString()} - Replication/Intimation required: ${skewedHelperAndReplication._3.toString()}"
+            )
+          )
 
             // 2: Do state transfer if needed and first phase
             workflowReshapeState.firstPhaseRequestsFinished = false
@@ -401,7 +399,7 @@ trait SkewDetectionHandler {
               val currHelperWorker = skewedAndHelper._2
               val stateTransferOrIntimationNeeded = skewedAndHelper._3
               if (stateTransferOrIntimationNeeded) {
-                send(SendImmutableStateOrNotifyHelper(currHelperWorker), currSkewedWorker).map(
+                send(SendImmutableState(currHelperWorker), currSkewedWorker).map(
                   stateTransferOrIntimationSuccessful => {
                     if (stateTransferOrIntimationSuccessful) {
                       workflowReshapeState.skewedToStateTransferOrIntimationDone(currSkewedWorker) =
