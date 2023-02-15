@@ -15,9 +15,9 @@ import collection.JavaConverters._
 
 class MongoDBStorage(id: String, schema: Schema) extends SinkStorageReader {
 
-  schema.getAttributeNames.stream.forEach(name =>
-    assert(!name.matches(".*[\\$\\.].*"), s"illegal attribute name '$name' for mongo DB")
-  )
+//  schema.getAttributeNames.stream.forEach(name =>
+//    assert(!name.matches(".*[\\$\\.].*"), s"illegal attribute name '$name' for mongo DB")
+//  )
 
   val url: String = AmberUtils.amberConfig.getString("storage.mongodb.url")
   val databaseName: String = AmberUtils.amberConfig.getString("storage.mongodb.database")

@@ -259,4 +259,5 @@ libraryDependencies += "org.jasypt" % "jasypt" % "1.9.3"
 // https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % "5.13.0.202109080827-r"
 
-libraryDependencies += "ai.djl" % "api" % "0.20.0"
+libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "1.0.0-M1"
+libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "1.0.0-M1"

@@ -3,18 +3,14 @@ package edu.uci.ics.texera.web
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
+import edu.uci.ics.texera.workflow.operators.nn.DNNOpExec
 
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
-    val a = RUNNING
-    val om = Utils.objectMapper
 
-    val str = om.writeValueAsString(a)
-    println(str)
-
-    val des = om.readValue(str, classOf[WorkflowAggregatedState])
-    println(des)
+    val a = new DNNOpExec(List("a","b"),"c",1)
+    a.readjustWeight()
 
   }
 }
