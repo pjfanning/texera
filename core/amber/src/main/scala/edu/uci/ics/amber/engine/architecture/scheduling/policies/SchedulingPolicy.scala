@@ -39,10 +39,6 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   @transient
   protected var execution: WorkflowExecution = _
 
-  protected val completedLinksOfRegion =
-    new mutable.HashMap[PipelinedRegion, mutable.Set[LinkIdentity]]
-      with mutable.MultiMap[PipelinedRegion, LinkIdentity]
-
   def attachToExecution(execution: WorkflowExecution): Unit = {
     this.execution = execution
   }
@@ -99,14 +95,14 @@ abstract class SchedulingPolicy(workflow: Workflow) {
 
   def onWorkerCompletion(workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(workerId)
-    regions.foreach(r => checkRegionCompleted(r))
+    regions.foreach(r => checkRegionCompleted(r.id))
     getNextSchedulingWork()
   }
 
   def onLinkCompletion(link: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(link)
-    regions.foreach(r => completedLinksOfRegion.addBinding(r, link))
-    regions.foreach(r => checkRegionCompleted(r))
+    regions.foreach(r => execution.completedLinksOfRegion.addBinding(r.id, link))
+    regions.foreach(r => checkRegionCompleted(r.id))
     getNextSchedulingWork()
   }
 

@@ -1,16 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import com.twitter.util.Future
-<<<<<<<< HEAD:core/amber/src/main/scala/edu/uci/ics/amber/engine/architecture/worker/processing/promisehandlers/SendImmutableStateOrNotifyHelperHandler.scala
-import AcceptImmutableStateHandler.AcceptImmutableState
-import SaveSkewedWorkerInfoHandler.SaveSkewedWorkerInfo
-import SendImmutableStateOrNotifyHelperHandler.SendImmutableStateOrNotifyHelper
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
-========
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptImmutableStateHandler.AcceptImmutableState
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutableStateHandler.SendImmutableState
->>>>>>>> shengquan-oom-fix:core/amber/src/main/scala/edu/uci/ics/amber/engine/architecture/worker/processing/promisehandlers/SendImmutableStateHandler.scala
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.AcceptImmutableStateHandler.AcceptImmutableState
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SendImmutableStateHandler.SendImmutableState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec
@@ -32,19 +25,11 @@ object SendImmutableStateHandler {
   ) extends ControlCommand[Boolean]
 }
 
-<<<<<<<< HEAD:core/amber/src/main/scala/edu/uci/ics/amber/engine/architecture/worker/processing/promisehandlers/SendImmutableStateOrNotifyHelperHandler.scala
-trait SendImmutableStateOrNotifyHelperHandler {
+trait SendImmutableStateHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
-  registerHandler { (cmd: SendImmutableStateOrNotifyHelper, sender) =>
-    dp.operator match {
-========
-trait SendImmutableStateHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
-
   registerHandler { (cmd: SendImmutableState, sender) =>
-    dataProcessor.getOperatorExecutor() match {
->>>>>>>> shengquan-oom-fix:core/amber/src/main/scala/edu/uci/ics/amber/engine/architecture/worker/processing/promisehandlers/SendImmutableStateHandler.scala
+    dp.operator match {
       case joinOpExec: HashJoinOpExec[_] =>
         // Returns true if the build table was replicated successfully in case of HashJoin.
         try {

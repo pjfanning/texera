@@ -46,7 +46,8 @@ class WorkflowExecution(@transient workflow: Workflow) {
   // regions currently running
   val runningRegions = new mutable.HashSet[PipelinedRegionIdentity]()
   val completedLinksOfRegion =
-    new mutable.HashMap[PipelinedRegionIdentity, mutable.HashSet[LinkIdentity]]()
+    new mutable.HashMap[PipelinedRegionIdentity, mutable.Set[LinkIdentity]]
+      with mutable.MultiMap[PipelinedRegionIdentity, LinkIdentity]
 
   def getAllWorkers: Iterable[ActorVirtualIdentity] =
     operatorExecutions.values

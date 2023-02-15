@@ -33,8 +33,8 @@ class SingleReadyRegionTimeInterleaved(
 
   override def onWorkerCompletion(workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(workerId)
-    regions.foreach(r => checkRegionCompleted(r))
-    if (regions.exists(r => isRegionCompleted(r))) {
+    regions.foreach(r => checkRegionCompleted(r.id))
+    if (regions.exists(r => isRegionCompleted(r.id))) {
       getNextSchedulingWork()
     } else {
       Set()
@@ -43,9 +43,9 @@ class SingleReadyRegionTimeInterleaved(
 
   override def onLinkCompletion(linkId: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(linkId)
-    regions.foreach(r => completedLinksOfRegion.addBinding(r, linkId))
-    regions.foreach(r => checkRegionCompleted(r))
-    if (regions.exists(r => isRegionCompleted(r))) {
+    regions.foreach(r => execution.completedLinksOfRegion.addBinding(r.id, linkId))
+    regions.foreach(r => checkRegionCompleted(r.id))
+    if (regions.exists(r => isRegionCompleted(r.id))) {
       getNextSchedulingWork()
     } else {
       Set()
