@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, Input, OnChanges, OnDestroy, OnInit, SimpleChanges } from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
+import { WorkflowStatusService } from "../../../service/workflow-status/workflow-status.service";
 import { Subject } from "rxjs";
 import { AbstractControl, FormGroup } from "@angular/forms";
 import { FormlyFieldConfig, FormlyFormOptions } from "@ngx-formly/core";
@@ -9,7 +10,7 @@ import { WorkflowActionService } from "../../../service/workflow-graph/model/wor
 import { cloneDeep, isEqual } from "lodash-es";
 import { CustomJSONSchema7, hideTypes } from "../../../types/custom-json-schema.interface";
 import { isDefined } from "../../../../common/util/predicate";
-import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
+import { ExecutionState, OperatorStatistics, OperatorState } from "src/app/workspace/types/execute-workflow.interface";
 import { DynamicSchemaService } from "../../../service/dynamic-schema/dynamic-schema.service";
 import {
   SchemaAttribute,
@@ -76,6 +77,9 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
   currentOperatorSchema?: OperatorSchema;
 
+  readonly OperatorState = OperatorState;
+  currentOperatorStatus?: OperatorStatistics;
+
   // re-declare enum for angular template to access it
   readonly ExecutionState = ExecutionState;
 
@@ -113,7 +117,6 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
   // for display component of some extra information
   extraDisplayComponentConfig?: PropertyDisplayComponentConfig;
-  public lockGranted: boolean = true;
   public allUserWorkflowAccess: ReadonlyArray<AccessEntry> = [];
   public operatorVersion: string = "";
   quillBinding?: QuillBinding;
@@ -131,7 +134,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     private changeDetectorRef: ChangeDetectorRef,
     private workflowVersionService: WorkflowVersionService,
     private userFileService: UserFileService,
-    private workflowGrantAccessService: WorkflowAccessService
+    private workflowGrantAccessService: WorkflowAccessService,
+    private workflowStatusSerivce: WorkflowStatusService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -170,6 +174,12 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
     let workflow = this.workflowActionService.getWorkflow();
     if (workflow) this.refreshGrantedList(workflow);
+
+    this.workflowStatusSerivce.getStatusUpdateStream().subscribe(update => {
+      if (this.currentOperatorId) {
+        this.currentOperatorStatus = update[this.currentOperatorId];
+      }
+    });
   }
 
   public refreshGrantedList(workflow: Workflow): void {
@@ -229,6 +239,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       return;
     }
     this.currentOperatorSchema = this.dynamicSchemaService.getDynamicSchema(this.currentOperatorId);
+    this.currentOperatorStatus = this.workflowStatusSerivce.getCurrentStatus()[this.currentOperatorId];
+
     this.workflowActionService.getTexeraGraph().updateSharedModelAwareness("currentlyEditing", this.currentOperatorId);
     const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
     // set the operator data needed
