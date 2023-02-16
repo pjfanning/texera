@@ -87,7 +87,7 @@ class WorkerInternalQueue(
       // may have race condition with restoreInput which happens inside DP thread.
       lock.lock()
       if (elem == null || elem.from == null || elem.from.name == null) {
-        throw new RuntimeException("from is null")
+        throw new RuntimeException("from is null for element " + elem)
       }
       if (dataQueues(elem.from.name) == null) {
         throw new RuntimeException(elem.from.name + " actor not registered")

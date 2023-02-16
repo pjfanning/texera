@@ -37,13 +37,13 @@ class WorkflowWebsocketResource extends LazyLogging {
 
   @OnOpen
   def myOnOpen(session: Session, config: EndpointConfig): Unit = {
-    SessionState.addSession(session.getId, new SessionState(session))
+    SessionState.setState(session.getId, new SessionState(session))
     logger.info("connection open")
   }
 
   @OnClose
   def myOnClose(session: Session, cr: CloseReason): Unit = {
-    SessionState.removeSession(session.getId)
+    SessionState.removeState(session.getId)
   }
 
   @OnMessage

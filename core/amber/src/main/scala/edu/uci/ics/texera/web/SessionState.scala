@@ -14,11 +14,11 @@ object SessionState {
     sessionIdToSessionState(sId)
   }
 
-  def addSession(sId: String, state: SessionState): Unit = {
+  def setState(sId: String, state: SessionState): Unit = {
     sessionIdToSessionState.put(sId, state)
   }
 
-  def removeSession(sId: String): Unit = {
+  def removeState(sId: String): Unit = {
     sessionIdToSessionState(sId).unsubscribe()
     sessionIdToSessionState.remove(sId)
   }

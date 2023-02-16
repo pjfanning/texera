@@ -9,9 +9,13 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperat
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
 
 object ModifyOperatorLogicHandler {
-  case class WorkerModifyLogic(opExecConfig: OpExecConfig) extends ControlCommand[Unit]
+  case class WorkerModifyLogic(
+      opExecConfig: OpExecConfig,
+      stateTransferFunc: Option[StateTransferFunc]
+  ) extends ControlCommand[Unit]
 
   case class WorkerModifyLogicMultiple(modifyLogicList: List[WorkerModifyLogic])
       extends ControlCommand[Unit]
@@ -27,7 +31,7 @@ trait ModifyOperatorLogicHandler {
   this: WorkerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: WorkerModifyLogic, _) =>
-    performModifyLogic(msg.opExecConfig)
+    performModifyLogic(msg)
     sendToClient(WorkerModifyLogicComplete(this.actorId))
   }
 
@@ -35,14 +39,18 @@ trait ModifyOperatorLogicHandler {
     val modifyLogic =
       msg.modifyLogicList.find(o => o.opExecConfig.id == dataProcessor.opExecConfig.id)
     if (modifyLogic.nonEmpty) {
-      performModifyLogic(modifyLogic.get.opExecConfig)
+      performModifyLogic(modifyLogic.get)
       sendToClient(WorkerModifyLogicComplete(this.actorId))
     }
   }
 
-  private def performModifyLogic(newOpExecConfig: OpExecConfig): Unit = {
+  private def performModifyLogic(modifyLogic: WorkerModifyLogic): Unit = {
+    val newOpExecConfig = modifyLogic.opExecConfig
     val newOperator =
       newOpExecConfig.initIOperatorExecutor((dataProcessor.workerIndex, newOpExecConfig))
+    if (modifyLogic.stateTransferFunc.nonEmpty) {
+      modifyLogic.stateTransferFunc.get.apply(dataProcessor.operator, newOperator)
+    }
     dataProcessor.operator = newOperator
     this.operator = newOperator
     operator.open()

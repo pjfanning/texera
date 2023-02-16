@@ -91,13 +91,11 @@ class DataProcessor( // dependencies:
             }
             runDPThreadMainLogic()
           } catch safely {
-            case interrupt: InterruptedException =>
+            case _: InterruptedException =>
               // dp thread will stop here
               logger.info("DP Thread exits")
-              throw interrupt
             case err: Exception =>
               logger.error("DP Thread exists unexpectedly", err)
-              throw err
               asyncRPCClient.send(
                 FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err)),
                 CONTROLLER
@@ -280,7 +278,6 @@ class DataProcessor( // dependencies:
           outputManager.emitEndOfUpstream()
           // Send Completed signal to worker actor.
           logger.info(s"$operator completed")
-//          internalQueue.disableDataQueue()
           operator.close() // close operator
           asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
           outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()

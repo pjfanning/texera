@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.Modify
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpDesc
 import edu.uci.ics.texera.workflow.common.operators.map.MapOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{PythonUDFOpDescV2, PythonUDFOpExecV2}
@@ -23,7 +23,8 @@ import scala.collection.mutable
 
 object ModifyLogicHandler {
 
-  final case class ModifyLogic(newOp: OpExecConfig) extends ControlCommand[Unit]
+  final case class ModifyLogic(newOp: OpExecConfig, stateTransferFunc: Option[StateTransferFunc])
+      extends ControlCommand[Unit]
 }
 
 /** retry the execution of the entire workflow
@@ -43,7 +44,7 @@ trait ModifyLogicHandler {
           isSource = operator.opExecClass.isAssignableFrom(classOf[PythonUDFSourceOpExecV2])
         )
       } else {
-        WorkerModifyLogic(msg.newOp)
+        WorkerModifyLogic(msg.newOp, msg.stateTransferFunc)
       }
 
       Future

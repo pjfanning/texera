@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperat
 }
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
+import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import org.jgrapht.alg.connectivity.ConnectivityInspector
 
@@ -22,7 +23,7 @@ object FriesReconfigurationAlgorithm {
 
   def scheduleReconfigurations(
       physicalPlan: PhysicalPlan,
-      reconfigurations: List[OpExecConfig],
+      reconfigurations: List[(OpExecConfig, Option[StateTransferFunc])],
       epochMarkerId: String
   ): List[(LayerIdentity, EpochMarker)] = {
     // independently schedule reconfigurations for each region:
@@ -34,12 +35,12 @@ object FriesReconfigurationAlgorithm {
 
   private def computeMCS(
       physicalPlan: PhysicalPlan,
-      reconfigurations: List[OpExecConfig],
+      reconfigurations: List[(OpExecConfig, Option[StateTransferFunc])],
       epochMarkerId: String
   ): List[(LayerIdentity, EpochMarker)] = {
 
     // add all reconfiguration operators to M
-    val reconfigOps = reconfigurations.map(reconfigOp => reconfigOp.id).toSet
+    val reconfigOps = reconfigurations.map(reconfigOp => reconfigOp._1.id).toSet
     val M = mutable.Set.empty ++ reconfigOps
 
     // for each one-to-many operator, add it to M if its downstream has a reconfiguration operator
@@ -88,7 +89,9 @@ object FriesReconfigurationAlgorithm {
 
       // generate the reconfiguration command for this component
       val reconfigCommand = WorkerModifyLogicMultiple(
-        reconfigurations.filter(o => component.contains(o.id)).map(o => WorkerModifyLogic(o))
+        reconfigurations
+          .filter(o => component.contains(o._1.id))
+          .map(o => WorkerModifyLogic(o._1, o._2))
       )
 
       // find the source operators of the component

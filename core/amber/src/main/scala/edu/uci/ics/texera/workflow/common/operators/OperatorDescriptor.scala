@@ -3,6 +3,7 @@ package edu.uci.ics.texera.workflow.common.operators
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.web.OPversion
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
@@ -62,6 +63,10 @@ import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStrin
 
 import java.util.UUID
 import scala.util.Try
+
+trait StateTransferFunc
+    extends ((IOperatorExecutor, IOperatorExecutor) => Unit)
+    with java.io.Serializable
 
 @JsonTypeInfo(
   use = JsonTypeInfo.Id.NAME,
@@ -180,7 +185,7 @@ abstract class OperatorDescriptor extends Serializable {
   def runtimeReconfiguration(
       newOpDesc: OperatorDescriptor,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[OpExecConfig] = {
+  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     throw new UnsupportedOperationException(
       "operator " + getClass.getSimpleName + " does not support reconfiguration"
     )

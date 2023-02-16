@@ -96,8 +96,8 @@ class JobReconfigurationService(
     // schedule all pending reconfigurations to the engine
     val reconfigurationId = UUID.randomUUID().toString
     if (!Constants.enableTransactionalReconfiguration) {
-      reconfigurations.foreach(newOp => {
-        client.sendAsync(ModifyLogic(newOp))
+      reconfigurations.foreach(reconfig => {
+        client.sendAsync(ModifyLogic(reconfig._1, reconfig._2))
       })
     } else {
       val epochMarkers = FriesReconfigurationAlgorithm.scheduleReconfigurations(
