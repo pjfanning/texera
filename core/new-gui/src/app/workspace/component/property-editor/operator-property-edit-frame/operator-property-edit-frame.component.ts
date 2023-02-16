@@ -28,7 +28,7 @@ import {
 } from "../typecasting-display/type-casting-display.component";
 import { DynamicComponentConfig } from "../../../../common/type/dynamic-component-config";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { filter } from "rxjs/operators";
+import { filter, takeUntil } from "rxjs/operators";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { PresetWrapperComponent } from "src/app/common/formly/preset-wrapper/preset-wrapper.component";
 import { environment } from "src/environments/environment";
@@ -175,11 +175,14 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     let workflow = this.workflowActionService.getWorkflow();
     if (workflow) this.refreshGrantedList(workflow);
 
-    this.workflowStatusSerivce.getStatusUpdateStream().subscribe(update => {
-      if (this.currentOperatorId) {
-        this.currentOperatorStatus = update[this.currentOperatorId];
-      }
-    });
+    this.workflowStatusSerivce
+      .getStatusUpdateStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(update => {
+        if (this.currentOperatorId) {
+          this.currentOperatorStatus = update[this.currentOperatorId];
+        }
+      });
   }
 
   public refreshGrantedList(workflow: Workflow): void {
