@@ -6,8 +6,6 @@ from pyarrow.lib import Schema
 
 from core.models.tuple import Tuple
 
-from proto.edu.uci.ics.amber.engine.common import LayerIdentity, ControlInvocationV2
-
 
 @dataclass
 class DataPayload:
@@ -28,10 +26,3 @@ class OutputDataFrame(DataPayload):
 @dataclass
 class EndOfUpstream(DataPayload):
     pass
-
-
-@dataclass
-class EpochMarker(DataPayload):
-    id: int
-    destination: LayerIdentity
-    command: ControlInvocationV2

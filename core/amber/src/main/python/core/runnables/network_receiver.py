@@ -8,7 +8,6 @@ from core.models import (
     InternalQueue,
 )
 from core.models.internal_queue import DataElement, ControlElement
-from core.models.payload import EpochMarker
 from core.proxy import ProxyServer
 from core.util import Stoppable
 from core.util.runnable.runnable import Runnable
@@ -27,16 +26,7 @@ class NetworkReceiver(Runnable, Stoppable):
         @logger.catch(reraise=True)
         def data_handler(command: bytes, table: Table):
             data_header = PythonDataHeader().parse(command)
-            if data_header.epoch_marker is not None:
-                epoch_marker = EpochMarker(
-                    data_header.epoch_marker.id,
-                    data_header.epoch_marker.destination,
-                    data_header.epoch_marker.command
-                )
-                shared_queue.put(
-                    DataElement(tag=data_header.tag, payload=epoch_marker)
-                )
-            elif not data_header.is_end:
+            if not data_header.is_end:
                 shared_queue.put(
                     DataElement(tag=data_header.tag, payload=InputDataFrame(table))
                 )

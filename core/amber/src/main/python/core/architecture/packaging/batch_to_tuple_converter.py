@@ -3,7 +3,7 @@ from typing import Iterator, Optional, Set, Union, Dict
 
 from core.models import Tuple, ArrowTableTupleProvider
 from core.models.marker import EndOfAllMarker, Marker, SenderChangeMarker
-from core.models.payload import InputDataFrame, DataPayload, EndOfUpstream, EpochMarker
+from core.models.payload import InputDataFrame, DataPayload, EndOfUpstream
 from core.models.tuple import InputExhausted
 from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity, LinkIdentity
 
@@ -63,7 +63,5 @@ class BatchToTupleConverter:
             if self._completed_link_ids == self._all_upstream_link_ids:
                 yield EndOfAllMarker()
 
-        elif isinstance(payload, EpochMarker):
-            pass
         else:
             raise NotImplementedError()
