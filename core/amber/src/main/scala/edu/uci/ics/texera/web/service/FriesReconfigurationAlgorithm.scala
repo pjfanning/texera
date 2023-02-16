@@ -2,8 +2,8 @@ package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
-  ModifyOperatorLogic,
-  ModifyWorkerLogicMultiple
+  WorkerModifyLogic,
+  WorkerModifyLogicMultiple
 }
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
@@ -14,7 +14,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.{asScalaIterator, asScalaSet}
 
-object FriesAlg {
+object FriesReconfigurationAlgorithm {
 
   def getOneToManyOperators(physicalPlan: PhysicalPlan): Set[LayerIdentity] = {
     physicalPlan.operators.filter(op => op.isOneToManyOp).map(op => op.id).toSet
@@ -75,8 +75,8 @@ object FriesAlg {
       val componentPlan = mcsPlan.subPlan(componentSet)
 
       // generate the reconfiguration command for this component
-      val reconfigCommand = ModifyWorkerLogicMultiple(
-        reconfigurations.filter(o => component.contains(o.id)).map(o => ModifyOperatorLogic(o))
+      val reconfigCommand = WorkerModifyLogicMultiple(
+        reconfigurations.filter(o => component.contains(o.id)).map(o => WorkerModifyLogic(o))
       )
 
       // find the source operators of the component

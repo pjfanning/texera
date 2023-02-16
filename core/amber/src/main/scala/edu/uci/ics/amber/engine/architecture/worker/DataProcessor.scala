@@ -50,7 +50,7 @@ class DataProcessor( // dependencies:
     outputManager: OutputManager, // to send output tuples
     breakpointManager: BreakpointManager, // to evaluate breakpoints
     stateManager: WorkerStateManager,
-    upstreamLinkStatus: UpstreamLinkStatus,
+    val upstreamLinkStatus: UpstreamLinkStatus,
     asyncRPCServer: AsyncRPCServer,
     val logStorage: DeterminantLogStorage,
     val logManager: LogManager,
@@ -62,6 +62,7 @@ class DataProcessor( // dependencies:
 ) extends AmberLogging {
 
   val pauseManager: PauseManager = new PauseManager(this)
+  val epochManager: EpochManager = new EpochManager(this, outputManager, asyncRPCServer)
   val internalQueue = new WorkerInternalQueue(pauseManager, logManager, recoveryQueue)
 
   // initialize dp thread upon construction
@@ -288,7 +289,7 @@ class DataProcessor( // dependencies:
       case ControlElement(from, payload) =>
         processControlCommand(from, payload)
       case InputEpochMarker(from, epochMarker) =>
-        processEpochMarker(from, epochMarker)
+        epochManager.processEpochMarker(from, epochMarker)
     }
   }
 
@@ -386,26 +387,6 @@ class DataProcessor( // dependencies:
       case ret: ReturnInvocation =>
         asyncRPCClient.logControlReply(ret, from)
         asyncRPCClient.fulfillPromise(ret)
-    }
-  }
-
-  private[this] def processEpochMarker(from: ActorVirtualIdentity, marker: EpochMarker): Unit = {
-    pauseManager.pauseInputChannel(EpochMarkerPause(marker.id), List(from))
-    val epochMarkerCompleted = upstreamLinkStatus.markEpochMarker(from, marker)
-    if (epochMarkerCompleted) {
-      // invoke the control command carried with the epoch marker
-      if (marker.command.nonEmpty) {
-        this.asyncRPCServer.receive(
-          ControlInvocation(AsyncRPCClient.IgnoreReply, marker.command.get),
-          actorId
-        )
-      }
-      // if this operator is not the final destination of the marker, pass it downstream
-      if (!marker.scope.sinkOperators.contains(opExecConfig.id)) {
-        this.outputManager.emitEpochMarker(marker)
-      }
-      // unblock input channels
-      pauseManager.resume(EpochMarkerPause(marker.id))
     }
   }
 

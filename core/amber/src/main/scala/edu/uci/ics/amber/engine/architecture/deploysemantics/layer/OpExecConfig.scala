@@ -130,11 +130,19 @@ case class OpExecConfig(
 ) {
 
   // return the runtime class of the corresponding OperatorExecutor
+  lazy val tempOperatorInstance = initIOperatorExecutor((0, this))
   lazy val opExecClass: Class[_ <: IOperatorExecutor] =
-    initIOperatorExecutor((0, this)).getClass
+    tempOperatorInstance.getClass
 
   def isPythonOperator(): Boolean =
     classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
+
+  def getPythonCode(): String = {
+    if (!this.isPythonOperator()) {
+      throw new RuntimeException("operator " + id + " is not a python operator")
+    }
+    tempOperatorInstance.asInstanceOf[PythonUDFOpExecV2].getCode
+  }
 
   /*
    * Variables related to runtime information

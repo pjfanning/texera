@@ -19,15 +19,12 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     * the build part completes. Therefore, we have a `allUpstreamLinkIds` to track the number of actual upstream
     * links that a worker receives data from.
     */
-  private val upstreamMap =
+  val upstreamMap =
     new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
-  private val upstreamMapReverse =
+  val upstreamMapReverse =
     new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
   private val completedLinkIds = new mutable.HashSet[LinkIdentity]()
-
-  private val epochMarkerReceived =
-    new mutable.HashMap[String, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamMap.update(input, upstreamMap(input) + identifier)
@@ -38,24 +35,6 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     if (identifier != null) {
       endReceivedFromWorkers.add(identifier)
     }
-  }
-
-  // markers the arrival of an epoch marker,
-  // returns a boolean indicating if the epoch marker is completely received from all senders within scope
-  def markEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker): Boolean = {
-    val markerId = epochMarker.id
-    epochMarkerReceived.update(markerId, epochMarkerReceived(markerId) + from)
-
-    // check if the epoch marker is completed
-    val sendersWithinScope = allUncompletedSenders.filter(sender =>
-      epochMarker.scope.links.contains(upstreamMapReverse(sender))
-    )
-    val epochMarkerCompleted = epochMarkerReceived(markerId) == sendersWithinScope
-    if (epochMarkerCompleted) {
-      epochMarkerReceived.remove(markerId) // clean up on epoch marker completion
-    }
-
-    epochMarkerCompleted
   }
 
   def allUncompletedSenders: Set[ActorVirtualIdentity] = {

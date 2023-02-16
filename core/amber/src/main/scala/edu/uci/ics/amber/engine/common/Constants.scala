@@ -5,7 +5,6 @@ import akka.actor.Address
 import scala.concurrent.duration._
 
 object Constants {
-  val defaultBatchSize: Int = AmberUtils.amberConfig.getInt("constants.default-batch-size")
   // time interval for logging queue sizes
   val loggingQueueSizeInterval: Int =
     AmberUtils.amberConfig.getInt("constants.logging-queue-size-interval")
@@ -66,4 +65,9 @@ object Constants {
   var enableTransactionalReconfiguration: Boolean =
     AmberUtils.amberConfig.getBoolean("reconfiguration.enable-transactional-reconfiguration")
 
+  val defaultBatchSize: Int = AmberUtils.amberConfig.getInt("network-buffering.default-batch-size")
+  var enableAdaptiveNetworkBuffering: Boolean =
+    AmberUtils.amberConfig.getBoolean("network-buffering.enable-adaptive-buffering")
+  var adaptiveBufferingTimeoutMs: Int =
+    AmberUtils.amberConfig.getInt("network-buffering.adaptive-buffering-timeout-ms")
 }

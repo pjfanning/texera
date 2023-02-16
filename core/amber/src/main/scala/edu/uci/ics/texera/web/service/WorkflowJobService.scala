@@ -149,6 +149,7 @@ class WorkflowJobService(
     jobRuntimeService.unsubscribeAll()
     jobPythonService.unsubscribeAll()
     jobStatsService.unsubscribeAll()
+    jobReconfigurationService.unsubscribeAll()
   }
 
 }

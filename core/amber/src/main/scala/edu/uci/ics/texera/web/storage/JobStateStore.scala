@@ -16,6 +16,6 @@ class JobStateStore {
   val reconfigurationStore = new StateStore(JobReconfigurationStore())
 
   def getAllStores: Iterable[StateStore[_]] = {
-    Iterable(statsStore, pythonStore, breakpointStore, jobMetadataStore)
+    Iterable(statsStore, pythonStore, breakpointStore, jobMetadataStore, reconfigurationStore)
   }
 }

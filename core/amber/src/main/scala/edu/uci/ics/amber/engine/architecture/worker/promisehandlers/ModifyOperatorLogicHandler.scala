@@ -2,14 +2,21 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.ModifyOperatorLogic
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
+  WorkerModifyLogic,
+  WorkerModifyLogicComplete,
+  WorkerModifyLogicMultiple
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object ModifyOperatorLogicHandler {
-  case class ModifyOperatorLogic(opExecConfig: OpExecConfig) extends ControlCommand[Unit]
+  case class WorkerModifyLogic(opExecConfig: OpExecConfig) extends ControlCommand[Unit]
 
-  case class ModifyWorkerLogicMultiple(modifyLogic: List[ModifyOperatorLogic])
+  case class WorkerModifyLogicMultiple(modifyLogicList: List[WorkerModifyLogic])
       extends ControlCommand[Unit]
+
+  case class WorkerModifyLogicComplete(workerID: ActorVirtualIdentity) extends ControlCommand[Unit]
 }
 
 /** Get queue and other resource usage of this worker
@@ -19,12 +26,25 @@ object ModifyOperatorLogicHandler {
 trait ModifyOperatorLogicHandler {
   this: WorkerAsyncRPCHandlerInitializer =>
 
-  registerHandler { (msg: ModifyOperatorLogic, _) =>
-    val operator =
-      msg.opExecConfig.initIOperatorExecutor((dataProcessor.workerIndex, msg.opExecConfig))
-    dataProcessor.opExecConfig = msg.opExecConfig
-    dataProcessor.operator = operator
-    this.operator = operator
+  registerHandler { (msg: WorkerModifyLogic, _) =>
+    performModifyLogic(msg.opExecConfig)
+    sendToClient(WorkerModifyLogicComplete(this.actorId))
+  }
+
+  registerHandler { (msg: WorkerModifyLogicMultiple, _) =>
+    val modifyLogic =
+      msg.modifyLogicList.find(o => o.opExecConfig.id == dataProcessor.opExecConfig.id)
+    if (modifyLogic.nonEmpty) {
+      performModifyLogic(modifyLogic.get.opExecConfig)
+      sendToClient(WorkerModifyLogicComplete(this.actorId))
+    }
+  }
+
+  private def performModifyLogic(newOpExecConfig: OpExecConfig): Unit = {
+    val newOperator =
+      newOpExecConfig.initIOperatorExecutor((dataProcessor.workerIndex, newOpExecConfig))
+    dataProcessor.operator = newOperator
+    this.operator = newOperator
     operator.open()
   }
 

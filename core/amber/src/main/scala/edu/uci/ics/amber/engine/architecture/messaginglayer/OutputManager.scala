@@ -10,6 +10,10 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InputEpochMarker
 import edu.uci.ics.amber.engine.common.Constants
+import edu.uci.ics.amber.engine.common.Constants.{
+  adaptiveBufferingTimeoutMs,
+  enableAdaptiveNetworkBuffering
+}
 import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -139,13 +143,16 @@ class AdaptiveBatchingMonitor {
   var adaptiveBatchingHandle: Option[Cancellable] = None
 
   def enableAdaptiveBatching(context: ActorContext): Unit = {
+    if (!enableAdaptiveNetworkBuffering) {
+      return
+    }
     if (this.adaptiveBatchingHandle.nonEmpty || context == null) {
       return
     }
     this.adaptiveBatchingHandle = Some(
       context.system.scheduler.scheduleAtFixedRate(
         0.milliseconds,
-        FiniteDuration.apply(500, MILLISECONDS),
+        FiniteDuration.apply(adaptiveBufferingTimeoutMs, MILLISECONDS),
         context.self,
         ControlInvocation(
           AsyncRPCClient.IgnoreReplyAndDoNotLog,

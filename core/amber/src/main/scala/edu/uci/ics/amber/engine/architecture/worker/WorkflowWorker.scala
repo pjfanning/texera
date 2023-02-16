@@ -78,6 +78,7 @@ class WorkflowWorker(
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
+  val epochManager: EpochManager = wire[EpochManager]
   val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
     wire[WorkerAsyncRPCHandlerInitializer]
 

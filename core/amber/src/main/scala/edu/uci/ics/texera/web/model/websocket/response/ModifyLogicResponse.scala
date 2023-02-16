@@ -7,3 +7,7 @@ case class ModifyLogicResponse(
     isValid: Boolean,
     errorMessage: String
 ) extends TexeraWebSocketEvent
+
+case class ModifyLogicCompletedEvent(
+    opIds: List[String]
+) extends TexeraWebSocketEvent

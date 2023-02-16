@@ -8,7 +8,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
 }
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers._
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload}
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor}
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
   AsyncRPCHandlerInitializer,
@@ -16,6 +15,7 @@ import edu.uci.ics.amber.engine.common.rpc.{
 }
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor}
 
 class WorkerAsyncRPCHandlerInitializer(
     val actorId: ActorVirtualIdentity,
@@ -32,6 +32,7 @@ class WorkerAsyncRPCHandlerInitializer(
     val breakpointManager: BreakpointManager,
     val stateManager: WorkerStateManager,
     val actorContext: ActorContext,
+    val epochManager: EpochManager,
     source: AsyncRPCClient,
     receiver: AsyncRPCServer
 ) extends AsyncRPCHandlerInitializer(source, receiver)
@@ -54,6 +55,8 @@ class WorkerAsyncRPCHandlerInitializer(
     with PauseSkewMitigationHandler
     with BackpressureHandler
     with SchedulerTimeSlotEventHandler
-    with FlushNetworkBufferHandler {
+    with FlushNetworkBufferHandler
+    with WorkerEpochMarkerHandler
+    with ModifyOperatorLogicHandler {
   var lastReportTime = 0L
 }

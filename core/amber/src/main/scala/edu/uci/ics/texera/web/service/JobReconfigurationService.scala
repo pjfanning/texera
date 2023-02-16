@@ -1,13 +1,18 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogicComplete
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.ModifyLogicRequest
-import edu.uci.ics.texera.web.model.websocket.response.ModifyLogicResponse
+import edu.uci.ics.texera.web.model.websocket.response.{
+  ModifyLogicCompletedEvent,
+  ModifyLogicResponse
+}
 import edu.uci.ics.texera.web.storage.{JobReconfigurationStore, JobStateStore}
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 
@@ -19,7 +24,37 @@ class JobReconfigurationService(
     stateStore: JobStateStore,
     workflowCompiler: WorkflowCompiler,
     workflow: Workflow
-) {
+) extends SubscriptionManager {
+
+  client.registerCallback[WorkerModifyLogicComplete]((evt: WorkerModifyLogicComplete) => {
+    stateStore.reconfigurationStore.updateState(old => {
+      old.copy(completedReconfigs = old.completedReconfigs + evt.workerID)
+    })
+  })
+
+  addSubscription(
+    stateStore.reconfigurationStore.registerDiffHandler((oldState, newState) => {
+      if (
+        oldState.completedReconfigs != newState.completedReconfigs
+        && oldState.currentReconfigId == newState.currentReconfigId
+      ) {
+        val diff = newState.completedReconfigs -- oldState.completedReconfigs
+        val newlyCompletedOps = diff
+          .map(workerId => workflow.getOperator(workerId).id)
+          .filter(opId =>
+            workflow.getOperator(opId).getAllWorkers.toSet.subsetOf(newState.completedReconfigs)
+          )
+          .map(opId => opId.operator)
+        if (newlyCompletedOps.nonEmpty) {
+          List(ModifyLogicCompletedEvent(newlyCompletedOps.toList))
+        } else {
+          List()
+        }
+      } else {
+        List()
+      }
+    })
+  )
 
   // handles reconfigure workflow logic from frontend
   // validate the modify logic request and notifies the frontend
@@ -34,7 +69,7 @@ class JobReconfigurationService(
       case Failure(exception) => ModifyLogicResponse(opId, isValid = false, exception.getMessage)
       case Success(op) => {
         stateStore.reconfigurationStore.updateState(old =>
-          JobReconfigurationStore(old.pendingReconfigurations :+ op)
+          old.copy(unscheduledReconfigs = old.unscheduledReconfigs :+ op)
         )
         ModifyLogicResponse(opId, isValid = true, "")
       }
@@ -42,22 +77,32 @@ class JobReconfigurationService(
   }
 
   def performReconfigurationOnResume(): Unit = {
-    val reconfigurations = stateStore.reconfigurationStore.getState.pendingReconfigurations
+    val reconfigurations = stateStore.reconfigurationStore.getState.unscheduledReconfigs
     if (reconfigurations.isEmpty) {
       return
     }
 
     // schedule all pending reconfigurations to the engine
+    val reconfigurationId = UUID.randomUUID().toString
     if (!Constants.enableTransactionalReconfiguration) {
       reconfigurations.foreach(newOp => {
         client.sendAsync(ModifyLogic(newOp))
       })
     } else {
-      FriesAlg.computeMCS(workflow.physicalPlan, reconfigurations, UUID.randomUUID().toString)
+      val epochMarkers = FriesReconfigurationAlgorithm.computeMCS(
+        workflow.physicalPlan,
+        reconfigurations,
+        reconfigurationId
+      )
+      epochMarkers.foreach(epoch => {
+        client.sendAsync(PropagateEpochMarker(epoch._1, epoch._2))
+      })
     }
 
-    // clear all pending reconfigurations
-    stateStore.reconfigurationStore.updateState(old => JobReconfigurationStore(List()))
+    // clear all un-scheduled reconfigurations, start a new reconfiguration ID
+    stateStore.reconfigurationStore.updateState(old =>
+      JobReconfigurationStore(Some(reconfigurationId))
+    )
   }
 
 }
