@@ -130,19 +130,9 @@ case class OpExecConfig(
 ) {
 
   // return the runtime class of the corresponding OperatorExecutor
-  lazy val tempOperatorInstance = initIOperatorExecutor((0, this))
+  lazy private val tempOperatorInstance: IOperatorExecutor = initIOperatorExecutor((0, this))
   lazy val opExecClass: Class[_ <: IOperatorExecutor] =
     tempOperatorInstance.getClass
-
-  def isPythonOperator(): Boolean =
-    classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
-
-  def getPythonCode(): String = {
-    if (!this.isPythonOperator()) {
-      throw new RuntimeException("operator " + id + " is not a python operator")
-    }
-    tempOperatorInstance.asInstanceOf[PythonUDFOpExecV2].getCode
-  }
 
   /*
    * Variables related to runtime information
@@ -161,6 +151,19 @@ case class OpExecConfig(
   /*
    * Helper functions related to compile-time operations
    */
+
+  def isSourceOperator: Boolean =
+    classOf[ISourceOperatorExecutor].isAssignableFrom(opExecClass)
+
+  def isPythonOperator: Boolean =
+    classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
+
+  def getPythonCode: String = {
+    if (!isPythonOperator) {
+      throw new RuntimeException("operator " + id + " is not a python operator")
+    }
+    tempOperatorInstance.asInstanceOf[PythonUDFOpExecV2].getCode
+  }
 
   // creates a copy with the specified port information
   def withPorts(operatorInfo: OperatorInfo): OpExecConfig = {
@@ -329,7 +332,7 @@ case class OpExecConfig(
         val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
         val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
 
-        val workflowWorker = if (this.isPythonOperator()) {
+        val workflowWorker = if (this.isPythonOperator) {
           PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
         } else {
           WorkflowWorker.props(

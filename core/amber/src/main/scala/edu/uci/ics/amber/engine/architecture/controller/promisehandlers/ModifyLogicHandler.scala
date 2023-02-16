@@ -38,9 +38,9 @@ trait ModifyLogicHandler {
     {
       val operator = workflow.physicalPlan.operatorMap(msg.newOp.id)
 
-      val workerCommand = if (operator.isPythonOperator()) {
+      val workerCommand = if (operator.isPythonOperator) {
         ModifyPythonOperatorLogic(
-          operator.getPythonCode(),
+          operator.getPythonCode,
           isSource = operator.opExecClass.isAssignableFrom(classOf[PythonUDFSourceOpExecV2])
         )
       } else {
