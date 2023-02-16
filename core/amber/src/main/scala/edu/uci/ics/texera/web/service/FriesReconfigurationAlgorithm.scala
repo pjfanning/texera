@@ -20,7 +20,19 @@ object FriesReconfigurationAlgorithm {
     physicalPlan.operators.filter(op => op.isOneToManyOp).map(op => op.id).toSet
   }
 
-  def computeMCS(
+  def scheduleReconfigurations(
+      physicalPlan: PhysicalPlan,
+      reconfigurations: List[OpExecConfig],
+      epochMarkerId: String
+  ): List[(LayerIdentity, EpochMarker)] = {
+    // independently schedule reconfigurations for each region:
+    physicalPlan
+      .getAllRegions()
+      .map(region => physicalPlan.subPlan(region.getOperators().toSet))
+      .flatMap(regionSubPlan => computeMCS(regionSubPlan, reconfigurations, epochMarkerId))
+  }
+
+  private def computeMCS(
       physicalPlan: PhysicalPlan,
       reconfigurations: List[OpExecConfig],
       epochMarkerId: String

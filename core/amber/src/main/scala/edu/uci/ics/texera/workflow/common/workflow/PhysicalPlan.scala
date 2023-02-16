@@ -106,6 +106,10 @@ case class PhysicalPlan(
     new TopologicalOrderIterator(dag).asScala
   }
 
+  def getAllRegions(): List[PipelinedRegion] = {
+    asScalaIterator(pipelinedRegionsDAG.iterator()).toList
+  }
+
   def getOperatorsInRegion(region: PipelinedRegion): PhysicalPlan = {
     val newOpIds = region.getOperators()
     val newOps = operators.filter(op => newOpIds.contains(op.id))

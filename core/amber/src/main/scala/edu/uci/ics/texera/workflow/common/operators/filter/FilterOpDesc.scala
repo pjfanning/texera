@@ -2,6 +2,7 @@ package edu.uci.ics.texera.workflow.common.operators.filter
 
 import com.google.common.base.Preconditions
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
@@ -13,8 +14,6 @@ abstract class FilterOpDesc extends OperatorDescriptor {
     Preconditions.checkArgument(schemas.length == 1)
     schemas(0)
   }
-
-  override def supportReconfiguration: Boolean = true
 
   override def runtimeReconfiguration(
       newOpDesc: OperatorDescriptor,

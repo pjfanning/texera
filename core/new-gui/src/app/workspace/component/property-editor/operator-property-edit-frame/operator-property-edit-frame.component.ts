@@ -41,6 +41,7 @@ import Quill from "quill";
 import QuillCursors from "quill-cursors";
 import * as Y from "yjs";
 import { CollabWrapperComponent } from "../../../../common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
+import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
 
 export type PropertyDisplayComponent = TypeCastingDisplayComponent;
 
@@ -72,6 +73,8 @@ Quill.register("modules/cursors", QuillCursors);
 })
 export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, OnDestroy {
   @Input() currentOperatorId?: string;
+
+  currentOperatorSchema?: OperatorSchema;
 
   // re-declare enum for angular template to access it
   readonly ExecutionState = ExecutionState;
@@ -225,14 +228,14 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     if (!this.currentOperatorId) {
       return;
     }
+    this.currentOperatorSchema = this.dynamicSchemaService.getDynamicSchema(this.currentOperatorId);
     this.workflowActionService.getTexeraGraph().updateSharedModelAwareness("currentlyEditing", this.currentOperatorId);
     const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
     // set the operator data needed
-    const currentOperatorSchema = this.dynamicSchemaService.getDynamicSchema(this.currentOperatorId);
-    this.workflowActionService.setOperatorVersion(operator.operatorID, currentOperatorSchema.operatorVersion);
+    this.workflowActionService.setOperatorVersion(operator.operatorID, this.currentOperatorSchema.operatorVersion);
     this.operatorVersion = operator.operatorVersion.slice(0, 9);
-    this.setFormlyFormBinding(currentOperatorSchema.jsonSchema);
-    this.formTitle = operator.customDisplayName ?? currentOperatorSchema.additionalMetadata.userFriendlyName;
+    this.setFormlyFormBinding(this.currentOperatorSchema.jsonSchema);
+    this.formTitle = operator.customDisplayName ?? this.currentOperatorSchema.additionalMetadata.userFriendlyName;
 
     /**
      * Important: make a deep copy of the initial property data object.
@@ -246,7 +249,7 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     // 1. the operator might be added not directly from the UI, which violates the precondition
     // 2. the schema might change, which specifies a new default value
     // 3. formly doesn't emit change event when it fills in default value, causing an inconsistency between component and service
-    this.ajv.validate(currentOperatorSchema, this.formData);
+    this.ajv.validate(this.currentOperatorSchema, this.formData);
 
     // manually trigger a form change event because default value might be filled in
     this.onFormChanges(this.formData);

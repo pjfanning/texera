@@ -177,8 +177,6 @@ abstract class OperatorDescriptor extends Serializable {
     this.context = workflowContext
   }
 
-  def supportReconfiguration: Boolean = false
-
   def runtimeReconfiguration(
       newOpDesc: OperatorDescriptor,
       operatorSchemaInfo: OperatorSchemaInfo

@@ -26,12 +26,15 @@ class JobReconfigurationService(
     workflow: Workflow
 ) extends SubscriptionManager {
 
+  // monitors notification from the engine that a reconfiguration on a worker is completed
   client.registerCallback[WorkerModifyLogicComplete]((evt: WorkerModifyLogicComplete) => {
     stateStore.reconfigurationStore.updateState(old => {
       old.copy(completedReconfigs = old.completedReconfigs + evt.workerID)
     })
   })
 
+  // monitors the reconfiguration state (completed workers) change,
+  // notifies the frontend when all workers of an operator complete reconfiguration
   addSubscription(
     stateStore.reconfigurationStore.registerDiffHandler((oldState, newState) => {
       if (
@@ -58,6 +61,8 @@ class JobReconfigurationService(
 
   // handles reconfigure workflow logic from frontend
   // validate the modify logic request and notifies the frontend
+  // reconfigurations can only come when the workflow is paused,
+  // they are not actually performed until the workflow is resumed
   def modifyOperatorLogic(modifyLogicRequest: ModifyLogicRequest): TexeraWebSocketEvent = {
     val newOp = modifyLogicRequest.operator
     val opId = newOp.operatorID
@@ -76,6 +81,12 @@ class JobReconfigurationService(
     }
   }
 
+  // actually performs all reconfiguration requests the user made during pause
+  // sends ModifyLogic messages to operators and workers,
+  // there are two modes: transactional or non-transactional
+  // in the transactional mode, reconfigurations on multiple operators will be synchronized
+  // in the non-transaction mode, they are not synchronized, this is faster, but can lead to consistency issues
+  // for details, see the Fries reconfiguration paper
   def performReconfigurationOnResume(): Unit = {
     val reconfigurations = stateStore.reconfigurationStore.getState.unscheduledReconfigs
     if (reconfigurations.isEmpty) {
@@ -89,7 +100,7 @@ class JobReconfigurationService(
         client.sendAsync(ModifyLogic(newOp))
       })
     } else {
-      val epochMarkers = FriesReconfigurationAlgorithm.computeMCS(
+      val epochMarkers = FriesReconfigurationAlgorithm.scheduleReconfigurations(
         workflow.physicalPlan,
         reconfigurations,
         reconfigurationId

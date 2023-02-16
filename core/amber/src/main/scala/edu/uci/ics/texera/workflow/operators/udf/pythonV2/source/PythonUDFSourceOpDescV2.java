@@ -86,7 +86,8 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
                 scala.collection.immutable.List.<InputPort>empty(),
                 asScalaBuffer(singletonList(new OutputPort(""))).toList(),
                 false,
-                false
+                false,
+                true
         );
     }
 
