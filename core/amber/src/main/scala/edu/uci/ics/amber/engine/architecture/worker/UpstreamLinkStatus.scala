@@ -31,6 +31,8 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) {
     upstreamMapReverse.update(identifier, input)
   }
 
+  def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = upstreamMapReverse(identifier)
+
   def markWorkerEOF(identifier: ActorVirtualIdentity): Unit = {
     if (identifier != null) {
       endReceivedFromWorkers.add(identifier)

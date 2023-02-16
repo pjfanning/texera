@@ -30,7 +30,12 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, Re
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{
+  CONTROLLER,
+  SELF,
+  SOURCE_STARTER_ACTOR,
+  SOURCE_STARTER_OP
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.{
   AmberLogging,
@@ -106,36 +111,19 @@ class DataProcessor( // dependencies:
     }
   }
 
-  /**
-    * Map from Identifier to input number. Used to convert the Identifier
-    * to int when adding sender info to the queue.
-    * We also keep track of the upstream actors so that we can emit
-    * EndOfAllMarker when all upstream actors complete their job
-    */
-  private val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
-
   if (this.operator.isInstanceOf[ISourceOperatorExecutor]) {
-    // for source operator: add a self input channel just for sending the end marker
-    internalQueue.registerInput(this.actorId)
+    // for source operator: add a virtual input channel just for kicking off the execution
+    registerInput(SOURCE_STARTER_ACTOR, LinkIdentity(SOURCE_STARTER_OP, this.opExecConfig.id))
   }
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
-    inputMap(identifier) = input
     upstreamLinkStatus.registerInput(identifier, input)
     internalQueue.registerInput(identifier)
   }
 
-  def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = {
-    if (identifier != this.actorId) {
-      inputMap(identifier)
-    } else {
-      null // special case for source operator
-    }
-  }
-
   def getInputPort(identifier: ActorVirtualIdentity): Int = {
-    val inputLink = getInputLink(identifier)
-    if (inputLink == null) 0
+    val inputLink = upstreamLinkStatus.getInputLink(identifier)
+    if (inputLink.from == SOURCE_STARTER_OP) 0 // special case for source operator
     else if (!opExecConfig.inputToOrdinalMapping.contains(inputLink)) 0
     else opExecConfig.inputToOrdinalMapping(inputLink)
   }
@@ -266,7 +254,7 @@ class DataProcessor( // dependencies:
         }
         processControlCommandsDuringExecution() // necessary for trigger correct recovery
         upstreamLinkStatus.markWorkerEOF(from)
-        val currentLink = getInputLink(currentInputActor)
+        val currentLink = upstreamLinkStatus.getInputLink(currentInputActor)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           currentInputTuple = Right(InputExhausted())
           handleInputTuple()
