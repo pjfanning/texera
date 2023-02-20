@@ -1,4 +1,3 @@
-import ast
 import importlib
 import inspect
 import sys
@@ -13,9 +12,11 @@ from core.models import Operator
 
 class OperatorManager:
     def __init__(self):
-        self.operator: Optional[Operator] = None
+        self._operator: Optional[Operator] = None
+        self._operator_with_bp: Optional[Operator] = None
         self.operator_module_name: Optional[str] = None
         self.operator_version: int = 0  # incremental only
+        self._static = False
 
         # create a tmp fs for storing source code, which will be removed when the
         # workflow is completed.
@@ -113,9 +114,9 @@ class OperatorManager:
         :return:
         """
         operator: type(Operator) = self.load_operator(code)
-        self.operator = operator()
-        self.operator.is_source = is_source
-        self.operator.output_schema = output_schema
+        self._operator = operator()
+        self._operator.is_source = is_source
+        self._operator.output_schema = output_schema
 
     def update_operator(self, code: str, is_source: bool) -> None:
         """
@@ -129,10 +130,10 @@ class OperatorManager:
         """
         original_internal_state = self.operator.__dict__
         operator: type(Operator) = self.load_operator(code)
-        self.operator = operator()
-        self.operator.is_source = is_source
+        self._operator = operator()
+        self._operator.is_source = is_source
         # overwrite the internal state
-        self.operator.__dict__ = original_internal_state
+        self._operator.__dict__ = original_internal_state
         # TODO:
         #   it may be an interesting idea to preserve versions of code and versions
         #   of states whenever the operator logic is being updated.
@@ -160,3 +161,18 @@ class OperatorManager:
     def apply_available_code_update(self):
         if self.scheduled_updates:
             self.update_operator(*self.scheduled_updates["asap"])
+
+    def add_operator_with_bp(self, code, is_source):
+        original_internal_state = self._operator.__dict__
+        operator: type(Operator) = self.load_operator(code)
+        self._operator_with_bp = operator()
+        self._operator_with_bp.is_source = is_source
+        # overwrite the internal state
+        self._operator_with_bp.__dict__ = original_internal_state
+
+    @property
+    def operator(self):
+        if self._static:
+            return self._operator_with_bp
+        else:
+            return self._operator

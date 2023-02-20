@@ -37,12 +37,12 @@ class DataProcessor(Runnable, Stoppable):
                 logger.info(self._context.statistics_manager.get_statistics()[0])
                 start_time = time.time()
 
-                # plain for loop:
-                if self._context.statistics_manager.get_statistics()[0] == 10:
-                    m = self._context.operator_manager.operator_module_name
-                    self._context.debug_manager.put_debug_command(
-                        f"b {m}:14, 'doesnotexist' in tuple_['text'] and s == -1")
-                    self._switch_context()
+                # # plain for loop:
+                # if self._context.statistics_manager.get_statistics()[0] == 10:
+                #     m = self._context.operator_manager.operator_module_name
+                #     self._context.debug_manager.put_debug_command(
+                #         f"b {m}:14, 'doesnotexist' in tuple_['text'] and s == -1")
+                #     self._switch_context()
 
                 # # udf1:
                 # if self._context.statistics_manager.get_statistics()[0] == 10:
@@ -58,13 +58,13 @@ class DataProcessor(Runnable, Stoppable):
                 #         f"b {m}:14, 'doesnotexist' in tuple_['text'] and pos == -1")
                 #     self._switch_context()
 
-                # # udf3:
-                # if self._context.statistics_manager.get_statistics()[0] == 10:
-                #     m = self._context.operator_manager.operator_module_name
-                #     self._context.debug_manager.put_debug_command(
-                #         f"b {m}:13, 'doesnotexist' in tuple_['text'] and doc['positive'] == "
-                #         f"-1")
-                #     self._switch_context()
+                # udf3:
+                if self._context.statistics_manager.get_statistics()[0] == 10:
+                    m = self._context.operator_manager.operator_module_name
+                    self._context.debug_manager.put_debug_command(
+                        f"b {m}:13, 'doesnotexist' in tuple_['text'] and doc['positive'] == "
+                        f"-1")
+                    self._switch_context()
 
                 # # op1-impl1
                 # if isinstance(
@@ -90,16 +90,44 @@ class DataProcessor(Runnable, Stoppable):
                 #             'text']:
                 #
                 #         self._context.debug_manager.debugger.clear_all_breaks()
+                #
+                #         sys.settrace(None)
+                #         frame = sys._getframe().f_back
+                #         while frame and frame.f_back:
+                #             del frame.f_trace
+                #             frame = frame.f_back
                 #         # logger.info(self._context.debug_manager.debugger.breaks)
                 #
                 #     else:
                 #         logger.info("add breakpoint back")
                 #         m = self._context.operator_manager.operator_module_name
+                #
+                #         frame = sys._getframe().f_back
+                #
+                #         while frame:
+                #             frame.f_trace = \
+                #                 self._context.debug_manager.debugger.trace_dispatch
+                #             self.botframe = frame
+                #             frame = frame.f_back
+                #         sys.settrace(self._context.debug_manager.debugger.trace_dispatch)
                 #         self._context.debug_manager.debugger.do_break(
-                #             f"{m}:13, 'doesnotexist' in tuple_['text'] and doc["
-                #             f"'positive'] == -1")
+                #             f"{m}:14, 'doesnotexist' in tuple_['text'] and item == -1")
 
+
+                # #op1B + op2
+                if isinstance(
+                        self._context.tuple_processing_manager.current_input_tuple,
+                        Tuple
+                ) :
+                    if 'doesnotexist' not in \
+                            self._context.tuple_processing_manager.current_input_tuple[
+                                'text']:
+                        self._context.operator_manager._static = False
+                    else:
+                        self._context.operator_manager._static = True
+                self._context.debug_manager.check_and_swap_for_static_breakpoints()
                 operator = self._context.operator_manager.operator
+                # logger.info(inspect.getsource(operator.process_tuple))
                 tuple_ = self._context.tuple_processing_manager.current_input_tuple
                 link = self._context.tuple_processing_manager.current_input_link
 

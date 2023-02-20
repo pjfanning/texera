@@ -59,9 +59,18 @@ class DebugManager:
                     code = self._operator_manager.add_breakpoint(bp)
                     self.breakpoints_managed.add(bp)
                     # TODO: change line mapping
-                    self.debugger.clear_bpbynumber(bp.number)
-            self._operator_manager.update_operator(code,
-                                                   is_source=self._operator_manager.operator.is_source)
+                    # self.debugger.clear_bpbynumber(bp.number)
+            self.debugger.clear_all_breaks()
+            sys.settrace(None)
+            frame = sys._getframe().f_back
+            while frame and frame.f_back:
+                del frame.f_trace
+                frame = frame.f_back
+
+            logger.info(self.debugger.breaks)
+            # self._operator_manager.update_operator(code, is_source=self._operator_manager._operator.is_source)
+            self._operator_manager.add_operator_with_bp(code,
+                                                   is_source=self._operator_manager._operator.is_source)
 
 
 def breakpoint():
