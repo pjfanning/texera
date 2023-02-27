@@ -33,7 +33,7 @@ import scala.reflect.ClassTag
   * @param ctrlSource
   * @param ctrlReceiver
   */
-class AsyncRPCHandlerInitializer(asyncRPCClient: AsyncRPCClient,  asyncRPCServer: AsyncRPCServer) {
+class AsyncRPCHandlerInitializer(asyncRPCClient: AsyncRPCClient,  asyncRPCServer: AsyncRPCServer) extends Serializable {
 
   /** register a sync handler for one type of control command
     * note that register handler allows multiple handlers for a control message and uses the latest handler.

@@ -13,7 +13,7 @@ trait GetReplayAlignmentHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
   registerHandler { (msg: GetReplayAlignment, _) =>
-    println("record total step at " + dp.totalValidStep + 1)
+    println(s"record total step at ${dp.totalValidStep + 1}")
     var estimatedCheckpointTime = 0
     var estimatedStateLoadTime = 0
     dp.operator match {

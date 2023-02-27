@@ -4,6 +4,7 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
+import edu.uci.ics.amber.engine.architecture.common.Interaction
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -14,7 +15,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import scala.collection.mutable
 
 object WorkerExecutionCompletedHandler {
-  final case class WorkerExecutionCompleted() extends ControlCommand[Unit] with SkipReply
+  final case class WorkerExecutionCompleted(currentStep:Long) extends ControlCommand[Unit] with SkipReply
 }
 
 /** indicate a worker has completed its job
@@ -33,6 +34,7 @@ trait WorkerExecutionCompletedHandler {
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion
+      interactionHistory.addCompletion(sender, msg.currentStep)
       val statsRequests = new mutable.MutableList[Future[Unit]]()
       statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender))), CONTROLLER)
 
@@ -42,15 +44,12 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (cp.execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
-            interactionHistory
-              .append(
-                (
-                  ((System.currentTimeMillis() - workflowStartTimeStamp) / 1000).toInt,
-                  cp.execution.getAllWorkers
-                    .map(x => (x, (-1L, Int.MaxValue, Int.MaxValue)))
-                    .toMap + (CONTROLLER -> (-1L, Int.MaxValue, Int.MaxValue))
-                )
-              )
+            val interaction = new Interaction()
+            interaction.addParticipant(CONTROLLER, -1L, 100000,0)
+            cp.execution.getAllWorkers.foreach{
+              worker => interaction.addParticipant(worker, -1L, 100000, 0)
+            }
+            interactionHistory.addInteraction((System.currentTimeMillis() - workflowStartTimeStamp), interaction)
             sendToClient(WorkflowReplayInfo(interactionHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()

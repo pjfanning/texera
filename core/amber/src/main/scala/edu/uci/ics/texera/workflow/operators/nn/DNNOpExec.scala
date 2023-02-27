@@ -34,7 +34,7 @@ class DNNOpExec(features: List[String], y:String, numLayers:Int) extends MLModel
 //  val net = new MultiLayerNetwork(conf)
 //  net.init()
 
-  override def getTotalEpochsCount: Int = 20
+  override def getTotalEpochsCount: Int = 10
 
   override def predict(miniBatch: Array[Tuple]): Unit = {
     Thread.sleep(1000)
@@ -47,22 +47,22 @@ class DNNOpExec(features: List[String], y:String, numLayers:Int) extends MLModel
   override def outputPrediction(allData: Array[Tuple]): Array[Tuple] = allData
 
   override def getEstimatedCheckpointTime: Int = {
-    5
+    3000
   }
 
   override def getEstimatedStateLoadTime: Int = {
-    5
+    1000
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint, serializer: Serialization): Unit = {
-    super.serializeState(currentIteratorState, checkpoint, serializer)
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
     // save other params
-    Thread.sleep(5000)
+    Thread.sleep(3000)
+    super.serializeState(currentIteratorState, checkpoint)
   }
 
-  override def deserializeState(checkpoint: SavedCheckpoint, deserializer: Serialization): Iterator[(ITuple, Option[Int])] = {
+  override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
     // load my own state
-    Thread.sleep(5000)
-    super.deserializeState(checkpoint, deserializer)
+    Thread.sleep(1000)
+    super.deserializeState(checkpoint)
   }
 }

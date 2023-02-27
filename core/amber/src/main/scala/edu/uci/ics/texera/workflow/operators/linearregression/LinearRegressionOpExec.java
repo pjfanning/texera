@@ -73,4 +73,14 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   public Tuple[] outputPrediction(Tuple[] allData) {
     return allData;
   }
+
+  @Override
+  public int getEstimatedCheckpointTime() {
+    return 0;
+  }
+
+  @Override
+  public int getEstimatedStateLoadTime() {
+    return 0;
+  }
 }

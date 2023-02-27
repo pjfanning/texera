@@ -101,7 +101,7 @@ abstract class SchedulingPolicy(workflow: Workflow) {
 
   def onLinkCompletion(link: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(link)
-    regions.foreach(r => execution.completedLinksOfRegion.addBinding(r.id, link))
+    regions.foreach(r => execution.completedLinksOfRegion.getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]()).add(link))
     regions.foreach(r => checkRegionCompleted(r.id))
     getNextSchedulingWork()
   }

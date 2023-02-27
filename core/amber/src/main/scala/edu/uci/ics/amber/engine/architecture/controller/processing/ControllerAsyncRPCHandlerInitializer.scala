@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
+import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
@@ -43,8 +44,8 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
   var statusUpdateAskHandle: Option[Cancellable] = None
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
-  var interactionHistory: mutable.ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])] =
-    new ArrayBuffer[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])]()
+  var interactionHistory: InteractionHistory = new InteractionHistory()
+
   var workflowStartTimeStamp: Long = System.currentTimeMillis()
   var workflowPauseStartTime: Long = 0L
   var suppressStatusUpdate = false

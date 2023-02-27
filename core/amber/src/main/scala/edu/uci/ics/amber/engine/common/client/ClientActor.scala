@@ -3,24 +3,12 @@ package edu.uci.ics.amber.engine.common.client
 import akka.actor.{Actor, ActorRef, PoisonPill}
 import akka.pattern.StatusReply.Ack
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import akka.util.Timeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage
-}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  TakeGlobalCheckpoint,
-  WorkflowControlMessage,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{TakeGlobalCheckpoint, WorkflowControlMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -41,6 +29,7 @@ private[client] class ClientActor extends Actor {
   var controlId = 0L
   val promiseMap = new mutable.LongMap[Promise[Any]]()
   var handlers: PartialFunction[Any, Unit] = PartialFunction.empty
+  private implicit val timeout: Timeout = Timeout(1.minute)
 
   override def receive: Receive = {
     case InitializeRequest(workflow, controllerConfig) =>

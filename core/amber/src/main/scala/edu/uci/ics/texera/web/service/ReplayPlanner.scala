@@ -2,6 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import com.google.common.collect.Sets
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
+import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
 import edu.uci.ics.amber.engine.architecture.worker.StateRestoreConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -18,38 +19,14 @@ object ReplayPlanner {
   case class ReplayExecution(restart: Boolean, conf: WorkflowStateRestoreConfig, fromIdx: Int)
       extends PlannerStep
 
-  def getExpectedReplayTime(time: Array[Int], from: Int, to: Int): Int = {
-    time(to) - time(from)
-  }
-
-  def getLastCheckpoint(checkpoint: Set[Int], replayTo: Int): Int = {
+  def getLastCheckpoint(checkpoint: Iterable[Int], replayTo: Int): Int = {
     checkpoint.filter(_ <= replayTo).minBy(replayTo - _)
   }
 
-  def getTotalReplayTime(
-      time: Array[Int],
-      checkpoint: Set[Int],
-      loadCost: Array[Int],
-      replayPoints: Array[Int]
-  ): Int = {
-    var res = 0
-    replayPoints.foreach { rp =>
-      val lastChkpt = getLastCheckpoint(checkpoint, rp)
-      val replayTime = loadCost(lastChkpt) + getExpectedReplayTime(time, lastChkpt, rp)
-      res += replayTime
-    }
-    res
-  }
 }
 
-class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Long, Int, Int)])]) {
+class ReplayPlanner(interactionHistory: InteractionHistory) {
   CheckpointHolder.clear()
-  private val time: Array[Int] = Array(0) ++ interactionHistory.map(_._1)
-  private val alignments = Array(Map[ActorVirtualIdentity, Long]()) ++ interactionHistory
-    .map(_._2)
-    .map(_.map(x => x._1 -> x._2._1).toMap)
-  private val checkpointCost = Array(0) ++ interactionHistory.map(_._2).map(_.map(x => x._2._2).sum)
-  private val loadCost = Array(0) ++ interactionHistory.map(_._2).map(_.map(x => x._2._3).sum)
   private var checkpointed = Set[Int](0)
   private val stepsQueue = mutable.Queue[PlannerStep]()
   private var currentIdx = 999
@@ -74,11 +51,11 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
     res
   }
 
-  def addCheckpoint(controllerAlignment: Any): Int = {
+  def addCheckpoint(controllerAlignment: Long): Int = {
     val interactionPointIdx =
-      alignments.indexWhere(x => x.contains(CONTROLLER) && x(CONTROLLER) == controllerAlignment)
+      interactionHistory.findInteractionIdx(CONTROLLER, controllerAlignment)
     checkpointed = checkpointed ++ Set(interactionPointIdx)
-    interactionPointIdx - 1
+    interactionPointIdx
   }
 
   private def createRestore(fromCheckpoint: Int, replayTo: Int): WorkflowStateRestoreConfig = {
@@ -86,7 +63,7 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
       mkOptionForActor(CONTROLLER, fromCheckpoint),
       mkOptionForActor(CONTROLLER, replayTo)
     )
-    val workerConf = alignments(replayTo).keys
+    val workerConf = interactionHistory.getInteraction(replayTo).getParticipants
       .filter(_ != CONTROLLER)
       .map { identity =>
         identity -> StateRestoreConfig(
@@ -102,7 +79,7 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
       actorVirtualIdentity: ActorVirtualIdentity,
       value: Int
   ): Option[Long] = {
-    alignments(value).get(actorVirtualIdentity)
+    interactionHistory.getInteraction(value).getAlignment(actorVirtualIdentity)
   }
 
   def startPlanning(replayTo: Int): Unit = {
@@ -123,10 +100,12 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
       startingPoint = lastChkpt
     }
 
-    val checkpointCostThreshold = 5
-    checkpointIndices = dynamicProgrammingPlanner(startingPoint, replayTo, checkpointCostThreshold)
+    val replayTimeThreshold = 5000
+    checkpointIndices = dynamicProgrammingPlanner(startingPoint, replayTo, replayTimeThreshold)
+    println(interactionHistory)
+    val best = bruteForcePlanner(startingPoint, replayTo, replayTimeThreshold)
     println(s"output plan = $checkpointIndices")
-    println(s"best plan = ${bruteForcePlanner(startingPoint, replayTo, checkpointCostThreshold)}")
+    println(s"best plan = $best")
     println("---------------------------planner replay plan------------------------")
     var cur = startingPoint
     checkpointIndices.toSeq.sorted.foreach { toCheckpoint =>
@@ -146,106 +125,75 @@ class ReplayPlanner(interactionHistory: Seq[(Int, Map[ActorVirtualIdentity, (Lon
     println("---------------------------------------------------------------------")
   }
 
-  def progressivePlanner(
-      from: Int,
-      to: Int,
-      replayTimeThreshold: Int,
-      checkpointCostThreshold: Int
-  ): Set[Int] = {
-    var cur = from
-    var accumulated = 0
-    var cost = 0
-    val res = mutable.ArrayBuffer[Int]()
-    for (i <- from until to) {
-      if (
-        accumulated >= replayTimeThreshold && cost + checkpointCost(i) < checkpointCostThreshold
-      ) {
-        res.append(i)
-        cur = i
-        cost += checkpointCost(i)
-        accumulated = 0
-      }
-      accumulated += getExpectedReplayTime(time, i, i + 1)
-    }
-    if (accumulated > replayTimeThreshold && cost + checkpointCost(to) < checkpointCostThreshold) {
-      cost += checkpointCost(to)
-      res.append(to)
-    }
-    res.toSet
+  def getCheckpointMap(checkpointed:Iterable[Int]): Map[ActorVirtualIdentity, Set[Long]] ={
+    checkpointed.flatMap(x => interactionHistory.getInteraction(x).getAlignmentMap.toSeq).groupBy(_._1).mapValues(_.map(_._2).toSet)
   }
 
-  def greedyPlanner(from: Int, to: Int, checkpointCostThreshold: Int): Set[Int] = {
-    var cost = 0
-    var stop = false
-    val replayPoints = (from + 1 to to).toArray
-    val remaining = mutable.HashSet(replayPoints: _*)
-    val selected = mutable.HashSet[Int]()
-    while (!stop) {
-      var bestChoice = -1
-      var bestCost = getTotalReplayTime(time, checkpointed ++ selected, loadCost, replayPoints)
-      for (i <- remaining) {
-        val replayTime =
-          getTotalReplayTime(time, checkpointed ++ selected ++ Set(i), loadCost, replayPoints)
-        if (replayTime < bestCost && cost + checkpointCost(i) < checkpointCostThreshold) {
-          bestCost = replayTime
-          bestChoice = i
-        }
-      }
-      if (bestChoice != -1) {
-        selected.add(bestChoice)
-        cost += checkpointCost(bestChoice)
-      } else {
-        stop = true
-      }
-    }
-    selected.toSet
-  }
-
-  def bruteForcePlanner(from: Int, to: Int, checkpointCostThreshold: Int): Set[Int] = {
-    var bestPlan: Set[Int] = Set()
-    var bestCost = Int.MaxValue
+  def bruteForcePlanner(from: Int, to: Int, replayTimeThreshold: Int): Set[Int] = {
+    var bestPlan: Set[Int] = (from + 1 to to).toSet
+    var bestCost = Long.MaxValue
+    var bestUnsatisfied = Int.MaxValue
     val replayPoints = (from + 1 to to).toArray
     Sets.powerSet(Sets.newHashSet((from + 1 to to).asJava)).asScala.foreach { choice =>
-      val choiceScalaSet = choice.asScala
-      val planCost =
-        getTotalReplayTime(time, checkpointed ++ choiceScalaSet, loadCost, replayPoints)
-      val chkptCost = choiceScalaSet.map(x => checkpointCost(x)).sum
-      println(s"choice = ${choice} planCost = ${planCost} checkpointCost = $chkptCost")
-      if (
-        planCost <= bestCost && chkptCost < checkpointCostThreshold && choiceScalaSet.size >= bestPlan.size
-      ) {
-        bestCost = planCost
-        bestPlan = choiceScalaSet.toSet
+      val choiceScalaArray = choice.asScala.toArray
+      val validation = interactionHistory.validateReplayTime(checkpointed ++ choiceScalaArray, replayPoints, replayTimeThreshold)
+      if(validation <= bestUnsatisfied){
+        val planCost = interactionHistory.getCheckpointCost(choiceScalaArray, getCheckpointMap(checkpointed))
+        // println(s"choice = ${choice} planCost = ${planCost}")
+        if (validation < bestUnsatisfied || planCost < bestCost) {
+          bestUnsatisfied = validation
+          bestCost = planCost
+          bestPlan = choiceScalaArray.toSet
+        }
       }
     }
     bestPlan
   }
 
-  def dynamicProgrammingPlanner(from: Int, to: Int, checkpointCostThreshold: Int): Set[Int] = {
-    val res = mutable.HashMap[Int, Set[Int]]()
-    val windowSize = to - from
-    val dp =
-      (from to to).map(i => (from to i).map(j => getExpectedReplayTime(time, from, j)).sum).toBuffer
-    for (i <- 0 to windowSize) {
-      res(i) = Set()
-    }
-    for (right <- 1 to windowSize) {
-      for (k <- 1 to right) {
-        var replayTimeAfterK = 0
-        for (j <- k to right) {
-          replayTimeAfterK += loadCost(k + from) + getExpectedReplayTime(time, k + from, j + from)
-        }
-        val subProblemReplayTime = dp(k - 1)
-        if (dp(right) >= subProblemReplayTime + replayTimeAfterK) {
-          val newSet = res(k - 1) ++ Set(k + from)
-          if (newSet.map(checkpointCost(_)).sum <= checkpointCostThreshold) {
-            dp(right) = subProblemReplayTime + replayTimeAfterK + checkpointCost(k + from)
-            res(right) = newSet
+  def dynamicProgrammingPlanner(from: Int, to: Int, replayTimeThreshold: Int): Set[Int] = {
+    val res = mutable.HashMap[(Int, Int), Set[Int]]()
+    val checkpointedMap = getCheckpointMap(checkpointed)
+    for(i <- from to to) {
+      for (j <- from to i) {
+        res.put((i, j), (from + 1 to j).toSet)
+      }
+      val replayPoints = (from + 1 to i).toArray
+      for (j <- from to i) {
+        for (k <- from until j) {
+          val candidate: Set[Int] = if (j != from) {
+            res(j - 1, k).union(Set(j))
+          } else {
+            Set()
+          }
+          val validation = interactionHistory.validateReplayTime(candidate ++ checkpointed, replayPoints, replayTimeThreshold)
+          val unsatisfied = interactionHistory.validateReplayTime(res(i,j)++ checkpointed, replayPoints, replayTimeThreshold)
+          if(validation <= unsatisfied){
+            val candidateCost = interactionHistory.getCheckpointCost(candidate, checkpointedMap)
+            // println(j, i, candidate, candidateCost)
+            if (validation < unsatisfied || candidateCost < interactionHistory.getCheckpointCost(res((i,j)), checkpointedMap)) {
+              res.put((i, j), candidate)
+            }
           }
         }
       }
     }
-    res(windowSize)
+    var finalMinCost = Long.MaxValue
+    var finalResult: Set[Int] = (from + 1 to to).toSet
+    var bestUnsatisfied = Int.MaxValue
+    val replayPoints = (from + 1 to to).toArray
+    for (j <- from to to) {
+      val unsatisfied = interactionHistory.validateReplayTime(res((to,j)) ++ checkpointed, replayPoints, replayTimeThreshold)
+      if(unsatisfied <= bestUnsatisfied){
+        val cost = interactionHistory.getCheckpointCost(res((to,j)), checkpointedMap)
+        if(unsatisfied < bestUnsatisfied || cost < finalMinCost){
+          bestUnsatisfied = unsatisfied
+          finalMinCost = cost
+          finalResult = res((to,j))
+        }
+      }
+    }
+    finalResult
   }
+
 
 }

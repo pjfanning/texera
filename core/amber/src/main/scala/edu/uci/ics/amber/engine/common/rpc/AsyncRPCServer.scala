@@ -105,12 +105,12 @@ class AsyncRPCServer(
     }
   }
 
-  def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
+  def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity, currentStep: Long): Unit = {
     if (call.command.isInstanceOf[SkipConsoleLog]) {
       return
     }
     logger.info(
-      s"receive command: ${call.command} from $sender (controlID: ${call.commandID})"
+      s"receive command: ${call.command} from $sender (controlID: ${call.commandID}, current step = $currentStep)"
     )
   }
 

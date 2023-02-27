@@ -12,6 +12,8 @@ object CheckpointHolder {
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
+  private val completion = new mutable.HashMap[ActorVirtualIdentity, Long]()
+
   def clear(): Unit = {
     checkpoints.clear()
   }
@@ -35,12 +37,23 @@ object CheckpointHolder {
     }
   }
 
+  def hasMarkedCompletion(id:ActorVirtualIdentity, alignment:Long): Boolean ={
+    completion.contains(id) && completion(id) < alignment
+  }
+
   def addCheckpoint(
-      id: ActorVirtualIdentity,
-      alignment: Long,
-      checkpoint: SavedCheckpoint
+                     id: ActorVirtualIdentity,
+                     alignment: Long,
+                     checkpoint: SavedCheckpoint,
+                     markCompletion: Boolean
   ): Unit = {
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
+    if(hasMarkedCompletion(id, alignment)){
+      checkpoint.pointerToCompletion = Some(completion(id))
+    }
+    if(markCompletion && !completion.contains(id)){
+      completion(id) = alignment
+    }
   }
 }

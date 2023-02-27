@@ -104,10 +104,10 @@ class AsyncRPCClient(
     }
   }
 
-  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
+  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity, currentStep:Long): Unit = {
     if (ret.controlReturn != null) {
       logger.info(
-        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
+        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID}, current step = $currentStep)"
       )
       ret.controlReturn match {
         case throwable: Throwable =>
@@ -116,7 +116,7 @@ class AsyncRPCClient(
       }
     } else {
       logger.info(
-        s"receive reply: null from $sender (controlID: ${ret.originalCommandID})"
+        s"receive reply: null from $sender (controlID: ${ret.originalCommandID}, current step = $currentStep)"
       )
     }
   }

@@ -7,13 +7,11 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 trait CheckpointSupport {
   def serializeState(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
-      checkpoint: SavedCheckpoint,
-      serializer: Serialization
-  ): Unit
+      checkpoint: SavedCheckpoint
+  ): Iterator[(ITuple, Option[Int])]
 
   def deserializeState(
-      checkpoint: SavedCheckpoint,
-      deserializer: Serialization
+      checkpoint: SavedCheckpoint
   ): Iterator[(ITuple, Option[Int])]
 
   def getEstimatedCheckpointTime: Int

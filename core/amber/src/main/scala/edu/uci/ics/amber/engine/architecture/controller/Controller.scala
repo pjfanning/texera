@@ -150,18 +150,17 @@ class Controller(
         logger.info("checkpoint found, start loading")
         val chkpt = CheckpointHolder.getCheckpoint(CONTROLLER, chkptAlignment)
         val startLoadingTime = System.currentTimeMillis()
-        val serialization = SerializationExtension(context.system)
+        chkpt.attachSerialization(SerializationExtension(context.system))
         // reload states:
-        controllerProcessor = chkpt.load("controlState").toObject(serialization)
+        controllerProcessor = chkpt.load("controlState")
         controlInputPort = new NetworkInputPort[ControlPayload](
           this.actorId,
           controllerProcessor.handleControlPayloadOuter
         )
-        controlInputPort.setFIFOState(chkpt.load("fifoState").toObject(serialization))
+        controlInputPort.setFIFOState(chkpt.load("fifoState"))
         // re-send outputs:
         chkpt
           .load("outputMessages")
-          .toObject(serialization)
           .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
           .foreach {
             case (id, iter) =>

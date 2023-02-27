@@ -89,7 +89,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
 
   private def loadDeterminant(): Unit = {
     val n = records.next()
-    println(s"read: ${n}")
+    //println(s"read: ${n}")
     n match {
       case StepDelta(sender, steps) =>
         targetVId = sender
@@ -144,11 +144,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
       if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
         loadDeterminant()
       }
+//      println(
+//        s"replayInfo: Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
+//      )
       if (step > 0) {
         step -= 1
-        println(
-          s"steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
-        )
         if (readInput) {
           val data =
             inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()

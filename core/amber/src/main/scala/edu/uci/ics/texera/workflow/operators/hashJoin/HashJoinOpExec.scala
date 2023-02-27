@@ -261,43 +261,37 @@ class HashJoinOpExec[K](
 
   override def serializeState(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
-      checkpoint: SavedCheckpoint,
-      serializer: Serialization
-  ): Unit = {
+      checkpoint: SavedCheckpoint
+  ): Iterator[(ITuple, Option[Int])] = {
+    val iteratorToArr = currentIteratorState.toArray
     checkpoint.save(
-      "currentIterator",
-      SerializedState.fromObject(currentIteratorState.toArray, serializer)
+      "currentIterator", iteratorToArr
     )
     checkpoint.save(
-      "buildTableHits",
-      SerializedState.fromObject(buildTableHits, serializer)
+      "buildTableHits", buildTableHits
     )
-    checkpoint.save("hashMap", SerializedState.fromObject(buildTableHashMap, serializer))
+    checkpoint.save("hashMap", buildTableHashMap)
     checkpoint.save(
-      "isBuildTableFinished",
-      SerializedState.fromObject(Boolean.box(isBuildTableFinished), serializer)
+      "isBuildTableFinished", isBuildTableFinished
     )
+    iteratorToArr.toIterator
   }
 
   override def deserializeState(
-      checkpoint: SavedCheckpoint,
-      deserializer: Serialization
+      checkpoint: SavedCheckpoint
   ): Iterator[(ITuple, Option[Int])] = {
-    buildTableHits = checkpoint.load("buildTableHits").toObject(deserializer)
-    buildTableHashMap = checkpoint.load("hashMap").toObject(deserializer)
-    isBuildTableFinished = checkpoint.load("isBuildTableFinished").toObject(deserializer)
-    checkpoint
-      .load("currentIterator")
-      .toObject(deserializer)
-      .asInstanceOf[Array[(ITuple, Option[Int])]]
-      .toIterator
+    buildTableHits = checkpoint.load("buildTableHits")
+    buildTableHashMap = checkpoint.load("hashMap")
+    isBuildTableFinished = checkpoint.load("isBuildTableFinished")
+    val arr:Array[(ITuple, Option[Int])] = checkpoint.load("currentIterator")
+    arr.toIterator
   }
 
   override def getEstimatedStateLoadTime: Int = {
-    buildTableHashMap.map(_._2._1.size).sum / 10
+    buildTableHashMap.map(_._2._1.size).sum
   }
 
   override def getEstimatedCheckpointTime: Int = {
-    buildTableHashMap.map(_._2._1.size).sum / 10
+    buildTableHashMap.map(_._2._1.size).sum
   }
 }

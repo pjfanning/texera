@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{FinalizeLink, FinalizeOperator}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
@@ -29,6 +29,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
+import edu.uci.ics.texera.workflow.operators.nn.DNNOpExec
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
 import scala.collection.mutable
@@ -45,6 +46,29 @@ object DataProcessor {
   }
   case class FinalizeLink(link: LinkIdentity) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
+
+  class DPOutputIterator extends Iterator[(ITuple, Option[Int])] {
+    val queue = new mutable.Queue[(ITuple, Option[Int])]
+    @transient var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
+
+    def setTupleOutput(outputIter: Iterator[(ITuple, Option[Int])]):Unit = {
+      this.outputIter = outputIter
+    }
+
+    override def hasNext: Boolean = outputIter.hasNext || queue.nonEmpty
+
+    override def next(): (ITuple, Option[Int]) = {
+      if(outputIter.hasNext){
+        outputIter.next()
+      }else{
+        queue.dequeue()
+      }
+    }
+
+    def appendSpecialTupleToEnd(tuple: ITuple): Unit = {
+      queue.enqueue((tuple, None))
+    }
+  }
 
 }
 
@@ -67,8 +91,6 @@ class DataProcessor( // meta dependencies:
   private[processing] var actorContext: ActorContext = _
   @transient
   private[processing] var operator: IOperatorExecutor = _
-  @transient
-  private[processing] var currentOutputIterator: Iterator[(ITuple, Option[Int])] = _
 
   def initialize(
       operator: IOperatorExecutor, // core logic
@@ -80,13 +102,13 @@ class DataProcessor( // meta dependencies:
       actorContext: ActorContext
   ): Unit = {
     this.operator = operator
-    this.currentOutputIterator = currentOutputIterator
+    this.outputIterator.setTupleOutput(currentOutputIterator)
     this.internalQueue = internalQueue
     this.logStorage = logStorage
     this.logManager = logManager
     this.recoveryManager = recoveryManager
     this.actorContext = actorContext
-    appendSpecialTupleToOutputIter()
+    this.rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
   }
 
   def outputDataPayload(
@@ -131,7 +153,8 @@ class DataProcessor( // meta dependencies:
   // 8. batch producer
   lazy private[processing] val outputManager: OutputManager = new OutputManager(actorId, dataOutputPort)
   // 9. rpc handlers
-  private[this] val rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
+  @transient
+  private[this] var rpcInitializer: DataProcessorRPCHandlerInitializer = _
 
   /**
     * Map from Identifier to input number. Used to convert the Identifier
@@ -142,6 +165,8 @@ class DataProcessor( // meta dependencies:
   lazy private[processing] val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
   lazy private[processing] val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
 
+  private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
+
   // dp thread stats:
   // TODO: add another variable for recovery index instead of using the counts below.
   protected var inputTupleCount = 0L
@@ -149,18 +174,6 @@ class DataProcessor( // meta dependencies:
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
   var totalValidStep = 0L
-
-  class SpecialTupleIterator extends Iterator[(ITuple, Option[Int])] {
-    val queue = new mutable.Queue[(ITuple, Option[Int])]
-    override def hasNext: Boolean = queue.nonEmpty
-
-    override def next(): (ITuple, Option[Int]) = queue.dequeue()
-
-    def add(tuple: ITuple): Unit = {
-      queue.enqueue((tuple, None))
-    }
-  }
-  private var specialTupleIterator = new SpecialTupleIterator()
 
   // initialize dp thread upon construction
   @transient
@@ -255,13 +268,16 @@ class DataProcessor( // meta dependencies:
   private[this] def processInputTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
     determinantLogger.stepIncrement()
     currentInputTuple = tuple
+    if(operator.isInstanceOf[DNNOpExec]){
+      logger.info(s"input $tuple at step = $totalValidStep")
+    }
     try {
-      currentOutputIterator = operator.processTuple(
+      outputIterator.setTupleOutput(operator.processTuple(
         currentInputTuple,
         getInputPort(currentInputActor),
         pauseManager,
         asyncRPCClient
-      )
+      ))
       if (currentInputTuple.isLeft) {
         inputTupleCount += 1
       }
@@ -283,19 +299,22 @@ class DataProcessor( // meta dependencies:
     determinantLogger.stepIncrement()
     var out: (ITuple, Option[Int]) = null
     try {
-      out = currentOutputIterator.next
+      out = outputIterator.next
     } catch safely {
       case e =>
         // invalidate current output tuple
         out = null
         // also invalidate outputIterator
-        currentOutputIterator = null
+        outputIterator.setTupleOutput(Iterator.empty)
         // forward input tuple to the user and pause DP thread
         handleOperatorException(e)
     }
     if (out == null) return
 
     val (outputTuple, outputPortOpt) = out
+    if(operator.isInstanceOf[DNNOpExec]){
+      logger.info(s"output null = ${outputTuple == null} at step = $totalValidStep")
+    }
 
     if (outputTuple == null) return
 
@@ -303,12 +322,13 @@ class DataProcessor( // meta dependencies:
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
-        logger.info(s"$operator completed")
+        logger.info(s"$operator completed at step = $totalValidStep outputted = $outputTupleCount")
         operator.close() // close operator
         outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
         stateManager.transitTo(COMPLETED)
-        asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
+        asyncRPCClient.send(WorkerExecutionCompleted(totalValidStep), CONTROLLER)
       case FinalizeLink(link) =>
+        logger.info(s"process FinalizeLink message at step = $totalValidStep")
         asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
       case _ =>
         if (breakpointManager.evaluateTuple(outputTuple)) {
@@ -351,20 +371,13 @@ class DataProcessor( // meta dependencies:
         upstreamLinkStatus.markWorkerEOF(from, currentLink)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           processInputTuple(Right(InputExhausted()))
-          specialTupleIterator.add(FinalizeLink(currentLink))
+          logger.info(s"$currentLink completed, append FinalizeLink message at step = $totalValidStep")
+          outputIterator.appendSpecialTupleToEnd(FinalizeLink(currentLink))
         }
         if (upstreamLinkStatus.isAllEOF) {
-          specialTupleIterator.add(FinalizeOperator())
+          logger.info(s"operator completed, append FinalizeOperator message at step = $totalValidStep")
+          outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
         }
-        appendSpecialTupleToOutputIter()
-    }
-  }
-
-  private[this] def appendSpecialTupleToOutputIter(): Unit = {
-    if (currentOutputIterator == null) {
-      currentOutputIterator = specialTupleIterator
-    } else {
-      currentOutputIterator ++= specialTupleIterator
     }
   }
 
@@ -372,8 +385,7 @@ class DataProcessor( // meta dependencies:
   private[this] def runDPThreadMainLogicNew(): Unit = {
     // main DP loop
     while (true) {
-      val outputAvailable = currentOutputIterator != null && currentOutputIterator.hasNext
-      if (outputAvailable && !pauseManager.isPaused()) {
+      if (outputIterator.hasNext && !pauseManager.isPaused()) {
         internalQueue.peek(totalValidStep) match {
           case Some(value) =>
             value match {
@@ -424,7 +436,7 @@ class DataProcessor( // meta dependencies:
     * @param iterator
     */
   def setCurrentOutputIterator(iterator: Iterator[ITuple]): Unit = {
-    currentOutputIterator = iterator.map(t => (t, Option.empty))
+    outputIterator.setTupleOutput(iterator.map(t => (t, Option.empty)))
   }
 
   private[this] def processControlCommand(
@@ -437,14 +449,14 @@ class DataProcessor( // meta dependencies:
         if (!invocation.command.isInstanceOf[SkipFaultTolerance]) {
           determinantLogger.logDeterminant(ProcessControlMessage(invocation, from))
         }
-        asyncRPCServer.logControlInvocation(invocation, from)
+        asyncRPCServer.logControlInvocation(invocation, from, totalValidStep)
         asyncRPCServer.receive(invocation, from)
         if (invocation.command.isInstanceOf[SkipFaultTolerance]) {
           totalValidStep -= 1 // negate the effect, must do it after processing control message
         }
       case ret: ReturnInvocation =>
         determinantLogger.logDeterminant(ProcessControlMessage(ret, from))
-        asyncRPCClient.logControlReply(ret, from)
+        asyncRPCClient.logControlReply(ret, from, totalValidStep)
         asyncRPCClient.fulfillPromise(ret)
     }
   }

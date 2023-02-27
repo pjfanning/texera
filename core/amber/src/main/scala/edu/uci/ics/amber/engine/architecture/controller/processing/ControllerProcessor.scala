@@ -2,8 +2,8 @@ package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.{ActorContext, Address, PoisonPill}
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import akka.serialization.SerializationExtension
+import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
@@ -36,6 +36,8 @@ class ControllerProcessor
     with Serializable {
 
   override def actorId: ActorVirtualIdentity = CONTROLLER
+
+  private implicit val timeout: Timeout = Timeout(1.minute)
 
   // outer dependencies:
   @transient
@@ -239,10 +241,10 @@ class ControllerProcessor
       // use control input port to pass control messages
       case invocation: ControlInvocation =>
         assert(from.isInstanceOf[ActorVirtualIdentity])
-        asyncRPCServer.logControlInvocation(invocation, from)
+        asyncRPCServer.logControlInvocation(invocation, from, numControlSteps)
         asyncRPCServer.receive(invocation, from)
       case ret: ReturnInvocation =>
-        asyncRPCClient.logControlReply(ret, from)
+        asyncRPCClient.logControlReply(ret, from, numControlSteps)
         asyncRPCClient.fulfillPromise(ret)
       case other =>
         throw new WorkflowRuntimeException(s"unhandled control message: $other")
@@ -259,21 +261,18 @@ class ControllerProcessor
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
       case TakeGlobalCheckpoint() =>
+        logger.info("start to take global checkpoint")
         // save output messages first
         val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
+        chkpt.attachSerialization(serialization)
         chkpt.save(
-          "fifoState",
-          SerializedState.fromObject(controlInput.getFIFOState, serialization)
-        )
+          "fifoState", controlInput.getFIFOState)
         chkpt.save(
           "outputMessages",
-          SerializedState.fromObject(
             Await
               .result((networkSender.ref ? GetMessageInQueue), 5.seconds)
-              .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]],
-            serialization
-          )
+              .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
         )
         // follow topological order
         val iter = workflow.getDAG.iterator()
@@ -281,24 +280,26 @@ class ControllerProcessor
         while (iter.hasNext) {
           val worker = iter.next()
           if (runningWorkers.contains(worker)) {
+            logger.info(s"start to ask $worker to checkpoint")
             val alignment = Await
               .result(
                 execution
                   .getOperatorExecution(worker)
                   .getWorkerInfo(worker)
                   .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint()),
-                10.seconds
+                60.seconds
               )
               .asInstanceOf[Long]
+            logger.info(s"received alignment for $worker alignment = $alignment")
             if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
               // put placeholder
-              CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint())
+              CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint(), false)
             }
           }
         }
         // finalize checkpoint
-        chkpt.save("controlState", SerializedState.fromObject(this, serialization))
-        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt)
+        chkpt.save("controlState",this)
+        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
         logger.info(
           s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
         )

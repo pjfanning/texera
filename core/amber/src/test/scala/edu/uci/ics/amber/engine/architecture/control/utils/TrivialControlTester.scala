@@ -78,10 +78,10 @@ class TrivialControlTester(
         // use control input port to pass control messages
         case invocation: ControlInvocation =>
           assert(from.isInstanceOf[ActorVirtualIdentity])
-          asyncRPCServer.logControlInvocation(invocation, from)
+          asyncRPCServer.logControlInvocation(invocation, from, 0)
           asyncRPCServer.receive(invocation, from)
         case ret: ReturnInvocation =>
-          asyncRPCClient.logControlReply(ret, from)
+          asyncRPCClient.logControlReply(ret, from, 0)
           asyncRPCClient.fulfillPromise(ret)
         case other =>
           logger.error(s"unhandled control message: $other")

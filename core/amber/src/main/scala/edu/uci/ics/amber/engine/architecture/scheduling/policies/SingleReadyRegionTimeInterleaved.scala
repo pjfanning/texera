@@ -43,7 +43,7 @@ class SingleReadyRegionTimeInterleaved(
 
   override def onLinkCompletion(linkId: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(linkId)
-    regions.foreach(r => execution.completedLinksOfRegion.addBinding(r.id, linkId))
+    regions.foreach(r => execution.completedLinksOfRegion.getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]()).add(linkId))
     regions.foreach(r => checkRegionCompleted(r.id))
     if (regions.exists(r => isRegionCompleted(r.id))) {
       getNextSchedulingWork()

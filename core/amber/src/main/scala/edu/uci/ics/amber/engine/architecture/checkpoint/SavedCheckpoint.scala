@@ -1,17 +1,36 @@
 package edu.uci.ics.amber.engine.architecture.checkpoint
 
+import akka.serialization.Serialization
+
 import scala.collection.mutable
 
 class SavedCheckpoint {
 
   private val states = new mutable.HashMap[String, SerializedState]()
 
-  def save(key: String, state: SerializedState): Unit = {
-    states(key) = state
+  @transient
+  private var serde:Serialization = _
+
+  def attachSerialization(serialization: Serialization): Unit ={
+    serde = serialization
   }
 
-  def load(key: String): SerializedState = {
-    states(key)
+  var pointerToCompletion:Option[Long] = None
+
+  def save[T <: Any](key: String, state: T): Unit = {
+    states(key) = SerializedState.fromObject(state.asInstanceOf[AnyRef], serde)
+  }
+
+  def has(key:String): Boolean ={
+    states.contains(key)
+  }
+
+  def load[T <: Any](key: String): T = {
+    if(states.contains(key)){
+      states(key).toObject(serde).asInstanceOf[T]
+    }else{
+      throw new RuntimeException(s"no state saved for key = $key")
+    }
   }
 
   def size(): Long = {

@@ -86,7 +86,7 @@ class JobRuntimeService(
     if (planner == null) {
       planner = new ReplayPlanner(evt.history)
       stateStore.jobMetadataStore.updateState(jobMetadata =>
-        jobMetadata.withInteractionHistory(evt.history.map(_._1)).withCurrentReplayPos(-1)
+        jobMetadata.withInteractionHistory(evt.history.getInteractionTimes).withCurrentReplayPos(-1)
       )
     }
   }))
@@ -104,14 +104,17 @@ class JobRuntimeService(
   }))
 
   def plannerNextStep(): Unit = {
+    println("enter planner next step")
     if (planner.hasNext) {
-      planner.next() match {
+      val nextStep =  planner.next()
+      println(s"planner next step = ${nextStep}")
+      nextStep match {
         case ReplayPlanner.CheckpointCurrentState() =>
           client
             .takeGlobalCheckpoint()
             .onSuccess(idx => {
               if (idx != -1) {
-                val res = planner.addCheckpoint(idx)
+                val res = planner.addCheckpoint(idx.asInstanceOf[Number].longValue)
                 if (res != -1) {
                   stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
                 }
@@ -133,7 +136,7 @@ class JobRuntimeService(
       .takeGlobalCheckpoint()
       .onSuccess(idx => {
         if (idx != -1) {
-          val res = planner.addCheckpoint(idx)
+          val res = planner.addCheckpoint(idx.asInstanceOf[Number].longValue)
           if (res != -1) {
             stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
           }

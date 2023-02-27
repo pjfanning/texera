@@ -82,7 +82,7 @@ object ControlCommandConvertUtils {
   ): ControlCommand[_] = {
     controlCommand match {
       case WorkerExecutionCompletedV2() =>
-        WorkerExecutionCompleted()
+        WorkerExecutionCompleted(0)
       case LocalOperatorExceptionV2(message) =>
         LocalOperatorException(null, new RuntimeException(message))
       case PythonConsoleMessageV2(timestamp, msgType, source, message) =>

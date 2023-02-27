@@ -8,6 +8,7 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, CreditMonitorImpl, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
@@ -96,78 +97,112 @@ class WorkflowWorker(
 
   override def receive: Receive = {
     // load from checkpoint if available
-    var outputIter: Iterator[(ITuple, Option[Int])] = null
-    restoreConfig.fromCheckpoint match {
-      case Some(alignment) =>
-        val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
-        logger.info("checkpoint found, start loading")
-        val startLoadingTime = System.currentTimeMillis()
-        //restore state from checkpoint: can be in either replaying or normal processing
-        val serialization = SerializationExtension(context.system)
-        dataInputPort.setFIFOState(chkpt.load("dataFifoState").toObject(serialization))
-        controlInputPort.setFIFOState(
-          chkpt.load("controlFifoState").toObject(serialization)
-        )
-        inputQueue = chkpt.load("inputHubState").toObject(serialization)
-        operator match {
-          case support: CheckpointSupport =>
-            outputIter = support.deserializeState(chkpt, serialization)
-          case _ =>
-        }
-        dataProcessor = chkpt.load("controlState").toObject(serialization)
-        logger.info(
-          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
-        )
-      case None =>
-        inputQueue = new WorkerInternalQueueImpl(creditMonitor)
-    }
-
-    // set replay
-    restoreConfig.replayTo match {
-      case Some(replayTo) =>
-        val queue = inputQueue match {
-          case impl: RecoveryInternalQueueImpl => impl
-          case impl: WorkerInternalQueueImpl   =>
-            // convert to replay queue if we have normal queue
-            val newQueue = new RecoveryInternalQueueImpl(creditMonitor)
-            inputQueue = newQueue
-            newQueue
-        }
-        queue.initialize(
-          logStorage.getReader.mkLogRecordIterator(),
-          dataProcessor.totalValidStep,
-          () => {
-            val syncFuture = new CompletableFuture[Unit]()
-            context.self ! ReplaceRecoveryQueue(syncFuture)
-            syncFuture.get()
+    var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
+    try {
+      restoreConfig.fromCheckpoint match {
+        case Some(alignment) =>
+          val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
+          logger.info("checkpoint found, start loading")
+          val startLoadingTime = System.currentTimeMillis()
+          //restore state from checkpoint: can be in either replaying or normal processing
+          chkpt.attachSerialization(SerializationExtension(context.system))
+          dataInputPort.setFIFOState(chkpt.load("dataFifoState"))
+          controlInputPort.setFIFOState(
+            chkpt.load("controlFifoState")
+          )
+          logger.info("fifo state restored")
+          inputQueue = chkpt.load("inputHubState")
+          logger.info("input queue restored")
+          operator match {
+            case support: CheckpointSupport =>
+              chkpt.pointerToCompletion match {
+                case Some(value) => outputIter = support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
+                case None => outputIter = support.deserializeState(chkpt)
+              }
+            case _ =>
           }
-        )
-        logger.info("set replay to " + replayTo)
-        queue.setReplayTo(replayTo)
-        recoveryManager.registerOnStart(() => {}
-        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
-        )
-        recoveryManager.setNotifyReplayCallback(() => {}
-        // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
-        )
-        recoveryManager.Start()
-        recoveryManager.registerOnEnd(() => {
-          logger.info("recovery complete! restoring stashed inputs...")
-          logManager.terminate()
-          logStorage.cleanPartiallyWrittenLogFile()
-          logManager.setupWriter(logStorage.getWriter)
-          logger.info("stashed inputs restored!")
-          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
-        })
-        val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
-        controlInputPort.overwriteFIFOSeqNum(fifoState)
-      case None =>
-        inputQueue match {
-          case impl: RecoveryInternalQueueImpl =>
-            replaceRecoveryQueue()
-          case impl: WorkerInternalQueueImpl =>
-          // do nothing
-        }
+          logger.info("operator restored")
+          dataProcessor = chkpt.load("controlState")
+          logger.info("DP restored")
+          chkpt
+            .load("outputMessages")
+            .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
+            .foreach {
+              case (id, iter) =>
+                iter.foreach { msg =>
+                  networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
+                }
+            }
+          logger.info(
+            s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
+          )
+        case None =>
+          inputQueue = new WorkerInternalQueueImpl(creditMonitor)
+      }
+
+      // set replay
+      restoreConfig.replayTo match {
+        case Some(replayTo) =>
+          val queue = inputQueue match {
+            case impl: RecoveryInternalQueueImpl => impl
+            case impl: WorkerInternalQueueImpl =>
+              // convert to replay queue if we have normal queue
+              val newQueue = new RecoveryInternalQueueImpl(creditMonitor)
+              impl.setDataQueueEnabled(true)
+              var numDataTupleRestored = 0
+              var numControlRestored = 0
+              while(impl.peek(0).isDefined){
+                impl.take(0) match {
+                  case element: WorkerInternalQueue.DataElement =>
+                    newQueue.enqueueData(element)
+                    numDataTupleRestored += 1
+                  case ctrl: ControlElement =>
+                    newQueue.enqueueCommand(ctrl)
+                    numControlRestored += 1
+                }
+              }
+              logger.info(s"Worker Queue convert to Recovery Queue: ${numControlRestored} control restored, ${numDataTupleRestored} data restored")
+              inputQueue = newQueue
+              newQueue
+          }
+          queue.initialize(
+            logStorage.getReader.mkLogRecordIterator(),
+            dataProcessor.totalValidStep,
+            () => {
+              val syncFuture = new CompletableFuture[Unit]()
+              context.self ! ReplaceRecoveryQueue(syncFuture)
+              syncFuture.get()
+            }
+          )
+          logger.info("set replay to " + replayTo)
+          queue.setReplayTo(replayTo)
+          recoveryManager.registerOnStart(() => {}
+            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+          )
+          recoveryManager.setNotifyReplayCallback(() => {}
+            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+          )
+          recoveryManager.Start()
+          recoveryManager.registerOnEnd(() => {
+            logger.info("recovery complete! restoring stashed inputs...")
+            logManager.terminate()
+            logStorage.cleanPartiallyWrittenLogFile()
+            logManager.setupWriter(logStorage.getWriter)
+            logger.info("stashed inputs restored!")
+            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+          })
+          val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
+          controlInputPort.overwriteFIFOSeqNum(fifoState)
+        case None =>
+          inputQueue match {
+            case impl: RecoveryInternalQueueImpl =>
+              replaceRecoveryQueue()
+            case impl: WorkerInternalQueueImpl =>
+            // do nothing
+          }
+      }
+    }catch{
+      case t:Throwable => t.printStackTrace()
     }
     dataProcessor.initialize(
       operator,
@@ -200,19 +235,18 @@ class WorkflowWorker(
         val startTime = System.currentTimeMillis()
         val syncFuture = new CompletableFuture[Long]()
         val chkpt = new SavedCheckpoint()
-        val serialization = SerializationExtension(context.system)
+        chkpt.attachSerialization(SerializationExtension(context.system))
+        logger.info("start to take local checkpoint")
         chkpt.save(
-          "dataFifoState",
-          SerializedState.fromObject(dataInputPort.getFIFOState, serialization)
+          "dataFifoState", dataInputPort.getFIFOState
         )
         chkpt.save(
-          "controlFifoState",
-          SerializedState.fromObject(controlInputPort.getFIFOState, serialization)
+          "controlFifoState", controlInputPort.getFIFOState
         )
-        inputQueue.enqueueSystemCommand(TakeCheckpoint(chkpt, serialization, syncFuture))
+        inputQueue.enqueueSystemCommand(TakeCheckpoint(chkpt, syncFuture))
         sender ! syncFuture.get()
         logger.info(
-          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
+          s"local checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
         )
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
