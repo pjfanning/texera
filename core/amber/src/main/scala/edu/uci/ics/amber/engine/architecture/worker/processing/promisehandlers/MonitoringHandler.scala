@@ -48,7 +48,9 @@ trait MonitoringHandler {
     try {
       val workloadMetrics = SelfWorkloadMetrics(
         dp.internalQueue.getDataQueueLength,
-        dp.internalQueue.getControlQueueLength
+        dp.internalQueue.getControlQueueLength,
+        dp.dataInputPort.getStashedMessageCount(),
+        dp.controlInputPort.getStashedMessageCount()
       )
 
       val samples = getWorkloadHistory(dp.outputManager)

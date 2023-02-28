@@ -44,7 +44,8 @@ class JobRuntimeService(
     client: AmberClient,
     stateStore: JobStateStore,
     wsInput: WebsocketInput,
-    breakpointService: JobBreakpointService
+    breakpointService: JobBreakpointService,
+    reconfigurationService: JobReconfigurationService
 ) extends SubscriptionManager
     with LazyLogging {
 
@@ -193,6 +194,7 @@ class JobRuntimeService(
 
   def doResume(): Unit = {
     breakpointService.clearTriggeredBreakpoints()
+    reconfigurationService.performReconfigurationOnResume()
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RESUMING))
     client.sendAsyncWithCallback[Unit](
       ResumeWorkflow(),

@@ -1,43 +1,41 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  CONTROL_QUEUE,
-  ControlElement,
-  DATA_QUEUE,
-  DataElement,
-  InputTuple,
-  InternalElement
-}
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipFaultTolerance,
-  SkipReply
-}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
+import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
+import edu.uci.ics.amber.engine.common.Constants
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import lbmq.LinkedBlockingMultiQueue
+
+import java.util.concurrent.locks.ReentrantLock
+import scala.collection.mutable
 
 object WorkerInternalQueue {
 
-  final val DATA_QUEUE = 1
-  final val CONTROL_QUEUE = 0
+  final val DATA_QUEUE_PRIORITY = 1
+
+  final val CONTROL_QUEUE_KEY = "CONTROL_QUEUE"
+  final val CONTROL_QUEUE_PRIORITY = 0
 
   // 4 kinds of elements can be accepted by internal queue
-  sealed trait InternalElement
+  sealed trait InternalQueueElement {
+    def from: ActorVirtualIdentity
+  }
 
-  sealed trait DataElement extends InternalElement
+  sealed trait DataElement extends InternalQueueElement
 
   case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
-      extends InternalElement
+      extends InternalQueueElement
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends DataElement
 
   case class EndMarker(from: ActorVirtualIdentity) extends DataElement
+  case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker)
+    extends InternalQueueElement
+
 
 }
 
@@ -66,13 +64,14 @@ abstract class WorkerInternalQueue extends Serializable {
 }
 
 class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
-  private val lbmq = new LinkedBlockingMultiQueue[Int, InternalElement]()
+  private[architecture] val lbmq = new LinkedBlockingMultiQueue[String, InternalQueueElement]()
 
-  lbmq.addSubQueue(DATA_QUEUE, DATA_QUEUE)
-  lbmq.addSubQueue(CONTROL_QUEUE, CONTROL_QUEUE)
+  lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
 
-  private val dataQueue = lbmq.getSubQueue(DATA_QUEUE)
-  private val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE)
+  private[architecture] val dataQueues =
+    new mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
+  private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
+
 
   override def enqueueCommand(control: ControlElement): Unit = {
     controlQueue.add(control)
@@ -83,7 +82,13 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
       case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
       case other               => //pass
     }
-    dataQueue.add(elem)
+    if (elem == null || elem.from == null || elem.from.name == null) {
+      throw new RuntimeException("from is null for element " + elem)
+    }
+    if (dataQueues(elem.from.name) == null) {
+      throw new RuntimeException(elem.from.name + " actor not registered")
+    }
+    dataQueues(elem.from.name).add(elem)
   }
 
   override def peek(currentStep: Long): Option[InternalElement] = {

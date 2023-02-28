@@ -18,6 +18,23 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.N
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{
+  NetworkInputPort,
+  NetworkOutputPort,
+  OutputManager
+}
+import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  EndMarker,
+  InputEpochMarker,
+  InputTuple
+}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
+import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -74,7 +91,6 @@ class WorkflowWorker(
     new NetworkInputPort[DataPayload](this.actorId, this.handleDataPayload)
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayload)
-  lazy val tupleProducer: BatchToTupleConverter = wire[BatchToTupleConverter]
   val creditMonitor = new CreditMonitorImpl()
   var inputQueue: WorkerInternalQueue = _
   implicit val ec: ExecutionContext = context.dispatcher
@@ -289,7 +305,18 @@ class WorkflowWorker(
   }
 
   def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
-    tupleProducer.processDataPayload(from, dataPayload)
+    dataPayload match {
+      case DataFrame(payload) =>
+        payload.foreach { i =>
+          internalQueue.appendElement(InputTuple(from, i))
+        }
+      case EndOfUpstream() =>
+        internalQueue.appendElement(EndMarker(from))
+      case marker @ EpochMarker(_, _, _) =>
+        internalQueue.appendElement(InputEpochMarker(from, marker))
+      case _ =>
+        throw new NotImplementedError()
+    }
   }
 
   def handleControlPayload(

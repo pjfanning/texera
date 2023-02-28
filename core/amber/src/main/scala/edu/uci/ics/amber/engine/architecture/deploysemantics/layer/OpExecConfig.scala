@@ -33,9 +33,17 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor}
+import edu.uci.ics.amber.engine.common.{
+  Constants,
+  IOperatorExecutor,
+  ISinkOperatorExecutor,
+  ISourceOperatorExecutor
+}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
+import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
+import edu.uci.ics.texera.workflow.common.operators.map.MapOpExec
+import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
 import jdk.jfr.Recording
@@ -119,19 +127,31 @@ case class OpExecConfig(
     // input ports that are blocking
     blockingInputs: List[Int] = List(),
     // execution dependency of ports
-    dependency: Map[Int, Int] = Map()
+    dependency: Map[Int, Int] = Map(),
+    isOneToManyOp: Boolean = false
 ) {
 
   // return the runtime class of the corresponding OperatorExecutor
-  lazy val opExecClass: Class[_] =
-    initIOperatorExecutor((0, this)).getClass
-
-  def isPythonOperator(): Boolean =
-    classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
+  lazy private val tempOperatorInstance: IOperatorExecutor = initIOperatorExecutor((0, this))
+  lazy val opExecClass: Class[_ <: IOperatorExecutor] =
+    tempOperatorInstance.getClass
 
   /*
    * Helper functions related to compile-time operations
    */
+
+  def isSourceOperator: Boolean =
+    classOf[ISourceOperatorExecutor].isAssignableFrom(opExecClass)
+
+  def isPythonOperator: Boolean =
+    classOf[PythonUDFOpExecV2].isAssignableFrom(opExecClass)
+
+  def getPythonCode: String = {
+    if (!isPythonOperator) {
+      throw new RuntimeException("operator " + id + " is not a python operator")
+    }
+    tempOperatorInstance.asInstanceOf[PythonUDFOpExecV2].getCode
+  }
 
   // creates a copy with the specified port information
   def withPorts(operatorInfo: OperatorInfo): OpExecConfig = {
@@ -182,6 +202,10 @@ case class OpExecConfig(
 
   // creates a copy with the number of workers specified
   def withNumWorkers(numWorkers: Int): OpExecConfig = this.copy(numWorkers = numWorkers)
+
+  // creates a copy with the specified property that whether this operator is one-to-many
+  def withIsOneToManyOp(isOneToManyOp: Boolean): OpExecConfig =
+    this.copy(isOneToManyOp = isOneToManyOp)
 
   // returns all input links on a specific input port
   def getInputLinks(portIndex: Int): List[LinkIdentity] = {
@@ -271,7 +295,7 @@ case class OpExecConfig(
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
     val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
-    val workflowWorker = if (this.isPythonOperator()) {
+    val workflowWorker = if (this.isPythonOperator) {
       PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
     } else {
       WorkflowWorker.props(
