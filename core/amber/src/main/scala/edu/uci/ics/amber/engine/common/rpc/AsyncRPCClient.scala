@@ -104,7 +104,11 @@ class AsyncRPCClient(
     }
   }
 
-  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity, currentStep:Long): Unit = {
+  def logControlReply(
+      ret: ReturnInvocation,
+      sender: ActorVirtualIdentity,
+      currentStep: Long
+  ): Unit = {
     if (ret.controlReturn != null) {
       logger.info(
         s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID}, current step = $currentStep)"

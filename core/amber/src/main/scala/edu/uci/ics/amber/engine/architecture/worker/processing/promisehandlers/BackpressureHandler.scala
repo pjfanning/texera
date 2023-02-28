@@ -1,14 +1,23 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import BackpressureHandler.Backpressure
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer, PauseType}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  BackpressurePause,
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer,
+  PauseType
+}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipConsoleLog,
+  SkipFaultTolerance,
+  SkipReply
+}
 
 object BackpressureHandler {
   final case class Backpressure(enableBackpressure: Boolean)
       extends ControlCommand[Unit]
       with SkipReply
-      with SkipConsoleLog
       with SkipFaultTolerance
 }
 

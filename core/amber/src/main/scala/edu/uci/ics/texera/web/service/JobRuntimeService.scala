@@ -107,7 +107,7 @@ class JobRuntimeService(
   def plannerNextStep(): Unit = {
     println("enter planner next step")
     if (planner.hasNext) {
-      val nextStep =  planner.next()
+      val nextStep = planner.next()
       println(s"planner next step = ${nextStep}")
       nextStep match {
         case ReplayPlanner.CheckpointCurrentState() =>

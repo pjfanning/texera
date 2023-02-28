@@ -1,10 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
-import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
+import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipFaultTolerance,
+  SkipReply
+}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -34,12 +40,14 @@ object WorkerInternalQueue {
 
   case class EndMarker(from: ActorVirtualIdentity) extends DataElement
   case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker)
-    extends InternalQueueElement
-
+      extends DataElement
 
 }
 
 abstract class WorkerInternalQueue extends Serializable {
+
+  private[architecture] def dataQueues
+      : mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]
 
   def enqueueSystemCommand(
       control: ControlCommand[_] with SkipReply with SkipFaultTolerance
@@ -47,15 +55,15 @@ abstract class WorkerInternalQueue extends Serializable {
     enqueueCommand(ControlElement(ControlInvocation(control), SELF))
   }
 
+  def registerInput(sender: String): Unit
+
   def enqueueCommand(control: ControlElement): Unit
 
   def enqueueData(elem: DataElement): Unit
 
-  def peek(currentStep: Long): Option[InternalElement]
+  def peek(currentStep: Long): Option[InternalQueueElement]
 
-  def take(currentStep: Long): InternalElement
-
-  def setDataQueueEnabled(status: Boolean): Unit
+  def take(currentStep: Long): InternalQueueElement
 
   def getDataQueueLength: Int
 
@@ -68,10 +76,9 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
 
   lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
 
-  private[architecture] val dataQueues =
+  private[architecture] override val dataQueues =
     new mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
   private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
-
 
   override def enqueueCommand(control: ControlElement): Unit = {
     controlQueue.add(control)
@@ -91,11 +98,11 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
     dataQueues(elem.from.name).add(elem)
   }
 
-  override def peek(currentStep: Long): Option[InternalElement] = {
+  override def peek(currentStep: Long): Option[InternalQueueElement] = {
     Option(lbmq.peek())
   }
 
-  override def take(currentStep: Long): InternalElement = {
+  override def take(currentStep: Long): InternalQueueElement = {
     lbmq.take() match {
       case elem @ InputTuple(from, _) =>
         creditMonitor.decreaseCredit(from)
@@ -105,11 +112,12 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
     }
   }
 
-  override def getDataQueueLength: Int = dataQueue.size()
+  override def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
 
   override def getControlQueueLength: Int = controlQueue.size()
 
-  override def setDataQueueEnabled(status: Boolean): Unit = {
-    dataQueue.enable(status)
+  override def registerInput(sender: String): Unit = {
+    lbmq.addSubQueue(sender, DATA_QUEUE_PRIORITY)
+    dataQueues(sender) = lbmq.getSubQueue(sender)
   }
 }

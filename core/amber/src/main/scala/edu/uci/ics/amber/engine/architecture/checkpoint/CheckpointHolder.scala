@@ -37,22 +37,22 @@ object CheckpointHolder {
     }
   }
 
-  def hasMarkedCompletion(id:ActorVirtualIdentity, alignment:Long): Boolean ={
+  def hasMarkedCompletion(id: ActorVirtualIdentity, alignment: Long): Boolean = {
     completion.contains(id) && completion(id) < alignment
   }
 
   def addCheckpoint(
-                     id: ActorVirtualIdentity,
-                     alignment: Long,
-                     checkpoint: SavedCheckpoint,
-                     markCompletion: Boolean
+      id: ActorVirtualIdentity,
+      alignment: Long,
+      checkpoint: SavedCheckpoint,
+      markCompletion: Boolean
   ): Unit = {
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
-    if(hasMarkedCompletion(id, alignment)){
+    if (hasMarkedCompletion(id, alignment)) {
       checkpoint.pointerToCompletion = Some(completion(id))
     }
-    if(markCompletion && !completion.contains(id)){
+    if (markCompletion && !completion.contains(id)) {
       completion(id) = alignment
     }
   }

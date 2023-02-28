@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.{
   WorkerModifyLogic,
   WorkerModifyLogicMultiple
 }

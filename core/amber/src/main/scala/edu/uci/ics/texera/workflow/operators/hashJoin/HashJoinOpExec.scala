@@ -265,14 +265,17 @@ class HashJoinOpExec[K](
   ): Iterator[(ITuple, Option[Int])] = {
     val iteratorToArr = currentIteratorState.toArray
     checkpoint.save(
-      "currentIterator", iteratorToArr
+      "currentIterator",
+      iteratorToArr
     )
     checkpoint.save(
-      "buildTableHits", buildTableHits
+      "buildTableHits",
+      buildTableHits
     )
     checkpoint.save("hashMap", buildTableHashMap)
     checkpoint.save(
-      "isBuildTableFinished", isBuildTableFinished
+      "isBuildTableFinished",
+      isBuildTableFinished
     )
     iteratorToArr.toIterator
   }
@@ -283,7 +286,7 @@ class HashJoinOpExec[K](
     buildTableHits = checkpoint.load("buildTableHits")
     buildTableHashMap = checkpoint.load("hashMap")
     isBuildTableFinished = checkpoint.load("isBuildTableFinished")
-    val arr:Array[(ITuple, Option[Int])] = checkpoint.load("currentIterator")
+    val arr: Array[(ITuple, Option[Int])] = checkpoint.load("currentIterator")
     arr.toIterator
   }
 

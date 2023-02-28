@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import akka.actor.ActorContext
 import com.softwaremill.macwire.wire
+import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
@@ -10,30 +11,68 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  DeterminantLogger,
+  LogManager,
+  ProcessControlMessage
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, OutputManager}
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
+  ControlElement,
+  DataElement,
+  EndMarker,
+  InputEpochMarker,
+  InputTuple
+}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING,
+  UNINITIALIZED
+}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{
+  DPOutputIterator,
+  FinalizeLink,
+  FinalizeOperator
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DataPayload,
+  WorkflowControlMessage,
+  WorkflowDataMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{
+  CONTROLLER,
+  SELF,
+  SOURCE_STARTER_ACTOR,
+  SOURCE_STARTER_OP
+}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
+import edu.uci.ics.amber.engine.common.{
+  AmberLogging,
+  IOperatorExecutor,
+  ISourceOperatorExecutor,
+  InputExhausted
+}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 import edu.uci.ics.texera.workflow.operators.nn.DNNOpExec
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
 import scala.collection.mutable
-
 
 object DataProcessor {
 
@@ -51,16 +90,16 @@ object DataProcessor {
     val queue = new mutable.Queue[(ITuple, Option[Int])]
     @transient var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
 
-    def setTupleOutput(outputIter: Iterator[(ITuple, Option[Int])]):Unit = {
+    def setTupleOutput(outputIter: Iterator[(ITuple, Option[Int])]): Unit = {
       this.outputIter = outputIter
     }
 
     override def hasNext: Boolean = outputIter.hasNext || queue.nonEmpty
 
     override def next(): (ITuple, Option[Int]) = {
-      if(outputIter.hasNext){
+      if (outputIter.hasNext) {
         outputIter.next()
-      }else{
+      } else {
         queue.dequeue()
       }
     }
@@ -108,8 +147,13 @@ class DataProcessor( // meta dependencies:
     this.logManager = logManager
     this.recoveryManager = recoveryManager
     this.actorContext = actorContext
+    this.pauseManager.initialize(this)
+    this.epochManager.initialize(this)
     this.rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
   }
+
+  def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
+  def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
   def outputDataPayload(
       to: ActorVirtualIdentity,
@@ -140,8 +184,10 @@ class DataProcessor( // meta dependencies:
     new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
   }
   // 3. RPC Layer
-  lazy private[processing] val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
-  lazy private[processing] val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
+  lazy private[processing] val asyncRPCClient: AsyncRPCClient =
+    new AsyncRPCClient(controlOutputPort, actorId)
+  lazy private[processing] val asyncRPCServer: AsyncRPCServer =
+    new AsyncRPCServer(controlOutputPort, actorId)
   // 4. pause manager
   lazy private[processing] val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
@@ -151,19 +197,16 @@ class DataProcessor( // meta dependencies:
   // 7. state manager
   lazy private[processing] val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
-  lazy private[processing] val outputManager: OutputManager = new OutputManager(actorId, dataOutputPort)
-  // 9. rpc handlers
+  lazy private[processing] val outputManager: OutputManager =
+    new OutputManager(actorId, dataOutputPort)
+  // 9. epoch manager
+  lazy private[processing] val epochManager: EpochManager = new EpochManager()
+  // rpc handlers
   @transient
   private[this] var rpcInitializer: DataProcessorRPCHandlerInitializer = _
 
-  /**
-    * Map from Identifier to input number. Used to convert the Identifier
-    * to int when adding sender info to the queue.
-    * We also keep track of the upstream actors so that we can emit
-    * EndOfAllMarker when all upstream actors complete their job
-    */
-  lazy private[processing] val inputMap = new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
-  lazy private[processing] val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
+  lazy private[processing] val determinantLogger: DeterminantLogger =
+    logManager.getDeterminantLogger
 
   private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
 
@@ -211,21 +254,20 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
-    inputMap(identifier) = input
+  // the following registration will not be called if the dp is restored from a checkpoint.
+  if (this.operator.isInstanceOf[ISourceOperatorExecutor]) {
+    // for source operator: add a virtual input channel just for kicking off the execution
+    registerInput(SOURCE_STARTER_ACTOR, LinkIdentity(SOURCE_STARTER_OP, this.getOperatorId))
   }
 
-  def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = {
-    if (identifier != null) {
-      inputMap(identifier)
-    } else {
-      null // special case for source operator
-    }
+  def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
+    upstreamLinkStatus.registerInput(identifier, input)
+    internalQueue.registerInput(identifier.name)
   }
 
   def getInputPort(identifier: ActorVirtualIdentity): Int = {
-    val inputLink = getInputLink(identifier)
-    if (inputLink == null) 0
+    val inputLink = upstreamLinkStatus.getInputLink(identifier)
+    if (inputLink.from == SOURCE_STARTER_OP) 0 // special case for source operator
     else if (!ordinalMapping.input.contains(inputLink)) 0
     else ordinalMapping.input(inputLink)
   }
@@ -268,21 +310,20 @@ class DataProcessor( // meta dependencies:
   private[this] def processInputTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
     determinantLogger.stepIncrement()
     currentInputTuple = tuple
-    if(operator.isInstanceOf[DNNOpExec]){
+    if (operator.isInstanceOf[DNNOpExec]) {
       logger.info(s"input $tuple at step = $totalValidStep")
     }
     try {
-      outputIterator.setTupleOutput(operator.processTuple(
-        currentInputTuple,
-        getInputPort(currentInputActor),
-        pauseManager,
-        asyncRPCClient
-      ))
+      outputIterator.setTupleOutput(
+        operator.processTuple(
+          currentInputTuple,
+          getInputPort(currentInputActor),
+          pauseManager,
+          asyncRPCClient
+        )
+      )
       if (currentInputTuple.isLeft) {
         inputTupleCount += 1
-      }
-      if (pauseManager.getPauseStatusByType(PauseType.OperatorLogicPause)) {
-        // if the operatorLogic decides to pause, we need to disable the data queue for this worker.
       }
     } catch safely {
       case e =>
@@ -312,7 +353,7 @@ class DataProcessor( // meta dependencies:
     if (out == null) return
 
     val (outputTuple, outputPortOpt) = out
-    if(operator.isInstanceOf[DNNOpExec]){
+    if (operator.isInstanceOf[DNNOpExec]) {
       logger.info(s"output null = ${outputTuple == null} at step = $totalValidStep")
     }
 
@@ -332,7 +373,7 @@ class DataProcessor( // meta dependencies:
         asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
       case _ =>
         if (breakpointManager.evaluateTuple(outputTuple)) {
-          pauseManager.recordRequest(PauseType.UserPause, true)
+          pauseManager.pause(UserPause)
           outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
           stateManager.transitTo(PAUSED)
         } else {
@@ -367,17 +408,23 @@ class DataProcessor( // meta dependencies:
           determinantLogger.setCurrentSender(from)
           currentInputActor = from
         }
-        val currentLink = getInputLink(currentInputActor)
+        val currentLink = upstreamLinkStatus.getInputLink(currentInputActor)
         upstreamLinkStatus.markWorkerEOF(from, currentLink)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           processInputTuple(Right(InputExhausted()))
-          logger.info(s"$currentLink completed, append FinalizeLink message at step = $totalValidStep")
+          logger.info(
+            s"$currentLink completed, append FinalizeLink message at step = $totalValidStep"
+          )
           outputIterator.appendSpecialTupleToEnd(FinalizeLink(currentLink))
         }
         if (upstreamLinkStatus.isAllEOF) {
-          logger.info(s"operator completed, append FinalizeOperator message at step = $totalValidStep")
+          logger.info(
+            s"operator completed, append FinalizeOperator message at step = $totalValidStep"
+          )
           outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
         }
+      case InputEpochMarker(from, epochMarker) =>
+        epochManager.processEpochMarker(from, epochMarker)
     }
   }
 

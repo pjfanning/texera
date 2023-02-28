@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.logging._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
@@ -8,13 +7,13 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   DataElement,
   EndMarker,
   InputTuple,
-  InternalElement
+  InternalQueueElement
 }
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.ReplaceRecoveryQueue
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import lbmq.LinkedBlockingMultiQueue
 
 import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
@@ -26,7 +25,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   @transient
   private var onRecoveryComplete: () => Unit = _
   @transient
-  private var orderedQueue: LinkedBlockingQueue[InternalElement] = _
+  private var orderedQueue: LinkedBlockingQueue[InternalQueueElement] = _
 
   private val inputMapping = mutable
     .HashMap[ActorVirtualIdentity, LinkedBlockingQueue[DataElement]]()
@@ -39,6 +38,8 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
 
   private var recordRead = 0L
 
+  val registeredInputs = new mutable.HashSet[String]()
+
   def setReplayTo(dest: Long): Unit = {
     replayTo = dest
   }
@@ -48,7 +49,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
       currentDPStep: Long,
       onRecoveryCompleted: () => Unit
   ): Unit = {
-    this.orderedQueue = new LinkedBlockingQueue[InternalElement]()
+    this.orderedQueue = new LinkedBlockingQueue[InternalQueueElement]()
     this.onRecoveryComplete = onRecoveryCompleted
     // restore replay progress by dropping some of the entries
     val copiedRead = recordRead
@@ -132,7 +133,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     }
   }
 
-  override def peek(currentStep: Long): Option[InternalElement] = {
+  override def peek(currentStep: Long): Option[InternalQueueElement] = {
     forwardRecoveryProgress(currentStep, false)
     Option(orderedQueue.peek())
   }
@@ -161,7 +162,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     }
   }
 
-  override def take(currentStep: Long): InternalElement = {
+  override def take(currentStep: Long): InternalQueueElement = {
     forwardRecoveryProgress(currentStep, true)
     val res = orderedQueue.take()
     if (isRecoveryCompleted && onRecoveryComplete != null) {
@@ -174,5 +175,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
 
   override def getControlQueueLength: Int = 0
 
-  override def setDataQueueEnabled(status: Boolean): Unit = {}
+  private[architecture] override def dataQueues
+      : mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue] =
+    mutable.HashMap.empty
+
+  override def registerInput(sender: String): Unit = {
+    registeredInputs.add(sender)
+  }
 }

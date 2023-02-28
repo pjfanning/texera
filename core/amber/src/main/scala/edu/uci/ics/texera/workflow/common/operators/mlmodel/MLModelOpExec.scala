@@ -23,7 +23,7 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
   var nextOperation: String = "predict"
   var hasMoreIterations: Boolean = true
   var receivedAll = false
-  var outputIterator:Iterator[Tuple] = Iterator()
+  var outputIterator: Iterator[Tuple] = Iterator()
 
   def getTotalEpochsCount: Int
 
@@ -43,7 +43,9 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
         Iterator()
       case Right(_) =>
         receivedAll = true
-        println(s"received all data size = ${allData.length} current Epoch = ${currentEpoch} nextMiniBatchStartIdx = $nextMiniBatchStartIdx nextOperation = $nextOperation")
+        println(
+          s"received all data size = ${allData.length} current Epoch = ${currentEpoch} nextMiniBatchStartIdx = $nextMiniBatchStartIdx nextOperation = $nextOperation"
+        )
         getIterativeTrainingIterator
     }
   }
@@ -55,9 +57,9 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
       }
 
       override def next(): Tuple = {
-        if(!hasMoreIterations){
+        if (!hasMoreIterations) {
           outputIterator.next()
-        }else{
+        } else {
           performTrainingStep()
           null
         }
@@ -65,7 +67,7 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
     }
   }
 
-  def performTrainingStep(): Unit ={
+  def performTrainingStep(): Unit = {
     if (nextOperation.equalsIgnoreCase("predict")) {
       // set the miniBatch
       if (nextMiniBatchStartIdx + MINI_BATCH_SIZE <= allData.size) {
@@ -112,8 +114,11 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
     s"DNNOp: current Epoch = ${currentEpoch} nextMiniBatchStartIdx = $nextMiniBatchStartIdx nextOperation = $nextOperation"
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
-    if(receivedAll){
+  override def serializeState(
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      checkpoint: SavedCheckpoint
+  ): Iterator[(ITuple, Option[Int])] = {
+    if (receivedAll) {
       checkpoint.save("currentEpoch", currentEpoch)
       checkpoint.save("nextOperation", nextOperation)
       checkpoint.save("nextMiniBatchStartIdx", nextMiniBatchStartIdx)
@@ -131,7 +136,7 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
   override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
     receivedAll = checkpoint.load("receivedAll")
     allData = checkpoint.load("allData")
-    if(receivedAll){
+    if (receivedAll) {
       nextOperation = checkpoint.load("nextOperation")
       currentEpoch = checkpoint.load("currentEpoch")
       nextMiniBatchStartIdx = checkpoint.load("nextMiniBatchStartIdx")
@@ -140,7 +145,7 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
       val outputArr = checkpoint.load("outputIterator").asInstanceOf[Array[Tuple]]
       outputIterator = outputArr.toIterator
       getIterativeTrainingIterator.map(x => (x, None))
-    }else{
+    } else {
       Iterator()
     }
   }

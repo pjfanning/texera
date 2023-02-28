@@ -1,9 +1,9 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogicComplete
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ModifyLogicHandler.ModifyLogic
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogicComplete
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SubscriptionManager
@@ -44,9 +44,7 @@ class JobReconfigurationService(
         val diff = newState.completedReconfigs -- oldState.completedReconfigs
         val newlyCompletedOps = diff
           .map(workerId => workflow.getOperator(workerId).id)
-          .filter(opId =>
-            workflow.getOperator(opId).getAllWorkers.toSet.subsetOf(newState.completedReconfigs)
-          )
+          .filter(opId => workflow.getOperator(opId).numWorkers == newState.completedReconfigs.size)
           .map(opId => opId.operator)
         if (newlyCompletedOps.nonEmpty) {
           List(ModifyLogicCompletedEvent(newlyCompletedOps.toList))

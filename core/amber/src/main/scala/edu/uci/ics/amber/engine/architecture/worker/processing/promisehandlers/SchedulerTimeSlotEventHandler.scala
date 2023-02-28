@@ -1,7 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import SchedulerTimeSlotEventHandler.SchedulerTimeSlotEvent
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer, PauseType}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer,
+  PauseType,
+  SchedulerTimeSlotExpiredPause
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object SchedulerTimeSlotEventHandler {
@@ -17,9 +22,9 @@ trait SchedulerTimeSlotEventHandler {
 
   registerHandler { (msg: SchedulerTimeSlotEvent, _) =>
     if (msg.timeSlotExpired) {
-      dp.pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, true)
+      dp.pauseManager.pause(SchedulerTimeSlotExpiredPause)
     } else {
-      dp.pauseManager.recordRequest(PauseType.SchedulerTimeSlotExpiredPause, false)
+      dp.pauseManager.resume(SchedulerTimeSlotExpiredPause)
     }
   }
 

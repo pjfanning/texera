@@ -9,26 +9,26 @@ class SavedCheckpoint {
   private val states = new mutable.HashMap[String, SerializedState]()
 
   @transient
-  private var serde:Serialization = _
+  private var serde: Serialization = _
 
-  def attachSerialization(serialization: Serialization): Unit ={
+  def attachSerialization(serialization: Serialization): Unit = {
     serde = serialization
   }
 
-  var pointerToCompletion:Option[Long] = None
+  var pointerToCompletion: Option[Long] = None
 
   def save[T <: Any](key: String, state: T): Unit = {
     states(key) = SerializedState.fromObject(state.asInstanceOf[AnyRef], serde)
   }
 
-  def has(key:String): Boolean ={
+  def has(key: String): Boolean = {
     states.contains(key)
   }
 
   def load[T <: Any](key: String): T = {
-    if(states.contains(key)){
+    if (states.contains(key)) {
       states(key).toObject(serde).asInstanceOf[T]
-    }else{
+    } else {
       throw new RuntimeException(s"no state saved for key = $key")
     }
   }

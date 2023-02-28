@@ -5,41 +5,62 @@ import akka.pattern.StatusReply.Ack
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{BatchToTupleConverter, CreditMonitor, CreditMonitorImpl, NetworkInputPort}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage,
+  NetworkSenderActorRef,
+  RegisterActorRef
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{
+  CreditMonitor,
+  CreditMonitorImpl,
+  NetworkInputPort
+}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{CheckInitialized, ReplaceRecoveryQueue, getWorkerLogName}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  CheckInitialized,
+  ReplaceRecoveryQueue,
+  getWorkerLogName
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.NoOpHandler.NoOp
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  NetworkInputPort,
-  NetworkOutputPort,
-  OutputManager
-}
-import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
   EndMarker,
   InputEpochMarker,
   InputTuple
 }
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
-import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataPayload, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ContinueReplay,
+  ContinueReplayTo,
+  ControlPayload,
+  CreditRequest,
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  EpochMarker,
+  GetOperatorInternalState,
+  ResendOutputTo,
+  TakeLocalCheckpoint,
+  UpdateRecoveryStatus,
+  WorkflowControlMessage,
+  WorkflowDataMessage,
+  WorkflowRecoveryMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import java.util.concurrent.CompletableFuture
@@ -132,7 +153,9 @@ class WorkflowWorker(
           operator match {
             case support: CheckpointSupport =>
               chkpt.pointerToCompletion match {
-                case Some(value) => outputIter = support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
+                case Some(value) =>
+                  outputIter =
+                    support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
                 case None => outputIter = support.deserializeState(chkpt)
               }
             case _ =>
@@ -146,7 +169,10 @@ class WorkflowWorker(
             .foreach {
               case (id, iter) =>
                 iter.foreach { msg =>
-                  networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
+                  networkCommunicationActor ! SendRequest(
+                    id,
+                    msg.internalMessage
+                  ) //re-assign ack id.
                 }
             }
           logger.info(
@@ -161,13 +187,16 @@ class WorkflowWorker(
         case Some(replayTo) =>
           val queue = inputQueue match {
             case impl: RecoveryInternalQueueImpl => impl
-            case impl: WorkerInternalQueueImpl =>
+            case impl: WorkerInternalQueueImpl   =>
               // convert to replay queue if we have normal queue
               val newQueue = new RecoveryInternalQueueImpl(creditMonitor)
-              impl.setDataQueueEnabled(true)
+              impl.dataQueues.foreach(x => {
+                x._2.enable(true)
+                newQueue.registerInput(x._1)
+              })
               var numDataTupleRestored = 0
               var numControlRestored = 0
-              while(impl.peek(0).isDefined){
+              while (impl.peek(0).isDefined) {
                 impl.take(0) match {
                   case element: WorkerInternalQueue.DataElement =>
                     newQueue.enqueueData(element)
@@ -177,7 +206,9 @@ class WorkflowWorker(
                     numControlRestored += 1
                 }
               }
-              logger.info(s"Worker Queue convert to Recovery Queue: ${numControlRestored} control restored, ${numDataTupleRestored} data restored")
+              logger.info(
+                s"Worker Queue convert to Recovery Queue: ${numControlRestored} control restored, ${numDataTupleRestored} data restored"
+              )
               inputQueue = newQueue
               newQueue
           }
@@ -193,10 +224,10 @@ class WorkflowWorker(
           logger.info("set replay to " + replayTo)
           queue.setReplayTo(replayTo)
           recoveryManager.registerOnStart(() => {}
-            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
           )
           recoveryManager.setNotifyReplayCallback(() => {}
-            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
           )
           recoveryManager.Start()
           recoveryManager.registerOnEnd(() => {
@@ -217,8 +248,8 @@ class WorkflowWorker(
             // do nothing
           }
       }
-    }catch{
-      case t:Throwable => t.printStackTrace()
+    } catch {
+      case t: Throwable => t.printStackTrace()
     }
     dataProcessor.initialize(
       operator,
@@ -237,6 +268,7 @@ class WorkflowWorker(
     val oldInputQueue = inputQueue.asInstanceOf[RecoveryInternalQueueImpl]
     inputQueue = new WorkerInternalQueueImpl(creditMonitor)
     // add unprocessed inputs into new queue
+    oldInputQueue.registeredInputs.foreach(inputQueue.registerInput)
     oldInputQueue.getAllStashedInputs.foreach(inputQueue.enqueueData)
     oldInputQueue.getAllStashedControls.foreach(inputQueue.enqueueCommand)
   }
@@ -254,10 +286,12 @@ class WorkflowWorker(
         chkpt.attachSerialization(SerializationExtension(context.system))
         logger.info("start to take local checkpoint")
         chkpt.save(
-          "dataFifoState", dataInputPort.getFIFOState
+          "dataFifoState",
+          dataInputPort.getFIFOState
         )
         chkpt.save(
-          "controlFifoState", controlInputPort.getFIFOState
+          "controlFifoState",
+          controlInputPort.getFIFOState
         )
         inputQueue.enqueueSystemCommand(TakeCheckpoint(chkpt, syncFuture))
         sender ! syncFuture.get()
@@ -308,12 +342,12 @@ class WorkflowWorker(
     dataPayload match {
       case DataFrame(payload) =>
         payload.foreach { i =>
-          internalQueue.appendElement(InputTuple(from, i))
+          inputQueue.enqueueData(InputTuple(from, i))
         }
       case EndOfUpstream() =>
-        internalQueue.appendElement(EndMarker(from))
+        inputQueue.enqueueData(EndMarker(from))
       case marker @ EpochMarker(_, _, _) =>
-        internalQueue.appendElement(InputEpochMarker(from, marker))
+        inputQueue.enqueueData(InputEpochMarker(from, marker))
       case _ =>
         throw new NotImplementedError()
     }

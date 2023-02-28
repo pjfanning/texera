@@ -4,7 +4,10 @@ import akka.actor.{ActorContext, Address}
 import com.twitter.util.Future
 import com.typesafe.scalalogging.Logger
 import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkerAssignmentUpdate,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
@@ -22,7 +25,11 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
 import edu.uci.ics.amber.engine.common.{Constants, ISourceOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2

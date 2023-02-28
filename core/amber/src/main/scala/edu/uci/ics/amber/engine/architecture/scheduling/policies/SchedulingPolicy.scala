@@ -68,7 +68,8 @@ abstract class SchedulingPolicy(workflow: Workflow) {
     val opId = workflow.getOperator(workerId).id
     execution.runningRegions
       .filter(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(opId))
-      .map(workflow.physicalPlan.getPipelinedRegion).toSet
+      .map(workflow.physicalPlan.getPipelinedRegion)
+      .toSet
   }
 
   /**
@@ -77,7 +78,8 @@ abstract class SchedulingPolicy(workflow: Workflow) {
   protected def getRegions(link: LinkIdentity): Set[PipelinedRegion] = {
     execution.runningRegions
       .filter(r => workflow.physicalPlan.getPipelinedRegion(r).getOperators().contains(link.from))
-      .map(workflow.physicalPlan.getPipelinedRegion).toSet
+      .map(workflow.physicalPlan.getPipelinedRegion)
+      .toSet
   }
 
   // gets the ready regions that is not currently running
@@ -101,7 +103,11 @@ abstract class SchedulingPolicy(workflow: Workflow) {
 
   def onLinkCompletion(link: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(link)
-    regions.foreach(r => execution.completedLinksOfRegion.getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]()).add(link))
+    regions.foreach(r =>
+      execution.completedLinksOfRegion
+        .getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]())
+        .add(link)
+    )
     regions.foreach(r => checkRegionCompleted(r.id))
     getNextSchedulingWork()
   }

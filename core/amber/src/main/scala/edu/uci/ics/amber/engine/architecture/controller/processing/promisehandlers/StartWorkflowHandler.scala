@@ -1,8 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowStateUpdate,
+  WorkflowStatusUpdate
+}
 import StartWorkflowHandler.StartWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 

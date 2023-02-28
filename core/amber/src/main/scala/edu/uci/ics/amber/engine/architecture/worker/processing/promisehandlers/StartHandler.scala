@@ -2,7 +2,10 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.EndMarker
 import StartHandler.StartWorker
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer
+}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor

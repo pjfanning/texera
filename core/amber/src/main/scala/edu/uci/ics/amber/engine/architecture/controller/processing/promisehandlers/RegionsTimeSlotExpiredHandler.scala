@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -42,7 +45,9 @@ trait RegionsTimeSlotExpiredHandler {
             .map(cp.workflow.physicalPlan.getPipelinedRegion)
         )
       ) {
-        cp.scheduler.onTimeSlotExpired(notCompletedRegions, cp.availableNodes).flatMap(_ => Future.Unit)
+        cp.scheduler
+          .onTimeSlotExpired(notCompletedRegions, cp.availableNodes)
+          .flatMap(_ => Future.Unit)
       } else {
         if (notCompletedRegions.nonEmpty) {
           // This shouldn't happen because the timer starts only after the regions have started

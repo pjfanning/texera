@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 import QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.WorkerResult
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog}
 import edu.uci.ics.amber.engine.common.{Constants, ISinkOperatorExecutor}
@@ -37,9 +40,9 @@ trait QueryStatisticsHandler {
         out
     }
 
-    val currentState = dp.stateManager.getCurrentState
+    val state = dp.stateManager.getCurrentState
 
-    WorkerStatistics(currentState, in, displayOut)
+    WorkerStatistics(state, in, displayOut)
   }
 
 }

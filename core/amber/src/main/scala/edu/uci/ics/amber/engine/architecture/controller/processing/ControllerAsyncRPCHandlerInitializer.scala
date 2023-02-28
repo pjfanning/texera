@@ -2,7 +2,28 @@ package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{
+  AssignBreakpointHandler,
+  DebugCommandHandler,
+  EvaluatePythonExpressionHandler,
+  FatalErrorHandler,
+  LinkCompletedHandler,
+  LinkWorkersHandler,
+  LocalBreakpointTriggeredHandler,
+  LocalOperatorExceptionHandler,
+  ModifyLogicHandler,
+  MonitoringHandler,
+  PauseHandler,
+  PythonConsoleMessageHandler,
+  QueryWorkerStatisticsHandler,
+  RegionsTimeSlotExpiredHandler,
+  ResumeHandler,
+  RetryWorkflowHandler,
+  SkewDetectionHandler,
+  StartWorkflowHandler,
+  WorkerExecutionCompletedHandler,
+  WorkerExecutionStartedHandler
+}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
@@ -17,7 +38,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
-    extends AsyncRPCHandlerInitializer(cp.asyncRPCClient, cp.asyncRPCServer) with AmberLogging
+    extends AsyncRPCHandlerInitializer(cp.asyncRPCClient, cp.asyncRPCServer)
+    with AmberLogging
     with LinkWorkersHandler
     with AssignBreakpointHandler
     with WorkerExecutionCompletedHandler
@@ -39,7 +61,7 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler {
 
-  val actorId:ActorVirtualIdentity = cp.actorId
+  val actorId: ActorVirtualIdentity = cp.actorId
 
   var statusUpdateAskHandle: Option[Cancellable] = None
   var monitoringHandle: Option[Cancellable] = None

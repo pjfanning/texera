@@ -1,18 +1,19 @@
-package edu.uci.ics.amber.engine.architecture.worker
+package edu.uci.ics.amber.engine.architecture.worker.processing
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class EpochManager(
-    dp: DataProcessor,
-    outputManager: OutputManager,
-    asyncRPCServer: AsyncRPCServer
-) {
+class EpochManager extends Serializable {
+
+  @transient
+  var dp: DataProcessor = _
+
+  def initialize(dp: DataProcessor): Unit = {
+    this.dp = dp
+  }
 
   private val epochMarkerReceived =
     new mutable.HashMap[String, Set[ActorVirtualIdentity]]().withDefaultValue(Set())
@@ -39,14 +40,14 @@ class EpochManager(
   def triggerEpochMarkerOnCompletion(marker: EpochMarker): Unit = {
     // invoke the control command carried with the epoch marker
     if (marker.command.nonEmpty) {
-      this.asyncRPCServer.receive(
-        ControlInvocation(AsyncRPCClient.IgnoreReply, marker.command.get),
-        asyncRPCServer.actorId
+      dp.asyncRPCServer.receive(
+        ControlInvocation(marker.command.get),
+        dp.actorId
       )
     }
     // if this operator is not the final destination of the marker, pass it downstream
-    if (!marker.scope.sinkOperators.contains(dp.opExecConfig.id)) {
-      this.outputManager.emitEpochMarker(marker)
+    if (!marker.scope.sinkOperators.contains(dp.getOperatorId)) {
+      dp.outputManager.emitEpochMarker(marker)
     }
     // unblock input channels
     dp.pauseManager.resume(EpochMarkerPause(marker.id))

@@ -45,7 +45,8 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
         val ret = nextRow
         var idx = 0
         for (elem <- nextRow) {
-          sumLen(idx) += (if(elem != null){elem.length}else{0})
+          sumLen(idx) += (if (elem != null) { elem.length }
+                          else { 0 })
           idx += 1
         }
         nextRow = null
@@ -113,10 +114,12 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       checkpoint: SavedCheckpoint
   ): Iterator[(ITuple, Option[Int])] = {
     checkpoint.save(
-      "numOutputRows", numRowGenerated
+      "numOutputRows",
+      numRowGenerated
     )
     checkpoint.save(
-      "sumLen", sumLen
+      "sumLen",
+      sumLen
     )
     currentIteratorState
   }

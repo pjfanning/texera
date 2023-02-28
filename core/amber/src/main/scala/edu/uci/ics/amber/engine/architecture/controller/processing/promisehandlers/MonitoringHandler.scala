@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import MonitoringHandler.ControllerInitiateMonitoring
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
@@ -65,14 +68,17 @@ trait MonitoringHandler {
     } else {
       previousCallFinished = false
       // send to specified workers (or all workers by default)
-      val workers = cp.execution.getAllWorkers.filterNot(p => msg.filterByWorkers.contains(p)).toList
+      val workers =
+        cp.execution.getAllWorkers.filterNot(p => msg.filterByWorkers.contains(p)).toList
 
       // send Monitoring message
       val requests = workers.map(worker =>
         send(QuerySelfWorkloadMetrics(), worker).map({
           case (metrics, samples) => {
-            cp.execution.getOperatorExecution(worker).getWorkerWorkloadInfo(worker).dataInputWorkload =
-              metrics.unprocessedDataInputQueueSize
+            cp.execution
+              .getOperatorExecution(worker)
+              .getWorkerWorkloadInfo(worker)
+              .dataInputWorkload = metrics.unprocessedDataInputQueueSize
             cp.execution
               .getOperatorExecution(worker)
               .getWorkerWorkloadInfo(worker)

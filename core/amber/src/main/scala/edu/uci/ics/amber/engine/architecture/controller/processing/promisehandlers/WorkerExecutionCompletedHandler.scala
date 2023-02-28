@@ -5,8 +5,14 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.common.Interaction
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowCompleted,
+  WorkflowReplayInfo
+}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -15,7 +21,9 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import scala.collection.mutable
 
 object WorkerExecutionCompletedHandler {
-  final case class WorkerExecutionCompleted(currentStep:Long) extends ControlCommand[Unit] with SkipReply
+  final case class WorkerExecutionCompleted(currentStep: Long)
+      extends ControlCommand[Unit]
+      with SkipReply
 }
 
 /** indicate a worker has completed its job
@@ -45,11 +53,12 @@ trait WorkerExecutionCompletedHandler {
           if (cp.execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
             val interaction = new Interaction()
-            interaction.addParticipant(CONTROLLER, -1L, 100000,0)
-            cp.execution.getAllWorkers.foreach{
-              worker => interaction.addParticipant(worker, -1L, 100000, 0)
+            interaction.addParticipant(CONTROLLER, -1L, 100000, 0)
+            cp.execution.getAllWorkers.foreach { worker =>
+              interaction.addParticipant(worker, -1L, 100000, 0)
             }
-            interactionHistory.addInteraction((System.currentTimeMillis() - workflowStartTimeStamp), interaction)
+            interactionHistory
+              .addInteraction((System.currentTimeMillis() - workflowStartTimeStamp), interaction)
             sendToClient(WorkflowReplayInfo(interactionHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()

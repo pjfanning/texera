@@ -5,10 +5,14 @@ import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyPythonOperatorLogicHandler.ModifyPythonOperatorLogic
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
@@ -37,7 +41,7 @@ trait ModifyLogicHandler {
 
   registerHandler { (msg: ModifyLogic, sender) =>
     {
-      val operator = workflow.physicalPlan.operatorMap(msg.newOp.id)
+      val operator = cp.workflow.physicalPlan.operatorMap(msg.newOp.id)
 
       val workerCommand = if (operator.isPythonOperator) {
         ModifyPythonOperatorLogic(

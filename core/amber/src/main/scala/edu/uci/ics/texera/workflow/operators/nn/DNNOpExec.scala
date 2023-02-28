@@ -18,7 +18,7 @@ import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 
-class DNNOpExec(features: List[String], y:String, numLayers:Int) extends MLModelOpExec {
+class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLModelOpExec {
 
 //  var confBuilder: NeuralNetConfiguration.ListBuilder = new NeuralNetConfiguration.Builder()
 //    .seed(256)
@@ -54,7 +54,10 @@ class DNNOpExec(features: List[String], y:String, numLayers:Int) extends MLModel
     1000
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+  override def serializeState(
+      currentIteratorState: Iterator[(ITuple, Option[Int])],
+      checkpoint: SavedCheckpoint
+  ): Iterator[(ITuple, Option[Int])] = {
     // save other params
     Thread.sleep(3000)
     super.serializeState(currentIteratorState, checkpoint)

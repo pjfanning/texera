@@ -105,7 +105,11 @@ class AsyncRPCServer(
     }
   }
 
-  def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity, currentStep: Long): Unit = {
+  def logControlInvocation(
+      call: ControlInvocation,
+      sender: ActorVirtualIdentity,
+      currentStep: Long
+  ): Unit = {
     if (call.command.isInstanceOf[SkipConsoleLog]) {
       return
     }

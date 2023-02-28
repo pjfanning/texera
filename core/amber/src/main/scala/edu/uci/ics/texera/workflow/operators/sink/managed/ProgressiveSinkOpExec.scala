@@ -61,8 +61,7 @@ class ProgressiveSinkOpExec(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
       checkpoint: SavedCheckpoint
   ): Iterator[(ITuple, Option[Int])] = {
-    checkpoint.save(
-      "numTupleIntoStorage", numTupleIntoStorage)
+    checkpoint.save("numTupleIntoStorage", numTupleIntoStorage)
     currentIteratorState
   }
 

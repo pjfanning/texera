@@ -1,11 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  ReportCurrentProcessingTuple,
+  WorkflowPaused,
+  WorkflowStatusUpdate
+}
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.common.Interaction
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControllerAsyncRPCHandlerInitializer,
+  ControllerProcessor
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
@@ -83,7 +90,7 @@ trait PauseHandler {
               workflowPauseStartTime = System.currentTimeMillis()
               println(s"current paused numControl = ${cp.numControlSteps}")
               val interaction = new Interaction()
-              alignments.foreach{
+              alignments.foreach {
                 case (identity, tuple) =>
                   interaction.addParticipant(identity, tuple._1, tuple._2, tuple._3)
               }

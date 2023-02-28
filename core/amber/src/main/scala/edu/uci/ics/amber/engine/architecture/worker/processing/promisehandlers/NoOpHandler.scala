@@ -1,9 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import NoOpHandler.NoOp
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  DataProcessor,
+  DataProcessorRPCHandlerInitializer
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
+  ControlCommand,
+  SkipConsoleLog,
+  SkipFaultTolerance,
+  SkipReply
+}
 
 object NoOpHandler {
   final case class NoOp()

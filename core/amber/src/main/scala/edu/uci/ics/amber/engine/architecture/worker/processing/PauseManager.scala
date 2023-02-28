@@ -4,12 +4,19 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class PauseManager(dataProcessor: DataProcessor) extends Serializable {
+class PauseManager extends Serializable {
 
   private val globalPauses = new mutable.HashSet[PauseType]()
   private val specificInputPauses =
     new mutable.HashMap[PauseType, mutable.Set[ActorVirtualIdentity]]
       with mutable.MultiMap[PauseType, ActorVirtualIdentity]
+
+  @transient
+  private var dataProcessor: DataProcessor = _
+
+  def initialize(dataProcessor: DataProcessor): Unit = {
+    this.dataProcessor = dataProcessor
+  }
 
   def pause(pauseType: PauseType): Unit = {
     globalPauses.add(pauseType)

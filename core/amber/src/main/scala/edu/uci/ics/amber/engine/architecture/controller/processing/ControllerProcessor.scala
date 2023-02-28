@@ -5,16 +5,33 @@ import akka.pattern.ask
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{
+  CheckpointHolder,
+  SavedCheckpoint,
+  SerializedState
+}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  AdditionalOperatorInfo,
+  WorkflowRecoveryStatus,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetMessageInQueue, NetworkMessage, NetworkSenderActorRef}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  LogManager,
+  ProcessControlMessage,
+  StepDelta
+}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  GetMessageInQueue,
+  NetworkMessage,
+  NetworkSenderActorRef
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
@@ -31,9 +48,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 
-class ControllerProcessor
-    extends AmberLogging
-    with Serializable {
+class ControllerProcessor extends AmberLogging with Serializable {
 
   override def actorId: ActorVirtualIdentity = CONTROLLER
 
@@ -133,19 +148,22 @@ class ControllerProcessor
   lazy private[processing] val controlOutputPort: NetworkOutputPort[ControlPayload] = {
     new NetworkOutputPort[ControlPayload](actorId, this.outputControlPayload)
   }
-  lazy private[controller] val asyncRPCClient: AsyncRPCClient = new AsyncRPCClient(controlOutputPort, actorId)
-  lazy private[processing] val asyncRPCServer: AsyncRPCServer = new AsyncRPCServer(controlOutputPort, actorId)
+  lazy private[controller] val asyncRPCClient: AsyncRPCClient =
+    new AsyncRPCClient(controlOutputPort, actorId)
+  lazy private[processing] val asyncRPCServer: AsyncRPCServer =
+    new AsyncRPCServer(controlOutputPort, actorId)
   lazy val execution = new WorkflowExecution(workflow)
-  lazy private[processing] val globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(
-    () => {
-      logger.info("Start global recovery")
-      asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
-    },
-    () => {
-      logger.info("global recovery complete!")
-      asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
-    }
-  )
+  lazy private[processing] val globalRecoveryManager: GlobalRecoveryManager =
+    new GlobalRecoveryManager(
+      () => {
+        logger.info("Start global recovery")
+        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
+      },
+      () => {
+        logger.info("global recovery complete!")
+        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
+      }
+    )
   lazy private[processing] val determinantLogger = logManager.getDeterminantLogger
   var isReplaying = false
   var numControlSteps = 0L
@@ -252,7 +270,9 @@ class ControllerProcessor
   }
 
   def terminate(): Unit = {
-    if (rpcInitializer.statusUpdateAskHandle != null && rpcInitializer.statusUpdateAskHandle.isDefined) {
+    if (
+      rpcInitializer.statusUpdateAskHandle != null && rpcInitializer.statusUpdateAskHandle.isDefined
+    ) {
       rpcInitializer.statusUpdateAskHandle.get.cancel()
     }
   }
@@ -266,13 +286,12 @@ class ControllerProcessor
         val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
         chkpt.attachSerialization(serialization)
-        chkpt.save(
-          "fifoState", controlInput.getFIFOState)
+        chkpt.save("fifoState", controlInput.getFIFOState)
         chkpt.save(
           "outputMessages",
-            Await
-              .result((networkSender.ref ? GetMessageInQueue), 5.seconds)
-              .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
+          Await
+            .result((networkSender.ref ? GetMessageInQueue), 5.seconds)
+            .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
         )
         // follow topological order
         val iter = workflow.getDAG.iterator()
@@ -298,7 +317,7 @@ class ControllerProcessor
           }
         }
         // finalize checkpoint
-        chkpt.save("controlState",this)
+        chkpt.save("controlState", this)
         CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
         logger.info(
           s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"

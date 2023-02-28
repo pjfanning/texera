@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
@@ -10,7 +10,7 @@ sealed trait DataPayload extends Serializable {}
 final case class EpochMarker(
     id: String,
     scope: PhysicalPlan,
-    command: Option[ControlCommand[_]]
+    command: Option[ControlCommand[_] with SkipReply]
 ) extends DataPayload
 
 final case class EndOfUpstream() extends DataPayload

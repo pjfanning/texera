@@ -5,7 +5,11 @@ import edu.uci.ics.amber.engine.architecture.common.{Interaction, InteractionHis
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.web.workflowruntimestate.{ConsoleMessage, OperatorRuntimeStats, WorkflowAggregatedState}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  ConsoleMessage,
+  OperatorRuntimeStats,
+  WorkflowAggregatedState
+}
 
 import scala.collection.mutable
 
@@ -17,8 +21,7 @@ object ControllerEvent {
 
   case class WorkflowRecoveryStatus(isRecovering: Boolean) extends ControlCommand[Unit]
 
-  case class WorkflowReplayInfo(history: InteractionHistory)
-      extends ControlCommand[Unit]
+  case class WorkflowReplayInfo(history: InteractionHistory) extends ControlCommand[Unit]
 
   case class WorkflowStateUpdate(aggState: WorkflowAggregatedState) extends ControlCommand[Unit]
 
