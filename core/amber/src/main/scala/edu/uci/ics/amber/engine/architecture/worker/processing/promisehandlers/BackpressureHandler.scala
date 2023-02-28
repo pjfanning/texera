@@ -21,9 +21,9 @@ trait BackpressureHandler {
 
   registerHandler { (msg: Backpressure, _) =>
     if (msg.enableBackpressure) {
-      dp.pauseManager.recordRequest(PauseType.BackpressurePause, true)
+      dp.pauseManager.pause(BackpressurePause)
     } else {
-      dp.pauseManager.recordRequest(PauseType.BackpressurePause, false)
+      dp.pauseManager.resume(BackpressurePause)
     }
   }
 
