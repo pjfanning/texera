@@ -2,28 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{
-  AssignBreakpointHandler,
-  DebugCommandHandler,
-  EvaluatePythonExpressionHandler,
-  FatalErrorHandler,
-  LinkCompletedHandler,
-  LinkWorkersHandler,
-  LocalBreakpointTriggeredHandler,
-  LocalOperatorExceptionHandler,
-  ModifyLogicHandler,
-  MonitoringHandler,
-  PauseHandler,
-  PythonConsoleMessageHandler,
-  QueryWorkerStatisticsHandler,
-  RegionsTimeSlotExpiredHandler,
-  ResumeHandler,
-  RetryWorkflowHandler,
-  SkewDetectionHandler,
-  StartWorkflowHandler,
-  WorkerExecutionCompletedHandler,
-  WorkerExecutionStartedHandler
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EpochMarkerHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
@@ -59,7 +38,7 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
     with MonitoringHandler
     with SkewDetectionHandler
     with RegionsTimeSlotExpiredHandler
-    with DebugCommandHandler {
+    with DebugCommandHandler with EpochMarkerHandler {
 
   val actorId: ActorVirtualIdentity = cp.actorId
 

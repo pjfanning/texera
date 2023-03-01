@@ -254,12 +254,6 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  // the following registration will not be called if the dp is restored from a checkpoint.
-  if (this.operator.isInstanceOf[ISourceOperatorExecutor]) {
-    // for source operator: add a virtual input channel just for kicking off the execution
-    registerInput(SOURCE_STARTER_ACTOR, LinkIdentity(SOURCE_STARTER_OP, this.getOperatorId))
-  }
-
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamLinkStatus.registerInput(identifier, input)
     internalQueue.registerInput(identifier.name)
