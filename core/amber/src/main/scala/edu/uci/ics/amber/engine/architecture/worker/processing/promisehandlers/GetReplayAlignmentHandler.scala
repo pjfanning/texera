@@ -6,6 +6,8 @@ import edu.uci.ics.amber.engine.common.CheckpointSupport
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
+import java.util.concurrent.TimeUnit
+
 object GetReplayAlignmentHandler {
 
   final case class ReplayAlignmentInfo(
@@ -36,7 +38,7 @@ trait GetReplayAlignmentHandler {
       dp.totalValidStep + 1,
       estimatedCheckpointTime,
       estimatedStateLoadTime,
-      dp.totalTimeSpent,
+      TimeUnit.NANOSECONDS.toMillis(dp.totalTimeSpent),
       dp.dataOutputPort.getFIFOState ++ dp.controlOutputPort.getFIFOState)
   }
 

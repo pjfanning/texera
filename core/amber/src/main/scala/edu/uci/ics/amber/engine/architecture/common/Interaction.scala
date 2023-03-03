@@ -16,7 +16,7 @@ class Interaction extends Serializable{
     participants(id) = info
   }
 
-  def getAllOutputChannelStates:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity,Long]] = {
+  lazy val allSenderChannelStates:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity,Long]] = {
     val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
     participants.foreach{
       case (src, info) =>
@@ -28,7 +28,7 @@ class Interaction extends Serializable{
     result.mapValues(_.toMap).toMap
   }
 
-  def getAllInputChannelStates: Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] ={
+  lazy val allReceiverChannelStates: Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] ={
     val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
     participants.foreach{
       case (dst, info) =>
@@ -38,6 +38,10 @@ class Interaction extends Serializable{
         }
     }
     result.mapValues(_.toMap).toMap
+  }
+
+  def getBusyTime(id:ActorVirtualIdentity): Option[Long] = {
+    participants.get(id).map(x => x.processedTime)
   }
 
   def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] =

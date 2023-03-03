@@ -22,13 +22,8 @@ object JsonTest {
     val planner = new ReplayPlanner(history)
 
     // planner.startPlanning(7)
-    println("best plan: " + planner.bruteForcePlanner(0, 7, 3000))
-    println("best plan2: " + planner.dynamicProgrammingPlanner(0, 7, 3000))
-
-    println("cost 1: " + history.getCheckpointCost(3, planner.getCheckpointMap(Array[Int]())))
-    println("cost 2: " + history.getCheckpointCost(5, planner.getCheckpointMap(Array[Int]())))
-    println("cost 1: " + history.getCheckpointCost(5, planner.getCheckpointMap(Array(3))))
-    println("cost 2: " + history.getCheckpointCost(3, planner.getCheckpointMap(Array(5))))
+    println("best plan: " + planner.bruteForcePlanner(0, 7, 5000))
+    println("best plan2: " + planner.dynamicProgrammingPlanner(0, 7, 5000))
     //println("best plan: "+planner.dynamicProgrammingPlanner(0,7, 4000))
   }
 }

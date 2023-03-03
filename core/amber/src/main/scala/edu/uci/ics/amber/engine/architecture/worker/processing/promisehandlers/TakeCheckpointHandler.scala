@@ -59,8 +59,8 @@ trait TakeCheckpointHandler {
       s"checkpoint stored for $actorId at alignment = ${dp.totalValidStep} size = ${msg.chkpt.size()} bytes"
     )
     // clear sent messages as we serialized them
-    dp.dataOutputPort.clearSentMessages()
-    dp.controlOutputPort.clearSentMessages()
+//    dp.dataOutputPort.clearSentMessages()
+//    dp.controlOutputPort.clearSentMessages()
     // completion
     msg.completion.complete(dp.totalValidStep)
     Future.Unit
