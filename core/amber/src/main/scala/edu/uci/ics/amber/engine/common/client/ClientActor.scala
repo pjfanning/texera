@@ -86,7 +86,7 @@ private[client] class ClientActor extends Actor {
       if (handlers.isDefinedAt(command)) {
         handlers(command)
       }
-    case x @ WorkflowRecoveryMessage(_, _ @TakeGlobalCheckpoint()) =>
+    case x @ WorkflowRecoveryMessage(_, _ @TakeGlobalCheckpoint(cutoffMap)) =>
       sender ! Await.result(controller ? x, 60.seconds)
     case x: WorkflowRecoveryMessage =>
       sender ! Ack

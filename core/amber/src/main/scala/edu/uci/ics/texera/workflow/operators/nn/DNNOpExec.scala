@@ -51,7 +51,7 @@ class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLMod
   }
 
   override def getEstimatedStateLoadTime: Int = {
-    1000
+    500
   }
 
   override def serializeState(

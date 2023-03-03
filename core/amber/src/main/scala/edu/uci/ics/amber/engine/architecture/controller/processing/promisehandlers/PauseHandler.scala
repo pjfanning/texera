@@ -1,18 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  ReportCurrentProcessingTuple,
-  WorkflowPaused,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.common.Interaction
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.CollectAlignmentInformationHandler.CollectAlignmentInformation
+import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
@@ -75,27 +69,13 @@ trait PauseHandler {
             }
         }.toSeq)
         .map { ret =>
-          Future
-            .collect(cp.execution.getAllWorkers.map { worker =>
-              send(GetReplayAlignment(), worker).map { alignment =>
-                (worker, alignment)
-              }
-            }.toSeq)
-            .map { alignments =>
+          execute(CollectAlignmentInformation(), CONTROLLER)
+            .map { ret =>
               // update frontend workflow status
               sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
               // send paused to frontend
               sendToClient(WorkflowPaused())
-              val time = (System.currentTimeMillis() - workflowStartTimeStamp)
               workflowPauseStartTime = System.currentTimeMillis()
-              println(s"current paused numControl = ${cp.numControlSteps}")
-              val interaction = new Interaction()
-              alignments.foreach {
-                case (identity, tuple) =>
-                  interaction.addParticipant(identity, tuple._1, tuple._2, tuple._3)
-              }
-              interaction.addParticipant(CONTROLLER, cp.numControlSteps, 0, 0)
-              interactionHistory.addInteraction(time, interaction)
             }
         }
         .unit

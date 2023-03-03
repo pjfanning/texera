@@ -1,58 +1,75 @@
 package edu.uci.ics.amber.engine.architecture.common
 
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler.ReplayAlignmentInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class Interaction {
+class Interaction extends Serializable{
 
-  private val participants = mutable.HashMap[ActorVirtualIdentity, Int]()
-  private val alignments = mutable.ArrayBuffer[Long]()
-  private val checkpointCosts = mutable.ArrayBuffer[Long]()
-  private val loadCosts = mutable.ArrayBuffer[Long]()
+  private val participants = mutable.HashMap[ActorVirtualIdentity, ReplayAlignmentInfo]()
 
   def addParticipant(
       id: ActorVirtualIdentity,
-      alignment: Long,
-      checkpointCost: Long,
-      loadCost: Long
+      info: ReplayAlignmentInfo
   ): Unit = {
-    participants(id) = participants.size
-    alignments.append(alignment)
-    checkpointCosts.append(checkpointCost)
-    loadCosts.append(loadCost)
+    participants(id) = info
+  }
+
+  def getAllOutputChannelStates:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity,Long]] = {
+    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
+    participants.foreach{
+      case (src, info) =>
+        info.outputWatermarks.foreach{
+          case (dst, sent) =>
+            result.getOrElseUpdate(src, new mutable.HashMap[ActorVirtualIdentity, Long])(dst) = sent
+        }
+    }
+    result.mapValues(_.toMap).toMap
+  }
+
+  def getAllInputChannelStates: Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] ={
+    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
+    participants.foreach{
+      case (dst, info) =>
+        info.inputWatermarks.foreach{
+          case (src, received) =>
+            result.getOrElseUpdate(src, new mutable.HashMap[ActorVirtualIdentity, Long])(dst) = received
+        }
+    }
+    result.mapValues(_.toMap).toMap
   }
 
   def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] =
-    participants.get(id).map(x => checkpointCosts(x))
+    participants.get(id).map(x => x.estimatedCheckpointTime)
 
   def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys
 
   def getAlignment(id: ActorVirtualIdentity): Option[Long] =
-    participants.get(id).map(x => alignments(x))
+    participants.get(id).map(x => x.alignment)
 
   def getLoadCost(id: ActorVirtualIdentity): Option[Long] =
-    participants.get(id).map(x => loadCosts(x))
+    participants.get(id).map(x => x.estimatedLoadTime)
 
-  def getTotalLoadCost: Long = loadCosts.sum
+  def getTotalLoadCost: Long =  participants.values.map(_.estimatedLoadTime).sum
 
   def getAlignmentMap: Map[ActorVirtualIdentity, Long] =
-    participants.map(x => x._1 -> alignments(x._2)).toMap
+    participants.map(x => x._1 -> x._2.alignment).toMap
 
   def containsAlignment(id: ActorVirtualIdentity, alignment: Long): Boolean = {
-    participants.contains(id) && alignments(participants(id)) == alignment
+    participants.contains(id) && participants(id).alignment == alignment
   }
 
   override def toString: String = {
     val sb = new StringBuilder()
     for (p <- participants) {
-      val idx = p._2
+      val info = p._2
       sb.append(p._1 + ": alignment = ")
-      sb.append(alignments(idx))
+      sb.append(info.alignment)
       sb.append(" save cost = ")
-      sb.append(checkpointCosts(idx))
+      sb.append(info.estimatedCheckpointTime)
       sb.append(" load cost = ")
-      sb.append(loadCosts(idx))
+      sb.append(info.estimatedLoadTime)
       sb.append("\n")
     }
     sb.toString()

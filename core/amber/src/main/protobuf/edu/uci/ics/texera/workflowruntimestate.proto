@@ -92,4 +92,6 @@ message JobMetadataStore{
   repeated int32 interaction_history = 7;
   string operator_info_str = 8;
   repeated int32 checkpointed_states = 9;
+  double replayElapsed = 10;
+  double checkpointElapsed = 11;
 }

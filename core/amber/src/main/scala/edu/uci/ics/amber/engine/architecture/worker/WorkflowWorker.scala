@@ -5,65 +5,29 @@ import akka.pattern.StatusReply.Ack
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  CreditMonitor,
-  CreditMonitorImpl,
-  NetworkInputPort
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  CheckInitialized,
-  ReplaceRecoveryQueue,
-  getWorkerLogName
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{CheckInitialized, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.NoOpHandler.NoOp
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  EndMarker,
-  InputEpochMarker,
-  InputTuple
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplay,
-  ContinueReplayTo,
-  ControlPayload,
-  CreditRequest,
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker,
-  GetOperatorInternalState,
-  ResendOutputTo,
-  TakeLocalCheckpoint,
-  UpdateRecoveryStatus,
-  WorkflowControlMessage,
-  WorkflowDataMessage,
-  WorkflowRecoveryMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import java.util.concurrent.CompletableFuture
+import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
@@ -162,19 +126,7 @@ class WorkflowWorker(
           }
           logger.info("operator restored")
           dataProcessor = chkpt.load("controlState")
-          logger.info("DP restored")
-          chkpt
-            .load("outputMessages")
-            .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
-            .foreach {
-              case (id, iter) =>
-                iter.foreach { msg =>
-                  networkCommunicationActor ! SendRequest(
-                    id,
-                    msg.internalMessage
-                  ) //re-assign ack id.
-                }
-            }
+          logger.info(s"DP restored ${dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
           logger.info(
             s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
           )
@@ -258,7 +210,9 @@ class WorkflowWorker(
       logStorage,
       logManager,
       recoveryManager,
-      context
+      context,
+      dataInputPort,
+      controlInputPort
     )
     dataProcessor.start()
     receiveAndProcessMessages
@@ -279,7 +233,7 @@ class WorkflowWorker(
         replaceRecoveryQueue()
         // unblock sync future on DP
         sync.complete(())
-      case WorkflowRecoveryMessage(from, TakeLocalCheckpoint()) =>
+      case WorkflowRecoveryMessage(from, TakeLocalCheckpoint(cutoffs)) =>
         val startTime = System.currentTimeMillis()
         val syncFuture = new CompletableFuture[Long]()
         val chkpt = new SavedCheckpoint()
@@ -293,7 +247,7 @@ class WorkflowWorker(
           "controlFifoState",
           controlInputPort.getFIFOState
         )
-        inputQueue.enqueueSystemCommand(TakeCheckpoint(chkpt, syncFuture))
+        inputQueue.enqueueSystemCommand(TakeCheckpoint(cutoffs, chkpt, syncFuture))
         sender ! syncFuture.get()
         logger.info(
           s"local checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"

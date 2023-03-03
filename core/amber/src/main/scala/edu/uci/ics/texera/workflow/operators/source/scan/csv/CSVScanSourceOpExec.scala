@@ -140,5 +140,5 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   override def getEstimatedCheckpointTime: Int = 100
 
-  override def getEstimatedStateLoadTime: Int = 1000
+  override def getEstimatedStateLoadTime: Int = 100
 }

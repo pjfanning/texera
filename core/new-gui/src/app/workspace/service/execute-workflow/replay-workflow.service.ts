@@ -15,9 +15,12 @@ export class ReplayWorkflowService {
   private displayWorkflowReplay = new Subject<string>();
   public operatorInfo: string[][] = [];
   public selectedIndex = -1;
-
-  public replayStarted = false;
-  public replayEnded = true;
+  public plannerStrategies: string[] = ["No checkpoint", "Complete - all", "Complete - naive", "Complete - optimized", "Partial - naive", "Partial - optimized"];
+  public selectedMode: String = this.plannerStrategies[0];
+  public isReplaying = false;
+  public replayTime = 0;
+  public checkpointTime = 0;
+  public replayTimeLimit = 5;
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
@@ -30,23 +33,23 @@ export class ReplayWorkflowService {
     this.history = [1,5, 20, 30, 40];
 
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(e => {
-      if (e.state === ExecutionState.Paused || e.state === ExecutionState.Completed) {
-        if (this.replayStarted) {
-          this.replayStarted = false;
-          this.replayEnded = true;
-        }
-      }else if(e.state === ExecutionState.Initializing){
+      if(e.state === ExecutionState.Initializing || e.state === ExecutionState.Aborted){
         this.history = [];
         this.checkpointed = [];
         this.selectedIndex = -1;
         this.operatorInfo = [];
-        this.replayEnded = true;
-        this.replayStarted = false;
+        this.isReplaying = false;
       }
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowCheckpointedEvent").subscribe(e => {
       this.checkpointed = e.checkpointed;
+    });
+
+    workflowWebsocketService.subscribeToEvent("WorkflowReplayCompletedEvent").subscribe(e => {
+      this.isReplaying = false;
+      this.replayTime = e.replayTime;
+      this.checkpointTime = e.checkpointTime;
     });
   }
 
@@ -59,11 +62,11 @@ export class ReplayWorkflowService {
   }
 
   public selectReplayPoint(index: number): void {
-    if(this.replayEnded) {
+    if(!this.isReplaying && this.selectedMode != "") {
       this.selectedIndex = index;
-      this.replayStarted = true;
-      this.replayEnded = false;
-      this.workflowWebsocketService.send("WorkflowReplayRequest", {replayPos: index});
+      this.isReplaying = true;
+      this.replayTime = 0;
+      this.workflowWebsocketService.send("WorkflowReplayRequest", {replayPos: index, plannerStrategy: this.selectedMode, replayTimeLimit: this.replayTimeLimit});
       this.notification.info("replaying time point " + this.history[index] + "s");
     }else{
       this.notification.info("replaying in progress");

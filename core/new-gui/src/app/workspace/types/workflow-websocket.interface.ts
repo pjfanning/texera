@@ -163,6 +163,11 @@ export type  WorkflowAdditionalOperatorInfoEvent = Readonly<{
   data: string;
 }>;
 
+export type WorkflowReplayCompletedEvent = Readonly<{
+  replayTime:number;
+  checkpointTime:number;
+}>;
+
 export type WorkflowCheckpointedEvent = Readonly<{
   checkpointed: readonly number[];
 }>;
@@ -193,7 +198,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
   DebugCommandRequest: DebugCommandRequest;
-  WorkflowReplayRequest: { replayPos: number };
+  WorkflowReplayRequest: { replayPos: number , plannerStrategy: String, replayTimeLimit:number};
   WorkflowAdditionalOperatorInfoRequest: {};
   WorkflowCheckpointRequest: {};
 };
@@ -222,6 +227,7 @@ export type TexeraWebsocketEventTypeMap = {
   ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
   WorkflowInteractionHistoryEvent: WorkflowInteractionHistoryEvent;
   WorkflowAdditionalOperatorInfoEvent: WorkflowAdditionalOperatorInfoEvent;
+  WorkflowReplayCompletedEvent:WorkflowReplayCompletedEvent;
 };
 
 // helper type definitions to generate the request and event types

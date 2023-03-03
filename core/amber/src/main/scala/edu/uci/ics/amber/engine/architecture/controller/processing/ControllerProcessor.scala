@@ -28,7 +28,6 @@ import edu.uci.ics.amber.engine.architecture.logging.{
   StepDelta
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetMessageInQueue,
   NetworkMessage,
   NetworkSenderActorRef
 }
@@ -120,7 +119,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
-  def restoreWorkers(): Unit = {
+  def restoreWorkersAndResendUnAckedMessages(): Unit = {
     Await.result(
       Future.sequence(
         execution.getAllWorkers
@@ -142,6 +141,9 @@ class ControllerProcessor extends AmberLogging with Serializable {
       ),
       600.seconds
     )
+    // re-send outputs:
+    // exclude CLIENT
+    controlOutputPort.resendMessages(Set(CLIENT))
   }
 
   // inner dependencies:
@@ -186,6 +188,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
       isReplaying = false
       globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
       if (!controlMessagesToReplay.hasNext) {
+        logger.info("replay completed!")
         logManager.terminate()
         logStorage.cleanPartiallyWrittenLogFile()
         logManager.setupWriter(logStorage.getWriter)
@@ -280,42 +283,31 @@ class ControllerProcessor extends AmberLogging with Serializable {
   def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
-      case TakeGlobalCheckpoint() =>
+      case TakeGlobalCheckpoint(cutoffMap) =>
         logger.info("start to take global checkpoint")
         // save output messages first
         val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
         chkpt.attachSerialization(serialization)
         chkpt.save("fifoState", controlInput.getFIFOState)
-        chkpt.save(
-          "outputMessages",
-          Await
-            .result((networkSender.ref ? GetMessageInQueue), 5.seconds)
-            .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
-        )
         // follow topological order
-        val iter = workflow.getDAG.iterator()
         val runningWorkers = execution.getAllWorkers.toSet
-        while (iter.hasNext) {
-          val worker = iter.next()
-          if (runningWorkers.contains(worker)) {
-            logger.info(s"start to ask $worker to checkpoint")
-            val alignment = Await
-              .result(
-                execution
-                  .getOperatorExecution(worker)
-                  .getWorkerInfo(worker)
-                  .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint()),
-                60.seconds
-              )
-              .asInstanceOf[Long]
-            logger.info(s"received alignment for $worker alignment = $alignment")
-            if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
-              // put placeholder
-              CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint(), false)
+        Await.result(Future.sequence(runningWorkers.map{
+          worker =>
+          logger.info(s"start to ask $worker to checkpoint")
+            (execution
+            .getOperatorExecution(worker)
+            .getWorkerInfo(worker)
+            .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint(cutoffMap.getOrElse(worker, Map())))).map{
+              result =>
+                val alignment = result.asInstanceOf[Long]
+                logger.info(s"received alignment for $worker alignment = $alignment")
+                if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
+                  // put placeholder
+                  CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint(), false)
+                }
             }
-          }
-        }
+        }), 60.seconds)
         // finalize checkpoint
         chkpt.save("controlState", this)
         CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
@@ -323,9 +315,9 @@ class ControllerProcessor extends AmberLogging with Serializable {
           s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
         )
         logger.info(
-          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
+          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000d}s"
         )
-        actorContext.sender() ! numControlSteps
+        actorContext.sender() ! ((System.currentTimeMillis() - startTime) / 1000d, numControlSteps)
       case GetOperatorInternalState() =>
         Future
           .sequence(

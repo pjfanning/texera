@@ -6,14 +6,9 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{
   LocalFSLogStorage
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetMessageInQueue,
-  NetworkMessage
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{
   GetMessageInQueueSync,
   SendRequest
@@ -52,8 +47,6 @@ trait LogManager {
 
   def sendCommitted(sendRequest: SendRequest): Unit
 
-  def getUnackedMessages(): Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]
-
   def terminate(): Unit
 
 }
@@ -72,11 +65,6 @@ class EmptyLogManagerImpl(
   }
 
   override def terminate(): Unit = {}
-
-  override def getUnackedMessages(): Array[(ActorVirtualIdentity, Iterable[NetworkMessage])] =
-    Await
-      .result(networkCommunicationActor.ref ? GetMessageInQueue, 5.seconds)
-      .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
 }
 
 class LogManagerImpl(
@@ -101,11 +89,5 @@ class LogManagerImpl(
 
   def terminate(): Unit = {
     writer.terminate()
-  }
-
-  override def getUnackedMessages(): Array[(ActorVirtualIdentity, Iterable[NetworkMessage])] = {
-    val future = new CompletableFuture[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]()
-    writer.putOutput(GetMessageInQueueSync(future))
-    future.get()
   }
 }

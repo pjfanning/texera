@@ -48,11 +48,16 @@ class NetworkInputPort[T](
     }
   }
 
-  def getFIFOState: Map[ActorVirtualIdentity, OrderingEnforcer[T]] = idToOrderingEnforcers.toMap
+  def getFIFOState: Map[ActorVirtualIdentity, Long] = idToOrderingEnforcers.map(x => (x._1,x._2.current)).toMap
 
-  def setFIFOState(fifoState: Map[ActorVirtualIdentity, OrderingEnforcer[T]]): Unit = {
+  def setFIFOState(fifoState: Map[ActorVirtualIdentity, Long]): Unit = {
     idToOrderingEnforcers.clear()
-    idToOrderingEnforcers ++= fifoState
+    fifoState.foreach{
+      case (id, current)  =>
+        val enforcer = new OrderingEnforcer[T]()
+        enforcer.current = current
+        idToOrderingEnforcers(id) = enforcer
+    }
   }
 
   def increaseFIFOSeqNum(id: ActorVirtualIdentity): Unit = {

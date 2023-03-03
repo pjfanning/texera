@@ -5,14 +5,9 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.common.Interaction
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowCompleted,
-  WorkflowReplayInfo
-}
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.CollectAlignmentInformationHandler.CollectAlignmentInformation
+import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -51,21 +46,16 @@ trait WorkerExecutionCompletedHandler {
         .flatMap(_ => {
           // if entire workflow is completed, clean up
           if (cp.execution.isCompleted) {
-            // after query result come back: send completed event, cleanup ,and kill workflow
-            val interaction = new Interaction()
-            interaction.addParticipant(CONTROLLER, -1L, 100000, 0)
-            cp.execution.getAllWorkers.foreach { worker =>
-              interaction.addParticipant(worker, -1L, 100000, 0)
+            execute(CollectAlignmentInformation(), CONTROLLER).map{
+              ret =>
+                // after query result come back: send completed event, cleanup ,and kill workflow
+                sendToClient(WorkflowReplayInfo(interactionHistory))
+                sendToClient(WorkflowCompleted())
+                disableStatusUpdate()
+                disableMonitoring()
+                disableSkewHandling()
+                println("workflow completed!!!!!!!!!!!!!!")
             }
-            interactionHistory
-              .addInteraction((System.currentTimeMillis() - workflowStartTimeStamp), interaction)
-            sendToClient(WorkflowReplayInfo(interactionHistory))
-            sendToClient(WorkflowCompleted())
-            disableStatusUpdate()
-            disableMonitoring()
-            disableSkewHandling()
-            println("workflow completed!!!!!!!!!!!!!!")
-            Future.Unit
           } else {
             cp.scheduler.onWorkerCompletion(sender, cp.availableNodes).flatMap(_ => Future.Unit)
           }

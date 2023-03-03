@@ -18,14 +18,18 @@ class UpstreamLinkStatus(ordinalMapping: OrdinalMapping) extends Serializable {
     * links that a worker receives data from.
     */
   val upstreamMap =
-    new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
+    new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]]
   val upstreamMapReverse =
     new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
   private val completedLinkIds = new mutable.HashSet[LinkIdentity]()
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
-    upstreamMap.update(input, upstreamMap(input) + identifier)
+    if(upstreamMap.contains(input)){
+      upstreamMap(input) = upstreamMap(input) + identifier
+    }else{
+      upstreamMap(input) = Set(identifier)
+    }
     upstreamMapReverse.update(identifier, input)
   }
 

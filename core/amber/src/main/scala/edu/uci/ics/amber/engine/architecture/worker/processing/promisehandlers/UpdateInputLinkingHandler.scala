@@ -21,7 +21,6 @@ trait UpdateInputLinkingHandler {
   registerHandler { (msg: UpdateInputLinking, sender) =>
     dp.stateManager.assertState(READY, RUNNING, PAUSED)
     dp.registerInput(msg.identifier, msg.inputLink)
-    dp.upstreamLinkStatus.registerInput(msg.identifier, msg.inputLink)
   }
 
 }

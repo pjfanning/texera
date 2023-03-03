@@ -1,5 +1,5 @@
 <nz-timeline
-[nzPending]="replay.replayStarted && !replay.replayEnded ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
+[nzPending]="replay.isReplaying ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
   <nz-timeline-item
   *ngFor="let timepoint of replay.history; index as i;"
   [nzColor]="replay.selectedIndex === i ? 'green': (replay.checkpointed.includes(i) ? 'blue':'gray')"
@@ -16,15 +16,19 @@
   </nz-timeline-item>
 </nz-timeline>
 
-<button mat-stroked-button (click)="replay.clickButton2()">
-  Take Global Checkpoint
-</button>
 
+<label *ngIf="replay.replayTime !== 0">Replay Time: {{replay.replayTime}}s, Checkpoint Overhead: {{replay.checkpointTime}}s</label>
+<label>Time limit for next replay(in seconds):
+  <input type="number" name="input"
+         min="1" max="99" [(ngModel)]="replay.replayTimeLimit" required>
+</label>
+<label>Replay Planner Strategy:</label>
+<select [(ngModel)]="replay.selectedMode">
+  <option *ngFor="let mode of replay.plannerStrategies;" [value]="mode">{{mode}}</option>
+</select>
 <button mat-stroked-button (click)="replay.clickButton()">
   Request Operator Info
 </button>
-
-<!-- <p>{{replay.operatorInfo}}</p> -->
 
 <nz-list nzItemLayout="vertical">
   <nz-list-item *ngFor="let info of replay.operatorInfo;">

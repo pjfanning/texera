@@ -5,7 +5,7 @@ import edu.uci.ics.texera.web.service.ReplayPlanner.getLastCheckpoint
 
 import scala.collection.mutable
 
-class InteractionHistory {
+class InteractionHistory extends Serializable {
 
   private val history = mutable.ArrayBuffer[Interaction](new Interaction())
   private val timestamps = mutable.ArrayBuffer[Long](0)
@@ -23,6 +23,16 @@ class InteractionHistory {
   def findInteractionIdx(id: ActorVirtualIdentity, alignment: Long): Int = {
     history.indexWhere(x => x.containsAlignment(id, alignment))
   }
+
+  def computeGlobalCheckpointCutoff(idx: Int):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
+    val interaction = getInteraction(idx)
+    interaction.getAllInputChannelStates
+  }
+
+  def computeLocalCheckpointCutoff(idx: Int, toCheckpoint:Set[ActorVirtualIdentity], existingCheckpoints: Map[ActorVirtualIdentity, Set[Long]]):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
+    Map()
+  }
+
 
   def getInteractions: Iterable[Interaction] = history
 

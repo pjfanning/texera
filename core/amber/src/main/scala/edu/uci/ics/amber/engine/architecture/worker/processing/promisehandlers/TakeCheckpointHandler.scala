@@ -2,28 +2,20 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import akka.serialization.Serialization
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer
-}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.CheckpointSupport
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipFaultTolerance,
-  SkipReply
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.util.concurrent.CompletableFuture
 
 object TakeCheckpointHandler {
   final case class TakeCheckpoint(
+      cutoffs: Map[ActorVirtualIdentity, Long],
       chkpt: SavedCheckpoint,
       completion: CompletableFuture[Long]
   ) extends ControlCommand[Unit]
@@ -47,11 +39,15 @@ trait TakeCheckpointHandler {
         }
       case _ =>
     }
+    msg.cutoffs.foreach{
+      case (id, watermark) =>
+        if(id != CONTROLLER){
+          dp.dataOutputPort.receiveWatermark(id, watermark)
+        }else{
+          dp.controlOutputPort.receiveWatermark(id, watermark)
+        }
+    }
     msg.chkpt.save("controlState", dp)
-    msg.chkpt.save(
-      "outputMessages",
-      dp.logManager.getUnackedMessages()
-    )
     // push to storage
     CheckpointHolder.addCheckpoint(
       actorId,
@@ -62,6 +58,9 @@ trait TakeCheckpointHandler {
     logger.info(
       s"checkpoint stored for $actorId at alignment = ${dp.totalValidStep} size = ${msg.chkpt.size()} bytes"
     )
+    // clear sent messages as we serialized them
+    dp.dataOutputPort.clearSentMessages()
+    dp.controlOutputPort.clearSentMessages()
     // completion
     msg.completion.complete(dp.totalValidStep)
     Future.Unit

@@ -1,18 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.common
 
 import akka.actor.{Actor, ActorRef, Stash}
-import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.logging.storage.{
   DeterminantLogStorage,
   EmptyLogStorage,
-  LocalFSLogStorage
 }
 import edu.uci.ics.amber.engine.architecture.logging.{AsyncLogWriter, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
   GetActorRef,
   NetworkSenderActorRef,
-  RegisterActorRef,
-  ResendFeasibility
+  RegisterActorRef
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkCommunicationActor,
@@ -40,8 +37,7 @@ abstract class WorkflowActor(
     context.actorOf(
       NetworkCommunicationActor.props(
         parentNetworkCommunicationActorRef.ref,
-        actorId,
-        supportFaultTolerance
+        actorId
       )
     )
   )
@@ -63,11 +59,6 @@ abstract class WorkflowActor(
   def forwardResendRequest: Receive = {
     case resend: ResendOutputTo =>
       networkCommunicationActor ! resend
-    case ResendFeasibility(status) =>
-      if (!status) {
-        // this exception will be caught by the catch in receiveAndProcessMessages
-        throw new WorkflowRuntimeException(s"network sender cannot resend message!")
-      }
   }
 
   def disallowActorRefRelatedMessages: Receive = {

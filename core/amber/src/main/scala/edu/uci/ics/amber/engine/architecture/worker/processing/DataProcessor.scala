@@ -11,63 +11,24 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  DeterminantLogger,
-  LogManager,
-  ProcessControlMessage
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, OutputManager}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort, OutputManager}
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  ControlElement,
-  DataElement,
-  EndMarker,
-  InputEpochMarker,
-  InputTuple
-}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputEpochMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{
-  DPOutputIterator,
-  FinalizeLink,
-  FinalizeOperator
-}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ControlPayload,
-  DataPayload,
-  WorkflowControlMessage,
-  WorkflowDataMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{
-  CONTROLLER,
-  SELF,
-  SOURCE_STARTER_ACTOR,
-  SOURCE_STARTER_OP
-}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
-import edu.uci.ics.amber.engine.common.{
-  AmberLogging,
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  InputExhausted
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_ACTOR, SOURCE_STARTER_OP}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 import edu.uci.ics.texera.workflow.operators.nn.DNNOpExec
 
@@ -131,6 +92,16 @@ class DataProcessor( // meta dependencies:
   @transient
   private[processing] var operator: IOperatorExecutor = _
 
+
+  // TODO: get rid of accessing the variable below
+  @transient
+  @volatile
+  private[processing] var dataInputPort: NetworkInputPort[DataPayload] = _
+
+  @transient
+  @volatile
+  private[processing] var controlInputPort: NetworkInputPort[ControlPayload] = _
+
   def initialize(
       operator: IOperatorExecutor, // core logic
       currentOutputIterator: Iterator[(ITuple, Option[Int])],
@@ -138,7 +109,9 @@ class DataProcessor( // meta dependencies:
       logStorage: DeterminantLogStorage,
       logManager: LogManager,
       recoveryManager: LocalRecoveryManager,
-      actorContext: ActorContext
+      actorContext: ActorContext,
+      dataInputPort: NetworkInputPort[DataPayload],
+      controlInputPort: NetworkInputPort[ControlPayload]
   ): Unit = {
     this.operator = operator
     this.outputIterator.setTupleOutput(currentOutputIterator)
@@ -150,6 +123,10 @@ class DataProcessor( // meta dependencies:
     this.pauseManager.initialize(this)
     this.epochManager.initialize(this)
     this.rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
+    this.dataInputPort = dataInputPort
+    this.controlInputPort = controlInputPort
+    this.dataOutputPort.resendMessages()
+    this.controlOutputPort.resendMessages()
   }
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
@@ -193,7 +170,7 @@ class DataProcessor( // meta dependencies:
   // 5. breakpoint manager
   lazy private[processing] val breakpointManager: BreakpointManager = wire[BreakpointManager]
   // 6. upstream links
-  lazy private[processing] val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
+  lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   // 7. state manager
   lazy private[processing] val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
@@ -217,6 +194,7 @@ class DataProcessor( // meta dependencies:
   protected var currentInputTuple: Either[ITuple, InputExhausted] = _
   protected var currentInputActor: ActorVirtualIdentity = _
   var totalValidStep = 0L
+  var totalTimeSpent = 0L
 
   // initialize dp thread upon construction
   @transient
@@ -364,7 +342,9 @@ class DataProcessor( // meta dependencies:
         asyncRPCClient.send(WorkerExecutionCompleted(totalValidStep), CONTROLLER)
       case FinalizeLink(link) =>
         logger.info(s"process FinalizeLink message at step = $totalValidStep")
-        asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
+        if(link != null && link.from != SOURCE_STARTER_OP){
+          asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
+        }
       case _ =>
         if (breakpointManager.evaluateTuple(outputTuple)) {
           pauseManager.pause(UserPause)
@@ -427,7 +407,9 @@ class DataProcessor( // meta dependencies:
     // main DP loop
     while (true) {
       if (outputIterator.hasNext && !pauseManager.isPaused()) {
-        internalQueue.peek(totalValidStep) match {
+        val input = internalQueue.peek(totalValidStep)
+        val startTime = System.nanoTime()
+        input match {
           case Some(value) =>
             value match {
               case _: DataElement =>
@@ -439,14 +421,18 @@ class DataProcessor( // meta dependencies:
           case None =>
             outputOneTuple()
         }
+        totalTimeSpent += System.nanoTime() - startTime
       } else {
         // TODO: find and fix null bug here.
-        internalQueue.take(totalValidStep) match {
+        val input = internalQueue.take(totalValidStep)
+        val startTime = System.nanoTime()
+        input match {
           case element: DataElement =>
             handleDataElement(element)
           case ControlElement(payload, from) =>
             processControlCommand(payload, from)
         }
+        totalTimeSpent += System.nanoTime() - startTime
       }
       totalValidStep += 1
     }

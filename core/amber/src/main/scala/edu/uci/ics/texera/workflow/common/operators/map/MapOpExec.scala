@@ -51,20 +51,13 @@ abstract class MapOpExec() extends OperatorExecutor with Serializable with Check
       currentIteratorState: Iterator[(ITuple, Option[Int])],
       checkpoint: SavedCheckpoint
   ): Iterator[(ITuple, Option[Int])] = {
-    if (currentIteratorState != null) {
       val arr = currentIteratorState.toArray
       checkpoint.save("currentIter", arr)
       arr.toIterator
-    }
-    currentIteratorState
   }
 
   override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
     val arr: Array[(ITuple, Option[Int])] = checkpoint.load("currentIter")
-    if (arr != null) {
-      arr.toIterator
-    } else {
-      null
-    }
+    arr.toIterator
   }
 }

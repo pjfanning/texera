@@ -162,18 +162,8 @@ class Controller(
           controllerProcessor.handleControlPayloadOuter
         )
         controlInputPort.setFIFOState(chkpt.load("fifoState"))
-        // re-send outputs:
-        chkpt
-          .load("outputMessages")
-          .asInstanceOf[Array[(ActorVirtualIdentity, Iterable[NetworkMessage])]]
-          .foreach {
-            case (id, iter) =>
-              iter.foreach { msg =>
-                networkCommunicationActor ! SendRequest(id, msg.internalMessage) //re-assign ack id.
-              }
-          }
         logger.info(
-          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
+          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000d}s"
         )
       case None =>
         controllerProcessor = new ControllerProcessor()
@@ -197,7 +187,7 @@ class Controller(
 
     // restore workers:
     logger.info("start to restore workers")
-    controllerProcessor.restoreWorkers()
+    controllerProcessor.restoreWorkersAndResendUnAckedMessages()
 
     // set replay alignment and start
     controllerConfig.stateRestoreConfig.controllerConf.replayTo match {

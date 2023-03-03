@@ -5,24 +5,15 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
 import com.github.toastshaman.dropwizard.auth.jwt.JwtAuthFilter
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.auth.JwtAuth.jwtConsumer
-import edu.uci.ics.texera.web.auth.{
-  GuestAuthFilter,
-  SessionUser,
-  UserAuthenticator,
-  UserRoleAuthorizer
-}
+import edu.uci.ics.texera.web.auth.{GuestAuthFilter, SessionUser, UserAuthenticator, UserRoleAuthorizer}
 import edu.uci.ics.texera.web.resource.auth.{AuthResource, GoogleAuthResource}
 import edu.uci.ics.texera.web.resource.dashboard.file.{UserFileAccessResource, UserFileResource}
-import edu.uci.ics.texera.web.resource.dashboard.workflow.{
-  WorkflowAccessResource,
-  WorkflowExecutionsResource,
-  WorkflowResource,
-  WorkflowVersionResource
-}
+import edu.uci.ics.texera.web.resource.dashboard.workflow.{WorkflowAccessResource, WorkflowExecutionsResource, WorkflowResource, WorkflowVersionResource}
 import edu.uci.ics.texera.web.resource.dashboard.project.ProjectResource
 import edu.uci.ics.texera.web.resource._
 import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource
@@ -87,6 +78,9 @@ object TexeraWebApplication {
 
     // start actor system master node
     actorSystem = AmberUtils.startActorMaster(clusterMode)
+
+    // clear all recovery logs (For dev only! No merge into master!)
+    LocalFSLogStorage.resetLogFolder()
 
     // start web server
     new TexeraWebApplication().run(
