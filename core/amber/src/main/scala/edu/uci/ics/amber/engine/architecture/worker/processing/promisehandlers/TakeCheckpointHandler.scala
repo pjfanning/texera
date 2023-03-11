@@ -1,24 +1,32 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
-import akka.serialization.Serialization
-import com.twitter.util.Future
+import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import TakeCheckpointHandler.TakeCheckpoint
+import TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats, StartCheckpoint}
+import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.CheckpointSupport
+import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(
-      cutoffs: Map[ActorVirtualIdentity, Long],
-      chkpt: SavedCheckpoint,
-      completion: CompletableFuture[Long]
-  ) extends ControlCommand[Unit]
+
+  final case class CheckpointStats(
+                                    checkpointId: Long,
+                                    initialCheckpointStats: InitialCheckpointStats,
+                                    inputAlignmentTime: Long,
+                                    saveUnprocessedInputTime: Long,
+                                    totalSize: Long, isEstimation: Boolean)
+
+  final case class InitialCheckpointStats(alignment: Long, processedTime: Long, checkpointStateTime: Long, saveProcessedInputTime: Long)
+
+  final case class StartCheckpoint(marker: SnapshotMarker,
+                                   chkpt:SavedCheckpoint,
+                                   syncFuture: CompletableFuture[InitialCheckpointStats])
+    extends ControlCommand[Unit]
       with SkipFaultTolerance
       with SkipReply
 }
@@ -26,43 +34,38 @@ object TakeCheckpointHandler {
 trait TakeCheckpointHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
-  registerHandler { (msg: TakeCheckpoint, sender) =>
-    dp.outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
-    // fill in checkpoint
-    msg.chkpt.save("inputHubState", dp.internalQueue)
-    dp.operator match {
-      case support: CheckpointSupport =>
-        if (!CheckpointHolder.hasMarkedCompletion(actorId, dp.totalValidStep)) {
-          dp.outputIterator.setTupleOutput(
-            support.serializeState(dp.outputIterator.outputIter, msg.chkpt)
-          )
-        }
-      case _ =>
+  registerHandler { (msg: StartCheckpoint, sender) =>
+    val checkpointTime = if(msg.marker.estimation){
+      dp.operator match {
+        case support: CheckpointSupport =>
+          support.getEstimatedCheckpointTime
+        case _ => 0L
+      }
+    }else{
+      dp.outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
+      val startTime = System.currentTimeMillis()
+      msg.chkpt.save("internalQueueState", dp.internalQueue)
+      dp.operator match {
+        case support: CheckpointSupport =>
+          if (!CheckpointHolder.hasMarkedCompletion(actorId, dp.totalValidStep)) {
+            dp.outputIterator.setTupleOutput(
+              support.serializeState(dp.outputIterator.outputIter, msg.chkpt)
+            )
+          }
+        case _ =>
+      }
+      msg.chkpt.save("controlState", dp)
+      val endTime = System.currentTimeMillis()
+      endTime - startTime
     }
-    msg.cutoffs.foreach{
-      case (id, watermark) =>
-        if(id != CONTROLLER){
-          dp.dataOutputPort.receiveWatermark(id, watermark)
-        }else{
-          dp.controlOutputPort.receiveWatermark(id, watermark)
-        }
+    // sent marker to downstream
+    dp.outputPort.broadcastMarker(msg.marker)
+    if(dp.stateManager.getCurrentState == COMPLETED){
+      CheckpointHolder.markCompletion(actorId, dp.totalValidStep)
     }
-    msg.chkpt.save("controlState", dp)
-    // push to storage
-    CheckpointHolder.addCheckpoint(
-      actorId,
-      dp.totalValidStep,
-      msg.chkpt,
-      dp.stateManager.getCurrentState == COMPLETED
-    )
-    logger.info(
-      s"checkpoint stored for $actorId at alignment = ${dp.totalValidStep} size = ${msg.chkpt.size()} bytes"
-    )
-    // clear sent messages as we serialized them
-//    dp.dataOutputPort.clearSentMessages()
-//    dp.controlOutputPort.clearSentMessages()
-    // completion
-    msg.completion.complete(dp.totalValidStep)
+    msg.syncFuture.complete(InitialCheckpointStats(dp.totalValidStep, TimeUnit.NANOSECONDS.toMillis(dp.totalTimeSpent), checkpointTime, 0))
     Future.Unit
   }
+
+
 }

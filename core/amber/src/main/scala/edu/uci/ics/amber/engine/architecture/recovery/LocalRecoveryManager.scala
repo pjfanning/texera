@@ -31,15 +31,15 @@ class LocalRecoveryManager {
     callbacksOnEnd.foreach(callback => callback())
   }
 
-  def getFIFOState(iter: Iterator[InMemDeterminant]): Map[ActorVirtualIdentity, Long] = {
-    val fifoState = new mutable.AnyRefMap[ActorVirtualIdentity, Long]()
+  def getFIFOState(iter: Iterator[InMemDeterminant]): Map[(ActorVirtualIdentity,Boolean), Long] = {
+    val fifoState = new mutable.AnyRefMap[(ActorVirtualIdentity,Boolean), Long]()
     while (iter.hasNext) {
       iter.next() match {
         case ProcessControlMessage(controlPayload, from) =>
-          if (fifoState.contains(from)) {
-            fifoState(from) += 1
+          if (fifoState.contains((from, false))) {
+            fifoState((from, false)) += 1
           } else {
-            fifoState(from) = 1
+            fifoState((from, false)) = 1
           }
         case other => //skip
       }

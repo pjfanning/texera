@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import akka.actor.{ActorRef, Address}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 sealed trait RecoveryPayload extends Serializable {}
@@ -23,5 +24,6 @@ final case class GetOperatorInternalState() extends RecoveryPayload
 final case class InterruptReplay() extends RecoveryPayload
 final case class PauseDuringReplay() extends RecoveryPayload
 final case class ResumeDuringReplay() extends RecoveryPayload
-final case class TakeGlobalCheckpoint(cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends RecoveryPayload
-final case class TakeLocalCheckpoint(cutoffs:Map[ActorVirtualIdentity, Long]) extends RecoveryPayload
+final case class TakeGlobalCheckpoint(marker:SnapshotMarker) extends RecoveryPayload
+final case class CheckpointCompleted(stats:CheckpointStats) extends RecoveryPayload
+final case class TakeLocalCheckpoint() extends RecoveryPayload

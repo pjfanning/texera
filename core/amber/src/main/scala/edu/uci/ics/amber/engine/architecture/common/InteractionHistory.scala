@@ -16,47 +16,49 @@ class InteractionHistory extends Serializable {
     completions(id) = completion
   }
 
-  def addInteraction(time: Long, interaction: Interaction): Unit = {
+  def addInteraction(time: Long, interaction: Interaction): Int = {
+    val idx = timestamps.size
     timestamps.append(time)
     history.append(interaction)
+    idx
   }
 
   def findInteractionIdx(id: ActorVirtualIdentity, alignment: Long): Int = {
     history.indexWhere(x => x.containsAlignment(id, alignment))
   }
 
-  def computeGlobalCheckpointCutoff(idx: Int):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
-    val interaction = getInteraction(idx)
-    interaction.allReceiverChannelStates
-  }
-
-  def computeLocalCheckpointCutoff(idx: Int, toCheckpoint:Set[ActorVirtualIdentity], checkpoints: Map[Int, Set[ActorVirtualIdentity]]):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
-    val lastCheckpoint = ReplayPlanner.getLastCheckpoint(checkpoints, idx, toCheckpoint)
-    val lastCheckpointMapping = mutable.HashMap[ActorVirtualIdentity, Int]()
-    lastCheckpoint.foreach{
-      case (i, identities) =>
-        identities.foreach(x => lastCheckpointMapping(x) = i)
-    }
-    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
-    toCheckpoint.foreach {
-      worker =>
-        val downstreams = getInteraction(idx).allReceiverChannelStates.keys
-        downstreams.foreach {
-          downstream =>
-            val received = if (toCheckpoint.contains(downstream)) {
-              getInteraction(idx).allReceiverChannelStates
-            } else if (lastCheckpointMapping.contains(downstream)) {
-              getInteraction(lastCheckpointMapping(downstream)).allReceiverChannelStates
-            } else {
-              Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]()
-            }
-            if (received.contains(worker) && received(worker).contains(downstream)) {
-              result.getOrElseUpdate(worker, mutable.HashMap[ActorVirtualIdentity, Long]())(downstream) = received(worker)(downstream)
-            }
-        }
-    }
-    result.mapValues(_.toMap).toMap
-  }
+//  def computeGlobalCheckpointCutoff(idx: Int):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
+//    val interaction = getInteraction(idx)
+//    interaction.allReceiverChannelStates
+//  }
+//
+//  def computeLocalCheckpointCutoff(idx: Int, toCheckpoint:Set[ActorVirtualIdentity], checkpoints: Map[Int, Set[ActorVirtualIdentity]]):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
+//    val lastCheckpoint = ReplayPlanner.getLastCheckpoint(checkpoints, idx, toCheckpoint)
+//    val lastCheckpointMapping = mutable.HashMap[ActorVirtualIdentity, Int]()
+//    lastCheckpoint.foreach{
+//      case (i, identities) =>
+//        identities.foreach(x => lastCheckpointMapping(x) = i)
+//    }
+//    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
+//    toCheckpoint.foreach {
+//      worker =>
+//        val downstreams = getInteraction(idx).allReceiverChannelStates.keys
+//        downstreams.foreach {
+//          downstream =>
+//            val received = if (toCheckpoint.contains(downstream)) {
+//              getInteraction(idx).allReceiverChannelStates
+//            } else if (lastCheckpointMapping.contains(downstream)) {
+//              getInteraction(lastCheckpointMapping(downstream)).allReceiverChannelStates
+//            } else {
+//              Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]()
+//            }
+//            if (received.contains(worker) && received(worker).contains(downstream)) {
+//              result.getOrElseUpdate(worker, mutable.HashMap[ActorVirtualIdentity, Long]())(downstream) = received(worker)(downstream)
+//            }
+//        }
+//    }
+//    result.mapValues(_.toMap).toMap
+//  }
 
 
   def getInteractions: Iterable[Interaction] = history

@@ -3,8 +3,9 @@ package edu.uci.ics.amber.engine.common.rpc
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, SnapshotMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -53,8 +54,8 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
-    val actorId: ActorVirtualIdentity
+                      controlOutputEndpoint: NetworkOutputPort,
+                      val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 

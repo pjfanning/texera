@@ -2,9 +2,12 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.SnapshotMarker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import org.deeplearning4j.optimize.listeners.Checkpoint
 
 import scala.reflect.ClassTag
 
@@ -82,5 +85,4 @@ class AsyncRPCHandlerInitializer(asyncRPCClient: AsyncRPCClient, asyncRPCServer:
   def sendToClient(cmd: ControlCommand[_]): Unit = {
     asyncRPCClient.sendToClient(cmd)
   }
-
 }

@@ -12,15 +12,9 @@ import edu.uci.ics.amber.engine.architecture.control.utils.NestedHandler.Nested
 import edu.uci.ics.amber.engine.architecture.control.utils.PingPongHandler.Ping
 import edu.uci.ics.amber.engine.architecture.control.utils.RecursionHandler.Recursion
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  GetActorRef,
-  NetworkAck,
-  NetworkMessage,
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowControlMessage
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -53,7 +47,7 @@ class TrivialControlSpec
         }
       case NetworkMessage(
             msgID,
-            WorkflowControlMessage(_, _, ReturnInvocation(id, returnValue))
+            WorkflowFIFOMessage(_, _, _, ReturnInvocation(id, returnValue))
           ) =>
         probe.sender() ! NetworkAck(msgID, Some(Constants.unprocessedBatchesCreditLimitPerSender))
         returnValue match {
@@ -91,8 +85,9 @@ class TrivialControlSpec
         idMap(ActorVirtualIdentity("0")),
         NetworkMessage(
           seqNum,
-          WorkflowControlMessage(
+          WorkflowFIFOMessage(
             CONTROLLER,
+            false,
             seqNum,
             ControlInvocation(seqNum, evt)
           )

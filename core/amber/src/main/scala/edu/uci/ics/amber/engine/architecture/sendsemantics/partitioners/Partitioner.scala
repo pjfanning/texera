@@ -3,12 +3,7 @@ package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.InputEpochMarker
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, EndOfUpstream, EpochMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -22,7 +17,7 @@ trait Partitioner extends Serializable {
 
 class NetworkOutputBuffer(
     val to: ActorVirtualIdentity,
-    val dataOutputPort: NetworkOutputPort[DataPayload],
+    val dataOutputPort: NetworkOutputPort,
     val batchSize: Int = Constants.defaultBatchSize
 ) extends Serializable {
 

@@ -1,67 +1,54 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import akka.actor.ActorRef
-import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkAck
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class NetworkInputPort[T](
+class NetworkInputPort(
     val actorId: ActorVirtualIdentity,
-    val handler: (ActorVirtualIdentity, T) => Unit
+    val handler: ((ActorVirtualIdentity, Boolean), WorkflowFIFOMessagePayload) => Unit
 ) extends AmberLogging {
 
-  private val idToOrderingEnforcers =
-    new mutable.HashMap[ActorVirtualIdentity, OrderingEnforcer[T]]()
+  private val inputChannels =
+    new mutable.HashMap[(ActorVirtualIdentity, Boolean), AmberFIFOChannel]()
 
   def handleMessage(
-      sender: ActorRef,
-      senderCredits: Int,
-      messageID: Long,
-      from: ActorVirtualIdentity,
-      sequenceNumber: Long,
-      payload: T
+      workflowFIFOMessage: WorkflowFIFOMessage
   ): Unit = {
-    sender ! NetworkAck(messageID, Some(senderCredits))
-
-    OrderingEnforcer.reorderMessage[T](
-      idToOrderingEnforcers,
-      from,
-      sequenceNumber,
-      payload
-    ) match {
-      case Some(iterable) =>
-        iterable.foreach(v => handler.apply(from, v))
-      case None =>
-      // discard duplicate
-      // logger.info(s"receive duplicated: $payload from $from")
+    val channelId = (workflowFIFOMessage.from, workflowFIFOMessage.isData)
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+    entry.acceptMessage(workflowFIFOMessage.sequenceNumber, workflowFIFOMessage.payload).foreach{
+      payload =>
+        handler.apply(channelId, payload)
     }
   }
 
-  def overwriteFIFOSeqNum(seqMap: Map[ActorVirtualIdentity, Long]): Unit = {
+  def overwriteControlFIFOSeqNum(seqMap: Map[(ActorVirtualIdentity, Boolean), Long]): Unit = {
     seqMap.foreach {
       case (identity, l) =>
-        val entry = idToOrderingEnforcers.getOrElseUpdate(identity, new OrderingEnforcer[T]())
+        val entry = inputChannels.getOrElseUpdate(identity, new AmberFIFOChannel())
         entry.setCurrent(l)
     }
   }
 
-  def getFIFOState: Map[ActorVirtualIdentity, Long] = idToOrderingEnforcers.map(x => (x._1,x._2.current)).toMap
+  def getActiveChannels: Iterable[(ActorVirtualIdentity, Boolean)] = inputChannels.keys
 
-  def setFIFOState(fifoState: Map[ActorVirtualIdentity, Long]): Unit = {
-    idToOrderingEnforcers.clear()
+  def getFIFOState: Map[(ActorVirtualIdentity, Boolean), Long] = inputChannels.map(x => (x._1,x._2.current)).toMap
+
+  def setFIFOState(fifoState: Map[(ActorVirtualIdentity, Boolean), Long]): Unit = {
+    inputChannels.clear()
     fifoState.foreach{
       case (id, current)  =>
-        val enforcer = new OrderingEnforcer[T]()
+        val enforcer = new AmberFIFOChannel()
         enforcer.current = current
-        idToOrderingEnforcers(id) = enforcer
+        inputChannels(id) = enforcer
     }
   }
 
-  def increaseFIFOSeqNum(id: ActorVirtualIdentity): Unit = {
-    idToOrderingEnforcers.getOrElseUpdate(id, new OrderingEnforcer[T]()).current += 1
+  def increaseFIFOSeqNum(id: ActorVirtualIdentity, isDataChannel:Boolean): Unit = {
+    inputChannels.getOrElseUpdate((id, isDataChannel), new AmberFIFOChannel()).current += 1
   }
 
 }

@@ -5,6 +5,7 @@ import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
 import edu.uci.ics.amber.engine.architecture.worker.StateRestoreConfig
+import edu.uci.ics.amber.engine.common.ambermessage.SnapshotMarker
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.web.service.ReplayPlanner._
@@ -16,7 +17,7 @@ import scala.jdk.CollectionConverters.{asJavaIterableConverter, asScalaSetConver
 object ReplayPlanner {
 
   sealed trait PlannerStep
-  case class CheckpointCurrentState(cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends PlannerStep
+  case class CheckpointCurrentState(marker:SnapshotMarker) extends PlannerStep
   case class ReplayExecution(restart: Boolean, conf: WorkflowStateRestoreConfig, fromIdx: Int)
       extends PlannerStep
 
@@ -152,7 +153,7 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
         println(s"replay from $cur to $toCheckpoint with restart = $requireRestart")
         stepsQueue.enqueue(ReplayExecution(requireRestart, createRestore(cur, toCheckpoint), cur))
         println(s"take checkpoint at $toCheckpoint")
-        stepsQueue.enqueue(CheckpointCurrentState(interactionHistory.computeGlobalCheckpointCutoff(toCheckpoint)))
+        stepsQueue.enqueue(CheckpointCurrentState(SnapshotMarker(toCheckpoint, false, interactionHistory.getInteraction(toCheckpoint).getParticipants.toSet)))
         checkpointed = checkpointed ++ completeCheckpointToPartialRepr(toCheckpoint)
         cur = toCheckpoint
         if (requireRestart) {

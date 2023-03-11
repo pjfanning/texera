@@ -4,26 +4,10 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerConfig,
-  Workflow,
-  WorkflowStateRestoreConfig
-}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowStateRestoreConfig}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ContinueReplay,
-  GetOperatorInternalState,
-  InterruptReplay,
-  NotifyFailedNode,
-  TakeGlobalCheckpoint,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, SnapshotMarker, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -111,14 +95,6 @@ class AmberClient(
     }
   }
 
-  def takeGlobalCheckpoint(cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]): Future[Any] = {
-    if (isActive) {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(cutoffMap))).asTwitter()
-    } else {
-      Future(-1)
-    }
-  }
-
   def getOperatorInfo(): Unit = {
     if (isActive) {
       clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
@@ -130,6 +106,14 @@ class AmberClient(
       Future[Any](())
     } else {
       (clientActor ? WorkflowRecoveryMessage(CLIENT, InterruptReplay())).asTwitter()
+    }
+  }
+
+  def takeGlobalCheckpoint(marker:SnapshotMarker): Future[Any] = {
+    if (isActive) {
+      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(marker))).asTwitter()
+    } else {
+      Future(-1)
     }
   }
 

@@ -1,48 +1,35 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
-import akka.actor.{ActorContext, Address, PoisonPill}
+import akka.actor.{ActorContext, ActorRef, Address, PoisonPill}
 import akka.pattern.ask
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.checkpoint.{
-  CheckpointHolder,
-  SavedCheckpoint,
-  SerializedState
-}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  AdditionalOperatorInfo,
-  WorkflowRecoveryStatus,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  LogManager,
-  ProcessControlMessage,
-  StepDelta
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkMessage,
-  NetworkSenderActorRef
-}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
+import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, PendingCheckpoint, ReplayInputRecorder}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.CheckInitialized
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats, StartCheckpoint}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage._
+import edu.uci.ics.amber.engine.common.ambermessage.{WorkflowFIFOMessagePayload, _}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
+import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
@@ -55,7 +42,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
 
   // outer dependencies:
   @transient
-  private[processing] var controlInput: NetworkInputPort[ControlPayload] = _
+  private[processing] var controlInput: NetworkInputPort = _
   @transient
   private[processing] var workflow: Workflow = _
   @transient
@@ -78,9 +65,14 @@ class ControllerProcessor extends AmberLogging with Serializable {
   private[processing] lazy val serialization = SerializationExtension(actorContext.system)
   @transient
   private[processing] var onReplayComplete: () => Unit = _
+  @transient
+  private[processing] var pendingCheckpoints: mutable.HashMap[Long,PendingCheckpoint] = _
+  @transient
+  private[processing] var interactionHistory: InteractionHistory = _
+
 
   def initialize(
-      controlInput: NetworkInputPort[ControlPayload],
+      controlInput: NetworkInputPort,
       workflow: Workflow,
       scheduler: WorkflowScheduler,
       logManager: LogManager,
@@ -98,6 +90,8 @@ class ControllerProcessor extends AmberLogging with Serializable {
     this.actorContext = actorContext
     this.controllerConfig = controllerConfig
     this.logStorage = logStorage
+    this.pendingCheckpoints = new mutable.HashMap[Long,PendingCheckpoint]()
+    this.interactionHistory = new InteractionHistory()
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
   }
 
@@ -112,10 +106,12 @@ class ControllerProcessor extends AmberLogging with Serializable {
   def outputControlPayload(
       to: ActorVirtualIdentity,
       self: ActorVirtualIdentity,
+      isData: Boolean,
       seqNum: Long,
-      payload: ControlPayload
+      payload: WorkflowFIFOMessagePayload
   ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
+    assert(!isData)
+    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
@@ -141,14 +137,11 @@ class ControllerProcessor extends AmberLogging with Serializable {
       ),
       600.seconds
     )
-    // re-send outputs:
-    // exclude CLIENT
-    controlOutputPort.resendMessages(Set(CLIENT))
   }
 
   // inner dependencies:
-  lazy private[processing] val controlOutputPort: NetworkOutputPort[ControlPayload] = {
-    new NetworkOutputPort[ControlPayload](actorId, this.outputControlPayload)
+  lazy private[processing] val controlOutputPort: NetworkOutputPort= {
+    new NetworkOutputPort(actorId, this.outputControlPayload)
   }
   lazy private[controller] val asyncRPCClient: AsyncRPCClient =
     new AsyncRPCClient(controlOutputPort, actorId)
@@ -225,7 +218,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
             currentHead = sender
           }
         case ProcessControlMessage(controlPayload, from) =>
-          controlInput.increaseFIFOSeqNum(from)
+          controlInput.increaseFIFOSeqNum(from, false)
           handleControlPayload(from, controlPayload)
       }
       if (checkIfReplayCompleted()) {
@@ -234,16 +227,30 @@ class ControllerProcessor extends AmberLogging with Serializable {
     }
   }
 
-  def handleControlPayloadOuter(from: ActorVirtualIdentity, controlPayload: ControlPayload) {
-    if (isReplaying) {
-      logger.info("received " + controlPayload + " from " + from)
-      controlMessages
-        .getOrElseUpdate(from, new mutable.Queue[ProcessControlMessage]())
-        .enqueue(ProcessControlMessage(controlPayload, from))
-      invokeReplay()
-    } else {
-      logger.info("normal processing of " + controlPayload)
-      handleControlPayload(from, controlPayload)
+  def handlePayloadOuter(channelId: (ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload):Unit= {
+    val (from, _) = channelId
+    payload match {
+      case controlPayload: ControlPayload =>
+        pendingCheckpoints.values.foreach(_.recordInput(channelId, payload))
+        if (isReplaying) {
+          logger.info("received " + controlPayload + " from " + from)
+          controlMessages
+            .getOrElseUpdate(from, new mutable.Queue[ProcessControlMessage]())
+            .enqueue(ProcessControlMessage(controlPayload, from))
+          invokeReplay()
+        } else {
+          logger.info("normal processing of " + controlPayload)
+          handleControlPayload(from, controlPayload)
+        }
+      case marker: SnapshotMarker =>
+        val completed = pendingCheckpoints
+          .getOrElseUpdate(marker.id, new PendingCheckpoint(controlInput, actorId, marker, startCheckpoint, finalizeCheckpoint))
+          .acceptSnapshotMarker(channelId)
+        if(completed) {
+          pendingCheckpoints.remove(marker.id)
+        }
+        logger.info(s"receive snapshot marker from $from and marker id = ${marker.id}")
+      case _ => logger.warn(s"received $payload which cannot be handled by controller")
     }
   }
 
@@ -280,44 +287,43 @@ class ControllerProcessor extends AmberLogging with Serializable {
     }
   }
 
+  def startCheckpoint(marker:SnapshotMarker): (SavedCheckpoint, InitialCheckpointStats) ={
+    logger.info(s"calling startCheckpoint for id = $marker.id}")
+    val ser = SerializationExtension(actorContext.system)
+    val chkpt = new SavedCheckpoint()
+    chkpt.attachSerialization(ser)
+    if(!marker.estimation){
+      // save state
+      chkpt.save("fifoState", controlInput.getFIFOState)
+      chkpt.save("controlState", this)
+    }
+    controlOutputPort.broadcastMarker(marker)
+    (chkpt, InitialCheckpointStats(numControlSteps, 0, 0, 0))
+  }
+
+  def finalizeCheckpoint(pendingCheckpoint: PendingCheckpoint): Unit ={
+    val chkpt = pendingCheckpoint.chkpt
+    val dataToTake = pendingCheckpoint.dataToTake
+    val initialCheckpointStats = pendingCheckpoint.initialCheckpointStats
+    if(!pendingCheckpoint.marker.estimation){
+      chkpt.save("unprocessedData", dataToTake)
+      CheckpointHolder.addCheckpoint(actorId, initialCheckpointStats.alignment, chkpt)
+    }
+  }
+
   def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
-      case TakeGlobalCheckpoint(cutoffMap) =>
+      case CheckpointCompleted(stats) =>
+        logger.info(s"received checkpoint stats from ${recoveryMsg.from}, stats = $stats")
+        if(stats.isEstimation){
+          interactionHistory.getInteraction(stats.checkpointId.toInt).addParticipant(recoveryMsg.from, stats)
+        }
+      case TakeGlobalCheckpoint(marker) =>
         logger.info("start to take global checkpoint")
-        // save output messages first
-        val startTime = System.currentTimeMillis()
-        val chkpt = new SavedCheckpoint()
-        chkpt.attachSerialization(serialization)
-        chkpt.save("fifoState", controlInput.getFIFOState)
-        // follow topological order
-        val runningWorkers = execution.getAllWorkers.toSet
-        Await.result(Future.sequence(runningWorkers.map{
-          worker =>
-          logger.info(s"start to ask $worker to checkpoint")
-            (execution
-            .getOperatorExecution(worker)
-            .getWorkerInfo(worker)
-            .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint(cutoffMap.getOrElse(worker, Map())))).map{
-              result =>
-                val alignment = result.asInstanceOf[Long]
-                logger.info(s"received alignment for $worker alignment = $alignment")
-                if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
-                  // put placeholder
-                  CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint(), false)
-                }
-            }
-        }), 60.seconds)
-        // finalize checkpoint
-        chkpt.save("controlState", this)
-        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
-        logger.info(
-          s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
-        )
-        logger.info(
-          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000d}s"
-        )
-        actorContext.sender() ! ((System.currentTimeMillis() - startTime) / 1000d, numControlSteps)
+        pendingCheckpoints
+          .getOrElseUpdate(marker.id, new PendingCheckpoint(controlInput, actorId, marker, startCheckpoint, finalizeCheckpoint))
+          .acceptSnapshotMarker((CLIENT, true))
       case GetOperatorInternalState() =>
         Future
           .sequence(

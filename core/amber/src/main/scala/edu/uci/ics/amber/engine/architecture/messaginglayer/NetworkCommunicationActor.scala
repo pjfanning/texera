@@ -8,12 +8,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  CreditRequest,
-  ResendOutputTo,
-  WorkflowControlMessage,
-  WorkflowMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{CreditRequest, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -143,8 +138,9 @@ class NetworkCommunicationActor(
     messageIDToIdentity(networkMessageID) = actorId
     val msgToSend = NetworkMessage(
       networkMessageID,
-      WorkflowControlMessage(
+      WorkflowFIFOMessage(
         actorId,
+        isData = false,
         nextSeqNumForMainActor,
         ControlInvocation(Backpressure(backpressureEnable))
       )

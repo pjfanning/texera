@@ -20,7 +20,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowControlMessage, WorkflowDataMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
@@ -93,25 +93,14 @@ class DataProcessor( // meta dependencies:
   private[processing] var operator: IOperatorExecutor = _
 
 
-  // TODO: get rid of accessing the variable below
-  @transient
-  @volatile
-  private[processing] var dataInputPort: NetworkInputPort[DataPayload] = _
-
-  @transient
-  @volatile
-  private[processing] var controlInputPort: NetworkInputPort[ControlPayload] = _
-
   def initialize(
-      operator: IOperatorExecutor, // core logic
-      currentOutputIterator: Iterator[(ITuple, Option[Int])],
-      internalQueue: WorkerInternalQueue,
-      logStorage: DeterminantLogStorage,
-      logManager: LogManager,
-      recoveryManager: LocalRecoveryManager,
-      actorContext: ActorContext,
-      dataInputPort: NetworkInputPort[DataPayload],
-      controlInputPort: NetworkInputPort[ControlPayload]
+                  operator: IOperatorExecutor, // core logic
+                  currentOutputIterator: Iterator[(ITuple, Option[Int])],
+                  internalQueue: WorkerInternalQueue,
+                  logStorage: DeterminantLogStorage,
+                  logManager: LogManager,
+                  recoveryManager: LocalRecoveryManager,
+                  actorContext: ActorContext
   ): Unit = {
     this.operator = operator
     this.outputIterator.setTupleOutput(currentOutputIterator)
@@ -123,48 +112,31 @@ class DataProcessor( // meta dependencies:
     this.pauseManager.initialize(this)
     this.epochManager.initialize(this)
     this.rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
-    this.dataInputPort = dataInputPort
-    this.controlInputPort = controlInputPort
-    this.dataOutputPort.resendMessages()
-    this.controlOutputPort.resendMessages()
   }
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
-  def outputDataPayload(
-      to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      seqNum: Long,
-      payload: DataPayload
-  ): Unit = {
-    val msg = WorkflowDataMessage(self, seqNum, payload)
-    logManager.sendCommitted(SendRequest(to, msg))
-  }
-
-  def outputControlPayload(
-      to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      seqNum: Long,
-      payload: ControlPayload
-  ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
+  def outputPayload(
+                         to: ActorVirtualIdentity,
+                         self: ActorVirtualIdentity,
+                         isData: Boolean,
+                         seqNum: Long,
+                         payload: WorkflowFIFOMessagePayload
+                       ): Unit = {
+    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
   // inner dependencies
-  // 1. Data Output
-  lazy private[processing] val dataOutputPort: NetworkOutputPort[DataPayload] =
-    new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
-  // 2. Control Output
-  lazy private[processing] val controlOutputPort: NetworkOutputPort[ControlPayload] = {
-    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
-  }
+  // 1. Unified data/control Output
+  lazy private[processing] val outputPort: NetworkOutputPort =
+    new NetworkOutputPort(this.actorId, this.outputPayload)
   // 3. RPC Layer
   lazy private[processing] val asyncRPCClient: AsyncRPCClient =
-    new AsyncRPCClient(controlOutputPort, actorId)
+    new AsyncRPCClient(outputPort, actorId)
   lazy private[processing] val asyncRPCServer: AsyncRPCServer =
-    new AsyncRPCServer(controlOutputPort, actorId)
+    new AsyncRPCServer(outputPort, actorId)
   // 4. pause manager
   lazy private[processing] val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
@@ -175,7 +147,7 @@ class DataProcessor( // meta dependencies:
   lazy private[processing] val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
   lazy private[processing] val outputManager: OutputManager =
-    new OutputManager(actorId, dataOutputPort)
+    new OutputManager(actorId, outputPort)
   // 9. epoch manager
   lazy private[processing] val epochManager: EpochManager = new EpochManager()
   // rpc handlers

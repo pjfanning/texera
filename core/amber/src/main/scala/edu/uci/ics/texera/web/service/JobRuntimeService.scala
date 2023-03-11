@@ -3,13 +3,9 @@ package edu.uci.ics.texera.web.service
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowRecoveryStatus, WorkflowReplayInfo}
-import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowCheckpointedEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowReplayCompletedEvent, WorkflowStateEvent}
@@ -102,9 +98,9 @@ class JobRuntimeService(
       val nextStep = planner.next()
       println(s"planner next step = ${nextStep}")
       nextStep match {
-        case ReplayPlanner.CheckpointCurrentState(cutoffMap) =>
+        case ReplayPlanner.CheckpointCurrentState(marker) =>
           client
-            .takeGlobalCheckpoint(cutoffMap)
+            .takeGlobalCheckpoint(marker)
             .onSuccess(ret => {
               val (chkptDelay, idx) = ret.asInstanceOf[(Double, Long)]
               checkpointOverhead += chkptDelay
@@ -129,18 +125,18 @@ class JobRuntimeService(
     }
   }
 
-  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
-    client
-      .takeGlobalCheckpoint(Map())
-      .onSuccess(idx => {
-        if (idx != -1) {
-          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)
-          if (res != -1) {
-            stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
-          }
-        }
-      })
-  }))
+//  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
+//    client
+//      .takeGlobalCheckpoint()
+//      .onSuccess(idx => {
+//        if (idx != -1) {
+//          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)
+//          if (res != -1) {
+//            stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
+//          }
+//        }
+//      })
+//  }))
 
   addSubscription(
     client

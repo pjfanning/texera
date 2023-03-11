@@ -1,9 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import java.util.concurrent.atomic.AtomicLong
+import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, SnapshotMarker, WorkflowFIFOMessagePayload}
 
+import java.util.concurrent.atomic.AtomicLong
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, SELF}
 
 import scala.collection.mutable
 
@@ -11,60 +12,33 @@ import scala.collection.mutable
   * NetworkOutput for generating sequence number when sending payloads
   * @param selfID ActorVirtualIdentity for the sender
   * @param handler actual sending logic
-  * @tparam T payload
   */
-class NetworkOutputPort[T](
+class NetworkOutputPort(
     selfID: ActorVirtualIdentity,
-    val handler: (ActorVirtualIdentity, ActorVirtualIdentity, Long, T) => Unit
+    val handler: (ActorVirtualIdentity, ActorVirtualIdentity, Boolean, Long, WorkflowFIFOMessagePayload) => Unit
 ) extends Serializable {
-  private val idToSequenceNums = new mutable.HashMap[ActorVirtualIdentity, AtomicLong]()
-  private val sentMessages = new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[(Long,T)]]()
+  private val idToSequenceNums = new mutable.HashMap[(ActorVirtualIdentity, Boolean), AtomicLong]()
 
-  def sendTo(to: ActorVirtualIdentity, payload: T): Unit = {
+  def sendTo(to: ActorVirtualIdentity, payload: WorkflowFIFOMessagePayload): Unit = {
     var receiverId = to
     if (to == SELF) {
       // selfID and VirtualIdentity.SELF should be one key
       receiverId = selfID
     }
-    val seqNum = idToSequenceNums.getOrElseUpdate(receiverId, new AtomicLong()).getAndIncrement()
-    if(!sentMessages.contains(to)){
-      sentMessages(to) = mutable.Queue[(Long,T)]()
-    }
-    sentMessages(to).enqueue((seqNum,payload))
-    handler(to, selfID, seqNum, payload)
+    val isData = payload.isInstanceOf[DataPayload]
+    val seqNum = idToSequenceNums.getOrElseUpdate((receiverId,isData), new AtomicLong()).getAndIncrement()
+    handler(to, selfID, isData, seqNum, payload)
   }
 
-  def getFIFOState:Map[ActorVirtualIdentity, Long] = idToSequenceNums.map(x => (x._1, x._2.get())).toMap
+  def getFIFOState:Map[(ActorVirtualIdentity, Boolean), Long] = idToSequenceNums.map(x => (x._1, x._2.get())).toMap
 
-  def clearSentMessages():Unit = {
-    sentMessages.clear()
-  }
-
-  def receiveWatermark(id:ActorVirtualIdentity, watermark:Long):Unit = {
-    if(sentMessages.contains(id)){
-      while(true){
-        sentMessages(id).headOption match {
-          case Some((seq, msg)) =>
-            if(seq < watermark){
-              sentMessages(id).dequeue()
-            } else{
-              return
-            }
-          case None => return
-        }
-      }
-    }
-  }
-
-  def resendMessages(exclude:Set[ActorVirtualIdentity] = Set()): Unit = {
-    sentMessages.foreach {
-      case (id, queue) =>
-        if(!exclude.contains(id)){
-          queue.foreach {
-            case (seq, msg) =>
-              handler(id, selfID, seq, msg)
-          }
+  def broadcastMarker(marker:SnapshotMarker): Unit ={
+    idToSequenceNums.foreach{
+      case (channelId, seq) =>
+        if(channelId._1 != CLIENT){
+          handler(channelId._1, selfID, channelId._2, seq.get(), marker)
         }
     }
   }
+
 }

@@ -61,13 +61,10 @@ class PythonWorkflowWorker(
   private lazy val clientThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private lazy val pythonProxyClient: PythonProxyClient =
     new PythonProxyClient(outputPortNum, actorId)
-  private lazy val dataOutputPort: NetworkOutputPort[DataPayload] =
-    new NetworkOutputPort[DataPayload](this.actorId, this.outputDataPayload)
-  private lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
-    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
-  }
+  private lazy val outputPort: NetworkOutputPort =
+    new NetworkOutputPort(this.actorId, this.outputPayload)
   private lazy val pythonProxyServer: PythonProxyServer =
-    new PythonProxyServer(inputPortNum, controlOutputPort, dataOutputPort, actorId)
+    new PythonProxyServer(inputPortNum, outputPort, actorId)
 
   val pythonSrcDirectory: Path = Utils.amberHomePath
     .resolve("src")
@@ -83,44 +80,35 @@ class PythonWorkflowWorker(
     Constants.unprocessedBatchesCreditLimitPerSender
   }
 
-  override def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
-    pythonProxyClient.enqueueData(DataElement(dataPayload, from))
-  }
-
-  override def handleControlPayload(
-      from: ActorVirtualIdentity,
-      controlPayload: ControlPayload
-  ): Unit = {
-    controlPayload match {
-      case ControlInvocation(_, c) =>
-        // TODO: Implement backpressure message handling for python worker
-        if (!c.isInstanceOf[Backpressure]) {
-          pythonProxyClient.enqueueCommand(controlPayload, from)
+  override def handlePayload(channelId:(ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload): Unit = {
+    val (from, _) = channelId
+    payload match {
+      case control: ControlPayload =>
+        control match {
+          case ControlInvocation(_, c) =>
+            // TODO: Implement backpressure message handling for python worker
+            if (!c.isInstanceOf[Backpressure]) {
+              pythonProxyClient.enqueueCommand(control, from)
+            }
+          case ReturnInvocation(_, _) =>
+            pythonProxyClient.enqueueCommand(control, from)
+          case _ =>
+            logger.error(s"unhandled control payload: $control")
         }
-      case ReturnInvocation(_, _) =>
-        pythonProxyClient.enqueueCommand(controlPayload, from)
-      case _ =>
-        logger.error(s"unhandled control payload: $controlPayload")
+      case data: DataPayload =>
+        pythonProxyClient.enqueueData(DataElement(data, from))
+      case _ => ???
     }
   }
 
-  def outputDataPayload(
+  def outputPayload(
       to: ActorVirtualIdentity,
       self: ActorVirtualIdentity,
+      isData: Boolean,
       seqNum: Long,
-      payload: DataPayload
+      payload: WorkflowFIFOMessagePayload
   ): Unit = {
-    val msg = WorkflowDataMessage(self, seqNum, payload)
-    logManager.sendCommitted(SendRequest(to, msg))
-  }
-
-  def outputControlPayload(
-      to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      seqNum: Long,
-      payload: ControlPayload
-  ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
+    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
