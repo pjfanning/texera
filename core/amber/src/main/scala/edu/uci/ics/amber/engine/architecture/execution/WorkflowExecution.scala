@@ -3,20 +3,17 @@ package edu.uci.ics.amber.engine.architecture.execution
 import akka.actor.Address
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerInfo
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.UNINITIALIZED
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
-class WorkflowExecution(@transient workflow: Workflow) {
+class WorkflowExecution(@transient workflow: Workflow, @transient val globalRecoveryManager: GlobalRecoveryManager) {
 
   private val linkExecutions: Map[LinkIdentity, LinkExecution] =
     workflow.physicalPlan.linkStrategies.map { link =>

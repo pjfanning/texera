@@ -282,9 +282,9 @@ class DataProcessor( // meta dependencies:
   private[this] def processInputTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
     determinantLogger.stepIncrement()
     currentInputTuple = tuple
-    if (operator.isInstanceOf[DNNOpExec]) {
-      logger.info(s"input $tuple at step = $totalValidStep")
-    }
+//    if (operator.isInstanceOf[DNNOpExec]) {
+//      logger.info(s"input $tuple at step = $totalValidStep")
+//    }
     try {
       outputIterator.setTupleOutput(
         operator.processTuple(
@@ -325,9 +325,9 @@ class DataProcessor( // meta dependencies:
     if (out == null) return
 
     val (outputTuple, outputPortOpt) = out
-    if (operator.isInstanceOf[DNNOpExec]) {
-      logger.info(s"output null = ${outputTuple == null} at step = $totalValidStep")
-    }
+//    if (operator.isInstanceOf[DNNOpExec]) {
+//      logger.info(s"output null = ${outputTuple == null} at step = $totalValidStep")
+//    }
 
     if (outputTuple == null) return
 

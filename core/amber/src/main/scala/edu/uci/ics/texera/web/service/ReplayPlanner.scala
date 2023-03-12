@@ -16,8 +16,8 @@ import scala.jdk.CollectionConverters.{asJavaIterableConverter, asScalaSetConver
 object ReplayPlanner {
 
   sealed trait PlannerStep
-  case class CheckpointCurrentState(cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends PlannerStep
-  case class ReplayExecution(restart: Boolean, conf: WorkflowStateRestoreConfig, fromIdx: Int)
+  case class CheckpointCurrentState(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends PlannerStep
+  case class ReplayExecution(conf: WorkflowStateRestoreConfig)
       extends PlannerStep
 
   def getLastGlobalCheckpoint(checkpoint: Map[Int, Set[ActorVirtualIdentity]], replayTo:Int): Int ={
@@ -52,7 +52,7 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
   private var checkpointed = Map(0 -> interactionHistory.getInteractions.last.getParticipants.toSet)
   private val stepsQueue = mutable.Queue[PlannerStep]()
   private var currentIdx = 999
-  private var targetIdx = 0
+  private var targetIdx = -1
 
   def hasNext: Boolean = {
     val res = stepsQueue.nonEmpty
@@ -62,15 +62,7 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
     res
   }
 
-  def next(): PlannerStep = {
-    val res = stepsQueue.dequeue()
-    res match {
-      case ReplayPlanner.CheckpointCurrentState(_) => //skip
-      case ReplayExecution(restart, conf, fromIdx) =>
-        currentIdx = fromIdx
-    }
-    res
-  }
+  def next(): PlannerStep = stepsQueue.dequeue()
 
   def getCheckpointIndex(controllerAlignment: Long): Int = {
     val interactionPointIdx =
@@ -78,23 +70,21 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
     interactionPointIdx - 1
   }
 
-  private def createRestore(fromCheckpoint: Int, replayTo: Int): WorkflowStateRestoreConfig = {
-    val controllerConf = StateRestoreConfig(
-      mkOptionForActor(CONTROLLER, fromCheckpoint),
-      mkOptionForActor(CONTROLLER, replayTo)
-    )
-    val workerConf = interactionHistory
-      .getInteraction(replayTo)
-      .getParticipants
-      .filter(_ != CONTROLLER)
-      .map { identity =>
-        identity -> StateRestoreConfig(
-          mkOptionForActor(identity, fromCheckpoint),
-          mkOptionForActor(identity, replayTo)
-        )
-      }
-      .toMap
-    WorkflowStateRestoreConfig(controllerConf, workerConf)
+
+  private def mkRestoreConfig(lastCheckpoint:Option[Map[Int, Set[ActorVirtualIdentity]]], targetIdx: Int): WorkflowStateRestoreConfig ={
+    val reverseMapping = lastCheckpoint match {
+      case Some(value) => interactionHistory.getCheckpointReverseMapping(value)
+      case None => Map[ActorVirtualIdentity, Int]()
+    }
+    val controllerChkpt = reverseMapping.get(CONTROLLER).flatMap(x => mkOptionForActor(CONTROLLER, x))
+    val controllerConf = StateRestoreConfig(controllerChkpt, mkOptionForActor(CONTROLLER, targetIdx))
+    val workersConf = interactionHistory.getInteraction(targetIdx).getParticipants.filter(x => x != CONTROLLER).map{
+      worker =>
+        val workerChkpt = reverseMapping.get(worker).flatMap(x => mkOptionForActor(worker, x))
+        val workerConf = StateRestoreConfig(workerChkpt, mkOptionForActor(worker, targetIdx))
+        worker -> workerConf
+    }.toMap
+    WorkflowStateRestoreConfig(controllerConf, workersConf)
   }
 
   private def mkOptionForActor(
@@ -110,62 +100,64 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
     }
     stepsQueue.clear()
     targetIdx = replayTo
-    val replayTimeThreshold = replayTimeLimit*1000
-
-    if(strategy.contains("Partial")){
-      strategy match{
+    val replayTimeThreshold = replayTimeLimit * 1000
+    if(targetIdx < currentIdx){
+      currentIdx = -1
+    }
+    val lastCheckpoint = getLastCheckpoint(checkpointed, replayTo, interactionHistory.getInteraction(replayTo).getParticipants.toSet).filter{
+      case (i, identities) =>
+        i > currentIdx
+    }
+    val startingPoint = if(lastCheckpoint.isEmpty){0}else{lastCheckpoint.keys.max}
+    val checkpointPlan = if (strategy.contains("Partial")) {
+      strategy match {
         case "Partial - naive" =>
+          partialIterativePlanner(replayTo, replayTimeThreshold)
         case "Partial - optimized" =>
+          Map[Int, Set[ActorVirtualIdentity]]()
         case other =>
           throw new RuntimeException("strategy does not match either naive or optimized method")
       }
-    }else{
-      val lastChkpt = getLastGlobalCheckpoint(checkpointed, replayTo)
-      var requireRestart = false
+    } else {
       var checkpointIndices = Set[Int]()
-      var startingPoint = currentIdx
-      if (replayTo >= currentIdx && lastChkpt <= currentIdx) {
-        println(s"planner output: continue replay to $replayTo")
-      } else {
-        println(s"planner output: restore state from $lastChkpt then replay to $replayTo")
-        requireRestart = true
-        startingPoint = lastChkpt
-      }
-      checkpointIndices = strategy match{
+      checkpointIndices = strategy match {
         case "Complete - all" =>
-          (startingPoint+1 to replayTo).toSet
-        case "Complete - naive"=>
+          (startingPoint + 1 to replayTo).toSet
+        case "Complete - naive" =>
           // iterative checkpoint
-           iterativePlanner(startingPoint, replayTo, replayTimeThreshold)
+          iterativePlanner(startingPoint, replayTo, replayTimeThreshold)
         case "Complete - optimized" =>
           dynamicProgrammingPlanner(startingPoint, replayTo, replayTimeThreshold)
         case other =>
           // no checkpoint case
           Set()
       }
-
-      println(interactionHistory)
-      println(s"output plan = $checkpointIndices")
-      println("---------------------------planner replay plan------------------------")
-      var cur = startingPoint
-      checkpointIndices.toSeq.sorted.foreach { toCheckpoint =>
-        println(s"replay from $cur to $toCheckpoint with restart = $requireRestart")
-        stepsQueue.enqueue(ReplayExecution(requireRestart, createRestore(cur, toCheckpoint), cur))
-        println(s"take checkpoint at $toCheckpoint")
-        stepsQueue.enqueue(CheckpointCurrentState(interactionHistory.computeGlobalCheckpointCutoff(toCheckpoint)))
-        checkpointed = checkpointed ++ completeCheckpointToPartialRepr(toCheckpoint)
-        cur = toCheckpoint
-        if (requireRestart) {
-          requireRestart = false
-        }
-      }
-      if (cur != replayTo || requireRestart) {
-        println(s"replay from $cur to $replayTo with restart = $requireRestart")
-        stepsQueue.enqueue(ReplayExecution(requireRestart, createRestore(cur, replayTo), cur))
-      }
-      println("---------------------------------------------------------------------")
+      mergeChoices(checkpointIndices)
     }
+    println("---------------------------planner replay plan------------------------")
+    var last = startingPoint
+    startingPoint+1 to replayTo foreach {
+      i =>
+        if(checkpointPlan.contains(i)){
+          val lastCheckpointOpt = if(last == startingPoint){Some(lastCheckpoint)}else{None}
+          val restoreConfig = mkRestoreConfig(lastCheckpointOpt, i)
+          println(s"replay from $last to $i restore plan = ${restoreConfig}")
+          stepsQueue.enqueue(ReplayExecution(restoreConfig))
+          println(s"take checkpoint at $i checkpoint operators = ${checkpointPlan(i)}")
+          stepsQueue.enqueue(CheckpointCurrentState(checkpointPlan(i), interactionHistory.computeLocalCheckpointCutoff(i, checkpointPlan(i), checkpointed)))
+          checkpointed = checkpointed + (i -> checkpointPlan(i))
+          last = i
+        }
+    }
+    if (last != replayTo || stepsQueue.isEmpty) {
+      val lastCheckpointOpt = (if(last == startingPoint){Some(lastCheckpoint)}else{None})
+      val restoreConfig = mkRestoreConfig(lastCheckpointOpt, replayTo)
+      println(s"replay from $last to $replayTo restore plan = ${restoreConfig}")
+      stepsQueue.enqueue(ReplayExecution(restoreConfig))
+    }
+    println("---------------------------------------------------------------------")
   }
+
 
 
   def completeCheckpointToPartialRepr(idx:Int):Map[Int,Set[ActorVirtualIdentity]] = {
@@ -289,11 +281,7 @@ class ReplayPlanner(interactionHistory: InteractionHistory) {
   def partialIterativePlanner(dest:Int, replayTimeThreshold:Int):Map[Int, Set[ActorVirtualIdentity]] = {
     val targets = interactionHistory.getInteraction(dest).getParticipants.toSet
     val lastCheckpoint = getLastCheckpoint(checkpointed, dest, targets)
-    val lastCheckpointMapping = mutable.HashMap[ActorVirtualIdentity, Int]()
-    lastCheckpoint.foreach{
-      case (i, identities) =>
-        identities.foreach(x => lastCheckpointMapping(x) = i)
-    }
+    val lastCheckpointMapping = interactionHistory.getCheckpointReverseMapping(lastCheckpoint)
     val result = mutable.HashMap[Int, mutable.HashSet[ActorVirtualIdentity]]()
     targets.foreach{
       id =>

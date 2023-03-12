@@ -11,4 +11,8 @@ object WorkflowStateRestoreConfig {
 case class WorkflowStateRestoreConfig(
     controllerConf: StateRestoreConfig,
     workerConfs: Map[ActorVirtualIdentity, StateRestoreConfig]
-)
+){
+  override def toString: String = {
+    s"\nCONTROLLER -> ${controllerConf}\n${workerConfs.mkString("\n")}"
+  }
+}

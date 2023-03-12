@@ -59,6 +59,7 @@ trait TakeCheckpointHandler {
       s"checkpoint stored for $actorId at alignment = ${dp.totalValidStep} size = ${msg.chkpt.size()} bytes"
     )
     // clear sent messages as we serialized them
+    // TODO: enable the following if we only save data between last alignment point and current point.
 //    dp.dataOutputPort.clearSentMessages()
 //    dp.controlOutputPort.clearSentMessages()
     // completion

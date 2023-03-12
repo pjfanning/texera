@@ -101,6 +101,8 @@ class WorkflowWorker(
     var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
     try {
       restoreConfig.fromCheckpoint match {
+        case None | Some(0) =>
+          inputQueue = new WorkerInternalQueueImpl(creditMonitor)
         case Some(alignment) =>
           val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
           logger.info("checkpoint found, start loading")
@@ -130,8 +132,6 @@ class WorkflowWorker(
           logger.info(
             s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
           )
-        case None =>
-          inputQueue = new WorkerInternalQueueImpl(creditMonitor)
       }
 
       // set replay
@@ -174,12 +174,15 @@ class WorkflowWorker(
             }
           )
           logger.info("set replay to " + replayTo)
-          queue.setReplayTo(replayTo)
+          queue.setReplayTo(replayTo, () => {
+            logger.info("replay completed!")
+            context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+          })
           recoveryManager.registerOnStart(() => {}
-          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
+            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
           )
           recoveryManager.setNotifyReplayCallback(() => {}
-          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+            // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
           )
           recoveryManager.Start()
           recoveryManager.registerOnEnd(() => {
@@ -230,9 +233,11 @@ class WorkflowWorker(
   def receiveAndProcessMessages: Receive =
     acceptInitializationMessage orElse acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
       case ReplaceRecoveryQueue(sync) =>
+        logger.info("replace recovery queue with normal queue")
         replaceRecoveryQueue()
         // unblock sync future on DP
         sync.complete(())
+        logger.info("replace queue done!")
       case WorkflowRecoveryMessage(from, TakeLocalCheckpoint(cutoffs)) =>
         val startTime = System.currentTimeMillis()
         val syncFuture = new CompletableFuture[Long]()
@@ -256,8 +261,12 @@ class WorkflowWorker(
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
         assert(inputQueue.isInstanceOf[RecoveryInternalQueueImpl])
-        inputQueue.asInstanceOf[RecoveryInternalQueueImpl].setReplayTo(index)
-        inputQueue.enqueueSystemCommand(NoOp())
+        logger.info("set replay to " + index)
+        inputQueue.asInstanceOf[RecoveryInternalQueueImpl].setReplayTo(index, () => {
+          logger.info("replay completed!")
+          context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
+        })
+        inputQueue.enqueueSystemCommand(NoOp()) //kick start replay process
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),

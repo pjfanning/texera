@@ -158,7 +158,8 @@ class WorkflowScheduler(
       networkCommunicationActor,
       ctx,
       execution.getOperatorExecution(operatorIdentity),
-      controllerConf
+      controllerConf,
+      execution.globalRecoveryManager
     )
   }
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {

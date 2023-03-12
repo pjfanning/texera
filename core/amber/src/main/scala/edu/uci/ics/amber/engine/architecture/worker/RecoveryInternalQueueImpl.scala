@@ -25,6 +25,8 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   @transient
   private var onRecoveryComplete: () => Unit = _
   @transient
+  private var onReplayComplete: () => Unit = _
+  @transient
   private var orderedQueue: LinkedBlockingQueue[InternalQueueElement] = _
 
   private val inputMapping = mutable
@@ -40,8 +42,9 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
 
   val registeredInputs = new mutable.HashSet[String]()
 
-  def setReplayTo(dest: Long): Unit = {
+  def setReplayTo(dest: Long, onReplayEnd: () => Unit): Unit = {
     replayTo = dest
+    onReplayComplete = onReplayEnd
   }
 
   def initialize(
@@ -145,9 +148,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
       if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
         loadDeterminant()
       }
-//      println(
-//        s"replayInfo: Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
-//      )
+      if(replayTo - currentStep < 100){
+        println(
+          s"replayInfo: replayTo = ${replayTo} Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
+        )
+      }
       if (step > 0) {
         step -= 1
         if (readInput) {
@@ -158,6 +163,14 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
       } else if (nextControlToEmit != null) {
         orderedQueue.put(nextControlToEmit)
         nextControlToEmit = null
+      }
+    }else{
+        println(
+          s"replayInfo: replayTo = ${replayTo} Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
+        )
+      if(onReplayComplete != null){
+        onReplayComplete()
+        onReplayComplete = null
       }
     }
   }

@@ -132,7 +132,8 @@ class ControllerProcessor extends AmberLogging with Serializable {
                 actorContext,
                 execution.getOperatorExecution(worker),
                 networkSender,
-                controllerConfig
+                controllerConfig,
+                globalRecoveryManager
               )
           }
           .map { ref =>
@@ -154,7 +155,6 @@ class ControllerProcessor extends AmberLogging with Serializable {
     new AsyncRPCClient(controlOutputPort, actorId)
   lazy private[processing] val asyncRPCServer: AsyncRPCServer =
     new AsyncRPCServer(controlOutputPort, actorId)
-  lazy val execution = new WorkflowExecution(workflow)
   lazy private[processing] val globalRecoveryManager: GlobalRecoveryManager =
     new GlobalRecoveryManager(
       () => {
@@ -166,6 +166,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
         asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
       }
     )
+  lazy val execution = new WorkflowExecution(workflow, globalRecoveryManager)
   lazy private[processing] val determinantLogger = logManager.getDeterminantLogger
   var isReplaying = false
   var numControlSteps = 0L
@@ -176,7 +177,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
   private val rpcInitializer = new ControllerAsyncRPCHandlerInitializer(this)
 
   def setReplayToAndStartReplay(targetStep: Long): Unit = {
-    globalRecoveryManager.markRecoveryStatus(actorId, isRecovering = true)
+    globalRecoveryManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
     this.replayToStep = targetStep
     isReplaying = true
     rpcInitializer.suppressStatusUpdate = true
@@ -251,12 +252,13 @@ class ControllerProcessor extends AmberLogging with Serializable {
       from: ActorVirtualIdentity,
       controlPayload: ControlPayload
   ): Unit = {
-    if (from == CLIENT || from == SELF || from == actorId) {
-      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
-    } else {
-      //logger.info("only save sender information for "+ controlPayload+" from "+from)
-      determinantLogger.logDeterminant(StepDelta(from, 0))
-    }
+    determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
+//    if (from == CLIENT || from == SELF || from == actorId) {
+//      determinantLogger.logDeterminant(ProcessControlMessage(controlPayload, from))
+//    } else {
+//      //logger.info("only save sender information for "+ controlPayload+" from "+from)
+//      determinantLogger.logDeterminant(StepDelta(from, 0))
+//    }
     numControlSteps += 1
     controlPayload match {
       // use control input port to pass control messages
@@ -283,15 +285,11 @@ class ControllerProcessor extends AmberLogging with Serializable {
   def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
-      case TakeGlobalCheckpoint(cutoffMap) =>
+      case TakeGlobalCheckpoint(involved, cutoffMap) =>
         logger.info("start to take global checkpoint")
-        // save output messages first
         val startTime = System.currentTimeMillis()
-        val chkpt = new SavedCheckpoint()
-        chkpt.attachSerialization(serialization)
-        chkpt.save("fifoState", controlInput.getFIFOState)
         // follow topological order
-        val runningWorkers = execution.getAllWorkers.toSet
+        val runningWorkers = execution.getAllWorkers.toSet.intersect(involved)
         Await.result(Future.sequence(runningWorkers.map{
           worker =>
           logger.info(s"start to ask $worker to checkpoint")
@@ -308,14 +306,17 @@ class ControllerProcessor extends AmberLogging with Serializable {
                 }
             }
         }), 60.seconds)
+//        val chkpt = new SavedCheckpoint()
+//        chkpt.attachSerialization(serialization)
+//        chkpt.save("fifoState", controlInput.getFIFOState)
         // finalize checkpoint
-        chkpt.save("controlState", this)
-        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
+        // chkpt.save("controlState", this)
+        // CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt, false)
+//        logger.info(
+//          s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
+//        )
         logger.info(
-          s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
-        )
-        logger.info(
-          s"global checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000d}s"
+          s"checkpoint request completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000d}s"
         )
         actorContext.sender() ! ((System.currentTimeMillis() - startTime) / 1000d, numControlSteps)
       case GetOperatorInternalState() =>
@@ -330,14 +331,32 @@ class ControllerProcessor extends AmberLogging with Serializable {
           })
       case ContinueReplay(conf) =>
         controllerConfig.stateRestoreConfig = conf
+        val futures = mutable.ArrayBuffer[Future[Any]]()
         execution.getAllWorkers
           .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-          .foreach(info =>
-            info.ref ! WorkflowRecoveryMessage(
-              actorId,
-              ContinueReplayTo(conf.workerConfs(info.id).replayTo.get)
-            )
-          )
+          .foreach(info =>{
+            if(conf.workerConfs(info.id).fromCheckpoint.isDefined){
+              info.ref ! PoisonPill
+              futures.append(workflow
+                .getOperator(info.id)
+                .buildWorker(
+                  info.id,
+                  AddressInfo(availableNodes, actorContext.self.path.address),
+                  actorContext,
+                  execution.getOperatorExecution(info.id),
+                  networkSender,
+                  controllerConfig,
+                  globalRecoveryManager
+                ) ? CheckInitialized())
+            }else{
+              globalRecoveryManager.markRecoveryStatus(info.id, isRecovering = true)
+              info.ref ! WorkflowRecoveryMessage(
+                actorId,
+                ContinueReplayTo(conf.workerConfs(info.id).replayTo.get)
+              )
+            }
+          })
+        Await.result(Future.sequence(futures), 600.seconds)
         setReplayToAndStartReplay(conf.controllerConf.replayTo.get)
       case UpdateRecoveryStatus(isRecovering) =>
         logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
@@ -375,7 +394,8 @@ class ControllerProcessor extends AmberLogging with Serializable {
               actorContext,
               execution.getOperatorExecution(info.id),
               networkSender,
-              controllerConfig
+              controllerConfig,
+              globalRecoveryManager
             )
           logger.info("Global Recovery: respawn " + info.id)
           val vidSet = infoIter.map(_.id).toSet

@@ -9,10 +9,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{
-  GetMessageInQueueSync,
-  SendRequest
-}
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 import java.util.concurrent.CompletableFuture
 import scala.concurrent.Await

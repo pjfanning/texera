@@ -5,40 +5,17 @@ import akka.remote.RemoteScope
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
-  AddressInfo,
-  LocationPreference,
-  PreferController,
-  RoundRobinPreference
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.worker.{StateRestoreConfig, WorkflowWorker}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
-import edu.uci.ics.amber.engine.common.{
-  Constants,
-  IOperatorExecutor,
-  ISinkOperatorExecutor,
-  ISourceOperatorExecutor
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISinkOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
@@ -268,7 +245,8 @@ case class OpExecConfig(
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       context: ActorContext,
       opExecution: OperatorExecution,
-      controllerConf: ControllerConfig
+      controllerConf: ControllerConfig,
+      globalRecoveryManager: GlobalRecoveryManager
   ): Unit = {
     (0 until numWorkers)
       .foreach(i => {
@@ -279,7 +257,8 @@ case class OpExecConfig(
           context,
           opExecution,
           parentNetworkCommunicationActorRef,
-          controllerConf
+          controllerConf,
+          globalRecoveryManager
         )
       })
   }
@@ -290,7 +269,8 @@ case class OpExecConfig(
       context: ActorContext,
       opExecution: OperatorExecution,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      controllerConf: ControllerConfig
+      controllerConf: ControllerConfig,
+      globalRecoveryManager: GlobalRecoveryManager,
   ): ActorRef = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
@@ -305,6 +285,7 @@ case class OpExecConfig(
         parentNetworkCommunicationActorRef,
         controllerConf.supportFaultTolerance,
         if (controllerConf.stateRestoreConfig.workerConfs.contains(workerId)) {
+          globalRecoveryManager.markRecoveryStatus(workerId, isRecovering = true)
           controllerConf.stateRestoreConfig.workerConfs(workerId)
         } else {
           StateRestoreConfig(None, None)

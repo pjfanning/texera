@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class Interaction extends Serializable{
+class Interaction(initialState:Boolean = false) extends Serializable{
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ReplayAlignmentInfo]()
 
@@ -41,21 +41,41 @@ class Interaction extends Serializable{
   }
 
   def getBusyTime(id:ActorVirtualIdentity): Option[Long] = {
+    if(initialState){
+      return Some(0)
+    }
     participants.get(id).map(x => x.processedTime)
   }
 
-  def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] =
+  def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] = {
+    if(initialState){
+      return Some(0)
+    }
     participants.get(id).map(x => x.estimatedCheckpointTime)
+  }
 
   def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys
 
-  def getAlignment(id: ActorVirtualIdentity): Option[Long] =
+  def getAlignment(id: ActorVirtualIdentity): Option[Long] = {
+    if(initialState){
+      return Some(0)
+    }
     participants.get(id).map(x => x.alignment)
+  }
 
-  def getLoadCost(id: ActorVirtualIdentity): Option[Long] =
+  def getLoadCost(id: ActorVirtualIdentity): Option[Long] = {
+    if(initialState){
+      return Some(0)
+    }
     participants.get(id).map(x => x.estimatedLoadTime)
+  }
 
-  def getTotalLoadCost: Long =  participants.values.map(_.estimatedLoadTime).sum
+  def getTotalLoadCost: Long =  {
+    if(initialState){
+      return 0
+    }
+    participants.values.map(_.estimatedLoadTime).sum
+  }
 
   def getAlignmentMap: Map[ActorVirtualIdentity, Long] =
     participants.map(x => x._1 -> x._2.alignment).toMap

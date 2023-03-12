@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 class InteractionHistory extends Serializable {
 
-  private val history = mutable.ArrayBuffer[Interaction](new Interaction())
+  private val history = mutable.ArrayBuffer[Interaction](new Interaction(true))
   private val timestamps = mutable.ArrayBuffer[Long](0)
   private val completions = mutable.HashMap[ActorVirtualIdentity, Long]()
 
@@ -30,13 +30,18 @@ class InteractionHistory extends Serializable {
     interaction.allReceiverChannelStates
   }
 
-  def computeLocalCheckpointCutoff(idx: Int, toCheckpoint:Set[ActorVirtualIdentity], checkpoints: Map[Int, Set[ActorVirtualIdentity]]):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
-    val lastCheckpoint = ReplayPlanner.getLastCheckpoint(checkpoints, idx, toCheckpoint)
+  def getCheckpointReverseMapping(checkpointMapping: Map[Int, Set[ActorVirtualIdentity]]): Map[ActorVirtualIdentity, Int] ={
     val lastCheckpointMapping = mutable.HashMap[ActorVirtualIdentity, Int]()
-    lastCheckpoint.foreach{
+    checkpointMapping.foreach{
       case (i, identities) =>
         identities.foreach(x => lastCheckpointMapping(x) = i)
     }
+    lastCheckpointMapping.toMap
+  }
+
+  def computeLocalCheckpointCutoff(idx: Int, toCheckpoint:Set[ActorVirtualIdentity], checkpoints: Map[Int, Set[ActorVirtualIdentity]]):Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] = {
+    val lastCheckpoint = ReplayPlanner.getLastCheckpoint(checkpoints, idx, toCheckpoint)
+    val lastCheckpointMapping = getCheckpointReverseMapping(lastCheckpoint)
     val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
     toCheckpoint.foreach {
       worker =>

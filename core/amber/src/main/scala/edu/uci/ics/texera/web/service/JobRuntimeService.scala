@@ -102,9 +102,9 @@ class JobRuntimeService(
       val nextStep = planner.next()
       println(s"planner next step = ${nextStep}")
       nextStep match {
-        case ReplayPlanner.CheckpointCurrentState(cutoffMap) =>
+        case ReplayPlanner.CheckpointCurrentState(involved, cutoffMap) =>
           client
-            .takeGlobalCheckpoint(cutoffMap)
+            .takeGlobalCheckpoint(involved, cutoffMap)
             .onSuccess(ret => {
               val (chkptDelay, idx) = ret.asInstanceOf[(Double, Long)]
               checkpointOverhead += chkptDelay
@@ -116,7 +116,7 @@ class JobRuntimeService(
               }
               plannerNextStep()
             })
-        case r @ ReplayPlanner.ReplayExecution(_, _, _) =>
+        case r @ ReplayPlanner.ReplayExecution(_) =>
           client.replayExecution(r)
       }
     } else {
@@ -129,18 +129,18 @@ class JobRuntimeService(
     }
   }
 
-  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
-    client
-      .takeGlobalCheckpoint(Map())
-      .onSuccess(idx => {
-        if (idx != -1) {
-          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)
-          if (res != -1) {
-            stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
-          }
-        }
-      })
-  }))
+//  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
+//    client
+//      .takeGlobalCheckpoint(Map())
+//      .onSuccess(idx => {
+//        if (idx != -1) {
+//          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)
+//          if (res != -1) {
+//            stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
+//          }
+//        }
+//      })
+//  }))
 
   addSubscription(
     client

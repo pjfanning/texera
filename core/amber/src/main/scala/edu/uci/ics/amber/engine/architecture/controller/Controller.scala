@@ -150,6 +150,12 @@ class Controller(
   override def receive: Receive = {
     // load from checkpoint if available
     controllerConfig.stateRestoreConfig.controllerConf.fromCheckpoint match {
+      case None | Some(0) =>
+        controllerProcessor = new ControllerProcessor()
+        controlInputPort = new NetworkInputPort[ControlPayload](
+          this.actorId,
+          controllerProcessor.handleControlPayloadOuter
+        )
       case Some(chkptAlignment) =>
         logger.info("checkpoint found, start loading")
         val chkpt = CheckpointHolder.getCheckpoint(CONTROLLER, chkptAlignment)
@@ -164,12 +170,6 @@ class Controller(
         controlInputPort.setFIFOState(chkpt.load("fifoState"))
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000d}s"
-        )
-      case None =>
-        controllerProcessor = new ControllerProcessor()
-        controlInputPort = new NetworkInputPort[ControlPayload](
-          this.actorId,
-          controllerProcessor.handleControlPayloadOuter
         )
     }
 

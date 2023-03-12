@@ -100,7 +100,7 @@ class AmberClient(
   def replayExecution(step: ReplayExecution): Unit = {
     if (isActive) {
       println(s"received replay request conf = ${step.conf}")
-      if (!step.restart) {
+      if (step.conf.controllerConf.fromCheckpoint.isEmpty) {
         println(s"replay request can use the current workflow state")
         clientActor ! WorkflowRecoveryMessage(CLIENT, ContinueReplay(step.conf))
       } else {
@@ -111,9 +111,9 @@ class AmberClient(
     }
   }
 
-  def takeGlobalCheckpoint(cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]): Future[Any] = {
+  def takeGlobalCheckpoint(involved: Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]): Future[Any] = {
     if (isActive) {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(cutoffMap))).asTwitter()
+      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(involved, cutoffMap))).asTwitter()
     } else {
       Future(-1)
     }
