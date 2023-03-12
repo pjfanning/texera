@@ -16,9 +16,11 @@ class InteractionHistory extends Serializable {
     completions(id) = completion
   }
 
-  def addInteraction(time: Long, interaction: Interaction): Unit = {
+  def addInteraction(time: Long, interaction: Interaction): Int = {
+    val idx = timestamps.size
     timestamps.append(time)
     history.append(interaction)
+    idx
   }
 
   def findInteractionIdx(id: ActorVirtualIdentity, alignment: Long): Int = {

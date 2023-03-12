@@ -20,8 +20,7 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ControlPayload,
-  ResendOutputTo,
-  WorkflowControlMessage
+  ResendOutputTo
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 

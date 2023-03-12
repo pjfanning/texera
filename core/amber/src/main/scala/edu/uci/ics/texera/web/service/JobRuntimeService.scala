@@ -3,13 +3,9 @@ package edu.uci.ics.texera.web.service
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowRecoveryStatus, WorkflowReplayInfo}
-import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowCheckpointedEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowReplayCompletedEvent, WorkflowStateEvent}
@@ -131,7 +127,7 @@ class JobRuntimeService(
 
 //  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
 //    client
-//      .takeGlobalCheckpoint(Map())
+//      .takeGlobalCheckpoint()
 //      .onSuccess(idx => {
 //        if (idx != -1) {
 //          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)

@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LayerIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-sealed trait DataPayload extends Serializable {}
+sealed trait DataPayload extends WorkflowFIFOMessagePayload {}
 
 final case class EpochMarker(
     id: String,

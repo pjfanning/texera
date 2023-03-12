@@ -4,18 +4,16 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.common.Interaction
-import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.CollectAlignmentInformationHandler.CollectAlignmentInformation
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler.GetReplayAlignment
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats}
+import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import scala.collection.mutable
 
@@ -69,14 +67,18 @@ trait PauseHandler {
             }
         }.toSeq)
         .map { ret =>
-          execute(CollectAlignmentInformation(), CONTROLLER)
-            .map { ret =>
-              // update frontend workflow status
-              sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
-              // send paused to frontend
-              sendToClient(WorkflowPaused())
-              workflowPauseStartTime = System.currentTimeMillis()
-            }
+          // update frontend workflow status
+          sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
+          // send paused to frontend
+          sendToClient(WorkflowPaused())
+          workflowPauseStartTime = System.currentTimeMillis()
+          if(!cp.isReplaying){
+            val time = (System.currentTimeMillis() - workflowStartTimeStamp)
+            val interaction = new Interaction()
+            val markerId = cp.interactionHistory.addInteraction(time, interaction)
+            interaction.addParticipant(CONTROLLER, CheckpointStats(markerId, InitialCheckpointStats(cp.numControlSteps, 0,0,0),0,0,0, true))
+            cp.processRecoveryMessage(WorkflowRecoveryMessage(SELF, TakeGlobalCheckpoint(SnapshotMarker(markerId, true, cp.execution.getAllWorkers.toSet))))
+          }
         }
         .unit
     }

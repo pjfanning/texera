@@ -3,13 +3,9 @@ package edu.uci.ics.amber.engine.common.rpc
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipConsoleLog,
-  SkipReply
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 /** Motivation of having a separate module to handle control messages as RPCs:
@@ -43,7 +39,7 @@ object AsyncRPCServer {
 }
 
 class AsyncRPCServer(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    controlOutputEndpoint: NetworkOutputPort,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
@@ -99,8 +95,10 @@ class AsyncRPCServer(
     if (!control.command.isInstanceOf[SkipReply]) {
       controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret))
     } else {
-      if (ret.isInstanceOf[Throwable]) {
-        throw ret.asInstanceOf[Throwable]
+      ret match {
+        case throwable: Throwable =>
+          throw throwable
+        case _ => //skip
       }
     }
   }

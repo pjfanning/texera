@@ -8,14 +8,15 @@ class SavedCheckpoint {
 
   private val states = new mutable.HashMap[String, SerializedState]()
 
+  var prevCheckpoint: Option[Long] = None
+  var pointerToCompletion: Option[Long] = None
+
   @transient
   private var serde: Serialization = _
 
   def attachSerialization(serialization: Serialization): Unit = {
     serde = serialization
   }
-
-  var pointerToCompletion: Option[Long] = None
 
   def save[T <: Any](key: String, state: T): Unit = {
     states(key) = SerializedState.fromObject(state.asInstanceOf[AnyRef], serde)

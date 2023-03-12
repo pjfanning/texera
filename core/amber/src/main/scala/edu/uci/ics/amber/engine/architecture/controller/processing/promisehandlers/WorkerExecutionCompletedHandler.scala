@@ -6,8 +6,8 @@ import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.common.Interaction
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.CollectAlignmentInformationHandler.CollectAlignmentInformation
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -37,7 +37,7 @@ trait WorkerExecutionCompletedHandler {
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion
-      interactionHistory.addCompletion(sender, msg.currentStep)
+      cp.interactionHistory.addCompletion(sender, msg.currentStep)
       val statsRequests = new mutable.MutableList[Future[Unit]]()
       statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender))), CONTROLLER)
 
@@ -46,16 +46,14 @@ trait WorkerExecutionCompletedHandler {
         .flatMap(_ => {
           // if entire workflow is completed, clean up
           if (cp.execution.isCompleted) {
-            execute(CollectAlignmentInformation(), CONTROLLER).map{
-              ret =>
-                // after query result come back: send completed event, cleanup ,and kill workflow
-                sendToClient(WorkflowReplayInfo(interactionHistory))
-                sendToClient(WorkflowCompleted())
-                disableStatusUpdate()
-                disableMonitoring()
-                disableSkewHandling()
-                println("workflow completed!!!!!!!!!!!!!!")
-            }
+            // after query result come back: send completed event, cleanup ,and kill workflow
+            sendToClient(WorkflowReplayInfo(cp.interactionHistory))
+            sendToClient(WorkflowCompleted())
+            disableStatusUpdate()
+            disableMonitoring()
+            disableSkewHandling()
+            println("workflow completed!!!!!!!!!!!!!!")
+            Future.Unit
           } else {
             cp.scheduler.onWorkerCompletion(sender, cp.availableNodes).flatMap(_ => Future.Unit)
           }

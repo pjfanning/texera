@@ -16,8 +16,7 @@ import org.apache.arrow.util.AutoCloseables
 import scala.collection.mutable
 
 private class AmberProducer(
-    controlOutputPort: NetworkOutputPort[ControlPayload],
-    dataOutputPort: NetworkOutputPort[DataPayload]
+    outputPort: NetworkOutputPort
 ) extends NoOpFlightProducer {
 
   override def doAction(
@@ -30,13 +29,13 @@ private class AmberProducer(
         val pythonControlMessage = PythonControlMessage.parseFrom(action.getBody)
         pythonControlMessage.payload match {
           case returnInvocation: ReturnInvocationV2 =>
-            controlOutputPort.sendTo(
+            outputPort.sendTo(
               to = pythonControlMessage.tag,
               payload = returnInvocationToV1(returnInvocation)
             )
 
           case controlInvocation: ControlInvocationV2 =>
-            controlOutputPort.sendTo(
+            outputPort.sendTo(
               to = pythonControlMessage.tag,
               payload = controlInvocationToV1(controlInvocation)
             )
@@ -73,13 +72,13 @@ private class AmberProducer(
     if (isEnd) {
       // EndOfUpstream
       assert(root.getRowCount == 0)
-      dataOutputPort.sendTo(to, EndOfUpstream())
+      outputPort.sendTo(to, EndOfUpstream())
     } else {
       // normal data batches
       val queue = mutable.Queue[Tuple]()
       for (i <- 0 until root.getRowCount)
         queue.enqueue(ArrowUtils.getTexeraTuple(i, root))
-      dataOutputPort.sendTo(to, DataFrame(queue.toArray))
+      outputPort.sendTo(to, DataFrame(queue.toArray))
 
     }
 
@@ -89,8 +88,7 @@ private class AmberProducer(
 
 class PythonProxyServer(
     portNumber: Int,
-    controlOutputPort: NetworkOutputPort[ControlPayload],
-    dataOutputPort: NetworkOutputPort[DataPayload],
+    outputPort: NetworkOutputPort,
     val actorId: ActorVirtualIdentity
 ) extends Runnable
     with AutoCloseable
@@ -99,7 +97,7 @@ class PythonProxyServer(
   val allocator: BufferAllocator =
     new RootAllocator().newChildAllocator("flight-server", 0, Long.MaxValue);
   val location: Location = Location.forGrpcInsecure("localhost", portNumber)
-  val producer: FlightProducer = new AmberProducer(controlOutputPort, dataOutputPort)
+  val producer: FlightProducer = new AmberProducer(outputPort)
   val server: FlightServer = FlightServer.builder(allocator, location, producer).build()
 
   override def run(): Unit = {

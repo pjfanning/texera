@@ -6,21 +6,9 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkAck,
-  NetworkMessage
-}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  TakeGlobalCheckpoint,
-  WorkflowControlMessage,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{TakeGlobalCheckpoint, WorkflowFIFOMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -66,7 +54,7 @@ private[client] class ClientActor extends Actor {
       sender ! scala.runtime.BoxedUnit.UNIT
     case NetworkMessage(
           mId,
-          _ @WorkflowControlMessage(_, _, _ @ReturnInvocation(originalCommandID, controlReturn))
+          _ @WorkflowFIFOMessage(_, _, _, _ @ReturnInvocation(originalCommandID, controlReturn))
         ) =>
       sender ! NetworkAck(mId)
       if (handlers.isDefinedAt(controlReturn)) {
@@ -81,7 +69,7 @@ private[client] class ClientActor extends Actor {
         }
         promiseMap.remove(originalCommandID)
       }
-    case NetworkMessage(mId, _ @WorkflowControlMessage(_, _, _ @ControlInvocation(_, command))) =>
+    case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _, _ @ControlInvocation(_, command))) =>
       sender ! NetworkAck(mId)
       if (handlers.isDefinedAt(command)) {
         handlers(command)

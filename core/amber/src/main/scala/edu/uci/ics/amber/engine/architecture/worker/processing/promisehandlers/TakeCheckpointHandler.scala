@@ -1,24 +1,32 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
-import akka.serialization.Serialization
-import com.twitter.util.Future
+import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import TakeCheckpointHandler.TakeCheckpoint
+import TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats, StartCheckpoint}
+import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.CheckpointSupport
+import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(
-      cutoffs: Map[ActorVirtualIdentity, Long],
-      chkpt: SavedCheckpoint,
-      completion: CompletableFuture[Long]
-  ) extends ControlCommand[Unit]
+
+  final case class CheckpointStats(
+                                    checkpointId: Long,
+                                    initialCheckpointStats: InitialCheckpointStats,
+                                    inputAlignmentTime: Long,
+                                    saveUnprocessedInputTime: Long,
+                                    totalSize: Long, isEstimation: Boolean)
+
+  final case class InitialCheckpointStats(alignment: Long, processedTime: Long, checkpointStateTime: Long, saveProcessedInputTime: Long)
+
+  final case class StartCheckpoint(marker: SnapshotMarker,
+                                   chkpt:SavedCheckpoint,
+                                   syncFuture: CompletableFuture[InitialCheckpointStats])
+    extends ControlCommand[Unit]
       with SkipFaultTolerance
       with SkipReply
 }
@@ -66,4 +74,6 @@ trait TakeCheckpointHandler {
     msg.completion.complete(dp.totalValidStep)
     Future.Unit
   }
+
+
 }

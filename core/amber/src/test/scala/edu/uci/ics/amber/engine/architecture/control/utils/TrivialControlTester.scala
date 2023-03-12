@@ -4,19 +4,11 @@ import akka.actor.ActorRef
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkMessage,
-  NetworkSenderActorRef
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
@@ -25,20 +17,21 @@ class TrivialControlTester(
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(id, parentNetworkCommunicationActorRef, false) {
 
-  lazy val controlInputPort: NetworkInputPort[ControlPayload] =
-    new NetworkInputPort[ControlPayload](id, this.handleControlPayloadWithTryCatch)
+  lazy val controlInputPort: NetworkInputPort =
+    new NetworkInputPort(id, this.handleControlPayloadWithTryCatch)
 
   def outputControlPayload(
       to: ActorVirtualIdentity,
       self: ActorVirtualIdentity,
+      isData:Boolean,
       seqNum: Long,
-      payload: ControlPayload
+      payload: WorkflowFIFOMessagePayload
   ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
+    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
-  lazy val controlOutputPort: NetworkOutputPort[ControlPayload] = {
-    new NetworkOutputPort[ControlPayload](this.actorId, this.outputControlPayload)
+  lazy val controlOutputPort: NetworkOutputPort= {
+    new NetworkOutputPort(this.actorId, this.outputControlPayload)
   }
 
   val asyncRPCServer: AsyncRPCServer = wire[AsyncRPCServer]
@@ -48,17 +41,11 @@ class TrivialControlTester(
     disallowActorRefRelatedMessages orElse {
       case NetworkMessage(
             id,
-            internalMessage @ WorkflowControlMessage(from, sequenceNumber, payload)
+            internalMessage:WorkflowFIFOMessage
           ) =>
         logger.info(s"received $internalMessage")
-        this.controlInputPort.handleMessage(
-          this.sender(),
-          Constants.unprocessedBatchesCreditLimitPerSender,
-          id,
-          from,
-          sequenceNumber,
-          payload
-        )
+        sender ! NetworkAck(id, Some(1000))
+        this.controlInputPort.handleMessage(internalMessage)
       case other =>
         logger.info(s"unhandled message: $other")
     }
@@ -70,9 +57,10 @@ class TrivialControlTester(
   }
 
   def handleControlPayloadWithTryCatch(
-      from: ActorVirtualIdentity,
-      controlPayload: ControlPayload
+      channelId: (ActorVirtualIdentity, Boolean),
+      controlPayload: WorkflowFIFOMessagePayload
   ): Unit = {
+    val (from, _) = channelId
     try {
       controlPayload match {
         // use control input port to pass control messages

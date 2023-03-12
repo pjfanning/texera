@@ -37,23 +37,35 @@ object CheckpointHolder {
     }
   }
 
+  def findLastCheckpointOf(id: ActorVirtualIdentity): Option[Long] = {
+    if (checkpoints.contains(id)) {
+      Try(
+        checkpoints(id).maxBy(_._1)._1
+      ).toOption
+    } else {
+      None
+    }
+  }
+
   def hasMarkedCompletion(id: ActorVirtualIdentity, alignment: Long): Boolean = {
     completion.contains(id) && completion(id) < alignment
+  }
+
+  def markCompletion(id:ActorVirtualIdentity, alignment: Long):Unit = {
+    if (!completion.contains(id)) {
+      completion(id) = alignment
+    }
   }
 
   def addCheckpoint(
       id: ActorVirtualIdentity,
       alignment: Long,
-      checkpoint: SavedCheckpoint,
-      markCompletion: Boolean
+      checkpoint: SavedCheckpoint
   ): Unit = {
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
     if (hasMarkedCompletion(id, alignment)) {
       checkpoint.pointerToCompletion = Some(completion(id))
-    }
-    if (markCompletion && !completion.contains(id)) {
-      completion(id) = alignment
     }
   }
 }

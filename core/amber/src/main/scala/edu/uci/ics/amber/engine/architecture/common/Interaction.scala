@@ -1,57 +1,33 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.GetReplayAlignmentHandler.ReplayAlignmentInfo
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
 class Interaction(initialState:Boolean = false) extends Serializable{
 
-  private val participants = mutable.HashMap[ActorVirtualIdentity, ReplayAlignmentInfo]()
+  private val participants = mutable.HashMap[ActorVirtualIdentity, CheckpointStats]()
 
   def addParticipant(
       id: ActorVirtualIdentity,
-      info: ReplayAlignmentInfo
+      info: CheckpointStats
   ): Unit = {
     participants(id) = info
-  }
-
-  lazy val allSenderChannelStates:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity,Long]] = {
-    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
-    participants.foreach{
-      case (src, info) =>
-        info.outputWatermarks.foreach{
-          case (dst, sent) =>
-            result.getOrElseUpdate(src, new mutable.HashMap[ActorVirtualIdentity, Long])(dst) = sent
-        }
-    }
-    result.mapValues(_.toMap).toMap
-  }
-
-  lazy val allReceiverChannelStates: Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]] ={
-    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[ActorVirtualIdentity, Long]]()
-    participants.foreach{
-      case (dst, info) =>
-        info.inputWatermarks.foreach{
-          case (src, received) =>
-            result.getOrElseUpdate(src, new mutable.HashMap[ActorVirtualIdentity, Long])(dst) = received
-        }
-    }
-    result.mapValues(_.toMap).toMap
   }
 
   def getBusyTime(id:ActorVirtualIdentity): Option[Long] = {
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.processedTime)
+    participants.get(id).map(x => x.initialCheckpointStats.processedTime)
   }
 
   def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] = {
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.estimatedCheckpointTime)
+    participants.get(id).map(x => x.initialCheckpointStats.checkpointStateTime + x.inputAlignmentTime)
   }
 
   def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys
@@ -60,28 +36,28 @@ class Interaction(initialState:Boolean = false) extends Serializable{
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.alignment)
+    participants.get(id).map(x => x.initialCheckpointStats.alignment)
   }
 
   def getLoadCost(id: ActorVirtualIdentity): Option[Long] = {
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.estimatedLoadTime)
+    participants.get(id).map(x => 0)
   }
 
   def getTotalLoadCost: Long =  {
     if(initialState){
       return 0
     }
-    participants.values.map(_.estimatedLoadTime).sum
+    participants.values.map(x => 0).sum
   }
 
   def getAlignmentMap: Map[ActorVirtualIdentity, Long] =
-    participants.map(x => x._1 -> x._2.alignment).toMap
+    participants.map(x => x._1 -> x._2.initialCheckpointStats.alignment).toMap
 
   def containsAlignment(id: ActorVirtualIdentity, alignment: Long): Boolean = {
-    participants.contains(id) && participants(id).alignment == alignment
+    participants.contains(id) && participants(id).initialCheckpointStats.alignment == alignment
   }
 
   override def toString: String = {
@@ -89,11 +65,11 @@ class Interaction(initialState:Boolean = false) extends Serializable{
     for (p <- participants) {
       val info = p._2
       sb.append(p._1 + ": alignment = ")
-      sb.append(info.alignment)
+      sb.append(info.initialCheckpointStats.alignment)
       sb.append(" save cost = ")
-      sb.append(info.estimatedCheckpointTime)
+      sb.append(info.initialCheckpointStats.checkpointStateTime)
       sb.append(" load cost = ")
-      sb.append(info.estimatedLoadTime)
+      sb.append(0)
       sb.append("\n")
     }
     sb.toString()

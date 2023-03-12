@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import akka.actor.{ActorRef, Address}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 sealed trait RecoveryPayload extends Serializable {}

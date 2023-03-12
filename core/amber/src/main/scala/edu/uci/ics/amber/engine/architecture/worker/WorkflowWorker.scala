@@ -5,22 +5,24 @@ import akka.pattern.StatusReply.Ack
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
+import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
+import edu.uci.ics.amber.engine.architecture.recovery.{PendingCheckpoint, ReplayInputRecorder}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{CheckInitialized, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.NoOpHandler.NoOp
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats, StartCheckpoint}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, GetOperatorInternalState, ResendOutputTo, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowControlMessage, WorkflowDataMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{CheckpointCompleted, ContinueReplay, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, GetOperatorInternalState, ResendOutputTo, SnapshotMarker, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
@@ -28,6 +30,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
 
@@ -72,12 +75,11 @@ class WorkflowWorker(
   lazy val operator: IOperatorExecutor =
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   logger.info(s"Worker:$actorId = ${context.self}")
-  lazy val dataInputPort: NetworkInputPort[DataPayload] =
-    new NetworkInputPort[DataPayload](this.actorId, this.handleDataPayload)
-  lazy val controlInputPort: NetworkInputPort[ControlPayload] =
-    new NetworkInputPort[ControlPayload](this.actorId, this.handleControlPayload)
+  lazy val inputPort: NetworkInputPort = new NetworkInputPort(this.actorId, this.handlePayload)
   val creditMonitor = new CreditMonitorImpl()
   var inputQueue: WorkerInternalQueue = _
+  val pendingCheckpoints = new mutable.HashMap[Long, PendingCheckpoint]()
+  val inputPayloadRecorder = new ReplayInputRecorder()
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
@@ -96,9 +98,38 @@ class WorkflowWorker(
     logger.error(s"Encountered fatal error, worker is shutting done.", reason)
   }
 
+  def reloadState(chkpt:SavedCheckpoint): Iterator[(ITuple, Option[Int])] ={
+    var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
+    inputQueue = chkpt.load("internalQueueState")
+    logger.info("input queue restored")
+    operator match {
+      case support: CheckpointSupport =>
+        chkpt.pointerToCompletion match {
+          case Some(value) =>
+            outputIter =
+              support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
+          case None => outputIter = support.deserializeState(chkpt)
+        }
+      case _ =>
+    }
+    logger.info("operator restored")
+    dataProcessor = chkpt.load("controlState")
+    logger.info(s"DP restored ${dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
+    outputIter
+  }
+
+  def insertPayloads(channelData: mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]): Unit ={
+    channelData.foreach{
+      case (channelId, payloads) =>
+        payloads.foreach(x => handlePayload(channelId, x))
+    }
+  }
+
   override def receive: Receive = {
     // load from checkpoint if available
     var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
+    var messageToReprocess:mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.HashMap()
+    var unprocessedMessages:mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.HashMap()
     try {
       restoreConfig.fromCheckpoint match {
         case None | Some(0) =>
@@ -109,31 +140,30 @@ class WorkflowWorker(
           val startLoadingTime = System.currentTimeMillis()
           //restore state from checkpoint: can be in either replaying or normal processing
           chkpt.attachSerialization(SerializationExtension(context.system))
-          dataInputPort.setFIFOState(chkpt.load("dataFifoState"))
-          controlInputPort.setFIFOState(
-            chkpt.load("controlFifoState")
-          )
-          logger.info("fifo state restored")
-          inputQueue = chkpt.load("inputHubState")
-          logger.info("input queue restored")
-          operator match {
-            case support: CheckpointSupport =>
-              chkpt.pointerToCompletion match {
-                case Some(value) =>
-                  outputIter =
-                    support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
-                case None => outputIter = support.deserializeState(chkpt)
-              }
-            case _ =>
+          val fifoStateAtCheckpointTime:Map[(ActorVirtualIdentity, Boolean), Long] = chkpt.load("fifoState")
+          var currentCheckpoint = chkpt
+          while(currentCheckpoint.prevCheckpoint.isDefined){
+            messageToReprocess = currentCheckpoint.load("processedMessages")
+            currentCheckpoint = CheckpointHolder.getCheckpoint(actorId, currentCheckpoint.prevCheckpoint.get)
           }
-          logger.info("operator restored")
-          dataProcessor = chkpt.load("controlState")
-          logger.info(s"DP restored ${dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
+          // reload state from the last concrete chkpt
+          if(currentCheckpoint.has("internalQueueState")){
+            outputIter = reloadState(currentCheckpoint)
+          }
+          unprocessedMessages = chkpt.load("unprocessedData")
+          val additionalFifoState = unprocessedMessages.mapValues(_.size.toLong)
+          val fifoState = fifoStateAtCheckpointTime.map{
+            case (k, v) =>
+              (k, v + additionalFifoState.getOrElse(k, 0L))
+          }
+          inputPort.setFIFOState(fifoState)
+          logger.info("fifo state restored")
           logger.info(
             s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
           )
       }
-
+      insertPayloads(messageToReprocess)
+      insertPayloads(unprocessedMessages)
       // set replay
       restoreConfig.replayTo match {
         case Some(replayTo) =>
@@ -194,7 +224,7 @@ class WorkflowWorker(
             // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
           })
           val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
-          controlInputPort.overwriteFIFOSeqNum(fifoState)
+          inputPort.overwriteControlFIFOSeqNum(fifoState)
         case None =>
           inputQueue match {
             case impl: RecoveryInternalQueueImpl =>
@@ -213,9 +243,7 @@ class WorkflowWorker(
       logStorage,
       logManager,
       recoveryManager,
-      context,
-      dataInputPort,
-      controlInputPort
+      context
     )
     dataProcessor.start()
     receiveAndProcessMessages
@@ -267,25 +295,13 @@ class WorkflowWorker(
           context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
         })
         inputQueue.enqueueSystemCommand(NoOp()) //kick start replay process
-      case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
-        dataInputPort.handleMessage(
-          this.sender(),
-          getSenderCredits(from),
-          id,
-          from,
-          seqNum,
-          payload
-        )
-      case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
-        controlInputPort.handleMessage(
-          this.sender(),
-          getSenderCredits(from),
-          id,
-          from,
-          seqNum,
-          payload
-        )
-      case NetworkMessage(id, CreditRequest(from, _)) =>
+      case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(from, _, _, payload)) =>
+        sender ! NetworkAck(id, Some(getSenderCredits(from)))
+        if(payload.isInstanceOf[SnapshotMarker]){
+          logger.info(s"receive marker $payload from $from")
+        }
+        inputPort.handleMessage(workflowMsg)
+      case NetworkMessage(id, CreditRequest(from)) =>
         sender ! NetworkAck(id, Some(getSenderCredits(from)))
       case other =>
         throw new WorkflowRuntimeException(s"unhandled message: $other")
@@ -293,7 +309,7 @@ class WorkflowWorker(
 
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      this.handleControlPayload(SELF, invocation)
+      this.handlePayload((SELF, false), invocation)
   }
 
   def acceptInitializationMessage: Receive = {
@@ -301,8 +317,19 @@ class WorkflowWorker(
       sender ! Ack
   }
 
-  def handleDataPayload(from: ActorVirtualIdentity, dataPayload: DataPayload): Unit = {
-    dataPayload match {
+  def handlePayload(channelId:(ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload): Unit = {
+    val (from, _) = channelId
+    inputPayloadRecorder.recordPayload(channelId, payload)
+    pendingCheckpoints.values.foreach(_.recordInput(channelId, payload))
+    payload match {
+      case marker: SnapshotMarker =>
+        logger.info(s"process marker $marker")
+        val completed = pendingCheckpoints
+          .getOrElseUpdate(marker.id, new PendingCheckpoint(inputPort, actorId, marker, startCheckpoint, finalizeCheckpoint))
+          .acceptSnapshotMarker(channelId)
+        if(completed) {
+          pendingCheckpoints.remove(marker.id)
+        }
       case DataFrame(payload) =>
         payload.foreach { i =>
           inputQueue.enqueueData(InputTuple(from, i))
@@ -311,22 +338,53 @@ class WorkflowWorker(
         inputQueue.enqueueData(EndMarker(from))
       case marker @ EpochMarker(_, _, _) =>
         inputQueue.enqueueData(InputEpochMarker(from, marker))
+      case controlCommand: ControlPayload =>
+        inputQueue.enqueueCommand(ControlElement(controlCommand, from))
       case _ =>
-        throw new NotImplementedError()
+        throw new WorkflowRuntimeException(s"cannot accept payload: $payload")
     }
   }
 
-  def handleControlPayload(
-      from: ActorVirtualIdentity,
-      controlPayload: ControlPayload
-  ): Unit = {
-    // let dp thread process it
-    controlPayload match {
-      case controlCommand @ (ControlInvocation(_, _) | ReturnInvocation(_, _)) =>
-        inputQueue.enqueueCommand(ControlElement(controlCommand, from))
-      case _ =>
-        throw new WorkflowRuntimeException(s"unhandled control payload: $controlPayload")
+  def startCheckpoint(marker:SnapshotMarker): (SavedCheckpoint, InitialCheckpointStats) ={
+    logger.info("calling startCheckpoint")
+    val ser = SerializationExtension(context.system)
+    val chkpt = new SavedCheckpoint()
+    chkpt.attachSerialization(ser)
+    var inputSavingTime = 0L
+    if(!marker.involved.contains(actorId)){
+      //save channel data
+      val input = inputPayloadRecorder.getRecordedInputForReplay
+      inputSavingTime = input.values.map(_.size).sum
+      if(!marker.estimation){
+        chkpt.save("processedData",input)
+      }
     }
+    if(!marker.estimation){
+      // save state
+      chkpt.save("fifoState", inputPort.getFIFOState)
+    }
+    val sync = new CompletableFuture[InitialCheckpointStats]()
+    inputQueue.enqueueSystemCommand(StartCheckpoint(marker,chkpt, sync))
+    val stats = sync.get()
+    inputPayloadRecorder.clearAll()
+    (chkpt, stats.copy(saveProcessedInputTime = inputSavingTime))
+  }
+
+  def finalizeCheckpoint(pendingCheckpoint: PendingCheckpoint): Unit ={
+    val startCheckpointInputTime = System.currentTimeMillis()
+    val chkpt = pendingCheckpoint.chkpt
+    val dataToTake = pendingCheckpoint.dataToTake
+    val initialCheckpointStats = pendingCheckpoint.initialCheckpointStats
+    val checkpointId = pendingCheckpoint.marker.id
+    val checkpointStats = if(!pendingCheckpoint.marker.estimation){
+      chkpt.save("unprocessedData", dataToTake)
+      chkpt.prevCheckpoint = CheckpointHolder.findLastCheckpointOf(actorId, initialCheckpointStats.alignment)
+      CheckpointHolder.addCheckpoint(actorId, initialCheckpointStats.alignment, chkpt)
+      CheckpointStats(checkpointId, initialCheckpointStats, startCheckpointInputTime - pendingCheckpoint.startAlignmentTime, System.currentTimeMillis() - startCheckpointInputTime, chkpt.size(), false)
+    }else{
+      CheckpointStats(checkpointId, initialCheckpointStats, startCheckpointInputTime - pendingCheckpoint.startAlignmentTime, dataToTake.values.map(_.size).sum, 0, true)
+    }
+    networkCommunicationActor ! SendRequest(CONTROLLER, WorkflowRecoveryMessage(actorId, CheckpointCompleted(checkpointStats)))
   }
 
   override def postStop(): Unit = {

@@ -1,9 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import akka.actor.Cancellable
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{WorkflowDataMessage, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -61,7 +60,7 @@ class FlowControl {
       receiverId: ActorVirtualIdentity,
       msg: WorkflowMessage
   ): Option[WorkflowMessage] = {
-    val isDataMessage = msg.isInstanceOf[WorkflowDataMessage]
+    val isDataMessage = msg.isInstanceOf[WorkflowFIFOMessage] && msg.asInstanceOf[WorkflowFIFOMessage].isData
     if (isDataMessage && Constants.flowControlEnabled) {
       if (
         receiverIdToCredits.getOrElseUpdate(
