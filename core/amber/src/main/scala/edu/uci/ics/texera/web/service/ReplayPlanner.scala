@@ -16,7 +16,7 @@ import scala.jdk.CollectionConverters.{asJavaIterableConverter, asScalaSetConver
 object ReplayPlanner {
 
   sealed trait PlannerStep
-  case class CheckpointCurrentState(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends PlannerStep
+  case class CheckpointCurrentState(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity,Boolean), Long]]) extends PlannerStep
   case class ReplayExecution(conf: WorkflowStateRestoreConfig)
       extends PlannerStep
 

@@ -142,29 +142,22 @@ class Controller(
     controllerConfig.stateRestoreConfig.controllerConf.fromCheckpoint match {
       case None | Some(0) =>
         controllerProcessor = new ControllerProcessor()
-        controlInputPort = new NetworkInputPort[ControlPayload](
+        controlInputPort = new NetworkInputPort(
           this.actorId,
-          controllerProcessor.handleControlPayloadOuter
+          controllerProcessor.handlePayloadOuter
         )
       case Some(chkptAlignment) =>
         logger.info("checkpoint found, start loading")
         val chkpt = CheckpointHolder.getCheckpoint(CONTROLLER, chkptAlignment)
         val startLoadingTime = System.currentTimeMillis()
         chkpt.attachSerialization(SerializationExtension(context.system))
-        val fifoStateAtCheckpointTime:Map[(ActorVirtualIdentity, Boolean), Long] = chkpt.load("fifoState")
         // reload states:
         controllerProcessor = chkpt.load("controlState")
         controlInputPort = new NetworkInputPort(
           this.actorId,
           controllerProcessor.handlePayloadOuter
         )
-        unprocessedMessages = chkpt.load("unprocessedData")
-        val additionalFifoState = unprocessedMessages.mapValues(_.size.toLong)
-        val fifoState = fifoStateAtCheckpointTime.map{
-          case (k, v) =>
-            (k, v + additionalFifoState.getOrElse(k, 0L))
-        }
-        controlInputPort.setFIFOState(fifoState)
+        controlInputPort.setFIFOState(chkpt.load("fifoState"))
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000d}s"
         )

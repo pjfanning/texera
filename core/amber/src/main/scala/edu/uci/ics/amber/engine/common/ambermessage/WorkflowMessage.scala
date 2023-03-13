@@ -10,7 +10,7 @@ case class WorkflowFIFOMessage(from: ActorVirtualIdentity, isData: Boolean, sequ
 
 trait WorkflowFIFOMessagePayload extends Serializable
 
-case class SnapshotMarker(id: Long, estimation:Boolean, involved:Set[ActorVirtualIdentity]) extends WorkflowFIFOMessagePayload
+case class SnapshotMarker(id: Long, estimation:Boolean) extends WorkflowFIFOMessagePayload
 
 case class WorkflowRecoveryMessage(
     from: ActorVirtualIdentity,

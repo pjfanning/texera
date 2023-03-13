@@ -24,5 +24,5 @@ final case class GetOperatorInternalState() extends RecoveryPayload
 final case class InterruptReplay() extends RecoveryPayload
 final case class PauseDuringReplay() extends RecoveryPayload
 final case class ResumeDuringReplay() extends RecoveryPayload
-final case class TakeGlobalCheckpoint(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]) extends RecoveryPayload
-final case class TakeLocalCheckpoint(cutoffs:Map[ActorVirtualIdentity, Long]) extends RecoveryPayload
+final case class TakeGlobalCheckpoint(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity,Boolean), Long]]) extends RecoveryPayload
+final case class TakeLocalCheckpoint(cutoffs:Map[(ActorVirtualIdentity,Boolean), Long]) extends RecoveryPayload

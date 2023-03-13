@@ -16,18 +16,49 @@ class Interaction(initialState:Boolean = false) extends Serializable{
     participants(id) = info
   }
 
+  lazy val allSenderChannelStates:Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity, Boolean),Long]] = {
+    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[(ActorVirtualIdentity, Boolean), Long]]()
+    participants.foreach{
+      case (src, info) =>
+        info.outputWatermarks.foreach{
+          case (dst, sent) =>
+            result.getOrElseUpdate(src, new mutable.HashMap[(ActorVirtualIdentity, Boolean), Long])(dst) = sent
+        }
+    }
+    result.mapValues(_.toMap).toMap
+  }
+
+  lazy val allReceiverChannelStates: Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity, Boolean),Long]] ={
+    val result = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[(ActorVirtualIdentity, Boolean), Long]]()
+    participants.foreach{
+      case (dst, info) =>
+        info.inputWatermarks.foreach{
+          case (src, received) =>
+            result.getOrElseUpdate(src._1, new mutable.HashMap[(ActorVirtualIdentity, Boolean), Long])((dst, src._2)) = received
+        }
+    }
+    result.mapValues(_.toMap).toMap
+  }
+
+  def getDownstreams(id:ActorVirtualIdentity): Iterable[(ActorVirtualIdentity, Boolean)] ={
+    participants.get(id) match {
+      case Some(value) => value.outputWatermarks.keys
+      case None => Iterable.empty
+    }
+  }
+
   def getBusyTime(id:ActorVirtualIdentity): Option[Long] = {
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.initialCheckpointStats.processedTime)
+    participants.get(id).map(x => x.processedTime)
   }
 
   def getCheckpointCost(id: ActorVirtualIdentity): Option[Long] = {
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.initialCheckpointStats.checkpointStateTime + x.inputAlignmentTime)
+    participants.get(id).map(x => x.saveStateTime)
   }
 
   def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys
@@ -36,7 +67,7 @@ class Interaction(initialState:Boolean = false) extends Serializable{
     if(initialState){
       return Some(0)
     }
-    participants.get(id).map(x => x.initialCheckpointStats.alignment)
+    participants.get(id).map(x => x.alignment)
   }
 
   def getLoadCost(id: ActorVirtualIdentity): Option[Long] = {
@@ -54,10 +85,10 @@ class Interaction(initialState:Boolean = false) extends Serializable{
   }
 
   def getAlignmentMap: Map[ActorVirtualIdentity, Long] =
-    participants.map(x => x._1 -> x._2.initialCheckpointStats.alignment).toMap
+    participants.map(x => x._1 -> x._2.alignment).toMap
 
   def containsAlignment(id: ActorVirtualIdentity, alignment: Long): Boolean = {
-    participants.contains(id) && participants(id).initialCheckpointStats.alignment == alignment
+    participants.contains(id) && participants(id).alignment == alignment
   }
 
   override def toString: String = {
@@ -65,9 +96,9 @@ class Interaction(initialState:Boolean = false) extends Serializable{
     for (p <- participants) {
       val info = p._2
       sb.append(p._1 + ": alignment = ")
-      sb.append(info.initialCheckpointStats.alignment)
+      sb.append(info.alignment)
       sb.append(" save cost = ")
-      sb.append(info.initialCheckpointStats.checkpointStateTime)
+      sb.append(info.saveStateTime)
       sb.append(" load cost = ")
       sb.append(0)
       sb.append("\n")

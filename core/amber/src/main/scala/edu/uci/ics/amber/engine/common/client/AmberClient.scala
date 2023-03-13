@@ -95,7 +95,7 @@ class AmberClient(
     }
   }
 
-  def takeGlobalCheckpoint(involved: Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[ActorVirtualIdentity, Long]]): Future[Any] = {
+  def takeGlobalCheckpoint(involved: Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity,Boolean), Long]]): Future[Any] = {
     if (isActive) {
       (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(involved, cutoffMap))).asTwitter()
     } else {
@@ -114,14 +114,6 @@ class AmberClient(
       Future[Any](())
     } else {
       (clientActor ? WorkflowRecoveryMessage(CLIENT, InterruptReplay())).asTwitter()
-    }
-  }
-
-  def takeGlobalCheckpoint(marker:SnapshotMarker): Future[Any] = {
-    if (isActive) {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint(marker))).asTwitter()
-    } else {
-      Future(-1)
     }
   }
 

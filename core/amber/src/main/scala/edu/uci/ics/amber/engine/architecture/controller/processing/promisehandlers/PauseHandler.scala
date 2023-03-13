@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAs
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{CheckpointStats, InitialCheckpointStats}
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
@@ -48,7 +48,7 @@ trait PauseHandler {
                 .map { worker =>
                   val info = opExecution.getWorkerInfo(worker)
                   // send a pause message
-                  send(PauseWorker(), worker).map { ret =>
+                  send(PauseWorker(), worker).flatMap { ret =>
                     info.state = ret
                     send(QueryStatistics(), worker)
                       .join(send(QueryCurrentInputTuple(), worker))
@@ -72,12 +72,14 @@ trait PauseHandler {
           // send paused to frontend
           sendToClient(WorkflowPaused())
           workflowPauseStartTime = System.currentTimeMillis()
+          logger.info(s"controller pause cursor = ${cp.numControlSteps}")
           if(!cp.isReplaying){
             val time = (System.currentTimeMillis() - workflowStartTimeStamp)
             val interaction = new Interaction()
             val markerId = cp.interactionHistory.addInteraction(time, interaction)
-            interaction.addParticipant(CONTROLLER, CheckpointStats(markerId, InitialCheckpointStats(cp.numControlSteps, 0,0,0),0,0,0, true))
-            cp.processRecoveryMessage(WorkflowRecoveryMessage(SELF, TakeGlobalCheckpoint(SnapshotMarker(markerId, true, cp.execution.getAllWorkers.toSet))))
+            interaction.addParticipant(CONTROLLER, CheckpointStats(true, markerId, cp.controlInput.getFIFOState, cp.controlOutputPort.getFIFOState,0,cp.numControlSteps + 1,0,0,0))
+            val marker = SnapshotMarker(markerId, true)
+            cp.controlOutputPort.broadcastMarker(marker)
           }
         }
         .unit
