@@ -4,25 +4,15 @@ import akka.actor.ActorContext
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.EmptyLogManagerImpl
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage
-}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  NetworkInputPort,
-  NetworkOutputPort,
-  OutputManager
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort, OutputManager}
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -30,18 +20,17 @@ import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, InputExhausted}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
+import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 
+import java.util.concurrent.CompletableFuture
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -421,6 +410,67 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       ) == Constants.unprocessedBatchesCreditLimitPerSender
     )
     Await.result(monitorCredits(senderID, dp, tuplesToSend), 3.seconds)
+    dp.shutdown()
+
+  }
+
+  def schema(name: String, attributeType: AttributeType, n: Int = 1): Schema = {
+    Schema
+      .newBuilder()
+      .add(
+        new Attribute(name, attributeType),
+        new Attribute(name + "_" + n, attributeType)
+      )
+      .build()
+  }
+
+
+  def integerTuple(name: String, n: Int = 1, i: Int): Tuple = {
+    Tuple
+      .newBuilder(schema(name, AttributeType.INTEGER, n))
+      .add(new Attribute(name, AttributeType.INTEGER), i)
+      .add(new Attribute(name + "_" + n, AttributeType.INTEGER), i)
+      .build()
+  }
+
+
+  "data processor" should "process data messages with no checks" in {
+    val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
+    val actorContext: ActorContext = null
+    val operator = new FilterOpExec{
+      setFilterFunc(t => false)
+    }
+    val opExecConfig =
+      OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0)
+    val logManager = new EmptyLogManagerImpl(NetworkSenderActorRef(null))
+    val logStorage: DeterminantLogStorage = new EmptyLogStorage()
+    val recoveryQueue: RecoveryQueue = new RecoveryQueue(logStorage.getReader)
+    val recoveryManager = new LocalRecoveryManager()
+    val asyncRPCServer: AsyncRPCServer = null
+    val senderID = ActorVirtualIdentity("sender")
+    val upstreamLinkStatus: UpstreamLinkStatus = new UpstreamLinkStatus(opExecConfig)
+    val workerStateManager: WorkerStateManager = new WorkerStateManager(UNINITIALIZED)
+
+    val dp = wire[DataProcessor]
+    dp.registerInput(senderID, linkID)
+    inAnyOrder {
+      (outputManager.emitEndOfUpstream _).expects().once()
+      (asyncRPCClient.send[Unit] _).expects(*, *).anyNumberOfTimes()
+    }
+    val batchSize = 100000
+    (0 until batchSize).foreach{
+      i =>
+        dp.internalQueue.appendElement(InputTuple(senderID, integerTuple("test", batchSize, i)))
+    }
+    dp.internalQueue.appendElement(EndMarker(senderID))
+    operator.open()
+    val startTime = System.nanoTime()
+    val completableFuture = new CompletableFuture[Unit]()
+    dp.start(completableFuture)
+    completableFuture.get()
+    val endTime = System.nanoTime()
+    val elapsed = endTime - startTime
+    println(elapsed / 1000000000d)
     dp.shutdown()
 
   }

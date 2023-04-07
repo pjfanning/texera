@@ -25,6 +25,8 @@ object WorkerInternalQueue {
 
   case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends InternalQueueElement
 
+  case class InputBatch(from: ActorVirtualIdentity, batch: Iterable[ITuple]) extends InternalQueueElement
+
   case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
       extends InternalQueueElement
 

@@ -8,44 +8,24 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerEx
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{
-  LogManager,
-  ProcessControlMessage,
-  SenderActorChange
-}
+import edu.uci.ics.amber.engine.architecture.logging.{LogManager, ProcessControlMessage, SenderActorChange}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, RecoveryQueue}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{
-  CONTROLLER,
-  SELF,
-  SOURCE_STARTER_ACTOR,
-  SOURCE_STARTER_OP
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_ACTOR, SOURCE_STARTER_OP}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{
-  AmberLogging,
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  InputExhausted
-}
+import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{ExecutorService, Executors, Future}
+import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future}
 import scala.collection.mutable
 
 class DataProcessor( // dependencies:
@@ -73,8 +53,10 @@ class DataProcessor( // dependencies:
   // initialize dp thread upon construction
   private val dpThreadExecutor: ExecutorService = Executors.newSingleThreadExecutor
   private var dpThread: Future[_] = _
-  def start(): Unit = {
+  private var syncFuture: CompletableFuture[Unit] = _
+  def start(syncFuture:CompletableFuture[Unit] = null): Unit = {
     if (dpThread == null) {
+      this.syncFuture = syncFuture
       dpThread = dpThreadExecutor.submit(new Runnable() {
         def run(): Unit = {
           try {
@@ -232,6 +214,24 @@ class DataProcessor( // dependencies:
       internalQueueElement: InternalQueueElement
   ): Unit = {
     internalQueueElement match {
+      case InputBatch(from, batch) =>
+        if (stateManager.getCurrentState == READY) {
+          stateManager.transitTo(RUNNING)
+          outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
+          asyncRPCClient.send(
+            WorkerStateUpdated(stateManager.getCurrentState),
+            CONTROLLER
+          )
+        }
+        if (currentInputActor != from) {
+          logManager.getDeterminantLogger.logDeterminant(SenderActorChange(from))
+          currentInputActor = from
+        }
+        batch.foreach{
+          tuple =>
+            currentInputTuple = Left(tuple)
+            handleInputTupleWithoutCheck()
+        }
       case InputTuple(from, tuple) =>
         if (stateManager.getCurrentState == READY) {
           stateManager.transitTo(RUNNING)
@@ -270,6 +270,9 @@ class DataProcessor( // dependencies:
           asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
           outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
           stateManager.transitTo(COMPLETED)
+          if(this.syncFuture!= null){
+            this.syncFuture.complete()
+          }
         }
       case ControlElement(from, payload) =>
         processControlCommand(from, payload)
@@ -322,6 +325,19 @@ class DataProcessor( // dependencies:
         outputOneTuple()
         // process controls after one tuple has been outputted.
         processControlCommandsDuringExecution()
+      }
+    }
+  }
+
+
+  private[this] def handleInputTupleWithoutCheck(): Unit = {
+    if (currentInputTuple != null) {
+      // pass input tuple to operator logic.
+      currentOutputIterator = processInputTuple()
+      // output loop: take one tuple from iterator at a time.
+      while (outputAvailable(currentOutputIterator)) {
+        // send tuple to downstream.
+        outputOneTuple()
       }
     }
   }
