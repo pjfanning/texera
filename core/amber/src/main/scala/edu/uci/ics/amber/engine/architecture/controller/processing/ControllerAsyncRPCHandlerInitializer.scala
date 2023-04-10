@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
-import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
+import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EpochMarkerHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ReportCheckpointStatsHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
@@ -42,7 +42,9 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
 
   val actorId: ActorVirtualIdentity = cp.actorId
 
+  @transient
   var statusUpdateAskHandle: Option[Cancellable] = None
+  @transient
   var monitoringHandle: Option[Cancellable] = None
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
   var workflowStartTimeStamp: Long = System.currentTimeMillis()

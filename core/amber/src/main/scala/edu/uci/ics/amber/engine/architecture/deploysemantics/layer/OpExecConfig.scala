@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
-import edu.uci.ics.amber.engine.architecture.worker.{StateRestoreConfig, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
@@ -284,11 +284,11 @@ case class OpExecConfig(
         this,
         parentNetworkCommunicationActorRef,
         controllerConf.supportFaultTolerance,
-        if (controllerConf.stateRestoreConfig.workerConfs.contains(workerId)) {
+        if (controllerConf.stateRestoreConfig.confs.contains(workerId)) {
           globalRecoveryManager.markRecoveryStatus(workerId, isRecovering = true)
-          controllerConf.stateRestoreConfig.workerConfs(workerId)
+          controllerConf.stateRestoreConfig.confs(workerId)
         } else {
-          StateRestoreConfig(None, None)
+          ReplayConfig(None, None, Array.empty)
         }
       )
     }

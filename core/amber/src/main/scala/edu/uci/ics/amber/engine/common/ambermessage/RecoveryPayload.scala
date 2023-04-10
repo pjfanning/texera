@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
 import akka.actor.{ActorRef, Address}
-import edu.uci.ics.amber.engine.architecture.controller.WorkflowStateRestoreConfig
+import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -17,12 +17,12 @@ final case class ResendOutputTo(vid: ActorVirtualIdentity, ref: ActorRef) extend
 final case class NotifyFailedNode(addr: Address) extends RecoveryPayload
 
 // for replay prototype:
-final case class ContinueReplay(workflowStateRestoreConfig: WorkflowStateRestoreConfig)
+final case class ContinueReplay(workflowStateRestoreConfig: WorkflowReplayConfig)
     extends RecoveryPayload
 final case class ContinueReplayTo(replayTo: Long) extends RecoveryPayload
 final case class GetOperatorInternalState() extends RecoveryPayload
 final case class InterruptReplay() extends RecoveryPayload
 final case class PauseDuringReplay() extends RecoveryPayload
 final case class ResumeDuringReplay() extends RecoveryPayload
-final case class TakeGlobalCheckpoint(involved:Set[ActorVirtualIdentity], cutoffMap:Map[ActorVirtualIdentity, Map[(ActorVirtualIdentity,Boolean), Long]]) extends RecoveryPayload
-final case class TakeLocalCheckpoint(cutoffs:Map[(ActorVirtualIdentity,Boolean), Long]) extends RecoveryPayload
+final case class TakeGlobalCheckpoint() extends RecoveryPayload
+final case class CheckpointCompleted(id:Long, alignment:Long) extends RecoveryPayload

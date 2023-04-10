@@ -69,6 +69,8 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def getControlQueueLength: Int
 
+  def getData:Map[String, Array[InternalQueueElement]]
+
 }
 
 class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
@@ -119,5 +121,12 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
   override def registerInput(sender: String): Unit = {
     lbmq.addSubQueue(sender, DATA_QUEUE_PRIORITY)
     dataQueues(sender) = lbmq.getSubQueue(sender)
+  }
+
+  override def getData: Map[String, Array[InternalQueueElement]] = {
+    dataQueues.map{
+      case (k, queue) =>
+        k -> queue.toArray(Array[InternalQueueElement]())
+    }.toMap
   }
 }

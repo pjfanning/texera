@@ -12,6 +12,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
+import edu.uci.ics.amber.engine.architecture.recovery.PendingCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ControlElement
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{CheckInitialized, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
@@ -21,7 +22,7 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperat
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{TakeCheckpoint, TakeCursor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, GetOperatorInternalState, ResendOutputTo, SnapshotMarker, TakeLocalCheckpoint, UpdateRecoveryStatus, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{CheckpointCompleted, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, EstimationMarker, FIFOMarker, GetOperatorInternalState, GlobalCheckpointMarker, UpdateRecoveryStatus, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
@@ -40,7 +41,7 @@ object WorkflowWorker {
       workerLayer: OpExecConfig,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       supportFaultTolerance: Boolean,
-      stateRestoreConfig: StateRestoreConfig
+      stateRestoreConfig: ReplayConfig
   ): Props =
     Props(
       new WorkflowWorker(
@@ -67,7 +68,7 @@ class WorkflowWorker(
     workerLayer: OpExecConfig,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef,
     supportFaultTolerance: Boolean,
-    restoreConfig: StateRestoreConfig
+    restoreConfig: ReplayConfig
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, supportFaultTolerance) {
   val ordinalMapping: OrdinalMapping = workerLayer.ordinalMapping
   var dataProcessor: DataProcessor = wire[DataProcessor]
@@ -79,6 +80,8 @@ class WorkflowWorker(
   var inputQueue: WorkerInternalQueue = _
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
+  private val receivedMarkers = mutable.HashSet[Long]()
+  private val pendingCheckpoints = mutable.HashMap[Long, PendingCheckpoint]()
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
@@ -101,12 +104,7 @@ class WorkflowWorker(
     logger.info("input queue restored")
     operator match {
       case support: CheckpointSupport =>
-        chkpt.pointerToCompletion match {
-          case Some(value) =>
-            outputIter =
-              support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
-          case None => outputIter = support.deserializeState(chkpt)
-        }
+          outputIter = support.deserializeState(chkpt)
       case _ =>
     }
     logger.info("operator restored")
@@ -133,30 +131,32 @@ class WorkflowWorker(
           val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
           logger.info("checkpoint found, start loading")
           val startLoadingTime = System.currentTimeMillis()
-          //restore state from checkpoint: can be in either replaying or normal processing
+          // restore state from checkpoint: can be in either replaying or normal processing
           chkpt.attachSerialization(SerializationExtension(context.system))
           val fifoState:Map[(ActorVirtualIdentity, Boolean), Long] = chkpt.load("fifoState")
-          inputPort.setFIFOState(fifoState)
-          fifoState.foreach{
+          val fifoStateWithInputData = (chkpt.getInputData.mapValues(_.size.toLong).toSeq ++ fifoState.toSeq)
+            .groupBy(_._1).mapValues(_.map(_._2).sum)
+          fifoStateWithInputData.foreach{
             case (tuple, l) =>
               logger.info(s"restored fifo status for upstream $tuple is $l")
           }
+          inputPort.setFIFOState(fifoStateWithInputData)
           logger.info("fifo state restored")
           inputQueue = chkpt.load("inputHubState")
           logger.info("input queue restored")
           operator match {
             case support: CheckpointSupport =>
-              chkpt.pointerToCompletion match {
-                case Some(value) =>
-                  outputIter =
-                    support.deserializeState(CheckpointHolder.getCheckpoint(actorId, value))
-                case None => outputIter = support.deserializeState(chkpt)
-              }
+              outputIter = support.deserializeState(chkpt)
             case _ =>
           }
           logger.info("operator restored")
           dataProcessor = chkpt.load("controlState")
           logger.info(s"DP restored ${dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
+          chkpt.getInputData.foreach{
+            case (channel, payloads) =>
+              payloads.foreach(payload => handlePayload(channel, payload))
+          }
+          logger.info("inflight data restored")
           logger.info(
             s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
           )
@@ -263,10 +263,6 @@ class WorkflowWorker(
         // unblock sync future on DP
         sync.complete(())
         logger.info("replace queue done!")
-      case WorkflowRecoveryMessage(from, TakeLocalCheckpoint(cutoffs)) =>
-        val syncFuture = new CompletableFuture[Long]()
-        inputQueue.enqueueSystemCommand(TakeCheckpoint(inputPort.getFIFOState, cutoffs, syncFuture))
-        sender ! syncFuture.get()
       case WorkflowRecoveryMessage(from, GetOperatorInternalState()) =>
         sender ! operator.getStateInformation
       case WorkflowRecoveryMessage(from, ContinueReplayTo(index)) =>
@@ -279,8 +275,8 @@ class WorkflowWorker(
         inputQueue.enqueueSystemCommand(NoOp()) //kick start replay process
       case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(from, _, _, payload)) =>
         sender ! NetworkAck(id, Some(getSenderCredits(from)))
-        if(payload.isInstanceOf[SnapshotMarker]){
-          logger.info(s"receive marker $payload from $from")
+        if(payload.isInstanceOf[GlobalCheckpointMarker]){
+          logger.info(s"receive ${payload.asInstanceOf[GlobalCheckpointMarker].id} from $from")
         }
         inputPort.handleMessage(workflowMsg)
       case NetworkMessage(id, CreditRequest(from)) =>
@@ -301,10 +297,41 @@ class WorkflowWorker(
 
   def handlePayload(channelId:(ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload): Unit = {
     val (from, _) = channelId
+    if(channelId._1 != SELF){
+      pendingCheckpoints.foreach{
+        case (id, chkpt) =>
+          if(!payload.isInstanceOf[FIFOMarker]){
+            chkpt.recordInput(channelId, payload)
+          }
+      }
+    }
     payload match {
-      case marker: SnapshotMarker =>
+      case marker: FIFOMarker =>
         logger.info(s"process marker $marker")
-        inputQueue.enqueueSystemCommand(TakeCursor(marker.id, inputPort.getFIFOState))
+        marker match {
+          case EstimationMarker(id) =>
+            if(!receivedMarkers.contains(id)){
+              receivedMarkers.add(id)
+              inputQueue.enqueueSystemCommand(TakeCursor(marker, inputPort.getFIFOState))
+            }
+          case GlobalCheckpointMarker(id, markerCollectionCount) =>
+            if(!pendingCheckpoints.contains(id)){
+              val chkpt = new SavedCheckpoint()
+              chkpt.attachSerialization(SerializationExtension(context.system))
+              logger.info("start to take local checkpoint")
+              // fill in checkpoint
+              chkpt.save("fifoState", inputPort.getFIFOState)
+              val syncFuture = new CompletableFuture[Long]()
+              inputQueue.enqueueSystemCommand(TakeCheckpoint(marker, chkpt, syncFuture))
+              val totalStep = syncFuture.get()
+              val onComplete = () => {context.parent ! WorkflowRecoveryMessage(actorId, CheckpointCompleted(id, totalStep))}
+              pendingCheckpoints(id) = new PendingCheckpoint(actorId, System.currentTimeMillis(), chkpt, totalStep, markerCollectionCount.getOrElse(actorId, 1), onComplete)
+            }
+            pendingCheckpoints(id).acceptSnapshotMarker(channelId)
+            if(pendingCheckpoints(id).isCompleted){
+              pendingCheckpoints.remove(id)
+            }
+        }
       case DataFrame(payload) =>
         payload.foreach { i =>
           inputQueue.enqueueData(InputTuple(from, i))

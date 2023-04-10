@@ -45,8 +45,6 @@ abstract class MapOpExec() extends OperatorExecutor with Serializable with Check
 
   override def getEstimatedCheckpointTime: Int = 0
 
-  override def getEstimatedStateLoadTime: Int = 0
-
   override def serializeState(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
       checkpoint: SavedCheckpoint

@@ -50,10 +50,6 @@ class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLMod
     3000
   }
 
-  override def getEstimatedStateLoadTime: Int = {
-    500
-  }
-
   override def serializeState(
       currentIteratorState: Iterator[(ITuple, Option[Int])],
       checkpoint: SavedCheckpoint

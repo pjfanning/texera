@@ -4,13 +4,14 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
+import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
+import edu.uci.ics.amber.engine.common.ambermessage.{EstimationMarker, FIFOMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 object QueryWorkerStatisticsHandler {
 
@@ -47,6 +48,18 @@ trait QueryWorkerStatisticsHandler {
       .collect(requests)
       .map(_ => {
         println("collected worker stats")
+        if(!cp.isReplaying){
+          val time = (System.currentTimeMillis() - workflowStartTimeStamp)
+          val interaction = new LogicalExecutionSnapshot()
+          val markerId = cp.interactionHistory.addSnapshot(time, interaction)
+          interaction.addParticipant(CONTROLLER, CheckpointStats(
+            markerId,
+            cp.controlInput.getFIFOState,
+            cp.controlOutputPort.getFIFOState,
+            cp.numControlSteps + 1,0))
+          val marker = EstimationMarker(markerId)
+          cp.controlOutputPort.broadcastMarker(marker)
+        }
         sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
       })
   })

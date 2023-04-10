@@ -290,10 +290,6 @@ class HashJoinOpExec[K](
     arr.toIterator
   }
 
-  override def getEstimatedStateLoadTime: Int = {
-    buildTableHashMap.map(_._2._1.size).sum / 10
-  }
-
   override def getEstimatedCheckpointTime: Int = {
     buildTableHashMap.map(_._2._1.size).sum
   }

@@ -3,13 +3,13 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
-import edu.uci.ics.amber.engine.architecture.common.Interaction
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
-import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{EstimationMarker, FIFOMarker, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -35,11 +35,11 @@ trait PauseHandler {
       disableMonitoring()
       disableSkewHandling()
       Future
-        .collect(cp.workflow.getAllOperators.map { operator =>
+        .collect(cp.execution.getAllOperatorExecutions.map {
+          case (layerId, opExecution) =>
           // create a buffer for the current input tuple
           // since we need to show them on the frontend
           val buffer = mutable.ArrayBuffer[(ITuple, ActorVirtualIdentity)]()
-          val opExecution = cp.execution.getOperatorExecution(operator.id)
           Future
             .collect(
               opExecution.identifiers
@@ -63,7 +63,7 @@ trait PauseHandler {
             )
             .map { ret =>
               // for each paused operator, send the input tuple
-              sendToClient(ReportCurrentProcessingTuple(operator.id.operator, buffer.toArray))
+              sendToClient(ReportCurrentProcessingTuple(layerId.operator, buffer.toArray))
             }
         }.toSeq)
         .map { ret =>
@@ -75,10 +75,14 @@ trait PauseHandler {
           logger.info(s"controller pause cursor = ${cp.numControlSteps}")
           if(!cp.isReplaying){
             val time = (System.currentTimeMillis() - workflowStartTimeStamp)
-            val interaction = new Interaction()
+            val interaction = new LogicalExecutionSnapshot()
             val markerId = cp.interactionHistory.addInteraction(time, interaction)
-            interaction.addParticipant(CONTROLLER, CheckpointStats(true, markerId, cp.controlInput.getFIFOState, cp.controlOutputPort.getFIFOState,0,cp.numControlSteps + 1,0,0,0))
-            val marker = SnapshotMarker(markerId, true)
+            interaction.addParticipant(CONTROLLER, CheckpointStats(
+              markerId,
+              cp.controlInput.getFIFOState,
+              cp.controlOutputPort.getFIFOState,
+              cp.numControlSteps + 1,0))
+            val marker = EstimationMarker(markerId)
             cp.controlOutputPort.broadcastMarker(marker)
           }
         }

@@ -16,6 +16,4 @@ trait CheckpointSupport {
 
   def getEstimatedCheckpointTime: Int
 
-  def getEstimatedStateLoadTime: Int
-
 }

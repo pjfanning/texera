@@ -26,7 +26,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   private var onRecoveryComplete: () => Unit = _
   @transient
   private var onReplayComplete: () => Unit = _
-  @transient
+
   private var orderedQueue: LinkedBlockingQueue[InternalQueueElement] = _
 
   private val inputMapping = mutable

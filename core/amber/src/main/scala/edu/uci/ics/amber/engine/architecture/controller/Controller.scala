@@ -9,6 +9,7 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerPro
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.recovery.PendingCheckpoint
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -28,7 +29,7 @@ object ControllerConfig {
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
       AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging"),
-      WorkflowStateRestoreConfig.empty
+      WorkflowReplayConfig.empty
     )
 }
 
@@ -37,7 +38,7 @@ final case class ControllerConfig(
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
     var supportFaultTolerance: Boolean,
-    var stateRestoreConfig: WorkflowStateRestoreConfig
+    var stateRestoreConfig: WorkflowReplayConfig
 )
 
 object Controller {
@@ -138,8 +139,8 @@ class Controller(
 
   override def receive: Receive = {
     // load from checkpoint if available
-    var unprocessedMessages:mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.HashMap()
-    controllerConfig.stateRestoreConfig.controllerConf.fromCheckpoint match {
+    var unprocessedMessages:mutable.Map[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.Map()
+    controllerConfig.stateRestoreConfig.confs(CONTROLLER).fromCheckpoint match {
       case None | Some(0) =>
         controllerProcessor = new ControllerProcessor()
         controlInputPort = new NetworkInputPort(
@@ -157,7 +158,16 @@ class Controller(
           this.actorId,
           controllerProcessor.handlePayloadOuter
         )
-        controlInputPort.setFIFOState(chkpt.load("fifoState"))
+        val fifoState = chkpt.load("fifoState").asInstanceOf[Map[(ActorVirtualIdentity,Boolean), Long]]
+        val fifoStateWithInputData = (chkpt.getInputData.mapValues(_.size.toLong).toSeq ++ fifoState.toSeq)
+          .groupBy(_._1).mapValues(_.map(_._2).sum)
+        fifoStateWithInputData.foreach{
+          case (tuple, l) =>
+            logger.info(s"restored fifo status for upstream $tuple is $l")
+        }
+        controlInputPort.setFIFOState(fifoStateWithInputData)
+        unprocessedMessages = chkpt.getInputData
+        logger.info("inflight data restored")
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000d}s"
         )
@@ -180,7 +190,7 @@ class Controller(
     controllerProcessor.restoreWorkersAndResendUnAckedMessages()
 
     // set replay alignment and start
-    val result = controllerConfig.stateRestoreConfig.controllerConf.replayTo match {
+    val result = controllerConfig.stateRestoreConfig.confs(CONTROLLER).replayTo match {
       case Some(replayAlignment) =>
         controllerProcessor.enterReplay(
           replayAlignment,

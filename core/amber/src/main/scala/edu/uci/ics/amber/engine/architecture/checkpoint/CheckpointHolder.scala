@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.checkpoint
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessagePayload
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import javax.swing.GroupLayout.Alignment
@@ -9,10 +10,16 @@ import scala.collection.mutable
 import scala.util.Try
 
 object CheckpointHolder {
+
+  private var uniqueId = 1000000L
+
+  def generateCheckpointId: Long = {
+    uniqueId += 1
+    uniqueId
+  }
+
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
-
-  private val completion = new mutable.HashMap[ActorVirtualIdentity, Long]()
 
   def clear(): Unit = {
     checkpoints.clear()
@@ -37,26 +44,6 @@ object CheckpointHolder {
     }
   }
 
-  def findLastCheckpointOf(id: ActorVirtualIdentity): Option[Long] = {
-    if (checkpoints.contains(id)) {
-      Try(
-        checkpoints(id).maxBy(_._1)._1
-      ).toOption
-    } else {
-      None
-    }
-  }
-
-  def hasMarkedCompletion(id: ActorVirtualIdentity, alignment: Long): Boolean = {
-    completion.contains(id) && completion(id) < alignment
-  }
-
-  def markCompletion(id:ActorVirtualIdentity, alignment: Long):Unit = {
-    if (!completion.contains(id)) {
-      completion(id) = alignment
-    }
-  }
-
   def addCheckpoint(
       id: ActorVirtualIdentity,
       alignment: Long,
@@ -64,8 +51,5 @@ object CheckpointHolder {
   ): Unit = {
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
-    if (hasMarkedCompletion(id, alignment)) {
-      checkpoint.pointerToCompletion = Some(completion(id))
-    }
   }
 }

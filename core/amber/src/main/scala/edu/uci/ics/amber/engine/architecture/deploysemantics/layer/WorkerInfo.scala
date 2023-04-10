@@ -9,5 +9,6 @@ case class WorkerInfo(
     id: ActorVirtualIdentity,
     var state: WorkerState,
     var stats: WorkerStatistics,
+    var upstreamChannelCount: Long,
     @transient var ref: ActorRef
 )

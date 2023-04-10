@@ -4,11 +4,12 @@ import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import akka.pattern.StatusReply.Ack
 import akka.util.Timeout
+import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{CreditRequest, WorkflowFIFOMessage, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{CreditRequest, FIFOMarker, GlobalCheckpointMarker, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -17,6 +18,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.Random
 
 object NetworkCommunicationActor {
 
@@ -248,6 +250,11 @@ class NetworkCommunicationActor(
 
   def sendMessagesAndReceiveAcks: Receive = {
     case SendRequest(id, msg) =>
+      msg match{
+        case WorkflowFIFOMessage(from, isData, sequenceNumber, payload:GlobalCheckpointMarker) =>
+          logger.info(s"NCA receives send request for ${payload.id} to $id")
+        case other => //skip
+      }
       val msgToForward = flowControl.getMessageToForward(id, msg)
       if (msgToForward.nonEmpty) {
         forwardMessageFromFlowControl(id, msgToForward.get)
@@ -321,7 +328,15 @@ class NetworkCommunicationActor(
   @inline
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
-      idToActorRefs(actorID) ! msg
+      Future{
+        Thread.sleep(Random.nextInt(3))
+        msg.internalMessage match{
+          case WorkflowFIFOMessage(from, isData, sequenceNumber, payload:GlobalCheckpointMarker) =>
+            logger.info(s"NCA send ${payload.id} to $actorID")
+          case other => //skip
+        }
+        idToActorRefs(actorID) ! msg
+      }
     } else {
       // otherwise, we ask the parent for the actorRef.
       if (parentRef != null) {

@@ -78,9 +78,4 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   public int getEstimatedCheckpointTime() {
     return 0;
   }
-
-  @Override
-  public int getEstimatedStateLoadTime() {
-    return 0;
-  }
 }

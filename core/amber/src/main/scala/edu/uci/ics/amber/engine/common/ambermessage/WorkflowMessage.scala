@@ -10,7 +10,11 @@ case class WorkflowFIFOMessage(from: ActorVirtualIdentity, isData: Boolean, sequ
 
 trait WorkflowFIFOMessagePayload extends Serializable
 
-case class SnapshotMarker(id: Long, estimation:Boolean) extends WorkflowFIFOMessagePayload
+abstract class FIFOMarker(val id: Long) extends WorkflowFIFOMessagePayload
+
+case class EstimationMarker(override val id:Long) extends FIFOMarker(id)
+
+case class GlobalCheckpointMarker(override val id:Long, markerCollectionCount:Map[ActorVirtualIdentity, Long]) extends FIFOMarker(id)
 
 case class WorkflowRecoveryMessage(
     from: ActorVirtualIdentity,

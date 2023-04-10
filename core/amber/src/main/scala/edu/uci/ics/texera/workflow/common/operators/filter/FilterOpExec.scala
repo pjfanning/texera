@@ -54,6 +54,4 @@ abstract class FilterOpExec() extends OperatorExecutor with CheckpointSupport wi
 
   override def getEstimatedCheckpointTime: Int = 0
 
-  override def getEstimatedStateLoadTime: Int = 0
-
 }

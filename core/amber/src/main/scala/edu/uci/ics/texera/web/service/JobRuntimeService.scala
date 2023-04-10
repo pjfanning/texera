@@ -87,63 +87,14 @@ class JobRuntimeService(
         state.withCurrentReplayPos(reqPos).withIsReplaying(true)
         state.withIsRecovering(true)
       })
-      planner.startPlanning(reqPos + 1, req.plannerStrategy, req.replayTimeLimit)
-      plannerNextStep()
+      planner.scheduleReplay(reqPos, client)
     }
   }))
-
-  def plannerNextStep(): Unit = {
-    println("enter planner next step")
-    if (planner.hasNext) {
-      val nextStep = planner.next()
-      println(s"planner next step = ${nextStep}")
-      nextStep match {
-        case ReplayPlanner.CheckpointCurrentState(involved, cutoffMap) =>
-          client
-            .takeGlobalCheckpoint(involved, cutoffMap)
-            .onSuccess(ret => {
-              val (chkptDelay, idx) = ret.asInstanceOf[(Double, Long)]
-              checkpointOverhead += chkptDelay
-              if (idx != -1) {
-                val res = planner.getCheckpointIndex(idx)
-                if (res != -1) {
-                  stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
-                }
-              }
-              plannerNextStep()
-            })
-        case r @ ReplayPlanner.ReplayExecution(_) =>
-          client.replayExecution(r)
-      }
-    } else {
-      stateStore.jobMetadataStore.updateState(state => {
-        state.withIsRecovering(false)
-          .withIsReplaying(false)
-          .withReplayElapsed((System.currentTimeMillis() - replayStart)/1000d)
-          .withCheckpointElapsed(checkpointOverhead)
-      })
-    }
-  }
-
-//  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
-//    client
-//      .takeGlobalCheckpoint()
-//      .onSuccess(idx => {
-//        if (idx != -1) {
-//          val res = planner.getCheckpointIndex(idx.asInstanceOf[Number].longValue)
-//          if (res != -1) {
-//            stateStore.jobMetadataStore.updateState(state => state.addCheckpointedStates(res))
-//          }
-//        }
-//      })
-//  }))
 
   addSubscription(
     client
       .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
-        if (!evt.isRecovering) {
-          plannerNextStep()
-        }
+
       })
   )
 
@@ -168,6 +119,7 @@ class JobRuntimeService(
   // Receive Pause
   addSubscription(wsInput.subscribe((req: WorkflowPauseRequest, uidOpt) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSING))
+    client.takeGlobalCheckpoint()
     client.sendAsync(PauseWorkflow())
   }))
 

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.common.{Interaction, InteractionHistory}
+import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
@@ -18,7 +18,7 @@ object ControllerEvent {
 
   case class WorkflowRecoveryStatus(isRecovering: Boolean) extends ControlCommand[Unit]
 
-  case class WorkflowReplayInfo(history: InteractionHistory) extends ControlCommand[Unit]
+  case class WorkflowReplayInfo(history: ProcessingHistory) extends ControlCommand[Unit]
 
   case class WorkflowStateUpdate(aggState: WorkflowAggregatedState) extends ControlCommand[Unit]
 

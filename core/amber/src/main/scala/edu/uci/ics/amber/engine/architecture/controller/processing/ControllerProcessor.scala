@@ -6,7 +6,7 @@ import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import edu.uci.ics.amber.engine.architecture.common.InteractionHistory
+import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowRecoveryStatus, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
@@ -17,7 +17,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, ReplayInputRecorder}
+import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, PendingCheckpoint, ReplayInputRecorder}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.CheckInitialized
 import edu.uci.ics.amber.engine.common.AmberLogging
@@ -65,7 +65,9 @@ class ControllerProcessor extends AmberLogging with Serializable {
   @transient
   private[processing] var onReplayComplete: () => Unit = _
   @transient
-  private[processing] var interactionHistory: InteractionHistory = _
+  private[processing] var interactionHistory: ProcessingHistory = _
+  @transient
+  private[processing] val pendingCheckpoints = mutable.HashMap[Long, PendingCheckpoint]()
 
 
   def initialize(
@@ -87,9 +89,8 @@ class ControllerProcessor extends AmberLogging with Serializable {
     this.actorContext = actorContext
     this.controllerConfig = controllerConfig
     this.logStorage = logStorage
-    this.interactionHistory = new InteractionHistory()
+    this.interactionHistory = new ProcessingHistory()
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(execution.getWorkflowStatus))
-    controlOutputPort.resendMessages(Set(CLIENT))
   }
 
   def availableNodes: Array[Address] =
@@ -228,6 +229,10 @@ class ControllerProcessor extends AmberLogging with Serializable {
 
   def handlePayloadOuter(channelId: (ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload):Unit= {
     val (from, _) = channelId
+    pendingCheckpoints.foreach{
+      case (id, chkpt) =>
+        chkpt.recordInput(channelId, payload)
+    }
     payload match {
       case controlPayload: ControlPayload =>
         if (isReplaying) {
@@ -240,13 +245,13 @@ class ControllerProcessor extends AmberLogging with Serializable {
           logger.info("normal processing of " + controlPayload)
           handleControlPayload(from, controlPayload)
         }
-      case marker: SnapshotMarker =>
-//        val completed = pendingCheckpoints
-//          .getOrElseUpdate(marker.id, new PendingCheckpoint(controlInput, actorId, marker, startCheckpoint, finalizeCheckpoint))
-//          .acceptSnapshotMarker(channelId)
-//        if(completed) {
-//          pendingCheckpoints.remove(marker.id)
-//        }
+      case marker: FIFOMarker =>
+        if(pendingCheckpoints.contains(marker.id)){
+          pendingCheckpoints(marker.id).acceptSnapshotMarker(channelId)
+          if(pendingCheckpoints(marker.id).isCompleted){
+            pendingCheckpoints.remove(marker.id)
+          }
+        }
         logger.info(s"receive snapshot marker from $from and marker id = ${marker.id}")
       case _ => logger.warn(s"received $payload which cannot be handled by controller")
     }
@@ -295,42 +300,26 @@ class ControllerProcessor extends AmberLogging with Serializable {
   def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
-      case TakeGlobalCheckpoint(involved, cutoffMap) =>
+      case CheckpointCompleted(id, alignment) =>
+        if(!CheckpointHolder.hasCheckpoint(recoveryMsg.from, alignment)){
+          CheckpointHolder.addCheckpoint(recoveryMsg.from, alignment, null)
+        }
+      case TakeGlobalCheckpoint() =>
         logger.info("start to take global checkpoint")
         val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
         chkpt.attachSerialization(serialization)
-        cutoffMap.getOrElse(CONTROLLER, Map()).foreach{
-          case (id, watermark) =>
-            controlOutputPort.receiveWatermark(id, watermark)
-        }
         chkpt.save("fifoState", controlInput.getFIFOState)
         chkpt.save("controlState", this)
-        CheckpointHolder.addCheckpoint(actorId, numControlSteps, chkpt)
-        logger.info(
-          s"checkpoint stored for $actorId at alignment = $numControlSteps size = ${chkpt.size()} bytes"
-        )
-        val runningWorkers = execution.getAllWorkers.toSet.intersect(involved)
-        Await.result(Future.sequence(runningWorkers.map{
+        val markerCollectionCountMap = execution.getAllWorkers.map{
           worker =>
-          logger.info(s"start to ask $worker to checkpoint")
-            (execution
-            .getOperatorExecution(worker)
-            .getWorkerInfo(worker)
-            .ref ? WorkflowRecoveryMessage(actorId, TakeLocalCheckpoint(cutoffMap.getOrElse(worker, Map())))).map{
-              result =>
-                val alignment = result.asInstanceOf[Long]
-                logger.info(s"received alignment for $worker alignment = $alignment")
-                if (!CheckpointHolder.hasCheckpoint(worker, alignment)) {
-                  // put placeholder
-                  CheckpointHolder.addCheckpoint(worker, alignment, new SavedCheckpoint())
-                }
-            }
-        }), 60.seconds)
-        logger.info(
-          s"checkpoint request completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000d}s"
-        )
-        actorContext.sender() ! ((System.currentTimeMillis() - startTime) / 1000d, numControlSteps)
+            worker -> execution.getOperatorExecution(worker).getWorkerInfo(worker).upstreamChannelCount
+        }.toMap
+        val checkpointId = CheckpointHolder.generateCheckpointId
+        controlOutputPort.broadcastMarker(GlobalCheckpointMarker(checkpointId, markerCollectionCountMap))
+        val msgSender = actorContext.sender()
+        val onComplete = () =>{ msgSender ! ((System.currentTimeMillis() - startTime) / 1000d, numControlSteps)}
+        pendingCheckpoints(checkpointId) = new PendingCheckpoint(actorId, startTime, chkpt, numControlSteps, controlInput.getActiveChannels.size, onComplete)
       case GetOperatorInternalState() =>
         Future
           .sequence(
@@ -347,7 +336,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
         execution.getAllWorkers
           .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
           .foreach(info =>{
-            if(conf.workerConfs(info.id).fromCheckpoint.isDefined){
+            if(conf.confs(info.id).fromCheckpoint.isDefined){
               info.ref ! PoisonPill
               futures.append(workflow
                 .getOperator(info.id)
@@ -364,12 +353,12 @@ class ControllerProcessor extends AmberLogging with Serializable {
               globalRecoveryManager.markRecoveryStatus(info.id, isRecovering = true)
               info.ref ! WorkflowRecoveryMessage(
                 actorId,
-                ContinueReplayTo(conf.workerConfs(info.id).replayTo.get)
+                ContinueReplayTo(conf.confs(info.id).replayTo.get)
               )
             }
           })
         Await.result(Future.sequence(futures), 600.seconds)
-        setReplayToAndStartReplay(conf.controllerConf.replayTo.get)
+        setReplayToAndStartReplay(conf.confs(CONTROLLER).replayTo.get)
       case UpdateRecoveryStatus(isRecovering) =>
         logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
         globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)

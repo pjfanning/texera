@@ -4,7 +4,7 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.common.Interaction
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
@@ -37,7 +37,6 @@ trait WorkerExecutionCompletedHandler {
       // after worker execution is completed, query statistics immediately one last time
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion
-      cp.interactionHistory.addCompletion(sender, msg.currentStep)
       val statsRequests = new mutable.MutableList[Future[Unit]]()
       statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender))), CONTROLLER)
 

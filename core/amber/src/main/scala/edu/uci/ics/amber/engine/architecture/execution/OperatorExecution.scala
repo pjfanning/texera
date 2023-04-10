@@ -38,7 +38,8 @@ class OperatorExecution(numWorkers: Int, val opExecClass: Class[_]) {
   def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = {
     workers.getOrElseUpdate(
       id,
-      new WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), null)
+      WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), 1, // 1 = controller
+        null)
     )
   }
 

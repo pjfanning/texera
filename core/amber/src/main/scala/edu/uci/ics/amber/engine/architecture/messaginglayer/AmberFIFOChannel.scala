@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.common.ambermessage.{SnapshotMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 
 import scala.collection.mutable
 
@@ -9,7 +9,7 @@ class AmberFIFOChannel {
 
   val ofoMap = new mutable.HashMap[Long, WorkflowFIFOMessagePayload]
   var current = 0L
-  var markerPos = new mutable.HashMap[Long, SnapshotMarker]
+  var markerPos = new mutable.HashMap[Long, FIFOMarker]
 
   def setCurrent(value: Long): Unit = {
     current = value
@@ -17,7 +17,7 @@ class AmberFIFOChannel {
 
   def acceptMessage(seq:Long, payload:WorkflowFIFOMessagePayload):Iterator[WorkflowFIFOMessagePayload] = {
     payload match {
-      case marker: SnapshotMarker =>
+      case marker: FIFOMarker =>
         addMarkerPosition(seq, marker)
       case _ =>
         if (isDuplicated(seq)) {
@@ -40,7 +40,7 @@ class AmberFIFOChannel {
     ofoMap(sequenceNumber) = data
   }
 
-  private def addMarkerPosition(seq:Long, marker:SnapshotMarker): Iterator[WorkflowFIFOMessagePayload] ={
+  private def addMarkerPosition(seq:Long, marker:FIFOMarker): Iterator[WorkflowFIFOMessagePayload] ={
     if(current == seq){
       Iterator(marker)
     }else{

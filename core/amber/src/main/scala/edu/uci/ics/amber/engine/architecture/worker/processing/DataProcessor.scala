@@ -112,7 +112,6 @@ class DataProcessor( // meta dependencies:
     this.pauseManager.initialize(this)
     this.epochManager.initialize(this)
     this.rpcInitializer = new DataProcessorRPCHandlerInitializer(this)
-    this.outputPort.resendMessages()
   }
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)

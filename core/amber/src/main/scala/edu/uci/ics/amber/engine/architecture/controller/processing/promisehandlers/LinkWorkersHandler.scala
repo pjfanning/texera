@@ -27,10 +27,16 @@ trait LinkWorkersHandler {
 
   registerHandler { (msg: LinkWorkers, sender) =>
     {
+      val opExecution = cp.execution.getOperatorExecution(msg.link.to)
       // get the list of (sender id, partitioning, set of receiver ids) from the link
       val futures = cp.workflow.getLink(msg.link).getPartitioning.flatMap {
         case (from, link, partitioning, tos) =>
           // send messages to sender worker and receiver workers
+          tos.foreach{
+            worker =>
+              // add upstream
+              opExecution.getWorkerInfo(worker).upstreamChannelCount += 1
+          }
           Seq(send(AddPartitioning(link, partitioning), from)) ++ tos.map(
             send(UpdateInputLinking(from, msg.link), _)
           )
