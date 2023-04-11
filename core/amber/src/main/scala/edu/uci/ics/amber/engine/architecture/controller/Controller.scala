@@ -9,7 +9,6 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerPro
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
-import edu.uci.ics.amber.engine.architecture.recovery.PendingCheckpoint
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -96,7 +95,7 @@ class Controller(
 
   def running: Receive = {
     forwardResendRequest orElse acceptRecoveryMessages orElse acceptDirectInvocations orElse {
-      case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(from, isData, seqNum, payload)) =>
+      case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, seqNum, payload)) =>
         // Controller is assumed to have enough credits
         this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
         controlInputPort.handleMessage(workflowMsg)
@@ -110,7 +109,7 @@ class Controller(
 
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      controllerProcessor.handleControlPayload(CLIENT, invocation)
+      controllerProcessor.handleControlPayload(ChannelEndpointID(CLIENT, true), invocation)
   }
 
   def acceptRecoveryMessages: Receive = {
@@ -121,13 +120,13 @@ class Controller(
   def recovering: Receive = {
     case NetworkMessage(
           _,
-          WorkflowFIFOMessage(from, isData, seqNum, ControlInvocation(_, FatalError(err)))
+          WorkflowFIFOMessage(channel, seqNum, ControlInvocation(_, FatalError(err)))
         ) =>
       // fatal error during recovery, fail
       controllerProcessor.asyncRPCClient.sendToClient(FatalError(err))
       // re-throw the error to fail the actor
       throw err
-    case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(from, isData, seqNum, payload)) =>
+    case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, seqNum, payload)) =>
       // Controller is assumed to have enough credits
       this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
       controlInputPort.handleMessage(workflowMsg)
@@ -139,7 +138,7 @@ class Controller(
 
   override def receive: Receive = {
     // load from checkpoint if available
-    var unprocessedMessages:mutable.Map[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.Map()
+    var unprocessedMessages:mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.Map()
     controllerConfig.stateRestoreConfig.confs(CONTROLLER).fromCheckpoint match {
       case None | Some(0) =>
         controllerProcessor = new ControllerProcessor()
@@ -158,7 +157,7 @@ class Controller(
           this.actorId,
           controllerProcessor.handlePayloadOuter
         )
-        val fifoState = chkpt.load("fifoState").asInstanceOf[Map[(ActorVirtualIdentity,Boolean), Long]]
+        val fifoState = chkpt.load("fifoState").asInstanceOf[Map[ChannelEndpointID, Long]]
         val fifoStateWithInputData = (chkpt.getInputData.mapValues(_.size.toLong).toSeq ++ fifoState.toSeq)
           .groupBy(_._1).mapValues(_.map(_._2).sum)
         fifoStateWithInputData.foreach{

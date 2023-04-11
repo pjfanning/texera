@@ -80,35 +80,30 @@ class PythonWorkflowWorker(
     Constants.unprocessedBatchesCreditLimitPerSender
   }
 
-  override def handlePayload(channelId:(ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload): Unit = {
-    val (from, _) = channelId
+  override def handlePayload(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match {
       case control: ControlPayload =>
         control match {
           case ControlInvocation(_, c) =>
             // TODO: Implement backpressure message handling for python worker
             if (!c.isInstanceOf[Backpressure]) {
-              pythonProxyClient.enqueueCommand(control, from)
+              pythonProxyClient.enqueueCommand(control, channelId)
             }
           case ReturnInvocation(_, _) =>
-            pythonProxyClient.enqueueCommand(control, from)
+            pythonProxyClient.enqueueCommand(control, channelId)
           case _ =>
             logger.error(s"unhandled control payload: $control")
         }
       case data: DataPayload =>
-        pythonProxyClient.enqueueData(DataElement(data, from))
+        pythonProxyClient.enqueueData(DataElement(data, channelId))
       case _ => ???
     }
   }
 
   def outputPayload(
       to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      isData: Boolean,
-      seqNum: Long,
-      payload: WorkflowFIFOMessagePayload
+      msg: WorkflowFIFOMessage
   ): Unit = {
-    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 

@@ -47,7 +47,7 @@ class ProcessingHistory extends Serializable {
     var currentCost = 0L
     val info = getSnapshot(currentIdx).getStats(op)
     currentCost += info.checkpointCost
-    info.inputStatus.keys.map(_._1).toSet.foreach{
+    info.inputStatus.keys.map(_.endpointWorker).toSet.foreach{
       k:ActorVirtualIdentity =>
         val pos = chkptPos.getOrElse(k, 0)
         if(pos >= currentIdx){

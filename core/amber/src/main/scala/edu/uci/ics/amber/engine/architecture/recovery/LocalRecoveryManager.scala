@@ -1,8 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class LocalRecoveryManager {
@@ -29,22 +26,6 @@ class LocalRecoveryManager {
 
   def End(): Unit = {
     callbacksOnEnd.foreach(callback => callback())
-  }
-
-  def getFIFOState(iter: Iterator[InMemDeterminant]): Map[(ActorVirtualIdentity,Boolean), Long] = {
-    val fifoState = new mutable.AnyRefMap[(ActorVirtualIdentity,Boolean), Long]()
-    while (iter.hasNext) {
-      iter.next() match {
-        case ProcessControlMessage(controlPayload, from) =>
-          if (fifoState.contains((from, false))) {
-            fifoState((from, false)) += 1
-          } else {
-            fifoState((from, false)) = 1
-          }
-        case other => //skip
-      }
-    }
-    fifoState.toMap
   }
 
 }

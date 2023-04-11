@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{GlobalCheckpointMarker, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, GlobalCheckpointMarker, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -14,9 +14,9 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
                         targetAlignmentCount:Long,
                         onComplete: () => Unit) extends AmberLogging{
 
-  private val channelAligned = mutable.HashSet[(ActorVirtualIdentity, Boolean)]()
+  private val channelAligned = mutable.HashSet[ChannelEndpointID]()
 
-  def acceptSnapshotMarker(channelId: (ActorVirtualIdentity, Boolean)):Unit = {
+  def acceptSnapshotMarker(channelId: ChannelEndpointID):Unit = {
     channelAligned.add(channelId)
     logger.info(s"start to record input channel current = ${channelAligned.size}, target = $targetAlignmentCount")
     if(isCompleted){
@@ -38,7 +38,7 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
 
   def isCompleted:Boolean = channelAligned.size == targetAlignmentCount
 
-  def recordInput(channelId:(ActorVirtualIdentity, Boolean), payload:WorkflowFIFOMessagePayload): Unit ={
+  def recordInput(channelId:ChannelEndpointID, payload:WorkflowFIFOMessagePayload): Unit ={
     if(!channelAligned.contains(channelId)){
       chkpt.addInputData(channelId, payload)
     }

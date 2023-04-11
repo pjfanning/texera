@@ -2,11 +2,11 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-sealed trait WorkflowMessage extends Serializable {
-  val from: ActorVirtualIdentity
-}
+case class ChannelEndpointID(endpointWorker:ActorVirtualIdentity, isControlChannel:Boolean)
 
-case class WorkflowFIFOMessage(from: ActorVirtualIdentity, isData: Boolean, sequenceNumber: Long, payload:WorkflowFIFOMessagePayload) extends WorkflowMessage
+sealed trait WorkflowMessage extends Serializable
+
+case class WorkflowFIFOMessage(channel: ChannelEndpointID, sequenceNumber: Long, payload:WorkflowFIFOMessagePayload) extends WorkflowMessage
 
 trait WorkflowFIFOMessagePayload extends Serializable
 

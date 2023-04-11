@@ -1,13 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.common.ambermessage.{FIFOMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, FIFOMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
 class ReplayInputRecorder {
-  private val channelData = new mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
-  def recordPayload(channelId:(ActorVirtualIdentity, Boolean), payload:WorkflowFIFOMessagePayload): Unit ={
+  private val channelData = new mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
+  def recordPayload(channelId:ChannelEndpointID, payload:WorkflowFIFOMessagePayload): Unit ={
     if(payload.isInstanceOf[FIFOMarker]){
       return
     }
@@ -18,6 +18,6 @@ class ReplayInputRecorder {
     channelData.clear()
   }
 
-  def getRecordedInputForReplay:mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = channelData
+  def getRecordedInputForReplay:mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = channelData
 
 }

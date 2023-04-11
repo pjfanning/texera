@@ -54,7 +54,7 @@ private[client] class ClientActor extends Actor {
       sender ! scala.runtime.BoxedUnit.UNIT
     case NetworkMessage(
           mId,
-          _ @WorkflowFIFOMessage(_, _, _, _ @ReturnInvocation(originalCommandID, controlReturn))
+          _ @WorkflowFIFOMessage(_, _, _ @ReturnInvocation(originalCommandID, controlReturn))
         ) =>
       sender ! NetworkAck(mId)
       if (handlers.isDefinedAt(controlReturn)) {
@@ -69,7 +69,7 @@ private[client] class ClientActor extends Actor {
         }
         promiseMap.remove(originalCommandID)
       }
-    case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _, _ @ControlInvocation(_, command))) =>
+    case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _ @ControlInvocation(_, command))) =>
       sender ! NetworkAck(mId)
       if (handlers.isDefinedAt(command)) {
         handlers(command)

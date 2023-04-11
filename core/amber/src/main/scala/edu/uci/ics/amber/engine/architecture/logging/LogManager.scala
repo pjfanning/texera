@@ -3,16 +3,14 @@ package edu.uci.ics.amber.engine.architecture.logging
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 
 //In-mem formats:
 sealed trait InMemDeterminant
-case class StepDelta(actorVirtualIdentity: ActorVirtualIdentity, steps: Long)
-    extends InMemDeterminant
-case class ProcessControlMessage(controlPayload: ControlPayload, from: ActorVirtualIdentity)
+case class StepDelta(channel: ChannelEndpointID, steps: Long)
     extends InMemDeterminant
 case class TimeStamp(value: Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant

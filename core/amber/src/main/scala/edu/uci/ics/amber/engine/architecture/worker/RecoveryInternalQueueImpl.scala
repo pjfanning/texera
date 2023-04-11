@@ -2,13 +2,8 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{
-  ControlElement,
-  DataElement,
-  EndMarker,
-  InputTuple,
-  InternalQueueElement
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple, InternalQueueElement}
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -30,11 +25,11 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   private var orderedQueue: LinkedBlockingQueue[InternalQueueElement] = _
 
   private val inputMapping = mutable
-    .HashMap[ActorVirtualIdentity, LinkedBlockingQueue[DataElement]]()
+    .HashMap[ChannelEndpointID, LinkedBlockingQueue[DataElement]]()
   private val controlMessages = mutable
-    .HashMap[ActorVirtualIdentity, mutable.Queue[ControlElement]]()
+    .HashMap[ChannelEndpointID, mutable.Queue[ControlElement]]()
   private var step = 0L
-  private var targetVId: ActorVirtualIdentity = _
+  private var targetChannel: ChannelEndpointID = _
   private var replayTo = -1L
   private var nextControlToEmit: ControlElement = _
 
@@ -96,10 +91,8 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
     //println(s"read: ${n}")
     n match {
       case StepDelta(sender, steps) =>
-        targetVId = sender
+        targetChannel = sender
         step = steps
-      case ProcessControlMessage(controlPayload, from) =>
-        nextControlToEmit = ControlElement(controlPayload, from)
       case TimeStamp(value) => ???
       case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")
     }
@@ -111,7 +104,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
         with AsyncRPCServer.SkipReply
         with AsyncRPCServer.SkipFaultTolerance
   ): Unit = {
-    orderedQueue.put(ControlElement(ControlInvocation(control), SELF))
+    orderedQueue.put(ControlElement(ChannelEndpointID(SELF, true), ControlInvocation(control)))
   }
 
   override def enqueueCommand(control: ControlElement): Unit = {
@@ -157,7 +150,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
         step -= 1
         if (readInput) {
           val data =
-            inputMapping.getOrElseUpdate(targetVId, new LinkedBlockingQueue[DataElement]()).take()
+            inputMapping.getOrElseUpdate(targetChannel, new LinkedBlockingQueue[DataElement]()).take()
           orderedQueue.put(data)
         }
       } else if (nextControlToEmit != null) {

@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager, ProcessControlMessage}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort, OutputManager}
 import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputEpochMarker, InputTuple}
@@ -119,12 +119,8 @@ class DataProcessor( // meta dependencies:
 
   def outputPayload(
                          to: ActorVirtualIdentity,
-                         self: ActorVirtualIdentity,
-                         isData: Boolean,
-                         seqNum: Long,
-                         payload: WorkflowFIFOMessagePayload
+                         msg:WorkflowFIFOMessage
                        ): Unit = {
-    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 

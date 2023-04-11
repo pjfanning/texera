@@ -22,7 +22,7 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperat
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{EndMarker, InputEpochMarker, InputTuple}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{TakeCheckpoint, TakeCursor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{CheckpointCompleted, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, EstimationMarker, FIFOMarker, GetOperatorInternalState, GlobalCheckpointMarker, UpdateRecoveryStatus, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, CheckpointCompleted, ContinueReplayTo, ControlPayload, CreditRequest, DataFrame, DataPayload, EndOfUpstream, EpochMarker, EstimationMarker, FIFOMarker, GetOperatorInternalState, GlobalCheckpointMarker, UpdateRecoveryStatus, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
@@ -113,7 +113,7 @@ class WorkflowWorker(
     outputIter
   }
 
-  def insertPayloads(channelData: mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]): Unit ={
+  def insertPayloads(channelData: mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]): Unit ={
     channelData.foreach{
       case (channelId, payloads) =>
         payloads.foreach(x => handlePayload(channelId, x))
@@ -133,7 +133,7 @@ class WorkflowWorker(
           val startLoadingTime = System.currentTimeMillis()
           // restore state from checkpoint: can be in either replaying or normal processing
           chkpt.attachSerialization(SerializationExtension(context.system))
-          val fifoState:Map[(ActorVirtualIdentity, Boolean), Long] = chkpt.load("fifoState")
+          val fifoState:Map[ChannelEndpointID, Long] = chkpt.load("fifoState")
           val fifoStateWithInputData = (chkpt.getInputData.mapValues(_.size.toLong).toSeq ++ fifoState.toSeq)
             .groupBy(_._1).mapValues(_.map(_._2).sum)
           fifoStateWithInputData.foreach{
@@ -295,8 +295,7 @@ class WorkflowWorker(
       sender ! Ack
   }
 
-  def handlePayload(channelId:(ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload): Unit = {
-    val (from, _) = channelId
+  def handlePayload(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     if(channelId._1 != SELF){
       pendingCheckpoints.foreach{
         case (id, chkpt) =>

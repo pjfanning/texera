@@ -4,13 +4,9 @@ import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogMana
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, EpochMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipFaultTolerance,
-  SkipReply
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -28,18 +24,18 @@ object WorkerInternalQueue {
 
   // 4 kinds of elements can be accepted by internal queue
   sealed trait InternalQueueElement {
-    def from: ActorVirtualIdentity
+    def channel: ChannelEndpointID
   }
 
   sealed trait DataElement extends InternalQueueElement
 
-  case class ControlElement(payload: ControlPayload, from: ActorVirtualIdentity)
+  case class ControlElement(channel: ChannelEndpointID, payload: ControlPayload)
       extends InternalQueueElement
 
-  case class InputTuple(from: ActorVirtualIdentity, tuple: ITuple) extends DataElement
+  case class InputTuple(channel: ChannelEndpointID, tuple: ITuple) extends DataElement
 
-  case class EndMarker(from: ActorVirtualIdentity) extends DataElement
-  case class InputEpochMarker(from: ActorVirtualIdentity, epochMarker: EpochMarker)
+  case class EndMarker(channel: ChannelEndpointID) extends DataElement
+  case class InputEpochMarker(channel: ChannelEndpointID, epochMarker: EpochMarker)
       extends DataElement
 
 }
@@ -52,7 +48,7 @@ abstract class WorkerInternalQueue extends Serializable {
   def enqueueSystemCommand(
       control: ControlCommand[_] with SkipReply with SkipFaultTolerance
   ): Unit = {
-    enqueueCommand(ControlElement(ControlInvocation(control), SELF))
+    enqueueCommand(ControlElement(ChannelEndpointID(SELF, true), ControlInvocation(control)))
   }
 
   def registerInput(sender: String): Unit

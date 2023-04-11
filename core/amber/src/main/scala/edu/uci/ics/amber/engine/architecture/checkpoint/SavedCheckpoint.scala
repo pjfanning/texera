@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.checkpoint
 
 import akka.serialization.Serialization
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessagePayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -10,15 +10,15 @@ import scala.collection.mutable.ArrayBuffer
 class SavedCheckpoint {
 
   private val states = new mutable.HashMap[String, SerializedState]()
-  private val recordedInputData = new mutable.HashMap[(ActorVirtualIdentity, Boolean), mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]
+  private val recordedInputData = new mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]
   @transient
   private var serde: Serialization = _
 
-  def addInputData(channel: (ActorVirtualIdentity, Boolean), data:WorkflowFIFOMessagePayload): Unit ={
+  def addInputData(channel: ChannelEndpointID, data:WorkflowFIFOMessagePayload): Unit ={
     recordedInputData.getOrElseUpdate(channel, new ArrayBuffer[WorkflowFIFOMessagePayload]()).append(data)
   }
 
-  def getInputData: mutable.Map[(ActorVirtualIdentity, Boolean), ArrayBuffer[WorkflowFIFOMessagePayload]] = recordedInputData
+  def getInputData: mutable.Map[ChannelEndpointID, ArrayBuffer[WorkflowFIFOMessagePayload]] = recordedInputData
 
   def attachSerialization(serialization: Serialization): Unit = {
     serde = serialization

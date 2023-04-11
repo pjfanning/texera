@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.logging.storage
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessControlMessage}
+import edu.uci.ics.amber.engine.architecture.logging.InMemDeterminant
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{
   DeterminantLogReader,
   DeterminantLogWriter
@@ -21,7 +21,6 @@ object DeterminantLogStorage {
     val ki = new ScalaKryoInstantiator {
       override def newKryo(): KryoBase = {
         val kryo = super.newKryo()
-        kryo.register(classOf[ProcessControlMessage])
         kryo.register(classOf[ControlInvocation])
         kryo.register(classOf[WorkerState])
         kryo.register(classOf[ReturnInvocation])

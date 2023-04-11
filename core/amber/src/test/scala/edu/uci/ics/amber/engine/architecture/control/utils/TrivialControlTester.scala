@@ -5,6 +5,7 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort.AmberChannelID
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -57,15 +58,13 @@ class TrivialControlTester(
   }
 
   def handleControlPayloadWithTryCatch(
-      channelId: (ActorVirtualIdentity, Boolean),
+      channelId: AmberChannelID,
       controlPayload: WorkflowFIFOMessagePayload
   ): Unit = {
-    val (from, _) = channelId
     try {
       controlPayload match {
         // use control input port to pass control messages
         case invocation: ControlInvocation =>
-          assert(from.isInstanceOf[ActorVirtualIdentity])
           asyncRPCServer.logControlInvocation(invocation, from, 0)
           asyncRPCServer.receive(invocation, from)
         case ret: ReturnInvocation =>

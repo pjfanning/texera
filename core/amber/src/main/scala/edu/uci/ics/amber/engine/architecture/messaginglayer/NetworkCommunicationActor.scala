@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{CreditRequest, FIFOMarker, GlobalCheckpointMarker, WorkflowFIFOMessage, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, CreditRequest, FIFOMarker, GlobalCheckpointMarker, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -141,8 +141,7 @@ class NetworkCommunicationActor(
     val msgToSend = NetworkMessage(
       networkMessageID,
       WorkflowFIFOMessage(
-        actorId,
-        isData = false,
+        ChannelEndpointID(actorId, false),
         nextSeqNumForMainActor,
         ControlInvocation(Backpressure(backpressureEnable))
       )
@@ -251,7 +250,7 @@ class NetworkCommunicationActor(
   def sendMessagesAndReceiveAcks: Receive = {
     case SendRequest(id, msg) =>
       msg match{
-        case WorkflowFIFOMessage(from, isData, sequenceNumber, payload:GlobalCheckpointMarker) =>
+        case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
           logger.info(s"NCA receives send request for ${payload.id} to $id")
         case other => //skip
       }
@@ -331,7 +330,7 @@ class NetworkCommunicationActor(
       Future{
         Thread.sleep(Random.nextInt(3))
         msg.internalMessage match{
-          case WorkflowFIFOMessage(from, isData, sequenceNumber, payload:GlobalCheckpointMarker) =>
+          case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
             logger.info(s"NCA send ${payload.id} to $actorID")
           case other => //skip
         }

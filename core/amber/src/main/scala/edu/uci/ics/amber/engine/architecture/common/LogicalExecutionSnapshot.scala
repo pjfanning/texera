@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.{ChannelStats, ChannelStatsMapping, ProcessingStats}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -10,19 +11,19 @@ import scala.collection.mutable
 object LogicalExecutionSnapshot{
 
   class ChannelStatsMapping extends Serializable {
-    private val map = mutable.HashMap[(ActorVirtualIdentity, Boolean), ChannelStats]()
-    def get(channel:(ActorVirtualIdentity, Boolean)):ChannelStats = {
+    private val map = mutable.HashMap[ChannelEndpointID, ChannelStats]()
+    def get(channel:ChannelEndpointID):ChannelStats = {
       map.getOrElseUpdate(channel, ChannelStats(0,0))
     }
 
-    def keys:Iterable[(ActorVirtualIdentity, Boolean)] = map.keys
+    def keys:Iterable[ChannelEndpointID] = map.keys
 
     def getToReceive(actorVirtualIdentity: ActorVirtualIdentity):Long = {
-      map.filter(_._1._1 == actorVirtualIdentity).map(_._2.toReceive).sum
+      map.filter(_._1.endpointWorker == actorVirtualIdentity).map(_._2.toReceive).sum
     }
 
     def getReceived(actorVirtualIdentity: ActorVirtualIdentity):Long = {
-      map.filter(_._1._1 == actorVirtualIdentity).map(_._2.actualReceived).sum
+      map.filter(_._1.endpointWorker == actorVirtualIdentity).map(_._2.actualReceived).sum
     }
   }
 
@@ -47,8 +48,8 @@ class LogicalExecutionSnapshot extends Serializable{
     }
     info.outputWatermarks.foreach{
       case (channel, sent) =>
-        val down = participants.getOrElseUpdate(channel._1, ProcessingStats(0, 0, new ChannelStatsMapping()))
-        val downChannelId = (id, channel._2)
+        val down = participants.getOrElseUpdate(channel.endpointWorker, ProcessingStats(0, 0, new ChannelStatsMapping()))
+        val downChannelId = ChannelEndpointID(id, channel.isControlChannel)
         down.inputStatus.get(downChannelId).toReceive = sent
     }
   }

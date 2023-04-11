@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, ProcessControlMessage, StepDelta}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, StepDelta}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, PendingCheckpoint, ReplayInputRecorder}
@@ -103,13 +103,8 @@ class ControllerProcessor extends AmberLogging with Serializable {
 
   def outputControlPayload(
       to: ActorVirtualIdentity,
-      self: ActorVirtualIdentity,
-      isData: Boolean,
-      seqNum: Long,
-      payload: WorkflowFIFOMessagePayload
+      msg: WorkflowFIFOMessage
   ): Unit = {
-    assert(!isData)
-    val msg = WorkflowFIFOMessage(self, isData, seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
@@ -162,9 +157,9 @@ class ControllerProcessor extends AmberLogging with Serializable {
   var isReplaying = false
   var numControlSteps = 0L
   private[processing] var replayToStep = -1L
-  private[processing] val controlMessages = mutable
-    .HashMap[ActorVirtualIdentity, mutable.Queue[ProcessControlMessage]]()
-  private[processing] var currentHead: ActorVirtualIdentity = null
+  private[processing] val messagesDuringReplay = mutable
+    .HashMap[ChannelEndpointID, mutable.Queue[ControlPayload]]()
+  private[processing] var currentHead: ChannelEndpointID = null
   private val rpcInitializer = new ControllerAsyncRPCHandlerInitializer(this)
 
   def setReplayToAndStartReplay(targetStep: Long): Unit = {
@@ -196,10 +191,10 @@ class ControllerProcessor extends AmberLogging with Serializable {
 
   def invokeReplay(): Unit = {
     if (currentHead != null) {
-      if (controlMessages.contains(currentHead) && controlMessages(currentHead).nonEmpty) {
+      if (messagesDuringReplay.contains(currentHead) && messagesDuringReplay(currentHead).nonEmpty) {
         logger.info("get current head from " + currentHead)
-        val elem = controlMessages(currentHead).dequeue()
-        handleControlPayload(elem.from, elem.controlPayload)
+        val elem = messagesDuringReplay(currentHead).dequeue()
+        handleControlPayload(currentHead, elem)
         currentHead = null
       }
     }
@@ -209,17 +204,14 @@ class ControllerProcessor extends AmberLogging with Serializable {
     while (currentHead == null) {
       controlMessagesToReplay.next() match {
         case StepDelta(sender, _) =>
-          if (controlMessages.contains(sender) && controlMessages(sender).nonEmpty) {
+          if (messagesDuringReplay.contains(sender) && messagesDuringReplay(sender).nonEmpty) {
             logger.info("already have current head of " + sender)
-            val elem = controlMessages(sender).dequeue()
-            handleControlPayload(elem.from, elem.controlPayload)
+            val elem = messagesDuringReplay(sender).dequeue()
+            handleControlPayload(sender, elem)
           } else {
             logger.info("set current head to " + sender)
             currentHead = sender
           }
-        case ProcessControlMessage(controlPayload, from) =>
-          controlInput.increaseFIFOSeqNum(from, false)
-          handleControlPayload(from, controlPayload)
       }
       if (checkIfReplayCompleted()) {
         return
@@ -227,8 +219,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
     }
   }
 
-  def handlePayloadOuter(channelId: (ActorVirtualIdentity, Boolean), payload: WorkflowFIFOMessagePayload):Unit= {
-    val (from, _) = channelId
+  def handlePayloadOuter(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload):Unit= {
     pendingCheckpoints.foreach{
       case (id, chkpt) =>
         chkpt.recordInput(channelId, payload)
@@ -236,14 +227,14 @@ class ControllerProcessor extends AmberLogging with Serializable {
     payload match {
       case controlPayload: ControlPayload =>
         if (isReplaying) {
-          logger.info("received " + controlPayload + " from " + from)
-          controlMessages
-            .getOrElseUpdate(from, new mutable.Queue[ProcessControlMessage]())
-            .enqueue(ProcessControlMessage(controlPayload, from))
+          logger.info("received " + controlPayload + " from " + channelId)
+          messagesDuringReplay
+            .getOrElseUpdate(channelId, new mutable.Queue[ControlPayload]())
+            .enqueue(controlPayload)
           invokeReplay()
         } else {
           logger.info("normal processing of " + controlPayload)
-          handleControlPayload(from, controlPayload)
+          handleControlPayload(channelId, controlPayload)
         }
       case marker: FIFOMarker =>
         if(pendingCheckpoints.contains(marker.id)){
@@ -252,13 +243,13 @@ class ControllerProcessor extends AmberLogging with Serializable {
             pendingCheckpoints.remove(marker.id)
           }
         }
-        logger.info(s"receive snapshot marker from $from and marker id = ${marker.id}")
+        logger.info(s"receive snapshot marker from $channelId and marker id = ${marker.id}")
       case _ => logger.warn(s"received $payload which cannot be handled by controller")
     }
   }
 
   def handleControlPayload(
-      from: ActorVirtualIdentity,
+      channelId: ChannelEndpointID,
       controlPayload: ControlPayload
   ): Unit = {
 //    if (from == CLIENT || from == SELF || from == actorId) {
@@ -273,7 +264,6 @@ class ControllerProcessor extends AmberLogging with Serializable {
         if (!invocation.command.isInstanceOf[SkipFaultTolerance]) {
           determinantLogger.logDeterminant(ProcessControlMessage(invocation, from))
         }
-        assert(from.isInstanceOf[ActorVirtualIdentity])
         asyncRPCServer.logControlInvocation(invocation, from, numControlSteps)
         asyncRPCServer.receive(invocation, from)
         if (invocation.command.isInstanceOf[SkipFaultTolerance]) {
