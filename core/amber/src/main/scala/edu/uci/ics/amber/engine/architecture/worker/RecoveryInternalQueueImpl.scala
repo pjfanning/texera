@@ -2,13 +2,11 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ControlElement, DataElement, EndMarker, InputTuple, InternalQueueElement}
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_MESSAGE, DATA_MESSAGE, DPMessage, QueueHeadStatus}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload, FIFOMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
-import lbmq.LinkedBlockingMultiQueue
 
 import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
@@ -16,26 +14,20 @@ import scala.collection.mutable
 class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
 
   @transient
-  private var records: Iterator[InMemDeterminant] = _
+  private var records: Iterator[StepsOnChannel] = _
   @transient
   private var onRecoveryComplete: () => Unit = _
   @transient
   private var onReplayComplete: () => Unit = _
+  @transient
+  private var switchStep = 0L
 
-  private var orderedQueue: LinkedBlockingQueue[InternalQueueElement] = _
-
-  private val inputMapping = mutable
-    .HashMap[ChannelEndpointID, LinkedBlockingQueue[DataElement]]()
-  private val controlMessages = mutable
-    .HashMap[ChannelEndpointID, mutable.Queue[ControlElement]]()
-  private var step = 0L
-  private var targetChannel: ChannelEndpointID = _
+  private val messageQueues = mutable
+    .HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]]()
+  private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
+  private var currentChannel: ChannelEndpointID = _
+  private var nextChannel: ChannelEndpointID = _
   private var replayTo = -1L
-  private var nextControlToEmit: ControlElement = _
-
-  private var recordRead = 0L
-
-  val registeredInputs = new mutable.HashSet[String]()
 
   def setReplayTo(dest: Long, onReplayEnd: () => Unit): Unit = {
     replayTo = dest
@@ -43,60 +35,28 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   }
 
   def initialize(
-      records: Iterator[InMemDeterminant],
-      currentDPStep: Long,
-      onRecoveryCompleted: () => Unit
+                  records: Iterator[StepsOnChannel],
+                  currentDPStep: Long,
+                  onRecoveryComplete: () => Unit
   ): Unit = {
-    this.orderedQueue = new LinkedBlockingQueue[InternalQueueElement]()
-    this.onRecoveryComplete = onRecoveryCompleted
+    this.onRecoveryComplete = onRecoveryComplete
     // restore replay progress by dropping some of the entries
-    val copiedRead = recordRead
-    recordRead = 0
-    var accumulatedSteps = 0L
+    switchStep = 0L
     this.records = records
-    while (accumulatedSteps < currentDPStep) {
-      loadDeterminant()
-      accumulatedSteps += (if (step == 0) 1 else step)
-      step = 0
+    while (records.hasNext && switchStep < currentDPStep) {
+      loadNextDeterminant()
     }
-    println(s"Internal Queue: accumulated step = $accumulatedSteps actual steps = $currentDPStep")
-    if (accumulatedSteps > currentDPStep) {
-      step = accumulatedSteps - currentDPStep
+    if(!records.hasNext){
+      //recovery already completed
+      onRecoveryComplete()
     }
-    println(s"Internal Queue: recovered read = $recordRead actual read = $copiedRead")
   }
 
-  def getAllStashedInputs: Iterable[DataElement] = {
-    val res = new mutable.ArrayBuffer[DataElement]
-    inputMapping.values.foreach { x =>
-      while (!x.isEmpty) {
-        res.append(x.take())
-      }
-    }
-    res
-  }
 
-  def getAllStashedControls: Iterable[ControlElement] = {
-    val res = new mutable.ArrayBuffer[ControlElement]
-    controlMessages.foreach { x =>
-      while (x._2.nonEmpty) {
-        res.append(x._2.dequeue())
-      }
-    }
-    res
-  }
-
-  private def loadDeterminant(): Unit = {
-    val n = records.next()
-    //println(s"read: ${n}")
-    n match {
-      case StepDelta(sender, steps) =>
-        targetChannel = sender
-        step = steps
-      case TimeStamp(value) => ???
-      case TerminateSignal  => throw new RuntimeException("Cannot handle terminate signal here.")
-    }
-    recordRead += 1
+  private def loadNextDeterminant(): Unit = {
+    val cc = records.next()
+    nextChannel = cc.channel
+    switchStep = cc.steps
   }
 
   override def enqueueSystemCommand(
@@ -104,88 +64,61 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
         with AsyncRPCServer.SkipReply
         with AsyncRPCServer.SkipFaultTolerance
   ): Unit = {
-    orderedQueue.put(ControlElement(ChannelEndpointID(SELF, true), ControlInvocation(control)))
+    systemCommandQueue.put(DPMessage(ChannelEndpointID(SELF, true), ControlInvocation(control)))
   }
 
-  override def enqueueCommand(control: ControlElement): Unit = {
-    controlMessages
-      .getOrElseUpdate(control.from, new mutable.Queue[ControlElement]())
-      .enqueue(control)
-  }
 
-  override def enqueueData(elem: DataElement): Unit = {
-    elem match {
-      case tuple: InputTuple =>
-        creditMonitor.decreaseCredit(tuple.from)
-        inputMapping
-          .getOrElseUpdate(tuple.from, new LinkedBlockingQueue[DataElement]())
-          .put(tuple)
-      case EndMarker(from) =>
-        inputMapping
-          .getOrElseUpdate(from, new LinkedBlockingQueue[DataElement]())
-          .put(EndMarker(from))
-      case _ =>
-      // pass
-    }
-  }
-
-  override def peek(currentStep: Long): Option[InternalQueueElement] = {
-    forwardRecoveryProgress(currentStep, false)
-    Option(orderedQueue.peek())
-  }
-
-  private def isRecoveryCompleted: Boolean = !records.hasNext && nextControlToEmit == null
-
-  private def forwardRecoveryProgress(currentStep: Long, readInput: Boolean): Unit = {
-    if (replayTo != currentStep) {
-      if (orderedQueue.isEmpty && step == 0 && records.hasNext) {
-        loadDeterminant()
-      }
-      if(replayTo - currentStep < 100){
-        println(
-          s"replayInfo: replayTo = ${replayTo} Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
-        )
-      }
-      if (step > 0) {
-        step -= 1
-        if (readInput) {
-          val data =
-            inputMapping.getOrElseUpdate(targetChannel, new LinkedBlockingQueue[DataElement]()).take()
-          orderedQueue.put(data)
-        }
-      } else if (nextControlToEmit != null) {
-        orderedQueue.put(nextControlToEmit)
-        nextControlToEmit = null
-      }
+  override def getQueueHeadStatus(currentStep: Long): QueueHeadStatus = {
+    forwardRecoveryProgress(currentStep)
+    if(currentChannel.isControlChannel){
+      CONTROL_MESSAGE
     }else{
-        println(
-          s"replayInfo: replayTo = ${replayTo} Q empty = ${orderedQueue.isEmpty} controlToEmit = $nextControlToEmit steps to next control = $step currentstep = $currentStep readInput = $readInput waiting on $targetVId"
-        )
-      if(onReplayComplete != null){
-        onReplayComplete()
-        onReplayComplete = null
+      DATA_MESSAGE
+    }
+  }
+
+  private def forwardRecoveryProgress(currentStep: Long): Unit = {
+    while(currentStep == switchStep){
+      currentChannel = nextChannel
+      if(records.hasNext){
+        loadNextDeterminant()
+      }else{
+        // recovery completed
+        onRecoveryComplete()
       }
     }
   }
 
-  override def take(currentStep: Long): InternalQueueElement = {
-    forwardRecoveryProgress(currentStep, true)
-    val res = orderedQueue.take()
-    if (isRecoveryCompleted && onRecoveryComplete != null) {
-      onRecoveryComplete()
+  override def take(currentStep: Long): DPMessage = {
+    if(!systemCommandQueue.isEmpty){
+      systemCommandQueue.take()
+    }else{
+      forwardRecoveryProgress(currentStep)
+      if(currentStep == replayTo){
+        // replay completed
+        onReplayComplete()
+        systemCommandQueue.take()
+      }else{
+        if(!currentChannel.isControlChannel){
+          creditMonitor.increaseCredit(currentChannel.endpointWorker)
+        }
+        messageQueues.getOrElseUpdate(currentChannel, new LinkedBlockingQueue()).take()
+      }
     }
-    res
   }
 
   override def getDataQueueLength: Int = 0
 
   override def getControlQueueLength: Int = 0
 
-  private[architecture] override def dataQueues
-      : mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue] =
-    mutable.HashMap.empty
-
-  override def registerInput(sender: String): Unit = {
-    registeredInputs.add(sender)
+  override def enqueuePayload(message: DPMessage): Unit = {
+    if(!message.channel.isControlChannel){
+      creditMonitor.decreaseCredit(message.channel.endpointWorker)
+    }
+    messageQueues.getOrElseUpdate(message.channel, new LinkedBlockingQueue()).put(message)
   }
+
+  override def enableAllDataQueue(enable: Boolean): Unit = {}
+
+  override def enableDataQueue(channelEndpointID: ChannelEndpointID, enable: Boolean): Unit = {}
 }

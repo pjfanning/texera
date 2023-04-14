@@ -1,128 +1,159 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
-import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, EpochMarker}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import lbmq.LinkedBlockingMultiQueue
 
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 object WorkerInternalQueue {
+  case class DPMessage(channel: ChannelEndpointID, payload:WorkflowFIFOMessagePayload)
 
-  final val DATA_QUEUE_PRIORITY = 1
-
-  final val CONTROL_QUEUE_KEY = "CONTROL_QUEUE"
-  final val CONTROL_QUEUE_PRIORITY = 0
-
-  // 4 kinds of elements can be accepted by internal queue
-  sealed trait InternalQueueElement {
-    def channel: ChannelEndpointID
-  }
-
-  sealed trait DataElement extends InternalQueueElement
-
-  case class ControlElement(channel: ChannelEndpointID, payload: ControlPayload)
-      extends InternalQueueElement
-
-  case class InputTuple(channel: ChannelEndpointID, tuple: ITuple) extends DataElement
-
-  case class EndMarker(channel: ChannelEndpointID) extends DataElement
-  case class InputEpochMarker(channel: ChannelEndpointID, epochMarker: EpochMarker)
-      extends DataElement
+  sealed trait QueueHeadStatus
+  case object NO_MESSAGE extends QueueHeadStatus
+  case object CONTROL_MESSAGE extends QueueHeadStatus
+  case object DATA_MESSAGE extends QueueHeadStatus
 
 }
 
-abstract class WorkerInternalQueue extends Serializable {
 
-  private[architecture] def dataQueues
-      : mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]
+abstract class WorkerInternalQueue extends Serializable {
 
   def enqueueSystemCommand(
       control: ControlCommand[_] with SkipReply with SkipFaultTolerance
   ): Unit = {
-    enqueueCommand(ControlElement(ChannelEndpointID(SELF, true), ControlInvocation(control)))
+    enqueuePayload(DPMessage(ChannelEndpointID(SELF, true), ControlInvocation(control)))
   }
 
-  def registerInput(sender: String): Unit
+  def enableAllDataQueue(enable:Boolean):Unit
 
-  def enqueueCommand(control: ControlElement): Unit
+  def enableDataQueue(channelEndpointID: ChannelEndpointID, enable: Boolean): Unit
 
-  def enqueueData(elem: DataElement): Unit
+  def enqueuePayload(message:DPMessage): Unit
 
-  def peek(currentStep: Long): Option[InternalQueueElement]
+  def getQueueHeadStatus(currentStep: Long): QueueHeadStatus
 
-  def take(currentStep: Long): InternalQueueElement
+  def take(currentStep: Long): DPMessage
 
   def getDataQueueLength: Int
 
   def getControlQueueLength: Int
 
-  def getData:Map[String, Array[InternalQueueElement]]
-
 }
 
 class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
-  private[architecture] val lbmq = new LinkedBlockingMultiQueue[String, InternalQueueElement]()
 
-  lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
+  private var allDisabled = false
+  private val enabledDataQueues = mutable.HashSet[ChannelEndpointID]()
+  private val disabledDataQueues = mutable.HashSet[ChannelEndpointID]()
+  private val dataQueues:mutable.HashMap[ChannelEndpointID, mutable.Queue[DPMessage]] = mutable.HashMap()
+  private val controlQueue:mutable.Queue[DPMessage] = mutable.Queue()
+  private val inputLock = new ReentrantLock()
+  private var availableFuture:CompletableFuture[Unit] = _
 
-  private[architecture] override val dataQueues =
-    new mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
-  private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
-
-  override def enqueueCommand(control: ControlElement): Unit = {
-    controlQueue.add(control)
-  }
-
-  override def enqueueData(elem: DataElement): Unit = {
-    elem match {
-      case InputTuple(from, _) => creditMonitor.decreaseCredit(from)
-      case other               => //pass
+  override def enqueuePayload(message:DPMessage): Unit = {
+    inputLock.lock()
+    if(message.channel.isControlChannel) {
+      controlQueue.enqueue(message)
+    }else{
+      creditMonitor.decreaseCredit(message.channel.endpointWorker)
+      if(dataQueues.contains(message.channel)){
+        dataQueues(message.channel).enqueue(message)
+      }else{
+        if(allDisabled){
+          disabledDataQueues.add(message.channel)
+        }else{
+          enabledDataQueues.add(message.channel)
+        }
+        dataQueues(message.channel) = mutable.Queue(message)
+      }
     }
-    if (elem == null || elem.from == null || elem.from.name == null) {
-      throw new RuntimeException("from is null for element " + elem)
+    if(availableFuture != null){
+      if(enabledDataQueues.exists(id => dataQueues(id).nonEmpty)){
+        availableFuture.complete()
+      }
     }
-    if (dataQueues(elem.from.name) == null) {
-      throw new RuntimeException(elem.from.name + " actor not registered")
+    inputLock.unlock()
+  }
+
+  override def getQueueHeadStatus(currentStep: Long): QueueHeadStatus = {
+    inputLock.lock()
+    val result = if(controlQueue.nonEmpty){
+      CONTROL_MESSAGE
+    }else if(enabledDataQueues.exists(id => dataQueues(id).nonEmpty)){
+      DATA_MESSAGE
+    }else{
+      NO_MESSAGE
     }
-    dataQueues(elem.from.name).add(elem)
+    inputLock.unlock()
+    result
   }
 
-  override def peek(currentStep: Long): Option[InternalQueueElement] = {
-    Option(lbmq.peek())
-  }
-
-  override def take(currentStep: Long): InternalQueueElement = {
-    lbmq.take() match {
-      case elem @ InputTuple(from, _) =>
-        creditMonitor.decreaseCredit(from)
-        elem
-      case other =>
-        other
+  override def take(currentStep: Long): DPMessage = {
+    inputLock.lock()
+    val queueEmpty = controlQueue.isEmpty && enabledDataQueues.forall(id => dataQueues(id).isEmpty)
+    val controlQueueEmptyWhilePaused = controlQueue.isEmpty && enabledDataQueues.isEmpty
+    if(queueEmpty || controlQueueEmptyWhilePaused){
+      availableFuture = new CompletableFuture[Unit]()
+    }
+    inputLock.unlock()
+    if(availableFuture != null){
+      availableFuture.get()
+      availableFuture = null
+    }
+    // we are sure the queue is not empty.
+    if(controlQueue.nonEmpty){
+      controlQueue.dequeue()
+    }else{
+      val nonEmptyChannelId = enabledDataQueues.find(id => dataQueues(id).nonEmpty).get
+      val msg = dataQueues(nonEmptyChannelId).dequeue()
+      creditMonitor.increaseCredit(msg.channel.endpointWorker)
+      msg
     }
   }
 
-  override def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
-
-  override def getControlQueueLength: Int = controlQueue.size()
-
-  override def registerInput(sender: String): Unit = {
-    lbmq.addSubQueue(sender, DATA_QUEUE_PRIORITY)
-    dataQueues(sender) = lbmq.getSubQueue(sender)
+  override def getDataQueueLength: Int = {
+    inputLock.lock()
+    val result = dataQueues.values.map(_.size).sum
+    inputLock.unlock()
+    result
   }
 
-  override def getData: Map[String, Array[InternalQueueElement]] = {
-    dataQueues.map{
-      case (k, queue) =>
-        k -> queue.toArray(Array[InternalQueueElement]())
-    }.toMap
+  override def getControlQueueLength: Int = {
+    inputLock.lock()
+    val result = controlQueue.size
+    inputLock.unlock()
+    result
+  }
+
+  override def enableDataQueue(channelEndpointID: ChannelEndpointID, enable: Boolean): Unit = {
+    inputLock.lock()
+    if(enable){
+      disabledDataQueues.remove(channelEndpointID)
+      enabledDataQueues.add(channelEndpointID)
+    }else{
+      enabledDataQueues.remove(channelEndpointID)
+      disabledDataQueues.add(channelEndpointID)
+    }
+    inputLock.unlock()
+  }
+
+  override def enableAllDataQueue(enable: Boolean): Unit = {
+    inputLock.lock()
+    if(enable){
+      allDisabled = false
+      disabledDataQueues.foreach(enabledDataQueues.add)
+      disabledDataQueues.clear()
+    }else{
+      allDisabled = true
+      enabledDataQueues.foreach(disabledDataQueues.add)
+      enabledDataQueues.clear()
+    }
+    inputLock.unlock()
   }
 }

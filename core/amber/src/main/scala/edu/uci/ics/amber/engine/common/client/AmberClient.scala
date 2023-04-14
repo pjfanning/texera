@@ -6,7 +6,7 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.common.FutureBijection._
-import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, FIFOMarker, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, TakeGlobalCheckpoint, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ContinueReplay, FIFOMarker, GetOperatorInternalState, InterruptReplay, NotifyFailedNode, TakeGlobalCheckpoint, AmberInternalMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
@@ -76,7 +76,7 @@ class AmberClient(
     if (!isActive) {
       Future[Any](())
     } else {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, NotifyFailedNode(address))).asTwitter()
+      (clientActor ? AmberInternalMessage(CLIENT, NotifyFailedNode(address))).asTwitter()
     }
   }
 
@@ -85,7 +85,7 @@ class AmberClient(
       println(s"received replay request conf = ${conf}")
       if (conf.confs(CONTROLLER).fromCheckpoint.isEmpty) {
         println(s"replay request can use the current workflow state")
-        clientActor ! WorkflowRecoveryMessage(CLIENT, ContinueReplay(conf))
+        clientActor ! AmberInternalMessage(CLIENT, ContinueReplay(conf))
       } else {
         println(s"replay request requires a system restart")
         controllerConfig.stateRestoreConfig = conf
@@ -96,7 +96,7 @@ class AmberClient(
 
   def takeGlobalCheckpoint(): Future[Any] = {
     if (isActive) {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, TakeGlobalCheckpoint())).asTwitter()
+      (clientActor ? AmberInternalMessage(CLIENT, TakeGlobalCheckpoint())).asTwitter()
     } else {
       Future(-1)
     }
@@ -104,7 +104,7 @@ class AmberClient(
 
   def getOperatorInfo(): Unit = {
     if (isActive) {
-      clientActor ! WorkflowRecoveryMessage(CLIENT, GetOperatorInternalState())
+      clientActor ! AmberInternalMessage(CLIENT, GetOperatorInternalState())
     }
   }
 
@@ -112,7 +112,7 @@ class AmberClient(
     if (!isActive) {
       Future[Any](())
     } else {
-      (clientActor ? WorkflowRecoveryMessage(CLIENT, InterruptReplay())).asTwitter()
+      (clientActor ? AmberInternalMessage(CLIENT, InterruptReplay())).asTwitter()
     }
   }
 

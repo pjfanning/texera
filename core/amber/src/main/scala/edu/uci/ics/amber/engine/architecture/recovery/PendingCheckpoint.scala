@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, GlobalCheckpointMarker, WorkflowFIFOMessagePayload, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, GlobalCheckpointMarker, WorkflowFIFOMessagePayload, AmberInternalMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable

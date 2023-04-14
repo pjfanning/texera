@@ -99,7 +99,7 @@ class Controller(
         // Controller is assumed to have enough credits
         this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
         controlInputPort.handleMessage(workflowMsg)
-      case NetworkMessage(id, recoveryMessage: WorkflowRecoveryMessage) =>
+      case NetworkMessage(id, recoveryMessage: AmberInternalMessage) =>
         this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
         controllerProcessor.processRecoveryMessage(recoveryMessage)
       case other =>
@@ -113,7 +113,7 @@ class Controller(
   }
 
   def acceptRecoveryMessages: Receive = {
-    case recoveryMsg: WorkflowRecoveryMessage =>
+    case recoveryMsg: AmberInternalMessage =>
       controllerProcessor.processRecoveryMessage(recoveryMsg)
   }
 

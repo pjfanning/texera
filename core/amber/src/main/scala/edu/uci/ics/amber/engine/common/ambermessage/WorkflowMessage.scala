@@ -16,12 +16,12 @@ case class EstimationMarker(override val id:Long) extends FIFOMarker(id)
 
 case class GlobalCheckpointMarker(override val id:Long, markerCollectionCount:Map[ActorVirtualIdentity, Long]) extends FIFOMarker(id)
 
-case class WorkflowRecoveryMessage(
+case class AmberInternalMessage(
     from: ActorVirtualIdentity,
-    payload: RecoveryPayload
+    payload: InternalPayload
 ) extends WorkflowMessage
 
 // sent from network communicator to next worker to poll for credit information
 case class CreditRequest(
-    from: ActorVirtualIdentity
+    actorVirtualIdentity: ActorVirtualIdentity
 ) extends WorkflowMessage

@@ -49,7 +49,7 @@ trait TakeCheckpointHandler {
         msg.marker.id,
         msg.inputSeqNums,
         dp.outputPort.getFIFOState,
-        dp.totalValidStep,
+        dp.determinantLogger.getStep,
         estimatedCheckpointCost + dp.internalQueue.getDataQueueLength)
     dp.outputPort.broadcastMarker(msg.marker)
     send(ReportCheckpointStats(stats), CONTROLLER)
@@ -68,7 +68,7 @@ trait TakeCheckpointHandler {
     }
     msg.chkpt.save("controlState", dp)
     dp.outputPort.broadcastMarker(msg.marker)
-    msg.syncFuture.complete(dp.totalValidStep)
+    msg.syncFuture.complete(dp.determinantLogger.getStep)
     Future.Unit
   }
 

@@ -36,6 +36,13 @@ class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) ext
     }
   }
 
+  def conditionalTransitTo(currentState:T, targetState:T, callback: () => Unit): Unit ={
+    if(getCurrentState == currentState){
+      transitTo(targetState)
+      callback
+    }
+  }
+
   def confirmState(state: T): Boolean = getCurrentState == state
 
   def getCurrentState: T = currentState

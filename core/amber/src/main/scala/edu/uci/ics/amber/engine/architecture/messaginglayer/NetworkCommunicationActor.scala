@@ -328,6 +328,7 @@ class NetworkCommunicationActor(
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
       Future{
+        //TODO: remove this random delay!!!!!
         Thread.sleep(Random.nextInt(3))
         msg.internalMessage match{
           case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>

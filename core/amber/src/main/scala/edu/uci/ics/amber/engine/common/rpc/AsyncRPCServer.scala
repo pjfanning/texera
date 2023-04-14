@@ -3,7 +3,6 @@ package edu.uci.ics.amber.engine.common.rpc
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -56,21 +55,21 @@ class AsyncRPCServer(
       newHandler orElse handlers
   }
 
-  def receive(control: ControlInvocation, senderID: ActorVirtualIdentity): Unit = {
+  def receive(control: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
     try {
-      execute((control.command, senderID))
+      execute((control.command, sender))
         .onSuccess { ret =>
-          returnResult(senderID, control, ret)
+          returnResult(sender, control, ret)
         }
         .onFailure { err =>
           logger.error("Exception occurred", err)
-          returnResult(senderID, control, err)
+          returnResult(sender, control, err)
         }
 
     } catch {
       case err: Throwable =>
         // if error occurs, return it to the sender.
-        returnResult(senderID, control, err)
+        returnResult(sender, control, err)
 
       // if throw this exception right now, the above message might not be able
       // to be sent out. We do not throw for now.
@@ -101,19 +100,6 @@ class AsyncRPCServer(
         case _ => //skip
       }
     }
-  }
-
-  def logControlInvocation(
-      call: ControlInvocation,
-      sender: ActorVirtualIdentity,
-      currentStep: Long
-  ): Unit = {
-    if (call.command.isInstanceOf[SkipConsoleLog]) {
-      return
-    }
-    logger.info(
-      s"receive command: ${call.command} from $sender (controlID: ${call.commandID}, current step = $currentStep)"
-    )
   }
 
 }

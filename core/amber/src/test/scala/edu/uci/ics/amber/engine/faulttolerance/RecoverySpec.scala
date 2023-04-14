@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{
 import edu.uci.ics.amber.engine.architecture.logging.{
   InMemDeterminant,
   ProcessControlMessage,
-  StepDelta
+  StepsOnChannel
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
 import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
@@ -85,7 +85,7 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(null, 1),
+      StepsOnChannel(null, 1),
       StepDelta(
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),
         29
@@ -109,7 +109,7 @@ class RecoverySpec
         ReturnInvocation(4, ()),
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0")
       ),
-      StepDelta(null, 1),
+      StepsOnChannel(null, 1),
       StepDelta(
         ActorVirtualIdentity("WF-SimpleSink-operator-06d5e7e6-dbd1-40e4-87d6-133d33559aa8-main-0"),
         29
@@ -160,7 +160,7 @@ class RecoverySpec
     inputHub.initialize(logStorage.getReader.mkLogRecordIterator(), 0, () => {})
     var currentStep = 0L
     determinants.foreach {
-      case StepDelta(from, steps) =>
+      case StepsOnChannel(from, steps) =>
         stepAccumulated += steps.toInt
         upstream = from
       case ProcessControlMessage(controlPayload, from) =>

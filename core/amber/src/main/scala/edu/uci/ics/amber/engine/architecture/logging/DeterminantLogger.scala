@@ -1,14 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 
 abstract class DeterminantLogger extends Serializable {
 
-  def setCurrentSender(sender: ActorVirtualIdentity): Unit
+  protected var totalValidStep = 0L
 
-  def stepIncrement(): Unit
+  def stepIncrement():Unit = {
+    totalValidStep += 1
+  }
 
-  def logDeterminant(inMemDeterminant: InMemDeterminant): Unit
+  def getStep:Long = totalValidStep
+
+  def setCurrentSender(channel:ChannelEndpointID): Unit
 
   def drainCurrentLogRecords(): Array[InMemDeterminant]
 

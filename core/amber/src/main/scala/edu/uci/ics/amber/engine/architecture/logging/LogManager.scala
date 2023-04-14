@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 //In-mem formats:
 sealed trait InMemDeterminant
-case class StepDelta(channel: ChannelEndpointID, steps: Long)
+case class StepsOnChannel(channel: ChannelEndpointID, steps: Long)
     extends InMemDeterminant
 case class TimeStamp(value: Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant

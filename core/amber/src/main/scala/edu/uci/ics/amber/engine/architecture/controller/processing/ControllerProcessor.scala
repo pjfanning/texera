@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, StepDelta}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, LogManager, StepsOnChannel}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.{GlobalRecoveryManager, PendingCheckpoint, ReplayInputRecorder}
@@ -203,7 +203,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
     }
     while (currentHead == null) {
       controlMessagesToReplay.next() match {
-        case StepDelta(sender, _) =>
+        case StepsOnChannel(sender, _) =>
           if (messagesDuringReplay.contains(sender) && messagesDuringReplay(sender).nonEmpty) {
             logger.info("already have current head of " + sender)
             val elem = messagesDuringReplay(sender).dequeue()
@@ -261,9 +261,6 @@ class ControllerProcessor extends AmberLogging with Serializable {
     controlPayload match {
       // use control input port to pass control messages
       case invocation: ControlInvocation =>
-        if (!invocation.command.isInstanceOf[SkipFaultTolerance]) {
-          determinantLogger.logDeterminant(ProcessControlMessage(invocation, from))
-        }
         asyncRPCServer.logControlInvocation(invocation, from, numControlSteps)
         asyncRPCServer.receive(invocation, from)
         if (invocation.command.isInstanceOf[SkipFaultTolerance]) {
@@ -287,7 +284,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
     }
   }
 
-  def processRecoveryMessage(recoveryMsg: WorkflowRecoveryMessage): Unit = {
+  def processRecoveryMessage(recoveryMsg: AmberInternalMessage): Unit = {
     // TODO: merge these to control messages?
     recoveryMsg.payload match {
       case CheckpointCompleted(id, alignment) =>
@@ -315,7 +312,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
           .sequence(
             execution.getAllWorkers
               .map(x => execution.getOperatorExecution(x).getWorkerInfo(x))
-              .map(info => info.ref ? WorkflowRecoveryMessage(actorId, GetOperatorInternalState()))
+              .map(info => info.ref ? AmberInternalMessage(actorId, GetOperatorInternalState()))
           )
           .onComplete(v => {
             asyncRPCClient.sendToClient(AdditionalOperatorInfo(v.get.mkString("\n")))
@@ -341,7 +338,7 @@ class ControllerProcessor extends AmberLogging with Serializable {
                 ) ? CheckInitialized())
             }else{
               globalRecoveryManager.markRecoveryStatus(info.id, isRecovering = true)
-              info.ref ! WorkflowRecoveryMessage(
+              info.ref ! AmberInternalMessage(
                 actorId,
                 ContinueReplayTo(conf.confs(info.id).replayTo.get)
               )
