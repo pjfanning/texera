@@ -32,6 +32,8 @@ class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends
   @transient
   private[processing] var dpThread: Future[_] = _
 
+  private var stopped = false
+
   private val dp = new DataProcessor()
   def start(): Unit = {
     if (dpThreadExecutor != null) {
@@ -67,7 +69,7 @@ class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends
   @throws[Exception]
   private[this] def runDPThreadMainLogicNew(): Unit = {
     // main DP loop
-    while (true) {
+    while (!stopped) {
       val currentStep = dp.determinantLogger.getStep
       var skipStepIncrement = false
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
@@ -81,7 +83,6 @@ class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends
             skipStepIncrement = dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
         }
       } else {
-        internalQueue.enableDataQueue(dp.pauseManager.isPaused())
         val msg = internalQueue.take(currentStep)
         dp.updateInputChannel(msg.channel)
         msg.payload match {
