@@ -1,15 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_MESSAGE, DATA_MESSAGE, NO_MESSAGE}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -75,11 +72,11 @@ class DPThread(val actorId: ActorVirtualIdentity,
       val currentStep = dp.determinantLogger.getStep
       var skipStepIncrement = false
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
-        val input = internalQueue.getQueueHeadStatus(currentStep)
+        val input = internalQueue.peek(currentStep)
         input match {
-          case NO_MESSAGE | DATA_MESSAGE =>
+          case None | Some(DPMessage(ChannelEndpointID(_, false), _)) =>
             dp.continueDataProcessing()
-          case CONTROL_MESSAGE =>
+          case Some(DPMessage(ChannelEndpointID(_, true), _))=>
             val controlMsg = internalQueue.take(currentStep)
             dp.updateInputChannel(controlMsg.channel)
             skipStepIncrement = dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])

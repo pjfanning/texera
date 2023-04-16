@@ -1,49 +1,71 @@
 package edu.uci.ics.texera.web
 
-import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory, VirtualIdentityUtils}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.web.service.ReplayPlanner
-
-import java.io.{FileInputStream, ObjectInputStream}
-import java.nio.file.{Files, Paths}
+import akka.actor.ActorSystem
+import akka.serialization.SerializationExtension
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
+import edu.uci.ics.amber.engine.common.AmberUtils.akkaConfig
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, EndOfUpstream, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.lbmq.{LinkedBlockingMultiQueue, LinkedBlockingSubQueue}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
 
-    val file = Paths.get("").resolve("latest-interation-history")
-    if(!Files.exists(file)){
-      println("no interaction history found!")
-      return
-    }
-    val ois = new ObjectInputStream(new FileInputStream(file.toFile))
-    val history = ois.readObject.asInstanceOf[ProcessingHistory]
-    ois.close()
+    val system = ActorSystem("Amber", akkaConfig)
 
-    val planner = new ReplayPlanner(history)
+    val q = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
 
-    val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    history.inputConstant = 1
-    val result = planner.getReplayPlan(history.getInteractionIdxes.length, 7000, mem)
-    println(result)
-//    planner.startPlanning(15, "Complete - optimized", 3)
-//    while(planner.hasNext){
-//      planner.next()
+    q.addSubQueue(ChannelEndpointID(SELF, true),0)
+    q.addSubQueue(ChannelEndpointID(CLIENT, true), 0)
+    q.addSubQueue(ChannelEndpointID(CONTROLLER, false), 1)
+
+    val q1 = q.getSubQueue(ChannelEndpointID(SELF, true))
+    val q2 = q.getSubQueue(ChannelEndpointID(CLIENT, true))
+    val q3 = q.getSubQueue(ChannelEndpointID(CONTROLLER, false))
+
+    val m = new mutable.HashMap[ChannelEndpointID, LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]]()
+    m(ChannelEndpointID(SELF, true)) = q1
+    m(ChannelEndpointID(CLIENT, true)) = q2
+    m(ChannelEndpointID(CONTROLLER, false)) = q3
+
+    q1.put(DPMessage(ChannelEndpointID(CLIENT, true), EndOfUpstream()))
+    q2.put(DPMessage(ChannelEndpointID(CLIENT, true), EndOfUpstream()))
+    q3.put(DPMessage(ChannelEndpointID(CLIENT, true), EndOfUpstream()))
+    q1.put(DPMessage(ChannelEndpointID(CLIENT, true), EndOfUpstream()))
+
+    q.take()
+
+    val l = new ReentrantLock()
+    val qq = new LinkedBlockingSubQueue[ChannelEndpointID, DPMessage](ChannelEndpointID(CLIENT, true), 1000, new AtomicInteger(), l, l.newCondition())
+    val chkpt = new SavedCheckpoint()
+    chkpt.attachSerialization(SerializationExtension(system))
+    chkpt.save("map", m)
+    chkpt.save("q",q)
+    chkpt.save("qq",qq)
+    val qqc = chkpt.load("qq").asInstanceOf[LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]]
+    val qc = chkpt.load("q").asInstanceOf[LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]]
+    val mc = chkpt.load("map").asInstanceOf[mutable.HashMap[ChannelEndpointID, LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]]]
+    println(mc)
+//    val file = Paths.get("").resolve("latest-interation-history")
+//    if(!Files.exists(file)){
+//      println("no interaction history found!")
+//      return
 //    }
-//    val planner2 = new ReplayPlanner(history)
-//    planner.startPlanning(4, "Partial - naive", 3)
-//    while(planner.hasNext){
-//      planner.next()
-//    }
-//    planner.startPlanning(6, "Complete - all", 1)
-//    val plan1 = planner.dynamicProgrammingPlanner(0, history.getInteractionTimes.length -1, 1000)
-//    val plan1ToPartial = history.getCheckpointCost(plan1, Map[Int, Set[ActorVirtualIdentity]]())
-//    val plan2 = planner.partialIterativePlanner(history.getInteractionTimes.length -1, 1000)
-//    println("best plan: " + plan1 + "cost = "+plan1ToPartial)
-//    println("best plan2: " + plan2.mkString("\n"))
-//    println("best plan: " + planner.bruteForcePlanner(0, 7, 5000))
-    //println("best plan: "+planner.dynamicProgrammingPlanner(0,7, 4000))
+//    val ois = new ObjectInputStream(new FileInputStream(file.toFile))
+//    val history = ois.readObject.asInstanceOf[ProcessingHistory]
+//    ois.close()
+//
+//    val planner = new ReplayPlanner(history)
+//
+//    val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
+//    history.inputConstant = 1
+//    val result = planner.getReplayPlan(history.getInteractionIdxes.length, 7000, mem)
+//    println(result)
   }
 }
 

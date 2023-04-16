@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.logging._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_MESSAGE, DATA_MESSAGE, DPMessage, QueueHeadStatus}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload, FIFOMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
@@ -68,13 +68,10 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInte
   }
 
 
-  override def getQueueHeadStatus(currentStep: Long): QueueHeadStatus = {
+  override def peek(currentStep: Long): Option[DPMessage] = {
     forwardRecoveryProgress(currentStep)
-    if(currentChannel.isControlChannel){
-      CONTROL_MESSAGE
-    }else{
-      DATA_MESSAGE
-    }
+    // output a dummy message
+    Some(DPMessage(currentChannel, null))
   }
 
   private def forwardRecoveryProgress(currentStep: Long): Unit = {

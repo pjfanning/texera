@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
@@ -14,10 +15,8 @@ import scala.collection.mutable
 object WorkerInternalQueue {
   case class DPMessage(channel: ChannelEndpointID, payload:WorkflowFIFOMessagePayload)
 
-  sealed trait QueueHeadStatus
-  case object NO_MESSAGE extends QueueHeadStatus
-  case object CONTROL_MESSAGE extends QueueHeadStatus
-  case object DATA_MESSAGE extends QueueHeadStatus
+  final val DATA_QUEUE_PRIORITY = 1
+  final val CONTROL_QUEUE_PRIORITY = 0
 
 }
 
@@ -36,7 +35,7 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def enqueuePayload(message:DPMessage): Unit
 
-  def getQueueHeadStatus(currentStep: Long): QueueHeadStatus
+  def peek(currentStep: Long): Option[DPMessage]
 
   def take(currentStep: Long): DPMessage
 
@@ -48,109 +47,69 @@ abstract class WorkerInternalQueue extends Serializable {
 
 class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
 
-  private var allDisabled = false
-  private val enabledDataQueues = mutable.HashSet[ChannelEndpointID]()
-  private val disabledDataQueues = mutable.HashSet[ChannelEndpointID]()
-  private val dataQueues:mutable.HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]] = mutable.HashMap()
-  private val controlQueue:LinkedBlockingQueue[DPMessage] = new LinkedBlockingQueue()
-  private val inputLock = new ReentrantLock()
-  private var availableFuture:CompletableFuture[Unit] = CompletableFuture.completedFuture(Unit)
+  private val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
 
   override def enqueuePayload(message:DPMessage): Unit = {
-    inputLock.lock()
-    if(message.channel.isControlChannel) {
-      controlQueue.put(message)
-    }else{
-      creditMonitor.decreaseCredit(message.channel.endpointWorker)
-      if(dataQueues.contains(message.channel)){
-        dataQueues(message.channel).put(message)
-      }else{
-        if(allDisabled){
-          disabledDataQueues.add(message.channel)
+    val subQueue = lbmq.getSubQueue(message.channel)
+    if(subQueue == null){
+      val priority =
+        if(message.channel.isControlChannel){
+          CONTROL_QUEUE_PRIORITY
         }else{
-          enabledDataQueues.add(message.channel)
+          DATA_QUEUE_PRIORITY
         }
-        val newQueue = new LinkedBlockingQueue[DPMessage]()
-        newQueue.put(message)
-        dataQueues(message.channel) = newQueue
-      }
+      lbmq.addSubQueue(message.channel, priority).add(message)
+    }else{
+      subQueue.add(message)
     }
-    if(!controlQueue.isEmpty || enabledDataQueues.exists(id => !dataQueues(id).isEmpty)){
-      availableFuture.complete(Unit)
+    if(!message.channel.isControlChannel) {
+      creditMonitor.decreaseCredit(message.channel.endpointWorker)
     }
-    inputLock.unlock()
   }
 
-  override def getQueueHeadStatus(currentStep: Long): QueueHeadStatus = {
-    inputLock.lock()
-    val result = if(!controlQueue.isEmpty){
-      CONTROL_MESSAGE
-    }else if(enabledDataQueues.exists(id => !dataQueues(id).isEmpty)){
-      DATA_MESSAGE
-    }else{
-      NO_MESSAGE
-    }
-    inputLock.unlock()
-    result
+  override def peek(currentStep: Long): Option[DPMessage] = {
+    Option(lbmq.peek())
   }
 
   override def take(currentStep: Long): DPMessage = {
-    inputLock.lock()
-    val queueEmpty = controlQueue.isEmpty && enabledDataQueues.forall(id => dataQueues(id).isEmpty)
-    val controlQueueEmptyWhilePaused = controlQueue.isEmpty && enabledDataQueues.isEmpty
-    if(queueEmpty || controlQueueEmptyWhilePaused){
-      availableFuture = new CompletableFuture[Unit]()
-    }
-    inputLock.unlock()
-    availableFuture.get()
-    // we are sure the queue is not empty.
-    if(!controlQueue.isEmpty){
-      controlQueue.take()
-    }else{
-      val nonEmptyChannelId = enabledDataQueues.find(id => !dataQueues(id).isEmpty).get
-      val msg = dataQueues(nonEmptyChannelId).take()
-      creditMonitor.increaseCredit(msg.channel.endpointWorker)
-      msg
-    }
+    lbmq.take()
   }
 
   override def getDataQueueLength: Int = {
-    inputLock.lock()
-    val result = dataQueues.values.map(_.size).sum
-    inputLock.unlock()
+    var result = 0
+    lbmq.priorityGroups.forEach{
+      group => if(group.priority == DATA_QUEUE_PRIORITY){
+        group.queues.forEach{
+          q => result += q.size
+        }
+      }
+    }
     result
   }
 
   override def getControlQueueLength: Int = {
-    inputLock.lock()
-    val result = controlQueue.size
-    inputLock.unlock()
+    var result = 0
+    lbmq.priorityGroups.forEach{
+      group => if(group.priority == CONTROL_QUEUE_PRIORITY){
+        group.queues.forEach{
+          q => result += q.size
+        }
+      }
+    }
     result
   }
 
   override def enableDataQueue(channelEndpointID: ChannelEndpointID, enable: Boolean): Unit = {
-    inputLock.lock()
-    if(enable){
-      disabledDataQueues.remove(channelEndpointID)
-      enabledDataQueues.add(channelEndpointID)
-    }else{
-      enabledDataQueues.remove(channelEndpointID)
-      disabledDataQueues.add(channelEndpointID)
-    }
-    inputLock.unlock()
+    lbmq.getSubQueue(channelEndpointID).enable(enable)
   }
 
   override def enableAllDataQueue(enable: Boolean): Unit = {
-    inputLock.lock()
-    if(enable){
-      allDisabled = false
-      disabledDataQueues.foreach(enabledDataQueues.add)
-      disabledDataQueues.clear()
-    }else{
-      allDisabled = true
-      enabledDataQueues.foreach(disabledDataQueues.add)
-      enabledDataQueues.clear()
+    lbmq.priorityGroups.forEach{
+      group => if(group.priority == DATA_QUEUE_PRIORITY){
+        group.queues.forEach{
+          q => q.enable(enable)
+        }
+      }
     }
-    inputLock.unlock()
   }
 }

@@ -177,7 +177,7 @@ abstract class WorkflowActor(
   /** Actor lifecycle: Processing */
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      this.handlePayload(ChannelEndpointID(SELF, false), invocation)
+      this.handlePayload(ChannelEndpointID(SELF, true), invocation)
   }
 
   // custom logic for payload handling (override by Worker and Controller)

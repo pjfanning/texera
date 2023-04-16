@@ -2,8 +2,8 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue._
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, ControlPayloadV2, DataPayload}
+import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import lbmq.LinkedBlockingMultiQueue
 object WorkerBatchInternalQueue {
   final val DATA_QUEUE = 1
   final val CONTROL_QUEUE = 0
@@ -55,9 +55,9 @@ trait WorkerBatchInternalQueue {
 
   def enableDataQueue(): Unit = dataQueue.enable(true)
 
-  def getDataQueueLength: Int = dataQueue.size()
+  def getDataQueueLength: Int = dataQueue.size
 
-  def getControlQueueLength: Int = controlQueue.size()
+  def getControlQueueLength: Int = controlQueue.size
 
   def isControlQueueEmpty: Boolean = controlQueue.isEmpty
 
