@@ -79,6 +79,8 @@ private[client] class ClientActor extends Actor {
     case x: AmberInternalMessage =>
       sender ! Ack
       controller ! x
+    case NetworkMessage(mId, _) =>
+      sender ! NetworkAck(mId)
     case other =>
       println("client actor cannot handle " + other) //skip
   }

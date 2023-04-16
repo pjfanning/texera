@@ -16,15 +16,9 @@ import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{ExecutorService, Executors, Future}
 
-class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends AmberLogging{
-
-  // outer dependencies
-  @transient
-  private[processing] var internalQueue: WorkerInternalQueue = _
-  @transient
-  private[processing] var logStorage: DeterminantLogStorage = _
-  @transient
-  private[processing] var recoveryManager: LocalRecoveryManager = _
+class DPThread(val actorId: ActorVirtualIdentity,
+               dp:DataProcessor,
+               internalQueue: WorkerInternalQueue) extends AmberLogging{
 
   // initialize dp thread upon construction
   @transient
@@ -32,13 +26,20 @@ class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends
   @transient
   private[processing] var dpThread: Future[_] = _
 
+  def stop(): Unit ={
+    dpThread.cancel(true) // interrupt
+    dpThreadExecutor.shutdownNow() // destroy thread
+    stopped = true
+  }
+
+  @volatile
   private var stopped = false
 
-  private val dp = new DataProcessor()
   def start(): Unit = {
     if (dpThreadExecutor != null) {
       return
     }
+    dp.attachDPThread(this)
     dpThreadExecutor = Executors.newSingleThreadExecutor
     if (dp.stateManager.getCurrentState == UNINITIALIZED) {
       dp.stateManager.transitTo(READY)
@@ -48,6 +49,7 @@ class DPThread(val actorId: ActorVirtualIdentity, logManager:LogManager) extends
       // operator.context = new OperatorContext(new TimeService(logManager))
       dpThread = dpThreadExecutor.submit(new Runnable() {
         def run(): Unit = {
+          logger.info("DP thread started")
           try {
             runDPThreadMainLogicNew()
           } catch safely {

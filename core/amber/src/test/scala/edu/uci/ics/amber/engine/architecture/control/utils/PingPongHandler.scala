@@ -17,7 +17,7 @@ trait PingPongHandler {
   registerHandler { (ping: Ping, sender) =>
     println(s"${ping.i} ping")
     if (ping.i < ping.end) {
-      send(Pong(ping.i + 1, ping.end, tester.actorId), ping.to).map { ret: Int =>
+      send(Pong(ping.i + 1, ping.end, processor.actorId), ping.to).map { ret: Int =>
         println(s"${ping.i} ping replied with value $ret!")
         ret
       }
@@ -29,7 +29,7 @@ trait PingPongHandler {
   registerHandler { (pong: Pong, sender) =>
     println(s"${pong.i} pong")
     if (pong.i < pong.end) {
-      send(Ping(pong.i + 1, pong.end, tester.actorId), pong.to).map { ret: Int =>
+      send(Ping(pong.i + 1, pong.end, processor.actorId), pong.to).map { ret: Int =>
         println(s"${pong.i} pong replied with value $ret!")
         ret
       }

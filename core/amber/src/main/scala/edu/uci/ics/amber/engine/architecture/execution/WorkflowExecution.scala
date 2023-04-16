@@ -13,7 +13,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
-class WorkflowExecution(@transient workflow: Workflow, @transient val globalRecoveryManager: GlobalRecoveryManager) {
+class WorkflowExecution(@transient workflow: Workflow) {
 
   private val linkExecutions: Map[LinkIdentity, LinkExecution] =
     workflow.physicalPlan.linkStrategies.map { link =>

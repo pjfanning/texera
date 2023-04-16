@@ -4,7 +4,7 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -72,18 +72,18 @@ trait PauseHandler {
           // send paused to frontend
           sendToClient(WorkflowPaused())
           workflowPauseStartTime = System.currentTimeMillis()
-          logger.info(s"controller pause cursor = ${cp.numControlSteps}")
+          logger.info(s"controller pause cursor = ${cp.determinantLogger.getStep}")
           if(!cp.isReplaying){
             val time = (System.currentTimeMillis() - workflowStartTimeStamp)
             val interaction = new LogicalExecutionSnapshot()
-            val markerId = cp.interactionHistory.addInteraction(time, interaction)
+            val markerId = cp.processingHistory.addInteraction(time, interaction)
             interaction.addParticipant(CONTROLLER, CheckpointStats(
               markerId,
-              cp.controlInput.getFIFOState,
-              cp.controlOutputPort.getFIFOState,
-              cp.numControlSteps + 1,0))
+              cp.inputPort.getFIFOState,
+              cp.outputPort.getFIFOState,
+              cp.determinantLogger.getStep + 1,0))
             val marker = EstimationMarker(markerId)
-            cp.controlOutputPort.broadcastMarker(marker)
+            cp.outputPort.broadcastMarker(marker)
           }
         }
         .unit

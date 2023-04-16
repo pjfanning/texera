@@ -1,24 +1,24 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import akka.actor.Props
-import akka.serialization.SerializationExtension
-import akka.util.Timeout
-import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
+import akka.actor.{Address, Props}
+import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerProcessor
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
-import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import akka.pattern.ask
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.worker.processing.{EmptyLocalCheckpointManager, LocalCheckpointManager}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
+import scala.concurrent.Await
 
 object ControllerConfig {
   def default: ControllerConfig =
@@ -57,163 +57,22 @@ object Controller {
 }
 
 class Controller(
-    val workflow: Workflow,
-    val controllerConfig: ControllerConfig,
+    workflow: Workflow,
+    controllerConfig: ControllerConfig,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(
       CONTROLLER,
       parentNetworkCommunicationActorRef,
+      controllerConfig.stateRestoreConfig.confs(CONTROLLER),
       controllerConfig.supportFaultTolerance
     ) {
-  private var controlInputPort: NetworkInputPort = _
-
-  implicit val ec: ExecutionContext = context.dispatcher
-  implicit val timeout: Timeout = 5.seconds
-  private var controllerProcessor: ControllerProcessor = _
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
-  val workflowScheduler =
-    new WorkflowScheduler(
-      networkCommunicationActor,
-      context,
-      logger,
-      workflow,
-      controllerConfig
-    )
-
-  // register controller itself and client
-  networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))
-  networkCommunicationActor.waitUntil(RegisterActorRef(CLIENT, context.parent))
-
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    super.preRestart(reason, message)
-    logger.error(s"Encountered fatal error, controller is shutting done.", reason)
-    // report error to frontend
-    controllerProcessor.asyncRPCClient.sendToClient(FatalError(reason))
-  }
-
-  def running: Receive = {
-    forwardResendRequest orElse acceptRecoveryMessages orElse acceptDirectInvocations orElse {
-      case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, seqNum, payload)) =>
-        // Controller is assumed to have enough credits
-        this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
-        controlInputPort.handleMessage(workflowMsg)
-      case NetworkMessage(id, recoveryMessage: AmberInternalMessage) =>
-        this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
-        controllerProcessor.processRecoveryMessage(recoveryMessage)
-      case other =>
-        logger.info(s"unhandled message: $other")
-    }
-  }
-
-  def acceptDirectInvocations: Receive = {
-    case invocation: ControlInvocation =>
-      controllerProcessor.handleControlPayload(ChannelEndpointID(CLIENT, true), invocation)
-  }
-
-  def acceptRecoveryMessages: Receive = {
-    case recoveryMsg: AmberInternalMessage =>
-      controllerProcessor.processRecoveryMessage(recoveryMsg)
-  }
-
-  def recovering: Receive = {
-    case NetworkMessage(
-          _,
-          WorkflowFIFOMessage(channel, seqNum, ControlInvocation(_, FatalError(err)))
-        ) =>
-      // fatal error during recovery, fail
-      controllerProcessor.asyncRPCClient.sendToClient(FatalError(err))
-      // re-throw the error to fail the actor
-      throw err
-    case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, seqNum, payload)) =>
-      // Controller is assumed to have enough credits
-      this.sender ! NetworkAck(id, Some(Constants.unprocessedBatchesCreditLimitPerSender))
-      controlInputPort.handleMessage(workflowMsg)
-    case invocation: ControlInvocation =>
-      logger.info("Reject during recovery: " + invocation)
-    case other =>
-      logger.info("Ignore during recovery: " + other)
-  }
-
-  override def receive: Receive = {
-    // load from checkpoint if available
-    var unprocessedMessages:mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]] = mutable.Map()
-    controllerConfig.stateRestoreConfig.confs(CONTROLLER).fromCheckpoint match {
-      case None | Some(0) =>
-        controllerProcessor = new ControllerProcessor()
-        controlInputPort = new NetworkInputPort(
-          this.actorId,
-          controllerProcessor.handlePayloadOuter
-        )
-      case Some(chkptAlignment) =>
-        logger.info("checkpoint found, start loading")
-        val chkpt = CheckpointHolder.getCheckpoint(CONTROLLER, chkptAlignment)
-        val startLoadingTime = System.currentTimeMillis()
-        chkpt.attachSerialization(SerializationExtension(context.system))
-        // reload states:
-        controllerProcessor = chkpt.load("controlState")
-        controlInputPort = new NetworkInputPort(
-          this.actorId,
-          controllerProcessor.handlePayloadOuter
-        )
-        val fifoState = chkpt.load("fifoState").asInstanceOf[Map[ChannelEndpointID, Long]]
-        val fifoStateWithInputData = (chkpt.getInputData.mapValues(_.size.toLong).toSeq ++ fifoState.toSeq)
-          .groupBy(_._1).mapValues(_.map(_._2).sum)
-        fifoStateWithInputData.foreach{
-          case (tuple, l) =>
-            logger.info(s"restored fifo status for upstream $tuple is $l")
-        }
-        controlInputPort.setFIFOState(fifoStateWithInputData)
-        unprocessedMessages = chkpt.getInputData
-        logger.info("inflight data restored")
-        logger.info(
-          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000d}s"
-        )
-    }
-
-    // passing non-serialized controller state
-    controllerProcessor.initialize(
-      controlInputPort,
-      workflow,
-      workflowScheduler,
-      logManager,
-      logStorage,
-      networkCommunicationActor,
-      context,
-      controllerConfig
-    )
-
-    // restore workers:
-    logger.info("start to restore workers")
-    controllerProcessor.restoreWorkersAndResendUnAckedMessages()
-
-    // set replay alignment and start
-    val result = controllerConfig.stateRestoreConfig.confs(CONTROLLER).replayTo match {
-      case Some(replayAlignment) =>
-        controllerProcessor.enterReplay(
-          replayAlignment,
-          () => {
-            unstashAll()
-            context.become(running)
-          }
-        )
-        forwardResendRequest orElse acceptRecoveryMessages orElse recovering
-      case None =>
-        // interrupt replay if checkpoint was taken during replay
-        controllerProcessor.interruptReplay()
-        running
-    }
-    unprocessedMessages.foreach{
-      case (channel, payloads) =>
-        payloads.foreach(payload => controllerProcessor.handlePayloadOuter(channel, payload))
-    }
-    result
-  }
+  lazy val controlProcessor: ControlProcessor = new ControlProcessor(actorId, determinantLogger)
 
   override def postStop(): Unit = {
     logger.info("Controller start to shutdown")
-    controllerProcessor.terminate()
     logManager.terminate()
 //    if (workflow.isCompleted) {
 //      workflow.getAllWorkers.foreach { workerId =>
@@ -227,5 +86,51 @@ class Controller(
     //logStorage.deleteLog()
 //    }
     logger.info("stopped successfully!")
+  }
+
+  override val localCheckpointManager: LocalCheckpointManager = new EmptyLocalCheckpointManager()
+
+  /** flow-control */
+  override def getSenderCredits(actorVirtualIdentity: ActorVirtualIdentity): Int = {
+    Constants.unprocessedBatchesCreditLimitPerSender
+  }
+
+  override def setupState(fromChkpt: Option[SavedCheckpoint], replayTo: Option[Long]): Unit = {
+    // register controller itself and client
+    networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))
+    networkCommunicationActor.waitUntil(RegisterActorRef(CLIENT, context.parent))
+    controlProcessor.initCP(workflow, controllerConfig,
+      new WorkflowScheduler(
+        networkCommunicationActor,
+        context,
+        logger,
+        workflow,
+        controllerConfig
+      ), new GlobalRecoveryManager(
+        () => {
+          logger.info("Start global recovery")
+          controlProcessor.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
+        },
+        () => {
+          logger.info("global recovery complete!")
+          controlProcessor.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
+        }
+      ), () =>{
+        Await
+          .result(
+            context.actorSelection("/user/cluster-info") ? GetAvailableNodeAddresses,
+            5.seconds
+          )
+          .asInstanceOf[Array[Address]]
+      }, inputPort, context, logManager)
+  }
+
+  override def inputPayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+    payload match {
+      case control:ControlPayload =>
+        controlProcessor.processControlPayload(channelEndpointID, control)
+      case other =>
+        logger.info(s"Controller cannot handle payload: $payload")
+    }
   }
 }

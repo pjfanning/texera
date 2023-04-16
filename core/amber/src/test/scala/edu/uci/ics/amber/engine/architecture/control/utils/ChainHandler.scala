@@ -13,9 +13,9 @@ trait ChainHandler {
   this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (x: Chain, sender) =>
-    println(s"chained ${tester.actorId}")
+    println(s"chained ${processor.actorId}")
     if (x.nexts.isEmpty) {
-      Future(tester.actorId)
+      Future(processor.actorId)
     } else {
       send(Chain(x.nexts.drop(1)), x.nexts.head).map { x =>
         println(s"chain returns from $x")

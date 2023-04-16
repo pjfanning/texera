@@ -25,8 +25,7 @@ trait ShutdownDPHandler {
   registerHandler { (msg: ShutdownDP, sender) =>
     dp.logManager.terminate()
     msg.completion.complete(())
-    dp.dpThread.cancel(true) // interrupt
-    dp.dpThreadExecutor.shutdownNow() // destroy thread
+    dp.dpThread.stop()
     if (msg.reason.isEmpty) {
       throw new InterruptedException() // actively interrupt itself
     } else {

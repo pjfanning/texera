@@ -141,7 +141,7 @@ class NetworkCommunicationActor(
     val msgToSend = NetworkMessage(
       networkMessageID,
       WorkflowFIFOMessage(
-        ChannelEndpointID(actorId, false),
+        ChannelEndpointID(actorId, true),
         nextSeqNumForMainActor,
         ControlInvocation(Backpressure(backpressureEnable))
       )
@@ -173,6 +173,7 @@ class NetworkCommunicationActor(
           .getOverloadedReceivers()
           .isEmpty && flowControl.backpressureRequestSentToMainActor
       ) {
+        println(s"backpressure lifted!!!! for $actorId")
         sendBackpressureMessageToParent(false)
         flowControl.backpressureRequestSentToMainActor = false
       }
@@ -328,8 +329,8 @@ class NetworkCommunicationActor(
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
       Future{
-        //TODO: remove this random delay!!!!!
-        Thread.sleep(Random.nextInt(3))
+//        //TODO: remove this random delay!!!!!
+//        Thread.sleep(Random.nextInt(3))
         msg.internalMessage match{
           case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
             logger.info(s"NCA send ${payload.id} to $actorID")

@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.control
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.pattern.ask
+import akka.remote.Ack
 import akka.testkit.{TestKit, TestProbe}
 import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.control.utils.ChainHandler.Chain
@@ -12,13 +13,14 @@ import edu.uci.ics.amber.engine.architecture.control.utils.NestedHandler.Nested
 import edu.uci.ics.amber.engine.architecture.control.utils.PingPongHandler.Ping
 import edu.uci.ics.amber.engine.architecture.control.utils.RecursionHandler.Recursion
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
@@ -41,13 +43,9 @@ class TrivialControlSpec
     val (probe, idMap) = setUp(numActors, events: _*)
     var flag = 0
     probe.receiveWhile(5.minutes, 10.seconds) {
-      case GetActorRef(id, replyTo) =>
-        replyTo.foreach { actor =>
-          actor ! RegisterActorRef(id, idMap(id))
-        }
       case NetworkMessage(
             msgID,
-            WorkflowFIFOMessage(_, _, _, ReturnInvocation(id, returnValue))
+            WorkflowFIFOMessage(_, _, ReturnInvocation(id, returnValue))
           ) =>
         probe.sender() ! NetworkAck(msgID, Some(Constants.unprocessedBatchesCreditLimitPerSender))
         returnValue match {
@@ -71,13 +69,15 @@ class TrivialControlSpec
       cmd: ControlCommand[_]*
   ): (TestProbe, mutable.HashMap[ActorVirtualIdentity, ActorRef]) = {
     val probe = TestProbe()
+    val nca = probe.childActorOf(NetworkCommunicationActor.props(null, CLIENT))
     val idMap = mutable.HashMap[ActorVirtualIdentity, ActorRef]()
     for (i <- 0 until numActors) {
       val id = ActorVirtualIdentity(s"$i")
       val ref =
-        probe.childActorOf(Props(new TrivialControlTester(id, NetworkSenderActorRef(probe.ref))))
+        probe.childActorOf(Props(new TrivialControlTester(id, NetworkSenderActorRef(nca))))
       idMap(id) = ref
     }
+    nca ! RegisterActorRef(CONTROLLER, probe.ref)
     idMap(CONTROLLER) = probe.ref
     var seqNum = 0
     cmd.foreach { evt =>
@@ -86,8 +86,8 @@ class TrivialControlSpec
         NetworkMessage(
           seqNum,
           WorkflowFIFOMessage(
-            CONTROLLER,
-            false,
+            ChannelEndpointID(CONTROLLER,
+            false),
             seqNum,
             ControlInvocation(seqNum, evt)
           )

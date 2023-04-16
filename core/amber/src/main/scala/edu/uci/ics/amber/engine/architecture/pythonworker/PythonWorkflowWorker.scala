@@ -2,11 +2,14 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import akka.actor.Props
 import com.typesafe.config.{Config, ConfigFactory}
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
+import edu.uci.ics.amber.engine.architecture.worker.processing.{EmptyLocalCheckpointManager, LocalCheckpointManager}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.Constants
@@ -44,13 +47,11 @@ class PythonWorkflowWorker(
     workerIndex: Int,
     workerLayer: OpExecConfig,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
-) extends WorkflowWorker(
+) extends WorkflowActor(
       actorId,
-      workerIndex,
-      workerLayer,
       parentNetworkCommunicationActorRef,
+      ReplayConfig(None, None, Array.empty),
       false,
-      ReplayConfig(None, None, Array.empty)
     ) {
 
   // Input/Output port used in between Python and Java processes.
@@ -66,6 +67,13 @@ class PythonWorkflowWorker(
   private lazy val pythonProxyServer: PythonProxyServer =
     new PythonProxyServer(inputPortNum, outputPort, actorId)
 
+  def outputPayload(
+                     to: ActorVirtualIdentity,
+                     msg:WorkflowFIFOMessage
+                   ): Unit = {
+    logManager.sendCommitted(SendRequest(to, msg))
+  }
+
   val pythonSrcDirectory: Path = Utils.amberHomePath
     .resolve("src")
     .resolve("main")
@@ -78,33 +86,6 @@ class PythonWorkflowWorker(
   // TODO: Implement credit calculation logic in python worker
   override def getSenderCredits(sender: ActorVirtualIdentity) = {
     Constants.unprocessedBatchesCreditLimitPerSender
-  }
-
-  override def handlePayload(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
-    payload match {
-      case control: ControlPayload =>
-        control match {
-          case ControlInvocation(_, c) =>
-            // TODO: Implement backpressure message handling for python worker
-            if (!c.isInstanceOf[Backpressure]) {
-              pythonProxyClient.enqueueCommand(control, channelId)
-            }
-          case ReturnInvocation(_, _) =>
-            pythonProxyClient.enqueueCommand(control, channelId)
-          case _ =>
-            logger.error(s"unhandled control payload: $control")
-        }
-      case data: DataPayload =>
-        pythonProxyClient.enqueueData(DataElement(data, channelId))
-      case _ => ???
-    }
-  }
-
-  def outputPayload(
-      to: ActorVirtualIdentity,
-      msg: WorkflowFIFOMessage
-  ): Unit = {
-    logManager.sendCommitted(SendRequest(to, msg))
   }
 
   override def postStop(): Unit = {
@@ -175,6 +156,32 @@ class PythonWorkflowWorker(
     } finally {
       assert(s != null)
       s.close()
+    }
+  }
+
+  override val localCheckpointManager: LocalCheckpointManager = new EmptyLocalCheckpointManager()
+
+  override def getLogName: String = ""
+
+  override def setupState(fromChkpt: Option[SavedCheckpoint], replayTo: Option[Long]): Unit = {}
+
+  override def inputPayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+    payload match {
+      case control: ControlPayload =>
+        control match {
+          case ControlInvocation(_, c) =>
+            // TODO: Implement backpressure message handling for python worker
+            if (!c.isInstanceOf[Backpressure]) {
+              pythonProxyClient.enqueueCommand(control, channelEndpointID)
+            }
+          case ReturnInvocation(_, _) =>
+            pythonProxyClient.enqueueCommand(control, channelEndpointID)
+          case _ =>
+            logger.error(s"unhandled control payload: $control")
+        }
+      case data: DataPayload =>
+        pythonProxyClient.enqueueData(DataElement(data, channelEndpointID))
+      case _ => ???
     }
   }
 }

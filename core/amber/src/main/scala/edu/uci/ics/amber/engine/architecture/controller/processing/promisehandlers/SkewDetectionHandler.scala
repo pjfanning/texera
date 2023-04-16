@@ -2,10 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 
 import com.twitter.util.Future
 import SkewDetectionHandler._
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo

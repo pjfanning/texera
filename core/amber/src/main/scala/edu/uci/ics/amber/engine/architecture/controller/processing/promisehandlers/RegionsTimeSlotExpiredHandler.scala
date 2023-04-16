@@ -3,10 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -46,7 +43,7 @@ trait RegionsTimeSlotExpiredHandler {
         )
       ) {
         cp.scheduler
-          .onTimeSlotExpired(notCompletedRegions, cp.availableNodes)
+          .onTimeSlotExpired(notCompletedRegions, cp.getAvailableNodes())
           .flatMap(_ => Future.Unit)
       } else {
         if (notCompletedRegions.nonEmpty) {

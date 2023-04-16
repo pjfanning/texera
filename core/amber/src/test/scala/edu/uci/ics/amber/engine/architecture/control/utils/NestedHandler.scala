@@ -14,9 +14,9 @@ trait NestedHandler {
   this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (n: Nested, sender) =>
-    send(Pass("Hello"), tester.actorId)
-      .flatMap(ret => send(Pass(ret + " "), tester.actorId))
-      .flatMap(ret => send(Pass(ret + "World!"), tester.actorId))
+    send(Pass("Hello"), processor.actorId)
+      .flatMap(ret => send(Pass(ret + " "), processor.actorId))
+      .flatMap(ret => send(Pass(ret + "World!"), processor.actorId))
   }
 
   registerHandler { (p: Pass, sender) =>

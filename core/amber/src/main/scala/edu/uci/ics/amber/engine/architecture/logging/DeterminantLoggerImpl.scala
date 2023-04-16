@@ -16,7 +16,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
   }
 
   def drainCurrentLogRecords(): Array[InMemDeterminant] = {
-    if(totalValidStep != tempLogs.last.asInstanceOf[StepsOnChannel].steps){
+    if(tempLogs.nonEmpty && totalValidStep != tempLogs.last.asInstanceOf[StepsOnChannel].steps){
       tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
     }
     val result = tempLogs.toArray

@@ -64,8 +64,8 @@ object DataProcessor {
 
 class DataProcessor( // meta dependencies:
     val ordinalMapping: OrdinalMapping,
-    actorId: ActorVirtualIdentity
-) extends ControlProcessor(actorId)
+    actorId: ActorVirtualIdentity, determinantLogger: DeterminantLogger
+) extends AmberProcessor(actorId, determinantLogger)
     with Serializable {
 
   // outer dependencies
@@ -75,19 +75,28 @@ class DataProcessor( // meta dependencies:
   private[processing] var actorContext: ActorContext = _
   @transient
   private[processing] var internalQueue:WorkerInternalQueue = _
+  @transient
+  private[processing] var dpThread:DPThread = _
 
   def initDP(
                   operator: IOperatorExecutor, // core logic
                   currentOutputIterator: Iterator[(ITuple, Option[Int])],
                   actorContext: ActorContext,
-                  logManager: LogManager
+                  logManager: LogManager,
+                  internalQueue: WorkerInternalQueue
   ): Unit = {
+    init(logManager)
     this.operator = operator
     this.outputIterator.setTupleOutput(currentOutputIterator)
     this.actorContext = actorContext
+    this.internalQueue = internalQueue
     this.pauseManager.initialize(internalQueue)
     this.epochManager.initialize(this)
-    initCP(new DataProcessorRPCHandlerInitializer(this), logManager)
+    new DataProcessorRPCHandlerInitializer(this)
+  }
+
+  def attachDPThread(dPThread: DPThread): Unit ={
+    this.dpThread = dPThread
   }
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
@@ -111,6 +120,7 @@ class DataProcessor( // meta dependencies:
   private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
   private[processing] var inputBatch: Array[ITuple] = _
   private[processing] var currentInputIdx = -1
+  private[processing] var currentBatchChannel: ChannelEndpointID = _
 
   // dp thread stats:
   protected var inputTupleCount = 0L
@@ -218,20 +228,22 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  def hasUnfinishedInput: Boolean = inputBatch != null && inputBatch.length < currentInputIdx
+  def hasUnfinishedInput: Boolean = inputBatch != null && currentInputIdx+1 < inputBatch.length
 
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
   def continueDataProcessing(): Unit ={
+    updateInputChannel(currentBatchChannel)
     if (hasUnfinishedOutput) {
       outputOneTuple()
     } else {
-      processInputTuple(Left(inputBatch(currentInputIdx)))
       currentInputIdx += 1
+      processInputTuple(Left(inputBatch(currentInputIdx)))
     }
   }
 
-  private[this] def initBatch(batch:Array[ITuple]): Unit ={
+  private[this] def initBatch(channel:ChannelEndpointID, batch:Array[ITuple]): Unit ={
+    currentBatchChannel = channel
     inputBatch = batch
     currentInputIdx = 0
   }
@@ -258,13 +270,13 @@ class DataProcessor( // meta dependencies:
             CONTROLLER
           )
         })
-        initBatch(tuples)
+        initBatch(channel, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
-        initBatch(Array.empty)
         val currentLink = upstreamLinkStatus.getInputLink(channel.endpointWorker)
         upstreamLinkStatus.markWorkerEOF(channel.endpointWorker, currentLink)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
+          initBatch(channel, Array.empty)
           processInputTuple(Right(InputExhausted()))
           logger.info(
             s"$currentLink completed, append FinalizeLink message at step = ${determinantLogger.getStep}"

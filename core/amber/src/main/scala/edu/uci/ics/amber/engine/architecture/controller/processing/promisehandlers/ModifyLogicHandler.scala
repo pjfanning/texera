@@ -5,10 +5,7 @@ import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyPythonOperatorLogicHandler.ModifyPythonOperatorLogic
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic

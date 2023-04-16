@@ -30,8 +30,10 @@ trait BackpressureHandler {
 
   registerHandler { (msg: Backpressure, _) =>
     if (msg.enableBackpressure) {
+      logger.info(s"$actorId is paused by backpressure")
       dp.pauseManager.pause(BackpressurePause)
     } else {
+      logger.info(s"$actorId is resumed by backpressure")
       dp.pauseManager.resume(BackpressurePause)
     }
   }

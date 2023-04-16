@@ -4,10 +4,7 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import ResumeHandler.ResumeWorkflow
 import RetryWorkflowHandler.RetryWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ReplayCurrentTupleHandler.ReplayCurrentTuple
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER

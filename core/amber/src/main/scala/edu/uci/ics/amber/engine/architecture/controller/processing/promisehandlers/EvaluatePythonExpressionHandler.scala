@@ -3,10 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import EvaluatePythonExpressionHandler.EvaluatePythonExpression
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.EvaluateExpressionHandler.EvaluateExpression
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.EvaluatedValue
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand

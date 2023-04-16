@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
+
 class PendingCheckpoint(val actorId:ActorVirtualIdentity,
                         startTime:Long,
                         chkpt:SavedCheckpoint,

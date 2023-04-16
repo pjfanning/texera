@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
@@ -51,41 +51,41 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
   private var allDisabled = false
   private val enabledDataQueues = mutable.HashSet[ChannelEndpointID]()
   private val disabledDataQueues = mutable.HashSet[ChannelEndpointID]()
-  private val dataQueues:mutable.HashMap[ChannelEndpointID, mutable.Queue[DPMessage]] = mutable.HashMap()
-  private val controlQueue:mutable.Queue[DPMessage] = mutable.Queue()
+  private val dataQueues:mutable.HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]] = mutable.HashMap()
+  private val controlQueue:LinkedBlockingQueue[DPMessage] = new LinkedBlockingQueue()
   private val inputLock = new ReentrantLock()
-  private var availableFuture:CompletableFuture[Unit] = _
+  private var availableFuture:CompletableFuture[Unit] = CompletableFuture.completedFuture(Unit)
 
   override def enqueuePayload(message:DPMessage): Unit = {
     inputLock.lock()
     if(message.channel.isControlChannel) {
-      controlQueue.enqueue(message)
+      controlQueue.put(message)
     }else{
       creditMonitor.decreaseCredit(message.channel.endpointWorker)
       if(dataQueues.contains(message.channel)){
-        dataQueues(message.channel).enqueue(message)
+        dataQueues(message.channel).put(message)
       }else{
         if(allDisabled){
           disabledDataQueues.add(message.channel)
         }else{
           enabledDataQueues.add(message.channel)
         }
-        dataQueues(message.channel) = mutable.Queue(message)
+        val newQueue = new LinkedBlockingQueue[DPMessage]()
+        newQueue.put(message)
+        dataQueues(message.channel) = newQueue
       }
     }
-    if(availableFuture != null){
-      if(enabledDataQueues.exists(id => dataQueues(id).nonEmpty)){
-        availableFuture.complete()
-      }
+    if(!controlQueue.isEmpty || enabledDataQueues.exists(id => !dataQueues(id).isEmpty)){
+      availableFuture.complete(Unit)
     }
     inputLock.unlock()
   }
 
   override def getQueueHeadStatus(currentStep: Long): QueueHeadStatus = {
     inputLock.lock()
-    val result = if(controlQueue.nonEmpty){
+    val result = if(!controlQueue.isEmpty){
       CONTROL_MESSAGE
-    }else if(enabledDataQueues.exists(id => dataQueues(id).nonEmpty)){
+    }else if(enabledDataQueues.exists(id => !dataQueues(id).isEmpty)){
       DATA_MESSAGE
     }else{
       NO_MESSAGE
@@ -102,16 +102,13 @@ class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerIntern
       availableFuture = new CompletableFuture[Unit]()
     }
     inputLock.unlock()
-    if(availableFuture != null){
-      availableFuture.get()
-      availableFuture = null
-    }
+    availableFuture.get()
     // we are sure the queue is not empty.
-    if(controlQueue.nonEmpty){
-      controlQueue.dequeue()
+    if(!controlQueue.isEmpty){
+      controlQueue.take()
     }else{
-      val nonEmptyChannelId = enabledDataQueues.find(id => dataQueues(id).nonEmpty).get
-      val msg = dataQueues(nonEmptyChannelId).dequeue()
+      val nonEmptyChannelId = enabledDataQueues.find(id => !dataQueues(id).isEmpty).get
+      val msg = dataQueues(nonEmptyChannelId).take()
       creditMonitor.increaseCredit(msg.channel.endpointWorker)
       msg
     }

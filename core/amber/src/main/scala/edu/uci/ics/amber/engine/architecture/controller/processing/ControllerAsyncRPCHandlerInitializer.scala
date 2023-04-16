@@ -15,7 +15,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
-class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
+class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     extends AsyncRPCHandlerInitializer(cp.asyncRPCClient, cp.asyncRPCServer)
     with AmberLogging
     with LinkWorkersHandler
@@ -55,15 +55,15 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
     if (suppressStatusUpdate) {
       return
     }
-    if (cp.controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
+    if (cp.config.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
       println("status update enabled")
       statusUpdateAskHandle = Option(
         cp.actorContext.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
-          FiniteDuration.apply(cp.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
           cp.actorContext.self,
           ControlInvocation(ControllerInitiateQueryStatistics())
-        )(cp.executor)
+        )(cp.actorContext.dispatcher)
       )
     }
   }
@@ -73,17 +73,17 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
       return
     }
     if (
-      Constants.monitoringEnabled && cp.controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
+      Constants.monitoringEnabled && cp.config.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
     ) {
       monitoringHandle = Option(
         cp.actorContext.system.scheduler.scheduleAtFixedRate(
           0.milliseconds,
-          FiniteDuration.apply(cp.controllerConfig.monitoringIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.config.monitoringIntervalMs.get, MILLISECONDS),
           cp.actorContext.self,
           ControlInvocation(
             ControllerInitiateMonitoring()
           )
-        )(cp.executor)
+        )(cp.actorContext.dispatcher)
       )
     }
   }
@@ -93,17 +93,17 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControllerProcessor)
       return
     }
     if (
-      Constants.reshapeSkewHandlingEnabled && cp.controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
+      Constants.reshapeSkewHandlingEnabled && cp.config.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
     ) {
       workflowReshapeState.skewDetectionHandle = Option(
         cp.actorContext.system.scheduler.scheduleAtFixedRate(
           Constants.reshapeSkewDetectionInitialDelayInMs.milliseconds,
-          FiniteDuration.apply(cp.controllerConfig.skewDetectionIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.config.skewDetectionIntervalMs.get, MILLISECONDS),
           cp.actorContext.self,
           ControlInvocation(
             ControllerInitiateSkewDetection()
           )
-        )(cp.executor)
+        )(cp.actorContext.dispatcher)
       )
     }
   }

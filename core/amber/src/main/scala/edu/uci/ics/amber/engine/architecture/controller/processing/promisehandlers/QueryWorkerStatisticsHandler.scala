@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.ambermessage.{EstimationMarker, FIFOMarker}
@@ -48,18 +48,18 @@ trait QueryWorkerStatisticsHandler {
       .collect(requests)
       .map(_ => {
         println("collected worker stats")
-        if(!cp.isReplaying){
-          val time = (System.currentTimeMillis() - workflowStartTimeStamp)
-          val interaction = new LogicalExecutionSnapshot()
-          val markerId = cp.interactionHistory.addSnapshot(time, interaction)
-          interaction.addParticipant(CONTROLLER, CheckpointStats(
-            markerId,
-            cp.controlInput.getFIFOState,
-            cp.controlOutputPort.getFIFOState,
-            cp.numControlSteps + 1,0))
-          val marker = EstimationMarker(markerId)
-          cp.controlOutputPort.broadcastMarker(marker)
-        }
+//        if(!cp.isReplaying){
+//          val time = (System.currentTimeMillis() - workflowStartTimeStamp)
+//          val interaction = new LogicalExecutionSnapshot()
+//          val markerId = cp.processingHistory.addSnapshot(time, interaction)
+//          interaction.addParticipant(CONTROLLER, CheckpointStats(
+//            markerId,
+//            cp.inputPort.getFIFOState,
+//            cp.outputPort.getFIFOState,
+//            cp.determinantLogger.getStep + 1,0))
+//          val marker = EstimationMarker(markerId)
+//          cp.outputPort.broadcastMarker(marker)
+//        }
         sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
       })
   })

@@ -6,10 +6,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Breakpoi
 import AssignBreakpointHandler.AssignGlobalBreakpoint
 import LocalBreakpointTriggeredHandler.LocalBreakpointTriggered
 import PauseHandler.PauseWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryAndRemoveBreakpointsHandler.QueryAndRemoveBreakpoints
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ResumeHandler.ResumeWorker

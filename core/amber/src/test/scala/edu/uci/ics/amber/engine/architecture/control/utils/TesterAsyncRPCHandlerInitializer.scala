@@ -1,14 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.control.utils
 
-import edu.uci.ics.amber.engine.common.rpc.{
-  AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
-  AsyncRPCServer
-}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
 
-class TesterAsyncRPCHandlerInitializer(val tester: TrivialControlTester)
-    extends AsyncRPCHandlerInitializer(tester.asyncRPCClient, tester.asyncRPCServer)
+class TesterAsyncRPCHandlerInitializer(val processor: AmberProcessor)
+    extends AsyncRPCHandlerInitializer(processor.asyncRPCClient, processor.asyncRPCServer)
     with PingPongHandler
     with ChainHandler
     with MultiCallHandler

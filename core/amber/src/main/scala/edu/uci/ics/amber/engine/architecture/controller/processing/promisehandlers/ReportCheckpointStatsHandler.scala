@@ -20,7 +20,7 @@ trait ReportCheckpointStatsHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
   registerHandler { (msg: ReportCheckpointStats, sender) =>
     if(!cp.isReplaying){
-      cp.interactionHistory.getSnapshot(msg.checkpointStats.markerId.toInt).addParticipant(sender, msg.checkpointStats)
+      cp.processingHistory.getSnapshot(msg.checkpointStats.markerId.toInt).addParticipant(sender, msg.checkpointStats)
     }
   }
 }

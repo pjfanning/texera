@@ -11,33 +11,24 @@ import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerIniti
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
-class ControlProcessor(val actorId:ActorVirtualIdentity)  extends AmberLogging
+abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: DeterminantLogger)  extends AmberLogging
   with Serializable {
 
-  @transient
-  private[processing] var logManager: LogManager = _
-
-  var determinantLogger: DeterminantLogger = _
+  @transient var logManager: LogManager = _
 
   // 1. Unified Output
-  lazy private[processing] val outputPort: NetworkOutputPort =
+  lazy val outputPort: NetworkOutputPort =
     new NetworkOutputPort(this.actorId, this.outputPayload)
   // 2. RPC Layer
-  lazy private[processing] val asyncRPCClient: AsyncRPCClient =
+  lazy val asyncRPCClient: AsyncRPCClient =
     new AsyncRPCClient(outputPort, actorId)
-  lazy private[processing] val asyncRPCServer: AsyncRPCServer =
+  lazy val asyncRPCServer: AsyncRPCServer =
     new AsyncRPCServer(outputPort, actorId)
-
-  // rpc handlers
-  @transient
-  private[this] var rpcInitializer: AsyncRPCHandlerInitializer = _
 
   protected var currentInputChannel:ChannelEndpointID = _
 
-  def initCP(rpcInit:AsyncRPCHandlerInitializer, logManager: LogManager): Unit ={
+  def init(logManager: LogManager): Unit ={
     this.logManager = logManager
-    determinantLogger = logManager.getDeterminantLogger
-    rpcInitializer = rpcInit
   }
 
   def updateInputChannel(channelEndpointID: ChannelEndpointID): Unit ={

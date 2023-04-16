@@ -246,7 +246,7 @@ case class OpExecConfig(
       context: ActorContext,
       opExecution: OperatorExecution,
       controllerConf: ControllerConfig,
-      globalRecoveryManager: GlobalRecoveryManager
+      onRecovery: (ActorVirtualIdentity) => Unit
   ): Unit = {
     (0 until numWorkers)
       .foreach(i => {
@@ -258,7 +258,7 @@ case class OpExecConfig(
           opExecution,
           parentNetworkCommunicationActorRef,
           controllerConf,
-          globalRecoveryManager
+          onRecovery
         )
       })
   }
@@ -270,7 +270,7 @@ case class OpExecConfig(
       opExecution: OperatorExecution,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       controllerConf: ControllerConfig,
-      globalRecoveryManager: GlobalRecoveryManager,
+      onRecovery: (ActorVirtualIdentity) => Unit,
   ): ActorRef = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
@@ -285,7 +285,7 @@ case class OpExecConfig(
         parentNetworkCommunicationActorRef,
         controllerConf.supportFaultTolerance,
         if (controllerConf.stateRestoreConfig.confs.contains(workerId)) {
-          globalRecoveryManager.markRecoveryStatus(workerId, isRecovering = true)
+          onRecovery(workerId)
           controllerConf.stateRestoreConfig.confs(workerId)
         } else {
           ReplayConfig(None, None, Array.empty)

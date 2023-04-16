@@ -7,10 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
 }
 import ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING

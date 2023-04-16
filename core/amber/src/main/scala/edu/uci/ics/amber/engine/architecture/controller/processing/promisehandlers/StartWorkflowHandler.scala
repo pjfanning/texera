@@ -5,10 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowStatusUpdate
 }
 import StartWorkflowHandler.StartWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 
@@ -29,7 +26,7 @@ trait StartWorkflowHandler {
   registerHandler { (msg: StartWorkflow, sender) =>
     {
       cp.scheduler
-        .startWorkflow(cp.availableNodes)
+        .startWorkflow(cp.getAvailableNodes())
         .map(_ => {
           sendToClient(WorkflowStateUpdate(RUNNING))
           enableStatusUpdate()

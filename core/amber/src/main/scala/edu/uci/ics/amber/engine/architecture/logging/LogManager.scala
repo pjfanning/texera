@@ -4,7 +4,6 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 
@@ -18,10 +17,11 @@ case object TerminateSignal extends InMemDeterminant
 object LogManager {
   def getLogManager(
       enabledLogging: Boolean,
-      networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef
+      networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
+      determinantLogger:DeterminantLogger
   ): LogManager = {
     if (enabledLogging) {
-      new LogManagerImpl(networkCommunicationActor)
+      new LogManagerImpl(networkCommunicationActor, determinantLogger)
     } else {
       new EmptyLogManagerImpl(networkCommunicationActor)
     }
@@ -30,8 +30,6 @@ object LogManager {
 
 trait LogManager {
   def setupWriter(logWriter: DeterminantLogWriter): Unit
-
-  def getDeterminantLogger: DeterminantLogger
 
   def sendCommitted(sendRequest: SendRequest): Unit
 
@@ -44,8 +42,6 @@ class EmptyLogManagerImpl(
 ) extends LogManager {
   override def setupWriter(logWriter: DeterminantLogStorage.DeterminantLogWriter): Unit = {}
 
-  override def getDeterminantLogger: DeterminantLogger = new EmptyDeterminantLogger()
-
   override def sendCommitted(
       sendRequest: SendRequest
   ): Unit = {
@@ -56,10 +52,9 @@ class EmptyLogManagerImpl(
 }
 
 class LogManagerImpl(
-    networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef
+    networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
+    determinantLogger: DeterminantLogger
 ) extends LogManager {
-
-  private val determinantLogger = new DeterminantLoggerImpl()
 
   private var writer: AsyncLogWriter = _
 

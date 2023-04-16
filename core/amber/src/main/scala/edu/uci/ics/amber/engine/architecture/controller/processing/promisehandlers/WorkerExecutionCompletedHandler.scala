@@ -6,7 +6,7 @@ import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControllerAsyncRPCHandlerInitializer, ControllerProcessor}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
@@ -46,7 +46,7 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (cp.execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
-            sendToClient(WorkflowReplayInfo(cp.interactionHistory))
+            sendToClient(WorkflowReplayInfo(cp.processingHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()
             disableMonitoring()
@@ -54,7 +54,7 @@ trait WorkerExecutionCompletedHandler {
             println("workflow completed!!!!!!!!!!!!!!")
             Future.Unit
           } else {
-            cp.scheduler.onWorkerCompletion(sender, cp.availableNodes).flatMap(_ => Future.Unit)
+            cp.scheduler.onWorkerCompletion(sender, cp.getAvailableNodes()).flatMap(_ => Future.Unit)
           }
         })
     }

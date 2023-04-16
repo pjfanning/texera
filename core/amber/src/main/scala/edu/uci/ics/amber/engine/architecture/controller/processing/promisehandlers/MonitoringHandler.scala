@@ -3,10 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import MonitoringHandler.ControllerInitiateMonitoring
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControllerAsyncRPCHandlerInitializer,
-  ControllerProcessor
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}

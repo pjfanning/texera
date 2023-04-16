@@ -15,9 +15,9 @@ trait MultiCallHandler {
   this: TesterAsyncRPCHandlerInitializer =>
 
   registerHandler { (m: MultiCall, sender) =>
-    send(Chain(m.seq), tester.actorId)
+    send(Chain(m.seq), processor.actorId)
       .flatMap(x => send(Recursion(1), x))
-      .flatMap(ret => send(Collect(m.seq.take(3)), tester.actorId))
+      .flatMap(ret => send(Collect(m.seq.take(3)), processor.actorId))
   }
 
 }
