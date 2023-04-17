@@ -6,13 +6,12 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueueImpl
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.NoOpHandler.NoOp
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ReplayControlMessageHandler.ContinueReplayTo
 import edu.uci.ics.amber.engine.architecture.worker.processing.{BackpressurePause, DataProcessor, DataProcessorRPCHandlerInitializer, PauseType}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 
 object ReplayControlMessageHandler {
   final case class ContinueReplayTo(replayTo: Long)
     extends ControlCommand[Unit]
       with SkipReply
-      with SkipFaultTolerance
 }
 
 trait ReplayControlMessageHandler {

@@ -9,7 +9,6 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, FIFOMarkerHandler}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.Constants
@@ -157,8 +156,6 @@ class PythonWorkflowWorker(
       s.close()
     }
   }
-
-  override val fifoMarkerHandler: FIFOMarkerHandler = new EmptyFIFOMarkerHandler()
 
   override def getLogName: String = ""
 

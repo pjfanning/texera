@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerFIFOMarkerHandler, ControllerReplayQueue, GlobalRecoveryManager, FIFOMarkerHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerInternalPayloadHandler, ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadHandler}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
@@ -70,7 +70,7 @@ class Controller(
   var controlProcessor: ControlProcessor = _
   var replayQueue:ControllerReplayQueue = _
 
-  override val fifoMarkerHandler: FIFOMarkerHandler = new ControllerFIFOMarkerHandler(this)
+  override val internalMessageHandler: InternalPayloadHandler = new ControllerInternalPayloadHandler(this)
 
   def getAvailableNodes():Array[Address] = {
     Await

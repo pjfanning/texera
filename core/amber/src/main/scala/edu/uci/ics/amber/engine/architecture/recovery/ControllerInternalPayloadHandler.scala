@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
-class ControllerFIFOMarkerHandler(controller:Controller) extends FIFOMarkerHandler(controller.actorId) {
+class ControllerInternalPayloadHandler(controller:Controller) extends InternalPayloadHandler(controller.actorId) {
 
   override def handleCommand(channel:ChannelEndpointID, controlCommand: ControlInvocation): Unit = {
     controller.controlProcessor.processControlPayload(channel, controlCommand)

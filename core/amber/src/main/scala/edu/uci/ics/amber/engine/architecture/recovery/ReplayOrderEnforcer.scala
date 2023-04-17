@@ -39,7 +39,7 @@ class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
     }
     if(records.isEmpty){
       //recovery already completed
-      onRecoveryComplete()
+      onRecoveryComplete.setValue(Unit)
     }
   }
 

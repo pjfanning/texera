@@ -10,11 +10,11 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStor
 import edu.uci.ics.amber.engine.architecture.logging.{AsyncLogWriter, DeterminantLogger, DeterminantLoggerImpl, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicationActor, NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{LocalRecoveryManager, FIFOMarkerHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadHandler, LocalRecoveryManager}
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkerInternalQueueImpl}
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, CheckpointSupport}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalMessage, ChannelEndpointID, CheckpointCompleted, ControlPayload, CreditRequest, EstimationMarker, FIFOMarker, GlobalCheckpointMarker, ResendOutputTo, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, CreditRequest, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
@@ -97,15 +97,15 @@ abstract class WorkflowActor(
   }
 
   // custom state ser/de support (override by Worker and Controller)
-  val fifoMarkerHandler:FIFOMarkerHandler
+  val internalMessageHandler:InternalPayloadHandler
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match {
-      case marker: FIFOMarker =>
-        logger.info(s"process marker $marker")
-        fifoMarkerHandler.inputMarker(channelId, marker)
+      case internal: AmberInternalPayload =>
+        logger.info(s"process internal payload $internal")
+        internal.inputMarker(channelId, internal)
       case other =>
-        fifoMarkerHandler.inputPayload(channelId, payload)
+        internalMessageHandler.inputPayload(channelId, payload)
         handlePayload(channelId, payload)
     }
   }
@@ -140,14 +140,14 @@ abstract class WorkflowActor(
   def loadState(): Unit ={
     restoreConfig.fromCheckpoint match {
       case None | Some(0) =>
-        fifoMarkerHandler.restoreStateFrom(None, restoreConfig.replayTo)
+        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
       case Some(alignment) =>
         val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
         logger.info("checkpoint found, start loading")
         val startLoadingTime = System.currentTimeMillis()
         // restore state from checkpoint: can be in either replaying or normal processing
         chkpt.attachSerialization(SerializationExtension(context.system))
-        fifoMarkerHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
+        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
         )

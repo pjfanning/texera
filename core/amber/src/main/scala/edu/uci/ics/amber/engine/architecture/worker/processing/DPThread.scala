@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessag
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, DataPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -73,6 +73,8 @@ class DPThread(val actorId: ActorVirtualIdentity,
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
         val input = internalQueue.peek(currentStep)
         input match {
+          case Some(DPMessage(_, internalPayload: AmberInternalPayload)) =>
+            // received system message
           case None | Some(DPMessage(ChannelEndpointID(_, false), _)) =>
             dp.continueDataProcessing()
           case Some(DPMessage(ChannelEndpointID(_, true), _))=>
@@ -86,6 +88,8 @@ class DPThread(val actorId: ActorVirtualIdentity,
             dp.handleDataPayload(msg.channel, data)
           case control: ControlPayload =>
             dp.processControlPayload(msg.channel, control)
+          case internal: AmberInternalPayload =>
+            // received system message
         }
       }
     }

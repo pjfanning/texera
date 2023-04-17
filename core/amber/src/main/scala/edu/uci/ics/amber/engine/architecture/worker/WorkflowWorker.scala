@@ -5,14 +5,14 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, FIFOMarkerHandler, WorkerFIFOMarkerHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadHandler, WorkerInternalPayloadHandler}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 
 import java.util.concurrent.CompletableFuture
@@ -62,7 +62,7 @@ class WorkflowWorker(
   var internalQueue: WorkerInternalQueue = _
   var dpThread: DPThread = _
 
-  override val fifoMarkerHandler: FIFOMarkerHandler = new WorkerFIFOMarkerHandler(this)
+  override val internalMessageHandler: InternalPayloadHandler = new WorkerInternalPayloadHandler(this)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -86,6 +86,7 @@ class WorkflowWorker(
     }
 
   override def inputPayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+
     internalQueue.enqueuePayload(DPMessage(channelId, payload))
   }
 

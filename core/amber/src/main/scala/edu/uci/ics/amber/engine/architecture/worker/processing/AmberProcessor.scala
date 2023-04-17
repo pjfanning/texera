@@ -4,10 +4,10 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{SkipConsoleLog, SkipFaultTolerance}
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
@@ -31,10 +31,12 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
     this.logManager = logManager
   }
 
-  def updateInputChannel(channelEndpointID: ChannelEndpointID): Unit ={
+  def updateInputChannelThenDoLogging(channelEndpointID: ChannelEndpointID): Unit ={
     if(currentInputChannel != channelEndpointID){
+      determinantLogger.setCurrentSender(channelEndpointID)
       currentInputChannel = channelEndpointID
     }
+    determinantLogger.stepIncrement()
   }
 
   def outputPayload(
@@ -45,11 +47,9 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
   }
 
 
-  def skipFaultTolerance(payload: ControlPayload): Boolean ={
-    payload match {
-      case invocation: ControlInvocation => invocation.isInstanceOf[SkipFaultTolerance]
-      case ret: ReturnInvocation => ret.skipFaultTolerance
-    }
+  def processInternalPayload(payload: AmberInternalPayload): Unit ={
+    // process system messages:
+
   }
 
   def processControlPayload(
@@ -57,11 +57,7 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
                              payload: ControlPayload
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    updateInputChannel(channel)
-    if(!skipFaultTolerance(payload)){
-      determinantLogger.setCurrentSender(channel)
-      determinantLogger.stepIncrement()
-    }
+    updateInputChannelThenDoLogging(channel)
     payload match {
       case invocation: ControlInvocation =>
         if (!invocation.command.isInstanceOf[SkipConsoleLog]) {

@@ -9,8 +9,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, CreditRequest, FIFOMarker, GlobalCheckpointMarker, WorkflowFIFOMessage, WorkflowMessage}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, CreditRequest, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
@@ -250,11 +249,6 @@ class NetworkCommunicationActor(
 
   def sendMessagesAndReceiveAcks: Receive = {
     case SendRequest(id, msg) =>
-      msg match{
-        case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
-          logger.info(s"NCA receives send request for ${payload.id} to $id")
-        case other => //skip
-      }
       val msgToForward = flowControl.getMessageToForward(id, msg)
       if (msgToForward.nonEmpty) {
         forwardMessageFromFlowControl(id, msgToForward.get)
@@ -329,13 +323,6 @@ class NetworkCommunicationActor(
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
       Future{
-//        //TODO: remove this random delay!!!!!
-//        Thread.sleep(Random.nextInt(3))
-        msg.message match{
-          case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
-            logger.info(s"NCA send ${payload.id} to $actorID")
-          case other => //skip
-        }
         idToActorRefs(actorID) ! msg
       }
     } else {

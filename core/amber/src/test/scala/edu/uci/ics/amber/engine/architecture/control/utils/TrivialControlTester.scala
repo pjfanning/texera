@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, FIFOMarkerHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, InternalPayloadHandler}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayConfig
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
@@ -20,7 +20,7 @@ class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(id, parentNetworkCommunicationActorRef, ReplayConfig(None,None,Array.empty),false) {
-  override val fifoMarkerHandler: FIFOMarkerHandler = new EmptyFIFOMarkerHandler()
+  override val internalMessageHandler: InternalPayloadHandler = new EmptyFIFOMarkerHandler()
   private val processor = new AmberProcessor(actorId, determinantLogger){}
 
   override def preStart(): Unit = {

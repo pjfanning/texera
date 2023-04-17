@@ -6,9 +6,9 @@ import edu.uci.ics.amber.engine.architecture.recovery.FIFOMarkerCollectionState
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, FIFOMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, FIFOMarkerControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
@@ -63,7 +63,6 @@ class AsyncRPCClient(
 
   private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
-  private var markerID = 0L
 
   class Convertable[T, U](val convertFunc: ControlCommand[T] => U)
 
@@ -80,28 +79,6 @@ class AsyncRPCClient(
     controlOutputEndpoint.sendTo(to, ControlInvocation(cmd))
   }
 
-  def broadcastMarker[T](cmd: FIFOMarkerControlCommand[T], markerCounts:Map[ActorVirtualIdentity, Long]): Future[Seq[T]] ={
-    markerID += 1
-    val controlIdMap = mutable.HashMap[ActorVirtualIdentity, Long]()
-    val promises = mutable.ArrayBuffer[Promise[T]]()
-    val receivers = mutable.HashSet[ActorVirtualIdentity]()
-    controlOutputEndpoint.getActiveChannels.foreach{
-      c =>
-        if(!receivers.contains(c.endpointWorker)){
-          receivers.add(c.endpointWorker)
-          val (p, id) = createPromise[T]()
-          controlIdMap(c.endpointWorker) = id
-          promises.append(p)
-        }
-    }
-    controlOutputEndpoint.broadcastMarker(FIFOMarker(markerID, markerCounts, controlIdMap.toMap, cmd))
-    Future.collect(promises)
-  }
-
-  def broadcastMarker[T](cmd: FIFOMarkerControlCommand[T] with SkipReply, markerCounts:Map[ActorVirtualIdentity, Long]): Unit ={
-    markerID += 1
-    controlOutputEndpoint.broadcastMarker(FIFOMarker(markerID, markerCounts, Map.empty, cmd))
-  }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
     controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))

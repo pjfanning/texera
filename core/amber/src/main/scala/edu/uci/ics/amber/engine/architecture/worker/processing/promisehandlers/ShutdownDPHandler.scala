@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture
 object ShutdownDPHandler {
   final case class ShutdownDP(reason: Option[Throwable], completion: CompletableFuture[Unit])
       extends ControlCommand[Unit]
-      with SkipFaultTolerance
       with SkipReply
 }
 

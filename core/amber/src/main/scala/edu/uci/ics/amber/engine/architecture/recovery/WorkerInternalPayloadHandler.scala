@@ -2,8 +2,6 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.CheckpointControlMessageHandler.ReportCheckpointCompleted
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ReplayControlMessageHandler.ReportReplayStatus
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
@@ -20,7 +18,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.util.concurrent.CompletableFuture
 
-class WorkerFIFOMarkerHandler(worker:WorkflowWorker) extends FIFOMarkerHandler(worker.actorId) {
+class WorkerInternalPayloadHandler(worker:WorkflowWorker) extends InternalPayloadHandler(worker.actorId) {
 
   override def handleCommand(channel: ChannelEndpointID, controlCommand: ControlInvocation): Unit = {
     worker.internalQueue.enqueuePayload(DPMessage(channel, controlCommand))
