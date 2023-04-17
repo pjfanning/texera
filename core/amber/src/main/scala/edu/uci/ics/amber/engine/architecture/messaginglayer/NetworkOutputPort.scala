@@ -29,12 +29,7 @@ class NetworkOutputPort(
     }
     val useControlChannel = !payload.isInstanceOf[DataPayload]
     val outChannelEndpointID = ChannelEndpointID(receiverId, useControlChannel)
-    val seqNum = payload match {
-      case s: SkipFaultTolerance => // seq num should not increment
-        idToSequenceNums.getOrElseUpdate(outChannelEndpointID, new AtomicLong()).get()
-      case other =>
-        idToSequenceNums.getOrElseUpdate(outChannelEndpointID, new AtomicLong()).getAndIncrement()
-    }
+    val seqNum = getSequenceNumber(outChannelEndpointID, payload)
     val inChannelEndpointID = ChannelEndpointID(actorId, useControlChannel)
     handler(receiverId, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
   }
@@ -43,12 +38,22 @@ class NetworkOutputPort(
 
   def getActiveChannels:Iterable[ChannelEndpointID] = idToSequenceNums.keys
 
+  def getSequenceNumber(channel:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Long ={
+    val counter = idToSequenceNums.getOrElseUpdate(channel, new AtomicLong())
+    if(AmberFIFOChannel.skipFaultTolerance(payload)){
+      counter.get()
+    }else{
+      counter.getAndIncrement()
+    }
+  }
+
   def broadcastMarker(marker:FIFOMarker): Unit ={
     idToSequenceNums.foreach{
       case (outChannel, seq) =>
         logger.info(s"send $marker to ${outChannel}")
         val inChannelEndpointID = ChannelEndpointID(actorId, outChannel.isControlChannel)
-        handler(outChannel.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seq.get(), marker))
+        val seqNum = getSequenceNumber(outChannel, marker)
+        handler(outChannel.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, marker))
     }
   }
 

@@ -1,9 +1,26 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.common.ambermessage.{FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.AmberFIFOChannel.skipFaultTolerance
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 
 import scala.collection.mutable
+
+
+object AmberFIFOChannel{
+
+  def skipFaultTolerance(payload:WorkflowFIFOMessagePayload): Boolean ={
+    payload match {
+      case control: ControlInvocation => control.isInstanceOf[SkipFaultTolerance]
+      case ret: ReturnInvocation => ret.skipFaultTolerance
+      case _: DataPayload => false
+      case FIFOMarker(id, markerCounts, controlIdMap, sharedCommand) => sharedCommand.isInstanceOf[SkipFaultTolerance]
+      case _ => false
+    }
+  }
+}
+
 
 /* The abstracted FIFO/exactly-once logic */
 class AmberFIFOChannel {
@@ -17,20 +34,17 @@ class AmberFIFOChannel {
   }
 
   def acceptMessage(seq:Long, payload:WorkflowFIFOMessagePayload):Iterator[WorkflowFIFOMessagePayload] = {
-    payload match {
-      case marker: FIFOMarker =>
-        addSpecialPayload(seq, marker)
-      case s:SkipFaultTolerance =>
-        addSpecialPayload(seq, s)
-      case _ =>
-        if (isDuplicated(seq)) {
-          Iterator.empty
-        } else if (isAhead(seq)) {
-          stash(seq, payload)
-          Iterator.empty
-        } else{
-          enforceFIFO(payload)
-        }
+    if(skipFaultTolerance(payload)){
+      addSpecialPayload(seq, payload)
+    }else{
+      if (isDuplicated(seq)) {
+        Iterator.empty
+      } else if (isAhead(seq)) {
+        stash(seq, payload)
+        Iterator.empty
+      } else{
+        enforceFIFO(payload)
+      }
     }
   }
 

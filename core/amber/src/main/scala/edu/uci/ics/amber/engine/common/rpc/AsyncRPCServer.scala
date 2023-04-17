@@ -39,7 +39,7 @@ object AsyncRPCServer {
 
   trait SkipReply
 
-  trait FIFOMarkerControlCommand[T] extends ControlCommand[T] with SkipFaultTolerance{
+  trait FIFOMarkerControlCommand[T] extends ControlCommand[T]{
     def commandOnFirstMarker():Option[FIFOFirstMarkerCommand] = None
     @transient var state:FIFOMarkerCollectionState = _
     @transient var marker:FIFOMarker = _
