@@ -28,7 +28,7 @@ class NetworkOutputPort(
     }
     val useControlChannel = !payload.isInstanceOf[DataPayload]
     val outChannelEndpointID = ChannelEndpointID(receiverId, useControlChannel)
-    val seqNum = getSequenceNumber(outChannelEndpointID, payload)
+    val seqNum = getSequenceNumber(outChannelEndpointID)
     val inChannelEndpointID = ChannelEndpointID(actorId, useControlChannel)
     handler(receiverId, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
   }
@@ -37,13 +37,9 @@ class NetworkOutputPort(
 
   def getActiveChannels:Iterable[ChannelEndpointID] = idToSequenceNums.keys
 
-  def getSequenceNumber(channel:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Long ={
+  def getSequenceNumber(channel:ChannelEndpointID): Long ={
     val counter = idToSequenceNums.getOrElseUpdate(channel, new AtomicLong())
-    if(AmberFIFOChannel.skipFaultTolerance(payload)){
-      counter.get()
-    }else{
-      counter.getAndIncrement()
-    }
+    counter.getAndIncrement()
   }
 
 //  def broadcastMarker(marker:FIFOMarker): Unit ={

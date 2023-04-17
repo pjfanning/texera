@@ -90,7 +90,7 @@ class AsyncRPCServer(
       ret: Any
   ): Unit = {
     if (!control.command.isInstanceOf[SkipReply]) {
-      controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret, control.command.isInstanceOf[SkipFaultTolerance]))
+      controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret))
     } else {
       ret match {
         case throwable: Throwable =>

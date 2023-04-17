@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
-class ControllerInternalPayloadHandler(controller:Controller) extends InternalPayloadHandler(controller.actorId) {
+class ControllerInternalPayloadManager(controller:Controller) extends InternalPayloadManager(controller.actorId) {
 
   override def handleCommand(channel:ChannelEndpointID, controlCommand: ControlInvocation): Unit = {
     controller.controlProcessor.processControlPayload(channel, controlCommand)

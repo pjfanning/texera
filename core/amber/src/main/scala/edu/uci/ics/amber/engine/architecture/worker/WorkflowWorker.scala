@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadHandler, WorkerInternalPayloadHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor}
@@ -62,7 +62,7 @@ class WorkflowWorker(
   var internalQueue: WorkerInternalQueue = _
   var dpThread: DPThread = _
 
-  override val internalMessageHandler: InternalPayloadHandler = new WorkerInternalPayloadHandler(this)
+  override val internalMessageHandler: InternalPayloadManager = new WorkerInternalPayloadManager(this)
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -85,8 +85,7 @@ class WorkflowWorker(
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }
 
-  override def inputPayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
-
+  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     internalQueue.enqueuePayload(DPMessage(channelId, payload))
   }
 

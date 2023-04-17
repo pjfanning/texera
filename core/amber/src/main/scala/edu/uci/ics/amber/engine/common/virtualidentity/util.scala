@@ -5,6 +5,7 @@ object util {
   lazy val CONTROLLER: ActorVirtualIdentity = ActorVirtualIdentity("CONTROLLER")
   lazy val SELF: ActorVirtualIdentity = ActorVirtualIdentity("SELF")
   lazy val CLIENT: ActorVirtualIdentity = ActorVirtualIdentity("CLIENT")
+  lazy val INTERNAL: ActorVirtualIdentity = ActorVirtualIdentity("INTERNAL")
 
   lazy val SOURCE_STARTER_ACTOR: ActorVirtualIdentity = ActorVirtualIdentity("SOURCE_STARTER")
   lazy val SOURCE_STARTER_OP: LayerIdentity =

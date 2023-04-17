@@ -5,16 +5,16 @@ import akka.pattern.StatusReply.Ack
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CheckInitialized, ResendOutputTo}
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
 import edu.uci.ics.amber.engine.architecture.logging.{AsyncLogWriter, DeterminantLogger, DeterminantLoggerImpl, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicationActor, NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadHandler, LocalRecoveryManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, LocalRecoveryManager}
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkerInternalQueueImpl}
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, CheckpointSupport}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, CreditRequest, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, CreditRequest, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
@@ -25,6 +25,7 @@ import scala.concurrent.duration.DurationInt
 
 object WorkflowActor{
   case class CheckInitialized()
+  case class ResendOutputTo()
 }
 
 abstract class WorkflowActor(
@@ -97,16 +98,22 @@ abstract class WorkflowActor(
   }
 
   // custom state ser/de support (override by Worker and Controller)
-  val internalMessageHandler:InternalPayloadHandler
+  val internalMessageHandler:InternalPayloadManager
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal")
-        internal.inputMarker(channelId, internal)
-      case other =>
+        internalMessageHandler.inputMarker(channelId, internal)
+      case payload: WorkflowFIFOMessagePayloadWithPiggyback =>
+        // take piggybacked payload out and clear the original payload
+        val piggybacked = payload.piggybacked
+        payload.piggybacked = null
         internalMessageHandler.inputPayload(channelId, payload)
         handlePayload(channelId, payload)
+        if(piggybacked != null){
+          handlePayloadAndMarker(channelId, piggybacked)
+        }
     }
   }
 

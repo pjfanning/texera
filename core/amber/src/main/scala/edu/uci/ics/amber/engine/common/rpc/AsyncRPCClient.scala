@@ -51,7 +51,7 @@ object AsyncRPCClient {
     * @param originalCommandID
     * @param controlReturn
     */
-  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any, skipFaultTolerance: Boolean) extends ControlPayload
+  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
 
 }
 

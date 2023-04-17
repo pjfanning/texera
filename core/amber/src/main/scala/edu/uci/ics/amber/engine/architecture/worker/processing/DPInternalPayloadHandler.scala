@@ -1,27 +1,25 @@
-package edu.uci.ics.amber.engine.architecture.recovery
+package edu.uci.ics.amber.engine.architecture.worker.processing
 
-import akka.serialization.SerializationExtension
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
-import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
-import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.ReplaceRecoveryQueue
-import edu.uci.ics.amber.engine.architecture.worker.processing.DPThread
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.{TakeCheckpoint, TakeCursor}
-import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport}
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadHandler.{ShutdownDP, TakeCheckpoint}
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadHandler, PendingCheckpoint}
+import edu.uci.ics.amber.engine.common.ambermessage.AmberInternalPayload
 
-import java.util.concurrent.CompletableFuture
+class DPInternalPayloadHandler(dp:DataProcessor) extends InternalPayloadHandler {
 
-class WorkerInternalPayloadHandler(worker:WorkflowWorker) extends InternalPayloadHandler(worker.actorId) {
-
-  override def handleCommand(channel: ChannelEndpointID, controlCommand: ControlInvocation): Unit = {
-    worker.internalQueue.enqueuePayload(DPMessage(channel, controlCommand))
+  override def process(cmd: AmberInternalPayload): Unit = {
+    cmd match {
+      case p:PendingCheckpoint =>
+        if(!p.isCompleted){
+          p.chkpt.save("dp", dp)
+          p.syncFuture.complete(Unit)
+        }else{
+          // finalize checkpoint and sent internal message to controller
+        }
+      case shutdownDP: ShutdownDP =>
+        dp.dpThread.stop()
+      case other =>
+        throw new RuntimeException(s"DP cannot handle internal message $other!")
+    }
   }
 
 //  override def doCheckpointEstimation(marker: EstimationMarker): Unit = {

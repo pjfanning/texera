@@ -9,8 +9,6 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.{
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
   ControlCommand,
-  SkipConsoleLog,
-  SkipFaultTolerance,
   SkipReply
 }
 
@@ -18,7 +16,6 @@ object BackpressureHandler {
   final case class Backpressure(enableBackpressure: Boolean)
       extends ControlCommand[Unit]
       with SkipReply
-      with SkipFaultTolerance
 }
 
 /** Get queue and other resource usage of this worker

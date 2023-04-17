@@ -8,13 +8,12 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.CheckpointSupport
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, FIFOMarker}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.util.concurrent.{CompletableFuture, TimeUnit}
-import scala.collection.mutable
 
 object TakeCheckpointHandler {
 
@@ -26,12 +25,10 @@ object TakeCheckpointHandler {
 
   final case class TakeCursor(marker: FIFOMarker, inputSeqNums: Map[ChannelEndpointID, Long])
     extends ControlCommand[Unit]
-      with SkipFaultTolerance
       with SkipReply
 
   final case class TakeCheckpoint(marker:FIFOMarker, chkpt:SavedCheckpoint, syncFuture: CompletableFuture[Long])
     extends ControlCommand[Unit]
-    with SkipFaultTolerance
     with SkipReply
 }
 

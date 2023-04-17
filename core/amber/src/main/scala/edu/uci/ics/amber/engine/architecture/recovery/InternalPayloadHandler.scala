@@ -1,47 +1,33 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import akka.serialization.SerializationExtension
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerAlignmentInternalPayloadWithState, OneTimeInternalPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import scala.collection.mutable
+object InternalPayloadHandler{
 
+  case class ShutdownDP() extends IdempotentInternalPayload
 
-abstract class InternalPayloadHandler(val actorId:ActorVirtualIdentity) extends AmberLogging {
+  case class EstimateCheckpointCost(id:Long) extends OneTimeInternalPayload
 
-  private val pending = mutable.HashMap[Long, MarkerAlignmentInternalPayload]()
-  private val seen = mutable.HashSet[Long]()
-
-  def inputInternalPayload(payload:AmberInternalPayload):Unit
-
-  def inputMarker(channel: ChannelEndpointID, payload:AmberInternalPayload):Unit = {
-    payload match {
-      case ip: IdempotentInternalPayload =>
-        inputInternalPayload(payload)
-      case op: OneTimeInternalPayload =>
-        if(!seen.contains(op.id)){
-          seen.add(op.id)
-          inputInternalPayload(payload)
-        }
-      case mp: MarkerAlignmentInternalPayload =>
-        if(pending.contains(mp.id)){
-          pending(mp.id).onReceiveMarker(channel)
-        }else{
-          pending(mp.id) = mp
-          mp.onReceiveMarker(channel)
-          inputInternalPayload(mp)
-        }
-        if(mp.isAligned){
-          inputInternalPayload(mp)
-        }
+  case class TakeCheckpoint(id:Long, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload {
+    override def toPayloadWithState(actor:WorkflowActor): MarkerAlignmentInternalPayloadWithState = {
+      val startTime = System.currentTimeMillis()
+      val chkpt = new SavedCheckpoint()
+      chkpt.attachSerialization(SerializationExtension(actor.context.system))
+      chkpt.save("fifoState", actor.inputPort.getFIFOState)
+      new PendingCheckpoint(actor.actorId, startTime, chkpt, this, alignmentMap(actor.actorId))
     }
   }
 
-  def inputPayload(channel:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
-    pending.foreach{
-      case (id, marker) =>
-        marker.onReceivePayload(channel, payload)
-    }
-  }
+  case class LoadCheckpoint(id:Long) extends OneTimeInternalPayload
+}
+
+
+trait InternalPayloadHandler {
+
+  def process(cmd:AmberInternalPayload):Unit
+
 }

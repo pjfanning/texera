@@ -3,10 +3,10 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{INTERNAL, SELF}
 
 import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable
@@ -18,11 +18,9 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnf
   private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
 
   override def enqueueSystemCommand(
-      control: AsyncRPCServer.ControlCommand[_]
-        with AsyncRPCServer.SkipReply
-        with AsyncRPCServer.SkipFaultTolerance
+      internalPayload:AmberInternalPayload
   ): Unit = {
-    systemCommandQueue.put(DPMessage(ChannelEndpointID(SELF, true), ControlInvocation(control)))
+    systemCommandQueue.put(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), internalPayload))
   }
 
   override def peek(currentStep: Long): Option[DPMessage] = {

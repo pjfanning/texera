@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerInternalPayloadHandler, ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadHandler}
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerInternalPayloadManager, ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadManager}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
@@ -70,7 +70,7 @@ class Controller(
   var controlProcessor: ControlProcessor = _
   var replayQueue:ControllerReplayQueue = _
 
-  override val internalMessageHandler: InternalPayloadHandler = new ControllerInternalPayloadHandler(this)
+  override val internalMessageHandler: InternalPayloadManager = new ControllerInternalPayloadManager(this)
 
   def getAvailableNodes():Array[Address] = {
     Await
@@ -92,7 +92,7 @@ class Controller(
         if(replayQueue != null){
           replayQueue.enqueuePayload(channelEndpointID, control)
         }else{
-          processPayload(channelEndpointID, control)
+          controlProcessor.processControlPayload(channelEndpointID, control)
         }
       case other =>
         logger.info(s"Controller cannot handle payload: $payload")

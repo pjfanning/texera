@@ -258,7 +258,7 @@ class DataProcessor( // meta dependencies:
     }
   }
 
-  def handleDataPayload(
+  def processDataPayload(
       channel:ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {

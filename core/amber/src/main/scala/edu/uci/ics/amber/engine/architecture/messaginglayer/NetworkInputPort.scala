@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable

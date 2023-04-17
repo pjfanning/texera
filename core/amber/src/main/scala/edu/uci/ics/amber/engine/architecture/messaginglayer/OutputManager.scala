@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.Constants.{adaptiveBufferingTimeoutMs, enableAdaptiveNetworkBuffering}
 import edu.uci.ics.amber.engine.common.ambermessage.{DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 

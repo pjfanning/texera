@@ -2,34 +2,25 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, InternalPayloadWithState, MarkerAlignmentInternalPayload, MarkerAlignmentInternalPayloadWithState, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class FIFOMarkerCollectionState(expectedMarkerCount:Long){
-  private var markerReceived = 0L
-
-  def acceptMarker(channel:ChannelEndpointID):Unit = {
-    markerReceived += 1
-  }
-  def isCompleted:Boolean = markerReceived == expectedMarkerCount
-
-  def acceptInputPayload(channel:ChannelEndpointID, payload: WorkflowFIFOMessagePayload):Unit = {}
-}
-
 
 class PendingCheckpoint(val actorId:ActorVirtualIdentity,
                         startTime:Long,
-                        chkpt:SavedCheckpoint,
-                        stepCursorAtCheckpoint:Long,
-                        expectedMarkerCount:Long) extends FIFOMarkerCollectionState(expectedMarkerCount) with AmberLogging{
+                        val chkpt:SavedCheckpoint,
+                        val checkpointPayload:MarkerAlignmentInternalPayload,
+                        toAlign: Set[ChannelEndpointID]) extends InternalPayloadWithState with AmberLogging{
 
-  private val channelAligned = mutable.HashSet[ChannelEndpointID]()
+  var stepCursorAtCheckpoint = 0L
+  val aligned = new mutable.HashSet[ChannelEndpointID]()
+  def isCompleted: Boolean = toAlign == aligned
 
-  def acceptMarker(channelId: ChannelEndpointID):Unit = {
-    channelAligned.add(channelId)
-    logger.info(s"start to record input channel current = ${channelAligned.size}, target = $expectedMarkerCount")
+  def onReceiveMarker(channel: ChannelEndpointID): Unit = {
+    aligned.add(channel)
+    logger.info(s"start to record input channel current = ${aligned.size}, target = $toAlign")
     if(isCompleted){
       // if all channels are aligned
       CheckpointHolder.addCheckpoint(
@@ -40,19 +31,15 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
       logger.info(
         s"checkpoint stored for $actorId at alignment = ${stepCursorAtCheckpoint} size = ${chkpt.size()} bytes"
       )
-      onComplete()
       logger.info(
         s"local checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
       )
     }
   }
 
-  def isCompleted:Boolean = channelAligned.size == targetAlignmentCount
-
-  def recordInput(channelId:ChannelEndpointID, payload:WorkflowFIFOMessagePayload): Unit ={
-    if(!channelAligned.contains(channelId)){
-      chkpt.addInputData(channelId, payload)
+  def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
+    if(!aligned.contains(channel)){
+      chkpt.addInputData(channel, p)
     }
   }
-
 }

@@ -4,13 +4,12 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsy
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ReportCheckpointStatsHandler.ReportCheckpointStats
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 
 
 object ReportCheckpointStatsHandler{
   final case class ReportCheckpointStats(checkpointStats:CheckpointStats)
     extends ControlCommand[Unit]
-      with SkipFaultTolerance
       with SkipReply
 }
 

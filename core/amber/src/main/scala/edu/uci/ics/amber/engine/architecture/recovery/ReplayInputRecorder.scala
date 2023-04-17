@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, FIFOMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable

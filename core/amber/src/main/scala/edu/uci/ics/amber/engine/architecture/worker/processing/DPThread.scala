@@ -75,6 +75,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
         input match {
           case Some(DPMessage(_, internalPayload: AmberInternalPayload)) =>
             // received system message
+            dp.processInternalPayload(internalPayload)
           case None | Some(DPMessage(ChannelEndpointID(_, false), _)) =>
             dp.continueDataProcessing()
           case Some(DPMessage(ChannelEndpointID(_, true), _))=>
@@ -85,11 +86,12 @@ class DPThread(val actorId: ActorVirtualIdentity,
         val msg = internalQueue.take(currentStep)
         msg.payload match {
           case data: DataPayload =>
-            dp.handleDataPayload(msg.channel, data)
+            dp.processDataPayload(msg.channel, data)
           case control: ControlPayload =>
             dp.processControlPayload(msg.channel, control)
           case internal: AmberInternalPayload =>
             // received system message
+            dp.processInternalPayload(internal)
         }
       }
     }

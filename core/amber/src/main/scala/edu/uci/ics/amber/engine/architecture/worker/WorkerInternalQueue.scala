@@ -2,11 +2,9 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{INTERNAL, SELF}
 
 import java.util
 import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
@@ -26,9 +24,9 @@ object WorkerInternalQueue {
 abstract class WorkerInternalQueue extends Serializable {
 
   def enqueueSystemCommand(
-      control: ControlCommand[_] with SkipReply with SkipFaultTolerance
+      control: AmberInternalPayload
   ): Unit = {
-    enqueuePayload(DPMessage(ChannelEndpointID(SELF, true), ControlInvocation(control)))
+    enqueuePayload(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), control))
   }
 
   def enableAllDataQueue(enable:Boolean):Unit

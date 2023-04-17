@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.{
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
   ControlCommand,
-  SkipFaultTolerance,
   SkipReply
 }
 
