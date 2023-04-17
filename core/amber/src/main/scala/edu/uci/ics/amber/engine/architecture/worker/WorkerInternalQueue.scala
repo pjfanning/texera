@@ -8,9 +8,8 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
-import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
-import java.util.concurrent.locks.ReentrantLock
-import scala.collection.mutable
+import java.util
+import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 object WorkerInternalQueue {
   case class DPMessage(channel: ChannelEndpointID, payload:WorkflowFIFOMessagePayload)
@@ -18,8 +17,11 @@ object WorkerInternalQueue {
   final val DATA_QUEUE_PRIORITY = 1
   final val CONTROL_QUEUE_PRIORITY = 0
 
-}
+  def transferContent(from:WorkerInternalQueue, to:WorkerInternalQueue): Unit = {
+    from.getAllMessages.foreach(to.enqueuePayload)
+  }
 
+}
 
 abstract class WorkerInternalQueue extends Serializable {
 
@@ -43,11 +45,19 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def getControlQueueLength: Int
 
+  def getAllMessages:Iterable[DPMessage]
+
 }
 
 class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
 
   private val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
+
+  override def getAllMessages:Iterable[DPMessage] = {
+    val arr = new util.ArrayList[DPMessage]()
+    lbmq.drainTo(arr)
+    arr.asScala
+  }
 
   override def enqueuePayload(message:DPMessage): Unit = {
     val subQueue = lbmq.getSubQueue(message.channel)

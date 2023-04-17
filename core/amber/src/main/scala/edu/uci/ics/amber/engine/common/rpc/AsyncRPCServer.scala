@@ -2,10 +2,14 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.recovery.FIFOMarkerCollectionState
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, FIFOMarker}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipConsoleLog, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, FIFOMarkerControlCommand, SkipConsoleLog, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
+import java.util.concurrent.CompletableFuture
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -35,6 +39,18 @@ object AsyncRPCServer {
 
   trait SkipReply
 
+  trait FIFOMarkerControlCommand[T] extends ControlCommand[T] with SkipFaultTolerance{
+    def commandOnFirstMarker():Option[FIFOFirstMarkerCommand] = None
+    @transient var state:FIFOMarkerCollectionState = _
+    @transient var marker:FIFOMarker = _
+  }
+
+  trait FIFOFirstMarkerCommand extends ControlCommand[Unit] with SkipReply with SkipFaultTolerance{
+    var state:FIFOMarkerCollectionState = _
+    var syncFuture:CompletableFuture[Unit] = _
+    var marker:FIFOMarker = _
+  }
+
 }
 
 class AsyncRPCServer(
@@ -43,7 +59,7 @@ class AsyncRPCServer(
 ) extends AmberLogging
     with Serializable {
 
-  // all handlers
+  // all normal RPC handlers
   protected var handlers: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]] =
     PartialFunction.empty
 
@@ -92,7 +108,7 @@ class AsyncRPCServer(
       ret: Any
   ): Unit = {
     if (!control.command.isInstanceOf[SkipReply]) {
-      controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret))
+      controlOutputEndpoint.sendTo(sender, ReturnInvocation(control.commandID, ret, control.command.isInstanceOf[SkipFaultTolerance]))
     } else {
       ret match {
         case throwable: Throwable =>

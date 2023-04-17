@@ -2,17 +2,19 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.recovery.FIFOMarkerCollectionState
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, FIFOMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, FIFOMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, FIFOMarkerControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
+import scala.concurrent.Channel
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -49,7 +51,7 @@ object AsyncRPCClient {
     * @param originalCommandID
     * @param controlReturn
     */
-  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
+  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any, skipFaultTolerance: Boolean) extends ControlPayload
 
 }
 
@@ -61,6 +63,7 @@ class AsyncRPCClient(
 
   private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
+  private var markerID = 0L
 
   class Convertable[T, U](val convertFunc: ControlCommand[T] => U)
 
@@ -77,6 +80,29 @@ class AsyncRPCClient(
     controlOutputEndpoint.sendTo(to, ControlInvocation(cmd))
   }
 
+  def broadcastMarker[T](cmd: FIFOMarkerControlCommand[T], markerCounts:Map[ActorVirtualIdentity, Long]): Future[Seq[T]] ={
+    markerID += 1
+    val controlIdMap = mutable.HashMap[ActorVirtualIdentity, Long]()
+    val promises = mutable.ArrayBuffer[Promise[T]]()
+    val receivers = mutable.HashSet[ActorVirtualIdentity]()
+    controlOutputEndpoint.getActiveChannels.foreach{
+      c =>
+        if(!receivers.contains(c.endpointWorker)){
+          receivers.add(c.endpointWorker)
+          val (p, id) = createPromise[T]()
+          controlIdMap(c.endpointWorker) = id
+          promises.append(p)
+        }
+    }
+    controlOutputEndpoint.broadcastMarker(FIFOMarker(markerID, markerCounts, controlIdMap.toMap, cmd))
+    Future.collect(promises)
+  }
+
+  def broadcastMarker[T](cmd: FIFOMarkerControlCommand[T] with SkipReply, markerCounts:Map[ActorVirtualIdentity, Long]): Unit ={
+    markerID += 1
+    controlOutputEndpoint.broadcastMarker(FIFOMarker(markerID, markerCounts, Map.empty, cmd))
+  }
+
   def sendToClient(cmd: ControlCommand[_]): Unit = {
     controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))
   }
@@ -91,7 +117,6 @@ class AsyncRPCClient(
   def fulfillPromise(ret: ReturnInvocation): Unit = {
     if (unfulfilledPromises.contains(ret.originalCommandID)) {
       val p = unfulfilledPromises(ret.originalCommandID)
-
       ret.controlReturn match {
         case error: Throwable =>
           p.setException(error)
@@ -100,7 +125,6 @@ class AsyncRPCClient(
         case _ =>
           p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
       }
-
       unfulfilledPromises.remove(ret.originalCommandID)
     }
   }

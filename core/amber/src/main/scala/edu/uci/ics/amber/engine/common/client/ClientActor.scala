@@ -7,7 +7,7 @@ import akka.util.Timeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
-import edu.uci.ics.amber.engine.common.ambermessage.{TakeGlobalCheckpoint, WorkflowFIFOMessage, AmberInternalMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalMessage, FIFOMarker, TakeGlobalCheckpoint, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -81,6 +81,8 @@ private[client] class ClientActor extends Actor {
       controller ! x
     case NetworkMessage(mId, _) =>
       sender ! NetworkAck(mId)
+    case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _:FIFOMarker)) =>
+      // skip
     case other =>
       println("client actor cannot handle " + other) //skip
   }

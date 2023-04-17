@@ -5,17 +5,10 @@ import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage,
-  LocalFSLogStorage
-}
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  StepsOnChannel
-}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
-import edu.uci.ics.amber.engine.architecture.worker.RecoveryInternalQueueImpl
+import edu.uci.ics.amber.engine.architecture.recovery.RecoveryInternalQueueImpl
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
@@ -177,10 +170,7 @@ class RecoverySpec
   "Logreader" should "not read anything from empty log" in {
     val workerName = "WF1-SimpleSink-operator-058c6027-5134-4a0d-b345-77227115ee76-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
-    val iter = logStorage.getReader.mkLogRecordIterator()
-    while (iter.hasNext) {
-      println(iter.next())
-    }
+    logStorage.getReader.getLogs[InMemDeterminant].foreach(println)
   }
 
 }

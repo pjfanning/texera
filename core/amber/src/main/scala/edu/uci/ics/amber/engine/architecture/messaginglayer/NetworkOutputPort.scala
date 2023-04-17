@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DataPayload, FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 
 import java.util.concurrent.atomic.AtomicLong
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -28,12 +29,19 @@ class NetworkOutputPort(
     }
     val useControlChannel = !payload.isInstanceOf[DataPayload]
     val outChannelEndpointID = ChannelEndpointID(receiverId, useControlChannel)
-    val seqNum = idToSequenceNums.getOrElseUpdate(outChannelEndpointID, new AtomicLong()).getAndIncrement()
+    val seqNum = payload match {
+      case s: SkipFaultTolerance => // seq num should not increment
+        idToSequenceNums.getOrElseUpdate(outChannelEndpointID, new AtomicLong()).get()
+      case other =>
+        idToSequenceNums.getOrElseUpdate(outChannelEndpointID, new AtomicLong()).getAndIncrement()
+    }
     val inChannelEndpointID = ChannelEndpointID(actorId, useControlChannel)
     handler(receiverId, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
   }
 
   def getFIFOState:Map[ChannelEndpointID, Long] = idToSequenceNums.map(x => (x._1, x._2.get())).toMap
+
+  def getActiveChannels:Iterable[ChannelEndpointID] = idToSequenceNums.keys
 
   def broadcastMarker(marker:FIFOMarker): Unit ={
     idToSequenceNums.foreach{

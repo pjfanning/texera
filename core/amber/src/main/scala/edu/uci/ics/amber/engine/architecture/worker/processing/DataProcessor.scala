@@ -233,6 +233,7 @@ class DataProcessor( // meta dependencies:
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
   def continueDataProcessing(): Unit ={
+    determinantLogger.stepIncrement()
     updateInputChannel(currentBatchChannel)
     if (hasUnfinishedOutput) {
       outputOneTuple()
@@ -262,6 +263,9 @@ class DataProcessor( // meta dependencies:
       channel:ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {
+    updateInputChannel(channel)
+    determinantLogger.setCurrentSender(channel)
+    determinantLogger.stepIncrement()
     dataPayload match {
       case DataFrame(tuples) =>
         stateManager.conditionalTransitTo(READY, RUNNING, ()=> {

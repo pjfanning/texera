@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, EmitMarkers, FIFOMarkerControlCommand, SkipFaultTolerance, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 case class ChannelEndpointID(endpointWorker:ActorVirtualIdentity, isControlChannel:Boolean)
@@ -10,16 +11,7 @@ case class WorkflowFIFOMessage(channel: ChannelEndpointID, sequenceNumber: Long,
 
 trait WorkflowFIFOMessagePayload extends Serializable
 
-abstract class FIFOMarker(val id: Long) extends WorkflowFIFOMessagePayload
-
-case class EstimationMarker(override val id:Long) extends FIFOMarker(id)
-
-case class GlobalCheckpointMarker(override val id:Long, markerCollectionCount:Map[ActorVirtualIdentity, Long]) extends FIFOMarker(id)
-
-case class AmberInternalMessage(
-    from: ActorVirtualIdentity,
-    payload: InternalPayload
-) extends WorkflowMessage
+case class FIFOMarker(id:Long, markerCounts:Map[ActorVirtualIdentity, Long], controlIdMap:Map[ActorVirtualIdentity, Long], sharedCommand:FIFOMarkerControlCommand[_]) extends WorkflowFIFOMessagePayload
 
 // sent from network communicator to next worker to poll for credit information
 case class CreditRequest(

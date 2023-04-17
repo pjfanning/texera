@@ -2,24 +2,34 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, GlobalCheckpointMarker, WorkflowFIFOMessagePayload, AmberInternalMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalMessage, ChannelEndpointID, FIFOMarker, GlobalCheckpointMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
+
+class FIFOMarkerCollectionState(expectedMarkerCount:Long){
+  private var markerReceived = 0L
+
+  def acceptMarker(channel:ChannelEndpointID):Unit = {
+    markerReceived += 1
+  }
+  def isCompleted:Boolean = markerReceived == expectedMarkerCount
+
+  def acceptInputPayload(channel:ChannelEndpointID, payload: WorkflowFIFOMessagePayload):Unit = {}
+}
 
 
 class PendingCheckpoint(val actorId:ActorVirtualIdentity,
                         startTime:Long,
                         chkpt:SavedCheckpoint,
                         stepCursorAtCheckpoint:Long,
-                        targetAlignmentCount:Long,
-                        onComplete: () => Unit) extends AmberLogging{
+                        expectedMarkerCount:Long) extends FIFOMarkerCollectionState(expectedMarkerCount) with AmberLogging{
 
   private val channelAligned = mutable.HashSet[ChannelEndpointID]()
 
-  def acceptSnapshotMarker(channelId: ChannelEndpointID):Unit = {
+  def acceptMarker(channelId: ChannelEndpointID):Unit = {
     channelAligned.add(channelId)
-    logger.info(s"start to record input channel current = ${channelAligned.size}, target = $targetAlignmentCount")
+    logger.info(s"start to record input channel current = ${channelAligned.size}, target = $expectedMarkerCount")
     if(isCompleted){
       // if all channels are aligned
       CheckpointHolder.addCheckpoint(

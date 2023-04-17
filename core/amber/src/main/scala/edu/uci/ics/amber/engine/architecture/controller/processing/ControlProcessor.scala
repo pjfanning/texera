@@ -31,7 +31,7 @@ class ControlProcessor(actorId:ActorVirtualIdentity, determinantLogger:Determina
 
   val processingHistory = new ProcessingHistory()
 
-  lazy private[processing] val execution = new WorkflowExecution(workflow)
+  lazy val execution = new WorkflowExecution(workflow)
 
   def initCP(workflow: Workflow,
              controllerConfig: ControllerConfig,

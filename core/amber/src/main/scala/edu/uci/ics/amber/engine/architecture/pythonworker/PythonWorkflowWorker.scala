@@ -9,13 +9,12 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.worker.processing.{EmptyLocalCheckpointManager, LocalCheckpointManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, FIFOMarkerHandler}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.Utils
 
@@ -159,13 +158,11 @@ class PythonWorkflowWorker(
     }
   }
 
-  override val localCheckpointManager: LocalCheckpointManager = new EmptyLocalCheckpointManager()
+  override val fifoMarkerHandler: FIFOMarkerHandler = new EmptyFIFOMarkerHandler()
 
   override def getLogName: String = ""
 
-  override def setupState(fromChkpt: Option[SavedCheckpoint], replayTo: Option[Long]): Unit = {}
-
-  override def inputPayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match {
       case control: ControlPayload =>
         control match {

@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.common.ambermessage.{FIFOMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipFaultTolerance
 
 import scala.collection.mutable
 
@@ -9,7 +10,7 @@ class AmberFIFOChannel {
 
   val ofoMap = new mutable.HashMap[Long, WorkflowFIFOMessagePayload]
   var current = 0L
-  var markerPos = new mutable.HashMap[Long, FIFOMarker]
+  var specialPayloads = new mutable.HashMap[Long, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]
 
   def setCurrent(value: Long): Unit = {
     current = value
@@ -18,7 +19,9 @@ class AmberFIFOChannel {
   def acceptMessage(seq:Long, payload:WorkflowFIFOMessagePayload):Iterator[WorkflowFIFOMessagePayload] = {
     payload match {
       case marker: FIFOMarker =>
-        addMarkerPosition(seq, marker)
+        addSpecialPayload(seq, marker)
+      case s:SkipFaultTolerance =>
+        addSpecialPayload(seq, s)
       case _ =>
         if (isDuplicated(seq)) {
           Iterator.empty
@@ -40,21 +43,21 @@ class AmberFIFOChannel {
     ofoMap(sequenceNumber) = data
   }
 
-  private def addMarkerPosition(seq:Long, marker:FIFOMarker): Iterator[WorkflowFIFOMessagePayload] ={
+  private def addSpecialPayload(seq:Long, payload:WorkflowFIFOMessagePayload): Iterator[WorkflowFIFOMessagePayload] ={
     if(current == seq){
-      Iterator(marker)
+      Iterator(payload)
     }else{
-      markerPos(seq) = marker
+      specialPayloads.getOrElseUpdate(seq, mutable.ArrayBuffer()).append(payload)
       Iterator.empty
     }
   }
 
   private def handleMarker(): Seq[WorkflowFIFOMessagePayload] ={
-    if(markerPos.contains(current)){
+    if(specialPayloads.contains(current)){
       // do something
-      val res = markerPos(current)
-      markerPos.remove(current)
-      Seq(res)
+      val res = specialPayloads(current)
+      specialPayloads.remove(current)
+      Seq(res:_*)
     }else{
       Seq.empty
     }

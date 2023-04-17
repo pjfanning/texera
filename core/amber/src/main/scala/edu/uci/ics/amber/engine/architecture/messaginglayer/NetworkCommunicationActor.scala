@@ -57,9 +57,9 @@ object NetworkCommunicationActor {
   /** All outgoing message should be eventually NetworkMessage
     *
     * @param messageId       Long, id for a NetworkMessage, used for FIFO and ExactlyOnce
-    * @param internalMessage WorkflowMessage, the message payload
+    * @param message WorkflowMessage, the message payload
     */
-  final case class NetworkMessage(messageId: Long, internalMessage: WorkflowMessage)
+  final case class NetworkMessage(messageId: Long, message: WorkflowMessage)
 
   /** Ack for NetworkMessage
     * note that it should NEVER be handled by the main thread
@@ -331,7 +331,7 @@ class NetworkCommunicationActor(
       Future{
 //        //TODO: remove this random delay!!!!!
 //        Thread.sleep(Random.nextInt(3))
-        msg.internalMessage match{
+        msg.message match{
           case WorkflowFIFOMessage(channel, sequenceNumber, payload:GlobalCheckpointMarker) =>
             logger.info(s"NCA send ${payload.id} to $actorID")
           case other => //skip

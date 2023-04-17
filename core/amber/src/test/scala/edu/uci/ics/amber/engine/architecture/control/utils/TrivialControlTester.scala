@@ -7,8 +7,9 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
+import edu.uci.ics.amber.engine.architecture.recovery.{EmptyFIFOMarkerHandler, FIFOMarkerHandler}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayConfig
-import edu.uci.ics.amber.engine.architecture.worker.processing.{AmberProcessor, EmptyLocalCheckpointManager, LocalCheckpointManager}
+import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer, AsyncRPCServer}
@@ -19,7 +20,7 @@ class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(id, parentNetworkCommunicationActorRef, ReplayConfig(None,None,Array.empty),false) {
-  override val localCheckpointManager: LocalCheckpointManager = new EmptyLocalCheckpointManager()
+  override val fifoMarkerHandler: FIFOMarkerHandler = new EmptyFIFOMarkerHandler()
   private val processor = new AmberProcessor(actorId, determinantLogger){}
 
   override def preStart(): Unit = {
@@ -35,9 +36,7 @@ class TrivialControlTester(
     1000
   }
 
-  override def setupState(fromChkpt: Option[SavedCheckpoint], replayTo: Option[Long]): Unit = {}
-
-  override def inputPayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match{
       case control:ControlPayload =>
         processor.processControlPayload(channelEndpointID, control)

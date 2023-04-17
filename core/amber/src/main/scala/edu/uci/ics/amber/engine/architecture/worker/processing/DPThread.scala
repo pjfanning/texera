@@ -15,7 +15,7 @@ import java.util.concurrent.{ExecutorService, Executors, Future}
 
 class DPThread(val actorId: ActorVirtualIdentity,
                dp:DataProcessor,
-               internalQueue: WorkerInternalQueue) extends AmberLogging{
+               var internalQueue: WorkerInternalQueue) extends AmberLogging{
 
   // initialize dp thread upon construction
   @transient
@@ -70,7 +70,6 @@ class DPThread(val actorId: ActorVirtualIdentity,
     // main DP loop
     while (!stopped) {
       val currentStep = dp.determinantLogger.getStep
-      var skipStepIncrement = false
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
         val input = internalQueue.peek(currentStep)
         input match {
@@ -78,21 +77,16 @@ class DPThread(val actorId: ActorVirtualIdentity,
             dp.continueDataProcessing()
           case Some(DPMessage(ChannelEndpointID(_, true), _))=>
             val controlMsg = internalQueue.take(currentStep)
-            dp.updateInputChannel(controlMsg.channel)
-            skipStepIncrement = dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
+            dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
         }
       } else {
         val msg = internalQueue.take(currentStep)
-        dp.updateInputChannel(msg.channel)
         msg.payload match {
           case data: DataPayload =>
             dp.handleDataPayload(msg.channel, data)
           case control: ControlPayload =>
-            skipStepIncrement = dp.processControlPayload(msg.channel, control)
+            dp.processControlPayload(msg.channel, control)
         }
-      }
-      if(!skipStepIncrement){
-        dp.determinantLogger.stepIncrement()
       }
     }
   }

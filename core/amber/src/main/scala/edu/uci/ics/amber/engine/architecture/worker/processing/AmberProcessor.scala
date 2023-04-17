@@ -33,7 +33,6 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
 
   def updateInputChannel(channelEndpointID: ChannelEndpointID): Unit ={
     if(currentInputChannel != channelEndpointID){
-      determinantLogger.setCurrentSender(channelEndpointID)
       currentInputChannel = channelEndpointID
     }
   }
@@ -45,12 +44,24 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
     logManager.sendCommitted(SendRequest(to, msg))
   }
 
+
+  def skipFaultTolerance(payload: ControlPayload): Boolean ={
+    payload match {
+      case invocation: ControlInvocation => invocation.isInstanceOf[SkipFaultTolerance]
+      case ret: ReturnInvocation => ret.skipFaultTolerance
+    }
+  }
+
   def processControlPayload(
                              channel:ChannelEndpointID,
                              payload: ControlPayload
-                           ): Boolean = {
+                           ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    var skipStepIncrement = false
+    updateInputChannel(channel)
+    if(!skipFaultTolerance(payload)){
+      determinantLogger.setCurrentSender(channel)
+      determinantLogger.stepIncrement()
+    }
     payload match {
       case invocation: ControlInvocation =>
         if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
@@ -59,14 +70,10 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
           )
         }
         asyncRPCServer.receive(invocation, channel.endpointWorker)
-        if (invocation.command.isInstanceOf[SkipFaultTolerance]) {
-          skipStepIncrement = true
-        }
       case ret: ReturnInvocation =>
         asyncRPCClient.logControlReply(ret, channel.endpointWorker, determinantLogger.getStep)
         asyncRPCClient.fulfillPromise(ret)
     }
-    skipStepIncrement
   }
 
 
