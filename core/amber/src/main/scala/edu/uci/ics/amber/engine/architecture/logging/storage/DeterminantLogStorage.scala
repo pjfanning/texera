@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2Message.SealedValue.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.AmberUtils
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation}
 
 import java.io.{DataInputStream, DataOutputStream}
 import scala.collection.mutable
@@ -58,7 +58,7 @@ object DeterminantLogStorage {
   }
 
   class DeterminantLogReader(inputStreamGen: () => DataInputStream) {
-    def getLogs[E <: InMemDeterminant]: mutable.Queue[E] = {
+    def getLogs[E <: InMemDeterminant: Manifest]: mutable.Queue[E] = {
       val input = new Input(inputStreamGen())
       var continue = true
       val result = mutable.Queue[E]()

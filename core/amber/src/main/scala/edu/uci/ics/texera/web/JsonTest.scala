@@ -3,11 +3,11 @@ package edu.uci.ics.texera.web
 import akka.actor.ActorSystem
 import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
 import edu.uci.ics.amber.engine.common.AmberUtils.akkaConfig
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, EndOfUpstream, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, EndOfUpstream, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.lbmq.{LinkedBlockingMultiQueue, LinkedBlockingSubQueue}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
+
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable

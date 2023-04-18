@@ -3,16 +3,14 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadHandler
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, IdempotentInternalPayload, MarkerAlignmentInternalPayload, OneTimeInternalPayload, WorkflowFIFOMessage}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
-abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: DeterminantLogger)  extends AmberLogging
+class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: DeterminantLogger)  extends AmberLogging
   with Serializable {
 
   @transient var logManager: LogManager = _
@@ -27,8 +25,6 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
     new AsyncRPCServer(outputPort, actorId)
 
   protected var currentInputChannel:ChannelEndpointID = _
-
-  def internalPayloadHandler: InternalPayloadHandler
 
   def init(logManager: LogManager): Unit ={
     this.logManager = logManager
@@ -47,10 +43,6 @@ abstract class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantL
                      msg:WorkflowFIFOMessage
                    ): Unit = {
     logManager.sendCommitted(SendRequest(to, msg))
-  }
-
-  def processInternalPayload(internalPayload: AmberInternalPayload): Unit ={
-    internalPayloadHandler.process(internalPayload)
   }
 
   def processControlPayload(

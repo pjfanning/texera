@@ -8,7 +8,6 @@ import edu.uci.ics.amber.engine.architecture.worker.controlcommands.{
   ControlCommandConvertUtils,
   ControlCommandV2
 }
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object InvocationConvertUtils {

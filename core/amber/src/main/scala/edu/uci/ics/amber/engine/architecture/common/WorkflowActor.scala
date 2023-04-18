@@ -14,8 +14,7 @@ import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, L
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkerInternalQueueImpl}
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, CheckpointSupport}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, CreditRequest, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, ControlPayload, CreditRequest, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
@@ -98,22 +97,24 @@ abstract class WorkflowActor(
   }
 
   // custom state ser/de support (override by Worker and Controller)
-  val internalMessageHandler:InternalPayloadManager
+  def internalPayloadManager:InternalPayloadManager
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal")
-        internalMessageHandler.inputMarker(channelId, internal)
+        internalPayloadManager.inputMarker(channelId, internal)
       case payload: WorkflowFIFOMessagePayloadWithPiggyback =>
         // take piggybacked payload out and clear the original payload
         val piggybacked = payload.piggybacked
         payload.piggybacked = null
-        internalMessageHandler.inputPayload(channelId, payload)
+        internalPayloadManager.inputPayload(channelId, payload)
         handlePayload(channelId, payload)
         if(piggybacked != null){
           handlePayloadAndMarker(channelId, piggybacked)
         }
+      case other =>
+        logger.warn(s"workflow actor cannot handle $other")
     }
   }
 
@@ -147,14 +148,14 @@ abstract class WorkflowActor(
   def loadState(): Unit ={
     restoreConfig.fromCheckpoint match {
       case None | Some(0) =>
-        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
+//        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
       case Some(alignment) =>
         val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
         logger.info("checkpoint found, start loading")
         val startLoadingTime = System.currentTimeMillis()
         // restore state from checkpoint: can be in either replaying or normal processing
         chkpt.attachSerialization(SerializationExtension(context.system))
-        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
+//        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
         logger.info(
           s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
         )
@@ -175,7 +176,7 @@ abstract class WorkflowActor(
   }
 
   // custom logic for payload handling (override by Worker and Controller)
-  def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit
+  def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit
 
   override def receive: Receive = {
     forwardResendRequest orElse

@@ -3,12 +3,10 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
-import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.QueryStatisticsHandler.QueryStatistics
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -72,18 +70,6 @@ trait PauseHandler {
           sendToClient(WorkflowPaused())
           workflowPauseStartTime = System.currentTimeMillis()
           logger.info(s"controller pause cursor = ${cp.determinantLogger.getStep}")
-          if(!cp.isReplaying){
-            val time = (System.currentTimeMillis() - workflowStartTimeStamp)
-            val interaction = new LogicalExecutionSnapshot()
-            val markerId = cp.processingHistory.addInteraction(time, interaction)
-            interaction.addParticipant(CONTROLLER, CheckpointStats(
-              markerId,
-              cp.inputPort.getFIFOState,
-              cp.outputPort.getFIFOState,
-              cp.determinantLogger.getStep + 1,0))
-            val marker = EstimationMarker(markerId)
-            cp.outputPort.broadcastMarker(marker)
-          }
         }
         .unit
     }

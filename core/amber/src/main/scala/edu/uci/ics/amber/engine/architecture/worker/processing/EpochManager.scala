@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
-import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, EpochMarker}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable

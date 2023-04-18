@@ -2,13 +2,10 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{INTERNAL, SELF}
 
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
 
 class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueue {
@@ -16,12 +13,6 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnf
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]]()
   private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
-
-  override def enqueueSystemCommand(
-      internalPayload:AmberInternalPayload
-  ): Unit = {
-    systemCommandQueue.put(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), internalPayload))
-  }
 
   override def peek(currentStep: Long): Option[DPMessage] = {
     replayOrderEnforcer.forwardReplayProcess(currentStep)
@@ -47,6 +38,10 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnf
   override def getControlQueueLength: Int = 0
 
   override def enqueuePayload(message: DPMessage): Unit = {
+    if(message.channel.endpointWorker == INTERNAL){
+      // system delegate
+      systemCommandQueue.put(message)
+    }
     if(!message.channel.isControlChannel){
       creditMonitor.decreaseCredit(message.channel.endpointWorker)
     }

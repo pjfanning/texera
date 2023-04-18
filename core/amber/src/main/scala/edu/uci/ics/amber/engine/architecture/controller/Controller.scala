@@ -3,16 +3,15 @@ package edu.uci.ics.amber.engine.architecture.controller
 import akka.actor.{Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
-import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerInternalPayloadManager, ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor, ControllerInternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.concurrent.Await
@@ -70,8 +69,6 @@ class Controller(
   var controlProcessor: ControlProcessor = _
   var replayQueue:ControllerReplayQueue = _
 
-  override val internalMessageHandler: InternalPayloadManager = new ControllerInternalPayloadManager(this)
-
   def getAvailableNodes():Array[Address] = {
     Await
       .result(
@@ -86,7 +83,7 @@ class Controller(
     Constants.unprocessedBatchesCreditLimitPerSender
   }
 
-  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
     payload match {
       case control:ControlPayload =>
         if(replayQueue != null){
@@ -115,4 +112,6 @@ class Controller(
     //    }
     logger.info("stopped successfully!")
   }
+
+  override def internalPayloadManager: InternalPayloadManager = new ControllerInternalPayloadManager(this)
 }

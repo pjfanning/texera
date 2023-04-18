@@ -2,19 +2,14 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
-import edu.uci.ics.amber.engine.architecture.recovery.FIFOMarkerCollectionState
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.TakeCheckpointHandler.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ReturnInvocation, ControlInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
-import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable
-import scala.concurrent.Channel
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -34,27 +29,6 @@ import scala.concurrent.Channel
   * server: handle request, return response
   * (web server, actor that handles control command)
   */
-object AsyncRPCClient {
-
-  /** The invocation of a control command
-    * @param commandID
-    * @param command
-    */
-  object ControlInvocation {
-    def apply(controlCommand: ControlCommand[_] with SkipReply): ControlInvocation = {
-      ControlInvocation(-1, controlCommand)
-    }
-  }
-  case class ControlInvocation(commandID: Long, command: ControlCommand[_]) extends ControlPayload
-
-  /** The invocation of a return to a promise.
-    * @param originalCommandID
-    * @param controlReturn
-    */
-  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
-
-}
-
 class AsyncRPCClient(
                       controlOutputEndpoint: NetworkOutputPort,
                       val actorId: ActorVirtualIdentity
@@ -66,13 +40,21 @@ class AsyncRPCClient(
 
   class Convertable[T, U](val convertFunc: ControlCommand[T] => U)
 
-  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
+  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity, attachedMarker:AmberInternalPayload = null): Future[T] = {
     val (p, id) = createPromise[T]()
     logger.info(
       s"send request: ${cmd} to $to (controlID: ${id})"
     )
-    controlOutputEndpoint.sendTo(to, ControlInvocation(id, cmd))
+    val control = ControlInvocation(id, cmd)
+    control.piggybacked = attachedMarker
+    controlOutputEndpoint.sendTo(to, control)
     p
+  }
+
+  def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity, attachedMarker:AmberInternalPayload): Unit = {
+    val control = ControlInvocation(cmd)
+    control.piggybacked = attachedMarker
+    controlOutputEndpoint.sendTo(to, control)
   }
 
   def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit = {

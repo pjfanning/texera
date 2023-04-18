@@ -126,7 +126,6 @@ class DataProcessor( // meta dependencies:
   protected var inputTupleCount = 0L
   protected var outputTupleCount = 0L
 
-
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamLinkStatus.registerInput(identifier, input)
   }

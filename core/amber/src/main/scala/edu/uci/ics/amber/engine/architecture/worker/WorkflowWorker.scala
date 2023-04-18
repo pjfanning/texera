@@ -3,17 +3,17 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl, NetworkInputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, WorkerInternalPayloadManager}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.DPMessage
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
+import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecoveryQueue, getWorkerLogName}
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor}
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ShutdownDPHandler.ShutdownDP
-import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, IOperatorExecutor}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
+import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.INTERNAL
 
 import java.util.concurrent.CompletableFuture
 
@@ -62,8 +62,6 @@ class WorkflowWorker(
   var internalQueue: WorkerInternalQueue = _
   var dpThread: DPThread = _
 
-  override val internalMessageHandler: InternalPayloadManager = new WorkerInternalPayloadManager(this)
-
   override def getLogName: String = getWorkerLogName(actorId)
 
   override def getSenderCredits(actorVirtualIdentity: ActorVirtualIdentity):Int = {
@@ -85,16 +83,24 @@ class WorkflowWorker(
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }
 
-  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
     internalQueue.enqueuePayload(DPMessage(channelId, payload))
+  }
+
+  def executeThroughDP[T](
+                           func: () => T
+                         ): T = {
+    val future = new CompletableFuture[T]()
+    internalQueue.enqueuePayload(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), FuncDelegate(func, future)))
+    future.get()
   }
 
   override def postStop(): Unit = {
     super.postStop()
     // shutdown dp thread by sending a command
-    val syncFuture = new CompletableFuture[Unit]()
-    internalQueue.enqueueSystemCommand(ShutdownDP(None, syncFuture))
-    syncFuture.get()
+    internalPayloadManager.handlePayload(ChannelEndpointID(INTERNAL, true), ShutdownDP())
     logger.info("stopped!")
   }
+
+  override def internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(this)
 }

@@ -3,40 +3,67 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage._
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
 
-class InternalPayloadManager(actor:WorkflowActor, handleCommand: AmberInternalPayload => Unit) extends AmberLogging {
+object InternalPayloadManager{
+  case class EstimateCheckpointCost(id:Long) extends OneTimeInternalPayload
+  case class NoOp() extends IdempotentInternalPayload
+  case class ShutdownDP() extends IdempotentInternalPayload
+  case class RestoreFromCheckpoint(fromCheckpoint:Option[Long], replayTo:Option[Long]) extends IdempotentInternalPayload
+  case class CheckpointCompleted(id:Long, step:Long) extends IdempotentInternalPayload
 
-  override def actorId: ActorVirtualIdentity = actor.actorId
+  case class TakeCheckpoint(id:Long, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
 
-  private val pending = mutable.HashMap[Long, MarkerAlignmentInternalPayloadWithState]()
+  final case class CheckpointStats(markerId: Long,
+                                   inputWatermarks: Map[ChannelEndpointID, Long],
+                                   outputWatermarks: Map[ChannelEndpointID, Long],
+                                   alignment: Long,
+                                   saveStateCost: Long)
+}
+
+class EmptyInternalPayloadManager extends InternalPayloadManager{
+    override def handlePayload(oneTimeInternalPayload: OneTimeInternalPayload): Unit = {}
+
+    override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit = {}
+
+    override def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {null}
+
+    override def markerAlignmentEnd(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, support: MarkerCollectionSupport): Unit = {}
+}
+
+
+abstract class InternalPayloadManager {
+
+  private val pending = mutable.HashMap[Long, MarkerCollectionSupport]()
   private val seen = mutable.HashSet[Long]()
+
+  def handlePayload(oneTimeInternalPayload: OneTimeInternalPayload):Unit
+
+  def handlePayload(channel:ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload):Unit
+
+  def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload):MarkerCollectionSupport
+
+  def markerAlignmentEnd(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, support: MarkerCollectionSupport):Unit
 
   def inputMarker(channel: ChannelEndpointID, payload:AmberInternalPayload):Unit = {
     payload match {
       case ip: IdempotentInternalPayload =>
-        handleCommand(payload)
+        handlePayload(channel, ip)
       case op: OneTimeInternalPayload =>
         if(!seen.contains(op.id)){
           seen.add(op.id)
-          handleCommand(payload)
+          handlePayload(op)
         }
       case mp: MarkerAlignmentInternalPayload =>
-        if(pending.contains(mp.id)){
-          pending(mp.id).onReceiveMarker(channel)
-        }else{
-          val payloadWithState = mp.toPayloadWithState(actor)
-          pending(mp.id) = payloadWithState
-          handleCommand(payloadWithState)
-          payloadWithState.onReceiveMarker(channel)
-          payloadWithState.syncFuture.get() // wait for (possibly) DP thread to prepare state
+        if(!pending.contains(mp.id)){
+          pending(mp.id) = markerAlignmentStart(mp)
         }
+        pending(mp.id).onReceiveMarker(channel)
         if(pending(mp.id).isCompleted){
-          handleCommand(pending(mp.id))
+          markerAlignmentEnd(mp, pending(mp.id))
           pending.remove(mp.id)
         }
     }

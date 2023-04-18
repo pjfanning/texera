@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 
 import java.util.concurrent.atomic.AtomicLong
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -42,14 +42,16 @@ class NetworkOutputPort(
     counter.getAndIncrement()
   }
 
-//  def broadcastMarker(marker:FIFOMarker): Unit ={
-//    idToSequenceNums.foreach{
-//      case (outChannel, seq) =>
-//        logger.info(s"send $marker to ${outChannel}")
-//        val inChannelEndpointID = ChannelEndpointID(actorId, outChannel.isControlChannel)
-//        val seqNum = getSequenceNumber(outChannel, marker)
-//        handler(outChannel.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, marker))
-//    }
-//  }
+  def broadcastMarker(internalPayload:AmberInternalPayload, excludeSet:Set[ChannelEndpointID] = Set.empty): Unit ={
+    idToSequenceNums.foreach{
+      case (outChannel, seq) =>
+        if(!excludeSet.contains(outChannel)){
+          logger.info(s"send $internalPayload to ${outChannel}")
+          val inChannelEndpointID = ChannelEndpointID(actorId, outChannel.isControlChannel)
+          val seqNum = getSequenceNumber(outChannel)
+          handler(outChannel.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, internalPayload))
+        }
+    }
+  }
 
 }

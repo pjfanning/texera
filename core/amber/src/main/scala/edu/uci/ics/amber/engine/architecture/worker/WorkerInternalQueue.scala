@@ -2,15 +2,14 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlPayload, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{INTERNAL, SELF}
 
 import java.util
+import java.util.concurrent.CompletableFuture
 import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 object WorkerInternalQueue {
-  case class DPMessage(channel: ChannelEndpointID, payload:WorkflowFIFOMessagePayload)
 
   final val DATA_QUEUE_PRIORITY = 1
   final val CONTROL_QUEUE_PRIORITY = 0
@@ -22,12 +21,6 @@ object WorkerInternalQueue {
 }
 
 abstract class WorkerInternalQueue extends Serializable {
-
-  def enqueueSystemCommand(
-      control: AmberInternalPayload
-  ): Unit = {
-    enqueuePayload(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), control))
-  }
 
   def enableAllDataQueue(enable:Boolean):Unit
 
