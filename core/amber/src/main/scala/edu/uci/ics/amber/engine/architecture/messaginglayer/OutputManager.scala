@@ -1,9 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import akka.actor.{ActorContext, Cancellable}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{FlushNetworkBuffer, getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
+import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.FlushNetworkBufferHandler.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.Constants.{adaptiveBufferingTimeoutMs, enableAdaptiveNetworkBuffering}
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
@@ -15,8 +16,6 @@ import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 object OutputManager {
-
-  final case class FlushNetworkBuffer() extends ControlCommand[Unit] with SkipReply
 
   // create a corresponding partitioner for the given partitioning policy
   def toPartitioner(partitioning: Partitioning): Partitioner = {

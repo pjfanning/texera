@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.{ActorContext, Address}
 import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
@@ -36,7 +37,6 @@ class ControlProcessor(actorId:ActorVirtualIdentity, determinantLogger:Determina
   def initCP(workflow: Workflow,
              controllerConfig: ControllerConfig,
              scheduler: WorkflowScheduler,
-             globalRecoveryManager: GlobalRecoveryManager,
              getAvailableNodes: () => Array[Address],
              inputPort:NetworkInputPort,
              actorContext: ActorContext,
@@ -44,6 +44,16 @@ class ControlProcessor(actorId:ActorVirtualIdentity, determinantLogger:Determina
     this.workflow = workflow
     this.config = controllerConfig
     this.scheduler = scheduler
+    this.globalRecoveryManager = new GlobalRecoveryManager(
+      () => {
+        logger.info("Start global recovery")
+        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
+      },
+      () => {
+        logger.info("global recovery complete!")
+        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
+      }
+    )
     this.scheduler.attachToExecution(execution, asyncRPCClient, globalRecoveryManager)
     this.getAvailableNodes = getAvailableNodes
     this.inputPort = inputPort

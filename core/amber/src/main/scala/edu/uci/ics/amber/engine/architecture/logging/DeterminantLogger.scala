@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
 
 
 object DeterminantLogger{
@@ -16,6 +16,8 @@ object DeterminantLogger{
 abstract class DeterminantLogger extends Serializable {
 
   protected var totalValidStep = 0L
+
+  def recordPayload(channelEndpointID: ChannelEndpointID, payload:ControlPayload):Unit
 
   def stepIncrement():Unit = {
     totalValidStep += 1

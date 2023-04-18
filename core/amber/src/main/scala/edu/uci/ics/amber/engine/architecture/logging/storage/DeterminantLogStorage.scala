@@ -4,14 +4,12 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.engine.architecture.logging.InMemDeterminant
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{DeterminantLogReader, DeterminantLogWriter}
-import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2Message.SealedValue.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation}
 
 import java.io.{DataInputStream, DataOutputStream}
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object DeterminantLogStorage {
   private val kryoPool = {
@@ -22,7 +20,6 @@ object DeterminantLogStorage {
         kryo.register(classOf[ControlInvocation])
         kryo.register(classOf[WorkerState])
         kryo.register(classOf[ReturnInvocation])
-        kryo.register(classOf[QueryStatistics])
         kryo
       }
     }.withRegistrar(r)

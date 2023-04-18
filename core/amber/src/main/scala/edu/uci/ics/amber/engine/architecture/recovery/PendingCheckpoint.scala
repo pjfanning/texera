@@ -15,7 +15,7 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
                         toAlign: Set[ChannelEndpointID]) extends MarkerCollectionSupport with AmberLogging{
 
   val aligned = new mutable.HashSet[ChannelEndpointID]()
-  def isCompleted: Boolean = toAlign == aligned
+  def isCompleted: Boolean = toAlign.subsetOf(aligned)
 
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
     aligned.add(channel)

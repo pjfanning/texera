@@ -75,9 +75,11 @@ class DPThread(val actorId: ActorVirtualIdentity,
           case Some(DPMessage(_, delegate: FuncDelegate[_])) =>
             // received system message
             delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
-          case None | Some(DPMessage(ChannelEndpointID(_, false), _)) =>
+          case None =>
             dp.continueDataProcessing()
-          case Some(DPMessage(ChannelEndpointID(_, true), _))=>
+          case Some(msg: DPMessage) if !msg.channel.isControlChannel =>
+            dp.continueDataProcessing()
+          case Some(msg: DPMessage) if msg.channel.isControlChannel =>
             val controlMsg = internalQueue.take(currentStep)
             dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
           case other =>

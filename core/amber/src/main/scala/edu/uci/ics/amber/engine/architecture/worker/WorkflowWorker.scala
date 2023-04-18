@@ -11,9 +11,8 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecov
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, FuncDelegateNoReturn, InternalChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.INTERNAL
 
 import java.util.concurrent.CompletableFuture
 
@@ -57,10 +56,23 @@ class WorkflowWorker(
   lazy val operator: IOperatorExecutor = workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   val creditMonitor = new CreditMonitorImpl()
 
-  // variables to be initialized by physical state mgr.
-  var dataProcessor: DataProcessor = _
-  var internalQueue: WorkerInternalQueue = _
+
+  var dataProcessor: DataProcessor = new DataProcessor(ordinalMapping, actorId, determinantLogger)
+  var internalQueue: WorkerInternalQueue = new WorkerInternalQueueImpl(creditMonitor)
   var dpThread: DPThread = _
+
+  override def initState(): Unit = {
+    dataProcessor.initDP(
+      operator,
+      Iterator.empty,
+      context,
+      logManager,
+      internalQueue
+    )
+    dpThread = new DPThread(actorId, dataProcessor, internalQueue)
+    dpThread.start()
+    logger.info(s"Worker:$actorId = ${context.self} started")
+  }
 
   override def getLogName: String = getWorkerLogName(actorId)
 
@@ -91,16 +103,23 @@ class WorkflowWorker(
                            func: () => T
                          ): T = {
     val future = new CompletableFuture[T]()
-    internalQueue.enqueuePayload(DPMessage(ChannelEndpointID(INTERNAL, isControlChannel = true), FuncDelegate(func, future)))
+    internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
     future.get()
+  }
+
+  def executeThroughDPNoReturn(
+                           func: () => Unit
+                         ): Unit = {
+    internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegateNoReturn(func)))
   }
 
   override def postStop(): Unit = {
     super.postStop()
     // shutdown dp thread by sending a command
-    internalPayloadManager.handlePayload(ChannelEndpointID(INTERNAL, true), ShutdownDP())
+    internalPayloadManager.handlePayload(InternalChannelEndpointID, ShutdownDP())
     logger.info("stopped!")
   }
 
   override def internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(this)
+
 }

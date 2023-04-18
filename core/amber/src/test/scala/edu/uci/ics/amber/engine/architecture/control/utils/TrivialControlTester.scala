@@ -36,4 +36,6 @@ class TrivialControlTester(
   }
 
   override def internalPayloadManager: InternalPayloadManager = new EmptyInternalPayloadManager()
+
+  override def initState(): Unit = {}
 }

@@ -4,13 +4,15 @@ import akka.actor.{Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor, ControllerInternalPayloadManager}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadManager}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
+import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -65,9 +67,19 @@ class Controller(
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
-  // variables to be initialized by physical state mgr.
-  var controlProcessor: ControlProcessor = _
+  val scheduler = new WorkflowScheduler(networkCommunicationActor, context, logger, workflow, controllerConfig)
+
+  // variables to be initialized
+  var controlProcessor: ControlProcessor = new ControlProcessor(actorId, determinantLogger)
   var replayQueue:ControllerReplayQueue = _
+
+  override def initState(): Unit = {
+    // register controller itself and client
+    networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))
+    networkCommunicationActor.waitUntil(RegisterActorRef(CLIENT, context.parent))
+
+    controlProcessor.initCP(workflow, controllerConfig, scheduler, this.getAvailableNodes, inputPort, context, logManager)
+  }
 
   def getAvailableNodes():Array[Address] = {
     Await

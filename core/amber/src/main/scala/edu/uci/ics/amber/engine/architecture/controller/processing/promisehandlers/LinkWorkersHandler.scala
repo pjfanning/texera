@@ -5,6 +5,7 @@ import LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.AddPartitioningHandler.AddPartitioning
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 
@@ -30,7 +31,7 @@ trait LinkWorkersHandler {
           tos.foreach{
             worker =>
               // add upstream
-              opExecution.getWorkerInfo(worker).upstreamChannelCount += 1
+              opExecution.getWorkerInfo(worker).upstreamChannels.add(ChannelEndpointID(from, false))
           }
           Seq(send(AddPartitioning(link, partitioning), from)) ++ tos.map(
             send(UpdateInputLinking(from, msg.link), _)

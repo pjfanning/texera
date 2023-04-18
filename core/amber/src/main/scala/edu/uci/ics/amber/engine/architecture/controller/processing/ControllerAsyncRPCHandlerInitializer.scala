@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
-import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EpochMarkerHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
@@ -12,7 +11,6 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import scala.collection.mutable
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)

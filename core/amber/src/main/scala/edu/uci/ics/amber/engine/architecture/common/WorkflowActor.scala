@@ -14,9 +14,8 @@ import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, L
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkerInternalQueueImpl}
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, CheckpointSupport}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, ControlPayload, CreditRequest, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, ControlPayload, CreditRequest, InternalChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.DurationInt
@@ -137,7 +136,7 @@ abstract class WorkflowActor(
       parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
     }
     try {
-      loadState()
+      initState()
     } catch {
       case t: Throwable =>
         t.printStackTrace()
@@ -145,22 +144,21 @@ abstract class WorkflowActor(
     }
   }
 
-  def loadState(): Unit ={
-    restoreConfig.fromCheckpoint match {
-      case None | Some(0) =>
-//        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
-      case Some(alignment) =>
-        val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
-        logger.info("checkpoint found, start loading")
-        val startLoadingTime = System.currentTimeMillis()
-        // restore state from checkpoint: can be in either replaying or normal processing
-        chkpt.attachSerialization(SerializationExtension(context.system))
-//        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
-        logger.info(
-          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
-        )
-    }
-  }
+  def initState(): Unit
+//    restoreConfig.fromCheckpoint match {
+//      case None | Some(0) =>
+////        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
+//      case Some(alignment) =>
+//        val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
+//        logger.info("checkpoint found, start loading")
+//        val startLoadingTime = System.currentTimeMillis()
+//        // restore state from checkpoint: can be in either replaying or normal processing
+//        chkpt.attachSerialization(SerializationExtension(context.system))
+////        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
+//        logger.info(
+//          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
+//        )
+//    }
 
   // actor behavior
   def acceptInitializationMessage: Receive = {
@@ -172,7 +170,12 @@ abstract class WorkflowActor(
   /** Actor lifecycle: Processing */
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      this.handlePayloadAndMarker(ChannelEndpointID(SELF, true), invocation)
+      this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, invocation)
+  }
+
+  def acceptDirectInternalCommands:Receive = {
+    case internalPayload: AmberInternalPayload =>
+      this.handlePayloadAndMarker(InternalChannelEndpointID, internalPayload)
   }
 
   // custom logic for payload handling (override by Worker and Controller)
@@ -182,6 +185,7 @@ abstract class WorkflowActor(
     forwardResendRequest orElse
       disallowActorRefRelatedMessages orElse
       acceptDirectInvocations orElse
+      acceptDirectInternalCommands orElse
       acceptInitializationMessage orElse
       receiveFIFOMessage orElse
       handleCreditRequest

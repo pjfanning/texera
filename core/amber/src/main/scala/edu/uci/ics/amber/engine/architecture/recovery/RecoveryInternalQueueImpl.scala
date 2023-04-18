@@ -2,8 +2,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate}
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{INTERNAL, SELF}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, InternalChannelEndpointID}
 
 import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
 import scala.collection.mutable
@@ -38,7 +37,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnf
   override def getControlQueueLength: Int = 0
 
   override def enqueuePayload(message: DPMessage): Unit = {
-    if(message.channel.endpointWorker == INTERNAL){
+    if(message.channel == InternalChannelEndpointID){
       // system delegate
       systemCommandQueue.put(message)
     }

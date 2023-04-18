@@ -35,6 +35,7 @@ class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: De
       determinantLogger.setCurrentSender(channelEndpointID)
       currentInputChannel = channelEndpointID
     }
+
     determinantLogger.stepIncrement()
   }
 

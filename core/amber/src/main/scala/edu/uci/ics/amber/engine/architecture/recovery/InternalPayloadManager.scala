@@ -1,7 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -9,6 +7,7 @@ import scala.collection.mutable
 
 
 object InternalPayloadManager{
+
   case class EstimateCheckpointCost(id:Long) extends OneTimeInternalPayload
   case class NoOp() extends IdempotentInternalPayload
   case class ShutdownDP() extends IdempotentInternalPayload

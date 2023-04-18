@@ -11,6 +11,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 sealed trait InMemDeterminant
 case class StepsOnChannel(channel: ChannelEndpointID, steps: Long)
     extends InMemDeterminant
+case class RecordedPayload(channel:ChannelEndpointID, payload:ControlPayload) extends InMemDeterminant
 case class TimeStamp(value: Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant
 

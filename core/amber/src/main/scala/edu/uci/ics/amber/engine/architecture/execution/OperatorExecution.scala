@@ -2,15 +2,11 @@ package edu.uci.ics.amber.engine.architecture.execution
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{WorkerInfo, WorkerWorkloadInfo}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING,
-  UNINITIALIZED
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
 import scala.collection.mutable
@@ -38,7 +34,7 @@ class OperatorExecution(numWorkers: Int, val opExecClass: Class[_]) {
   def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = {
     workers.getOrElseUpdate(
       id,
-      WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), 1, // 1 = controller
+      WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), mutable.HashSet(ChannelEndpointID(CONTROLLER, true)),
         null)
     )
   }

@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID}
 
 import scala.collection.mutable
 
@@ -8,7 +8,15 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
 
+  private val channelsToRecord:Set[ChannelEndpointID] = Set(OutsideWorldChannelEndpointID)
+
   private var currentChannel:ChannelEndpointID = _
+
+  override def recordPayload(channel: ChannelEndpointID, payload: ControlPayload): Unit = {
+    if(channelsToRecord.contains(channel)){
+      tempLogs.append(RecordedPayload(currentChannel, payload))
+    }
+  }
 
   override def setCurrentSender(channel: ChannelEndpointID): Unit = {
     currentChannel = channel
