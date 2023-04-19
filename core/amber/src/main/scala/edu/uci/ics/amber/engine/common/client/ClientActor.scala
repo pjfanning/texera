@@ -5,14 +5,20 @@ import akka.pattern.StatusReply.Ack
 import akka.pattern.ask
 import akka.util.Timeout
 import com.twitter.util.Promise
+import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowPaused}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{EstimateCheckpointCost, EstimationCompleted}
+import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ControlInvocation, ReturnInvocation, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.web.TexeraWebApplication
 
 import scala.collection.mutable
-import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 // TODO: Rename or refactor it since it has mixed duties (send/receive messages, execute callbacks)
@@ -28,7 +34,28 @@ private[client] class ClientActor extends Actor {
   var controlId = 0L
   val promiseMap = new mutable.LongMap[Promise[Any]]()
   var handlers: PartialFunction[Any, Unit] = PartialFunction.empty
+  var handlersForInternalCommand:  PartialFunction[Any, Unit] = PartialFunction.empty
   private implicit val timeout: Timeout = Timeout(1.minute)
+  val startTime:Long = System.currentTimeMillis()
+
+  val estimationHandler = TexeraWebApplication.scheduleRecurringCallThroughActorSystem(1.seconds, 1.seconds){
+    controller ! EstimateCheckpointCost(System.currentTimeMillis() - startTime)
+  }
+
+//  var globalRecoveryManager: GlobalRecoveryManager = new GlobalRecoveryManager(() =>{
+//    if (handlersForInternalCommand.isDefinedAt(GlobalReplayStarted())) {
+//      handlersForInternalCommand(GlobalReplayStarted())
+//    }
+//  },
+//    () => {
+//    if (handlersForInternalCommand.isDefinedAt(GlobalReplayCompleted())) {
+//      handlersForInternalCommand(GlobalReplayCompleted())
+//    }
+//  })
+//
+  val pendingCheckpointStatus = new mutable.HashMap[Long, mutable.HashSet[ActorVirtualIdentity]]()
+
+  val processingHistory = new ProcessingHistory()
 
   override def receive: Receive = {
     case InitializeRequest(workflow, controllerConfig) =>
@@ -44,6 +71,12 @@ private[client] class ClientActor extends Actor {
         case e: Throwable =>
           sender ! e
       }
+    case NetworkMessage(mId, WorkflowFIFOMessage(channel, _, EstimationCompleted(id, checkpointStats))) =>
+      sender ! NetworkAck(mId)
+      if(!processingHistory.hasSnapshotAtTime(id)){
+        processingHistory.addSnapshot(id, new LogicalExecutionSnapshot())
+      }
+      processingHistory.getSnapshotAtTime(id).addParticipant(channel.endpointWorker, checkpointStats)
     case commandRequest: CommandRequest =>
       controller ! ControlInvocation(controlId, commandRequest.command)
       promiseMap(controlId) = commandRequest.promise
@@ -51,8 +84,6 @@ private[client] class ClientActor extends Actor {
     case req: ObservableRequest =>
       handlers = req.pf orElse handlers
       sender ! scala.runtime.BoxedUnit.UNIT
-    case internal: AmberInternalPayload =>
-      controller ! internal
     case NetworkMessage(
           mId,
           _ @WorkflowFIFOMessage(_, _, _ @ReturnInvocation(originalCommandID, controlReturn))
@@ -72,6 +103,9 @@ private[client] class ClientActor extends Actor {
       }
     case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _ @ControlInvocation(_, command))) =>
       sender ! NetworkAck(mId)
+      if(command.isInstanceOf[WorkflowPaused] || command.isInstanceOf[WorkflowCompleted]){
+        estimationHandler.cancel()
+      }
       if (handlers.isDefinedAt(command)) {
         handlers(command)
       }

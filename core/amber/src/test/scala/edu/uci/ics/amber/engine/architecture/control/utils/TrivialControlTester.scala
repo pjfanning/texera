@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
-) extends WorkflowActor(id, parentNetworkCommunicationActorRef, ReplayConfig(None,None,Array.empty),false) {
+) extends WorkflowActor(id, parentNetworkCommunicationActorRef) {
   private val processor = new AmberProcessor(actorId, determinantLogger)
 
   override def preStart(): Unit = {

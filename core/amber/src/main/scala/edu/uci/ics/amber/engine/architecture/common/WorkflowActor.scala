@@ -1,20 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import akka.actor.{Actor, ActorRef, Stash}
+import akka.actor.{Actor, Stash}
 import akka.pattern.StatusReply.Ack
-import akka.serialization.SerializationExtension
 import akka.util.Timeout
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CheckInitialized, ResendOutputTo}
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
-import edu.uci.ics.amber.engine.architecture.logging.{AsyncLogWriter, DeterminantLogger, DeterminantLoggerImpl, LogManager}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicationActor, NetworkInputPort, NetworkOutputPort}
-import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, LocalRecoveryManager}
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkerInternalQueueImpl}
-import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, CheckpointSupport}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicationActor, NetworkInputPort}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, ControlPayload, CreditRequest, InternalChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, CreditRequest, InternalChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.concurrent.ExecutionContext
@@ -22,15 +19,13 @@ import scala.concurrent.duration.DurationInt
 
 
 object WorkflowActor{
-  case class CheckInitialized()
+  case class CheckInitialized(setupCommands:Iterable[AmberInternalPayload])
   case class ResendOutputTo()
 }
 
 abstract class WorkflowActor(
     val actorId: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-    restoreConfig: ReplayConfig,
-    supportFaultTolerance: Boolean
+    parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends Actor
     with Stash
     with AmberLogging {
@@ -82,18 +77,9 @@ abstract class WorkflowActor(
 
   /** Fault-tolerance layer*/
 
-  val logStorage: DeterminantLogStorage = {
-    DeterminantLogStorage.getLogStorage(supportFaultTolerance, getLogName)
-  }
-  val recoveryManager = new LocalRecoveryManager()
-  val determinantLogger:DeterminantLogger = DeterminantLogger.getDeterminantLogger(supportFaultTolerance)
-  val logManager: LogManager =
-    LogManager.getLogManager(supportFaultTolerance, networkCommunicationActor, determinantLogger)
-  if (!logStorage.isLogAvailableForRead) {
-    logManager.setupWriter(logStorage.getWriter)
-  } else {
-    logManager.setupWriter(new EmptyLogStorage().getWriter)
-  }
+  var logStorage: DeterminantLogStorage = new EmptyLogStorage()
+  var determinantLogger:DeterminantLogger = new EmptyDeterminantLogger()
+  var logManager: LogManager = new EmptyLogManagerImpl(networkCommunicationActor)
 
   // custom state ser/de support (override by Worker and Controller)
   def internalPayloadManager:InternalPayloadManager
@@ -136,6 +122,7 @@ abstract class WorkflowActor(
       parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
     }
     try {
+      logManager.setupWriter(new EmptyLogStorage().getWriter)
       initState()
     } catch {
       case t: Throwable =>
@@ -145,24 +132,13 @@ abstract class WorkflowActor(
   }
 
   def initState(): Unit
-//    restoreConfig.fromCheckpoint match {
-//      case None | Some(0) =>
-////        internalMessageHandler.restoreStateFrom(None, restoreConfig.replayTo)
-//      case Some(alignment) =>
-//        val chkpt = CheckpointHolder.getCheckpoint(actorId, alignment)
-//        logger.info("checkpoint found, start loading")
-//        val startLoadingTime = System.currentTimeMillis()
-//        // restore state from checkpoint: can be in either replaying or normal processing
-//        chkpt.attachSerialization(SerializationExtension(context.system))
-////        internalMessageHandler.restoreStateFrom(Some(chkpt), restoreConfig.replayTo)
-//        logger.info(
-//          s"checkpoint loading complete! loading duration = ${(System.currentTimeMillis() - startLoadingTime) / 1000f}s"
-//        )
-//    }
 
   // actor behavior
   def acceptInitializationMessage: Receive = {
     case init: CheckInitialized =>
+      init.setupCommands.foreach{
+        cmd => this.handlePayloadAndMarker(InternalChannelEndpointID, cmd)
+      }
       sender ! Ack
   }
 

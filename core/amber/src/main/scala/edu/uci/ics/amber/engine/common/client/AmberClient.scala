@@ -73,41 +73,38 @@ class AmberClient(
   }
 
   def notifyNodeFailure(address: Address): Future[Unit] ={
-    Future()
+    if (isActive) {
+      println(s"received node failure")
+      // get actor ref of existing workers on that node
+      // setup recovery
+    }
+    Future.Unit
   }
 
   def replayExecution(conf: WorkflowReplayConfig): Unit = {
-//    if (isActive) {
-//      println(s"received replay request conf = ${conf}")
-//      if (conf.confs(CONTROLLER).fromCheckpoint.isEmpty) {
-//        println(s"replay request can use the current workflow state")
-//        clientActor ! AmberInternalMessage(CLIENT, ContinueReplay(conf))
-//      } else {
-//        println(s"replay request requires a system restart")
-//        controllerConfig.stateRestoreConfig = conf
-//        clientActor ! InitializeRequest(workflowGen(), controllerConfig)
-//      }
-//    }
+    if (isActive) {
+      println(s"received replay request conf = ${conf}")
+      // get actor ref of all workers.
+      // setup replay
+    }
   }
 
   def takeGlobalCheckpoint(): Unit = {
+    if (!isActive) {
+      Future[Any](())
+    } else {
       clientActor ! TakeCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
+    }
   }
 
-  def getOperatorInfo(): Unit = {
-//    if (isActive) {
-//      clientActor ! AmberInternalMessage(CLIENT, GetOperatorInternalState())
-//    }
-  }
-
-  def interruptReplay(): Future[Any] = {
+//  def interruptReplay(): Future[Any] = {
 //    if (!isActive) {
 //      Future[Any](())
 //    } else {
 //      (clientActor ? AmberInternalMessage(CLIENT, InterruptReplay())).asTwitter()
 //    }
-    Future()
-  }
+//    Future()
+//  }
 
   def registerCallback[T](callback: T => Unit)(implicit ct: ClassTag[T]): Disposable = {
     if (!isActive) {

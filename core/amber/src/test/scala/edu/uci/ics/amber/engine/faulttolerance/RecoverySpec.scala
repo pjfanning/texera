@@ -183,7 +183,7 @@ class RecoverySpec
     val replayEnd = Promise[Unit]()
     var stop = false
     recoveryEnd.map(x => stop = true)
-    orderEnforcer.initialize(INIT_STEP, recoveryEnd)
+    orderEnforcer.initialize(INIT_STEP)
     while(!stop){
       step += 1
       orderEnforcer.forwardReplayProcess(step)

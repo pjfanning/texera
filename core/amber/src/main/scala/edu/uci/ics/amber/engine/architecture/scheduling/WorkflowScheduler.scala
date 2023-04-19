@@ -46,13 +46,10 @@ class WorkflowScheduler(
   private var asyncRPCClient: AsyncRPCClient = _
   @transient
   private var execution: WorkflowExecution = _
-  @transient
-  private var onRecovery:(ActorVirtualIdentity) => Unit = (vid) => {}
 
-  def attachToExecution(execution: WorkflowExecution, asyncRPCClient: AsyncRPCClient, globalRecoveryManager: GlobalRecoveryManager): Unit = {
+  def attachToExecution(execution: WorkflowExecution, asyncRPCClient: AsyncRPCClient): Unit = {
     this.execution = execution
     this.asyncRPCClient = asyncRPCClient
-    this.onRecovery = (vid) => {globalRecoveryManager.markRecoveryStatus(vid, true)}
     schedulingPolicy.attachToExecution(execution)
   }
 
@@ -156,8 +153,7 @@ class WorkflowScheduler(
       networkCommunicationActor,
       ctx,
       execution.getOperatorExecution(operatorIdentity),
-      controllerConf,
-      onRecovery
+      controllerConf
     )
   }
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {

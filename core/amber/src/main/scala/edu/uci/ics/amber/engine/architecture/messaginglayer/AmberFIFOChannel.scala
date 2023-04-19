@@ -35,7 +35,7 @@ class AmberFIFOChannel {
     ofoMap(sequenceNumber) = data
   }
 
-  private def enforceFIFO(data: WorkflowFIFOMessagePayload): Iterator[WorkflowFIFOMessagePayload] = {
+  def enforceFIFO(data: WorkflowFIFOMessagePayload): Iterator[WorkflowFIFOMessagePayload] = {
     val resultIterator = new Iterator[WorkflowFIFOMessagePayload]{
       private val outputBuffer = mutable.Queue[WorkflowFIFOMessagePayload](data)
       current += 1

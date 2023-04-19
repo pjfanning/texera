@@ -103,9 +103,9 @@ class JobRuntimeService(
     throw new RuntimeException("skipping tuple is temporarily disabled")
   }))
 
-  addSubscription(wsInput.subscribe((req: WorkflowAdditionalOperatorInfoRequest, uidOpt) => {
-    client.getOperatorInfo()
-  }))
+//  addSubscription(wsInput.subscribe((req: WorkflowAdditionalOperatorInfoRequest, uidOpt) => {
+//    client.getOperatorInfo()
+//  }))
 
   // Receive Paused from Amber
   addSubscription(client.registerCallback[WorkflowPaused]((evt: WorkflowPaused) => {
@@ -126,12 +126,12 @@ class JobRuntimeService(
   // Receive Resume
   addSubscription(wsInput.subscribe((req: WorkflowResumeRequest, uidOpt) => {
     if (stateStore.jobMetadataStore.getState.isReplaying) {
-      client
-        .interruptReplay()
-        .onSuccess(ret => {
-          stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
-          doResume()
-        })
+//      client
+//        .interruptReplay()
+//        .onSuccess(ret => {
+//          stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
+//          doResume()
+//        })
     } else {
       doResume()
     }

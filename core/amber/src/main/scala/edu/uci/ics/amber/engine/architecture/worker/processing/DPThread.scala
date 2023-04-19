@@ -18,9 +18,11 @@ class DPThread(val actorId: ActorVirtualIdentity,
 
   // initialize dp thread upon construction
   @transient
-  private[processing] var dpThreadExecutor: ExecutorService = _
+  var dpThreadExecutor: ExecutorService = _
   @transient
-  private[processing] var dpThread: Future[_] = _
+  var dpThread: Future[_] = _
+
+  private val endFuture = new CompletableFuture[Unit]()
 
   private var waitFuture = CompletableFuture.completedFuture[Unit]()
 
@@ -36,6 +38,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
     dpThread.cancel(true) // interrupt
     dpThreadExecutor.shutdownNow() // destroy thread
     stopped = true
+    endFuture.get()
   }
 
   @volatile
@@ -114,6 +117,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
         }
       }
     }
+    endFuture.complete(Unit)
   }
 
 

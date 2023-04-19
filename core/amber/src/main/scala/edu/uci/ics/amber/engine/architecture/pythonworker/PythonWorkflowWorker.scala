@@ -47,9 +47,7 @@ class PythonWorkflowWorker(
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(
       actorId,
-      parentNetworkCommunicationActorRef,
-      ReplayConfig(None, None, Array.empty),
-      false,
+      parentNetworkCommunicationActorRef
     ) {
 
   // Input/Output port used in between Python and Java processes.

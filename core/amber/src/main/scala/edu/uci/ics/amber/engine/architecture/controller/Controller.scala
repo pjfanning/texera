@@ -11,7 +11,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -24,18 +23,14 @@ object ControllerConfig {
       monitoringIntervalMs = Option(Constants.monitoringIntervalInMs),
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
-        Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging"),
-      WorkflowReplayConfig.empty
+        Option(AmberUtils.amberConfig.getLong("constants.status-update-interval"))
     )
 }
 
 final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
-    statusUpdateIntervalMs: Option[Long],
-    var supportFaultTolerance: Boolean,
-    var stateRestoreConfig: WorkflowReplayConfig
+    statusUpdateIntervalMs: Option[Long]
 )
 
 object Controller {
@@ -60,9 +55,7 @@ class Controller(
     parentNetworkCommunicationActorRef: NetworkSenderActorRef
 ) extends WorkflowActor(
       CONTROLLER,
-      parentNetworkCommunicationActorRef,
-      controllerConfig.stateRestoreConfig.confs(CONTROLLER),
-      controllerConfig.supportFaultTolerance
+      parentNetworkCommunicationActorRef
     ) {
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"

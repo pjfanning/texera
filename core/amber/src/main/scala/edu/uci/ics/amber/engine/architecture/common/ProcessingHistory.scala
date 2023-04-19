@@ -11,6 +11,10 @@ class ProcessingHistory extends Serializable {
   private val interactions = mutable.ArrayBuffer[Int]()
   var inputConstant = 100
 
+  def hasSnapshotAtTime(time:Long): Boolean ={
+    timestamps.contains(time)
+  }
+
   def addSnapshot(time: Long, snapshot: LogicalExecutionSnapshot): Int = {
     val idx = timestamps.size
     timestamps.append(time)
@@ -34,6 +38,10 @@ class ProcessingHistory extends Serializable {
   def getSnapshots: Iterable[LogicalExecutionSnapshot] = history
 
   def getSnapshot(idx: Int): LogicalExecutionSnapshot = history(idx)
+
+  def getSnapshotAtTime(time: Long): LogicalExecutionSnapshot = {
+    history(timestamps.indexOf(time))
+  }
 
   def getInteractionIdxes: Array[Int] = {
     interactions.toArray

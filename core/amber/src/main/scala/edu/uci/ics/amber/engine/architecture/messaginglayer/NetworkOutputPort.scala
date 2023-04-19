@@ -28,9 +28,7 @@ class NetworkOutputPort(
     }
     val useControlChannel = !payload.isInstanceOf[DataPayload]
     val outChannelEndpointID = ChannelEndpointID(receiverId, useControlChannel)
-    val seqNum = getSequenceNumber(outChannelEndpointID)
-    val inChannelEndpointID = ChannelEndpointID(actorId, useControlChannel)
-    handler(receiverId, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
+    sendThroughChannel(outChannelEndpointID, payload)
   }
 
   def getFIFOState:Map[ChannelEndpointID, Long] = idToSequenceNums.map(x => (x._1, x._2.get())).toMap
@@ -42,15 +40,27 @@ class NetworkOutputPort(
     counter.getAndIncrement()
   }
 
+  private def sendThroughChannel(to:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
+    val inChannelEndpointID = ChannelEndpointID(actorId, to.isControlChannel)
+    val seqNum = getSequenceNumber(to)
+    handler(to.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
+  }
+
   def broadcastMarker(internalPayload:AmberInternalPayload, excludeSet:Set[ChannelEndpointID] = Set.empty): Unit ={
     idToSequenceNums.foreach{
       case (outChannel, seq) =>
         if(!excludeSet.contains(outChannel)){
           logger.info(s"send $internalPayload to ${outChannel}")
-          val inChannelEndpointID = ChannelEndpointID(actorId, outChannel.isControlChannel)
-          val seqNum = getSequenceNumber(outChannel)
-          handler(outChannel.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, internalPayload))
+          sendThroughChannel(outChannel, internalPayload)
         }
+    }
+  }
+
+  def sendMarkerTo(internalPayload:AmberInternalPayload, receivers:Set[ChannelEndpointID]): Unit ={
+    receivers.foreach{
+      outChannel =>
+        logger.info(s"send $internalPayload to ${outChannel}")
+        sendThroughChannel(outChannel, internalPayload)
     }
   }
 

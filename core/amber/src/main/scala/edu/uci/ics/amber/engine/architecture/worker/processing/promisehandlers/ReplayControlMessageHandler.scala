@@ -21,7 +21,7 @@ trait ReplayControlMessageHandler {
       case impl: RecoveryInternalQueueImpl =>
         val replayCompletion = Promise[Unit]()
         logger.info("set replay to " + msg.replayTo)
-        impl.replayOrderEnforcer.setReplayTo(msg.replayTo, replayCompletion)
+//        impl.replayOrderEnforcer.setReplayTo(msg.replayTo, replayCompletion)
         //impl.executeThroughDP(NoOp()) //kick start replay process
         replayCompletion
       case impl: WorkerInternalQueueImpl =>

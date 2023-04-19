@@ -25,6 +25,14 @@ class NetworkInputPort(
     }
   }
 
+  def handleFIFOPayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+    entry.enforceFIFO(payload).foreach{
+      payload =>
+        handler.apply(channelId, payload)
+    }
+  }
+
   def overwriteControlFIFOSeqNum(seqMap: Map[ChannelEndpointID, Long]): Unit = {
     seqMap.foreach {
       case (identity, l) =>

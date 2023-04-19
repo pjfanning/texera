@@ -2,126 +2,25 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager._
-import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, PendingCheckpoint}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, PendingCheckpoint, RecoveryInternalQueueImpl, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport}
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload}
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloadManager with AmberLogging {
 
   override def actorId: ActorVirtualIdentity = worker.actorId
 
-//  override def doCheckpointEstimation(marker: EstimationMarker): Unit = {
-//    worker.internalQueue.enqueueSystemCommand(TakeCursor(marker, worker.inputPort.getFIFOState))
-//  }
-//
-//  override def prepareGlobalCheckpoint(channel: ChannelEndpointID, marker: GlobalCheckpointMarker): PendingCheckpoint = {
-//    val chkpt = new SavedCheckpoint()
-//    chkpt.attachSerialization(SerializationExtension(worker.context.system))
-//    logger.info("start to take checkpoint")
-//    // fill in checkpoint
-//    chkpt.save("fifoState", worker.inputPort.getFIFOState)
-//    val syncFuture = new CompletableFuture[Long]()
-//    worker.internalQueue.enqueueSystemCommand(TakeCheckpoint(marker, chkpt, syncFuture))
-//    val totalStep = syncFuture.get()
-//    val onComplete = () => {worker.dataProcessor.asyncRPCClient.send(ReportCheckpointCompleted(), CONTROLLER)}
-//    new PendingCheckpoint(actorId, System.currentTimeMillis(), chkpt, totalStep, marker.markerCollectionCount.getOrElse(actorId, 1), onComplete)
-//  }
-//
-//  override def restoreStateFrom(savedCheckpoint: Option[SavedCheckpoint], replayTo: Option[Long]): Unit = {
-//    var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
-//    savedCheckpoint match {
-//      case Some(chkpt) =>
-//        outputIter = reloadState(chkpt)
-//      case None =>
-//        worker.internalQueue = new WorkerInternalQueueImpl(worker.creditMonitor)
-//    }
-//    initReplay(replayTo)
-//    worker.dataProcessor.initDP(
-//      worker.operator,
-//      outputIter,
-//      worker.context,
-//      worker.logManager,
-//      worker.internalQueue
-//    )
-//    worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue)
-//    worker.dpThread.start()
-//    logger.info(s"Worker:$actorId = ${worker.context.self} started")
-//  }
-//
-//  def reloadState(chkpt:SavedCheckpoint): Iterator[(ITuple, Option[Int])] ={
-//    worker.internalQueue = chkpt.load("internalQueueState")
-//    logger.info("input queue restored")
-//    worker.dataProcessor = chkpt.load("controlState")
-//    logger.info(s"DP restored ${worker.dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
-//    var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
-//    worker.operator match {
-//      case support: CheckpointSupport =>
-//        outputIter = support.deserializeState(chkpt)
-//      case _ =>
-//    }
-//    logger.info("operator restored")
-//    outputIter
-//  }
-//
-//  def initReplay(replayConf:Option[Long]): Unit ={
-//    // set replay
-//    replayConf match {
-//      case Some(replayTo) =>
-//        val queue = worker.internalQueue match {
-//          case impl: RecoveryInternalQueueImpl =>
-//            impl
-//          case impl: WorkerInternalQueueImpl   =>
-//            val replayOrderEnforcer = new ReplayOrderEnforcer(worker.logStorage.getReader.getLogs[StepsOnChannel])
-//            replayOrderEnforcer.initialize(worker.dataProcessor.determinantLogger.getStep, () =>{
-//              // this MUST happen inside DP thread.
-//              val syncFuture = new CompletableFuture[Unit]()
-//              worker.context.self ! ReplaceRecoveryQueue(syncFuture)
-//              syncFuture.get()
-//            })
-//            val newQueue = new RecoveryInternalQueueImpl(worker.creditMonitor, replayOrderEnforcer)
-//            impl.getAllMessages.foreach(newQueue.enqueuePayload)
-//            newQueue
-//        }
-//        queue.replayOrderEnforcer.setReplayTo(replayTo, () => {
-//          logger.info("replay completed!")
-//          worker.dataProcessor.asyncRPCClient.send(ReportReplayStatus(false), CONTROLLER)
-//        })
-//        worker.internalQueue = queue
-//        worker.recoveryManager.registerOnStart(() => {}
-//          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(true))
-//        )
-//        worker.recoveryManager.setNotifyReplayCallback(() => {}
-//          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
-//        )
-//        worker.recoveryManager.Start()
-//        worker.recoveryManager.registerOnEnd(() => {
-//          logger.info("recovery complete! restoring stashed inputs...")
-//          worker.logManager.terminate()
-//          worker.logStorage.cleanPartiallyWrittenLogFile()
-//          worker.logManager.setupWriter(worker.logStorage.getWriter)
-//          logger.info("stashed inputs restored!")
-//          // context.parent ! WorkflowRecoveryMessage(actorId, UpdateRecoveryStatus(false))
-//        })
-//      case None =>
-//        worker.internalQueue match {
-//          case impl: RecoveryInternalQueueImpl =>
-//            val newQueue = new WorkerInternalQueueImpl(worker.creditMonitor)
-//            WorkerInternalQueue.transferContent(impl, newQueue)
-//            worker.internalQueue = newQueue
-//          case impl: WorkerInternalQueueImpl =>
-//          // do nothing
-//        }
-//    }
-//  }
-
   override def handlePayload(payload: OneTimeInternalPayload): Unit = {
     payload match {
       case EstimateCheckpointCost(id) =>
-        worker.executeThroughDP(() =>{
+        worker.executeThroughDPNoReturn(() =>{
+          worker.dataProcessor.outputPort.broadcastMarker(payload)
           var estimatedCheckpointCost = 0
           worker.dataProcessor.operator match {
             case support: CheckpointSupport =>
@@ -134,23 +33,84 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.dataProcessor.outputPort.getFIFOState,
             worker.dataProcessor.determinantLogger.getStep,
             estimatedCheckpointCost + worker.dataProcessor.internalQueue.getDataQueueLength)
-          worker.dataProcessor.outputPort.broadcastMarker(payload)
+          worker.dataProcessor.outputPort.sendTo(CLIENT, EstimationCompleted(id, stats))
         })
+      case LoadStateAndReplay(id, fromCheckpoint, replayTo, chkpts) =>
+        var chkpt:SavedCheckpoint = null
+        if(fromCheckpoint.isDefined){
+          worker.dpThread.stop() // intentionally kill DP
+          chkpt = CheckpointHolder.getCheckpoint(worker.actorId, fromCheckpoint.get)
+          chkpt.attachSerialization(SerializationExtension(worker.context.system))
+          worker.inputPort.setFIFOState(chkpt.load("fifoState"))
+          logger.info("fifo state restored")
+          worker.internalQueue = chkpt.load("internalQueue")
+          logger.info("input queue restored")
+          worker.dataProcessor = chkpt.load("dataProcessor")
+          logger.info(s"DP restored ${worker.dataProcessor.upstreamLinkStatus.upstreamMapReverse}")
+          var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
+          worker.operator match {
+            case support: CheckpointSupport =>
+              outputIter = support.deserializeState(chkpt)
+            case _ =>
+          }
+          logger.info("operator restored")
+          worker.dataProcessor.initDP(
+            worker.operator,
+            outputIter,
+            worker.context,
+            worker.logManager,
+            worker.internalQueue
+          )
+          worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue)
+        }
+        val replayOrderEnforcer = setupReplay()
+        if(replayTo.isDefined){
+          val currentStep = worker.dataProcessor.determinantLogger.getStep
+          replayOrderEnforcer.setReplayTo(currentStep, replayTo.get,  () => {
+            worker.dpThread.blockingOnNextStep()
+            worker.dataProcessor.outputPort.sendTo(CLIENT, ReplayCompleted(id))
+          })
+          worker.dpThread.unblock() // in case it is blocked.
+        }else{
+          replayOrderEnforcer.setRecovery(() => {
+            val normalQueue = new WorkerInternalQueueImpl(worker.creditMonitor)
+            WorkerInternalQueue.transferContent(worker.internalQueue, normalQueue)
+            worker.internalQueue = normalQueue
+            worker.dataProcessor.outputPort.sendTo(CLIENT, ReplayCompleted(id))
+          })
+        }
+        if(chkpt != null){
+          worker.dpThread.start() // new DP is not started yet.
+          chkpt.getInputData.foreach{
+            case (c, payloads) =>
+              payloads.foreach(x => worker.inputPort.handleFIFOPayload(c, x))
+          }
+        }
       case _ => ???
     }
   }
 
+  def setupReplay(): ReplayOrderEnforcer ={
+    val replayOrderEnforcer = new ReplayOrderEnforcer(worker.logStorage.getReader.getLogs[StepsOnChannel])
+    val currentStep = worker.dataProcessor.determinantLogger.getStep
+    replayOrderEnforcer.initialize(currentStep)
+    val recoveryQueue = new RecoveryInternalQueueImpl(worker.creditMonitor, replayOrderEnforcer)
+    WorkerInternalQueue.transferContent(worker.internalQueue, recoveryQueue)
+    worker.internalQueue = recoveryQueue
+    replayOrderEnforcer
+  }
+
   override def handlePayload(channel:ChannelEndpointID, payload: IdempotentInternalPayload): Unit = {
     payload match {
-      case NoOp() =>
-        worker.executeThroughDP(() => {})
-      case RestoreFromCheckpoint(fromCheckpoint, replayTo) => ???
       case ShutdownDP() =>
-        worker.executeThroughDP(() =>{
+        val f = worker.executeThroughDP(() =>{
           worker.dataProcessor.logManager.terminate()
-          worker.dataProcessor.dpThread.stop()
-          throw new InterruptedException() // actively interrupt itself
+          throw new InterruptedException() // actively interrupt DP
         })
+        f.get()
+        worker.dataProcessor.dpThread.stop()
+      case SetupLogging() =>
+        InternalPayloadManager.setupLoggingForWorkflowActor(worker)
       case _ => ???
     }
   }
@@ -158,7 +118,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
   override def markerAlignmentStart(payload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {
     payload match {
       case TakeCheckpoint(_, alignmentMap) =>
-        worker.executeThroughDP(() =>{
+        val f = worker.executeThroughDP(() =>{
           val chkpt = new SavedCheckpoint()
           chkpt.attachSerialization(SerializationExtension(worker.context.system))
           var restoreAdaptiveBatching = false
@@ -176,13 +136,14 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
               )
             case _ =>
           }
-          chkpt.save("DataProcessor", worker.dataProcessor)
+          chkpt.save("dataProcessor", worker.dataProcessor)
           worker.dataProcessor.outputPort.broadcastMarker(payload)
           if(restoreAdaptiveBatching){
             worker.dataProcessor.outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(worker.context)
           }
           new PendingCheckpoint(worker.actorId, System.currentTimeMillis(), worker.dataProcessor.determinantLogger.getStep, chkpt, alignmentMap(worker.actorId))
         })
+        f.get()
       case _ => ???
     }
   }

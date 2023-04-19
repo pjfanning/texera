@@ -45,7 +45,7 @@ trait WorkerExecutionCompletedHandler {
           // if entire workflow is completed, clean up
           if (cp.execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
-            sendToClient(WorkflowReplayInfo(cp.processingHistory))
+//            sendToClient(WorkflowReplayInfo(cp.processingHistory))
             sendToClient(WorkflowCompleted())
             disableStatusUpdate()
             disableMonitoring()

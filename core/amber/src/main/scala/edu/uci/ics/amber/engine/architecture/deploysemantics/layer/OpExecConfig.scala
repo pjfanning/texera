@@ -245,8 +245,7 @@ case class OpExecConfig(
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       context: ActorContext,
       opExecution: OperatorExecution,
-      controllerConf: ControllerConfig,
-      onRecovery: (ActorVirtualIdentity) => Unit
+      controllerConf: ControllerConfig
   ): Unit = {
     (0 until numWorkers)
       .foreach(i => {
@@ -257,8 +256,7 @@ case class OpExecConfig(
           context,
           opExecution,
           parentNetworkCommunicationActorRef,
-          controllerConf,
-          onRecovery
+          controllerConf
         )
       })
   }
@@ -269,8 +267,7 @@ case class OpExecConfig(
       context: ActorContext,
       opExecution: OperatorExecution,
       parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      controllerConf: ControllerConfig,
-      onRecovery: (ActorVirtualIdentity) => Unit,
+      controllerConf: ControllerConfig
   ): ActorRef = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
@@ -282,14 +279,7 @@ case class OpExecConfig(
         workerId,
         i,
         this,
-        parentNetworkCommunicationActorRef,
-        controllerConf.supportFaultTolerance,
-        if (controllerConf.stateRestoreConfig.confs.contains(workerId)) {
-          onRecovery(workerId)
-          controllerConf.stateRestoreConfig.confs(workerId)
-        } else {
-          ReplayConfig(None, None, Array.empty)
-        }
+        parentNetworkCommunicationActorRef
       )
     }
     val ref =

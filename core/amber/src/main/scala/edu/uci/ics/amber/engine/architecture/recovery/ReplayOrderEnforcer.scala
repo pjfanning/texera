@@ -8,31 +8,33 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import scala.collection.mutable
 
 class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
-  private var recoveryEndPromise: Promise[Unit] = Promise()
-  private var replayEndPromise: Promise[Unit] = Promise()
+  private var onReplayComplete: () => Unit = () => {}
+  private var onRecoveryComplete: () => Unit = () => {}
   private var switchStep = INIT_STEP
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
 
   var currentChannel: ChannelEndpointID = _
 
-  def setReplayTo(dest: Long, replayEndPromise:Promise[Unit]): Unit = {
+  def setReplayTo(currentDPStep: Long, dest: Long, replayEndPromise:() => Unit): Unit = {
+    assert(currentDPStep < dest)
     replayTo = dest
-    this.replayEndPromise = replayEndPromise
+    this.onReplayComplete = replayEndPromise
   }
 
-  def initialize(currentDPStep: Long,
-                  onRecoveryComplete: Promise[Unit]
-                ): Unit = {
-    this.recoveryEndPromise = onRecoveryComplete
+  def setRecovery(onRecoveryComplete: () => Unit): Unit ={
+    this.onRecoveryComplete = onRecoveryComplete
+    if(records.isEmpty){
+      //recovery already completed
+      onRecoveryComplete()
+    }
+  }
+
+  def initialize(currentDPStep: Long): Unit = {
     // restore replay progress by dropping some of the entries
     switchStep = INIT_STEP
     while (records.nonEmpty && switchStep <= currentDPStep) {
       loadNextDeterminant()
-    }
-    if(records.isEmpty){
-      //recovery already completed
-      onRecoveryComplete.setValue(Unit)
     }
   }
 
@@ -44,15 +46,15 @@ class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
 
   def forwardReplayProcess(currentStep:Long): Unit ={
     if(replayTo == currentStep){
-      replayEndPromise.setValue(Unit)
+      onReplayComplete()
     }
     while(currentStep == switchStep){
       currentChannel = nextChannel
       if(records.nonEmpty){
         loadNextDeterminant()
-      }else if(!recoveryEndPromise.isDone){
+      }else{
         // recovery completed
-        recoveryEndPromise.setValue(Unit)
+        onRecoveryComplete()
         switchStep = INIT_STEP - 1
       }
     }

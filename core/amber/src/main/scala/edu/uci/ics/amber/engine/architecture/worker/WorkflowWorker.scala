@@ -21,18 +21,14 @@ object WorkflowWorker {
       id: ActorVirtualIdentity,
       workerIndex: Int,
       workerLayer: OpExecConfig,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      supportFaultTolerance: Boolean,
-      stateRestoreConfig: ReplayConfig
+      parentNetworkCommunicationActorRef: NetworkSenderActorRef
   ): Props =
     Props(
       new WorkflowWorker(
         id,
         workerIndex: Int,
         workerLayer: OpExecConfig,
-        parentNetworkCommunicationActorRef,
-        supportFaultTolerance,
-        stateRestoreConfig
+        parentNetworkCommunicationActorRef
       )
     )
 
@@ -46,10 +42,8 @@ class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
     workerLayer: OpExecConfig,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-    supportFaultTolerance: Boolean,
-    restoreConfig: ReplayConfig
-) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef, restoreConfig, supportFaultTolerance) {
+    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef) {
 
   // variables unrelated to physical states
   val ordinalMapping: OrdinalMapping = workerLayer.ordinalMapping
@@ -99,16 +93,18 @@ class WorkflowWorker(
 
   def executeThroughDP[T](
                            func: () => T
-                         ): T = {
+                         ): CompletableFuture[T] = {
     val future = new CompletableFuture[T]()
     internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
-    future.get()
+    dpThread.unblock() // in case it is blocked.
+    future
   }
 
   def executeThroughDPNoReturn(
                            func: () => Unit
                          ): Unit = {
     internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegateNoReturn(func)))
+    dpThread.unblock() // in case it is blocked.
   }
 
   override def postStop(): Unit = {

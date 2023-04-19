@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerC
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
-import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -22,15 +21,9 @@ class ControlProcessor(actorId:ActorVirtualIdentity, determinantLogger:Determina
 
   @transient var getAvailableNodes: () => Array[Address] = _
 
-  @transient var globalRecoveryManager: GlobalRecoveryManager = _
-
   @transient var inputPort:NetworkInputPort = _
 
   @transient var actorContext:ActorContext = _
-
-  var isReplaying = false
-
-  val processingHistory = new ProcessingHistory()
 
   lazy val execution = new WorkflowExecution(workflow)
 
@@ -44,17 +37,7 @@ class ControlProcessor(actorId:ActorVirtualIdentity, determinantLogger:Determina
     this.workflow = workflow
     this.config = controllerConfig
     this.scheduler = scheduler
-    this.globalRecoveryManager = new GlobalRecoveryManager(
-      () => {
-        logger.info("Start global recovery")
-        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
-      },
-      () => {
-        logger.info("global recovery complete!")
-        asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
-      }
-    )
-    this.scheduler.attachToExecution(execution, asyncRPCClient, globalRecoveryManager)
+    this.scheduler.attachToExecution(execution, asyncRPCClient)
     this.getAvailableNodes = getAvailableNodes
     this.inputPort = inputPort
     this.actorContext = actorContext

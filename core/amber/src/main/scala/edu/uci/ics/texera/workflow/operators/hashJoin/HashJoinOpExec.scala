@@ -291,6 +291,10 @@ class HashJoinOpExec[K](
   }
 
   override def getEstimatedCheckpointTime: Int = {
-    buildTableHashMap.map(_._2._1.size).sum
+    if(buildTableHashMap == null){
+      0
+    }else{
+      buildTableHashMap.map(_._2._1.size).sum
+    }
   }
 }

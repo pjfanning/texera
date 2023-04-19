@@ -37,7 +37,7 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
   }
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
-    if(!aligned.contains(channel)){
+    if(!aligned.contains(channel) && toAlign.contains(channel)){
       chkpt.addInputData(channel, p)
     }
   }
