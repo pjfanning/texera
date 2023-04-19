@@ -119,7 +119,7 @@ class JobRuntimeService(
   // Receive Pause
   addSubscription(wsInput.subscribe((req: WorkflowPauseRequest, uidOpt) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSING))
-    //client.takeGlobalCheckpoint()
+    client.takeGlobalCheckpoint()
     client.sendAsync(PauseWorkflow())
   }))
 

@@ -4,7 +4,9 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
+import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
@@ -88,13 +90,8 @@ class AmberClient(
 //    }
   }
 
-  def takeGlobalCheckpoint(): Future[Any] = {
-//    if (isActive) {
-//      (clientActor ? AmberInternalMessage(CLIENT, TakeGlobalCheckpoint())).asTwitter()
-//    } else {
-//      Future(-1)
-//    }
-    Future(-1)
+  def takeGlobalCheckpoint(): Unit = {
+      clientActor ! TakeCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
   }
 
   def getOperatorInfo(): Unit = {

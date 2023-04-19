@@ -13,7 +13,8 @@ object InternalPayloadManager{
   case class ShutdownDP() extends IdempotentInternalPayload
   case class RestoreFromCheckpoint(fromCheckpoint:Option[Long], replayTo:Option[Long]) extends IdempotentInternalPayload
   case class CheckpointCompleted(id:Long, step:Long) extends IdempotentInternalPayload
-
+  case class LoadStateFrom(checkpointStep:Long) extends IdempotentInternalPayload
+  case class ReplayTo(replayTo:Long) extends IdempotentInternalPayload
   case class TakeCheckpoint(id:Long, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
 
   final case class CheckpointStats(markerId: Long,

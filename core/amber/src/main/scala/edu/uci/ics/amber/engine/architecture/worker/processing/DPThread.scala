@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{ExecutorService, Executors, Future}
+import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future}
 
 class DPThread(val actorId: ActorVirtualIdentity,
                dp:DataProcessor,
@@ -21,6 +21,16 @@ class DPThread(val actorId: ActorVirtualIdentity,
   private[processing] var dpThreadExecutor: ExecutorService = _
   @transient
   private[processing] var dpThread: Future[_] = _
+
+  private var waitFuture = CompletableFuture.completedFuture[Unit]()
+
+  def blockingOnNextStep(): Unit ={
+    waitFuture = new CompletableFuture[Unit]()
+  }
+
+  def unblock(): Unit ={
+    waitFuture.complete(Unit)
+  }
 
   def stop(): Unit ={
     dpThread.cancel(true) // interrupt
@@ -69,11 +79,15 @@ class DPThread(val actorId: ActorVirtualIdentity,
     // main DP loop
     while (!stopped) {
       val currentStep = dp.determinantLogger.getStep
+      // block here to let main thread do following.
+      // 1) replace queue from replay to normal 2) continue replay
+      waitFuture.get()
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
         val input = internalQueue.peek(currentStep)
         input match {
           case Some(DPMessage(_, delegate: FuncDelegate[_])) =>
             // received system message
+            internalQueue.take(currentStep) // take the message out
             delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
           case None =>
             dp.continueDataProcessing()

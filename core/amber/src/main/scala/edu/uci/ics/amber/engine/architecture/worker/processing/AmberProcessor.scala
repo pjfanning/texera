@@ -31,12 +31,11 @@ class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: De
   }
 
   def updateInputChannelThenDoLogging(channelEndpointID: ChannelEndpointID): Unit ={
+    determinantLogger.stepIncrement()
     if(currentInputChannel != channelEndpointID){
       determinantLogger.setCurrentSender(channelEndpointID)
       currentInputChannel = channelEndpointID
     }
-
-    determinantLogger.stepIncrement()
   }
 
   def outputPayload(
@@ -52,6 +51,7 @@ class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: De
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
     updateInputChannelThenDoLogging(channel)
+    determinantLogger.recordPayload(channel, payload)
     payload match {
       case invocation: ControlInvocation =>
         if (!invocation.command.isInstanceOf[SkipConsoleLog]) {

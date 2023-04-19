@@ -7,7 +7,7 @@ import akka.util.Timeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ControlInvocation, ReturnInvocation, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -51,6 +51,8 @@ private[client] class ClientActor extends Actor {
     case req: ObservableRequest =>
       handlers = req.pf orElse handlers
       sender ! scala.runtime.BoxedUnit.UNIT
+    case internal: AmberInternalPayload =>
+      controller ! internal
     case NetworkMessage(
           mId,
           _ @WorkflowFIFOMessage(_, _, _ @ReturnInvocation(originalCommandID, controlReturn))

@@ -161,6 +161,11 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
         worker.executeThroughDP(() =>{
           val chkpt = new SavedCheckpoint()
           chkpt.attachSerialization(SerializationExtension(worker.context.system))
+          var restoreAdaptiveBatching = false
+          if(worker.dataProcessor.outputManager.adaptiveBatchingMonitor.adaptiveBatchingHandle.isDefined){
+            restoreAdaptiveBatching = true
+            worker.dataProcessor.outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
+          }
           logger.info("start to take checkpoint")
           chkpt.save("fifoState", worker.inputPort.getFIFOState)
           chkpt.save("internalQueue", worker.internalQueue)
@@ -173,6 +178,9 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
           }
           chkpt.save("DataProcessor", worker.dataProcessor)
           worker.dataProcessor.outputPort.broadcastMarker(payload)
+          if(restoreAdaptiveBatching){
+            worker.dataProcessor.outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(worker.context)
+          }
           new PendingCheckpoint(worker.actorId, System.currentTimeMillis(), worker.dataProcessor.determinantLogger.getStep, chkpt, alignmentMap(worker.actorId))
         })
       case _ => ???

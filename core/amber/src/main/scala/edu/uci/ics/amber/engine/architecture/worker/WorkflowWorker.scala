@@ -38,7 +38,7 @@ object WorkflowWorker {
 
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
-  case class ReplaceRecoveryQueue(syncFuture: CompletableFuture[Unit])
+  case class ReplaceRecoveryQueue()
 
 }
 
@@ -82,14 +82,12 @@ class WorkflowWorker(
 
    override def receive: Receive =
     super.receive orElse {
-      case ReplaceRecoveryQueue(sync) =>
+      case ReplaceRecoveryQueue() =>
         logger.info("replace recovery queue with normal queue")
         val newQueue = new WorkerInternalQueueImpl(creditMonitor)
         WorkerInternalQueue.transferContent(internalQueue, newQueue)
         internalQueue = newQueue
         this.dpThread.internalQueue = newQueue
-        // unblock sync future on DP
-        sync.complete(())
         logger.info("replace queue done!")
       case other =>
         throw new WorkflowRuntimeException(s"unhandled message: $other")
@@ -120,6 +118,6 @@ class WorkflowWorker(
     logger.info("stopped!")
   }
 
-  override def internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(this)
+  override val internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(this)
 
 }

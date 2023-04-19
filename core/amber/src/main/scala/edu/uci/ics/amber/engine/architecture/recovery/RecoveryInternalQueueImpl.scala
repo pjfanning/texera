@@ -2,9 +2,9 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, InternalChannelEndpointID}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID}
 
-import java.util.concurrent.{CompletableFuture, LinkedBlockingQueue}
+import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable
 
 class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueue {

@@ -12,6 +12,8 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var currentChannel:ChannelEndpointID = _
 
+  private var lastStep = 0L
+
   override def recordPayload(channel: ChannelEndpointID, payload: ControlPayload): Unit = {
     if(channelsToRecord.contains(channel)){
       tempLogs.append(RecordedPayload(currentChannel, payload))
@@ -19,12 +21,16 @@ class DeterminantLoggerImpl extends DeterminantLogger {
   }
 
   override def setCurrentSender(channel: ChannelEndpointID): Unit = {
-    currentChannel = channel
-    tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
+    if(currentChannel != channel){
+      currentChannel = channel
+      lastStep = totalValidStep
+      tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
+    }
   }
 
   def drainCurrentLogRecords(): Array[InMemDeterminant] = {
-    if(tempLogs.nonEmpty && totalValidStep != tempLogs.last.asInstanceOf[StepsOnChannel].steps){
+    if(lastStep != totalValidStep){
+      lastStep = totalValidStep
       tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
     }
     val result = tempLogs.toArray

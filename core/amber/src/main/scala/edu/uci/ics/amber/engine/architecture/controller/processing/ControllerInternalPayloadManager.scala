@@ -31,7 +31,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit ={
     idempotentInternalPayload match {
-      case CheckpointCompleted(id, step) => ???
+      case CheckpointCompleted(id, step) => // skip
       case RestoreFromCheckpoint(fromCheckpoint, replayTo) => ???
       case _ => ???
     }
@@ -40,7 +40,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   override def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {
     markerAlignmentInternalPayload match {
-      case TakeCheckpoint(_, _) =>
+      case TakeCheckpoint(id, _) =>
         logger.info("start to take global checkpoint")
         val startTime = System.currentTimeMillis()
         val chkpt = new SavedCheckpoint()
@@ -54,8 +54,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
             val mutableSet = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).upstreamChannels
             worker -> mutableSet.toSet
         }.toMap
-        val checkpointId = CheckpointHolder.generateCheckpointId
-        controller.controlProcessor.outputPort.broadcastMarker(TakeCheckpoint(checkpointId, markerCollectionCountMap))
+        controller.controlProcessor.outputPort.broadcastMarker(TakeCheckpoint(id, markerCollectionCountMap))
         val numControlSteps = controller.controlProcessor.determinantLogger.getStep
         new PendingCheckpoint(actorId, startTime, numControlSteps, chkpt, toAlign.toSet)
       case _ => ???

@@ -4,15 +4,16 @@ import akka.actor.{ActorContext, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
+import com.twitter.util.Promise
 import edu.uci.ics.amber.clustering.SingleNodeListener
+import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger.INIT_STEP
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
-import edu.uci.ics.amber.engine.architecture.recovery.RecoveryInternalQueueImpl
+import edu.uci.ics.amber.engine.architecture.recovery.{RecoveryInternalQueueImpl, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ReturnInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import org.scalatest.BeforeAndAfterAll
@@ -168,9 +169,25 @@ class RecoverySpec
 //  }
 
   "Logreader" should "not read anything from empty log" in {
-    val workerName = "WF1-SimpleSink-operator-058c6027-5134-4a0d-b345-77227115ee76-main-0"
+    val workerName = "WF1-CONTROLLER"
     val logStorage = new LocalFSLogStorage(workerName)
     logStorage.getReader.getLogs[InMemDeterminant].foreach(println)
   }
 
+  "Logreader" should "not read anything from empty log2" in {
+    val workerName = "WF1-CONTROLLER"
+    val logStorage = new LocalFSLogStorage(workerName)
+    val orderEnforcer = new ReplayOrderEnforcer(logStorage.getReader.getLogs[StepsOnChannel])
+    var step = INIT_STEP
+    val recoveryEnd = Promise[Unit]()
+    val replayEnd = Promise[Unit]()
+    var stop = false
+    recoveryEnd.map(x => stop = true)
+    orderEnforcer.initialize(INIT_STEP, recoveryEnd)
+    while(!stop){
+      step += 1
+      orderEnforcer.forwardReplayProcess(step)
+      println(orderEnforcer.currentChannel, step)
+    }
+  }
 }

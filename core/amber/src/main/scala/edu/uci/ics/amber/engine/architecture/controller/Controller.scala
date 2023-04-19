@@ -125,5 +125,5 @@ class Controller(
     logger.info("stopped successfully!")
   }
 
-  override def internalPayloadManager: InternalPayloadManager = new ControllerInternalPayloadManager(this)
+  override val internalPayloadManager: InternalPayloadManager = new ControllerInternalPayloadManager(this)
 }
