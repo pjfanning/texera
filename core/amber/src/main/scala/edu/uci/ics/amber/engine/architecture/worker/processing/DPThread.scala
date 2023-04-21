@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DPMessage, DataPayload, FuncDelegate}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DPMessage, DataPayload, FuncDelegate, FuncDelegateNoReturn}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -92,6 +92,10 @@ class DPThread(val actorId: ActorVirtualIdentity,
             // received system message
             internalQueue.take(currentStep) // take the message out
             delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+          case Some(DPMessage(_, delegate: FuncDelegateNoReturn)) =>
+            // received system message
+            internalQueue.take(currentStep) // take the message out
+            delegate.func()
           case None =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if !msg.channel.isControlChannel =>
@@ -112,6 +116,9 @@ class DPThread(val actorId: ActorVirtualIdentity,
           case delegate: FuncDelegate[_] =>
             // received system message
             delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+          case delegate: FuncDelegateNoReturn =>
+            // received system message
+            delegate.func()
           case other =>
             throw new RuntimeException(s"DP thread cannot handle message $other")
         }

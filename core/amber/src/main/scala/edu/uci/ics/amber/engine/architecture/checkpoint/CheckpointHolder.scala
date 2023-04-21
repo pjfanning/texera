@@ -11,11 +11,16 @@ import scala.util.Try
 
 object CheckpointHolder {
 
-  private var uniqueId = 1000000L
+  private var uniqueId = 0L
 
-  def generateCheckpointId: Long = {
+  def generateCheckpointId: String = {
     uniqueId += 1
-    uniqueId
+    s"global checkpoint - $uniqueId"
+  }
+
+  def generateEstimationId(time:Long):String = {
+    uniqueId += 1
+    s"estimation - $time - $uniqueId"
   }
 
   private val checkpoints =

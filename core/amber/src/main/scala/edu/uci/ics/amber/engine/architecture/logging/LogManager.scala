@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
+import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
@@ -18,7 +19,7 @@ case object TerminateSignal extends InMemDeterminant
 object LogManager {
   def getLogManager(
       enabledLogging: Boolean,
-      networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
+      networkCommunicationActor: ActorRef,
       determinantLogger:DeterminantLogger
   ): LogManager = {
     if (enabledLogging) {
@@ -39,7 +40,7 @@ trait LogManager {
 }
 
 class EmptyLogManagerImpl(
-    networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef
+    networkCommunicationActor: ActorRef
 ) extends LogManager {
   override def setupWriter(logWriter: DeterminantLogStorage.DeterminantLogWriter): Unit = {}
 
@@ -53,7 +54,7 @@ class EmptyLogManagerImpl(
 }
 
 class LogManagerImpl(
-    networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
+    networkCommunicationActor: ActorRef,
     determinantLogger: DeterminantLogger
 ) extends LogManager {
 

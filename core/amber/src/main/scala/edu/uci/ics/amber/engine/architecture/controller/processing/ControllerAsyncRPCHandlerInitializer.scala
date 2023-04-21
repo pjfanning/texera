@@ -56,12 +56,11 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     if (cp.config.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
       println("status update enabled")
       statusUpdateAskHandle = Option(
-        cp.actorContext.system.scheduler.scheduleAtFixedRate(
+        cp.actorService.scheduleWithFixedDelay(
           0.milliseconds,
           FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
-          cp.actorContext.self,
-          ControlInvocation(ControllerInitiateQueryStatistics())
-        )(cp.actorContext.dispatcher)
+          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateQueryStatistics())
+        )
       )
     }
   }
@@ -74,14 +73,11 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
       Constants.monitoringEnabled && cp.config.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
     ) {
       monitoringHandle = Option(
-        cp.actorContext.system.scheduler.scheduleAtFixedRate(
+        cp.actorService.scheduleWithFixedDelay(
           0.milliseconds,
-          FiniteDuration.apply(cp.config.monitoringIntervalMs.get, MILLISECONDS),
-          cp.actorContext.self,
-          ControlInvocation(
-            ControllerInitiateMonitoring()
-          )
-        )(cp.actorContext.dispatcher)
+          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
+          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateMonitoring())
+        )
       )
     }
   }
@@ -94,14 +90,11 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
       Constants.reshapeSkewHandlingEnabled && cp.config.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
     ) {
       workflowReshapeState.skewDetectionHandle = Option(
-        cp.actorContext.system.scheduler.scheduleAtFixedRate(
-          Constants.reshapeSkewDetectionInitialDelayInMs.milliseconds,
-          FiniteDuration.apply(cp.config.skewDetectionIntervalMs.get, MILLISECONDS),
-          cp.actorContext.self,
-          ControlInvocation(
-            ControllerInitiateSkewDetection()
-          )
-        )(cp.actorContext.dispatcher)
+        cp.actorService.scheduleWithFixedDelay(
+          0.milliseconds,
+          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
+          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateSkewDetection())
+        )
       )
     }
   }

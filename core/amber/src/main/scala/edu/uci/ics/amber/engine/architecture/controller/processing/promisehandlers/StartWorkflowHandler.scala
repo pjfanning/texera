@@ -26,7 +26,7 @@ trait StartWorkflowHandler {
   registerHandler { (msg: StartWorkflow, sender) =>
     {
       cp.scheduler
-        .startWorkflow(cp.getAvailableNodes())
+        .startWorkflow()
         .map(_ => {
           sendToClient(WorkflowStateUpdate(RUNNING))
           enableStatusUpdate()

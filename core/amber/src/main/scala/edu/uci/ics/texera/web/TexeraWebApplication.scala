@@ -17,6 +17,7 @@ import edu.uci.ics.texera.web.resource.dashboard.workflow.{WorkflowAccessResourc
 import edu.uci.ics.texera.web.resource.dashboard.project.ProjectResource
 import edu.uci.ics.texera.web.resource._
 import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource
+import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.dropwizard.auth.{AuthDynamicFeature, AuthValueFactoryProvider}
 import io.dropwizard.setup.{Bootstrap, Environment}
 import io.dropwizard.websockets.WebsocketBundle
@@ -36,7 +37,7 @@ import scala.annotation.tailrec
 object TexeraWebApplication {
 
   def createAmberRuntime(
-      workflowGen: () => Workflow,
+      workflowGen: () => (Workflow, PipelinedRegionPlan),
       conf: ControllerConfig,
       errorHandler: Throwable => Unit
   ): AmberClient = {

@@ -1,22 +1,21 @@
 package edu.uci.ics.amber.engine.architecture.control.utils
 
+import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.recovery.{EmptyInternalPayloadManager, InternalPayloadManager}
-import edu.uci.ics.amber.engine.architecture.worker.ReplayConfig
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class TrivialControlTester(
     id: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(id, parentNetworkCommunicationActorRef) {
   private val processor = new AmberProcessor(actorId, determinantLogger)
 
   override def preStart(): Unit = {
     super.preStart()
-    processor.init(logManager)
+    processor.init(this)
     new TesterAsyncRPCHandlerInitializer(processor)
   }
 

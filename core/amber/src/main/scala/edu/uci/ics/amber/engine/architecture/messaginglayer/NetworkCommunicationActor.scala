@@ -1,9 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import akka.pattern.ask
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import akka.pattern.StatusReply.Ack
-import akka.util.Timeout
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
@@ -14,9 +12,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
 import scala.collection.mutable
-import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Random
 
 object NetworkCommunicationActor {
 
@@ -25,26 +21,6 @@ object NetworkCommunicationActor {
       actorId: ActorVirtualIdentity
   ): Props =
     Props(new NetworkCommunicationActor(parentSender, actorId))
-
-  /** to distinguish between main actor self ref and
-    * network sender actor
-    * TODO: remove this after using Akka Typed APIs
-    *
-    * @param ref
-    */
-  case class NetworkSenderActorRef(ref: ActorRef = null) {
-    def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
-      if (ref != null) {
-        ref ! message
-      }
-    }
-    def waitUntil(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
-      implicit val timeout: Timeout = 3.seconds
-      if (ref != null) {
-        Await.result(ref ? message, 5.seconds)
-      }
-    }
-  }
 
   /** Identifier <-> ActorRef related messages
     */

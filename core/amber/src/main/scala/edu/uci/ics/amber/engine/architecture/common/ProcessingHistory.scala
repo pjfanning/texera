@@ -6,59 +6,59 @@ import scala.collection.mutable
 
 class ProcessingHistory extends Serializable {
 
-  private val history = mutable.ArrayBuffer[LogicalExecutionSnapshot](new EmptyLogicalExecutionSnapshot())
-  private val timestamps = mutable.ArrayBuffer[Long](0)
-  private val interactions = mutable.ArrayBuffer[Int]()
+  private val history = mutable.HashMap[Long, LogicalExecutionSnapshot]()
+  private val idMapping = mutable.HashMap[String, Long]()
+  history(0) = new EmptyLogicalExecutionSnapshot()
   var inputConstant = 100
 
-  def hasSnapshotAtTime(time:Long): Boolean ={
-    timestamps.contains(time)
+  def hasSnapshotWithID(id:String): Boolean ={
+    idMapping.contains(id)
   }
 
-  def addSnapshot(time: Long, snapshot: LogicalExecutionSnapshot): Int = {
-    val idx = timestamps.size
-    timestamps.append(time)
-    history.append(snapshot)
-    idx
+  def hasSnapshotAtTime(time:Long):Boolean = {
+    history.contains(time)
   }
 
-  def addInteraction(time: Long, snapshot: LogicalExecutionSnapshot): Int ={
-    val idx = addSnapshot(time, snapshot)
-    interactions.append(idx)
-    idx
-  }
-
-  def getTimeGap(start:Int, end:Int):Long = {
-    if(start < 0){
-      return timestamps(end) - timestamps(0)
+  def addSnapshot(time: Long, snapshot: LogicalExecutionSnapshot, id:String = null): Unit = {
+    history(time) = snapshot
+    if(id != null){
+      idMapping(id) = time
     }
-    timestamps(end) - timestamps(start)
   }
 
-  def getSnapshots: Iterable[LogicalExecutionSnapshot] = history
-
-  def getSnapshot(idx: Int): LogicalExecutionSnapshot = history(idx)
-
-  def getSnapshotAtTime(time: Long): LogicalExecutionSnapshot = {
-    history(timestamps.indexOf(time))
+  def getTimeGap(start:Long, end:Long):Long = {
+    if(start < 0){
+      return history(end).timestamp - history(0).timestamp
+    }
+    history(end).timestamp - history(start).timestamp
   }
 
-  def getInteractionIdxes: Array[Int] = {
-    interactions.toArray
+  def getSnapshots: Iterable[LogicalExecutionSnapshot] = history.values
+
+  def getSnapshot(time: Long): LogicalExecutionSnapshot = {
+    history(time)
   }
 
-  def getInteractionTimes: Array[Int] = {
-    interactions.map(x => timestamps(x).toInt/1000).toArray
+  def getSnapshot(id: String): LogicalExecutionSnapshot = {
+    history(idMapping(id))
   }
 
-  def getOperatorCost(op: ActorVirtualIdentity, currentIdx: Int, chkptPos:Map[ActorVirtualIdentity, Int]):Long = {
+  def getInteractionTimesAsSeconds: Array[Int] = {
+    history.keys.map(x => x.toInt/1000).toArray.sorted
+  }
+
+  def getInteractionTimes: Array[Long] = {
+    history.keys.toArray.sorted
+  }
+
+  def getOperatorCost(op: ActorVirtualIdentity, currentTime: Long, chkptPos:Map[ActorVirtualIdentity, Long]):Long = {
     var currentCost = 0L
-    val info = getSnapshot(currentIdx).getStats(op)
+    val info = getSnapshot(currentTime).getStats(op)
     currentCost += info.checkpointCost
     info.inputStatus.keys.map(_.endpointWorker).toSet.foreach{
       k:ActorVirtualIdentity =>
-        val pos = chkptPos.getOrElse(k, 0)
-        if(pos >= currentIdx){
+        val pos = chkptPos.getOrElse(k, 0L)
+        if(pos >= currentTime){
           val toReceive = getSnapshot(pos).getStats(op).inputStatus.getToReceive(k)
           val received = info.inputStatus.getReceived(k)
           currentCost += (toReceive - received) / inputConstant
@@ -68,7 +68,7 @@ class ProcessingHistory extends Serializable {
   }
 
 
-  def getPlanCost(chkptPos:Map[ActorVirtualIdentity, Int]): Long ={
+  def getPlanCost(chkptPos:Map[ActorVirtualIdentity, Long]): Long ={
     var cost = 0L
     chkptPos.keys.foreach{
       k =>
@@ -78,7 +78,7 @@ class ProcessingHistory extends Serializable {
   }
 
   override def toString: String = {
-    s"time = ${timestamps.mkString(",")}\n${history.mkString("--------------------------------\n")} \n"
+    s"${history.mkString("--------------------------------\n")} \n"
 
   }
 }

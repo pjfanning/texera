@@ -2,32 +2,20 @@ package edu.uci.ics.amber.engine.architecture.deploysemantics.layer
 
 import akka.actor.{ActorContext, ActorRef, Address, Deploy, Props}
 import akka.remote.RemoteScope
-import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
-import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
+import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
-import edu.uci.ics.amber.engine.architecture.recovery.GlobalRecoveryManager
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISinkOperatorExecutor, ISourceOperatorExecutor}
-import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
-import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
-import edu.uci.ics.texera.workflow.common.operators.map.MapOpExec
-import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
-import jdk.jfr.Recording
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 trait OpExecFunc extends (((Int, OpExecConfig)) => IOperatorExecutor) with java.io.Serializable
@@ -242,10 +230,8 @@ case class OpExecConfig(
 
   def build(
       addressInfo: AddressInfo,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      context: ActorContext,
-      opExecution: OperatorExecution,
-      controllerConf: ControllerConfig
+      actorService: WorkflowActorService,
+      opExecution: OperatorExecution
   ): Unit = {
     (0 until numWorkers)
       .foreach(i => {
@@ -253,10 +239,8 @@ case class OpExecConfig(
         buildWorker(
           workerId,
           addressInfo,
-          context,
-          opExecution,
-          parentNetworkCommunicationActorRef,
-          controllerConf
+          actorService,
+          opExecution
         )
       })
   }
@@ -264,27 +248,25 @@ case class OpExecConfig(
   def buildWorker(
       workerId: ActorVirtualIdentity,
       addressInfo: AddressInfo,
-      context: ActorContext,
-      opExecution: OperatorExecution,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef,
-      controllerConf: ControllerConfig
+      actorService: WorkflowActorService,
+      opExecution: OperatorExecution
   ): ActorRef = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
     val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
     val workflowWorker = if (this.isPythonOperator) {
-      PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
+      PythonWorkflowWorker.props(workerId, i, this, actorService.networkCommunicationActor)
     } else {
       WorkflowWorker.props(
         workerId,
         i,
         this,
-        parentNetworkCommunicationActorRef
+        actorService.networkCommunicationActor
       )
     }
     val ref =
-      context.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
-    parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(workerId, ref))
+      actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
+    actorService.registerActorForNetworkCommunication(workerId, ref)
     opExecution.getWorkerInfo(workerId).ref = ref
     ref
   }

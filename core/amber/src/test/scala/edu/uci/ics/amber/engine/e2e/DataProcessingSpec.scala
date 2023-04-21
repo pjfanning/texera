@@ -51,7 +51,7 @@ class DataProcessingSpec
   def buildWorkflow(
       operators: List[OperatorDescriptor],
       links: List[OperatorLink]
-  ): Workflow = {
+  ): (Workflow, PipelinedRegionPlan) = {
     val context = new WorkflowContext
     context.jobId = "workflow-test"
 
@@ -62,9 +62,9 @@ class DataProcessingSpec
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 
-  def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {
+  def executeWorkflow(workflow: Workflow, pipelinedRegionPlan: PipelinedRegionPlan): Map[String, List[ITuple]] = {
     var results: Map[String, List[ITuple]] = null
-    val client = new AmberClient(system, () => workflow, ControllerConfig.default, error => {})
+    val client = new AmberClient(system, () => (workflow, pipelinedRegionPlan), ControllerConfig.default, error => {})
     val completion = Promise[Unit]
     client
       .registerCallback[WorkflowCompleted](evt => {
@@ -116,7 +116,7 @@ class DataProcessingSpec
   "Engine" should "execute headerlessCsv->sink workflow normally" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(headerlessCsvOpDesc, sink),
       List(
         OperatorLink(
@@ -125,7 +125,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow, pipelinedPlan)(sink.operatorID)
 
     assert(results.size == 100)
   }
@@ -133,7 +133,7 @@ class DataProcessingSpec
   "Engine" should "execute headerlessMultiLineDataCsv-->sink workflow normally" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallMultiLineDataCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(headerlessCsvOpDesc, sink),
       List(
         OperatorLink(
@@ -142,7 +142,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow, pipelinedPlan)(sink.operatorID)
 
     assert(results.size == 100)
   }
@@ -150,7 +150,7 @@ class DataProcessingSpec
   "Engine" should "execute jsonl->sink workflow normally" in {
     val jsonlOp = TestOperators.smallJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(jsonlOp, sink),
       List(
         OperatorLink(
@@ -159,7 +159,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow, pipelinedPlan)(sink.operatorID)
 
     assert(results.size == 100)
 
@@ -178,7 +178,7 @@ class DataProcessingSpec
   "Engine" should "execute mediumFlattenJsonl->sink workflow normally" in {
     val jsonlOp = TestOperators.mediumFlattenJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(jsonlOp, sink),
       List(
         OperatorLink(
@@ -187,7 +187,7 @@ class DataProcessingSpec
         )
       )
     )
-    val results = executeWorkflow(workflow)(sink.operatorID)
+    val results = executeWorkflow(workflow, pipelinedPlan)(sink.operatorID)
 
     assert(results.size == 1000)
 
@@ -207,7 +207,7 @@ class DataProcessingSpec
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         OperatorLink(
@@ -217,7 +217,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   "Engine" should "execute headerlessCsv->word count->sink workflow normally" in {
@@ -226,7 +226,7 @@ class DataProcessingSpec
     // Get only the highest count, for testing purposes
     val wordCountOpDesc = TestOperators.wordCloudOpDesc("column-1", 1)
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(headerlessCsvOpDesc, wordCountOpDesc, sink),
       List(
         OperatorLink(
@@ -236,7 +236,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    val result = executeWorkflow(workflow).values
+    val result = executeWorkflow(workflow, pipelinedPlan).values
     // Assert that only one tuple came out successfully
     assert(result.size == 1)
 
@@ -245,20 +245,20 @@ class DataProcessingSpec
   "Engine" should "execute csv->sink workflow normally" in {
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(csvOpDesc, sink),
       List(
         OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   "Engine" should "execute csv->keyword->sink workflow normally" in {
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, sink),
       List(
         OperatorLink(
@@ -268,7 +268,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   "Engine" should "execute csv->keyword->count->sink workflow normally" in {
@@ -277,7 +277,7 @@ class DataProcessingSpec
     val countOpDesc =
       TestOperators.aggregateAndGroupByDesc("Region", AggregationFunction.COUNT, List[String]())
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, countOpDesc, sink),
       List(
         OperatorLink(
@@ -291,7 +291,7 @@ class DataProcessingSpec
         OperatorLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   "Engine" should "execute csv->keyword->averageAndGroupBy->sink workflow normally" in {
@@ -304,7 +304,7 @@ class DataProcessingSpec
         List[String]("Country")
       )
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
       List(
         OperatorLink(
@@ -321,7 +321,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   "Engine" should "execute csv->(csv->)->join->sink workflow normally" in {
@@ -329,7 +329,7 @@ class DataProcessingSpec
     val headerlessCsvOpDesc2 = TestOperators.headerlessSmallCsvScanOpDesc()
     val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(
         headerlessCsvOpDesc1,
         headerlessCsvOpDesc2,
@@ -351,7 +351,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
   }
 
   // TODO: use mock data to perform the test, remove dependency on the real AsterixDB
@@ -380,7 +380,7 @@ class DataProcessingSpec
     )
 
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val (workflow, pipelinedPlan) = buildWorkflow(
       List(inMemoryMsSQLSourceOpDesc, sink),
       List(
         OperatorLink(
@@ -389,7 +389,7 @@ class DataProcessingSpec
         )
       )
     )
-    executeWorkflow(workflow)
+    executeWorkflow(workflow, pipelinedPlan)
 
     inMemoryMySQLInstance.get.stop()
   }

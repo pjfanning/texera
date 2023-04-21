@@ -53,7 +53,7 @@ trait WorkerExecutionCompletedHandler {
             println("workflow completed!!!!!!!!!!!!!!")
             Future.Unit
           } else {
-            cp.scheduler.onWorkerCompletion(sender, cp.getAvailableNodes()).flatMap(_ => Future.Unit)
+            cp.scheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
           }
         })
     }

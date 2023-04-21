@@ -32,16 +32,22 @@ object LogicalExecutionSnapshot{
   final case class ProcessingStats(checkpointCost:Long, alignment:Long, inputStatus:ChannelStatsMapping)
 }
 
-class LogicalExecutionSnapshot extends Serializable{
+class LogicalExecutionSnapshot(val isInteraction:Boolean, val timestamp:Long) extends Serializable{
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
+  private val checkpointed = mutable.HashSet[ActorVirtualIdentity]()
+
+  def addCheckpoint(id:ActorVirtualIdentity): Unit ={
+    checkpointed.add(id)
+  }
 
   def addParticipant(
       id: ActorVirtualIdentity,
-      info: CheckpointStats
+      info: CheckpointStats,
+      isCheckpointed:Boolean = false
   ): Unit = {
     val cur = participants.getOrElseUpdate(id, ProcessingStats(0, 0, new ChannelStatsMapping()))
-    participants(id) = cur.copy(checkpointCost = info.saveStateCost, alignment = info.alignment)
+    participants(id) = cur.copy(checkpointCost = info.saveStateCost+info.alignmentCost, alignment = info.step)
     info.inputWatermarks.foreach{
       case (channel, received) =>
         cur.inputStatus.get(channel).actualReceived = received
@@ -51,6 +57,9 @@ class LogicalExecutionSnapshot extends Serializable{
         val down = participants.getOrElseUpdate(channel.endpointWorker, ProcessingStats(0, 0, new ChannelStatsMapping()))
         val downChannelId = ChannelEndpointID(id, channel.isControlChannel)
         down.inputStatus.get(downChannelId).toReceive = sent
+    }
+    if(isCheckpointed){
+      checkpointed.add(id)
     }
   }
 
@@ -63,7 +72,7 @@ class LogicalExecutionSnapshot extends Serializable{
 }
 
 
-class EmptyLogicalExecutionSnapshot() extends LogicalExecutionSnapshot{
+class EmptyLogicalExecutionSnapshot extends LogicalExecutionSnapshot(false, 0){
   private val stats = ProcessingStats(0,0,new ChannelStatsMapping())
   override def getStats(actorVirtualIdentity: ActorVirtualIdentity): ProcessingStats = stats
 }

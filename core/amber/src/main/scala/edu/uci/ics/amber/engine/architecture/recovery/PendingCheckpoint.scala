@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, MarkerAlignmentInternalPayload, MarkerCollectionSupport, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -9,8 +10,11 @@ import scala.collection.mutable
 
 
 class PendingCheckpoint(val actorId:ActorVirtualIdentity,
-                        startTime:Long,
+                        val startTime:Long,
                         val stepCursorAtCheckpoint:Long,
+                        val fifoInputState:Map[ChannelEndpointID, Long],
+                        val fifoOutputState:Map[ChannelEndpointID, Long],
+                        val initialCheckpointTime:Long,
                         val chkpt:SavedCheckpoint,
                         toAlign: Set[ChannelEndpointID]) extends MarkerCollectionSupport with AmberLogging{
 

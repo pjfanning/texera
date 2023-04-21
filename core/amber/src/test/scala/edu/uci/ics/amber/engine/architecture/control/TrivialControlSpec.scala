@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.control.utils.PingPongHandler.Ping
 import edu.uci.ics.amber.engine.architecture.control.utils.RecursionHandler.Recursion
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ReturnInvocation, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -73,7 +73,7 @@ class TrivialControlSpec
     for (i <- 0 until numActors) {
       val id = ActorVirtualIdentity(s"$i")
       val ref =
-        probe.childActorOf(Props(new TrivialControlTester(id, NetworkSenderActorRef(nca))))
+        probe.childActorOf(Props(new TrivialControlTester(id, nca)))
       idMap(id) = ref
     }
     nca ! RegisterActorRef(CONTROLLER, probe.ref)

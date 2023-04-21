@@ -1,17 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.ShutdownDP
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ReplaceRecoveryQueue, getWorkerLogName}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{InternalPayloadFromDP, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, FuncDelegateNoReturn, InternalChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, FuncDelegateNoReturn, InternalChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.CompletableFuture
@@ -21,7 +20,7 @@ object WorkflowWorker {
       id: ActorVirtualIdentity,
       workerIndex: Int,
       workerLayer: OpExecConfig,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef
+      parentNetworkCommunicationActorRef: ActorRef
   ): Props =
     Props(
       new WorkflowWorker(
@@ -36,13 +35,15 @@ object WorkflowWorker {
 
   case class ReplaceRecoveryQueue()
 
+  case class InternalPayloadFromDP(internalPayload: AmberInternalPayload)
+
 }
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
     workerLayer: OpExecConfig,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef) {
 
   // variables unrelated to physical states
@@ -57,11 +58,8 @@ class WorkflowWorker(
 
   override def initState(): Unit = {
     dataProcessor.initDP(
-      operator,
+      this,
       Iterator.empty,
-      context,
-      logManager,
-      internalQueue
     )
     dpThread = new DPThread(actorId, dataProcessor, internalQueue)
     dpThread.start()
@@ -83,6 +81,8 @@ class WorkflowWorker(
         internalQueue = newQueue
         this.dpThread.internalQueue = newQueue
         logger.info("replace queue done!")
+      case InternalPayloadFromDP(payload) =>
+        acceptDirectInternalCommands(payload)
       case other =>
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }

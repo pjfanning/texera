@@ -1,21 +1,18 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import akka.actor.{Actor, Stash}
+import akka.actor.{Actor, ActorRef, Stash}
 import akka.pattern.StatusReply.Ack
 import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CheckInitialized, ResendOutputTo}
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManager}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, NetworkSenderActorRef, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicationActor, NetworkInputPort}
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, CreditRequest, InternalChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.DurationInt
 
 
 object WorkflowActor{
@@ -25,27 +22,24 @@ object WorkflowActor{
 
 abstract class WorkflowActor(
     val actorId: ActorVirtualIdentity,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends Actor
     with Stash
     with AmberLogging {
 
-  /** Akka Actor related */
-
-  implicit val ec: ExecutionContext = context.dispatcher
-  implicit val timeout: Timeout = 5.seconds
-
   /** Network sender related */
 
-  val networkCommunicationActor: NetworkSenderActorRef = NetworkSenderActorRef(
+  val networkCommunicationActor: ActorRef =
     // create a network communication actor on the same machine as the WorkflowActor itself
     context.actorOf(
       NetworkCommunicationActor.props(
-        parentNetworkCommunicationActorRef.ref,
+        parentNetworkCommunicationActorRef,
         actorId
       )
-    )
   )
+
+  /** Akka related */
+  val actorService:WorkflowActorService = new WorkflowActorService(this)
 
   def forwardResendRequest: Receive = {
     case resend: ResendOutputTo =>
@@ -118,9 +112,6 @@ abstract class WorkflowActor(
 
   /** Worker lifecycle: Initialization */
   override def preStart(): Unit = {
-    if (parentNetworkCommunicationActorRef != null) {
-      parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))
-    }
     try {
       logManager.setupWriter(new EmptyLogStorage().getWriter)
       initState()

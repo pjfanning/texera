@@ -10,11 +10,17 @@ import scala.collection.mutable
 class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
   private var onReplayComplete: () => Unit = () => {}
   private var onRecoveryComplete: () => Unit = () => {}
+  private val checkpointStepQueue = mutable.Queue[(Long, () => Unit)]()
   private var switchStep = INIT_STEP
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
 
   var currentChannel: ChannelEndpointID = _
+
+  def setCheckpoint(checkpointStep:Long, callback: () => Unit): Unit ={
+    checkpointStepQueue.clear()
+    checkpointStepQueue.enqueue((checkpointStep, callback))
+  }
 
   def setReplayTo(currentDPStep: Long, dest: Long, replayEndPromise:() => Unit): Unit = {
     assert(currentDPStep < dest)
@@ -45,6 +51,10 @@ class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
   }
 
   def forwardReplayProcess(currentStep:Long): Unit ={
+    if(checkpointStepQueue.nonEmpty && checkpointStepQueue.head._1 == currentStep){
+      checkpointStepQueue.head._2()
+      checkpointStepQueue.dequeue()
+    }
     if(replayTo == currentStep){
       onReplayComplete()
     }

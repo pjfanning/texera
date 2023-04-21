@@ -13,7 +13,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
-class WorkflowExecution(@transient workflow: Workflow) {
+class WorkflowExecution(workflow: Workflow) {
 
   private val linkExecutions: Map[LinkIdentity, LinkExecution] =
     workflow.physicalPlan.linkStrategies.map { link =>
@@ -23,9 +23,6 @@ class WorkflowExecution(@transient workflow: Workflow) {
     workflow.getAllOperators.map { opConf =>
       opConf.id -> new OperatorExecution(opConf.numWorkers, opConf.opExecClass)
     }.toMap
-  var regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity] = new TopologicalOrderIterator(
-    workflow.physicalPlan.pipelinedRegionsDAG
-  ).asScala.map(_.id).toBuffer
 
   // Since one operator/link(i.e. links within an operator) can belong to multiple regions, we need to keep
   // track of those already built
@@ -48,7 +45,6 @@ class WorkflowExecution(@transient workflow: Workflow) {
   def getAllWorkers: Iterable[ActorVirtualIdentity] =
     operatorExecutions.values
       .flatMap(operator => operator.identifiers.map(worker => operator.getWorkerInfo(worker)))
-      .filter(_.state != UNINITIALIZED)
       .map(_.id)
 
   def getOperatorExecution(op: LayerIdentity): OperatorExecution = {

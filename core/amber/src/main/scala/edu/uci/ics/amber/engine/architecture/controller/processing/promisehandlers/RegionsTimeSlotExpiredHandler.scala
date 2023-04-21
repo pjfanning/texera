@@ -7,8 +7,6 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsy
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
@@ -30,20 +28,20 @@ trait RegionsTimeSlotExpiredHandler {
     {
       val notCompletedRegions =
         msg.regions.diff(
-          cp.scheduler.schedulingPolicy
+          cp.schedulingPolicy
             .getCompletedRegions()
-            .map(cp.workflow.physicalPlan.getPipelinedRegion)
+            .map(cp.pipelinedRegionPlan.getPipelinedRegion)
         )
 
       if (
         notCompletedRegions.subsetOf(
-          cp.scheduler.schedulingPolicy
+          cp.schedulingPolicy
             .getRunningRegions()
-            .map(cp.workflow.physicalPlan.getPipelinedRegion)
+            .map(cp.pipelinedRegionPlan.getPipelinedRegion)
         )
       ) {
         cp.scheduler
-          .onTimeSlotExpired(notCompletedRegions, cp.getAvailableNodes())
+          .onTimeSlotExpired(notCompletedRegions)
           .flatMap(_ => Future.Unit)
       } else {
         if (notCompletedRegions.nonEmpty) {

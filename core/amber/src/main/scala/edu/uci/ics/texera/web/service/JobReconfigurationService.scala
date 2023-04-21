@@ -9,12 +9,9 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.ModifyLogicRequest
-import edu.uci.ics.texera.web.model.websocket.response.{
-  ModifyLogicCompletedEvent,
-  ModifyLogicResponse
-}
+import edu.uci.ics.texera.web.model.websocket.response.{ModifyLogicCompletedEvent, ModifyLogicResponse}
 import edu.uci.ics.texera.web.storage.{JobReconfigurationStore, JobStateStore}
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
+import edu.uci.ics.texera.workflow.common.workflow.{PipelinedRegionPlan, WorkflowCompiler}
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -23,7 +20,8 @@ class JobReconfigurationService(
     client: AmberClient,
     stateStore: JobStateStore,
     workflowCompiler: WorkflowCompiler,
-    workflow: Workflow
+    workflow: Workflow,
+    pipelinedRegionPlan: PipelinedRegionPlan
 ) extends SubscriptionManager {
 
   // monitors notification from the engine that a reconfiguration on a worker is completed
@@ -100,6 +98,7 @@ class JobReconfigurationService(
     } else {
       val epochMarkers = FriesReconfigurationAlgorithm.scheduleReconfigurations(
         workflow.physicalPlan,
+        pipelinedRegionPlan,
         reconfigurations,
         reconfigurationId
       )

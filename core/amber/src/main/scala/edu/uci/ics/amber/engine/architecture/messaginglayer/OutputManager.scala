@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import akka.actor.{ActorContext, Cancellable}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActorService
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
@@ -131,20 +132,21 @@ class OutputManager(
 class AdaptiveBatchingMonitor extends Serializable {
   var adaptiveBatchingHandle: Option[Cancellable] = None
 
-  def enableAdaptiveBatching(context: ActorContext): Unit = {
+  def enableAdaptiveBatching(service:WorkflowActorService): Unit = {
     if (!enableAdaptiveNetworkBuffering) {
       return
     }
-    if (this.adaptiveBatchingHandle.nonEmpty || context == null) {
+    if (this.adaptiveBatchingHandle.nonEmpty) {
       return
     }
     this.adaptiveBatchingHandle = Some(
-      context.system.scheduler.scheduleAtFixedRate(
+      service.scheduleWithFixedDelay(
         0.milliseconds,
         FiniteDuration.apply(adaptiveBufferingTimeoutMs, MILLISECONDS),
-        context.self,
-        ControlInvocation(FlushNetworkBuffer())
-      )(context.dispatcher)
+        () => {
+          service.self ! ControlInvocation(FlushNetworkBuffer())
+        }
+      )
     )
   }
 

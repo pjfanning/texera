@@ -5,12 +5,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{
-  BreakpointInfo,
-  OperatorLink,
-  WorkflowCompiler,
-  LogicalPlan
-}
+import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalPlan, OperatorLink, PipelinedRegionPlan, WorkflowCompiler}
 
 object Utils {
 
@@ -19,7 +14,7 @@ object Utils {
       links: List[OperatorLink],
       jobId: String = "workflow-test",
       workflowTag: String = "workflow-test"
-  ): Workflow = {
+  ): (Workflow, PipelinedRegionPlan) = {
     val context = new WorkflowContext
     context.jobId = jobId
 

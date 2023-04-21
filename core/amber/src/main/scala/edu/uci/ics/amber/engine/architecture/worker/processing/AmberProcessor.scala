@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
+import edu.uci.ics.amber.engine.architecture.common.{WorkflowActor, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
@@ -10,10 +11,13 @@ import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
-class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: DeterminantLogger)  extends AmberLogging
+class AmberProcessor(val actorId:ActorVirtualIdentity,
+                     val determinantLogger: DeterminantLogger) extends AmberLogging
   with Serializable {
 
   @transient var logManager: LogManager = _
+
+  @transient var actorService:WorkflowActorService = _
 
   // 1. Unified Output
   lazy val outputPort: NetworkOutputPort =
@@ -26,8 +30,9 @@ class AmberProcessor(val actorId:ActorVirtualIdentity, val determinantLogger: De
 
   protected var currentInputChannel:ChannelEndpointID = _
 
-  def init(logManager: LogManager): Unit ={
-    this.logManager = logManager
+  def init(actor:WorkflowActor): Unit ={
+    this.logManager = actor.logManager
+    this.actorService = actor.actorService
   }
 
   def updateInputChannelThenDoLogging(channelEndpointID: ChannelEndpointID): Unit ={

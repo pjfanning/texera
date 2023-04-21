@@ -32,7 +32,7 @@ trait LinkCompletedHandler {
         link.incrementCompletedReceiversCount()
         if (link.isCompleted) {
           cp.scheduler
-            .onLinkCompletion(msg.linkID, cp.getAvailableNodes())
+            .onLinkCompletion(msg.linkID)
             .flatMap(_ => Future.Unit)
         } else {
           // if the link is not completed yet, do nothing

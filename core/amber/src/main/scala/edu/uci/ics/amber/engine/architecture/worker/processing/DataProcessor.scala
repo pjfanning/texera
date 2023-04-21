@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort, OutputManager}
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
+import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
@@ -72,24 +72,17 @@ class DataProcessor( // meta dependencies:
   @transient
   private[processing] var operator: IOperatorExecutor = _
   @transient
-  private[processing] var actorContext: ActorContext = _
-  @transient
   private[processing] var internalQueue:WorkerInternalQueue = _
   @transient
   private[processing] var dpThread:DPThread = _
 
-  def initDP(
-                  operator: IOperatorExecutor, // core logic
-                  currentOutputIterator: Iterator[(ITuple, Option[Int])],
-                  actorContext: ActorContext,
-                  logManager: LogManager,
-                  internalQueue: WorkerInternalQueue
+  def initDP(worker:WorkflowWorker,
+             currentOutputIterator: Iterator[(ITuple, Option[Int])]
   ): Unit = {
-    init(logManager)
-    this.operator = operator
+    init(worker)
+    this.operator = worker.operator
     this.outputIterator.setTupleOutput(currentOutputIterator)
-    this.actorContext = actorContext
-    this.internalQueue = internalQueue
+    this.internalQueue = worker.internalQueue
     this.pauseManager.initialize(internalQueue)
     this.epochManager.initialize(this)
     new DataProcessorRPCHandlerInitializer(this)
@@ -180,7 +173,7 @@ class DataProcessor( // meta dependencies:
     * this function is only called by the DP thread
     */
   def outputOneTuple(): Unit = {
-    outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorContext)
+    outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorService)
     var out: (ITuple, Option[Int]) = null
     try {
       out = outputIterator.next()

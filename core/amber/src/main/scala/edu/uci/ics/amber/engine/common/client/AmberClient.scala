@@ -6,10 +6,10 @@ import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.TakeCheckpoint
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.TakeRuntimeGlobalCheckpoint
 import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
+import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.{PublishSubject, Subject}
@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
 
 class AmberClient(
     system: ActorSystem,
-    workflowGen: () => Workflow,
+    workflowGen: () => (Workflow,PipelinedRegionPlan),
     controllerConfig: ControllerConfig,
     errorHandler: Throwable => Unit
 ) {
@@ -93,7 +93,7 @@ class AmberClient(
     if (!isActive) {
       Future[Any](())
     } else {
-      clientActor ! TakeCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
+      clientActor ! TakeRuntimeGlobalCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
     }
   }
 

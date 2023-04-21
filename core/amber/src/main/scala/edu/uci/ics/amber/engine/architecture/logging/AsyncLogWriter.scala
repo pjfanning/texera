@@ -1,12 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
+import akka.actor.ActorRef
 import com.google.common.collect.Queues
-import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{
-  LogWriterOutputMessage,
-  SendRequest
-}
+import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.{LogWriterOutputMessage, SendRequest}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -23,7 +20,7 @@ object AsyncLogWriter {
 }
 
 class AsyncLogWriter(
-    networkCommunicationActor: NetworkCommunicationActor.NetworkSenderActorRef,
+    networkCommunicationActor: ActorRef,
     writer: DeterminantLogWriter
 ) extends Thread {
   private val drained = new util.ArrayList[Either[InMemDeterminant, LogWriterOutputMessage]]()

@@ -34,7 +34,7 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       .map(o => (o._1, o._2.validate().toSet))
       .filter(o => o._2.nonEmpty)
 
-  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
+  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): (Workflow, PipelinedRegionPlan) = {
     // pre-process: set output mode for sink based on the visualization operator before it
     logicalPlan.getSinkOperators.foreach(sinkOpId => {
       val sinkOp = logicalPlan.getOperator(sinkOpId)
@@ -54,7 +54,7 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
     val physicalPlan0 = logicalPlan.toPhysicalPlan(this.context, opResultStorage)
 
     // create pipelined regions.
-    val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(
+    val pipelinedRegionPlan = new WorkflowPipelinedRegionsBuilder(
       workflowId,
       logicalPlan,
       physicalPlan0,
@@ -62,9 +62,9 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
     ).buildPipelinedRegions()
 
     // assign link strategies
-    val physicalPlan2 = new PartitionEnforcer(physicalPlan1).enforcePartition()
+    val physicalPlan1 = new PartitionEnforcer(physicalPlan0).enforcePartition()
 
-    new Workflow(workflowId, physicalPlan2)
+    (new Workflow(workflowId, physicalPlan1), pipelinedRegionPlan)
   }
 
 }

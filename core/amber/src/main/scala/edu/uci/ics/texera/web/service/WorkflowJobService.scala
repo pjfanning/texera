@@ -39,7 +39,7 @@ class WorkflowJobService(
   val stateStore = new JobStateStore()
   val logicalPlan: LogicalPlan = createLogicalPlan()
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(logicalPlan)
-  val workflow: Workflow = workflowCompiler.amberWorkflow(
+  val (workflow, pipelinedRegionPlan) = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
     resultService.opResultStorage
   )
@@ -61,17 +61,13 @@ class WorkflowJobService(
   // Runtime starts from here:
   var client: AmberClient =
     TexeraWebApplication.createAmberRuntime(
-      () =>
-        workflowCompiler.amberWorkflow(
-          WorkflowIdentity(workflowContext.jobId),
-          resultService.opResultStorage
-        ),
+      () => (workflow, pipelinedRegionPlan),
       controllerConfig,
       errorHandler
     )
   val jobBreakpointService = new JobBreakpointService(client, stateStore)
   val jobReconfigurationService =
-    new JobReconfigurationService(client, stateStore, workflowCompiler, workflow)
+    new JobReconfigurationService(client, stateStore, workflowCompiler, workflow, pipelinedRegionPlan)
   val jobStatsService = new JobStatsService(client, stateStore)
   val jobRuntimeService =
     new JobRuntimeService(

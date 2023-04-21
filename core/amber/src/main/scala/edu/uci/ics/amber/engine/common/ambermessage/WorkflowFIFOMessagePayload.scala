@@ -15,10 +15,10 @@ sealed trait AmberInternalPayload extends WorkflowFIFOMessagePayload
 
 trait IdempotentInternalPayload extends AmberInternalPayload
 trait OneTimeInternalPayload extends AmberInternalPayload{
-  val id:Long
+  val id:String
 }
 trait MarkerAlignmentInternalPayload extends AmberInternalPayload{
-  val id:Long
+  val id:String
   val alignmentMap:Map[ActorVirtualIdentity,Set[ChannelEndpointID]]
 }
 

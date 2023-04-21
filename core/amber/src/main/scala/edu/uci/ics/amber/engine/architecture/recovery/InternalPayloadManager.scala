@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLoggerImpl, LogManagerImpl}
 import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage
+import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -15,18 +16,17 @@ object InternalPayloadManager{
   case class ShutdownDP() extends IdempotentInternalPayload
 
   // estimation related:
-  case class EstimateCheckpointCost(id:Long) extends OneTimeInternalPayload
-  case class EstimationCompleted(id:Long, checkpointStats: CheckpointStats) extends OneTimeInternalPayload
+  case class EstimateCheckpointCost(id:String) extends OneTimeInternalPayload
+  case class EstimationCompleted(id:String, checkpointStats: CheckpointStats) extends OneTimeInternalPayload
 
-  final case class CheckpointStats(markerId: Long,
-                                   inputWatermarks: Map[ChannelEndpointID, Long],
+  final case class CheckpointStats(step:Long, inputWatermarks: Map[ChannelEndpointID, Long],
                                    outputWatermarks: Map[ChannelEndpointID, Long],
-                                   alignment: Long,
+                                   alignmentCost: Long,
                                    saveStateCost: Long)
 
   // replay related:
-  case class LoadStateAndReplay(id:Long, checkpointStep:Option[Long], replayTo:Option[Long], checkpointDuringReplay:Map[Long, TakeCheckpoint]) extends OneTimeInternalPayload
-  case class ReplayCompleted(id:Long) extends OneTimeInternalPayload
+  case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
+  case class ReplayCompleted(id:String) extends OneTimeInternalPayload
 
   // runtime fault-tolerance:
   case class SetupLogging() extends IdempotentInternalPayload
@@ -40,8 +40,8 @@ object InternalPayloadManager{
   }
 
   // checkpoint related:
-  case class TakeCheckpoint(id:Long, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
-  case class CheckpointCompleted(id:Long, step:Long) extends OneTimeInternalPayload
+  case class TakeRuntimeGlobalCheckpoint(id:String, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
+  case class RuntimeCheckpointCompleted(id:String, checkpointStats: CheckpointStats) extends OneTimeInternalPayload
 }
 
 class EmptyInternalPayloadManager extends InternalPayloadManager{
@@ -57,8 +57,8 @@ class EmptyInternalPayloadManager extends InternalPayloadManager{
 
 abstract class InternalPayloadManager {
 
-  private val pending = mutable.HashMap[Long, MarkerCollectionSupport]()
-  private val seen = mutable.HashSet[Long]()
+  private val pending = mutable.HashMap[String, MarkerCollectionSupport]()
+  private val seen = mutable.HashSet[String]()
 
   def handlePayload(oneTimeInternalPayload: OneTimeInternalPayload):Unit
 

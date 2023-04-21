@@ -1,19 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import akka.actor.{Address, Props}
+import akka.actor.{ActorRef, Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor, ControllerInternalPayloadManager}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkSenderActorRef, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, GlobalRecoveryManager, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
-import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
 import scala.concurrent.Await
 
@@ -37,12 +37,14 @@ object Controller {
 
   def props(
       workflow: Workflow,
+      pipelinedRegionPlan: PipelinedRegionPlan,
       controllerConfig: ControllerConfig = ControllerConfig.default,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef = NetworkSenderActorRef()
+      parentNetworkCommunicationActorRef: ActorRef
   ): Props =
     Props(
       new Controller(
         workflow,
+        pipelinedRegionPlan,
         controllerConfig,
         parentNetworkCommunicationActorRef
       )
@@ -51,8 +53,9 @@ object Controller {
 
 class Controller(
     val workflow: Workflow,
+    val pipelinedRegionPlan: PipelinedRegionPlan,
     val controllerConfig: ControllerConfig,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(
       CONTROLLER,
       parentNetworkCommunicationActorRef
@@ -60,18 +63,18 @@ class Controller(
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 
-  val scheduler = new WorkflowScheduler(networkCommunicationActor, context, logger, workflow, controllerConfig)
+  // separate pipelined region dag (non-serializable) from workflow
+
 
   // variables to be initialized
-  var controlProcessor: ControlProcessor = new ControlProcessor(actorId, determinantLogger)
+  var controlProcessor: ControlProcessor = new ControlProcessor(actorId, controllerConfig, determinantLogger)
   var replayQueue:ControllerReplayQueue = _
 
   override def initState(): Unit = {
     // register controller itself and client
-    networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))
-    networkCommunicationActor.waitUntil(RegisterActorRef(CLIENT, context.parent))
-
-    controlProcessor.initCP(workflow, controllerConfig, scheduler, this.getAvailableNodes, inputPort, context, logManager)
+    controlProcessor.initCP(this)
+    actorService.registerActorForNetworkCommunication(CONTROLLER, self)
+    actorService.registerActorForNetworkCommunication(CLIENT, context.parent)
   }
 
   def getAvailableNodes():Array[Address] = {

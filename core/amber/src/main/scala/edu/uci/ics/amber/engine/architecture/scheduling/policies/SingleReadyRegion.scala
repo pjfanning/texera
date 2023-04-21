@@ -1,22 +1,26 @@
 package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
+import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
+import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
+import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
-class SingleReadyRegion(workflow: Workflow) extends SchedulingPolicy(workflow) {
+import scala.collection.mutable
 
-  override def getNextSchedulingWork(): Set[PipelinedRegion] = {
+class SingleReadyRegion(workflow: Workflow,  execution:WorkflowExecution, regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity]) extends SchedulingPolicy(workflow, execution) {
+
+  override def getNextSchedulingWork(plan:PipelinedRegionPlan): Set[PipelinedRegion] = {
     if (
       (execution.scheduledRegions.isEmpty ||
       execution.scheduledRegions.forall(
         execution.completedRegions.contains
-      )) && execution.regionsScheduleOrder.nonEmpty
+      )) && regionsScheduleOrder.nonEmpty
     ) {
-      val nextRegion = execution.regionsScheduleOrder.head
-      execution.regionsScheduleOrder.remove(0)
+      val nextRegion = regionsScheduleOrder.head
+      regionsScheduleOrder.remove(0)
       assert(!execution.scheduledRegions.contains(nextRegion))
       execution.scheduledRegions.add(nextRegion)
-      return Set(workflow.physicalPlan.getPipelinedRegion(nextRegion))
+      return Set(plan.getPipelinedRegion(nextRegion))
     }
     Set()
   }

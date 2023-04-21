@@ -73,7 +73,7 @@ class JobRuntimeService(
       oos.close()
       planner = new ReplayPlanner(evt.history)
       stateStore.jobMetadataStore.updateState(jobMetadata =>
-        jobMetadata.withInteractionHistory(evt.history.getInteractionTimes).withCurrentReplayPos(-1)
+        jobMetadata.withInteractionHistory(evt.history.getInteractionTimesAsSeconds).withCurrentReplayPos(-1)
       )
     }
   }))

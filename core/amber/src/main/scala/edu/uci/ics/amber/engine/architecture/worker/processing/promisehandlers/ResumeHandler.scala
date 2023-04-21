@@ -22,7 +22,7 @@ trait ResumeHandler {
     if (dp.stateManager.getCurrentState == PAUSED) {
       dp.pauseManager.resume(UserPause)
       dp.stateManager.transitTo(RUNNING)
-      dp.outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(dp.actorContext)
+      dp.outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(dp.actorService)
     }
     dp.stateManager.getCurrentState
   }

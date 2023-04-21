@@ -1,17 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import com.typesafe.config.{Config, ConfigFactory}
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
 import edu.uci.ics.amber.engine.architecture.recovery.{EmptyInternalPayloadManager, InternalPayloadManager}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -28,7 +25,7 @@ object PythonWorkflowWorker {
       id: ActorVirtualIdentity,
       workerIndex: Int,
       workerLayer: OpExecConfig,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef
+      parentNetworkCommunicationActorRef: ActorRef
   ): Props =
     Props(
       new PythonWorkflowWorker(
@@ -44,7 +41,7 @@ class PythonWorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
     workerLayer: OpExecConfig,
-    parentNetworkCommunicationActorRef: NetworkSenderActorRef
+    parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(
       actorId,
       parentNetworkCommunicationActorRef
