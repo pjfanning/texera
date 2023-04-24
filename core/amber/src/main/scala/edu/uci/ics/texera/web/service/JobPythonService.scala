@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import com.google.protobuf.timestamp.Timestamp
 import com.twitter.util.{Await, Duration}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.ConsoleMessageTriggered
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.EvaluatePythonExpressionHandler.EvaluatePythonExpression
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.RetryWorkflowHandler.RetryWorkflow

@@ -41,9 +41,9 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
   val actorId: ActorVirtualIdentity = cp.actorId
 
   @transient
-  var statusUpdateAskHandle: Option[Cancellable] = None
+  var statusUpdateAskHandle: Cancellable = null
   @transient
-  var monitoringHandle: Option[Cancellable] = None
+  var monitoringHandle: Cancellable = null
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
   var workflowStartTimeStamp: Long = System.currentTimeMillis()
   var workflowPauseStartTime: Long = 0L
@@ -53,14 +53,13 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     if (suppressStatusUpdate) {
       return
     }
-    if (cp.config.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle.isEmpty) {
+    if (cp.controller.controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle == null) {
       println("status update enabled")
-      statusUpdateAskHandle = Option(
+      statusUpdateAskHandle =
         cp.actorService.scheduleWithFixedDelay(
           0.milliseconds,
-          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
           ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateQueryStatistics())
-        )
       )
     }
   }
@@ -70,14 +69,13 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
       return
     }
     if (
-      Constants.monitoringEnabled && cp.config.monitoringIntervalMs.nonEmpty && monitoringHandle.isEmpty
+      Constants.monitoringEnabled && cp.controller.controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle == null
     ) {
-      monitoringHandle = Option(
+      monitoringHandle =
         cp.actorService.scheduleWithFixedDelay(
           0.milliseconds,
-          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
           ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateMonitoring())
-        )
       )
     }
   }
@@ -87,37 +85,36 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
       return
     }
     if (
-      Constants.reshapeSkewHandlingEnabled && cp.config.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle.isEmpty
+      Constants.reshapeSkewHandlingEnabled && cp.controller.controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle == null
     ) {
-      workflowReshapeState.skewDetectionHandle = Option(
+      workflowReshapeState.skewDetectionHandle =
         cp.actorService.scheduleWithFixedDelay(
           0.milliseconds,
-          FiniteDuration.apply(cp.config.statusUpdateIntervalMs.get, MILLISECONDS),
+          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
           ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateSkewDetection())
-        )
       )
     }
   }
 
   def disableStatusUpdate(): Unit = {
-    if (statusUpdateAskHandle.nonEmpty) {
+    if (statusUpdateAskHandle != null) {
       println("status update disabled")
-      statusUpdateAskHandle.get.cancel()
-      statusUpdateAskHandle = Option.empty
+      statusUpdateAskHandle.cancel()
+      statusUpdateAskHandle = null
     }
   }
 
   def disableMonitoring(): Unit = {
-    if (monitoringHandle.nonEmpty) {
-      monitoringHandle.get.cancel()
-      monitoringHandle = Option.empty
+    if (monitoringHandle != null) {
+      monitoringHandle.cancel()
+      monitoringHandle = null
     }
   }
 
   def disableSkewHandling(): Unit = {
-    if (workflowReshapeState.skewDetectionHandle.nonEmpty) {
-      workflowReshapeState.skewDetectionHandle.get.cancel()
-      workflowReshapeState.skewDetectionHandle = Option.empty
+    if (workflowReshapeState.skewDetectionHandle != null) {
+      workflowReshapeState.skewDetectionHandle.cancel()
+      workflowReshapeState.skewDetectionHandle = null
     }
   }
 

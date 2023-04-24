@@ -3,9 +3,11 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlP
 
 class EmptyDeterminantLogger extends DeterminantLogger {
 
-  override def setCurrentSender(channel: ChannelEndpointID): Unit = {}
+  override def setCurrentSender(channel: ChannelEndpointID, step:Long): Unit = {}
 
-  override def drainCurrentLogRecords(): Array[InMemDeterminant] = { Array.empty }
+  override def drainCurrentLogRecords(step:Long): Array[InMemDeterminant] = { Array.empty }
 
   override def recordPayload(channelEndpointID: ChannelEndpointID, payload: ControlPayload): Unit = {}
+
+  override def enableOutputCommit(enabled: Boolean): Unit = {}
 }

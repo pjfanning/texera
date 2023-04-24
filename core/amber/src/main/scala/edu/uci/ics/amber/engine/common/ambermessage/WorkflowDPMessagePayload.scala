@@ -10,5 +10,3 @@ trait WorkflowDPMessagePayload
 case class FuncDelegate[T](func: () => T, future: CompletableFuture[T]) extends WorkflowDPMessagePayload{
   type returnType = T
 }
-
-case class FuncDelegateNoReturn(func: () => Unit) extends WorkflowDPMessagePayload

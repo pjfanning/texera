@@ -14,12 +14,15 @@ class ControllerReplayQueue(controlProcessor:ControlProcessor, replayOrderEnforc
     messageQueues.getOrElseUpdate(channelEndpointID, new mutable.Queue()).enqueue(payload)
     var continue = true
     while(continue){
-      replayOrderEnforcer.forwardReplayProcess(controlProcessor.determinantLogger.getStep)
+      val currentStep = controlProcessor.cursor.getStep
+      replayOrderEnforcer.forwardReplayProcess(currentStep)
       val currentChannel = replayOrderEnforcer.currentChannel
       if(messageQueues.getOrElseUpdate(currentChannel, new mutable.Queue()).nonEmpty){
+        println(s"reprocessing message from channel = $currentChannel content = $payload at step = $currentStep")
         processPayload(currentChannel, messageQueues(currentChannel).dequeue())
       }else{
         continue = false
+        println(s"waiting message from channel = $currentChannel at step = $currentStep")
       }
     }
   }

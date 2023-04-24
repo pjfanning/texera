@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.BreakpointTriggered
 import ModifyLogicHandler.ModifyLogic
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig

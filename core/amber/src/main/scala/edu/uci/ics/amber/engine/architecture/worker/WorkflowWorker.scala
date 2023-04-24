@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{InternalPayl
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, FuncDelegateNoReturn, InternalChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, InternalChannelEndpointID, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.CompletableFuture
@@ -48,11 +48,11 @@ class WorkflowWorker(
 
   // variables unrelated to physical states
   val ordinalMapping: OrdinalMapping = workerLayer.ordinalMapping
-  lazy val operator: IOperatorExecutor = workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
+  var operator: IOperatorExecutor = workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   val creditMonitor = new CreditMonitorImpl()
 
 
-  var dataProcessor: DataProcessor = new DataProcessor(ordinalMapping, actorId, determinantLogger)
+  var dataProcessor: DataProcessor = new DataProcessor(this)
   var internalQueue: WorkerInternalQueue = new WorkerInternalQueueImpl(creditMonitor)
   var dpThread: DPThread = _
 
@@ -93,18 +93,11 @@ class WorkflowWorker(
 
   def executeThroughDP[T](
                            func: () => T
-                         ): CompletableFuture[T] = {
+                         ): T = {
     val future = new CompletableFuture[T]()
     internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
     dpThread.unblock() // in case it is blocked.
-    future
-  }
-
-  def executeThroughDPNoReturn(
-                           func: () => Unit
-                         ): Unit = {
-    internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegateNoReturn(func)))
-    dpThread.unblock() // in case it is blocked.
+    future.get()
   }
 
   override def postStop(): Unit = {

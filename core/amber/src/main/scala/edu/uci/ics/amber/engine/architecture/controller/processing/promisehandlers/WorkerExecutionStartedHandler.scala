@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowStatusUpdate
 import WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState

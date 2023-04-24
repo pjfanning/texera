@@ -4,16 +4,15 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.TakeRuntimeGlobalCheckpoint
-import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{CommandRequest, ExecuteRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.{PublishSubject, Subject}
 
+import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration.{Duration, DurationInt}
@@ -81,21 +80,26 @@ class AmberClient(
     Future.Unit
   }
 
-  def replayExecution(conf: WorkflowReplayConfig): Unit = {
-    if (isActive) {
-      println(s"received replay request conf = ${conf}")
-      // get actor ref of all workers.
-      // setup replay
-    }
+  def execute(closure: (ClientActor) => Unit): Unit ={
+    val future = new CompletableFuture[Unit]()
+    clientActor ! ExecuteRequest(closure, future)
+    future.get()
   }
 
-  def takeGlobalCheckpoint(): Unit = {
-    if (!isActive) {
-      Future[Any](())
-    } else {
-      clientActor ! TakeRuntimeGlobalCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
-    }
-  }
+//  def replayExecution(requestId:String, conf: WorkflowReplayConfig): Unit = {
+//    if (isActive) {
+//      println(s"received replay request conf = ${conf}")
+//      clientActor ! ReplayWorkflow(requestId, conf)
+//    }
+//  }
+//
+//  def takeGlobalCheckpoint(): Unit = {
+//    if (!isActive) {
+//      Future[Any](())
+//    } else {
+//      clientActor ! TakeRuntimeGlobalCheckpoint(CheckpointHolder.generateCheckpointId, Map.empty)
+//    }
+//  }
 
 //  def interruptReplay(): Future[Any] = {
 //    if (!isActive) {
@@ -137,14 +141,6 @@ class AmberClient(
           case t: Throwable => errorHandler(t)
         }
       }
-    }
-  }
-
-  def executeClosureSync[T](closure: => T): T = {
-    if (!isActive) {
-      closure
-    } else {
-      Await.result(clientActor ? ClosureRequest(() => closure), timeout.duration).asInstanceOf[T]
     }
   }
 

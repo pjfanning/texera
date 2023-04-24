@@ -17,11 +17,12 @@ import edu.uci.ics.texera.workflow.common.workflow._
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregationFunction
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import java.sql.PreparedStatement
 
+import java.sql.PreparedStatement
 import com.twitter.util.{Await, Promise}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
 import scala.collection.mutable
@@ -67,13 +68,15 @@ class DataProcessingSpec
     val client = new AmberClient(system, () => (workflow, pipelinedRegionPlan), ControllerConfig.default, error => {})
     val completion = Promise[Unit]
     client
-      .registerCallback[WorkflowCompleted](evt => {
-        results = workflow.physicalPlan.getSinkOperators
-          .map(sinkOpId => workflow.physicalPlan.operatorMap(sinkOpId))
-          .filter(op => resultStorage.contains(op.id.operator))
-          .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
-          .toMap
-        completion.setDone()
+      .registerCallback[WorkflowStateUpdate](evt => {
+        if(evt.aggState == COMPLETED){
+          results = workflow.physicalPlan.getSinkOperators
+            .map(sinkOpId => workflow.physicalPlan.operatorMap(sinkOpId))
+            .filter(op => resultStorage.contains(op.id.operator))
+            .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
+            .toMap
+          completion.setDone()
+        }
       })
     Await.result(client.sendAsync(StartWorkflow()))
     Await.result(completion)

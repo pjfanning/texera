@@ -62,62 +62,52 @@ object DataProcessor {
 
 }
 
-class DataProcessor( // meta dependencies:
-    val ordinalMapping: OrdinalMapping,
-    actorId: ActorVirtualIdentity, determinantLogger: DeterminantLogger
-) extends AmberProcessor(actorId, determinantLogger)
+class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor(worker)
     with Serializable {
 
   // outer dependencies
-  @transient
-  private[processing] var operator: IOperatorExecutor = _
-  @transient
-  private[processing] var internalQueue:WorkerInternalQueue = _
-  @transient
-  private[processing] var dpThread:DPThread = _
+  def operator: IOperatorExecutor = worker.operator
+  def internalQueue:WorkerInternalQueue = worker.internalQueue
+  def dpThread:DPThread = worker.dpThread
+  def ordinalMapping:OrdinalMapping = worker.ordinalMapping
 
-  def initDP(worker:WorkflowWorker,
-             currentOutputIterator: Iterator[(ITuple, Option[Int])]
-  ): Unit = {
-    init(worker)
-    this.operator = worker.operator
+  def initDP(worker:WorkflowWorker, currentOutputIterator: Iterator[(ITuple, Option[Int])]): Unit = {
+    initAP(worker)
+    this.worker = worker
     this.outputIterator.setTupleOutput(currentOutputIterator)
-    this.internalQueue = worker.internalQueue
     this.pauseManager.initialize(internalQueue)
     this.epochManager.initialize(this)
-    new DataProcessorRPCHandlerInitializer(this)
-  }
-
-  def attachDPThread(dPThread: DPThread): Unit ={
-    this.dpThread = dPThread
   }
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
   // inner dependencies
+  private val initializer = new DataProcessorRPCHandlerInitializer(this)
   // 4. pause manager
-  lazy private[processing] val pauseManager: PauseManager = wire[PauseManager]
+  private[processing] val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
-  lazy private[processing] val breakpointManager: BreakpointManager = new BreakpointManager(asyncRPCClient)
+  private[processing] val breakpointManager: BreakpointManager = new BreakpointManager(asyncRPCClient)
   // 6. upstream links
-  lazy val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
+  private[processing] val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   // 7. state manager
-  lazy private[processing] val stateManager: WorkerStateManager = new WorkerStateManager()
+  private[processing] val stateManager: WorkerStateManager = new WorkerStateManager()
   // 8. batch producer
-  lazy private[processing] val outputManager: OutputManager =
+  private[processing] val outputManager: OutputManager =
     new OutputManager(actorId, outputPort)
   // 9. epoch manager
-  lazy private[processing] val epochManager: EpochManager = new EpochManager()
+  private[processing] val epochManager: EpochManager = new EpochManager()
 
   private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
-  private[processing] var inputBatch: Array[ITuple] = _
+  var inputBatch: Array[ITuple] = _
   private[processing] var currentInputIdx = -1
   private[processing] var currentBatchChannel: ChannelEndpointID = _
 
   // dp thread stats:
   protected var inputTupleCount = 0L
   protected var outputTupleCount = 0L
+
+  var operatorOpened:Boolean = false
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     upstreamLinkStatus.registerInput(identifier, input)
@@ -138,6 +128,20 @@ class DataProcessor( // meta dependencies:
     }
   }
 
+  @transient private var needResumeAdaptiveBatching = false
+
+  def onInterrupt(): Unit ={
+    needResumeAdaptiveBatching = outputManager.adaptiveBatchingMonitor.adaptiveBatchingHandle.isDefined
+    outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
+  }
+
+  def onContinue(): Unit ={
+    if(needResumeAdaptiveBatching){
+      outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorService)
+    }
+  }
+
+
   /** provide API for actor to get stats of this operator
     *
     * @return (input tuple count, output tuple count)
@@ -154,7 +158,7 @@ class DataProcessor( // meta dependencies:
       outputIterator.setTupleOutput(
         operator.processTuple(
           tuple,
-          getInputPort(currentInputChannel.endpointWorker),
+          getInputPort(cursor.getChannel.endpointWorker),
           pauseManager,
           asyncRPCClient
         )
@@ -196,13 +200,13 @@ class DataProcessor( // meta dependencies:
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
-        logger.info(s"$operator completed at step = ${determinantLogger.getStep} outputted = $outputTupleCount")
+        logger.info(s"$operator completed at step = ${cursor.getStep} outputted = $outputTupleCount")
         operator.close() // close operator
         outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
         stateManager.transitTo(COMPLETED)
-        asyncRPCClient.send(WorkerExecutionCompleted(determinantLogger.getStep), CONTROLLER)
+        asyncRPCClient.send(WorkerExecutionCompleted(cursor.getStep), CONTROLLER)
       case FinalizeLink(link) =>
-        logger.info(s"process FinalizeLink message at step = ${determinantLogger.getStep}")
+        logger.info(s"process FinalizeLink message at step = ${cursor.getStep}")
         if(link != null && link.from != SOURCE_STARTER_OP){
           asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
         }
@@ -225,12 +229,13 @@ class DataProcessor( // meta dependencies:
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
   def continueDataProcessing(): Unit ={
-    updateInputChannelThenDoLogging(currentBatchChannel)
-    if (hasUnfinishedOutput) {
-      outputOneTuple()
-    } else {
-      currentInputIdx += 1
-      processInputTuple(Left(inputBatch(currentInputIdx)))
+    doFaultTolerantProcessing(currentBatchChannel){
+      if (hasUnfinishedOutput) {
+        outputOneTuple()
+      } else {
+        currentInputIdx += 1
+        processInputTuple(Left(inputBatch(currentInputIdx)))
+      }
     }
   }
 
@@ -254,36 +259,37 @@ class DataProcessor( // meta dependencies:
       channel:ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {
-    updateInputChannelThenDoLogging(channel)
-    dataPayload match {
-      case DataFrame(tuples) =>
-        stateManager.conditionalTransitTo(READY, RUNNING, ()=> {
-          asyncRPCClient.send(
-            WorkerStateUpdated(stateManager.getCurrentState),
-            CONTROLLER
-          )
-        })
-        initBatch(channel, tuples)
-        processInputTuple(Left(inputBatch(currentInputIdx)))
-      case EndOfUpstream() =>
-        val currentLink = upstreamLinkStatus.getInputLink(channel.endpointWorker)
-        upstreamLinkStatus.markWorkerEOF(channel.endpointWorker, currentLink)
-        if (upstreamLinkStatus.isLinkEOF(currentLink)) {
-          initBatch(channel, Array.empty)
-          processInputTuple(Right(InputExhausted()))
-          logger.info(
-            s"$currentLink completed, append FinalizeLink message at step = ${determinantLogger.getStep}"
-          )
-          outputIterator.appendSpecialTupleToEnd(FinalizeLink(currentLink))
-        }
-        if (upstreamLinkStatus.isAllEOF) {
-          logger.info(
-            s"operator completed, append FinalizeOperator message at step = ${determinantLogger.getStep}"
-          )
-          outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
-        }
-      case marker: EpochMarker =>
-        epochManager.processEpochMarker(channel.endpointWorker, marker)
+    doFaultTolerantProcessing(channel){
+      dataPayload match {
+        case DataFrame(tuples) =>
+          stateManager.conditionalTransitTo(READY, RUNNING, ()=> {
+            asyncRPCClient.send(
+              WorkerStateUpdated(stateManager.getCurrentState),
+              CONTROLLER
+            )
+          })
+          initBatch(channel, tuples)
+          processInputTuple(Left(inputBatch(currentInputIdx)))
+        case EndOfUpstream() =>
+          val currentLink = upstreamLinkStatus.getInputLink(channel.endpointWorker)
+          upstreamLinkStatus.markWorkerEOF(channel.endpointWorker, currentLink)
+          if (upstreamLinkStatus.isLinkEOF(currentLink)) {
+            initBatch(channel, Array.empty)
+            processInputTuple(Right(InputExhausted()))
+            logger.info(
+              s"$currentLink completed, append FinalizeLink message at step = ${cursor.getStep}"
+            )
+            outputIterator.appendSpecialTupleToEnd(FinalizeLink(currentLink))
+          }
+          if (upstreamLinkStatus.isAllEOF) {
+            logger.info(
+              s"operator completed, append FinalizeOperator message at step = ${cursor.getStep}"
+            )
+            outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
+          }
+        case marker: EpochMarker =>
+          epochManager.processEpochMarker(channel.endpointWorker, marker)
+      }
     }
   }
 

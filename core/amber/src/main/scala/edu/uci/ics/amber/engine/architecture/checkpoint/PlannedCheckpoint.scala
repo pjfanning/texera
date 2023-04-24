@@ -4,17 +4,12 @@ import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-class PlannedCheckpoint(actorId:ActorVirtualIdentity, val conf: ReplayCheckpointConfig, serialization: Serialization) {
+class PlannedCheckpoint(val conf:ReplayCheckpointConfig) extends SavedCheckpoint {
 
-  private var completionCount = conf.recordInputAt.size + 1
-  val chkpt = new SavedCheckpoint()
-  chkpt.attachSerialization(serialization)
+  var completionCount:Int = conf.recordInputAt.size + 1
 
   def decreaseCompletionCount(): Unit ={
     completionCount -= 1
-    if(completionCount == 0){
-      CheckpointHolder.addCheckpoint(actorId, conf.checkpointAt, chkpt)
-    }
   }
 
 }

@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
 
 
@@ -12,26 +11,16 @@ object DeterminantLogger{
       new EmptyDeterminantLogger()
     }
   }
-
-  // step value before processing any incoming message
-  // processing first message will have step = 0
-  val INIT_STEP:Long = -1L
 }
 
 abstract class DeterminantLogger extends Serializable {
 
-  protected var totalValidStep:Long = INIT_STEP
+  def enableOutputCommit(enabled:Boolean):Unit
 
   def recordPayload(channelEndpointID: ChannelEndpointID, payload:ControlPayload):Unit
 
-  def stepIncrement():Unit = {
-    totalValidStep += 1
-  }
+  def setCurrentSender(channel:ChannelEndpointID, step:Long): Unit
 
-  def getStep:Long = totalValidStep
-
-  def setCurrentSender(channel:ChannelEndpointID): Unit
-
-  def drainCurrentLogRecords(): Array[InMemDeterminant]
+  def drainCurrentLogRecords(step:Long): Array[InMemDeterminant]
 
 }

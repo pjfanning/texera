@@ -4,10 +4,9 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
 import QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowCompleted, WorkflowReplayInfo}
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
@@ -46,7 +45,8 @@ trait WorkerExecutionCompletedHandler {
           if (cp.execution.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
 //            sendToClient(WorkflowReplayInfo(cp.processingHistory))
-            sendToClient(WorkflowCompleted())
+            sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
+            sendToClient(WorkflowStateUpdate(cp.execution.getState))
             disableStatusUpdate()
             disableMonitoring()
             disableSkewHandling()

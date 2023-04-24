@@ -1,8 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLoggerImpl, LogManagerImpl}
-import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage
+import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLoggerImpl, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManagerImpl}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -12,12 +13,14 @@ import scala.collection.mutable
 
 object InternalPayloadManager{
 
+  // command that has no effect:
+  case class NoOp() extends IdempotentInternalPayload
+
   // worker lifecycle related:
   case class ShutdownDP() extends IdempotentInternalPayload
 
   // estimation related:
   case class EstimateCheckpointCost(id:String) extends OneTimeInternalPayload
-  case class EstimationCompleted(id:String, checkpointStats: CheckpointStats) extends OneTimeInternalPayload
 
   final case class CheckpointStats(step:Long, inputWatermarks: Map[ChannelEndpointID, Long],
                                    outputWatermarks: Map[ChannelEndpointID, Long],
@@ -26,22 +29,36 @@ object InternalPayloadManager{
 
   // replay related:
   case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
-  case class ReplayCompleted(id:String) extends OneTimeInternalPayload
+  case class ContinueReplay(id:String, replayTo: Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
+  case class PauseReplay(id:String) extends OneTimeInternalPayload
 
   // runtime fault-tolerance:
   case class SetupLogging() extends IdempotentInternalPayload
 
-  def setupLoggingForWorkflowActor(actor:WorkflowActor): Unit ={
-    actor.determinantLogger = new DeterminantLoggerImpl()
-    actor.logManager = new LogManagerImpl(actor.networkCommunicationActor, actor.determinantLogger)
-    actor.logStorage = new LocalFSLogStorage(actor.getLogName)
-    actor.logStorage.cleanPartiallyWrittenLogFile()
-    actor.logManager.setupWriter(actor.logStorage.getWriter)
+  def setupLoggingForWorkflowActor(actor:WorkflowActor, loggingEnabled:Boolean): Unit ={
+    if(loggingEnabled){
+      actor.determinantLogger = new DeterminantLoggerImpl()
+      actor.logManager = new LogManagerImpl(actor.networkCommunicationActor, actor.determinantLogger)
+      actor.logStorage = new LocalFSLogStorage(actor.getLogName)
+      actor.logStorage.cleanPartiallyWrittenLogFile()
+      actor.logManager.setupWriter(actor.logStorage.getWriter)
+    }else{
+      actor.logStorage = new EmptyLogStorage()
+      actor.determinantLogger = new EmptyDeterminantLogger()
+      actor.logManager = new EmptyLogManagerImpl(actor.networkCommunicationActor)
+    }
+  }
+
+  def retrieveLogForWorkflowActor(actor:WorkflowActor):DeterminantLogStorage.DeterminantLogReader = {
+    new LocalFSLogStorage(actor.getLogName).getReader
   }
 
   // checkpoint related:
   case class TakeRuntimeGlobalCheckpoint(id:String, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
-  case class RuntimeCheckpointCompleted(id:String, checkpointStats: CheckpointStats) extends OneTimeInternalPayload
+
+  // controller replay workflow:
+  case class ReplayWorkflow(id:String, replayConfig: WorkflowReplayConfig) extends OneTimeInternalPayload
+
 }
 
 class EmptyInternalPayloadManager extends InternalPayloadManager{

@@ -43,14 +43,6 @@ class NetworkInputPort(
     }
   }
 
-  def overwriteControlFIFOSeqNum(seqMap: Map[ChannelEndpointID, Long]): Unit = {
-    seqMap.foreach {
-      case (identity, l) =>
-        val entry = inputChannels.getOrElseUpdate(identity, new AmberFIFOChannel(identity))
-        entry.setCurrent(l)
-    }
-  }
-
   def getActiveChannels: Iterable[ChannelEndpointID] = inputChannels.keys
 
   def getFIFOState: Map[ChannelEndpointID, Long] = inputChannels.map(x => (x._1,x._2.current)).toMap
@@ -63,10 +55,6 @@ class NetworkInputPort(
         enforcer.current = current
         inputChannels(id) = enforcer
     }
-  }
-
-  def increaseFIFOSeqNum(channelID: ChannelEndpointID): Unit = {
-    inputChannels.getOrElseUpdate(channelID, new AmberFIFOChannel(channelID)).current += 1
   }
 
 }

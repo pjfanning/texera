@@ -33,7 +33,7 @@ object LogManager {
 trait LogManager {
   def setupWriter(logWriter: DeterminantLogWriter): Unit
 
-  def sendCommitted(sendRequest: SendRequest): Unit
+  def sendCommitted(sendRequest: SendRequest, step:Long): Unit
 
   def terminate(): Unit
 
@@ -45,7 +45,7 @@ class EmptyLogManagerImpl(
   override def setupWriter(logWriter: DeterminantLogStorage.DeterminantLogWriter): Unit = {}
 
   override def sendCommitted(
-      sendRequest: SendRequest
+      sendRequest: SendRequest, step:Long
   ): Unit = {
     networkCommunicationActor ! sendRequest
   }
@@ -67,8 +67,8 @@ class LogManagerImpl(
 
   def getDeterminantLogger: DeterminantLogger = determinantLogger
 
-  def sendCommitted(sendRequest: SendRequest): Unit = {
-    writer.putDeterminants(determinantLogger.drainCurrentLogRecords())
+  def sendCommitted(sendRequest: SendRequest, step:Long): Unit = {
+    writer.putDeterminants(determinantLogger.drainCurrentLogRecords(step))
     writer.putOutput(sendRequest)
   }
 

@@ -2,52 +2,55 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.common.{WorkflowActor, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
+import edu.uci.ics.amber.engine.architecture.logging.{ChannelStepCursor, DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
-class AmberProcessor(val actorId:ActorVirtualIdentity,
-                     val determinantLogger: DeterminantLogger) extends AmberLogging
+class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
   with Serializable {
 
-  @transient var logManager: LogManager = _
+  override def actorId: ActorVirtualIdentity = actor.actorId
 
-  @transient var actorService:WorkflowActorService = _
+  def logManager: LogManager = actor.logManager
 
-  // 1. Unified Output
-  lazy val outputPort: NetworkOutputPort =
-    new NetworkOutputPort(this.actorId, this.outputPayload)
-  // 2. RPC Layer
-  lazy val asyncRPCClient: AsyncRPCClient =
-    new AsyncRPCClient(outputPort, actorId)
-  lazy val asyncRPCServer: AsyncRPCServer =
-    new AsyncRPCServer(outputPort, actorId)
+  def actorService:WorkflowActorService = actor.actorService
 
-  protected var currentInputChannel:ChannelEndpointID = _
+  def determinantLogger: DeterminantLogger = actor.determinantLogger
 
-  def init(actor:WorkflowActor): Unit ={
-    this.logManager = actor.logManager
-    this.actorService = actor.actorService
+  def initAP(actor:WorkflowActor): Unit ={
+    this.actor = actor
   }
 
-  def updateInputChannelThenDoLogging(channelEndpointID: ChannelEndpointID): Unit ={
-    determinantLogger.stepIncrement()
-    if(currentInputChannel != channelEndpointID){
-      determinantLogger.setCurrentSender(channelEndpointID)
-      currentInputChannel = channelEndpointID
-    }
+  // 1. Unified Output
+  val outputPort: NetworkOutputPort =
+    new NetworkOutputPort(this.actorId, this.outputPayload)
+  // 2. RPC Layer
+  val asyncRPCClient: AsyncRPCClient =
+    new AsyncRPCClient(outputPort, actorId)
+  val asyncRPCServer: AsyncRPCServer =
+    new AsyncRPCServer(outputPort, actorId)
+
+  var cursor = new ChannelStepCursor()
+
+  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID)(code: => Unit): Unit ={
+    determinantLogger.setCurrentSender(channelEndpointID, cursor.getStep)
+    determinantLogger.enableOutputCommit(true)
+    cursor.setCurrentChannel(channelEndpointID)
+    code
+    cursor.stepIncrement()
+    determinantLogger.enableOutputCommit(false)
   }
 
   def outputPayload(
                      to: ActorVirtualIdentity,
-                     msg:WorkflowFIFOMessage
+                     msg:WorkflowMessage
                    ): Unit = {
-    logManager.sendCommitted(SendRequest(to, msg))
+    logManager.sendCommitted(SendRequest(to, msg), cursor.getStep)
   }
 
   def processControlPayload(
@@ -55,19 +58,20 @@ class AmberProcessor(val actorId:ActorVirtualIdentity,
                              payload: ControlPayload
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    updateInputChannelThenDoLogging(channel)
-    determinantLogger.recordPayload(channel, payload)
-    payload match {
-      case invocation: ControlInvocation =>
-        if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
-          logger.info(
-            s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${determinantLogger.getStep})"
-          )
-        }
-        asyncRPCServer.receive(invocation, channel.endpointWorker)
-      case ret: ReturnInvocation =>
-        asyncRPCClient.logControlReply(ret, channel.endpointWorker, determinantLogger.getStep)
-        asyncRPCClient.fulfillPromise(ret)
+    doFaultTolerantProcessing(channel){
+      determinantLogger.recordPayload(channel, payload)
+      payload match {
+        case invocation: ControlInvocation =>
+          if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
+            logger.info(
+              s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${cursor.getStep})"
+            )
+          }
+          asyncRPCServer.receive(invocation, channel.endpointWorker)
+        case ret: ReturnInvocation =>
+          asyncRPCClient.logControlReply(ret, channel.endpointWorker, cursor.getStep)
+          asyncRPCClient.fulfillPromise(ret)
+      }
     }
   }
 

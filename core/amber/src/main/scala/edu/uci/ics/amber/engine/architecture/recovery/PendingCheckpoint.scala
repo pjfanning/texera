@@ -1,9 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.NoOp
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, MarkerAlignmentInternalPayload, MarkerCollectionSupport, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, MarkerAlignmentInternalPayload, MarkerCollectionSupport, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -23,26 +23,16 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
 
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
     aligned.add(channel)
-    logger.info(s"start to record input channel current = ${aligned.size}, target = $toAlign")
-    if(isCompleted){
-      // if all channels are aligned
-      CheckpointHolder.addCheckpoint(
-        actorId,
-        stepCursorAtCheckpoint,
-        chkpt
-      )
-      logger.info(
-        s"checkpoint stored for $actorId at alignment = ${stepCursorAtCheckpoint} size = ${chkpt.size()} bytes"
-      )
-      logger.info(
-        s"local checkpoint completed! time spent = ${(System.currentTimeMillis() - startTime) / 1000f}s"
-      )
-    }
+    logger.info(s"finish recording input channel current = ${aligned.size}, target = $toAlign")
   }
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
     if(!aligned.contains(channel) && toAlign.contains(channel)){
-      chkpt.addInputData(channel, p)
+      if(p.isInstanceOf[AmberInternalPayload]){
+        chkpt.addInputData(channel, NoOp())
+      }else{
+        chkpt.addInputData(channel, p)
+      }
     }
   }
 }

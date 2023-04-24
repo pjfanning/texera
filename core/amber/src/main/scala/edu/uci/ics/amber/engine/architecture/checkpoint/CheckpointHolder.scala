@@ -56,5 +56,10 @@ object CheckpointHolder {
   ): Unit = {
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
+    if(checkpoint != null){
+      println(
+        s"checkpoint stored for $id at alignment = ${alignment} size = ${checkpoint.size()} bytes"
+      )
+    }
   }
 }

@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
+import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID}
 
 import scala.collection.mutable
@@ -12,7 +13,9 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var currentChannel:ChannelEndpointID = _
 
-  private var lastStep = 0L
+  private var lastStep = INIT_STEP
+
+  private var outputCommitEnabled = false
 
   override def recordPayload(channel: ChannelEndpointID, payload: ControlPayload): Unit = {
     if(channelsToRecord.contains(channel)){
@@ -20,21 +23,28 @@ class DeterminantLoggerImpl extends DeterminantLogger {
     }
   }
 
-  override def setCurrentSender(channel: ChannelEndpointID): Unit = {
+  override def setCurrentSender(channel: ChannelEndpointID, step: Long): Unit = {
     if(currentChannel != channel){
       currentChannel = channel
-      lastStep = totalValidStep
-      tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
+      lastStep = step
+      tempLogs.append(StepsOnChannel(currentChannel, step))
     }
   }
 
-  def drainCurrentLogRecords(): Array[InMemDeterminant] = {
-    if(lastStep != totalValidStep){
-      lastStep = totalValidStep
-      tempLogs.append(StepsOnChannel(currentChannel, totalValidStep))
+  def drainCurrentLogRecords(step: Long): Array[InMemDeterminant] = {
+    if(!outputCommitEnabled){
+      return Array.empty
+    }
+    if(lastStep != step){
+      lastStep = step
+      tempLogs.append(StepsOnChannel(currentChannel, step))
     }
     val result = tempLogs.toArray
     tempLogs.clear()
     result
+  }
+
+  override def enableOutputCommit(enabled: Boolean): Unit = {
+    outputCommitEnabled = enabled
   }
 }

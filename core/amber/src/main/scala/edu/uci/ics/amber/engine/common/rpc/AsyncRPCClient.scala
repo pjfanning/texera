@@ -4,7 +4,8 @@ import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ReturnInvocation, ControlInvocation}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -62,8 +63,8 @@ class AsyncRPCClient(
   }
 
 
-  def sendToClient(cmd: ControlCommand[_]): Unit = {
-    controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))
+  def sendToClient(cmd: ClientEvent): Unit = {
+    controlOutputEndpoint.sendToClient(cmd)
   }
 
   private def createPromise[T](): (Promise[T], Long) = {

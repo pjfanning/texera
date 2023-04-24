@@ -21,28 +21,26 @@ class AmberFIFOChannel(channel:ChannelEndpointID) {
   }
 
   def recordPayload(payload:WorkflowFIFOMessagePayload): Unit ={
+    if(!isRecording && recordingRanges.contains(current)){
+      isRecording = true
+      recordingInfo = recordingRanges(current)
+      recordingRanges.remove(current)
+    }
     if(isRecording){
-      recordingInfo._2.chkpt.addInputData(channel, payload)
+      recordingInfo._2.addInputData(channel, payload)
       if(recordingInfo._1 == current){
         isRecording = false
         recordingInfo._2.decreaseCompletionCount()
       }
-    }else if(recordingRanges.contains(current)){
-      isRecording = true
-      recordingInfo = recordingRanges(current)
-      recordingRanges.remove(current)
-      recordingInfo._2.chkpt.addInputData(channel, payload)
     }
-  }
-
-  def setCurrent(value: Long): Unit = {
-    current = value
   }
 
   def acceptMessage(seq:Long, payload:WorkflowFIFOMessagePayload):Iterator[WorkflowFIFOMessagePayload] = {
     if (isDuplicated(seq)) {
+      println(s"received duplicated message $payload with seq = $seq while current seq = $current")
       Iterator.empty
     } else if (isAhead(seq)) {
+      println(s"received ahead message $payload with seq = $seq while current seq = $current")
       stash(seq, payload)
       Iterator.empty
     } else{

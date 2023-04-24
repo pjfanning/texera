@@ -2,8 +2,7 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import akka.actor.{Actor, ActorRef, Stash}
 import akka.pattern.StatusReply.Ack
-import akka.util.Timeout
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CheckInitialized, ResendOutputTo}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, RegisterActorRef}
@@ -17,7 +16,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object WorkflowActor{
   case class CheckInitialized(setupCommands:Iterable[AmberInternalPayload])
-  case class ResendOutputTo()
 }
 
 abstract class WorkflowActor(
@@ -40,11 +38,6 @@ abstract class WorkflowActor(
 
   /** Akka related */
   val actorService:WorkflowActorService = new WorkflowActorService(this)
-
-  def forwardResendRequest: Receive = {
-    case resend: ResendOutputTo =>
-      networkCommunicationActor ! resend
-  }
 
   def disallowActorRefRelatedMessages: Receive = {
     case GetActorRef =>
@@ -79,6 +72,7 @@ abstract class WorkflowActor(
   def internalPayloadManager:InternalPayloadManager
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+    internalPayloadManager.inputPayload(channelId, payload)
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal")
@@ -87,7 +81,6 @@ abstract class WorkflowActor(
         // take piggybacked payload out and clear the original payload
         val piggybacked = payload.piggybacked
         payload.piggybacked = null
-        internalPayloadManager.inputPayload(channelId, payload)
         handlePayload(channelId, payload)
         if(piggybacked != null){
           handlePayloadAndMarker(channelId, piggybacked)
@@ -127,17 +120,17 @@ abstract class WorkflowActor(
   // actor behavior
   def acceptInitializationMessage: Receive = {
     case init: CheckInitialized =>
+      sender ! Ack
       init.setupCommands.foreach{
         cmd => this.handlePayloadAndMarker(InternalChannelEndpointID, cmd)
       }
-      sender ! Ack
   }
 
 
   /** Actor lifecycle: Processing */
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, invocation)
+      inputPort.handleFIFOPayload(OutsideWorldChannelEndpointID, invocation)
   }
 
   def acceptDirectInternalCommands:Receive = {
@@ -149,7 +142,6 @@ abstract class WorkflowActor(
   def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit
 
   override def receive: Receive = {
-    forwardResendRequest orElse
       disallowActorRefRelatedMessages orElse
       acceptDirectInvocations orElse
       acceptDirectInternalCommands orElse
@@ -161,7 +153,7 @@ abstract class WorkflowActor(
 
   override def postStop(): Unit = {
     logManager.terminate()
-    logStorage.deleteLog()
+    //logStorage.deleteLog()
   }
 
 }

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.BreakpointTriggered
 import LocalOperatorExceptionHandler.LocalOperatorException
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer

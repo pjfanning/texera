@@ -4,7 +4,7 @@ import akka.actor.{ActorContext, ActorRef, Cancellable, Props}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import akka.pattern.ask
 import akka.util.Timeout
@@ -36,6 +36,10 @@ class WorkflowActorService(actor:WorkflowActor) {
 
   def scheduleWithFixedDelay(initialDelay:FiniteDuration, delay:FiniteDuration, callable: ()=> Unit):Cancellable = {
     actorContext.system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(() => callable())
+  }
+
+  def waitUntil(atMost:FiniteDuration, futures:Seq[Future[Any]]): Seq[Any] ={
+    Await.result(Future.sequence(futures), atMost)
   }
 
 }

@@ -4,7 +4,7 @@ import akka.actor.{ActorContext, ActorRef, Address}
 import com.twitter.util.Future
 import com.typesafe.scalalogging.Logger
 import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{FatalErrorToClient, WorkerAssignmentUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkWorkersHandler.LinkWorkers
@@ -180,7 +180,7 @@ class WorkflowScheduler(
       .onFailure((err: Throwable) => {
         logger.error("Failure when sending Python UDF code", err)
         // report error to frontend
-        getAsyncRPCClient.sendToClient(FatalError(err))
+        getAsyncRPCClient.sendToClient(FatalErrorToClient(err))
       })
   }
 

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandl
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.BreakpointTriggered
 import AssignBreakpointHandler.AssignGlobalBreakpoint
 import LocalBreakpointTriggeredHandler.LocalBreakpointTriggered
 import PauseHandler.PauseWorkflow

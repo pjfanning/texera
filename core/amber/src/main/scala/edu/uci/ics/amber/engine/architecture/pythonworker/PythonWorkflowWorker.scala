@@ -62,9 +62,9 @@ class PythonWorkflowWorker(
 
   def outputPayload(
                      to: ActorVirtualIdentity,
-                     msg:WorkflowFIFOMessage
+                     msg:WorkflowMessage
                    ): Unit = {
-    logManager.sendCommitted(SendRequest(to, msg))
+    logManager.sendCommitted(SendRequest(to, msg), 0)
   }
 
   val pythonSrcDirectory: Path = Utils.amberHomePath

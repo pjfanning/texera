@@ -11,7 +11,8 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, InternalChannelEndpointID, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
@@ -65,9 +66,8 @@ class Controller(
 
   // separate pipelined region dag (non-serializable) from workflow
 
-
   // variables to be initialized
-  var controlProcessor: ControlProcessor = new ControlProcessor(actorId, controllerConfig, determinantLogger)
+  var controlProcessor: ControlProcessor = new ControlProcessor(this)
   var replayQueue:ControllerReplayQueue = _
 
   override def initState(): Unit = {
@@ -75,6 +75,7 @@ class Controller(
     controlProcessor.initCP(this)
     actorService.registerActorForNetworkCommunication(CONTROLLER, self)
     actorService.registerActorForNetworkCommunication(CLIENT, context.parent)
+    handlePayloadAndMarker(InternalChannelEndpointID, SetupLogging())
   }
 
   def getAvailableNodes():Array[Address] = {

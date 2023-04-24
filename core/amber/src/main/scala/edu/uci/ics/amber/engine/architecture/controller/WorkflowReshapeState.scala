@@ -7,7 +7,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class WorkflowReshapeState {
-  var skewDetectionHandle: Option[Cancellable] = None
+  @transient var skewDetectionHandle: Cancellable = null
   var detectionCallCount = 0
   var previousSkewDetectionCallFinished = true
   var firstPhaseRequestsFinished = true

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{ReportCurrentProcessingTuple, WorkflowPaused, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReportCurrentProcessingTuple, WorkflowStateUpdate, WorkflowStatusUpdate}
 import PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
@@ -66,10 +66,9 @@ trait PauseHandler {
         .map { ret =>
           // update frontend workflow status
           sendToClient(WorkflowStatusUpdate(cp.execution.getWorkflowStatus))
-          // send paused to frontend
-          sendToClient(WorkflowPaused())
+          sendToClient(WorkflowStateUpdate(cp.execution.getState))
           workflowPauseStartTime = System.currentTimeMillis()
-          logger.info(s"controller pause cursor = ${cp.determinantLogger.getStep}")
+          logger.info(s"controller pause cursor = ${cp.cursor.getStep}")
         }
         .unit
     }

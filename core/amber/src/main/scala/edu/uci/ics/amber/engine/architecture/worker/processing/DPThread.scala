@@ -1,11 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.recovery.ReplayOrderEnforcer
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DPMessage, DataPayload, FuncDelegate, FuncDelegateNoReturn}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DPMessage, DataPayload, FuncDelegate}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -14,7 +15,8 @@ import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Futu
 
 class DPThread(val actorId: ActorVirtualIdentity,
                dp:DataProcessor,
-               var internalQueue: WorkerInternalQueue) extends AmberLogging{
+               var internalQueue: WorkerInternalQueue,
+               replayOrderEnforcer: ReplayOrderEnforcer = null) extends AmberLogging{
 
   // initialize dp thread upon construction
   @transient
@@ -48,7 +50,6 @@ class DPThread(val actorId: ActorVirtualIdentity,
     if (dpThreadExecutor != null) {
       return
     }
-    dp.attachDPThread(this)
     dpThreadExecutor = Executors.newSingleThreadExecutor
     if (dp.stateManager.getCurrentState == UNINITIALIZED) {
       dp.stateManager.transitTo(READY)
@@ -72,42 +73,54 @@ class DPThread(val actorId: ActorVirtualIdentity,
                 CONTROLLER
               )
           }
+          endFuture.complete(Unit)
         }
       })
     }
+  }
+
+  def dpInterrupted(code: => Unit): Unit ={
+    dp.onInterrupt()
+    code
+    dp.onContinue()
   }
 
   @throws[Exception]
   private[this] def runDPThreadMainLogicNew(): Unit = {
     // main DP loop
     while (!stopped) {
-      val currentStep = dp.determinantLogger.getStep
+      if(replayOrderEnforcer != null){
+        replayOrderEnforcer.forwardReplayProcess(dp.cursor.getStep)
+      }
       // block here to let main thread do following.
       // 1) replace queue from replay to normal 2) continue replay
-      waitFuture.get()
+      if(!waitFuture.isDone){
+        dpInterrupted{
+          logger.info("DP Thread is blocked, waiting for unblock")
+          waitFuture.get()
+        }
+      }
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
-        val input = internalQueue.peek(currentStep)
+        val input = internalQueue.peek()
         input match {
           case Some(DPMessage(_, delegate: FuncDelegate[_])) =>
             // received system message
-            internalQueue.take(currentStep) // take the message out
-            delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
-          case Some(DPMessage(_, delegate: FuncDelegateNoReturn)) =>
-            // received system message
-            internalQueue.take(currentStep) // take the message out
-            delegate.func()
+            dpInterrupted {
+              internalQueue.take() // take the message out
+              delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+            }
           case None =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if !msg.channel.isControlChannel =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if msg.channel.isControlChannel =>
-            val controlMsg = internalQueue.take(currentStep)
+            val controlMsg = internalQueue.take()
             dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
           case other =>
             throw new RuntimeException(s"DP thread cannot handle message $other")
         }
       } else {
-        val msg = internalQueue.take(currentStep)
+        val msg = internalQueue.take()
         msg.payload match {
           case data: DataPayload =>
             dp.processDataPayload(msg.channel, data)
@@ -115,16 +128,14 @@ class DPThread(val actorId: ActorVirtualIdentity,
             dp.processControlPayload(msg.channel, control)
           case delegate: FuncDelegate[_] =>
             // received system message
-            delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
-          case delegate: FuncDelegateNoReturn =>
-            // received system message
-            delegate.func()
+            dpInterrupted {
+              delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+            }
           case other =>
             throw new RuntimeException(s"DP thread cannot handle message $other")
         }
       }
     }
-    endFuture.complete(Unit)
   }
 
 

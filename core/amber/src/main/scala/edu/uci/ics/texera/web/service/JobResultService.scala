@@ -3,22 +3,17 @@ package edu.uci.ics.texera.web.service
 import akka.actor.Cancellable
 import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonTypeName}
 import com.fasterxml.jackson.databind.node.ObjectNode
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowresultstate.OperatorResultMetadata
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{RUNNING, COMPLETED}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -154,19 +149,15 @@ class JobResultService(
             }
           } else {
             if (resultUpdateCancellable != null) resultUpdateCancellable.cancel()
+            if (newState.state == COMPLETED){
+              if (resultUpdateCancellable.cancel() || resultUpdateCancellable.isCancelled) {
+                // immediately perform final update
+                onResultUpdate()
+              }
+            }
           }
         }
     })
-
-    addSubscription(
-      client
-        .registerCallback[WorkflowCompleted](_ => {
-          if (resultUpdateCancellable.cancel() || resultUpdateCancellable.isCancelled) {
-            // immediately perform final update
-            onResultUpdate()
-          }
-        })
-    )
 
     addSubscription(
       client.registerCallback[FatalError](_ =>

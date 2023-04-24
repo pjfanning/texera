@@ -64,8 +64,6 @@ class NetworkCommunicationActor(
   val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
   val messageStash = new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]
   val messageIDToIdentity = new mutable.LongMap[ActorVirtualIdentity]
-  val resendForRecoveryQueueLimit: Long =
-    AmberUtils.amberConfig.getLong("fault-tolerance.max-supported-resend-queue-length")
   // register timer for resending messages
   val resendHandle: Cancellable = context.system.scheduler.scheduleWithFixedDelay(
     30.seconds,
@@ -85,7 +83,6 @@ class NetworkCommunicationActor(
   var networkMessageID = 0L
 
   // data structures needed by flow control
-  var nextSeqNumForMainActor = 0L // used to send backpressure enable/disable messages to parent.
   val flowControl = new FlowControl()
 
   /**
@@ -111,18 +108,7 @@ class NetworkCommunicationActor(
   }
 
   private def sendBackpressureMessageToParent(backpressureEnable: Boolean): Unit = {
-    messageIDToIdentity(networkMessageID) = actorId
-    val msgToSend = NetworkMessage(
-      networkMessageID,
-      WorkflowFIFOMessage(
-        ChannelEndpointID(actorId, true),
-        nextSeqNumForMainActor,
-        ControlInvocation(Backpressure(backpressureEnable))
-      )
-    )
-    context.parent ! msgToSend
-    networkMessageID += 1
-    nextSeqNumForMainActor += 1
+    context.parent ! ControlInvocation(Backpressure(backpressureEnable))
   }
 
   /**

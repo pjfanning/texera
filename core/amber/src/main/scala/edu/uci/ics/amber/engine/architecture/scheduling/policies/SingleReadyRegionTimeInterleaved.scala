@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling.policies
 import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.common.{WorkflowActor, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
@@ -17,8 +18,8 @@ import scala.jdk.CollectionConverters.asScalaSet
 import scala.util.control.Breaks.{break, breakable}
 
 class SingleReadyRegionTimeInterleaved(
-    workflow: Workflow, execution:WorkflowExecution, regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity]
-) extends SchedulingPolicy(workflow, execution) {
+    controlProcessor: ControlProcessor, regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity]
+) extends SchedulingPolicy(controlProcessor) {
 
   var currentlyExecutingRegions = new mutable.LinkedHashSet[PipelinedRegionIdentity]()
 
@@ -42,7 +43,7 @@ class SingleReadyRegionTimeInterleaved(
   override def onLinkCompletion(plan:PipelinedRegionPlan, linkId: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(plan, linkId)
     regions.foreach(r =>
-      execution.completedLinksOfRegion
+      getExecution.completedLinksOfRegion
         .getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]())
         .add(linkId)
     )
@@ -61,11 +62,11 @@ class SingleReadyRegionTimeInterleaved(
         val nextRegion = plan.getPipelinedRegion(nextRegionId)
         val upstreamRegions =
           asScalaSet(plan.pipelinedRegionsDAG.getAncestors(nextRegion)).map(_.id)
-        if (upstreamRegions.forall(execution.completedRegions.contains)) {
-          assert(!execution.scheduledRegions.contains(nextRegionId))
+        if (upstreamRegions.forall(getExecution.completedRegions.contains)) {
+          assert(!getExecution.scheduledRegions.contains(nextRegionId))
           currentlyExecutingRegions.add(nextRegionId)
           regionsScheduleOrder.remove(0)
-          execution.scheduledRegions.add(nextRegionId)
+          getExecution.scheduledRegions.add(nextRegionId)
         } else {
           break
         }
@@ -73,7 +74,7 @@ class SingleReadyRegionTimeInterleaved(
     }
     if (currentlyExecutingRegions.nonEmpty) {
       val nextToSchedule = currentlyExecutingRegions.head
-      if (!execution.runningRegions.contains(nextToSchedule)) {
+      if (!getExecution.runningRegions.contains(nextToSchedule)) {
         // if `nextToSchedule` is not running right now.
         currentlyExecutingRegions.remove(nextToSchedule) // remove first element
         currentlyExecutingRegions.add(nextToSchedule) // add to end of list
@@ -85,7 +86,7 @@ class SingleReadyRegionTimeInterleaved(
   }
 
   override def addToRunningRegions(regions: Set[PipelinedRegionIdentity], plan:PipelinedRegionPlan, actorService: WorkflowActorService): Unit = {
-    regions.foreach(r => execution.runningRegions.add(r))
+    regions.foreach(r => getExecution.runningRegions.add(r))
     actorService.scheduleOnce(
       FiniteDuration.apply(Constants.timeSlotExpirationDurationInMs, MILLISECONDS),
       () => actorService.self ! ControlInvocation(RegionsTimeSlotExpired(regions.map(plan.getPipelinedRegion)))

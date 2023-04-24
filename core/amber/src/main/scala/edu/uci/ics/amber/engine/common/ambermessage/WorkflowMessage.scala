@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
@@ -11,7 +12,7 @@ object ChannelEndpointID{
   }
 }
 
-class ChannelEndpointID(val endpointWorker:ActorVirtualIdentity, val isControlChannel:Boolean){
+class ChannelEndpointID(val endpointWorker:ActorVirtualIdentity, val isControlChannel:Boolean) extends Serializable {
   def canEqual(other: Any): Boolean = other.isInstanceOf[ChannelEndpointID]
 
   override def equals(other: Any): Boolean = other match {
@@ -39,6 +40,8 @@ case object InternalChannelEndpointID extends ChannelEndpointID(ActorVirtualIden
 sealed trait WorkflowMessage extends Serializable
 
 case class WorkflowFIFOMessage(channel: ChannelEndpointID, sequenceNumber: Long, payload:WorkflowFIFOMessagePayload) extends WorkflowMessage
+
+case class WorkflowClientMessage(payload:ClientEvent) extends WorkflowMessage
 
 // sent from network communicator to next worker to poll for credit information
 case class CreditRequest(

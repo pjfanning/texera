@@ -1,9 +1,7 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{
   WorkerAssignmentUpdate,
-  WorkflowCompleted,
-  WorkflowRecoveryStatus,
   WorkflowStateUpdate,
   WorkflowStatusUpdate
 }
@@ -67,7 +65,6 @@ class JobStatsService(
     registerCallbackOnWorkflowStatusUpdate()
     registerCallbackOnWorkerAssignedUpdate()
 //    registerCallbackOnWorkflowRecoveryUpdate()
-    registerCallbackOnWorkflowComplete()
     registerCallbackOnFatalError()
     registerCallbackOnWorkflowStateUpdate()
   }
@@ -118,16 +115,9 @@ class JobStatsService(
           stateStore.jobMetadataStore.updateState { jobMetadata =>
             jobMetadata.withState(evt.aggState)
           }
-        })
-    )
-  }
-
-  private[this] def registerCallbackOnWorkflowComplete(): Unit = {
-    addSubscription(
-      client
-        .registerCallback[WorkflowCompleted]((evt: WorkflowCompleted) => {
-          // client.shutdown()
-          stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(COMPLETED))
+          if(evt.aggState == COMPLETED){
+            // client.shutdown()
+          }
         })
     )
   }

@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling.policies
 import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActorService
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -17,49 +18,51 @@ import scala.collection.JavaConverters._
 object SchedulingPolicy {
   def createPolicy(
       policyName: String,
-      workflow: Workflow,
-      execution: WorkflowExecution,
-      pipelinedRegionPlan: PipelinedRegionPlan
+      controlProcessor: ControlProcessor
   ): SchedulingPolicy = {
-    val scheduleOrder = pipelinedRegionPlan.getRegionScheduleOrder()
+    val scheduleOrder = controlProcessor.pipelinedRegionPlan.getRegionScheduleOrder()
     if (policyName.equals("single-ready-region")) {
-      new SingleReadyRegion(workflow, execution, scheduleOrder)
+      new SingleReadyRegion(controlProcessor, scheduleOrder)
     } else if (policyName.equals("all-ready-regions")) {
-      new AllReadyRegions(workflow, execution, scheduleOrder)
+      new AllReadyRegions(controlProcessor, scheduleOrder)
     } else if (policyName.equals("single-ready-region-time-interleaved")) {
-      new SingleReadyRegionTimeInterleaved(workflow, execution, scheduleOrder)
+      new SingleReadyRegionTimeInterleaved(controlProcessor, scheduleOrder)
     } else {
       throw new WorkflowRuntimeException(s"Unknown scheduling policy name")
     }
   }
 }
 
-abstract class SchedulingPolicy(workflow: Workflow, execution: WorkflowExecution) {
+abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
+
+  def getWorkflow:Workflow = controlProcessor.workflow
+
+  def getExecution: WorkflowExecution = controlProcessor.execution
 
   protected def isRegionCompleted(plan:PipelinedRegionPlan, regionId: PipelinedRegionIdentity): Boolean = {
     val region = plan.getPipelinedRegion(regionId)
-    workflow
+    getWorkflow
       .getBlockingOutLinksOfRegion(region)
       .subsetOf(
-        execution.completedLinksOfRegion.getOrElse(regionId, new mutable.HashSet[LinkIdentity]())
+        getExecution.completedLinksOfRegion.getOrElse(regionId, new mutable.HashSet[LinkIdentity]())
       ) &&
     region
       .getOperators()
       .forall(opId =>
-        execution.getOperatorExecution(opId).getState == WorkflowAggregatedState.COMPLETED
+        getExecution.getOperatorExecution(opId).getState == WorkflowAggregatedState.COMPLETED
       )
   }
 
   protected def checkRegionCompleted(pipelinedRegionPlan: PipelinedRegionPlan,region: PipelinedRegionIdentity): Unit = {
     if (isRegionCompleted(pipelinedRegionPlan, region)) {
-      execution.runningRegions.remove(region)
-      execution.completedRegions.add(region)
+      getExecution.runningRegions.remove(region)
+      getExecution.completedRegions.add(region)
     }
   }
 
   protected def getRegions(plan:PipelinedRegionPlan, workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
-    val opId = workflow.getOperator(workerId).id
-    execution.runningRegions
+    val opId = getWorkflow.getOperator(workerId).id
+    getExecution.runningRegions
       .filter(r => plan.getPipelinedRegion(r).getOperators().contains(opId))
       .map(plan.getPipelinedRegion)
       .toSet
@@ -69,7 +72,7 @@ abstract class SchedulingPolicy(workflow: Workflow, execution: WorkflowExecution
     * A link's region is the region of the source operator of the link.
     */
   protected def getRegions(plan:PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
-    execution.runningRegions
+    getExecution.runningRegions
       .filter(r => plan.getPipelinedRegion(r).getOperators().contains(link.from))
       .map(plan.getPipelinedRegion)
       .toSet
@@ -97,7 +100,7 @@ abstract class SchedulingPolicy(workflow: Workflow, execution: WorkflowExecution
   def onLinkCompletion(plan:PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(plan, link)
     regions.foreach(r =>
-      execution.completedLinksOfRegion
+      getExecution.completedLinksOfRegion
         .getOrElseUpdate(r.id, new mutable.HashSet[LinkIdentity]())
         .add(link)
     )
@@ -110,15 +113,15 @@ abstract class SchedulingPolicy(workflow: Workflow, execution: WorkflowExecution
   }
 
   def addToRunningRegions(regions: Set[PipelinedRegionIdentity], plan:PipelinedRegionPlan,  actorService: WorkflowActorService): Unit = {
-    execution.runningRegions ++= regions
+    getExecution.runningRegions ++= regions
   }
 
   def removeFromRunningRegion(regions: Set[PipelinedRegionIdentity]): Unit = {
-    execution.runningRegions --= regions
+    getExecution.runningRegions --= regions
   }
 
-  def getRunningRegions(): Set[PipelinedRegionIdentity] = execution.runningRegions.toSet
+  def getRunningRegions(): Set[PipelinedRegionIdentity] = getExecution.runningRegions.toSet
 
-  def getCompletedRegions(): Set[PipelinedRegionIdentity] = execution.completedRegions.toSet
+  def getCompletedRegions(): Set[PipelinedRegionIdentity] = getExecution.completedRegions.toSet
 
 }

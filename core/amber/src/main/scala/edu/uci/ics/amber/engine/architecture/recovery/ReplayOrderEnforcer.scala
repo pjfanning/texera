@@ -1,39 +1,29 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import com.twitter.util.Promise
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger.INIT_STEP
+import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 
 import scala.collection.mutable
 
-class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
+class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel], onRecoveryComplete: () => Unit) {
   private var onReplayComplete: () => Unit = () => {}
-  private var onRecoveryComplete: () => Unit = () => {}
   private val checkpointStepQueue = mutable.Queue[(Long, () => Unit)]()
   private var switchStep = INIT_STEP
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
+  private var recoveryCompleted = false
 
   var currentChannel: ChannelEndpointID = _
 
   def setCheckpoint(checkpointStep:Long, callback: () => Unit): Unit ={
-    checkpointStepQueue.clear()
     checkpointStepQueue.enqueue((checkpointStep, callback))
   }
 
   def setReplayTo(currentDPStep: Long, dest: Long, replayEndPromise:() => Unit): Unit = {
-    assert(currentDPStep < dest)
+    assert(currentDPStep <= dest)
     replayTo = dest
     this.onReplayComplete = replayEndPromise
-  }
-
-  def setRecovery(onRecoveryComplete: () => Unit): Unit ={
-    this.onRecoveryComplete = onRecoveryComplete
-    if(records.isEmpty){
-      //recovery already completed
-      onRecoveryComplete()
-    }
   }
 
   def initialize(currentDPStep: Long): Unit = {
@@ -46,6 +36,7 @@ class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
 
   private def loadNextDeterminant(): Unit = {
     val cc = records.dequeue()
+    currentChannel = nextChannel
     nextChannel = cc.channel
     switchStep = cc.steps
   }
@@ -58,14 +49,17 @@ class ReplayOrderEnforcer(records: mutable.Queue[StepsOnChannel]) {
     if(replayTo == currentStep){
       onReplayComplete()
     }
+    if(recoveryCompleted){
+      // recovery completed
+      onRecoveryComplete()
+    }
     while(currentStep == switchStep){
-      currentChannel = nextChannel
       if(records.nonEmpty){
         loadNextDeterminant()
       }else{
-        // recovery completed
-        onRecoveryComplete()
+        currentChannel = nextChannel
         switchStep = INIT_STEP - 1
+        recoveryCompleted = true
       }
     }
   }

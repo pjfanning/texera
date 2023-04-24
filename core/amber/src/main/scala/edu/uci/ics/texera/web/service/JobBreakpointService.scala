@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.{
   ConditionalGlobalBreakpoint,
   CountGlobalBreakpoint
 }
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SubscriptionManager

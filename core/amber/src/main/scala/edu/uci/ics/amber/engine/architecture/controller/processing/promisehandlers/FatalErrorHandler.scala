@@ -4,6 +4,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.FatalErrorToClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object FatalErrorHandler {
@@ -23,7 +24,7 @@ trait FatalErrorHandler {
       logger.error("FatalError received", msg)
 
       //report to client
-      sendToClient(msg)
+      sendToClient(FatalErrorToClient(msg.e))
     }
   }
 }

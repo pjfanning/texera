@@ -6,21 +6,13 @@ import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import com.twitter.util.Promise
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger.INIT_STEP
+import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{CreditMonitor, CreditMonitorImpl}
 import edu.uci.ics.amber.engine.architecture.recovery.{RecoveryInternalQueueImpl, ReplayOrderEnforcer}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
-import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
@@ -175,19 +167,24 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log2" in {
-    val workerName = "WF1-CONTROLLER"
+    val workerName = "WF1-HashJoin-operator-ab811eaf-8cc3-4712-9796-a5811f0eda45-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
-    val orderEnforcer = new ReplayOrderEnforcer(logStorage.getReader.getLogs[StepsOnChannel])
-    var step = INIT_STEP
-    val recoveryEnd = Promise[Unit]()
-    val replayEnd = Promise[Unit]()
-    var stop = false
-    recoveryEnd.map(x => stop = true)
-    orderEnforcer.initialize(INIT_STEP)
-    while(!stop){
-      step += 1
-      orderEnforcer.forwardReplayProcess(step)
-      println(orderEnforcer.currentChannel, step)
+    for (elem <- logStorage.getReader.getLogs[InMemDeterminant]){
+      println(elem)
     }
+    var step = 112
+    var stop = false
+    val orderEnforcer = new ReplayOrderEnforcer(logStorage.getReader.getLogs[StepsOnChannel], ()=> {
+      println("recovery completed!")
+      stop = true
+    })
+    orderEnforcer.initialize(step)
+//    while(!stop){
+//      orderEnforcer.forwardReplayProcess(step)
+//      if(!stop){
+//        println(orderEnforcer.currentChannel, step)
+//        step+=1
+//      }
+//    }
   }
 }

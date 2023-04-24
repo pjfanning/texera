@@ -9,31 +9,28 @@ import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
-class ControlProcessor(actorId:ActorVirtualIdentity, val config:ControllerConfig, determinantLogger:DeterminantLogger) extends AmberProcessor(actorId, determinantLogger) {
+class ControlProcessor(@transient var controller:Controller) extends AmberProcessor(controller) {
 
-  @transient var workflow: Workflow = _
+  def workflow: Workflow = controller.workflow
 
-  @transient var getAvailableNodes: () => Array[Address] = _
+  def getAvailableNodes: () => Array[Address] = controller.getAvailableNodes
 
-  @transient var inputPort:NetworkInputPort = _
+  def inputPort:NetworkInputPort = controller.inputPort
 
-  @transient var pipelinedRegionPlan:PipelinedRegionPlan = _
+  def pipelinedRegionPlan:PipelinedRegionPlan = controller.pipelinedRegionPlan
 
-  lazy val schedulingPolicy: SchedulingPolicy = SchedulingPolicy.createPolicy(Constants.schedulingPolicyName, workflow, execution, pipelinedRegionPlan)
+  val schedulingPolicy: SchedulingPolicy = SchedulingPolicy.createPolicy(Constants.schedulingPolicyName, this)
 
-  lazy val scheduler: WorkflowScheduler = new WorkflowScheduler(logger, this)
+  val scheduler: WorkflowScheduler = new WorkflowScheduler(logger, this)
 
-  lazy val execution = new WorkflowExecution(workflow)
+  val execution = new WorkflowExecution(workflow)
+
+  private val initializer = new ControllerAsyncRPCHandlerInitializer(this)
 
   def initCP(controller:Controller): Unit = {
-    init(controller)
-    this.workflow = controller.workflow
-    this.pipelinedRegionPlan = controller.pipelinedRegionPlan
-    this.getAvailableNodes = controller.getAvailableNodes
-    this.inputPort = controller.inputPort
-    new ControllerAsyncRPCHandlerInitializer(this)
+    initAP(controller)
+    this.controller = controller
   }
 }

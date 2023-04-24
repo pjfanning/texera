@@ -6,6 +6,7 @@ import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, Workf
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
@@ -267,6 +268,7 @@ case class OpExecConfig(
     val ref =
       actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
     actorService.registerActorForNetworkCommunication(workerId, ref)
+    ref ! SetupLogging()
     opExecution.getWorkerInfo(workerId).ref = ref
     ref
   }

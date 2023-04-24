@@ -2,32 +2,37 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable
 
-class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueue {
+class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient creditMonitor: CreditMonitor, @transient val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueue with AmberLogging {
 
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]]()
   private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
 
-  override def peek(currentStep: Long): Option[DPMessage] = {
-    replayOrderEnforcer.forwardReplayProcess(currentStep)
+  override def peek(): Option[DPMessage] = {
     // output a dummy message
-    Some(DPMessage(replayOrderEnforcer.currentChannel, null))
+    if(!systemCommandQueue.isEmpty){
+      Some(systemCommandQueue.peek())
+    }else{
+      Some(DPMessage(replayOrderEnforcer.currentChannel, null))
+    }
   }
 
-  override def take(currentStep: Long): DPMessage = {
+  override def take(): DPMessage = {
     if(!systemCommandQueue.isEmpty){
       systemCommandQueue.take()
     }else{
-      replayOrderEnforcer.forwardReplayProcess(currentStep)
       val currentChannel = replayOrderEnforcer.currentChannel
       if(!currentChannel.isControlChannel){
         creditMonitor.increaseCredit(currentChannel.endpointWorker)
       }
+      logger.info(s"taking message from channel = $currentChannel")
       messageQueues.getOrElseUpdate(currentChannel, new LinkedBlockingQueue()).take()
     }
   }
@@ -44,6 +49,7 @@ class RecoveryInternalQueueImpl(creditMonitor: CreditMonitor, val replayOrderEnf
     if(!message.channel.isControlChannel){
       creditMonitor.decreaseCredit(message.channel.endpointWorker)
     }
+    logger.info(s"received $message from ${message.channel}")
     messageQueues.getOrElseUpdate(message.channel, new LinkedBlockingQueue()).put(message)
   }
 

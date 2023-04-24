@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
@@ -9,7 +10,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.{asScalaSet, asScalaSetConverter}
 import scala.util.control.Breaks.{break, breakable}
 
-class AllReadyRegions(workflow: Workflow, execution:WorkflowExecution, regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity]) extends SchedulingPolicy(workflow, execution) {
+class AllReadyRegions(controlProcessor:ControlProcessor, regionsScheduleOrder: mutable.Buffer[PipelinedRegionIdentity]) extends SchedulingPolicy(controlProcessor) {
 
   override def getNextSchedulingWork(plan:PipelinedRegionPlan): Set[PipelinedRegion] = {
     val nextToSchedule: mutable.HashSet[PipelinedRegion] = new mutable.HashSet[PipelinedRegion]()
@@ -19,11 +20,11 @@ class AllReadyRegions(workflow: Workflow, execution:WorkflowExecution, regionsSc
         val nextRegion = plan.getPipelinedRegion(nextRegionId)
         val upstreamRegions =
           asScalaSet(plan.pipelinedRegionsDAG.getAncestors(nextRegion)).map(_.id)
-        if (upstreamRegions.forall(execution.completedRegions.contains)) {
-          assert(!execution.scheduledRegions.contains(nextRegionId))
+        if (upstreamRegions.forall(getExecution.completedRegions.contains)) {
+          assert(!getExecution.scheduledRegions.contains(nextRegionId))
           nextToSchedule.add(nextRegion)
           regionsScheduleOrder.remove(0)
-          execution.scheduledRegions.add(nextRegionId)
+          getExecution.scheduledRegions.add(nextRegionId)
         } else {
           break
         }

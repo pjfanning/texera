@@ -11,11 +11,11 @@ class TrivialControlTester(
     id: ActorVirtualIdentity,
     parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(id, parentNetworkCommunicationActorRef) {
-  private val processor = new AmberProcessor(actorId, determinantLogger)
+  private val processor = new AmberProcessor(this)
 
   override def preStart(): Unit = {
     super.preStart()
-    processor.init(this)
+    processor.initAP(this)
     new TesterAsyncRPCHandlerInitializer(processor)
   }
 

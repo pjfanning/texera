@@ -1,8 +1,10 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
 import scala.reflect.ClassTag
 
 /** class for developers to write control command handlers
@@ -76,7 +78,7 @@ class AsyncRPCHandlerInitializer(asyncRPCClient: AsyncRPCClient, asyncRPCServer:
     asyncRPCServer.execute((cmd, sender)).asInstanceOf[Future[T]]
   }
 
-  def sendToClient(cmd: ControlCommand[_]): Unit = {
+  def sendToClient(cmd: ClientEvent): Unit = {
     asyncRPCClient.sendToClient(cmd)
   }
 }

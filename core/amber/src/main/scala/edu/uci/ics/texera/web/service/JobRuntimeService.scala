@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{AdditionalOperatorInfo, WorkflowPaused, WorkflowRecoveryStatus, WorkflowReplayInfo}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
@@ -13,8 +13,6 @@ import edu.uci.ics.texera.web.model.websocket.request.{RemoveBreakpointRequest, 
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
-import java.io.{FileOutputStream, ObjectOutputStream}
-import java.nio.file.Paths
 import scala.collection.mutable
 
 class JobRuntimeService(
@@ -26,9 +24,12 @@ class JobRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  var planner: ReplayPlanner = _
-  var checkpointOverhead = 0d
-  var replayStart = 0L
+  var planner: WorkflowReplayManager = new WorkflowReplayManager(client, stateStore)
+
+  override def unsubscribeAll(): Unit = {
+    super.unsubscribeAll()
+    planner.unsubscribeAll()
+  }
 
   addSubscription(
     stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
@@ -65,61 +66,19 @@ class JobRuntimeService(
     })
   )
 
-  addSubscription(client.registerCallback[WorkflowReplayInfo]((evt: WorkflowReplayInfo) => {
-    if (planner == null) {
-      val file = Paths.get("").resolve("latest-interation-history")
-      val oos = new ObjectOutputStream(new FileOutputStream(file.toFile))
-      oos.writeObject(evt.history)
-      oos.close()
-      planner = new ReplayPlanner(evt.history)
-      stateStore.jobMetadataStore.updateState(jobMetadata =>
-        jobMetadata.withInteractionHistory(evt.history.getInteractionTimesAsSeconds).withCurrentReplayPos(-1)
-      )
-    }
-  }))
-
   addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
-    val reqPos = req.replayPos
-    if (stateStore.jobMetadataStore.getState.currentReplayPos != reqPos) {
-      replayStart = System.currentTimeMillis()
-      checkpointOverhead = 0
-      stateStore.jobMetadataStore.updateState(state => {
-        state.withCurrentReplayPos(reqPos).withIsReplaying(true)
-        state.withIsRecovering(true)
-      })
-      planner.scheduleReplay(reqPos, client)
-    }
+    planner.scheduleReplay(req)
   }))
 
-  addSubscription(
-    client
-      .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
-
-      })
-  )
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
     throw new RuntimeException("skipping tuple is temporarily disabled")
   }))
 
-//  addSubscription(wsInput.subscribe((req: WorkflowAdditionalOperatorInfoRequest, uidOpt) => {
-//    client.getOperatorInfo()
-//  }))
-
-  // Receive Paused from Amber
-  addSubscription(client.registerCallback[WorkflowPaused]((evt: WorkflowPaused) => {
-    stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSED))
-  }))
-
-  addSubscription(client.registerCallback[AdditionalOperatorInfo]((evt: AdditionalOperatorInfo) => {
-    stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withOperatorInfoStr(evt.data))
-  }))
-
   // Receive Pause
   addSubscription(wsInput.subscribe((req: WorkflowPauseRequest, uidOpt) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSING))
-    client.takeGlobalCheckpoint()
     client.sendAsync(PauseWorkflow())
   }))
 
