@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.{PlannedCheckpoint, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
@@ -16,19 +15,11 @@ class NetworkInputPort(
   private val inputChannels =
     new mutable.HashMap[ChannelEndpointID, AmberFIFOChannel]()
 
-
-  def setRecordingForFutureInput(planned:PlannedCheckpoint): Unit ={
-    planned.conf.recordInputAt.foreach{
-      case (channel, (from, to)) =>
-        inputChannels.getOrElseUpdate(channel, new AmberFIFOChannel(channel)).addRecording(from, to, planned)
-    }
-  }
-
   def handleMessage(
       workflowFIFOMessage: WorkflowFIFOMessage
   ): Unit = {
     val channelId = workflowFIFOMessage.channel
-    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(channelId))
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
     entry.acceptMessage(workflowFIFOMessage.sequenceNumber, workflowFIFOMessage.payload).foreach{
       payload =>
         handler.apply(channelId, payload)
@@ -36,7 +27,7 @@ class NetworkInputPort(
   }
 
   def handleFIFOPayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
-    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(channelId))
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
     entry.enforceFIFO(payload).foreach{
       payload =>
         handler.apply(channelId, payload)
@@ -51,7 +42,7 @@ class NetworkInputPort(
     inputChannels.clear()
     fifoState.foreach{
       case (id, current)  =>
-        val enforcer = new AmberFIFOChannel(id)
+        val enforcer = new AmberFIFOChannel()
         enforcer.current = current
         inputChannels(id) = enforcer
     }

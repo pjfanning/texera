@@ -13,7 +13,7 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
 
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, LinkedBlockingQueue[DPMessage]]()
-  private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
+  @transient lazy private val systemCommandQueue = new LinkedBlockingQueue[DPMessage]()
 
   override def peek(): Option[DPMessage] = {
     // output a dummy message

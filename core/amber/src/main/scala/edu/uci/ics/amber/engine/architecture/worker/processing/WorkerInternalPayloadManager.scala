@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import akka.serialization.SerializationExtension
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, PlannedCheckpoint, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.logging.{RecordedPayload, StepsOnChannel}
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager._
 import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, PendingCheckpoint, RecoveryInternalQueueImpl, ReplayOrderEnforcer}
@@ -96,15 +96,23 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
         // setup checkpoints during replay
         // create empty checkpoints to fill
         confs.foreach(conf => {
-          val planned = new PlannedCheckpoint(conf)
+          val planned = new SavedCheckpoint()
           planned.attachSerialization(SerializationExtension(worker.context.system))
-          CheckpointHolder.addCheckpoint(actorId, conf.checkpointAt, planned)
-          worker.inputPort.setRecordingForFutureInput(planned)
+          val pendingCheckpoint = new PendingCheckpoint(
+            worker.actorId,
+            0,
+            conf.checkpointAt,
+            null,
+            null,
+            0,
+            planned,
+            conf.waitingForMarker)
+          addPendingCheckpoint(conf.id, pendingCheckpoint)
           replayOrderEnforcer.setCheckpoint(conf.checkpointAt, () =>{
             // now inside DP thread
             worker.dpThread.dpInterrupted{
-              fillCheckpoint(planned)
-              planned.decreaseCompletionCount()
+              worker.dataProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
+              fillCheckpoint(chkpt)
             }
           })
         })

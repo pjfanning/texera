@@ -10,11 +10,11 @@ import scala.collection.mutable
 
 
 class PendingCheckpoint(val actorId:ActorVirtualIdentity,
-                        val startTime:Long,
+                        var startTime:Long,
                         val stepCursorAtCheckpoint:Long,
-                        val fifoInputState:Map[ChannelEndpointID, Long],
-                        val fifoOutputState:Map[ChannelEndpointID, Long],
-                        val initialCheckpointTime:Long,
+                        var fifoInputState:Map[ChannelEndpointID, Long],
+                        var fifoOutputState:Map[ChannelEndpointID, Long],
+                        var initialCheckpointTime:Long,
                         val chkpt:SavedCheckpoint,
                         toAlign: Set[ChannelEndpointID]) extends MarkerCollectionSupport with AmberLogging{
 

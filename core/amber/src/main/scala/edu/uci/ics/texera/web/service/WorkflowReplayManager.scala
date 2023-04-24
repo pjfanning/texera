@@ -29,6 +29,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
 
   var startTime:Long = 0
   var history = new ProcessingHistory()
+  val planner = new ReplayCheckpointPlanner(history)
   val pendingReplay = new mutable.HashSet[ActorVirtualIdentity]()
   var replayStart = 0L
 
@@ -133,7 +134,6 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       }
     val snapshot = history.getSnapshot(estIdx)
     val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    val planner = new ReplayCheckpointPlanner(history)
     val chkptPlan = planner.getReplayPlan(req.replayPos, 2000, mem)
     val converted = planner.getConvertedPlan(chkptPlan)
     val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {

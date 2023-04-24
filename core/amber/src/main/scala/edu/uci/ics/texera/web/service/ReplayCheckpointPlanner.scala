@@ -2,13 +2,16 @@ package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, OutsideWorldChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class ReplayCheckpointPlanner(history:ProcessingHistory) {
+
+  var replayChkptId = 0
 
   def pickInRange(start:Int, end:Int): (Map[ActorVirtualIdentity, Int], Long, Int) ={
     var currentPlan = history.getSnapshot(end).getParticipants.map(x => x -> end).toMap
@@ -90,19 +93,14 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
           case (identity, i) =>
             val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
             val snapshotStats = history.getSnapshot(i).getStats(identity)
-            val toRecord = mutable.HashMap[ChannelEndpointID, (Long, Long)]()
-            snapshotStats.inputStatus.keys.foreach{
-              channel =>
-                val upstream = channel.endpointWorker
-                val upstreamCheckpointPos = plan(upstream)
-                val myOldStats = history.getSnapshot(upstreamCheckpointPos).getStats(identity)
-                val startSeq = myOldStats.inputStatus.getReceived(upstream)
-                val endSeq = snapshotStats.inputStatus.getToReceive(upstream) - 1
-                if(endSeq >= startSeq){
-                  toRecord(channel) = (startSeq, endSeq)
-                }
+            val markerCollection = mutable.HashSet[ChannelEndpointID]()
+            plan.values.toSet.foreach{
+              pos:Int =>
+                val snapshot2 = history.getSnapshot(pos)
+                snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
             }
-            val conf = ReplayCheckpointConfig(toRecord.toMap, snapshotStats.alignment)
+            markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
+            val conf = ReplayCheckpointConfig(s"replay checkpoint - $replayChkptId", markerCollection.toSet, snapshotStats.alignment)
             buffer.append(conf)
         }
     }

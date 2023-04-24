@@ -1,39 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.{PlannedCheckpoint, SavedCheckpoint}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DataPayload, WorkflowFIFOMessagePayload}
 
 import scala.collection.mutable
 
 
 /* The abstracted FIFO/exactly-once logic */
-class AmberFIFOChannel(channel:ChannelEndpointID) {
+class AmberFIFOChannel() {
 
   val ofoMap = new mutable.HashMap[Long, WorkflowFIFOMessagePayload]
   var current = 0L
-
-  var recordingRanges:mutable.HashMap[Long, (Long, PlannedCheckpoint)] = mutable.HashMap.empty
-  var isRecording = false
-  var recordingInfo: (Long, PlannedCheckpoint) = _
-
-  def addRecording(from:Long, to:Long, chkpt:PlannedCheckpoint): Unit ={
-    recordingRanges(from) = (to, chkpt)
-  }
-
-  def recordPayload(payload:WorkflowFIFOMessagePayload): Unit ={
-    if(!isRecording && recordingRanges.contains(current)){
-      isRecording = true
-      recordingInfo = recordingRanges(current)
-      recordingRanges.remove(current)
-    }
-    if(isRecording){
-      recordingInfo._2.addInputData(channel, payload)
-      if(recordingInfo._1 == current){
-        isRecording = false
-        recordingInfo._2.decreaseCompletionCount()
-      }
-    }
-  }
 
   def acceptMessage(seq:Long, payload:WorkflowFIFOMessagePayload):Iterator[WorkflowFIFOMessagePayload] = {
     if (isDuplicated(seq)) {
@@ -60,14 +36,12 @@ class AmberFIFOChannel(channel:ChannelEndpointID) {
   def enforceFIFO(data: WorkflowFIFOMessagePayload): Iterator[WorkflowFIFOMessagePayload] = {
     val resultIterator = new Iterator[WorkflowFIFOMessagePayload]{
       private val outputBuffer = mutable.Queue[WorkflowFIFOMessagePayload](data)
-      recordPayload(data)
       current += 1
       override def hasNext: Boolean = {
         if(outputBuffer.isEmpty && ofoMap.contains(current)){
           val currentPayload = ofoMap(current)
           outputBuffer.enqueue(currentPayload)
           ofoMap.remove(current)
-          recordPayload(currentPayload)
           current += 1
         }
         outputBuffer.nonEmpty

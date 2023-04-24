@@ -77,6 +77,10 @@ abstract class InternalPayloadManager {
   private val pending = mutable.HashMap[String, MarkerCollectionSupport]()
   private val seen = mutable.HashSet[String]()
 
+  def addPendingCheckpoint(id:String, pendingCheckpoint: PendingCheckpoint): Unit ={
+    pending(id) = pendingCheckpoint
+  }
+
   def handlePayload(oneTimeInternalPayload: OneTimeInternalPayload):Unit
 
   def handlePayload(channel:ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload):Unit

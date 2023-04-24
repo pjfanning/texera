@@ -4,7 +4,7 @@ import akka.actor.PoisonPill
 import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import akka.serialization.SerializationExtension
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, PlannedCheckpoint, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
@@ -112,13 +112,21 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
     // setup checkpoints during replay
     // create empty checkpoints to fill
     confs.foreach(conf => {
-      val planned = new PlannedCheckpoint(conf)
+      val planned = new SavedCheckpoint()
       planned.attachSerialization(SerializationExtension(controller.context.system))
-      CheckpointHolder.addCheckpoint(actorId, conf.checkpointAt, planned)
-      controller.inputPort.setRecordingForFutureInput(planned)
+      val pendingCheckpoint = new PendingCheckpoint(
+        controller.actorId,
+        0,
+        conf.checkpointAt,
+        null,
+        null,
+        0,
+        planned,
+        conf.waitingForMarker)
+      addPendingCheckpoint(conf.id, pendingCheckpoint)
       replayOrderEnforcer.setCheckpoint(conf.checkpointAt, () =>{
+        controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
         fillCheckpoint(planned)
-        planned.decreaseCompletionCount()
       })
     })
   }
