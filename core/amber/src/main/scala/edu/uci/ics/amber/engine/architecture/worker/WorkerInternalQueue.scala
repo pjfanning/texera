@@ -40,9 +40,9 @@ abstract class WorkerInternalQueue extends Serializable {
 
 }
 
-class WorkerInternalQueueImpl(creditMonitor: CreditMonitor) extends WorkerInternalQueue {
+class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends WorkerInternalQueue {
 
-  private val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
+  protected val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
 
   override def getAllMessages:Iterable[DPMessage] = {
     val arr = new util.ArrayList[DPMessage]()

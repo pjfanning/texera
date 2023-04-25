@@ -4,14 +4,13 @@ import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, OutsideWorldChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class ReplayCheckpointPlanner(history:ProcessingHistory) {
 
-  var replayChkptId = 0
+  private var replayChkptId = 0
 
   def pickInRange(start:Int, end:Int): (Map[ActorVirtualIdentity, Int], Long, Int) ={
     var currentPlan = history.getSnapshot(end).getParticipants.map(x => x -> end).toMap
@@ -87,6 +86,7 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
 
   def getConvertedPlan(chkptPlan:(Iterable[Map[ActorVirtualIdentity, Int]], Long)): Map[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]] ={
     val converted = mutable.HashMap[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]]()
+    replayChkptId += 1
     chkptPlan._1.foreach{
       plan =>
         plan.foreach{
@@ -101,7 +101,7 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
                 snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
             }
             markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
-            val conf = ReplayCheckpointConfig(snapshot.id, markerCollection.toSet, snapshotStats.alignment)
+            val conf = ReplayCheckpointConfig(s"replay checkpoint - $replayChkptId", markerCollection.toSet, snapshotStats.alignment, snapshot.id)
             buffer.append(conf)
         }
     }

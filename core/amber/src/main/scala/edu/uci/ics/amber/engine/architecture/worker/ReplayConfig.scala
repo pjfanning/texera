@@ -9,4 +9,4 @@ case class ReplayConfig(fromCheckpoint: Option[Long],
 
 
 case class ReplayCheckpointConfig(id:String, waitingForMarker: Set[ChannelEndpointID],
-                                  checkpointAt: Long)
+                                  checkpointAt: Long, estimationId:String)

@@ -211,6 +211,22 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
     } finally takeLock.unlock()
   }
 
+  def disableSubQueueExcept(exceptions:K*): Unit ={
+    subQueues.values().forEach{
+      queue =>
+        if(queue.isEnabled){
+          queue.enable(false)
+        }
+    }
+    exceptions.foreach{
+      k =>
+        val queue = getSubQueue(k)
+        if(queue != null && !queue.isEnabled){
+          queue.enable(true)
+        }
+    }
+  }
+
   /**
     * Gets a sub-queue
     *

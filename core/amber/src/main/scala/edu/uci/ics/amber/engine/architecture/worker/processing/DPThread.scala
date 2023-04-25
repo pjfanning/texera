@@ -103,19 +103,21 @@ class DPThread(val actorId: ActorVirtualIdentity,
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
         val input = internalQueue.peek()
         input match {
-          case Some(DPMessage(_, delegate: FuncDelegate[_])) =>
-            // received system message
-            dpInterrupted {
-              internalQueue.take() // take the message out
-              delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
-            }
           case None =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if !msg.channel.isControlChannel =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if msg.channel.isControlChannel =>
-            val controlMsg = internalQueue.take()
-            dp.processControlPayload(controlMsg.channel, controlMsg.payload.asInstanceOf[ControlPayload])
+            val controlOrSystemMsg = internalQueue.take()
+            controlOrSystemMsg match{
+              case DPMessage(channel, delegate: FuncDelegate[_]) =>
+                // received system message
+                dpInterrupted {
+                  delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+                }
+              case DPMessage(channel, payload:ControlPayload) =>
+                dp.processControlPayload(channel, payload)
+            }
           case other =>
             throw new RuntimeException(s"DP thread cannot handle message $other")
         }
