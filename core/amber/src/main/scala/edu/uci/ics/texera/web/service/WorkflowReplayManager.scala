@@ -47,7 +47,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       client.execute(actor => {
         val time = System.currentTimeMillis() - startTime
         val id = CheckpointHolder.generateCheckpointId
-        history.addSnapshot(time, new LogicalExecutionSnapshot(false, time), id)
+        history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
         actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
       })
     }
@@ -60,7 +60,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
         val time = System.currentTimeMillis() - startTime
         val id = CheckpointHolder.generateEstimationId(time)
         if(!history.hasSnapshotAtTime(time)){
-          history.addSnapshot(time, new LogicalExecutionSnapshot(interactionCounter % interactionEveryNEstimation == 0, time), id)
+          history.addSnapshot(time, new LogicalExecutionSnapshot(id, interactionCounter % interactionEveryNEstimation == 0, time), id)
         }
         actor.controller ! EstimateCheckpointCost(id)
       })

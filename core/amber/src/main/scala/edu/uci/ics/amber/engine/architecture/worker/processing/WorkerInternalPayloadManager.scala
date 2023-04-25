@@ -22,10 +22,6 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
   override def handlePayload(channel:ChannelEndpointID, payload: IdempotentInternalPayload): Unit = {
     payload match {
       case ShutdownDP() =>
-        worker.executeThroughDP(() =>{
-          worker.dataProcessor.logManager.terminate()
-          throw new InterruptedException() // actively interrupt DP
-        })
         worker.dataProcessor.dpThread.stop()
       case SetupLogging() =>
         InternalPayloadManager.setupLoggingForWorkflowActor(worker, true)
@@ -102,8 +98,8 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.actorId,
             0,
             conf.checkpointAt,
-            null,
-            null,
+            Map.empty,
+            Map.empty,
             0,
             planned,
             conf.waitingForMarker)

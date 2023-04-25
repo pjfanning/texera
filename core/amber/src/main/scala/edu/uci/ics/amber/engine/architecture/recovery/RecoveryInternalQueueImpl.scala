@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID, OutsideWorldChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.LinkedBlockingQueue
@@ -45,12 +45,13 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
     if(message.channel == InternalChannelEndpointID){
       // system delegate
       systemCommandQueue.put(message)
+    }else{
+      if(!message.channel.isControlChannel){
+        creditMonitor.decreaseCredit(message.channel.endpointWorker)
+      }
+      logger.info(s"received $message from ${message.channel}")
+      messageQueues.getOrElseUpdate(message.channel, new LinkedBlockingQueue()).put(message)
     }
-    if(!message.channel.isControlChannel){
-      creditMonitor.decreaseCredit(message.channel.endpointWorker)
-    }
-    logger.info(s"received $message from ${message.channel}")
-    messageQueues.getOrElseUpdate(message.channel, new LinkedBlockingQueue()).put(message)
   }
 
   override def enableAllDataQueue(enable: Boolean): Unit = {}

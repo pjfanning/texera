@@ -95,9 +95,12 @@ class WorkflowWorker(
                            func: () => T
                          ): T = {
     val future = new CompletableFuture[T]()
+    logger.info("start to execute through DP")
     internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
     dpThread.unblock() // in case it is blocked.
-    future.get()
+    val res = future.get()
+    logger.info("execution completed")
+    res
   }
 
   override def postStop(): Unit = {

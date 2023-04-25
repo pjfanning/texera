@@ -2,8 +2,8 @@ package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.PoisonPill
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import akka.serialization.SerializationExtension
+import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
@@ -17,7 +17,6 @@ import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
@@ -26,6 +25,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   override def actorId: ActorVirtualIdentity = controller.actorId
 
+  implicit val initializeTimeout:Timeout = 10.seconds
 
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit ={
     idempotentInternalPayload match {
@@ -70,7 +70,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           val conf = replayConfig.confs(worker)
           ref ? CheckInitialized(Array(LoadStateAndReplay(id, conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig)))
         }.toSeq
-      controller.actorService.waitUntil(600.seconds,futures)
+      controller.actorService.waitUntil(10.seconds,futures)
     }
     chkpt
   }
@@ -118,8 +118,8 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.actorId,
         0,
         conf.checkpointAt,
-        null,
-        null,
+        Map.empty,
+        Map.empty,
         0,
         planned,
         conf.waitingForMarker)
@@ -154,12 +154,15 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.controlProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
       case ReplayWorkflow(id, replayConfig) =>
         val controllerReplayConf = replayConfig.confs(actorId)
-        killAllExistingWorkers()
+        // killAllExistingWorkers()
         val chkpt = loadFromCheckpoint(id, controllerReplayConf.fromCheckpoint, replayConfig)
         val replayOrderEnforcer = setupReplay(id,controllerReplayConf.replayTo)
         setupCheckpointsDuringReplay(replayOrderEnforcer, controllerReplayConf.checkpointConfig)
         // disable logging
         InternalPayloadManager.setupLoggingForWorkflowActor(controller, false)
+        logger.info(s"controller restored! input Seq: ${controller.inputPort.getFIFOState}")
+        logger.info(s"controller restored! output Seq: ${controller.controlProcessor.outputPort.getFIFOState}")
+        logger.info(s"recorded data: ${chkpt.getInputData.map(x => s"${x._1} -> ${x._2.size}")}")
         restoreInputs(chkpt)
         replayOrderEnforcer.forwardReplayProcess(controller.controlProcessor.cursor.getStep)
       case _ => ???

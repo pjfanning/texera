@@ -269,6 +269,7 @@ case class OpExecConfig(
       actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
     actorService.registerActorForNetworkCommunication(workerId, ref)
     ref ! SetupLogging()
+    println(s"Worker Built! Actor for $workerId is at $ref")
     opExecution.getWorkerInfo(workerId).ref = ref
     ref
   }

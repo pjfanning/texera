@@ -92,7 +92,8 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
         plan.foreach{
           case (identity, i) =>
             val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
-            val snapshotStats = history.getSnapshot(i).getStats(identity)
+            val snapshot = history.getSnapshot(i)
+            val snapshotStats = snapshot.getStats(identity)
             val markerCollection = mutable.HashSet[ChannelEndpointID]()
             plan.values.toSet.foreach{
               pos:Int =>
@@ -100,7 +101,7 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
                 snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
             }
             markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
-            val conf = ReplayCheckpointConfig(s"replay checkpoint - $replayChkptId", markerCollection.toSet, snapshotStats.alignment)
+            val conf = ReplayCheckpointConfig(snapshot.id, markerCollection.toSet, snapshotStats.alignment)
             buffer.append(conf)
         }
     }

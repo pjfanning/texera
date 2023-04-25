@@ -38,9 +38,9 @@ class DPThread(val actorId: ActorVirtualIdentity,
 
   def stop(): Unit ={
     dpThread.cancel(true) // interrupt
-    dpThreadExecutor.shutdownNow() // destroy thread
     stopped = true
     endFuture.get()
+    dpThreadExecutor.shutdownNow() // destroy thread
   }
 
   @volatile

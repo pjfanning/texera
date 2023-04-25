@@ -62,11 +62,11 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
       determinantLogger.recordPayload(channel, payload)
       payload match {
         case invocation: ControlInvocation =>
-          if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
+          //if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
             logger.info(
               s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${cursor.getStep})"
             )
-          }
+          //}
           asyncRPCServer.receive(invocation, channel.endpointWorker)
         case ret: ReturnInvocation =>
           asyncRPCClient.logControlReply(ret, channel.endpointWorker, cursor.getStep)
