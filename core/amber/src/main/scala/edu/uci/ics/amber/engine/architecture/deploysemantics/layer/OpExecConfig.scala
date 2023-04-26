@@ -2,12 +2,18 @@ package edu.uci.ics.amber.engine.architecture.deploysemantics.layer
 
 import akka.actor.{ActorContext, ActorRef, Address, Deploy, Props}
 import akka.remote.RemoteScope
+import akka.pattern.ask
+import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import com.twitter.util.{Await, Future}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
+import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{LoadStateAndReplay, SetupLogging}
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
+import edu.uci.ics.amber.engine.common.ambermessage.AmberInternalPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISinkOperatorExecutor, ISourceOperatorExecutor}
@@ -232,26 +238,34 @@ case class OpExecConfig(
   def build(
       addressInfo: AddressInfo,
       actorService: WorkflowActorService,
-      opExecution: OperatorExecution
+      opExecution: OperatorExecution,
+      replayPlan: WorkflowReplayConfig
   ): Unit = {
-    (0 until numWorkers)
-      .foreach(i => {
+    Await.result(Future.collect((0 until numWorkers)
+      .map(i => {
         val workerId: ActorVirtualIdentity = identifier(i)
-        buildWorker(
-          workerId,
-          addressInfo,
-          actorService,
-          opExecution
-        )
-      })
+          buildWorker(
+            workerId,
+            addressInfo,
+            actorService,
+            opExecution,
+           (if(replayPlan.confs.contains(workerId)){
+          val replayConfig = replayPlan.confs(workerId)
+          Array(LoadStateAndReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
+        }else{
+          Array(SetupLogging())
+        })
+          )
+      })))
   }
 
   def buildWorker(
       workerId: ActorVirtualIdentity,
       addressInfo: AddressInfo,
       actorService: WorkflowActorService,
-      opExecution: OperatorExecution
-  ): ActorRef = {
+      opExecution: OperatorExecution,
+      extraCommands: Array[AmberInternalPayload]
+  ): Future[ActorRef] = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
     val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
@@ -268,9 +282,11 @@ case class OpExecConfig(
     val ref =
       actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
     actorService.registerActorForNetworkCommunication(workerId, ref)
-    ref ! SetupLogging()
-    println(s"Worker Built! Actor for $workerId is at $ref")
-    opExecution.getWorkerInfo(workerId).ref = ref
-    ref
+    actorService.ask(ref, CheckInitialized(extraCommands)).map{
+      _ =>
+        println(s"Worker Built! Actor for $workerId is at $ref")
+        opExecution.getWorkerInfo(workerId).ref = ref
+        ref
+    }
   }
 }

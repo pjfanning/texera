@@ -57,9 +57,11 @@ class DPThread(val actorId: ActorVirtualIdentity,
     if (dpThread == null) {
       // TODO: setup context
       // operator.context = new OperatorContext(new TimeService(logManager))
+      val startFuture = new CompletableFuture[Unit]()
       dpThread = dpThreadExecutor.submit(new Runnable() {
         def run(): Unit = {
           logger.info("DP thread started")
+          startFuture.complete(Unit)
           try {
             runDPThreadMainLogicNew()
           } catch safely {
@@ -76,6 +78,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
           endFuture.complete(Unit)
         }
       })
+      startFuture.get()
     }
   }
 
@@ -108,7 +111,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
           case Some(msg: DPMessage) if !msg.channel.isControlChannel =>
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if msg.channel.isControlChannel =>
-            val controlOrSystemMsg = internalQueue.take()
+            val controlOrSystemMsg = internalQueue.take(dp)
             controlOrSystemMsg match{
               case DPMessage(channel, delegate: FuncDelegate[_]) =>
                 // received system message
@@ -122,7 +125,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
             throw new RuntimeException(s"DP thread cannot handle message $other")
         }
       } else {
-        val msg = internalQueue.take()
+        val msg = internalQueue.take(dp)
         msg.payload match {
           case data: DataPayload =>
             dp.processDataPayload(msg.channel, data)

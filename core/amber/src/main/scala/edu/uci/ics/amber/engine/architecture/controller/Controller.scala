@@ -93,6 +93,9 @@ class Controller(
   }
 
   override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+    if(channelEndpointID.endpointWorker == CONTROLLER){
+      logger.info(s"receive $payload from myself!!!")
+    }
     payload match {
       case control:ControlPayload =>
         if(replayQueue != null){

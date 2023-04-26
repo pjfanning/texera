@@ -100,7 +100,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
 
   private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
   var inputBatch: Array[ITuple] = _
-  private[processing] var currentInputIdx = -1
+  var currentInputIdx = -1
   private[processing] var currentBatchChannel: ChannelEndpointID = _
 
   // dp thread stats:

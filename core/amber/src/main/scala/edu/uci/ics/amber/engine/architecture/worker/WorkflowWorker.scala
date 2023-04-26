@@ -77,7 +77,7 @@ class WorkflowWorker(
       case ReplaceRecoveryQueue() =>
         logger.info("replace recovery queue with normal queue")
         val newQueue = new WorkerInternalQueueImpl(creditMonitor)
-        WorkerInternalQueue.transferContent(internalQueue, newQueue)
+        WorkerInternalQueue.transferContent(internalQueue, newQueue, Set.empty)
         internalQueue = newQueue
         this.dpThread.internalQueue = newQueue
         logger.info("replace queue done!")

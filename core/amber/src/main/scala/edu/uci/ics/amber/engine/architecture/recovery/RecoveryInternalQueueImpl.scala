@@ -2,7 +2,8 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueueImpl
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.CONTROL_QUEUE_PRIORITY
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_QUEUE_PRIORITY, DATA_QUEUE_PRIORITY, getPriority}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -11,6 +12,9 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient creditMonitor: CreditMonitor, @transient val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueueImpl(creditMonitor) with AmberLogging {
 
   lbmq.addSubQueue(InternalChannelEndpointID, CONTROL_QUEUE_PRIORITY)
+  replayOrderEnforcer.getAllReplayChannels.foreach{
+    channel => lbmq.addSubQueue(channel, getPriority(channel))
+  }
   private val systemCmdQueue = lbmq.getSubQueue(InternalChannelEndpointID)
 
   override def peek(): Option[DPMessage] = {
@@ -22,15 +26,18 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
     }
   }
 
-  override def take(): DPMessage = {
+  override def take(dp:DataProcessor): DPMessage = {
     val currentChannel = replayOrderEnforcer.currentChannel
     if(!currentChannel.isControlChannel){
       creditMonitor.increaseCredit(currentChannel.endpointWorker)
     }
-    logger.info(s"taking message from channel = $currentChannel")
+    logger.info(s"taking message from channel = $currentChannel at step = ${dp.cursor.getStep} batchSize = ${if(dp.inputBatch==null)0 else{dp.inputBatch.length}}, batch tuple = ${if(dp.inputBatch==null || dp.inputBatch.isEmpty)"null" else{dp.inputBatch.head.toString}}")
     lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
-    lbmq.take()
+    val res = lbmq.take()
+    logger.info(s"message to process = $res")
+    res
   }
+
 
   override def enableAllDataQueue(enable: Boolean): Unit = {}
 

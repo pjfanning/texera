@@ -67,6 +67,7 @@ abstract class WorkflowActor(
   var logStorage: DeterminantLogStorage = new EmptyLogStorage()
   var determinantLogger:DeterminantLogger = new EmptyDeterminantLogger()
   var logManager: LogManager = new EmptyLogManagerImpl(networkCommunicationActor)
+  var isReplaying = false
 
   // custom state ser/de support (override by Worker and Controller)
   def internalPayloadManager:InternalPayloadManager
@@ -130,7 +131,12 @@ abstract class WorkflowActor(
   /** Actor lifecycle: Processing */
   def acceptDirectInvocations: Receive = {
     case invocation: ControlInvocation =>
-      inputPort.handleFIFOPayload(OutsideWorldChannelEndpointID, invocation)
+      // during replay, cannot take outside world normal control message
+      if(!isReplaying){
+        inputPort.handleFIFOPayload(OutsideWorldChannelEndpointID, invocation)
+      }else{
+        logger.info(s"doing replay! ignore $invocation from outside world")
+      }
   }
 
   def acceptDirectInternalCommands:Receive = {

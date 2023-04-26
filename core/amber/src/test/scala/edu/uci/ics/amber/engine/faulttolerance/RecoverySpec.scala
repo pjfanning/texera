@@ -167,24 +167,31 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log2" in {
-    val workerName = "WF1-HashJoin-operator-3a46bc28-b848-40ff-af91-27d3af014b46-main-0"
+    val workerName = "WF1-CONTROLLER"
     val logStorage = new LocalFSLogStorage(workerName)
     for (elem <- logStorage.getReader.getLogs[InMemDeterminant]){
       println(elem)
     }
-    var step = 239
+    var step = 188831
     var stop = false
     val orderEnforcer = new ReplayOrderEnforcer(logStorage.getReader.getLogs[StepsOnChannel], ()=> {
       println("recovery completed!")
       stop = true
     })
     orderEnforcer.initialize(step)
-    while(!stop && step < 50000){
-      orderEnforcer.forwardReplayProcess(step)
-      if(!stop){
-        println(orderEnforcer.currentChannel, step)
-        step+=1
-      }
-    }
+    orderEnforcer.forwardReplayProcess(step)
+    println(orderEnforcer.currentChannel, step)
+    step+=1
+    orderEnforcer.forwardReplayProcess(step)
+    println(orderEnforcer.currentChannel, step)
+    step+=1
+    orderEnforcer.forwardReplayProcess(step)
+    println(orderEnforcer.currentChannel, step)
+    orderEnforcer.forwardReplayProcess(step)
+    println(orderEnforcer.currentChannel, step)
+    step+=1
+    orderEnforcer.forwardReplayProcess(step)
+    println(orderEnforcer.currentChannel, step)
+    step+=1
   }
 }

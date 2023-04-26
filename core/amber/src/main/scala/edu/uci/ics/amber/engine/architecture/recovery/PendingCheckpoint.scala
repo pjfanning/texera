@@ -6,10 +6,12 @@ import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, MarkerAlignmentInternalPayload, MarkerCollectionSupport, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
+import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 
-class PendingCheckpoint(val actorId:ActorVirtualIdentity,
+class PendingCheckpoint(val checkpointId:String,
+                        val actorId:ActorVirtualIdentity,
                         var startTime:Long,
                         val stepCursorAtCheckpoint:Long,
                         var fifoInputState:Map[ChannelEndpointID, Long],
@@ -21,18 +23,25 @@ class PendingCheckpoint(val actorId:ActorVirtualIdentity,
   val aligned = new mutable.HashSet[ChannelEndpointID]()
   def isCompleted: Boolean = toAlign.subsetOf(aligned)
 
+  @volatile var startRecording = false
+  val recordingLock = new ReentrantLock()
+
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
     aligned.add(channel)
-    logger.info(s"finish recording input channel current = ${aligned.size}, target = $toAlign")
+    logger.info(s"finish recording input channel $channel current = ${aligned}, target = $toAlign, recorded input for this channel = ${chkpt.getInputData.getOrElse(channel, mutable.ArrayBuffer.empty).size}")
   }
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
-    if(!aligned.contains(channel) && toAlign.contains(channel)){
-      if(p.isInstanceOf[AmberInternalPayload]){
-        chkpt.addInputData(channel, NoOp())
-      }else{
-        chkpt.addInputData(channel, p)
+    recordingLock.lock()
+    if(startRecording){
+      if(!aligned.contains(channel) && toAlign.contains(channel)){
+        if(p.isInstanceOf[AmberInternalPayload]){
+          chkpt.addInputData(channel, NoOp())
+        }else{
+          chkpt.addInputData(channel, p)
+        }
       }
     }
+    recordingLock.unlock()
   }
 }

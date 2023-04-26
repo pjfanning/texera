@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{FatalErrorToCli
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkWorkersHandler.LinkWorkers
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
@@ -48,6 +48,8 @@ class WorkflowScheduler(
   private def getWorkflow: Workflow = controlProcessor.workflow
 
   private def getExecution: WorkflowExecution = controlProcessor.execution
+
+  private def getReplayConf: WorkflowReplayConfig = controlProcessor.replayPlan
 
   def startWorkflow(): Future[Seq[Unit]] = {
     doSchedulingWork(getSchedulingPolicy.startWorkflow(getPipelinedRegionPlan))
@@ -140,7 +142,8 @@ class WorkflowScheduler(
     workerLayer.build(
       AddressInfo(getAvailableNodes, getActorService.self.path.address),
       getActorService,
-      getExecution.getOperatorExecution(operatorIdentity)
+      getExecution.getOperatorExecution(operatorIdentity),
+      getReplayConf
     )
   }
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {

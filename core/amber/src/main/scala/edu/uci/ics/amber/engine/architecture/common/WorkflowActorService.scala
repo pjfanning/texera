@@ -4,10 +4,13 @@ import akka.actor.{ActorContext, ActorRef, Cancellable, Props}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import akka.pattern.ask
 import akka.util.Timeout
+import com.twitter.util.{Await, Future}
+import edu.uci.ics.amber.engine.common.FutureBijection._
+
+import scala.concurrent.ExecutionContext
 
 class WorkflowActorService(actor:WorkflowActor) {
 
@@ -25,7 +28,7 @@ class WorkflowActorService(actor:WorkflowActor) {
   }
 
   def registerActorForNetworkCommunication(workerId:ActorVirtualIdentity, ref:ActorRef): Unit ={
-    Await.result(networkCommunicationActor ? RegisterActorRef(workerId, ref), 5.seconds)
+    Await.result(ask(networkCommunicationActor,RegisterActorRef(workerId, ref)))
   }
 
   def scheduleOnce(delay:FiniteDuration, callable:() => Unit):Cancellable ={
@@ -38,8 +41,8 @@ class WorkflowActorService(actor:WorkflowActor) {
     actorContext.system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(() => callable())
   }
 
-  def waitUntil(atMost:FiniteDuration, futures:Seq[Future[Any]]): Seq[Any] ={
-    Await.result(Future.sequence(futures), atMost)
+  def ask(ref: ActorRef, message:Any):com.twitter.util.Future[Any] = {
+    akka.pattern.ask(ref, message).asTwitter()
   }
 
 }

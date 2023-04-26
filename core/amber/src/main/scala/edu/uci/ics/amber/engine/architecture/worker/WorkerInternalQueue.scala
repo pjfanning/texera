@@ -2,8 +2,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util
 import java.util.concurrent.CompletableFuture
@@ -14,8 +16,17 @@ object WorkerInternalQueue {
   final val DATA_QUEUE_PRIORITY = 1
   final val CONTROL_QUEUE_PRIORITY = 0
 
-  def transferContent(from:WorkerInternalQueue, to:WorkerInternalQueue): Unit = {
-    from.getAllMessages.foreach(to.enqueuePayload)
+  def getPriority(channelEndpointID: ChannelEndpointID): Int ={
+    if(channelEndpointID.isControlChannel){CONTROL_QUEUE_PRIORITY}else{DATA_QUEUE_PRIORITY}
+  }
+
+  def transferContent(from :WorkerInternalQueue, to:WorkerInternalQueue, excludedChannels:Set[ChannelEndpointID]): Unit = {
+    from.getAllMessages.foreach{
+      case (channel, messages) =>
+        if(!excludedChannels.contains(channel)){
+          messages.foreach(to.enqueuePayload)
+        }
+    }
   }
 
 }
@@ -30,13 +41,13 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def peek(): Option[DPMessage]
 
-  def take(): DPMessage
+  def take(dp:DataProcessor): DPMessage
 
   def getDataQueueLength: Int
 
   def getControlQueueLength: Int
 
-  def getAllMessages:Iterable[DPMessage]
+  def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]]
 
 }
 
@@ -44,10 +55,11 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
 
   protected val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
 
-  override def getAllMessages:Iterable[DPMessage] = {
+  override def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]] = {
+    lbmq.enableAllSubQueue()
     val arr = new util.ArrayList[DPMessage]()
     lbmq.drainTo(arr)
-    arr.asScala
+    arr.asScala.groupBy(_.channel)
   }
 
   override def enqueuePayload(message:DPMessage): Unit = {
@@ -72,7 +84,7 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
     Option(lbmq.peek())
   }
 
-  override def take(): DPMessage = {
+  override def take(dp:DataProcessor): DPMessage = {
     lbmq.take()
   }
 

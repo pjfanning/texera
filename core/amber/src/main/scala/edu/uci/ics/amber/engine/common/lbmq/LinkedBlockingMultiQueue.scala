@@ -211,6 +211,15 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
     } finally takeLock.unlock()
   }
 
+  def enableAllSubQueue(): Unit ={
+    subQueues.values().forEach{
+      queue =>
+        if(!queue.isEnabled){
+          queue.enable(true)
+        }
+    }
+  }
+
   def disableSubQueueExcept(exceptions:K*): Unit ={
     subQueues.values().forEach{
       queue =>
