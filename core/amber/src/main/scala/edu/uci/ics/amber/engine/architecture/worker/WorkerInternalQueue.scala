@@ -20,12 +20,10 @@ object WorkerInternalQueue {
     if(channelEndpointID.isControlChannel){CONTROL_QUEUE_PRIORITY}else{DATA_QUEUE_PRIORITY}
   }
 
-  def transferContent(from :WorkerInternalQueue, to:WorkerInternalQueue, excludedChannels:Set[ChannelEndpointID]): Unit = {
+  def transferContent(from :WorkerInternalQueue, to:WorkerInternalQueue): Unit = {
     from.getAllMessages.foreach{
       case (channel, messages) =>
-        if(!excludedChannels.contains(channel)){
           messages.foreach(to.enqueuePayload)
-        }
     }
   }
 

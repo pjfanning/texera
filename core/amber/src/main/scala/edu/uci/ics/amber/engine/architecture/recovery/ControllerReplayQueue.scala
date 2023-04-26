@@ -11,16 +11,8 @@ class ControllerReplayQueue(controlProcessor:ControlProcessor, replayOrderEnforc
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, mutable.Queue[ControlPayload]]()
 
-  def getAllMessages:Iterable[(ChannelEndpointID,ControlPayload)] = {
-    val buffer = new ArrayBuffer[(ChannelEndpointID,ControlPayload)]()
-    messageQueues.foreach{
-      case (d, payloads) =>
-        payloads.foreach{
-          payload =>
-            buffer.append((d, payload))
-        }
-    }
-    buffer
+  def getAllMessages:Map[ChannelEndpointID, Iterable[ControlPayload]] = {
+    messageQueues.toMap
   }
 
   def enqueuePayload(channelEndpointID: ChannelEndpointID, payload:ControlPayload): Unit = {

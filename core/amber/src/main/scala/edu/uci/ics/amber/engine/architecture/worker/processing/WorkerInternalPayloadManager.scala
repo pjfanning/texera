@@ -82,12 +82,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
         // setup replay infra
         val logReader = InternalPayloadManager.retrieveLogForWorkflowActor(worker)
         val replayOrderEnforcer = setupReplay(logReader)
-        val checkpointedChannels = if(existingChkpt != null){
-          Set[ChannelEndpointID]()
-        }else{
-          Set[ChannelEndpointID]()
-        }
-        transferQueueContent(replayOrderEnforcer, checkpointedChannels)
+        transferQueueContent(replayOrderEnforcer)
         if(replayTo.isDefined){
           val currentStep = worker.dataProcessor.cursor.getStep
           replayOrderEnforcer.setReplayTo(currentStep, replayTo.get,  () => {
@@ -149,9 +144,9 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
   }
 
 
-  def transferQueueContent(replayOrderEnforcer: ReplayOrderEnforcer, excludedChannels:Set[ChannelEndpointID]): Unit ={
+  def transferQueueContent(replayOrderEnforcer: ReplayOrderEnforcer): Unit ={
     val recoveryQueue = new RecoveryInternalQueueImpl(worker.actorId, worker.creditMonitor, replayOrderEnforcer)
-    WorkerInternalQueue.transferContent(worker.internalQueue, recoveryQueue, excludedChannels)
+    WorkerInternalQueue.transferContent(worker.internalQueue, recoveryQueue)
     worker.internalQueue = recoveryQueue
   }
 
@@ -170,7 +165,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
     val replayOrderEnforcer = new ReplayOrderEnforcer(logReader.getLogs[StepsOnChannel], () => {
       logger.info("recovery completed, continue normal processing")
       val normalQueue = new WorkerInternalQueueImpl(worker.creditMonitor)
-      WorkerInternalQueue.transferContent(worker.internalQueue, normalQueue, Set.empty)
+      WorkerInternalQueue.transferContent(worker.internalQueue, normalQueue)
       worker.internalQueue = normalQueue
     })
     val currentStep = worker.dataProcessor.cursor.getStep

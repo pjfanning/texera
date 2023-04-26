@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, In
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager._
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
@@ -87,16 +87,15 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
     })
   }
 
-  def transferQueueContent(chkpt:SavedCheckpoint, replayOrderEnforcer: ReplayOrderEnforcer, excludedChannels:Set[ChannelEndpointID]): Unit ={
+  def transferQueueContent(chkpt:SavedCheckpoint, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
     val newQueue = new ControllerReplayQueue(controller.controlProcessor, replayOrderEnforcer, controller.controlProcessor.processControlPayload)
-    val oldQueue:ControllerReplayQueue = chkpt.load("replayQueue")
-    if(oldQueue != null){
+    val queuedMessages: Map[ChannelEndpointID, Iterable[ControlPayload]] = chkpt.load("queuedMessages")
+    if (queuedMessages != null) {
       // in case we have some message left in the old queue
-      oldQueue.getAllMessages.foreach(x => {
-        if(!excludedChannels.contains(x._1)){
-          newQueue.enqueuePayload(x._1,x._2)
-        }
-      })
+      queuedMessages.foreach {
+        case (channel, messages) =>
+          messages.foreach(msg => newQueue.enqueuePayload(channel, msg))
+      }
     }
     controller.replayQueue = newQueue
   }
@@ -172,13 +171,8 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         val chkpt = loadFromCheckpoint(id, controllerReplayConf.fromCheckpoint, replayConfig)
         val logReader = InternalPayloadManager.retrieveLogForWorkflowActor(controller)
         val replayOrderEnforcer = setupReplay(id,logReader, controllerReplayConf.replayTo)
-        val checkpointedChannels = if(chkpt != null){
-          Set[ChannelEndpointID]()
-        }else{
-          Set[ChannelEndpointID]()
-        }
         if(chkpt!= null){
-          transferQueueContent(chkpt, replayOrderEnforcer, checkpointedChannels)
+          transferQueueContent(chkpt, replayOrderEnforcer)
         }
         setupCheckpointsDuringReplay(replayOrderEnforcer, controllerReplayConf.checkpointConfig)
         // disable logging
@@ -197,7 +191,11 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
     val startTime = System.currentTimeMillis()
     chkpt.save("fifoState", controller.inputPort.getFIFOState)
     chkpt.save("controlState", controller.controlProcessor)
-    chkpt.save("replayQueue", controller.replayQueue)
+    if(controller.isReplaying){
+      chkpt.save("queuedMessages", controller.replayQueue.getAllMessages)
+    }else{
+      chkpt.save("queuedMessages", null)
+    }
     System.currentTimeMillis() - startTime
   }
 

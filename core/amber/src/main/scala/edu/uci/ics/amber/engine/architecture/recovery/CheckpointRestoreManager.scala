@@ -10,5 +10,6 @@ trait CheckpointRestoreManager {
 
   def startProcessing()
 
+  def transferQueueContent()
 
 }
