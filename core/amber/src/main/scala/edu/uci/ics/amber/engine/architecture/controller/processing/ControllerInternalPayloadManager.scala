@@ -1,20 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
-import akka.actor.PoisonPill
-import akka.pattern.ask
 import akka.serialization.SerializationExtension
 import akka.util.Timeout
-import com.twitter.util.{Await, Future}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
-import edu.uci.ics.amber.engine.architecture.logging.{RecordedPayload, StepsOnChannel}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager, PendingCheckpoint, RecoveryInternalQueueImpl, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.recovery.{ControllerCheckpointRestoreManager, ControllerReplayQueue, InternalPayloadManager, PendingCheckpoint, RecoveryInternalQueueImpl, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager._
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -29,6 +21,8 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   implicit val initializeTimeout:Timeout = 10.seconds
 
+  val restoreManager = new ControllerCheckpointRestoreManager(controller)
+
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit ={
     idempotentInternalPayload match {
       case SetupLogging() =>
@@ -40,118 +34,6 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   }
 
-  def killAllExistingWorkers(): Unit ={
-    // kill all existing workers
-    controller.controlProcessor.execution.getAllWorkers.foreach{
-      worker =>
-        val workerRef = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).ref
-        workerRef ! PoisonPill
-    }
-  }
-
-  def loadFromCheckpoint(id:String, fromCheckpoint:Option[Long], replayConfig: WorkflowReplayConfig): SavedCheckpoint ={
-    var chkpt:SavedCheckpoint = null
-    if(fromCheckpoint.isDefined){
-      chkpt = CheckpointHolder.getCheckpoint(controller.actorId, fromCheckpoint.get)
-      chkpt.attachSerialization(SerializationExtension(controller.context.system))
-      controller.inputPort.setFIFOState(chkpt.load("fifoState"))
-      controller.controlProcessor = chkpt.load("controlState")
-      controller.controlProcessor.initCP(controller)
-      controller.controlProcessor.replayPlan = replayConfig
-      Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
-        .map { worker =>
-          val conf = replayConfig.confs(worker)
-          controller.controlProcessor.workflow
-            .getOperator(worker)
-            .buildWorker(
-              worker,
-              AddressInfo(controller.getAvailableNodes(), controller.actorService.self.path.address),
-              controller.actorService,
-              controller.controlProcessor.execution.getOperatorExecution(worker),
-              Array(LoadStateAndReplay("replay - restart",conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
-            )
-        }.toSeq))
-    }
-    chkpt
-  }
-
-
-  def addRecordedPayloadBack(logReader: DeterminantLogReader): Unit ={
-    // add recorded payload back to the queue from log
-    val recoveredSeqMap = mutable.HashMap[ChannelEndpointID, Long]()
-    logReader.getLogs[RecordedPayload].foreach(elem => {
-      val seqNum = recoveredSeqMap.getOrElseUpdate(elem.channel, 0L)
-      val message = WorkflowFIFOMessage(elem.channel, seqNum, elem.payload)
-      controller.inputPort.handleMessage(message)
-      recoveredSeqMap(elem.channel) += 1
-    })
-  }
-
-  def transferQueueContent(chkpt:SavedCheckpoint, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
-    val newQueue = new ControllerReplayQueue(controller.controlProcessor, replayOrderEnforcer, controller.controlProcessor.processControlPayload)
-    val queuedMessages: Map[ChannelEndpointID, Iterable[ControlPayload]] = chkpt.load("queuedMessages")
-    if (queuedMessages != null) {
-      // in case we have some message left in the old queue
-      queuedMessages.foreach {
-        case (channel, messages) =>
-          messages.foreach(msg => newQueue.enqueuePayload(channel, msg))
-      }
-    }
-    controller.replayQueue = newQueue
-  }
-
-
-  def setupReplay(id:String,logReader: DeterminantLogReader, replayTo:Option[Long]): ReplayOrderEnforcer ={
-    val replayOrderEnforcer = new ReplayOrderEnforcer(logReader.getLogs[StepsOnChannel], () => {
-      logger.info("recovery completed, continue normal processing")
-      controller.replayQueue = null
-    })
-    val currentStep = controller.controlProcessor.cursor.getStep
-    replayOrderEnforcer.initialize(currentStep)
-    if(replayTo.isDefined){
-      replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get,  () => {
-        logger.info("replay completed, waiting for next instruction")
-        controller.controlProcessor.asyncRPCClient.sendToClient(WorkflowStatusUpdate(controller.controlProcessor.execution.getWorkflowStatus))
-        controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, id))
-      })
-    }
-    replayOrderEnforcer
-  }
-
-  def setupCheckpointsDuringReplay(replayOrderEnforcer: ReplayOrderEnforcer, confs:Array[ReplayCheckpointConfig]): Unit ={
-    // setup checkpoints during replay
-    // create empty checkpoints to fill
-    confs.foreach(conf => {
-      val planned = new SavedCheckpoint()
-      planned.attachSerialization(SerializationExtension(controller.context.system))
-      val pendingCheckpoint = new PendingCheckpoint(
-        conf.estimationId,
-        controller.actorId,
-        0,
-        conf.checkpointAt,
-        Map.empty,
-        Map.empty,
-        0,
-        planned,
-        conf.waitingForMarker)
-      addPendingCheckpoint(conf.id, pendingCheckpoint)
-      replayOrderEnforcer.setCheckpoint(conf.checkpointAt, () =>{
-        controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
-        fillCheckpoint(planned)
-        pendingCheckpoint.startRecording = true
-      })
-    })
-  }
-
-
-  def restoreInputs(chkpt:SavedCheckpoint): Unit ={
-    if(chkpt != null){
-      chkpt.getInputData.foreach{
-        case (c, payloads) =>
-          payloads.foreach(x => controller.inputPort.handleFIFOPayload(c, x))
-      }
-    }
-  }
 
   override def handlePayload(payload: OneTimeInternalPayload): Unit = {
     payload match {
@@ -166,37 +48,12 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.controlProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
       case ReplayWorkflow(id, replayConfig) =>
         controller.isReplaying = true
+        restoreManager.replayConfig = replayConfig
         val controllerReplayConf = replayConfig.confs(actorId)
-        killAllExistingWorkers()
-        val chkpt = loadFromCheckpoint(id, controllerReplayConf.fromCheckpoint, replayConfig)
-        val logReader = InternalPayloadManager.retrieveLogForWorkflowActor(controller)
-        val replayOrderEnforcer = setupReplay(id,logReader, controllerReplayConf.replayTo)
-        if(chkpt!= null){
-          transferQueueContent(chkpt, replayOrderEnforcer)
-        }
-        setupCheckpointsDuringReplay(replayOrderEnforcer, controllerReplayConf.checkpointConfig)
-        // disable logging
-        InternalPayloadManager.setupLoggingForWorkflowActor(controller, false)
-        logger.info(s"controller restored! input Seq: ${controller.inputPort.getFIFOState}")
-        logger.info(s"controller restored! output Seq: ${controller.controlProcessor.outputPort.getFIFOState}")
-        logger.info(s"recorded data: ${chkpt.getInputData.map(x => s"${x._1} -> ${x._2.size}")}")
-        restoreInputs(chkpt)
-        addRecordedPayloadBack(logReader)
-        replayOrderEnforcer.forwardReplayProcess(controller.controlProcessor.cursor.getStep)
+        controller.controlProcessor.replayPlan = replayConfig
+        restoreManager.restoreFromCheckpointAndSetupReplay(id, controllerReplayConf.fromCheckpoint, controllerReplayConf.replayTo, controllerReplayConf.checkpointConfig, pending)
       case _ => ???
     }
-  }
-
-  def fillCheckpoint(chkpt: SavedCheckpoint): Long ={
-    val startTime = System.currentTimeMillis()
-    chkpt.save("fifoState", controller.inputPort.getFIFOState)
-    chkpt.save("controlState", controller.controlProcessor)
-    if(controller.isReplaying){
-      chkpt.save("queuedMessages", controller.replayQueue.getAllMessages)
-    }else{
-      chkpt.save("queuedMessages", null)
-    }
-    System.currentTimeMillis() - startTime
   }
 
   override def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {
@@ -213,7 +70,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(id, markerCollectionCountMap))
         val chkpt = new SavedCheckpoint()
         chkpt.attachSerialization(SerializationExtension(controller.context.system))
-        val elapsed = fillCheckpoint(chkpt)
+        val elapsed = restoreManager.fillCheckpoint(chkpt)
         val numControlSteps = controller.controlProcessor.cursor.getStep
         val pending = new PendingCheckpoint(
           id,
@@ -222,7 +79,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           numControlSteps,controller.inputPort.getFIFOState,
           controller.controlProcessor.outputPort.getFIFOState,
           elapsed, chkpt, toAlign.toSet)
-          pending.startRecording = true
+          pending.checkpointDone = true
         pending
       case _ => ???
     }

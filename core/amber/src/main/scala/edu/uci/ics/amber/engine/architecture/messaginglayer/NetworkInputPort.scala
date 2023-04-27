@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -19,7 +18,7 @@ class NetworkInputPort(
       workflowFIFOMessage: WorkflowFIFOMessage
   ): Unit = {
     val channelId = workflowFIFOMessage.channel
-    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(actorId))
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(channelId.endpointWorker))
     entry.acceptMessage(workflowFIFOMessage.sequenceNumber, workflowFIFOMessage.payload).foreach{
       payload =>
         handler.apply(channelId, payload)
@@ -27,7 +26,7 @@ class NetworkInputPort(
   }
 
   def handleFIFOPayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
-    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(actorId))
+    val entry = inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(channelId.endpointWorker))
     entry.enforceFIFO(payload).foreach{
       payload =>
         handler.apply(channelId, payload)
@@ -42,7 +41,7 @@ class NetworkInputPort(
     inputChannels.clear()
     fifoState.foreach{
       case (id, current)  =>
-        val enforcer = new AmberFIFOChannel(actorId)
+        val enforcer = new AmberFIFOChannel(id.endpointWorker)
         enforcer.current = current
         inputChannels(id) = enforcer
     }

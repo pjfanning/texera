@@ -98,7 +98,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
   // 9. epoch manager
   private[processing] val epochManager: EpochManager = new EpochManager()
 
-  private[processing] var outputIterator: DPOutputIterator = new DPOutputIterator()
+  var outputIterator: DPOutputIterator = new DPOutputIterator()
   var inputBatch: Array[ITuple] = _
   var currentInputIdx = -1
   private[processing] var currentBatchChannel: ChannelEndpointID = _

@@ -4,9 +4,8 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProces
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
-class ControllerReplayQueue(controlProcessor:ControlProcessor, replayOrderEnforcer: ReplayOrderEnforcer, processPayload:(ChannelEndpointID, ControlPayload) => Unit){
+class ControllerReplayQueue(@transient controlProcessor:ControlProcessor, @transient replayOrderEnforcer: ReplayOrderEnforcer, @transient processPayload:(ChannelEndpointID, ControlPayload) => Unit) extends Serializable{
 
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, mutable.Queue[ControlPayload]]()

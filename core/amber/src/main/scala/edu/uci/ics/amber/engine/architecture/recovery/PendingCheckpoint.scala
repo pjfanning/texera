@@ -23,7 +23,7 @@ class PendingCheckpoint(val checkpointId:String,
   val aligned = new mutable.HashSet[ChannelEndpointID]()
   def isCompleted: Boolean = toAlign.subsetOf(aligned)
 
-  @volatile var startRecording = false
+  @volatile var checkpointDone = false
   val recordingLock = new ReentrantLock()
 
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
@@ -33,7 +33,7 @@ class PendingCheckpoint(val checkpointId:String,
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
     recordingLock.lock()
-    if(startRecording){
+    if(checkpointDone){
       if(!aligned.contains(channel) && toAlign.contains(channel)){
         if(p.isInstanceOf[AmberInternalPayload]){
           chkpt.addInputData(channel, NoOp())

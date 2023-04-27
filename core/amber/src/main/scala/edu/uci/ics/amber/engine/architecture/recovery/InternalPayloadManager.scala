@@ -74,12 +74,8 @@ class EmptyInternalPayloadManager extends InternalPayloadManager{
 
 abstract class InternalPayloadManager {
 
-  private val pending = mutable.HashMap[String, MarkerCollectionSupport]()
+  protected val pending:mutable.HashMap[String, MarkerCollectionSupport] = mutable.HashMap[String, MarkerCollectionSupport]()
   private val seen = mutable.HashSet[String]()
-
-  def addPendingCheckpoint(id:String, pendingCheckpoint: PendingCheckpoint): Unit ={
-    pending(id) = pendingCheckpoint
-  }
 
   def handlePayload(oneTimeInternalPayload: OneTimeInternalPayload):Unit
 
