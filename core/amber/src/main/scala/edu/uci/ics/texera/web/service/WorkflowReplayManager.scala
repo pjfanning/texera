@@ -134,7 +134,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       }
     val snapshot = history.getSnapshot(estIdx)
     val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    val chkptPlan = planner.getReplayPlan(req.replayPos, 2000, mem)
+    val chkptPlan = planner.getReplayPlan(req.replayPos+1, 2000, mem)
     val converted = planner.getConvertedPlan(chkptPlan)
     val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
       worker =>

@@ -95,7 +95,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           pendingCheckpoint.chkpt
         )
         logger.info(
-          s"local checkpoint completed! initial time spent = ${pendingCheckpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - pendingCheckpoint.startTime) / 1000f}s"
+          s"local checkpoint completed! marker id = $id checkpoint id = ${pendingCheckpoint.checkpointId} initial time spent = ${pendingCheckpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - pendingCheckpoint.startTime) / 1000f}s"
         )
         val alignmentCost = System.currentTimeMillis() - pendingCheckpoint.startTime
         val stats = CheckpointStats(

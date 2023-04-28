@@ -86,9 +86,9 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
 
   def getConvertedPlan(chkptPlan:(Iterable[Map[ActorVirtualIdentity, Int]], Long)): Map[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]] ={
     val converted = mutable.HashMap[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]]()
-    replayChkptId += 1
     chkptPlan._1.foreach{
       plan =>
+        replayChkptId += 1
         plan.foreach{
           case (identity, i) =>
             val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
