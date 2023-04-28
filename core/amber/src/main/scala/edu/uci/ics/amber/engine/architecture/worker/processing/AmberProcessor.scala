@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.{ChannelStepCursor, DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -37,8 +37,8 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
 
   var cursor = new ChannelStepCursor()
 
-  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID)(code: => Unit): Unit ={
-    determinantLogger.setCurrentSender(channelEndpointID, cursor.getStep)
+  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID, payload:WorkflowFIFOMessagePayloadWithPiggyback)(code: => Unit): Unit ={
+    determinantLogger.setCurrentSenderWithPayload(channelEndpointID, cursor.getStep, payload)
     determinantLogger.enableOutputCommit(true)
     cursor.setCurrentChannel(channelEndpointID)
     code
@@ -58,8 +58,7 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
                              payload: ControlPayload
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    doFaultTolerantProcessing(channel){
-      determinantLogger.recordPayload(channel, payload)
+    doFaultTolerantProcessing(channel, payload){
       payload match {
         case invocation: ControlInvocation =>
           //if (!invocation.command.isInstanceOf[SkipConsoleLog]) {

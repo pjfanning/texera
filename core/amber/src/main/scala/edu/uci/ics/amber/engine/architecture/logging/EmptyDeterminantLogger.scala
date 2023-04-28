@@ -1,13 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.logging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 
 class EmptyDeterminantLogger extends DeterminantLogger {
 
-  override def setCurrentSender(channel: ChannelEndpointID, step:Long): Unit = {}
+  override def setCurrentSenderWithPayload(channel: ChannelEndpointID, step:Long, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {}
 
   override def drainCurrentLogRecords(step:Long): Array[InMemDeterminant] = { Array.empty }
-
-  override def recordPayload(channelEndpointID: ChannelEndpointID, payload: ControlPayload): Unit = {}
 
   override def enableOutputCommit(enabled: Boolean): Unit = {}
 }

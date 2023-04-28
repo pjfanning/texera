@@ -51,7 +51,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         restoreManager.replayConfig = replayConfig
         val controllerReplayConf = replayConfig.confs(actorId)
         controller.controlProcessor.replayPlan = replayConfig
-        restoreManager.restoreFromCheckpointAndSetupReplay(id, controllerReplayConf.fromCheckpoint, controllerReplayConf.replayTo, controllerReplayConf.checkpointConfig, pending)
+        restoreManager.restoreFromCheckpointAndSetupReplay(id, controllerReplayConf.fromCheckpoint, controllerReplayConf.inputSeqMap, controllerReplayConf.replayTo, controllerReplayConf.checkpointConfig, pending)
       case _ => ???
     }
   }
@@ -70,7 +70,6 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(id, markerCollectionCountMap))
         val chkpt = new SavedCheckpoint()
         chkpt.attachSerialization(SerializationExtension(controller.context.system))
-        val elapsed = restoreManager.fillCheckpoint(chkpt)
         val numControlSteps = controller.controlProcessor.cursor.getStep
         val pending = new PendingCheckpoint(
           id,
@@ -78,8 +77,9 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           System.currentTimeMillis(),
           numControlSteps,controller.inputPort.getFIFOState,
           controller.controlProcessor.outputPort.getFIFOState,
-          elapsed, chkpt, toAlign.toSet)
+          0, chkpt, toAlign.toSet)
           pending.checkpointDone = true
+        pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)
         pending
       case _ => ???
     }
@@ -92,6 +92,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         CheckpointHolder.addCheckpoint(
           actorId,
           pendingCheckpoint.stepCursorAtCheckpoint,
+          pendingCheckpoint.checkpointId,
           pendingCheckpoint.chkpt
         )
         logger.info(

@@ -9,6 +9,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util
 import java.util.concurrent.CompletableFuture
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 object WorkerInternalQueue {
@@ -54,10 +55,17 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
   protected val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
 
   override def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]] = {
-    lbmq.enableAllSubQueue()
-    val arr = new util.ArrayList[DPMessage]()
-    lbmq.drainTo(arr)
-    arr.asScala.groupBy(_.channel)
+    val result = mutable.HashMap[ChannelEndpointID, mutable.Queue[DPMessage]]()
+    lbmq.priorityGroups.forEach{
+      g =>
+        g.queues.forEach{
+          q =>
+            val newQ = new mutable.Queue[DPMessage]()
+            q.iterator.forEachRemaining(dp => newQ.enqueue(dp))
+            result(q.key) = newQ
+        }
+    }
+    result.toMap
   }
 
   override def enqueuePayload(message:DPMessage): Unit = {

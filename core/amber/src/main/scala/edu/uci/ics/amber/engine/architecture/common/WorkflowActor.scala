@@ -73,7 +73,6 @@ abstract class WorkflowActor(
   def internalPayloadManager:InternalPayloadManager
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
-    internalPayloadManager.inputPayload(channelId, payload)
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal")
@@ -82,6 +81,7 @@ abstract class WorkflowActor(
         // take piggybacked payload out and clear the original payload
         val piggybacked = payload.piggybacked
         payload.piggybacked = null
+        internalPayloadManager.inputPayload(channelId, payload)
         handlePayload(channelId, payload)
         if(piggybacked != null){
           handlePayloadAndMarker(channelId, piggybacked)

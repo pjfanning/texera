@@ -31,11 +31,14 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
     if(!currentChannel.isControlChannel){
       creditMonitor.increaseCredit(currentChannel.endpointWorker)
     }
-    logger.info(s"taking message from channel = $currentChannel at step = ${dp.cursor.getStep} batchSize = ${if(dp.inputBatch==null)0 else{dp.inputBatch.length}}, batch tuple = ${if(dp.inputBatch==null || dp.inputBatch.isEmpty)"null" else{dp.inputBatch.head.toString}}")
-    lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
-    val res = lbmq.take()
-    logger.info(s"message to process = $res")
-    res
+    if(replayOrderEnforcer.isPayloadRecorded){
+      DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
+    }else{
+      lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
+      val res = lbmq.take()
+      logger.info(s"message to process = $res")
+      res
+    }
   }
 
 

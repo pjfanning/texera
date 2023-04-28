@@ -50,10 +50,10 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             estimatedCheckpointCost + worker.dataProcessor.internalQueue.getDataQueueLength)
           worker.dataProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
         })
-      case LoadStateAndReplay(id, fromCheckpoint, replayTo, confs) =>
+      case LoadStateAndReplay(id, fromCheckpoint, seqMap, replayTo, confs) =>
         worker.isReplaying = true
         worker.dpThread.stop() // intentionally kill DP
-        restoreManager.restoreFromCheckpointAndSetupReplay(id, fromCheckpoint, replayTo, confs, pending)
+        restoreManager.restoreFromCheckpointAndSetupReplay(id, fromCheckpoint, seqMap, replayTo, confs, pending)
       case _ => ???
     }
   }
@@ -65,7 +65,6 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
           val chkpt = new SavedCheckpoint()
           chkpt.attachSerialization(SerializationExtension(worker.context.system))
           worker.dataProcessor.outputPort.broadcastMarker(payload)
-          val elapsed = restoreManager.fillCheckpoint(chkpt)
           val pending = new PendingCheckpoint(
             id,
             worker.actorId,
@@ -73,10 +72,11 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.dataProcessor.cursor.getStep,
             worker.inputPort.getFIFOState,
             worker.dataProcessor.outputPort.getFIFOState,
-            elapsed,
+            0,
             chkpt,
             alignmentMap(worker.actorId))
             pending.checkpointDone = true
+          pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)
           pending
         })
       case _ => ???
@@ -91,6 +91,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
           CheckpointHolder.addCheckpoint(
             actorId,
             pendingCheckpoint.stepCursorAtCheckpoint,
+            pendingCheckpoint.checkpointId,
             pendingCheckpoint.chkpt
           )
           logger.info(

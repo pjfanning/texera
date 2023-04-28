@@ -4,6 +4,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 case class ReplayConfig(fromCheckpoint: Option[Long],
+                        inputSeqMap:Map[ChannelEndpointID, Long],
                         replayTo: Option[Long],
                         checkpointConfig: Array[ReplayCheckpointConfig])
 

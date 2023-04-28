@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 
 import scala.collection.mutable
 
@@ -17,17 +17,16 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var outputCommitEnabled = false
 
-  override def recordPayload(channel: ChannelEndpointID, payload: ControlPayload): Unit = {
-    if(channelsToRecord.contains(channel)){
-      tempLogs.append(RecordedPayload(currentChannel, payload))
-    }
-  }
-
-  override def setCurrentSender(channel: ChannelEndpointID, step: Long): Unit = {
-    if(currentChannel != channel){
+  override def setCurrentSenderWithPayload(channel: ChannelEndpointID, step: Long, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+    if(currentChannel != channel || channelsToRecord.contains(channel)){
       currentChannel = channel
       lastStep = step
-      tempLogs.append(StepsOnChannel(currentChannel, step))
+      val recordedPayload = if(channelsToRecord.contains(channel)){
+        payload
+      }else{
+        null
+      }
+      tempLogs.append(StepsOnChannel(currentChannel, step, recordedPayload))
     }
   }
 
@@ -37,7 +36,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
     }
     if(lastStep != step){
       lastStep = step
-      tempLogs.append(StepsOnChannel(currentChannel, step))
+      tempLogs.append(StepsOnChannel(currentChannel, step, null))
     }
     val result = tempLogs.toArray
     tempLogs.clear()

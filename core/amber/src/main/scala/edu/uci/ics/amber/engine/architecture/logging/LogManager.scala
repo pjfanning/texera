@@ -4,17 +4,20 @@ import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 
 //In-mem formats:
-sealed trait InMemDeterminant
-case class StepsOnChannel(channel: ChannelEndpointID, steps: Long)
+sealed trait InMemDeterminant{
+  val steps:Long
+}
+case class StepsOnChannel(channel: ChannelEndpointID, steps: Long, payload:WorkflowFIFOMessagePayloadWithPiggyback)
     extends InMemDeterminant
-case class RecordedPayload(channel:ChannelEndpointID, payload:ControlPayload) extends InMemDeterminant
-case class TimeStamp(value: Long) extends InMemDeterminant
-case object TerminateSignal extends InMemDeterminant
+case class TimeStamp(value: Long, steps:Long) extends InMemDeterminant
+case object TerminateSignal extends InMemDeterminant{
+  val steps = 0
+}
 
 object LogManager {
   def getLogManager(

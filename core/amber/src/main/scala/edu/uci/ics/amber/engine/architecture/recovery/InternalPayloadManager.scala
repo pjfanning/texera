@@ -28,7 +28,7 @@ object InternalPayloadManager{
                                    saveStateCost: Long)
 
   // replay related:
-  case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
+  case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], seqMap:Map[ChannelEndpointID, Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
   case class ContinueReplay(id:String, replayTo: Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
   case class PauseReplay(id:String) extends OneTimeInternalPayload
 

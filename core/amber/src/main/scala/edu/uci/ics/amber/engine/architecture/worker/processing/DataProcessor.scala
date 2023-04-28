@@ -229,7 +229,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
   def continueDataProcessing(): Unit ={
-    doFaultTolerantProcessing(currentBatchChannel){
+    doFaultTolerantProcessing(currentBatchChannel, null){
       if (hasUnfinishedOutput) {
         outputOneTuple()
       } else {
@@ -259,7 +259,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
       channel:ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {
-    doFaultTolerantProcessing(channel){
+    doFaultTolerantProcessing(channel, dataPayload){
       dataPayload match {
         case DataFrame(tuples) =>
           stateManager.conditionalTransitTo(READY, RUNNING, ()=> {

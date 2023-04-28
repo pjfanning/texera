@@ -16,18 +16,26 @@ class ControllerReplayQueue(@transient controlProcessor:ControlProcessor, @trans
 
   def enqueuePayload(channelEndpointID: ChannelEndpointID, payload:ControlPayload): Unit = {
     messageQueues.getOrElseUpdate(channelEndpointID, new mutable.Queue()).enqueue(payload)
+    triggerReplay()
+  }
+
+  def triggerReplay(): Unit ={
     var continue = true
     while(continue){
       val currentStep = controlProcessor.cursor.getStep
       replayOrderEnforcer.forwardReplayProcess(currentStep)
       val currentChannel = replayOrderEnforcer.currentChannel
-      if(messageQueues.getOrElseUpdate(currentChannel, new mutable.Queue()).nonEmpty){
-        val controlPayload = messageQueues(currentChannel).dequeue()
-        println(s"reprocessing message from channel = $currentChannel content = $controlPayload at step = $currentStep")
-        processPayload(currentChannel, controlPayload)
+      if(replayOrderEnforcer.isPayloadRecorded){
+        processPayload(currentChannel, replayOrderEnforcer.getRecordedPayload.asInstanceOf[ControlPayload])
       }else{
-        continue = false
-        println(s"waiting message from channel = $currentChannel at step = $currentStep")
+        if(messageQueues.getOrElseUpdate(currentChannel, new mutable.Queue()).nonEmpty){
+          val controlPayload = messageQueues(currentChannel).dequeue()
+          println(s"reprocessing message from channel = $currentChannel content = $controlPayload at step = $currentStep")
+          processPayload(currentChannel, controlPayload)
+        }else{
+          continue = false
+          println(s"waiting message from channel = $currentChannel at step = $currentStep")
+        }
       }
     }
   }

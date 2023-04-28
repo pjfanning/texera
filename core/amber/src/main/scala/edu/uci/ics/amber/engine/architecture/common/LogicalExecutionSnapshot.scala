@@ -35,10 +35,10 @@ object LogicalExecutionSnapshot{
 class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val timestamp:Long) extends Serializable{
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
-  private val checkpointed = mutable.HashSet[ActorVirtualIdentity]()
+  private val checkpointed = mutable.HashMap[ActorVirtualIdentity, Map[ChannelEndpointID, Long]]()
 
-  def addCheckpoint(id:ActorVirtualIdentity): Unit ={
-    checkpointed.add(id)
+  def getCheckpointedFIFOSeq(id: ActorVirtualIdentity):Map[ChannelEndpointID, Long] = {
+    checkpointed(id)
   }
 
   def addParticipant(
@@ -48,18 +48,19 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
   ): Unit = {
     val cur = participants.getOrElseUpdate(id, ProcessingStats(0, 0, new ChannelStatsMapping()))
     participants(id) = cur.copy(checkpointCost = info.saveStateCost+info.alignmentCost, alignment = info.step)
-    info.inputWatermarks.foreach{
-      case (channel, received) =>
-        cur.inputStatus.get(channel).actualReceived = received
-    }
-    info.outputWatermarks.foreach{
-      case (channel, sent) =>
-        val down = participants.getOrElseUpdate(channel.endpointWorker, ProcessingStats(0, 0, new ChannelStatsMapping()))
-        val downChannelId = ChannelEndpointID(id, channel.isControlChannel)
-        down.inputStatus.get(downChannelId).toReceive = sent
-    }
     if(isCheckpointed){
-      checkpointed.add(id)
+      checkpointed(id) = info.outputWatermarks
+    }else{
+      info.inputWatermarks.foreach{
+        case (channel, received) =>
+          cur.inputStatus.get(channel).actualReceived = received
+      }
+      info.outputWatermarks.foreach{
+        case (channel, sent) =>
+          val down = participants.getOrElseUpdate(channel.endpointWorker, ProcessingStats(0, 0, new ChannelStatsMapping()))
+          val downChannelId = ChannelEndpointID(id, channel.isControlChannel)
+          down.inputStatus.get(downChannelId).toReceive = sent
+      }
     }
   }
 

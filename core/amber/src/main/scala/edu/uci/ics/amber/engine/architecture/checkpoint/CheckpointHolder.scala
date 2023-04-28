@@ -26,6 +26,8 @@ object CheckpointHolder {
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
+  private val checkpointIdMap = mutable.HashMap[(ActorVirtualIdentity, Long), String]()
+
   def clear(): Unit = {
     checkpoints.clear()
   }
@@ -39,11 +41,16 @@ object CheckpointHolder {
     checkpoints(id)(alignment)
   }
 
-  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[Long] = {
+  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[(Long, String)] = {
     if (checkpoints.contains(id)) {
-      Try(
+      val res = Try(
         checkpoints(id).map(x => (alignment - x._1, x._1)).filter(_._1 >= 0).minBy(_._1)._2
       ).toOption
+      if(res.isDefined){
+        Some((res.get, checkpointIdMap((id, res.get))))
+      }else{
+        None
+      }
     } else {
       None
     }
@@ -52,8 +59,10 @@ object CheckpointHolder {
   def addCheckpoint(
       id: ActorVirtualIdentity,
       alignment: Long,
+      snapshotId:String,
       checkpoint: SavedCheckpoint
   ): Unit = {
+    checkpointIdMap((id, alignment)) = snapshotId
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
     if(checkpoint != null){

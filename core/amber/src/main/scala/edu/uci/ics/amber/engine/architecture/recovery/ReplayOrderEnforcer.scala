@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
 
 import scala.collection.mutable
 
@@ -14,11 +14,23 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
   private var recoveryCompleted = false
+  private var recordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
+  private var nextRecordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
 
   var currentChannel: ChannelEndpointID = _
 
   def setCheckpoint(checkpointStep:Long, callback: () => Unit): Unit ={
     checkpointStepQueue.enqueue((checkpointStep, callback))
+  }
+
+  def isPayloadRecorded: Boolean ={
+    recordedPayload != null
+  }
+
+  def getRecordedPayload:WorkflowFIFOMessagePayloadWithPiggyback ={
+    val res = recordedPayload
+    recordedPayload = null
+    res
   }
 
   def initialize(currentDPStep: Long): Unit = {
@@ -50,8 +62,10 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
   private def loadNextDeterminant(): Unit = {
     val cc = records.dequeue()
     currentChannel = nextChannel
+    recordedPayload = nextRecordedPayload
     nextChannel = cc.channel
     switchStep = cc.steps
+    nextRecordedPayload = cc.payload
   }
 
   def forwardReplayProcess(currentStep:Long): Unit ={

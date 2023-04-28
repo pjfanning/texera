@@ -2,6 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.ProcessingStats
 import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{EstimateCheckpointCost, ReplayWorkflow, TakeRuntimeGlobalCheckpoint}
@@ -75,7 +76,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     val actor = cmd.actorId
     val checkpointStats = cmd.checkpointStats
     if(!CheckpointHolder.hasCheckpoint(actor, checkpointStats.step)){
-      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, null)
+      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.id, null)
     }
     history.getSnapshot(cmd.id).addParticipant(actor, checkpointStats, true)
   }))
@@ -126,24 +127,37 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     println(s"replayTo: ${req.replayPos}")
     val estIdx = history.getInteractionIdxes(req.replayPos)
     replayStart = System.currentTimeMillis()
-    val current =
-      if (currentIdx < history.getSnapshots.size) {
-        history.getSnapshot(estIdx)
-      } else {
-        null
-      }
     val snapshot = history.getSnapshot(estIdx)
+    val chkpts = snapshot.getParticipants.map {
+      worker =>
+        val workerStats = snapshot.getStats(worker)
+        worker -> CheckpointHolder.findLastCheckpointOf(worker, workerStats.alignment)
+    }.toMap
     val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
     val chkptPlan = planner.getReplayPlan(req.replayPos+1, 2000, mem)
     val converted = planner.getConvertedPlan(chkptPlan)
     val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
       worker =>
-        val replayTo = snapshot.getStats(worker).alignment
-        val chkpt = CheckpointHolder.findLastCheckpointOf(worker, snapshot.getStats(worker).alignment)
-        if (current == null || (chkpt.isDefined && chkpt.get > current.getStats(worker).alignment)) {
-          worker -> ReplayConfig(chkpt, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
+        val workerStats = snapshot.getStats(worker)
+        val replayTo = workerStats.alignment
+        val inputFifoMap = mutable.HashMap[ChannelEndpointID, Long]()
+        chkpts.foreach{
+          case (sender, chkptInfo) =>
+            if(chkptInfo.isDefined){
+              val checkpointedFIFOSeq = history.getSnapshot(chkptInfo.get._2).getCheckpointedFIFOSeq(sender)
+              checkpointedFIFOSeq.foreach{
+                case (channel, seq) =>
+                  if(channel.endpointWorker == worker){
+                    inputFifoMap(ChannelEndpointID(sender, channel.isControlChannel)) = seq
+                  }
+              }
+            }
+        }
+        val checkpointOpt = chkpts(worker)
+        if (checkpointOpt.isDefined) {
+          worker -> ReplayConfig(Some(checkpointOpt.get._1), inputFifoMap.toMap, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
         } else {
-          worker -> ReplayConfig(None, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
+          worker -> ReplayConfig(None, inputFifoMap.toMap, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
         }
     }.toMap - CLIENT) // client is always ready
     replayId += 1
@@ -152,14 +166,5 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       actor.controller ! ReplayWorkflow(s"replay - $replayId", replayConf)
     })
   }
-//
-//  def mergeChoices(choices:Iterable[Int]): Map[Int, Set[ActorVirtualIdentity]] ={
-//    if(choices.nonEmpty){choices.map(completeCheckpointToPartialRepr).reduce(_ ++ _)}else{Map()}
-//  }
-//
-
-
-
-
 
 }

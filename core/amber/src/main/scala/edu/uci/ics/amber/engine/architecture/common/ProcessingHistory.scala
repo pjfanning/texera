@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.common
 
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.ProcessingStats
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable

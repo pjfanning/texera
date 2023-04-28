@@ -40,7 +40,7 @@ class NetworkInputPort(
   def setFIFOState(fifoState: Map[ChannelEndpointID, Long]): Unit = {
     inputChannels.clear()
     fifoState.foreach{
-      case (id, current)  =>
+      case (id, current) =>
         val enforcer = new AmberFIFOChannel(id.endpointWorker)
         enforcer.current = current
         inputChannels(id) = enforcer

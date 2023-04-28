@@ -35,11 +35,7 @@ class PendingCheckpoint(val checkpointId:String,
     recordingLock.lock()
     if(checkpointDone){
       if(!aligned.contains(channel) && toAlign.contains(channel)){
-        if(p.isInstanceOf[AmberInternalPayload]){
-          chkpt.addInputData(channel, NoOp())
-        }else{
           chkpt.addInputData(channel, p)
-        }
       }
     }
     recordingLock.unlock()

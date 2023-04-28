@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, WorkflowStatusUpdate}
 
 import scala.collection.mutable
@@ -18,16 +18,16 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   @transient var replayConfig: WorkflowReplayConfig = _
 
-  def killAllExistingWorkers(): Unit ={
+  def killAllExistingWorkers(): Unit = {
     // kill all existing workers
-    controller.controlProcessor.execution.getAllWorkers.foreach{
+    controller.controlProcessor.execution.getAllWorkers.foreach {
       worker =>
         val workerRef = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).ref
         workerRef ! PoisonPill
     }
   }
 
-  def restoreWorkers(): Unit ={
+  def restoreWorkers(): Unit = {
     Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
       .map { worker =>
         val conf = replayConfig.confs(worker)
@@ -38,24 +38,21 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
             AddressInfo(controller.getAvailableNodes(), controller.actorService.self.path.address),
             controller.actorService,
             controller.controlProcessor.execution.getOperatorExecution(worker),
-            Array(LoadStateAndReplay("replay - restart",conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
+            Array(LoadStateAndReplay("replay - restart", conf.fromCheckpoint, conf.inputSeqMap, conf.replayTo, conf.checkpointConfig))
           )
       }.toSeq))
   }
 
-  override protected def overwriteState(chkpt: SavedCheckpoint): Unit = {
+  override def overwriteState(chkpt: SavedCheckpoint): Unit = {
     killAllExistingWorkers()
-    controller.inputPort.setFIFOState(chkpt.load("fifoState"))
-    logger.info("fifo state restored")
     controller.controlProcessor = chkpt.load("controlState")
     logger.info("cp restored")
-    controller.replayQueue = chkpt.load("replayQueue")
     controller.controlProcessor.initCP(controller)
     controller.controlProcessor.replayPlan = replayConfig
     restoreWorkers()
   }
 
-  override protected def setupReplay(replayId: String, logReader: DeterminantLogStorage.DeterminantLogReader, replayTo: Option[Long]): ReplayOrderEnforcer = {
+  override def setupReplay(replayId: String, logReader: DeterminantLogStorage.DeterminantLogReader, replayTo: Option[Long]): ReplayOrderEnforcer = {
     val replayOrderEnforcer = new ReplayOrderEnforcer(logReader.getLogs[StepsOnChannel], () => {
       logger.info("recovery completed, continue normal processing")
       controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
@@ -63,47 +60,45 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     })
     val currentStep = controller.controlProcessor.cursor.getStep
     replayOrderEnforcer.initialize(currentStep)
-    if(replayTo.isDefined){
-      replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get,  () => {
+    if (replayTo.isDefined) {
+      replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get, () => {
         logger.info("replay completed, waiting for next instruction")
         controller.controlProcessor.asyncRPCClient.sendToClient(WorkflowStatusUpdate(controller.controlProcessor.execution.getWorkflowStatus))
         controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
       })
     }
+    controller.replayQueue = new ControllerReplayQueue(controller.controlProcessor, replayOrderEnforcer, controller.controlProcessor.processControlPayload)
     replayOrderEnforcer
   }
 
-  override def fillCheckpoint(checkpoint: SavedCheckpoint): Long = {
+  override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    checkpoint.save("fifoState", controller.inputPort.getFIFOState)
-    checkpoint.save("controlState", controller.controlProcessor)
-    checkpoint.save("replayQueue", controller.replayQueue)
+    val alreadyAligned = checkpoint.aligned
+    if(controller.replayQueue != null){
+      controller.replayQueue.getAllMessages.foreach{
+        case (d, messages) =>
+          if(!alreadyAligned.contains(d)){
+            messages.foreach(x => checkpoint.chkpt.addInputData(d, x))
+          }
+      }
+    }
+    checkpoint.chkpt.save("controlState", controller.controlProcessor)
     System.currentTimeMillis() - startTime
   }
 
-  override protected def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf: ReplayCheckpointConfig): () => Unit = {
-    () =>{
+  override def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf: ReplayCheckpointConfig): () => Unit = {
+    () => {
       controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
-      fillCheckpoint(pendingCheckpoint.chkpt)
+      pendingCheckpoint.fifoOutputState = controller.controlProcessor.outputPort.getFIFOState
+      fillCheckpoint(pendingCheckpoint)
       pendingCheckpoint.checkpointDone = true
     }
   }
 
-  override protected def startProcessing(stateReloaded: Boolean, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
+  override def startProcessing(stateReloaded: Boolean, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
     logger.info(s"controller restored! input Seq: ${controller.inputPort.getFIFOState}")
     logger.info(s"controller restored! output Seq: ${controller.controlProcessor.outputPort.getFIFOState}")
-    replayOrderEnforcer.forwardReplayProcess(controller.controlProcessor.cursor.getStep)
-  }
-
-  override protected def transferQueueContent(orderEnforcer: ReplayOrderEnforcer): Unit = {
-    val newQueue = new ControllerReplayQueue(controller.controlProcessor, orderEnforcer, controller.controlProcessor.processControlPayload)
-    if (controller.replayQueue != null) {
-      // in case we have some message left in the old queue
-      controller.replayQueue.getAllMessages.foreach {
-        case (channel, messages) =>
-          messages.foreach(msg => newQueue.enqueuePayload(channel, msg))
-      }
-    }
-    controller.replayQueue = newQueue
+    assert(controller.replayQueue != null)
+    controller.replayQueue.triggerReplay()
   }
 }
