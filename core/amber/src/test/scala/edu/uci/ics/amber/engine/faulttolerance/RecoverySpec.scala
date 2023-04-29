@@ -167,7 +167,7 @@ class RecoverySpec
   }
 
   "Logreader" should "not read anything from empty log2" in {
-    val workerName = "WF1-CONTROLLER"
+    val workerName = "WF1-HashJoin-operator-ff7129c7-dbc9-442c-a2bb-b60c3c7a838b-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
     for (elem <- logStorage.getReader.getLogs[InMemDeterminant]){
       println(elem)

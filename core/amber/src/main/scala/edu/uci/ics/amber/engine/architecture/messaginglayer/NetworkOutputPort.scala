@@ -52,6 +52,7 @@ class NetworkOutputPort(
   }
 
   def broadcastMarker(internalPayload:AmberInternalPayload, excludeSet:Set[ChannelEndpointID] = Set.empty): Unit ={
+    // TODO: send message for the output channel which are not created yet
     idToSequenceNums.foreach{
       case (outChannel, seq) =>
         if(!excludeSet.contains(outChannel)){
