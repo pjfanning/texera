@@ -5,7 +5,6 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.ShutdownDP
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{InternalPayloadFromDP, ReplaceRecoveryQueue, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
@@ -94,11 +93,20 @@ class WorkflowWorker(
   def executeThroughDP[T](
                            func: () => T
                          ): T = {
-    val future = new CompletableFuture[T]()
     logger.info("start to execute through DP")
-    internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
-    dpThread.unblock() // in case it is blocked.
-    val res = future.get()
+    val res = if(Thread.currentThread().getName == dpThread.getThreadName){
+      //inside dp thread
+      func()
+    }else{
+      val future = new CompletableFuture[T]()
+      if(!dpThread.blockingFuture.isDone){
+        val old = dpThread.blockingFuture
+        dpThread.blockingFuture = new CompletableFuture[Unit]()
+        old.complete(Unit)
+      }
+      internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
+      future.get()
+    }
     logger.info("execution completed")
     res
   }
@@ -106,7 +114,7 @@ class WorkflowWorker(
   override def postStop(): Unit = {
     super.postStop()
     // shutdown dp thread by sending a command
-    internalPayloadManager.handlePayload(InternalChannelEndpointID, ShutdownDP())
+    dpThread.stop()
     logger.info("stopped!")
   }
 

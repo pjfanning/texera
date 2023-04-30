@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.FlushNetworkBufferHandler.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.Constants.{adaptiveBufferingTimeoutMs, enableAdaptiveNetworkBuffering}
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
@@ -80,6 +80,7 @@ class OutputManager(
     val partitioner = toPartitioner(partitioning)
     partitioners.update(link, partitioner)
     partitioner.allReceivers.foreach(receiver => {
+      dataOutputPort.addOutputChannel(ChannelEndpointID(receiver, false))
       val buffer = new NetworkOutputBuffer(receiver, dataOutputPort, getBatchSize(partitioning))
       networkOutputBuffers.update((link, receiver), buffer)
     })

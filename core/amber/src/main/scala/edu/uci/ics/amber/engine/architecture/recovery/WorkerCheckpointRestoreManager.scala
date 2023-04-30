@@ -1,19 +1,25 @@
 package edu.uci.ics.amber.engine.architecture.recovery
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.TakeRuntimeGlobalCheckpoint
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DPThread
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.CheckpointSupport
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ReplayCompleted
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 
-import scala.collection.mutable
-
 class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends CheckpointRestoreManager(worker) {
+
+
+  def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
+    worker.executeThroughDP(() =>{
+      val stats = finalizeCheckpoint(pendingCheckpoint)
+      worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, stats))
+    })
+  }
 
   override def overwriteState(chkpt:SavedCheckpoint):Unit = {
     var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
@@ -43,14 +49,9 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
     })
     val currentStep = worker.dataProcessor.cursor.getStep
     replayOrderEnforcer.initialize(currentStep)
-    if(replayTo.isDefined){
+    if(replayTo.isDefined) {
       val currentStep = worker.dataProcessor.cursor.getStep
-      replayOrderEnforcer.setReplayTo(currentStep, replayTo.get,  () => {
-        logger.info("replay completed, waiting for next instruction")
-        worker.dpThread.blockingOnNextStep()
-        worker.dataProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
-      })
-      worker.dpThread.unblock() // in case it is blocked.
+      replayOrderEnforcer.setReplayTo(currentStep, replayTo.get)
     }
     worker.internalQueue = new RecoveryInternalQueueImpl(worker.actorId, worker.creditMonitor, replayOrderEnforcer)
     replayOrderEnforcer
@@ -58,7 +59,6 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
 
   override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    logger.info("start to take checkpoint")
     val alreadyAligned = checkpoint.aligned
     worker.internalQueue.getAllMessages.foreach{
       case (d, messages) =>
@@ -85,10 +85,12 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
       worker.dpThread.dpInterrupted {
         logger.info(s"taking checkpoint during replay at step ${worker.dataProcessor.cursor.getStep}")
         pendingCheckpoint.recordingLock.lock()
-        pendingCheckpoint.fifoOutputState = worker.dataProcessor.outputPort.getFIFOState
         worker.dataProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
         fillCheckpoint(pendingCheckpoint)
+        pendingCheckpoint.fifoOutputState = worker.dataProcessor.outputPort.getFIFOState
         pendingCheckpoint.checkpointDone = true
+        logger.info(s"state serialization done, pending checkpoint aligned = ${pendingCheckpoint.isNoLongerPending}")
+        pendingCheckpoint.checkCompletion()
         pendingCheckpoint.recordingLock.unlock()
       }
     }
@@ -101,5 +103,12 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
     logger.info("starting new DP thread...")
     assert(worker.internalQueue.isInstanceOf[RecoveryInternalQueueImpl])
     worker.dpThread.start() // new DP is not started yet.
+  }
+
+  override protected def replayCompletedCallback(replayId: String): () => Unit = {
+    () => {
+      logger.info("replay completed, waiting for next instruction")
+      worker.dataProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
+    }
   }
 }

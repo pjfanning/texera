@@ -24,17 +24,11 @@ class DPThread(val actorId: ActorVirtualIdentity,
   @transient
   var dpThread: Future[_] = _
 
+  def getThreadName:String = "DP-thread"
+
   private val endFuture = new CompletableFuture[Unit]()
 
-  private var waitFuture = CompletableFuture.completedFuture[Unit]()
-
-  def blockingOnNextStep(): Unit ={
-    waitFuture = new CompletableFuture[Unit]()
-  }
-
-  def unblock(): Unit ={
-    waitFuture.complete(Unit)
-  }
+  var blockingFuture = new CompletableFuture[Unit]()
 
   def stop(): Unit ={
     dpThread.cancel(true) // interrupt
@@ -60,6 +54,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
       val startFuture = new CompletableFuture[Unit]()
       dpThread = dpThreadExecutor.submit(new Runnable() {
         def run(): Unit = {
+          Thread.currentThread().setName(getThreadName)
           logger.info("DP thread started")
           startFuture.complete(Unit)
           try {
@@ -93,14 +88,14 @@ class DPThread(val actorId: ActorVirtualIdentity,
     // main DP loop
     while (!stopped) {
       if(replayOrderEnforcer != null){
-        replayOrderEnforcer.forwardReplayProcess(dp.cursor.getStep)
-      }
-      // block here to let main thread do following.
-      // 1) replace queue from replay to normal 2) continue replay
-      if(!waitFuture.isDone){
-        dpInterrupted{
-          logger.info("DP Thread is blocked, waiting for unblock")
-          waitFuture.get()
+        val currentStep = dp.cursor.getStep
+        replayOrderEnforcer.triggerCallbacks(currentStep)
+        if(replayOrderEnforcer.isReplayCompleted(currentStep)){
+          dpInterrupted{
+            blockingFuture.get()
+          }
+        }else{
+          replayOrderEnforcer.forwardReplayProcess(currentStep)
         }
       }
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {

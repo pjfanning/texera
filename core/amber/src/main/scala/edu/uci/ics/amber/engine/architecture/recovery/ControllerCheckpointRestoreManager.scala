@@ -2,21 +2,26 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import akka.actor.PoisonPill
 import com.twitter.util.{Await, Future}
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 
 import scala.collection.mutable
 
 class ControllerCheckpointRestoreManager(@transient controller:Controller) extends CheckpointRestoreManager(controller) {
 
   @transient var replayConfig: WorkflowReplayConfig = _
+
+  override def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
+    val stats = finalizeCheckpoint(pendingCheckpoint)
+    controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, stats))
+  }
 
   def killAllExistingWorkers(): Unit = {
     // kill all existing workers
@@ -61,11 +66,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     val currentStep = controller.controlProcessor.cursor.getStep
     replayOrderEnforcer.initialize(currentStep)
     if (replayTo.isDefined) {
-      replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get, () => {
-        logger.info("replay completed, waiting for next instruction")
-        controller.controlProcessor.asyncRPCClient.sendToClient(WorkflowStatusUpdate(controller.controlProcessor.execution.getWorkflowStatus))
-        controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
-      })
+      replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get)
     }
     controller.replayQueue = new ControllerReplayQueue(controller.controlProcessor, replayOrderEnforcer, controller.controlProcessor.processControlPayload)
     replayOrderEnforcer
@@ -92,6 +93,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
       pendingCheckpoint.fifoOutputState = controller.controlProcessor.outputPort.getFIFOState
       fillCheckpoint(pendingCheckpoint)
       pendingCheckpoint.checkpointDone = true
+      pendingCheckpoint.checkCompletion()
     }
   }
 
@@ -100,5 +102,12 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     logger.info(s"controller restored! output Seq: ${controller.controlProcessor.outputPort.getFIFOState}")
     assert(controller.replayQueue != null)
     controller.replayQueue.triggerReplay()
+  }
+
+  override protected def replayCompletedCallback(replayId:String): () => Unit = {
+    () => {
+      logger.info("replay completed, waiting for next instruction")
+      controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
+    }
   }
 }

@@ -8,8 +8,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, Workflow
 import scala.collection.mutable
 
 class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryComplete: () => Unit) {
-  private var onReplayComplete: () => Unit = () => {}
-  private val checkpointStepQueue = mutable.Queue[(Long, () => Unit)]()
+  private val callbacks = mutable.HashMap[Long, mutable.ArrayBuffer[() => Unit]]()
   private var switchStep = INIT_STEP
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
@@ -17,10 +16,12 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
   private var recordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
   private var nextRecordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
 
+  def isReplayCompleted(currentStep:Long):Boolean = replayTo == currentStep
+
   var currentChannel: ChannelEndpointID = _
 
-  def setCheckpoint(checkpointStep:Long, callback: () => Unit): Unit ={
-    checkpointStepQueue.enqueue((checkpointStep, callback))
+  def setCallbackOnStep(step:Long, callback: () => Unit): Unit ={
+    callbacks.getOrElseUpdate(step, new mutable.ArrayBuffer[() => Unit]()).append(callback)
   }
 
   def isPayloadRecorded: Boolean ={
@@ -41,10 +42,9 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
     }
   }
 
-  def setReplayTo(currentDPStep: Long, dest: Long, replayEndPromise:() => Unit): Unit = {
+  def setReplayTo(currentDPStep: Long, dest: Long): Unit = {
     assert(currentDPStep <= dest)
     replayTo = dest
-    this.onReplayComplete = replayEndPromise
   }
 
   def getAllReplayChannels:Set[ChannelEndpointID] = {
@@ -68,14 +68,16 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
     nextRecordedPayload = cc.payload
   }
 
+  def triggerCallbacks(currentStep:Long): Unit = {
+    if(callbacks.contains(currentStep)){
+      callbacks(currentStep).foreach{
+        func => func()
+      }
+      callbacks.remove(currentStep)
+    }
+  }
+
   def forwardReplayProcess(currentStep:Long): Unit ={
-    if(checkpointStepQueue.nonEmpty && checkpointStepQueue.head._1 == currentStep){
-      checkpointStepQueue.head._2()
-      checkpointStepQueue.dequeue()
-    }
-    if(replayTo == currentStep){
-      onReplayComplete()
-    }
     if(recoveryCompleted){
       // recovery completed
       onRecoveryComplete()

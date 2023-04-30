@@ -25,5 +25,5 @@ trait MarkerAlignmentInternalPayload extends AmberInternalPayload{
 trait MarkerCollectionSupport{
   def onReceiveMarker(channel:ChannelEndpointID):Unit
   def onReceivePayload(channel:ChannelEndpointID, p: WorkflowFIFOMessagePayload):Unit
-  def isCompleted:Boolean
+  def isNoLongerPending:Boolean
 }

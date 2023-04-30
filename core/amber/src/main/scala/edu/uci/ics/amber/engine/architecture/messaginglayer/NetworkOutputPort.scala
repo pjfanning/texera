@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, Chann
 
 import java.util.concurrent.atomic.AtomicLong
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, SELF}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
 import scala.collection.mutable
 
@@ -20,6 +20,10 @@ class NetworkOutputPort(
     val handler: (ActorVirtualIdentity, WorkflowMessage) => Unit
 ) extends AmberLogging with Serializable {
   private val idToSequenceNums = new mutable.HashMap[ChannelEndpointID, AtomicLong]()
+
+  def addOutputChannel(channel:ChannelEndpointID): Unit ={
+    idToSequenceNums(channel) = new AtomicLong()
+  }
 
   def sendToClient(payload:ClientEvent): Unit ={
     handler(CLIENT, WorkflowClientMessage(payload))
@@ -41,8 +45,7 @@ class NetworkOutputPort(
   def getActiveChannels:Iterable[ChannelEndpointID] = idToSequenceNums.keys
 
   def getSequenceNumber(channel:ChannelEndpointID): Long ={
-    val counter = idToSequenceNums.getOrElseUpdate(channel, new AtomicLong())
-    counter.getAndIncrement()
+    idToSequenceNums.getOrElseUpdate(channel, new AtomicLong()).getAndIncrement()
   }
 
   private def sendThroughChannel(to:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit ={
@@ -51,14 +54,11 @@ class NetworkOutputPort(
     handler(to.endpointWorker, WorkflowFIFOMessage(inChannelEndpointID, seqNum, payload))
   }
 
-  def broadcastMarker(internalPayload:AmberInternalPayload, excludeSet:Set[ChannelEndpointID] = Set.empty): Unit ={
-    // TODO: send message for the output channel which are not created yet
+  def broadcastMarker(internalPayload:AmberInternalPayload): Unit ={
     idToSequenceNums.foreach{
       case (outChannel, seq) =>
-        if(!excludeSet.contains(outChannel)){
           logger.info(s"send $internalPayload to ${outChannel}")
           sendThroughChannel(outChannel, internalPayload)
-        }
     }
   }
 

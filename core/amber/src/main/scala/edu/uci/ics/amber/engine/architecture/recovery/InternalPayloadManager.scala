@@ -16,9 +16,6 @@ object InternalPayloadManager{
   // command that has no effect:
   case class NoOp() extends IdempotentInternalPayload
 
-  // worker lifecycle related:
-  case class ShutdownDP() extends IdempotentInternalPayload
-
   // estimation related:
   case class EstimateCheckpointCost(id:String) extends OneTimeInternalPayload
 
@@ -67,8 +64,6 @@ class EmptyInternalPayloadManager extends InternalPayloadManager{
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit = {}
 
   override def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {null}
-
-  override def markerAlignmentEnd(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, support: MarkerCollectionSupport): Unit = {}
 }
 
 
@@ -82,8 +77,6 @@ abstract class InternalPayloadManager {
   def handlePayload(channel:ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload):Unit
 
   def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload):MarkerCollectionSupport
-
-  def markerAlignmentEnd(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, support: MarkerCollectionSupport):Unit
 
   def inputMarker(channel: ChannelEndpointID, payload:AmberInternalPayload):Unit = {
     payload match {
@@ -99,8 +92,7 @@ abstract class InternalPayloadManager {
           pending(mp.id) = markerAlignmentStart(mp)
         }
         pending(mp.id).onReceiveMarker(channel)
-        if(pending(mp.id).isCompleted){
-          markerAlignmentEnd(mp, pending(mp.id))
+        if(pending(mp.id).isNoLongerPending){
           pending.remove(mp.id)
         }
     }

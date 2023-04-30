@@ -60,7 +60,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       .map(row => {
         try {
           val parsedFields: Array[Object] = {
-            //Thread.sleep(200)
+            Thread.sleep(1)
             AttributeTypeUtils.parseFields(row.asInstanceOf[Array[Object]], schema)
           }
           Tuple.newBuilder(schema).addSequentially(parsedFields).build

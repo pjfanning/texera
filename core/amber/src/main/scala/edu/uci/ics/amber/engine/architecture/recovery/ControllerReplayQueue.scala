@@ -23,18 +23,23 @@ class ControllerReplayQueue(@transient controlProcessor:ControlProcessor, @trans
     var continue = true
     while(continue){
       val currentStep = controlProcessor.cursor.getStep
-      replayOrderEnforcer.forwardReplayProcess(currentStep)
-      val currentChannel = replayOrderEnforcer.currentChannel
-      if(replayOrderEnforcer.isPayloadRecorded){
-        processPayload(currentChannel, replayOrderEnforcer.getRecordedPayload.asInstanceOf[ControlPayload])
+      replayOrderEnforcer.triggerCallbacks(currentStep)
+      if(replayOrderEnforcer.isReplayCompleted(currentStep)){
+        continue = false
       }else{
-        if(messageQueues.getOrElseUpdate(currentChannel, new mutable.Queue()).nonEmpty){
-          val controlPayload = messageQueues(currentChannel).dequeue()
-          println(s"reprocessing message from channel = $currentChannel content = $controlPayload at step = $currentStep")
-          processPayload(currentChannel, controlPayload)
+        replayOrderEnforcer.forwardReplayProcess(currentStep)
+        val currentChannel = replayOrderEnforcer.currentChannel
+        if(replayOrderEnforcer.isPayloadRecorded){
+          processPayload(currentChannel, replayOrderEnforcer.getRecordedPayload.asInstanceOf[ControlPayload])
         }else{
-          continue = false
-          println(s"waiting message from channel = $currentChannel at step = $currentStep")
+          if(messageQueues.getOrElseUpdate(currentChannel, new mutable.Queue()).nonEmpty){
+            val controlPayload = messageQueues(currentChannel).dequeue()
+            println(s"reprocessing message from channel = $currentChannel content = $controlPayload at step = $currentStep")
+            processPayload(currentChannel, controlPayload)
+          }else{
+            continue = false
+            println(s"waiting message from channel = $currentChannel at step = $currentStep")
+          }
         }
       }
     }

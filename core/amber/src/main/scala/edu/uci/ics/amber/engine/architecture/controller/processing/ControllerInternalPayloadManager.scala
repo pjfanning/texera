@@ -78,34 +78,10 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           numControlSteps,controller.inputPort.getFIFOState,
           controller.controlProcessor.outputPort.getFIFOState,
           0, chkpt, toAlign.toSet)
-          pending.checkpointDone = true
+        pending.setOnComplete(restoreManager.onCheckpointCompleted)
+        pending.checkpointDone = true
         pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)
         pending
-      case _ => ???
-    }
-  }
-
-  override def markerAlignmentEnd(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, support: MarkerCollectionSupport): Unit = {
-    markerAlignmentInternalPayload match {
-      case TakeRuntimeGlobalCheckpoint(id, _) =>
-        val pendingCheckpoint = support.asInstanceOf[PendingCheckpoint]
-        CheckpointHolder.addCheckpoint(
-          actorId,
-          pendingCheckpoint.stepCursorAtCheckpoint,
-          pendingCheckpoint.checkpointId,
-          pendingCheckpoint.chkpt
-        )
-        logger.info(
-          s"local checkpoint completed! marker id = $id checkpoint id = ${pendingCheckpoint.checkpointId} initial time spent = ${pendingCheckpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - pendingCheckpoint.startTime) / 1000f}s"
-        )
-        val alignmentCost = System.currentTimeMillis() - pendingCheckpoint.startTime
-        val stats = CheckpointStats(
-          pendingCheckpoint.stepCursorAtCheckpoint,
-          pendingCheckpoint.fifoInputState,
-          pendingCheckpoint.fifoOutputState,
-          alignmentCost,
-          pendingCheckpoint.initialCheckpointTime)
-        controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, stats))
       case _ => ???
     }
   }

@@ -4,6 +4,7 @@ import akka.serialization.SerializationExtension
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue, WorkerInternalQueueImpl}
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport}
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, MarkerCollectionSupport, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
@@ -24,6 +25,29 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
   protected def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf:ReplayCheckpointConfig): () => Unit
 
   protected def startProcessing(stateReloaded:Boolean, replayOrderEnforcer: ReplayOrderEnforcer):Unit
+
+  protected def replayCompletedCallback(replayId:String): () => Unit
+
+  def onCheckpointCompleted(checkpoint: PendingCheckpoint): Unit
+
+  protected def finalizeCheckpoint(checkpoint: PendingCheckpoint): CheckpointStats ={
+    CheckpointHolder.addCheckpoint(
+      actorId,
+      checkpoint.stepCursorAtCheckpoint,
+      checkpoint.checkpointId,
+      checkpoint.chkpt
+    )
+    logger.info(
+      s"local checkpoint completed! checkpoint id = ${checkpoint.checkpointId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - checkpoint.startTime) / 1000f}s"
+    )
+    val alignmentCost = System.currentTimeMillis() - checkpoint.startTime
+    CheckpointStats(
+      checkpoint.stepCursorAtCheckpoint,
+      checkpoint.fifoInputState,
+      checkpoint.fifoOutputState,
+      alignmentCost,
+      checkpoint.initialCheckpointTime)
+  }
 
   def restoreFromCheckpointAndSetupReplay(replayId:String, fromCheckpoint:Option[Long], fifoState:Map[ChannelEndpointID, Long], replayTo:Option[Long], confs:Array[ReplayCheckpointConfig], pendingCheckpoints:mutable.HashMap[String, MarkerCollectionSupport]): Unit ={
     var recordedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
@@ -52,10 +76,12 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
         0,
         planned,
         conf.waitingForMarker)
+      pendingCheckpoint.setOnComplete(onCheckpointCompleted)
       // add this checkpoint to pending checkpoints
       pendingCheckpoints(conf.id) = pendingCheckpoint
-      orderEnforcer.setCheckpoint(conf.checkpointAt, doCheckpointDuringReplay(pendingCheckpoint, conf))
+      orderEnforcer.setCallbackOnStep(conf.checkpointAt, doCheckpointDuringReplay(pendingCheckpoint, conf))
     })
+    orderEnforcer.setCallbackOnStep(replayTo.get, replayCompletedCallback(replayId))
     InternalPayloadManager.setupLoggingForWorkflowActor(actor, false)
     recordedInput.foreach{
       case (c, payloads) =>

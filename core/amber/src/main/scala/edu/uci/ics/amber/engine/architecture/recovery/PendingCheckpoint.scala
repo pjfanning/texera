@@ -20,15 +20,29 @@ class PendingCheckpoint(val checkpointId:String,
                         val chkpt:SavedCheckpoint,
                         toAlign: Set[ChannelEndpointID]) extends MarkerCollectionSupport with AmberLogging{
 
+
+
+  private var onComplete: (PendingCheckpoint) => Unit = (_) => {}
+  def setOnComplete(onComplete: (PendingCheckpoint) => Unit): Unit ={
+    this.onComplete = onComplete
+  }
+
   val aligned = new mutable.HashSet[ChannelEndpointID]()
-  def isCompleted: Boolean = toAlign.subsetOf(aligned)
+  def isNoLongerPending: Boolean = toAlign.subsetOf(aligned)
 
   @volatile var checkpointDone = false
   val recordingLock = new ReentrantLock()
 
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
     aligned.add(channel)
+    checkCompletion()
     logger.info(s"finish recording input channel $channel current = ${aligned}, target = $toAlign, recorded input for this channel = ${chkpt.getInputData.getOrElse(channel, mutable.ArrayBuffer.empty).size}")
+  }
+
+  def checkCompletion(): Unit ={
+    if(checkpointDone && toAlign.subsetOf(aligned)){
+      onComplete(this)
+    }
   }
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
