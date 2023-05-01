@@ -17,28 +17,37 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
   }
   private val systemCmdQueue = lbmq.getSubQueue(InternalChannelEndpointID)
 
-  override def peek(): Option[DPMessage] = {
+  override def peek(dp:DataProcessor): Option[DPMessage] = {
     // output a dummy message
-    if(!systemCmdQueue.isEmpty){
+    if(replayOrderEnforcer.isReplayCompleted(dp.cursor.getStep)){
       Some(DPMessage(InternalChannelEndpointID, null))
-    }else{
-      Some(DPMessage(replayOrderEnforcer.currentChannel, null))
+    }else {
+      if (!systemCmdQueue.isEmpty) {
+        Some(DPMessage(InternalChannelEndpointID, null))
+      } else {
+        Some(DPMessage(replayOrderEnforcer.currentChannel, null))
+      }
     }
   }
 
   override def take(dp:DataProcessor): DPMessage = {
-    val currentChannel = replayOrderEnforcer.currentChannel
-    if(!currentChannel.isControlChannel){
-      creditMonitor.increaseCredit(currentChannel.endpointWorker)
-    }
-    if(replayOrderEnforcer.isPayloadRecorded){
-      DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
+    if(replayOrderEnforcer.isReplayCompleted(dp.cursor.getStep)){
+      lbmq.disableSubQueueExcept(InternalChannelEndpointID)
+      lbmq.take()
     }else{
-      lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
-      logger.info(s"message to take from = $currentChannel at step = ${dp.cursor.getStep}")
-      val res = lbmq.take()
-      logger.info(s"message to process = $res")
-      res
+      val currentChannel = replayOrderEnforcer.currentChannel
+      if(!currentChannel.isControlChannel){
+        creditMonitor.increaseCredit(currentChannel.endpointWorker)
+      }
+      if(replayOrderEnforcer.isPayloadRecorded){
+        DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
+      }else{
+        lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
+        logger.info(s"message to take from = $currentChannel at step = ${dp.cursor.getStep}")
+        val res = lbmq.take()
+        logger.info(s"message to process = $res")
+        res
+      }
     }
   }
 

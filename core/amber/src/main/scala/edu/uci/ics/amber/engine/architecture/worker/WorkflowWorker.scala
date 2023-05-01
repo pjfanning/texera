@@ -99,11 +99,6 @@ class WorkflowWorker(
       func()
     }else{
       val future = new CompletableFuture[T]()
-      if(!dpThread.blockingFuture.isDone){
-        val old = dpThread.blockingFuture
-        dpThread.blockingFuture = new CompletableFuture[Unit]()
-        old.complete(Unit)
-      }
       internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
       future.get()
     }

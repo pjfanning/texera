@@ -34,22 +34,9 @@ object JsonTest {
     val planner = new ReplayCheckpointPlanner(history)
 
     val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-//    history.inputConstant = 1
-//    val result1 = planner.getReplayPlan(2, 10000, mem)
-//    println(result1)
-//    val converted = planner.getConvertedPlan(result1)
-//    println(converted)
-//    converted.foreach{
-//      case (identity, configs) =>
-//        configs.foreach{
-//          conf =>
-//            CheckpointHolder.addCheckpoint(identity,conf.checkpointAt,"",null)
-//        }
-//    }
-//    val result2 = planner.getReplayPlan(4, 10000, mem)
-//    println(result2)
-//    val converted2 = planner.getConvertedPlan(result2)
-//    println(converted2)
+    history.inputConstant = 1
+    val result1 = planner.getReplayPlan(history.getInteractionIdxes.length, 10000, mem)
+    println(result1)
   }
 }
 

@@ -106,18 +106,19 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
               val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
               val snapshot = history.getSnapshot(i)
               val snapshotStats = snapshot.getStats(identity)
-              val alignment = snapshotStats.alignment
-              if(!CheckpointHolder.hasCheckpoint(identity, alignment)){
-                val markerCollection = mutable.HashSet[ChannelEndpointID]()
-                plan.values.toSet.foreach{
-                  pos:Int =>
-                    val snapshot2 = history.getSnapshot(pos)
-                    snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
-                }
-                markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
-                val conf = ReplayCheckpointConfig(s"replay_checkpoint-$replayChkptId", markerCollection.toSet, snapshotStats.alignment, snapshot.id)
-                buffer.append(conf)
+              val markerCollection = mutable.HashSet[ChannelEndpointID]()
+              plan.foreach{
+                case (upstream, chkptPos) =>
+                  val snapshot2 = history.getSnapshot(chkptPos)
+                  if(snapshot2.getParticipants.toSet.contains(identity)){
+                    snapshot2.getStats(identity).inputStatus.keys.toSet.foreach{
+                      channel:ChannelEndpointID => if(channel.endpointWorker == upstream){markerCollection.add(channel)}
+                    }
+                  }
               }
+              markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
+              val conf = ReplayCheckpointConfig(s"replay_checkpoint-$replayChkptId", markerCollection.toSet, snapshotStats.alignment, snapshot.id)
+              buffer.append(conf)
           }
         }
     }

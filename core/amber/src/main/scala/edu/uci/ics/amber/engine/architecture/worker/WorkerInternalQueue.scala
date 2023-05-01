@@ -38,7 +38,7 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def enqueuePayload(message:DPMessage): Unit
 
-  def peek(): Option[DPMessage]
+  def peek(dp:DataProcessor): Option[DPMessage]
 
   def take(dp:DataProcessor): DPMessage
 
@@ -88,7 +88,7 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
     }
   }
 
-  override def peek(): Option[DPMessage] = {
+  override def peek(dp:DataProcessor): Option[DPMessage] = {
     Option(lbmq.peek())
   }
 

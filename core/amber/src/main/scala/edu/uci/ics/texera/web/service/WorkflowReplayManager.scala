@@ -49,11 +49,12 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
 
   def doEstimation(interaction:Boolean): Unit ={
     client.executeAsync(actor =>{
-      val time = System.currentTimeMillis() - startTime
-      val id = CheckpointHolder.generateEstimationId(time) + (if(interaction){"-interaction"}else{""})
-      if(!history.hasSnapshotAtTime(time)){
-        history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
+      var time = System.currentTimeMillis() - startTime
+      if(history.hasSnapshotAtTime(time)) {
+        time +=1
       }
+      val id = CheckpointHolder.generateEstimationId(time) + (if(interaction){"-interaction"}else{""})
+      history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
       actor.controller ! EstimateCheckpointCost(id)
     })
   }
@@ -66,7 +67,6 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   addSubscription(client.registerCallback[EstimationCompleted](cmd =>{
     val snapshot = history.getSnapshot(cmd.id)
     snapshot.addParticipant(cmd.actorId, cmd.checkpointStats)
-    checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
   }))
 
   addSubscription(client.registerCallback[RuntimeCheckpointCompleted](cmd =>{
@@ -75,6 +75,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     if(!CheckpointHolder.hasCheckpoint(actor, checkpointStats.step)){
       CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.id, cmd.markerId, null)
     }
+    checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
     val snapshot = history.getSnapshot(cmd.id)
     snapshot.addParticipant(actor, checkpointStats, true)
     val time = history.getSnapshotTime(cmd.id)

@@ -90,16 +90,10 @@ class DPThread(val actorId: ActorVirtualIdentity,
       if(replayOrderEnforcer != null){
         val currentStep = dp.cursor.getStep
         replayOrderEnforcer.triggerCallbacks(currentStep)
-        if(replayOrderEnforcer.isReplayCompleted(currentStep)){
-          dpInterrupted{
-            blockingFuture.get()
-          }
-        }else{
-          replayOrderEnforcer.forwardReplayProcess(currentStep)
-        }
+        replayOrderEnforcer.forwardReplayProcess(currentStep)
       }
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
-        val input = internalQueue.peek()
+        val input = internalQueue.peek(dp)
         input match {
           case None =>
             dp.continueDataProcessing()
