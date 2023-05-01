@@ -1283,11 +1283,16 @@ class JsonSchemaGenerator
                     p: BeanProperty =>
                       selectAnnotation(p, classOf[JsonSchemaInjects]) match {
                         case Some(a) => Some(a)
+                        case None =>
+                          // Try to look at the class itself -- Looks like this is the only way to find it if the type is Enum
+                          Option(p.getType.getRawClass.getAnnotation(classOf[JsonSchemaInjects]))
+                            .filter(annotationIsApplicable(_))
                       }
                   }.foreach {
-                    a => a.value().foreach(b =>
-                      injectFromJsonSchemaInject(b, thisPropertyNode.meta)
-                    )
+                    a => {
+                      System.out.println(a.value().length)
+                      a.value().foreach(b => injectFromJsonSchemaInject(b, thisPropertyNode.meta))
+                    }
                   }
                 }
 
