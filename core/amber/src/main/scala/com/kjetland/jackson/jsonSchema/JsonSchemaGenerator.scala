@@ -1278,6 +1278,17 @@ class JsonSchemaGenerator
                     a =>
                       injectFromJsonSchemaInject(a, thisPropertyNode.meta)
                   }
+
+                  prop.flatMap {
+                    p: BeanProperty =>
+                      selectAnnotation(p, classOf[JsonSchemaInjects]) match {
+                        case Some(a) => Some(a)
+                      }
+                  }.foreach {
+                    a => a.value().foreach(b =>
+                      injectFromJsonSchemaInject(b, thisPropertyNode.meta)
+                    )
+                  }
                 }
 
                 override def optionalProperty(prop: BeanProperty): Unit = {
