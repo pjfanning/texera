@@ -10,6 +10,8 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
+import scala.collection.mutable
+
 
 class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
   with Serializable {
@@ -36,6 +38,14 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
     new AsyncRPCServer(outputPort, actorId)
 
   var cursor = new ChannelStepCursor()
+  val processedPayloadCountMap = new mutable.HashMap[ChannelEndpointID, Long]()
+
+  def increaseProcessedCount(channel:ChannelEndpointID): Unit ={
+    if(!processedPayloadCountMap.contains(channel)){
+      processedPayloadCountMap(channel) = 0L
+    }
+    processedPayloadCountMap(channel) += 1
+  }
 
   def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID, payload:WorkflowFIFOMessagePayloadWithPiggyback)(code: => Unit): Unit ={
     determinantLogger.setCurrentSenderWithPayload(channelEndpointID, cursor.getStep, payload)
@@ -58,6 +68,7 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
                              payload: ControlPayload
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
+    increaseProcessedCount(channel)
     doFaultTolerantProcessing(channel, payload){
       payload match {
         case invocation: ControlInvocation =>

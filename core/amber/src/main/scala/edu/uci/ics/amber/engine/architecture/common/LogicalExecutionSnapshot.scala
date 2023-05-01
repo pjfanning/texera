@@ -4,6 +4,7 @@ import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.{Ch
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 
@@ -41,6 +42,8 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
     checkpointed(id)
   }
 
+  def isAllCheckpointed:Boolean = (participants.keys.toSet - CLIENT) == checkpointed.keys.toSet
+
   def addParticipant(
       id: ActorVirtualIdentity,
       info: CheckpointStats,
@@ -64,7 +67,7 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
     }
   }
 
-  def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys
+  def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys.toSet - CLIENT
 
   def getStats(actorVirtualIdentity: ActorVirtualIdentity):ProcessingStats = {
     participants.getOrElse(actorVirtualIdentity, ProcessingStats(0,0,new ChannelStatsMapping()))

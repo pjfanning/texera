@@ -1,17 +1,16 @@
 <nz-timeline
-[nzPending]="replay.isReplaying ? 'Replaying to ' + replay.history[replay.selectedIndex] + 's ...' : false">
+[nzPending]="replay.isReplaying ? 'Replaying to ' + (replay.selectedKey / 1000) + 's ...' : false">
   <nz-timeline-item
-  *ngFor="let timepoint of replay.history; index as i;"
-  [nzColor]="replay.selectedIndex === i ? 'green': (replay.checkpointed.includes(i) ? 'blue':'gray')"
+  *ngFor="let t of replay.historyStatus | keys;"
+  [nzColor]="replay.selectedKey === t ? 'red': (replay.historyStatus[t] ==='interaction' ? 'gray': (replay.historyStatus[t] === 'partial' ? 'green' :'blue'))"
   >
     <div
       [style]="{
-        'padding-bottom': (i === replay.history.length ? 10 :
-        (replay.history[i + 1] - replay.history[i])) * 8 + 'px',
+        'padding-bottom': '10px',
         'margin-bottom': '0px'
         }"
-      (click)="replay.selectReplayPoint(i)">
-      <p [style]="{'cursor': 'pointer'}">{{timepoint}}s</p>
+      (click)="replay.selectReplayPoint(t)">
+      <p [style]="{'cursor': 'pointer'}">{{t / 1000}}s</p>
     </div>
   </nz-timeline-item>
 </nz-timeline>

@@ -10,12 +10,11 @@ export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_rep
   providedIn: "root",
 })
 export class ReplayWorkflowService {
-  public history: readonly number[] = [];
-  public checkpointed: readonly number[] = [];
+  public historyStatus: Record<number, string> = {};
   private displayWorkflowReplay = new Subject<string>();
   public operatorInfo: string[][] = [];
-  public selectedIndex = -1;
-  public plannerStrategies: string[] = ["No checkpoint", "Complete - all", "Complete - naive", "Complete - optimized", "Partial - naive", "Partial - optimized"];
+  public selectedKey = -1;
+  public plannerStrategies: string[] = ["No checkpoint", "Complete - all", "Complete - optimized", "Partial - greedy"];
   public selectedMode: String = this.plannerStrategies[0];
   public isReplaying = false;
   public replayTime = 0;
@@ -24,26 +23,28 @@ export class ReplayWorkflowService {
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
-      this.history = e.history;
+      e.history.forEach(x => {
+        this.historyStatus[x] = "interaction";
+      });
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowAdditionalOperatorInfoEvent").subscribe(e =>{
       this.operatorInfo = e.data.split("\n").map(row => row.split(":"));
     });
-    this.history = [1,5, 20, 30, 40];
 
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(e => {
       if(e.state === ExecutionState.Initializing || e.state === ExecutionState.Aborted){
-        this.history = [];
-        this.checkpointed = [];
-        this.selectedIndex = -1;
+        this.historyStatus = {};
+        this.selectedKey = -1;
         this.operatorInfo = [];
         this.isReplaying = false;
       }
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowCheckpointedEvent").subscribe(e => {
-      this.checkpointed = e.checkpointed;
+      Object.entries(e.checkpointed).forEach(entry => {
+        this.historyStatus[Number(entry[0])] = entry[1]?"full":"partial";
+      });
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowReplayCompletedEvent").subscribe(e => {
@@ -61,15 +62,17 @@ export class ReplayWorkflowService {
     return this.displayWorkflowReplay.asObservable();
   }
 
-  public selectReplayPoint(index: number): void {
-    if(!this.isReplaying && this.selectedMode != "") {
-      this.selectedIndex = index;
-      this.isReplaying = true;
-      this.replayTime = 0;
-      this.workflowWebsocketService.send("WorkflowReplayRequest", {replayPos: index, plannerStrategy: this.selectedMode, replayTimeLimit: this.replayTimeLimit});
-      this.notification.info("replaying time point " + this.history[index] + "s");
-    }else{
-      this.notification.info("replaying in progress");
+  public selectReplayPoint(key: number): void {
+    if(key in this.historyStatus){
+      if(!this.isReplaying && this.selectedMode != "") {
+        this.selectedKey = key;
+        this.isReplaying = true;
+        this.replayTime = 0;
+        this.workflowWebsocketService.send("WorkflowReplayRequest", {replayPos: key, plannerStrategy: this.selectedMode, replayTimeLimit: this.replayTimeLimit*1000});
+        this.notification.info("replaying time point " + (key/1000) + "s");
+      }else{
+        this.notification.info("replaying in progress");
+      }
     }
   }
 

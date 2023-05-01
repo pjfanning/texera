@@ -16,6 +16,7 @@ import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowReplayRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import io.reactivex.rxjava3.disposables.Disposable
 
 import java.io.{FileOutputStream, ObjectOutputStream}
 import java.nio.file.Paths
@@ -25,60 +26,61 @@ import scala.concurrent.duration.DurationInt
 
 
 class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) extends SubscriptionManager {
-  private var currentIdx = 999
   private var replayId = 0
 
   var startTime:Long = 0
+  var pauseStart:Long = 0
   var history = new ProcessingHistory()
   val planner = new ReplayCheckpointPlanner(history)
   val pendingReplay = new mutable.HashSet[ActorVirtualIdentity]()
   var replayStart = 0L
+  var checkpointCost = 0L
+  var chkptPlan: (Iterable[Map[ActorVirtualIdentity, Int]], Long) = _
+  var timeLimit = 10000000L
 
-  private val checkpointInterval = 1000.seconds
   private val estimationInterval = 1.seconds
-  private val interactionEveryNEstimation = 4
-  private var interactionCounter = 0
-
   private var estimationHandler = Cancellable.alreadyCancelled
-
-  private var checkpointHandler = Cancellable.alreadyCancelled
-
-  def setupCheckpoint(): Cancellable = {
-    TexeraWebApplication.scheduleRecurringCallThroughActorSystem(1.seconds, checkpointInterval) {
-      client.execute(actor => {
-        val time = System.currentTimeMillis() - startTime
-        val id = CheckpointHolder.generateCheckpointId
-        history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
-        actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
-      })
-    }
-  }
 
   def setupEstimation(): Cancellable ={
     TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds, estimationInterval){
-      client.execute(actor =>{
-        interactionCounter += 1
-        val time = System.currentTimeMillis() - startTime
-        val id = CheckpointHolder.generateEstimationId(time)
-        if(!history.hasSnapshotAtTime(time)){
-          history.addSnapshot(time, new LogicalExecutionSnapshot(id, interactionCounter % interactionEveryNEstimation == 0, time), id)
-        }
-        actor.controller ! EstimateCheckpointCost(id)
-      })
+      doEstimation(false)
     }
   }
 
+  def doEstimation(interaction:Boolean): Unit ={
+    client.executeAsync(actor =>{
+      val time = System.currentTimeMillis() - startTime
+      val id = CheckpointHolder.generateEstimationId(time) + (if(interaction){"-interaction"}else{""})
+      if(!history.hasSnapshotAtTime(time)){
+        history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
+      }
+      actor.controller ! EstimateCheckpointCost(id)
+    })
+  }
+
+  addSubscription(new Disposable {
+    override def dispose(): Unit = estimationHandler.cancel()
+    override def isDisposed: Boolean = estimationHandler.isCancelled
+  })
+
   addSubscription(client.registerCallback[EstimationCompleted](cmd =>{
-    history.getSnapshot(cmd.id).addParticipant(cmd.actorId, cmd.checkpointStats)
+    val snapshot = history.getSnapshot(cmd.id)
+    snapshot.addParticipant(cmd.actorId, cmd.checkpointStats)
+    checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
   }))
 
   addSubscription(client.registerCallback[RuntimeCheckpointCompleted](cmd =>{
     val actor = cmd.actorId
     val checkpointStats = cmd.checkpointStats
     if(!CheckpointHolder.hasCheckpoint(actor, checkpointStats.step)){
-      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.id, null)
+      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.id, cmd.markerId, null)
     }
-    history.getSnapshot(cmd.id).addParticipant(actor, checkpointStats, true)
+    val snapshot = history.getSnapshot(cmd.id)
+    snapshot.addParticipant(actor, checkpointStats, true)
+    val time = history.getSnapshotTime(cmd.id)
+    stateStore.jobMetadataStore.updateState(state => {
+      state.withCheckpointedStates(state.checkpointedStates + (time.toInt -> snapshot.isAllCheckpointed))
+    })
   }))
 
   addSubscription(client.registerCallback[ReplayCompleted](cmd =>{
@@ -89,7 +91,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       stateStore.jobMetadataStore.updateState(state => {
         state.withIsRecovering(false).withIsReplaying(false)
           .withReplayElapsed((System.currentTimeMillis() - replayStart)/1000d)
-          .withCheckpointElapsed(0)
+          .withCheckpointElapsed(checkpointCost / 1000d)
       })
     }
   }))
@@ -99,21 +101,31 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       case WorkflowAggregatedState.RUNNING =>
         if(startTime == 0){
           startTime = System.currentTimeMillis()
+          TexeraWebApplication.scheduleCallThroughActorSystem(1.seconds) {
+            client.executeAsync(actor => {
+              val time = System.currentTimeMillis() - startTime
+              val id = CheckpointHolder.generateCheckpointId
+              history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
+              actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+            })
+          }
+        }else if(pauseStart != 0){
+          startTime += System.currentTimeMillis() - pauseStart
+          pauseStart = 0
         }
-        if(estimationHandler.isCancelled){
+        if(estimationHandler.isCancelled && replayStart == 0L){
           estimationHandler = setupEstimation()
         }
-        if(checkpointHandler.isCancelled){
-          checkpointHandler = setupCheckpoint()
-        }
       case WorkflowAggregatedState.PAUSED =>
+        pauseStart = System.currentTimeMillis()
         estimationHandler.cancel()
-        checkpointHandler.cancel()
+        if(replayStart == 0L){
+          doEstimation(true)
+        }
       case WorkflowAggregatedState.COMPLETED =>
         estimationHandler.cancel()
-        checkpointHandler.cancel()
         stateStore.jobMetadataStore.updateState(jobMetadata =>
-          jobMetadata.withInteractionHistory(history.getInteractionTimesAsSeconds).withCurrentReplayPos(-1)
+          jobMetadata.withInteractionHistory(history.getInteractionTimes.map(_.toInt)).withCurrentReplayPos(-1)
         )
         val file = Paths.get("").resolve("latest-interation-history")
         val oos = new ObjectOutputStream(new FileOutputStream(file.toFile))
@@ -124,18 +136,29 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   }))
 
   def scheduleReplay(req:WorkflowReplayRequest): Unit = {
-    println(s"replayTo: ${req.replayPos}")
-    val estIdx = history.getInteractionIdxes(req.replayPos)
+    checkpointCost = 0L
     replayStart = System.currentTimeMillis()
-    val snapshot = history.getSnapshot(estIdx)
+    if(timeLimit > req.replayTimeLimit){
+      val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
+      chkptPlan = planner.getReplayPlan(history.getInteractionIdxes.length, req.replayTimeLimit, mem)
+      timeLimit = req.replayTimeLimit
+    }
+    val snapshot = history.getSnapshot(req.replayPos.toLong)
+    var markerId = ""
     val chkpts = snapshot.getParticipants.map {
       worker =>
         val workerStats = snapshot.getStats(worker)
-        worker -> CheckpointHolder.findLastCheckpointOf(worker, workerStats.alignment)
+        val prevCheckpoint = CheckpointHolder.findLastCheckpointOf(worker, workerStats.alignment)
+        if(prevCheckpoint.isDefined){
+          if(markerId == ""){
+            markerId = prevCheckpoint.get._3
+          }else if(markerId != prevCheckpoint.get._3){
+            throw new RuntimeException("panic")
+          }
+        }
+        worker -> prevCheckpoint
     }.toMap
-    val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    val chkptPlan = planner.getReplayPlan(req.replayPos+1, 2000, mem)
-    val converted = planner.getConvertedPlan(chkptPlan)
+    val converted = planner.getConvertedPlan(chkptPlan, chkpts.mapValues(_.getOrElse((0L, "", ""))._1))
     val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
       worker =>
         val workerStats = snapshot.getStats(worker)
@@ -161,7 +184,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
         }
     }.toMap - CLIENT) // client is always ready
     replayId += 1
-    client.execute(actor => {
+    client.executeAsync(actor => {
       replayConf.confs.keys.foreach(pendingReplay.add)
       actor.controller ! ReplayWorkflow(s"replay - $replayId", replayConf)
     })

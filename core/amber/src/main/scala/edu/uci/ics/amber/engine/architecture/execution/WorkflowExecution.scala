@@ -89,11 +89,13 @@ class WorkflowExecution(workflow: Workflow) {
       return WorkflowAggregatedState.RUNNING
     }
     val unCompletedOpStates = opStates.filter(_ != COMPLETED)
+    val runningOpStates = unCompletedOpStates.filter(_ != UNINITIALIZED)
     if (unCompletedOpStates.forall(_ == UNINITIALIZED)) {
-      WorkflowAggregatedState.UNINITIALIZED
-    } else if (unCompletedOpStates.forall(_ == PAUSED)) {
+      return WorkflowAggregatedState.UNINITIALIZED
+    }
+    if (runningOpStates.forall(_ == PAUSED)) {
       WorkflowAggregatedState.PAUSED
-    } else if (unCompletedOpStates.forall(_ == READY)) {
+    } else if (runningOpStates.forall(_ == READY)) {
       WorkflowAggregatedState.READY
     } else {
       WorkflowAggregatedState.UNKNOWN

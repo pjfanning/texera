@@ -259,6 +259,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
       channel:ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {
+    increaseProcessedCount(channel)
     doFaultTolerantProcessing(channel, dataPayload){
       dataPayload match {
         case DataFrame(tuples) =>

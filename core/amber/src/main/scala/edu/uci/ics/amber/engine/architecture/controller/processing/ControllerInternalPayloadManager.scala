@@ -63,7 +63,9 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         val toAlign = mutable.HashSet[ChannelEndpointID](ChannelEndpointID(CONTROLLER, true))
         val markerCollectionCountMap = controller.controlProcessor.execution.getAllWorkers.map{
           worker =>
-            toAlign.add(ChannelEndpointID(worker, true))
+            val channelToAlign = ChannelEndpointID(worker, true)
+            controller.controlProcessor.outputPort.addOutputChannel(channelToAlign) // in case the channel is not established
+            toAlign.add(channelToAlign)
             val mutableSet = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).upstreamChannels
             worker -> mutableSet.toSet
         }.toMap
@@ -73,11 +75,12 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         val numControlSteps = controller.controlProcessor.cursor.getStep
         val pending = new PendingCheckpoint(
           id,
+          id,
           actorId,
           System.currentTimeMillis(),
           numControlSteps,controller.inputPort.getFIFOState,
           controller.controlProcessor.outputPort.getFIFOState,
-          0, chkpt, toAlign.toSet)
+          0, chkpt, toAlign.toSet, restoreManager.getProjectedProcessedCountForMarker)
         pending.setOnComplete(restoreManager.onCheckpointCompleted)
         pending.checkpointDone = true
         pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)

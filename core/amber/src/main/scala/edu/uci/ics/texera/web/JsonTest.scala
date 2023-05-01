@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web
 
 import akka.actor.ActorSystem
 import akka.serialization.SerializationExtension
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
+import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
 import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.common.AmberUtils.akkaConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, EndOfUpstream, WorkflowFIFOMessage}
@@ -34,11 +34,22 @@ object JsonTest {
     val planner = new ReplayCheckpointPlanner(history)
 
     val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    history.inputConstant = 1
-    val result = planner.getReplayPlan(history.getInteractionIdxes.length, 2000, mem)
-    println(result)
-    val converted = planner.getConvertedPlan(result)
-    println(converted)
+//    history.inputConstant = 1
+//    val result1 = planner.getReplayPlan(2, 10000, mem)
+//    println(result1)
+//    val converted = planner.getConvertedPlan(result1)
+//    println(converted)
+//    converted.foreach{
+//      case (identity, configs) =>
+//        configs.foreach{
+//          conf =>
+//            CheckpointHolder.addCheckpoint(identity,conf.checkpointAt,"",null)
+//        }
+//    }
+//    val result2 = planner.getReplayPlan(4, 10000, mem)
+//    println(result2)
+//    val converted2 = planner.getConvertedPlan(result2)
+//    println(converted2)
   }
 }
 

@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{Ch
 import edu.uci.ics.amber.engine.architecture.worker.processing.DPThread
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.CheckpointSupport
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, InternalChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 
@@ -17,7 +17,7 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
   def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
     worker.executeThroughDP(() =>{
       val stats = finalizeCheckpoint(pendingCheckpoint)
-      worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, stats))
+      worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, pendingCheckpoint.markerId, stats))
     })
   }
 
@@ -37,6 +37,14 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
       worker,
       outputIter
     )
+  }
+
+  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long ={
+    worker.executeThroughDP(() => {
+      var existing = worker.dataProcessor.processedPayloadCountMap.getOrElse(channel, 0L)
+      existing += worker.internalQueue.getQueuedMessageCount(channel)
+      existing
+    })
   }
 
   override def setupReplay(replayId:String, logReader: DeterminantLogReader, replayTo:Option[Long]):ReplayOrderEnforcer = {
@@ -59,10 +67,16 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
 
   override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    val alreadyAligned = checkpoint.aligned
+    val markerCountMap = checkpoint.markerProcessedCountMap
+    val processedCountMap = worker.dataProcessor.processedPayloadCountMap
     worker.internalQueue.getAllMessages.foreach{
       case (d, messages) =>
-        if(!alreadyAligned.contains(d)){
+        if(markerCountMap.contains(d)){
+          val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
+          if(debt > 0) {
+            messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInputData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
+          }
+        }else if(d != InternalChannelEndpointID){
           messages.foreach(x => checkpoint.chkpt.addInputData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
         }
     }

@@ -10,7 +10,6 @@ class ProcessingHistory extends Serializable {
   private val history = mutable.HashMap[Long, LogicalExecutionSnapshot]()
   private val idMapping = mutable.HashMap[String, Long]()
   var historyArray:Array[Long] = _
-  history(0) = new EmptyLogicalExecutionSnapshot()
   var inputConstant = 100
 
   def hasSnapshotWithID(id:String): Boolean ={
@@ -23,7 +22,7 @@ class ProcessingHistory extends Serializable {
 
   def getTimeGap(start:Int, end:Int):Long = {
     if(start < 0){
-      return history(historyArray(end)).timestamp - history(0).timestamp
+      return history(historyArray(end)).timestamp - history(historyArray(0)).timestamp
     }
     history(historyArray(end)).timestamp - history(historyArray(start)).timestamp
   }
@@ -43,16 +42,22 @@ class ProcessingHistory extends Serializable {
     history(idMapping(id))
   }
 
+  def getSnapshot(time:Long):LogicalExecutionSnapshot = {
+    history(time)
+  }
+
+  def getSnapshotTime(id:String):Long = idMapping(id)
+
   def getSnapshot(idx:Int): LogicalExecutionSnapshot ={
     history(historyArray(idx))
   }
 
-  def getInteractionTimesAsSeconds: Array[Int] = {
-    history.keys.filter(k => history(k).isInteraction).map(x => x.toInt/1000).toArray.sorted
-  }
-
   def getInteractionTimes: Array[Long] = {
     history.keys.filter(k => history(k).isInteraction).toArray.sorted
+  }
+
+  def getInteractionIdx(time:Long):Int = {
+    historyArray.indices.find(i => historyArray(i) == time).get
   }
 
   def getInteractionIdxes: Array[Int] = {

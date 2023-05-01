@@ -46,6 +46,8 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def getControlQueueLength: Int
 
+  def getQueuedMessageCount(channelEndpointID: ChannelEndpointID): Int
+
   def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]]
 
 }
@@ -129,6 +131,15 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
           q => q.enable(enable)
         }
       }
+    }
+  }
+
+  override def getQueuedMessageCount(channelEndpointID: ChannelEndpointID): Int = {
+    val subQueue = lbmq.getSubQueue(channelEndpointID)
+    if(subQueue == null){
+      0
+    }else{
+      subQueue.size
     }
   }
 }

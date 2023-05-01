@@ -35,6 +35,7 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
       DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
     }else{
       lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
+      logger.info(s"message to take from = $currentChannel at step = ${dp.cursor.getStep}")
       val res = lbmq.take()
       logger.info(s"message to process = $res")
       res

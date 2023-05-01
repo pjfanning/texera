@@ -22,7 +22,9 @@ class NetworkOutputPort(
   private val idToSequenceNums = new mutable.HashMap[ChannelEndpointID, AtomicLong]()
 
   def addOutputChannel(channel:ChannelEndpointID): Unit ={
-    idToSequenceNums(channel) = new AtomicLong()
+    if(!idToSequenceNums.contains(channel)){
+      idToSequenceNums(channel) = new AtomicLong()
+    }
   }
 
   def sendToClient(payload:ClientEvent): Unit ={

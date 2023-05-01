@@ -44,7 +44,7 @@ object ClientEvent {
 
   case class EstimationCompleted(actorId:ActorVirtualIdentity, id:String, checkpointStats: CheckpointStats) extends ClientEvent
 
-  case class RuntimeCheckpointCompleted(actorId:ActorVirtualIdentity, id:String, checkpointStats: CheckpointStats) extends ClientEvent
+  case class RuntimeCheckpointCompleted(actorId:ActorVirtualIdentity, id:String, markerId:String, checkpointStats: CheckpointStats) extends ClientEvent
 
   case class FatalErrorToClient(e:Throwable) extends ClientEvent
 

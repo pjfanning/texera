@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, InternalChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 
 import scala.collection.mutable
@@ -20,7 +20,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   override def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
     val stats = finalizeCheckpoint(pendingCheckpoint)
-    controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, stats))
+    controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId,pendingCheckpoint.markerId, stats))
   }
 
   def killAllExistingWorkers(): Unit = {
@@ -30,6 +30,14 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
         val workerRef = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).ref
         workerRef ! PoisonPill
     }
+  }
+
+  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long ={
+    var existing = controller.controlProcessor.processedPayloadCountMap.getOrElse(channel, 0L)
+    if(controller.replayQueue != null){
+      existing += controller.replayQueue.getQueuedMessageCount(channel)
+    }
+    existing
   }
 
   def restoreWorkers(): Unit = {
@@ -74,11 +82,17 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    val alreadyAligned = checkpoint.aligned
+    val markerCountMap = checkpoint.markerProcessedCountMap
+    val processedCountMap = controller.controlProcessor.processedPayloadCountMap
     if(controller.replayQueue != null){
       controller.replayQueue.getAllMessages.foreach{
         case (d, messages) =>
-          if(!alreadyAligned.contains(d)){
+          if(markerCountMap.contains(d)){
+            val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
+            if(debt > 0) {
+              messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInputData(d, x))
+            }
+          }else if(d != InternalChannelEndpointID){
             messages.foreach(x => checkpoint.chkpt.addInputData(d, x))
           }
       }

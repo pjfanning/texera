@@ -169,7 +169,7 @@ export type WorkflowReplayCompletedEvent = Readonly<{
 }>;
 
 export type WorkflowCheckpointedEvent = Readonly<{
-  checkpointed: readonly number[];
+  checkpointed: Record<number, boolean>;
 }>;
 
 export type DebugCommandRequest = Readonly<{

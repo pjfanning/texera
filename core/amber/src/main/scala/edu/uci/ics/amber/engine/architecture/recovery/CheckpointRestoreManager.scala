@@ -30,11 +30,14 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
 
   def onCheckpointCompleted(checkpoint: PendingCheckpoint): Unit
 
+  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long
+
   protected def finalizeCheckpoint(checkpoint: PendingCheckpoint): CheckpointStats ={
     CheckpointHolder.addCheckpoint(
       actorId,
       checkpoint.stepCursorAtCheckpoint,
       checkpoint.checkpointId,
+      checkpoint.markerId,
       checkpoint.chkpt
     )
     logger.info(
@@ -67,6 +70,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       val planned = new SavedCheckpoint()
       planned.attachSerialization(SerializationExtension(actor.context.system))
       val pendingCheckpoint = new PendingCheckpoint(
+        conf.id,
         conf.estimationId,
         actor.actorId,
         0,
@@ -75,7 +79,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
         Map.empty,
         0,
         planned,
-        conf.waitingForMarker)
+        conf.waitingForMarker, getProjectedProcessedCountForMarker)
       pendingCheckpoint.setOnComplete(onCheckpointCompleted)
       // add this checkpoint to pending checkpoints
       pendingCheckpoints(conf.id) = pendingCheckpoint

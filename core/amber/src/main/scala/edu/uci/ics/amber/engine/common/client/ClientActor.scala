@@ -21,7 +21,7 @@ private[client] object ClientActor {
   case class InitializeRequest(workflowAndPipelinedRegionPlan: (Workflow,PipelinedRegionPlan), controllerConfig: ControllerConfig)
   case class ObservableRequest(pf: PartialFunction[Any, Unit])
   case class CommandRequest(command: ControlCommand[_], promise: Promise[Any])
-  case class ExecuteRequest(closure:(ClientActor) => Unit, completableFuture: CompletableFuture[Unit])
+  case class ExecuteRequest(closure:(ClientActor) => Unit)
 }
 
 private[client] class ClientActor extends Actor {
@@ -42,9 +42,9 @@ private[client] class ClientActor extends Actor {
       if(handlers.isDefinedAt(payload)){
         handlers(payload)
       }
-    case ExecuteRequest(closure, completableFuture) =>
+    case ExecuteRequest(closure) =>
       closure(this)
-      completableFuture.complete(Unit)
+      sender ! Ack
     case commandRequest: CommandRequest =>
       controller ! ControlInvocation(controlId, commandRequest.command)
       promiseMap(controlId) = commandRequest.promise
@@ -69,33 +69,6 @@ private[client] class ClientActor extends Actor {
         }
         promiseMap.remove(originalCommandID)
       }
-//    case NetworkMessage(mId, _ @WorkflowFIFOMessage(_, _, _ @ControlInvocation(_, command))) =>
-//      sender ! NetworkAck(mId)
-//      if(command.isInstanceOf[WorkflowPaused] || command.isInstanceOf[WorkflowCompleted]){
-//        estimationHandler.cancel()
-//        checkpointHandler.cancel()
-//      }
-//      command match {
-//        case update1: WorkflowStateUpdate =>
-//          if(update1.aggState == RUNNING){
-//            if(estimationHandler.isCancelled){
-//              estimationHandler = setupEstimation()
-//            }
-//            if(checkpointHandler.isCancelled){
-//              checkpointHandler = setupCheckpoint()
-//            }
-//          }
-//        case _ =>
-//      }
-//      if(command.isInstanceOf[WorkflowCompleted]){
-//        if (handlers.isDefinedAt(WorkflowReplayInfo(null))) {
-//          handlers(WorkflowReplayInfo(processingHistory))
-//        }
-//      }
-//      if (handlers.isDefinedAt(command)) {
-//        handlers(command)
-//      }
-
     case NetworkMessage(mId, _) =>
       sender ! NetworkAck(mId)
     case other =>

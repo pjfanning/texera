@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.service
 
+import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.common.ProcessingHistory
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, OutsideWorldChannelEndpointID}
@@ -84,25 +85,40 @@ class ReplayCheckpointPlanner(history:ProcessingHistory) {
   }
 
 
-  def getConvertedPlan(chkptPlan:(Iterable[Map[ActorVirtualIdentity, Int]], Long)): Map[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]] ={
+  def getConvertedPlan(chkptPlan:(Iterable[Map[ActorVirtualIdentity, Int]], Long), startFrom:Map[ActorVirtualIdentity, Long]): Map[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]] ={
     val converted = mutable.HashMap[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]]()
     chkptPlan._1.foreach{
       plan =>
-        replayChkptId += 1
+        var availableToCheckpoint = true
         plan.foreach{
           case (identity, i) =>
-            val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
             val snapshot = history.getSnapshot(i)
             val snapshotStats = snapshot.getStats(identity)
-            val markerCollection = mutable.HashSet[ChannelEndpointID]()
-            plan.values.toSet.foreach{
-              pos:Int =>
-                val snapshot2 = history.getSnapshot(pos)
-                snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
+            val alignment = snapshotStats.alignment
+            if(alignment <= startFrom.getOrElse(identity, 0L)){
+              availableToCheckpoint = false
             }
-            markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
-            val conf = ReplayCheckpointConfig(s"replay checkpoint - $replayChkptId", markerCollection.toSet, snapshotStats.alignment, snapshot.id)
-            buffer.append(conf)
+        }
+        if(availableToCheckpoint){
+          replayChkptId += 1
+          plan.foreach{
+            case (identity, i) =>
+              val buffer = converted.getOrElseUpdate(identity, new ArrayBuffer[ReplayCheckpointConfig]())
+              val snapshot = history.getSnapshot(i)
+              val snapshotStats = snapshot.getStats(identity)
+              val alignment = snapshotStats.alignment
+              if(!CheckpointHolder.hasCheckpoint(identity, alignment)){
+                val markerCollection = mutable.HashSet[ChannelEndpointID]()
+                plan.values.toSet.foreach{
+                  pos:Int =>
+                    val snapshot2 = history.getSnapshot(pos)
+                    snapshot2.getStats(identity).inputStatus.keys.foreach(markerCollection.add)
+                }
+                markerCollection.remove(OutsideWorldChannelEndpointID) // outside world marker cannot be collected
+                val conf = ReplayCheckpointConfig(s"replay_checkpoint-$replayChkptId", markerCollection.toSet, snapshotStats.alignment, snapshot.id)
+                buffer.append(conf)
+              }
+          }
         }
     }
     converted.toMap

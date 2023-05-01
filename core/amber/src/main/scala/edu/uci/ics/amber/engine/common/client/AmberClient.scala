@@ -80,10 +80,8 @@ class AmberClient(
     Future.Unit
   }
 
-  def execute(closure: (ClientActor) => Unit): Unit ={
-    val future = new CompletableFuture[Unit]()
-    clientActor ! ExecuteRequest(closure, future)
-    future.get()
+  def executeAsync(closure: (ClientActor) => Unit): Unit ={
+    clientActor ! ExecuteRequest(closure)
   }
 
 //  def replayExecution(requestId:String, conf: WorkflowReplayConfig): Unit = {

@@ -10,6 +10,10 @@ class ControllerReplayQueue(@transient controlProcessor:ControlProcessor, @trans
   private val messageQueues = mutable
     .HashMap[ChannelEndpointID, mutable.Queue[ControlPayload]]()
 
+  def getQueuedMessageCount(channelEndpointID: ChannelEndpointID): Int ={
+    messageQueues.getOrElse(channelEndpointID, new mutable.Queue()).size
+  }
+
   def getAllMessages:Map[ChannelEndpointID, Iterable[ControlPayload]] = {
     messageQueues.toMap
   }
