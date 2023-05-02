@@ -11,6 +11,8 @@ class SavedCheckpoint {
 
   private val states = new mutable.HashMap[String, SerializedState]()
   private val recordedInputData = new mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]
+  private val internalData = new mutable.HashMap[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]
+
   @transient
   private var serde: Serialization = _
 
@@ -18,7 +20,13 @@ class SavedCheckpoint {
     recordedInputData.getOrElseUpdate(channel, new ArrayBuffer[WorkflowFIFOMessagePayload]()).append(data)
   }
 
+  def addInternalData(channel:ChannelEndpointID, data:WorkflowFIFOMessagePayload): Unit ={
+    internalData.getOrElseUpdate(channel, new ArrayBuffer[WorkflowFIFOMessagePayload]()).append(data)
+  }
+
   def getInputData: mutable.Map[ChannelEndpointID, ArrayBuffer[WorkflowFIFOMessagePayload]] = recordedInputData
+
+  def getInternalData: mutable.Map[ChannelEndpointID, ArrayBuffer[WorkflowFIFOMessagePayload]] = internalData
 
   def attachSerialization(serialization: Serialization): Unit = {
     serde = serialization

@@ -74,10 +74,10 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
         if(markerCountMap.contains(d)){
           val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
           if(debt > 0) {
-            messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInputData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
+            messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
           }
         }else if(d != InternalChannelEndpointID){
-          messages.foreach(x => checkpoint.chkpt.addInputData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
+          messages.foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
         }
     }
     if(worker.dataProcessor.operatorOpened){

@@ -84,16 +84,18 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     val startTime = System.currentTimeMillis()
     val markerCountMap = checkpoint.markerProcessedCountMap
     val processedCountMap = controller.controlProcessor.processedPayloadCountMap
+    // record current fifo status
+
     if(controller.replayQueue != null){
       controller.replayQueue.getAllMessages.foreach{
         case (d, messages) =>
           if(markerCountMap.contains(d)){
             val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
             if(debt > 0) {
-              messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInputData(d, x))
+              messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInternalData(d, x))
             }
           }else if(d != InternalChannelEndpointID){
-            messages.foreach(x => checkpoint.chkpt.addInputData(d, x))
+            messages.foreach(x => checkpoint.chkpt.addInternalData(d, x))
           }
       }
     }
