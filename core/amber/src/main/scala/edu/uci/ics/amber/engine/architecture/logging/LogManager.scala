@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 
 
@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 sealed trait InMemDeterminant{
   val steps:Long
 }
-case class StepsOnChannel(channel: ChannelEndpointID, steps: Long, payload:WorkflowFIFOMessagePayloadWithPiggyback)
+case class StepsOnChannel(channel: ChannelEndpointID, steps: Long, payload:WorkflowExecutionPayload)
     extends InMemDeterminant
 case class TimeStamp(value: Long, steps:Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant{

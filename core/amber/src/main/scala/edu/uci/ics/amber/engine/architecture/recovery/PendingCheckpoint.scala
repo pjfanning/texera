@@ -19,7 +19,7 @@ class PendingCheckpoint(val markerId:String,
                         var fifoOutputState:Map[ChannelEndpointID, Long],
                         var initialCheckpointTime:Long,
                         val chkpt:SavedCheckpoint,
-                        toAlign: Set[ChannelEndpointID], getProcessedCountForMarker: (ChannelEndpointID) => Long) extends MarkerCollectionSupport with AmberLogging{
+                        toAlign: Set[ChannelEndpointID]) extends MarkerCollectionSupport with AmberLogging{
 
 
 
@@ -27,16 +27,13 @@ class PendingCheckpoint(val markerId:String,
   def setOnComplete(onComplete: (PendingCheckpoint) => Unit): Unit ={
     this.onComplete = onComplete
   }
-  val markerProcessedCountMap = new mutable.HashMap[ChannelEndpointID, Long]()
 
   private val aligned = new mutable.HashSet[ChannelEndpointID]()
   def isNoLongerPending: Boolean = toAlign.subsetOf(aligned)
 
   @volatile var checkpointDone = false
-  val recordingLock = new ReentrantLock()
 
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {
-    markerProcessedCountMap(channel) = getProcessedCountForMarker(channel)
     aligned.add(channel)
     checkCompletion()
     logger.info(s"finish recording input channel $channel current = ${aligned}, target = $toAlign, recorded input for this channel = ${chkpt.getInputData.getOrElse(channel, mutable.ArrayBuffer.empty).size}")
@@ -49,12 +46,10 @@ class PendingCheckpoint(val markerId:String,
   }
 
   def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {
-    recordingLock.lock()
     if(checkpointDone){
       if(!aligned.contains(channel) && toAlign.contains(channel)){
           chkpt.addInputData(channel, p)
       }
     }
-    recordingLock.unlock()
   }
 }

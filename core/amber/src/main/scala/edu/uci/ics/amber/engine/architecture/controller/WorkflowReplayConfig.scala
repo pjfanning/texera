@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object WorkflowReplayConfig {
   def empty: WorkflowReplayConfig =
-    WorkflowReplayConfig(Map().withDefaultValue(ReplayConfig(None, Map.empty, None, Array.empty)))
+    WorkflowReplayConfig(Map().withDefaultValue(ReplayConfig(None, None, Array.empty)))
 }
 
 case class WorkflowReplayConfig(confs: Map[ActorVirtualIdentity, ReplayConfig]){

@@ -12,7 +12,7 @@ import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, InternalChannelEndpointID, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowExecutionPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
@@ -75,7 +75,7 @@ class Controller(
     controlProcessor.initCP(this)
     actorService.registerActorForNetworkCommunication(CONTROLLER, self)
     actorService.registerActorForNetworkCommunication(CLIENT, context.parent)
-    handlePayloadAndMarker(InternalChannelEndpointID, SetupLogging())
+    handlePayloadAndMarker(OutsideWorldChannelEndpointID, SetupLogging())
   }
 
   def getAvailableNodes():Array[Address] = {
@@ -92,7 +92,7 @@ class Controller(
     Constants.unprocessedBatchesCreditLimitPerSender
   }
 
-  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
     if(channelEndpointID.endpointWorker == CONTROLLER){
       logger.info(s"receive $payload from myself!!!")
     }

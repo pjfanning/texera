@@ -3,19 +3,19 @@ package edu.uci.ics.amber.engine.architecture.worker
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, FuncDelegate, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import java.util
-import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
 object WorkerInternalQueue {
 
-  final val DATA_QUEUE_PRIORITY = 1
-  final val CONTROL_QUEUE_PRIORITY = 0
+  final val DATA_QUEUE_PRIORITY = 2
+  final val CONTROL_QUEUE_PRIORITY = 1
+  final val THREAD_SYNC_PRIORITY = 0
+  // not covered by fault-tolerance layer
+  case object ThreadSyncChannelID extends ChannelEndpointID(ActorVirtualIdentity("DP-Main Sync"), true)
 
   def getPriority(channelEndpointID: ChannelEndpointID): Int ={
     if(channelEndpointID.isControlChannel){CONTROL_QUEUE_PRIORITY}else{DATA_QUEUE_PRIORITY}
@@ -55,6 +55,8 @@ abstract class WorkerInternalQueue extends Serializable {
 class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends WorkerInternalQueue {
 
   protected val lbmq = new LinkedBlockingMultiQueue[ChannelEndpointID, DPMessage]()
+
+  lbmq.addSubQueue(ThreadSyncChannelID, THREAD_SYNC_PRIORITY)
 
   override def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]] = {
     val result = mutable.HashMap[ChannelEndpointID, mutable.Queue[DPMessage]]()

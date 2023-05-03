@@ -28,6 +28,12 @@ object CheckpointHolder {
 
   private val checkpointIdMap = mutable.HashMap[(ActorVirtualIdentity, Long), (String, String)]()
 
+  private val completedCheckpoint = mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[String]]()
+
+  def hasCheckpoint(id:ActorVirtualIdentity, checkpointId:String): Boolean = {
+    completedCheckpoint.contains(id) && completedCheckpoint(id).contains(checkpointId)
+  }
+
   def clear(): Unit = {
     checkpoints.clear()
   }
@@ -64,6 +70,7 @@ object CheckpointHolder {
                      markerId:String,
                      checkpoint: SavedCheckpoint
   ): Unit = {
+    completedCheckpoint.getOrElseUpdate(id, new mutable.HashSet[String]()).add(snapshotId)
     checkpointIdMap((id, alignment)) = (snapshotId, markerId)
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
 
 import scala.collection.mutable
 
@@ -17,7 +17,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var outputCommitEnabled = false
 
-  override def setCurrentSenderWithPayload(channel: ChannelEndpointID, step: Long, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+  override def setCurrentSenderWithPayload(channel: ChannelEndpointID, step: Long, payload: WorkflowExecutionPayload): Unit = {
     if(currentChannel != channel || channelsToRecord.contains(channel)){
       currentChannel = channel
       lastStep = step

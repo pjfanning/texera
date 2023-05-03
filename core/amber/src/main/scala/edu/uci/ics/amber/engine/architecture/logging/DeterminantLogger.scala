@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
 
 
 object DeterminantLogger{
@@ -17,7 +17,7 @@ abstract class DeterminantLogger extends Serializable {
 
   def enableOutputCommit(enabled:Boolean):Unit
 
-  def setCurrentSenderWithPayload(channelEndpointID: ChannelEndpointID,step:Long, payload:WorkflowFIFOMessagePayloadWithPiggyback):Unit
+  def setCurrentSenderWithPayload(channelEndpointID: ChannelEndpointID,step:Long, payload:WorkflowExecutionPayload):Unit
 
   def drainCurrentLogRecords(step:Long): Array[InMemDeterminant]
 

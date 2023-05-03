@@ -9,10 +9,8 @@ import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, InternalChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 
-import scala.collection.mutable
 
 class ControllerCheckpointRestoreManager(@transient controller:Controller) extends CheckpointRestoreManager(controller) {
 
@@ -32,14 +30,6 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     }
   }
 
-  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long ={
-    var existing = controller.controlProcessor.processedPayloadCountMap.getOrElse(channel, 0L)
-    if(controller.replayQueue != null){
-      existing += controller.replayQueue.getQueuedMessageCount(channel)
-    }
-    existing
-  }
-
   def restoreWorkers(): Unit = {
     Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
       .map { worker =>
@@ -51,13 +41,14 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
             AddressInfo(controller.getAvailableNodes(), controller.actorService.self.path.address),
             controller.actorService,
             controller.controlProcessor.execution.getOperatorExecution(worker),
-            Array(LoadStateAndReplay("replay - restart", conf.fromCheckpoint, conf.inputSeqMap, conf.replayTo, conf.checkpointConfig))
+            Array(LoadStateAndReplay("replay - restart", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
           )
       }.toSeq))
   }
 
   override def overwriteState(chkpt: SavedCheckpoint): Unit = {
     killAllExistingWorkers()
+    controller.inputPort.setFIFOState(chkpt.load("fifoState"))
     controller.controlProcessor = chkpt.load("controlState")
     logger.info("cp restored")
     controller.controlProcessor.initCP(controller)
@@ -82,23 +73,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    val markerCountMap = checkpoint.markerProcessedCountMap
-    val processedCountMap = controller.controlProcessor.processedPayloadCountMap
-    // record current fifo status
-
-    if(controller.replayQueue != null){
-      controller.replayQueue.getAllMessages.foreach{
-        case (d, messages) =>
-          if(markerCountMap.contains(d)){
-            val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
-            if(debt > 0) {
-              messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInternalData(d, x))
-            }
-          }else if(d != InternalChannelEndpointID){
-            messages.foreach(x => checkpoint.chkpt.addInternalData(d, x))
-          }
-      }
-    }
+    checkpoint.chkpt.save("fifoState", controller.inputPort.getFIFOState)
     checkpoint.chkpt.save("controlState", controller.controlProcessor)
     System.currentTimeMillis() - startTime
   }

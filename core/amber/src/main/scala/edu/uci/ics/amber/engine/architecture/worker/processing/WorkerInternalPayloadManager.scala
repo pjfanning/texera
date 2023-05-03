@@ -7,9 +7,11 @@ import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, P
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted}
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, ambermessage}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, OneTimeInternalPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, NeverCompleteMarkerCollection, OneTimeInternalPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
+import scala.collection.mutable
 
 class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloadManager with AmberLogging {
 
@@ -30,7 +32,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
   override def handlePayload(payload: OneTimeInternalPayload): Unit = {
     payload match {
       case EstimateCheckpointCost(id) =>
-        worker.executeThroughDP(() =>{
+        worker.initiateSyncActionFromMain(() =>{
           worker.dataProcessor.outputPort.broadcastMarker(payload)
           var estimatedCheckpointCost = 0
           if(worker.dataProcessor.operatorOpened) {
@@ -48,43 +50,45 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             estimatedCheckpointCost)
           worker.dataProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
         })
-      case LoadStateAndReplay(id, fromCheckpoint, seqMap, replayTo, confs) =>
+      case LoadStateAndReplay(id, fromCheckpoint, replayTo, confs) =>
         worker.isReplaying = true
         worker.dpThread.stop() // intentionally kill DP
-        restoreManager.restoreFromCheckpointAndSetupReplay(id, fromCheckpoint, seqMap, replayTo, confs, pending)
+        restoreManager.restoreFromCheckpointAndSetupReplay(id, fromCheckpoint, replayTo, confs, pending)
       case _ => ???
     }
   }
 
-  override def markerAlignmentStart(payload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {
+  override def markerAlignmentStart(channel: ChannelEndpointID, payload: MarkerAlignmentInternalPayload, pendingCollections:mutable.HashMap[String, MarkerCollectionSupport]): Unit = {
     payload match {
       case TakeRuntimeGlobalCheckpoint(id, alignmentMap) =>
         if(alignmentMap.contains(worker.actorId)) {
-          worker.executeThroughDP(() => {
-            val chkpt = new SavedCheckpoint()
-            chkpt.attachSerialization(SerializationExtension(worker.context.system))
-            worker.dataProcessor.outputPort.broadcastMarker(payload)
-            val pending = new PendingCheckpoint(
-              id,
-              id,
-              worker.actorId,
-              System.currentTimeMillis(),
-              worker.dataProcessor.cursor.getStep,
-              worker.inputPort.getFIFOState,
-              worker.dataProcessor.outputPort.getFIFOState,
-              0,
-              chkpt,
-              alignmentMap(worker.actorId), restoreManager.getProjectedProcessedCountForMarker)
-            pending.setOnComplete(restoreManager.onCheckpointCompleted)
-            pending.checkpointDone = true
-            pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)
-            pending
-          })
-        }else{
-          new MarkerCollectionSupport {
-            override def onReceiveMarker(channel: ChannelEndpointID): Unit = {}
-            override def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {}
-            override def isNoLongerPending: Boolean = true
+          if (!CheckpointHolder.hasCheckpoint(actorId, id)) {
+            worker.initiateSyncActionFromMain(() => {
+              worker.dataProcessor.outputPort.broadcastMarker(payload)
+              val chkpt = new SavedCheckpoint()
+              chkpt.attachSerialization(SerializationExtension(worker.context.system))
+              val pending = new PendingCheckpoint(
+                id,
+                id,
+                worker.actorId,
+                System.currentTimeMillis(),
+                worker.dataProcessor.cursor.getStep,
+                worker.inputPort.getFIFOState,
+                worker.dataProcessor.outputPort.getFIFOState,
+                0,
+                chkpt,
+                alignmentMap(worker.actorId))
+              pending.setOnComplete(restoreManager.onCheckpointCompleted)
+              pending.checkpointDone = true
+              pending.initialCheckpointTime = restoreManager.fillCheckpoint(pending)
+              pending.onReceiveMarker(channel)
+              if (!pending.isNoLongerPending) {
+                pendingCollections(id) = pending
+              }
+            })
+          } else {
+            logger.info(s"already took checkpoint, ignore marker for $id")
+            pendingCollections(id) = new NeverCompleteMarkerCollection()
           }
         }
       case _ => ???

@@ -2,28 +2,27 @@ package edu.uci.ics.amber.engine.architecture.recovery
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueueImpl
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{CONTROL_QUEUE_PRIORITY, DATA_QUEUE_PRIORITY, getPriority}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.{ThreadSyncChannelID, getPriority}
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, InternalChannelEndpointID}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
 class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient creditMonitor: CreditMonitor, @transient val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueueImpl(creditMonitor) with AmberLogging {
 
-  lbmq.addSubQueue(InternalChannelEndpointID, CONTROL_QUEUE_PRIORITY)
   replayOrderEnforcer.getAllReplayChannels.foreach{
     channel => lbmq.addSubQueue(channel, getPriority(channel))
   }
-  private val systemCmdQueue = lbmq.getSubQueue(InternalChannelEndpointID)
+  private val systemCmdQueue = lbmq.getSubQueue(ThreadSyncChannelID)
 
   override def peek(dp:DataProcessor): Option[DPMessage] = {
     // output a dummy message
     if(replayOrderEnforcer.isReplayCompleted(dp.cursor.getStep)){
-      Some(DPMessage(InternalChannelEndpointID, null))
+      Some(DPMessage(ThreadSyncChannelID, null))
     }else {
       if (!systemCmdQueue.isEmpty) {
-        Some(DPMessage(InternalChannelEndpointID, null))
+        Some(DPMessage(ThreadSyncChannelID, null))
       } else {
         Some(DPMessage(replayOrderEnforcer.currentChannel, null))
       }
@@ -32,21 +31,25 @@ class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient cre
 
   override def take(dp:DataProcessor): DPMessage = {
     if(replayOrderEnforcer.isReplayCompleted(dp.cursor.getStep)){
-      lbmq.disableSubQueueExcept(InternalChannelEndpointID)
+      lbmq.disableSubQueueExcept(ThreadSyncChannelID)
       lbmq.take()
     }else{
-      val currentChannel = replayOrderEnforcer.currentChannel
-      if(!currentChannel.isControlChannel){
-        creditMonitor.increaseCredit(currentChannel.endpointWorker)
-      }
-      if(replayOrderEnforcer.isPayloadRecorded){
-        DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
+      if(!systemCmdQueue.isEmpty){
+        lbmq.take()
       }else{
-        lbmq.disableSubQueueExcept(InternalChannelEndpointID, currentChannel)
-        logger.info(s"message to take from = $currentChannel at step = ${dp.cursor.getStep}")
-        val res = lbmq.take()
-        logger.info(s"message to process = $res")
-        res
+        val currentChannel = replayOrderEnforcer.currentChannel
+        if(!currentChannel.isControlChannel){
+          creditMonitor.increaseCredit(currentChannel.endpointWorker)
+        }
+        if(replayOrderEnforcer.isPayloadRecorded){
+          DPMessage(currentChannel, replayOrderEnforcer.getRecordedPayload)
+        }else{
+          lbmq.disableSubQueueExcept(ThreadSyncChannelID, currentChannel)
+          logger.info(s"message to take from = $currentChannel at step = ${dp.cursor.getStep}")
+          val res = lbmq.take()
+          logger.info(s"message to process = $res")
+          res
+        }
       }
     }
   }

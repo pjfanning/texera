@@ -6,9 +6,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 sealed trait WorkflowFIFOMessagePayload extends Serializable
 
-trait WorkflowFIFOMessagePayloadWithPiggyback extends WorkflowFIFOMessagePayload with WorkflowDPMessagePayload {
-  var piggybacked:AmberInternalPayload = _
-}
+trait WorkflowExecutionPayload extends WorkflowFIFOMessagePayload with WorkflowDPMessagePayload
 
 // system messages: fault tolerance, checks, shutdowns
 sealed trait AmberInternalPayload extends WorkflowFIFOMessagePayload
@@ -26,4 +24,11 @@ trait MarkerCollectionSupport{
   def onReceiveMarker(channel:ChannelEndpointID):Unit
   def onReceivePayload(channel:ChannelEndpointID, p: WorkflowFIFOMessagePayload):Unit
   def isNoLongerPending:Boolean
+}
+
+
+class NeverCompleteMarkerCollection extends MarkerCollectionSupport {
+  def onReceiveMarker(channel: ChannelEndpointID): Unit = {}
+  def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit = {}
+  def isNoLongerPending: Boolean = false
 }

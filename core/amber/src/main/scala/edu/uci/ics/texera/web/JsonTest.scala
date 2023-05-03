@@ -31,12 +31,8 @@ object JsonTest {
     val history = ois.readObject.asInstanceOf[ProcessingHistory]
     ois.close()
 
-    val planner = new ReplayCheckpointPlanner(history)
-
-    val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-    history.inputConstant = 1
-    val result1 = planner.getReplayPlan(history.getInteractionIdxes.length, 10000, mem)
-    println(result1)
+    val planner = new ReplayCheckpointPlanner(history, 5000)
+    planner.generateReplayPlan(1)
   }
 }
 

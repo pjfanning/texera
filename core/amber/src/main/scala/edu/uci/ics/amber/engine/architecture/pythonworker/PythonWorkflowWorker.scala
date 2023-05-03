@@ -154,7 +154,7 @@ class PythonWorkflowWorker(
 
   override def getLogName: String = ""
 
-  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
     payload match {
       case control: ControlPayload =>
         control match {

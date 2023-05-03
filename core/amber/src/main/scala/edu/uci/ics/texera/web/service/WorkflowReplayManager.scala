@@ -31,12 +31,10 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   var startTime:Long = 0
   var pauseStart:Long = 0
   var history = new ProcessingHistory()
-  val planner = new ReplayCheckpointPlanner(history)
+  var planner:ReplayCheckpointPlanner = _
   val pendingReplay = new mutable.HashSet[ActorVirtualIdentity]()
   var replayStart = 0L
   var checkpointCost = 0L
-  var chkptPlan: (Iterable[Map[ActorVirtualIdentity, Int]], Long) = _
-  var timeLimit = 10000000L
 
   private val estimationInterval = 1.seconds
   private var estimationHandler = Cancellable.alreadyCancelled
@@ -139,51 +137,21 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   def scheduleReplay(req:WorkflowReplayRequest): Unit = {
     checkpointCost = 0L
     replayStart = System.currentTimeMillis()
-    if(timeLimit > req.replayTimeLimit){
-      val mem = mutable.HashMap[Int, (Iterable[Map[ActorVirtualIdentity, Int]], Long)]()
-      chkptPlan = planner.getReplayPlan(history.getInteractionIdxes.length, req.replayTimeLimit, mem)
-      timeLimit = req.replayTimeLimit
+    if(planner == null){
+      planner = new ReplayCheckpointPlanner(history, req.replayTimeLimit)
     }
-    val snapshot = history.getSnapshot(req.replayPos.toLong)
-    var markerId = ""
-    val chkpts = snapshot.getParticipants.map {
-      worker =>
-        val workerStats = snapshot.getStats(worker)
-        val prevCheckpoint = CheckpointHolder.findLastCheckpointOf(worker, workerStats.alignment)
-        if(prevCheckpoint.isDefined){
-          if(markerId == ""){
-            markerId = prevCheckpoint.get._3
-          }else if(markerId != prevCheckpoint.get._3){
-            throw new RuntimeException("panic")
-          }
-        }
-        worker -> prevCheckpoint
-    }.toMap
-    val converted = planner.getConvertedPlan(chkptPlan, chkpts.mapValues(_.getOrElse((0L, "", ""))._1))
-    val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
-      worker =>
-        val workerStats = snapshot.getStats(worker)
-        val replayTo = workerStats.alignment
-        val inputFifoMap = mutable.HashMap[ChannelEndpointID, Long]()
-        chkpts.foreach{
-          case (sender, chkptInfo) =>
-            if(chkptInfo.isDefined){
-              val checkpointedFIFOSeq = history.getSnapshot(chkptInfo.get._2).getCheckpointedFIFOSeq(sender)
-              checkpointedFIFOSeq.foreach{
-                case (channel, seq) =>
-                  if(channel.endpointWorker == worker){
-                    inputFifoMap(ChannelEndpointID(sender, channel.isControlChannel)) = seq
-                  }
-              }
-            }
-        }
-        val checkpointOpt = chkpts(worker)
-        if (checkpointOpt.isDefined) {
-          worker -> ReplayConfig(Some(checkpointOpt.get._1), inputFifoMap.toMap, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
-        } else {
-          worker -> ReplayConfig(None, inputFifoMap.toMap, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
-        }
-    }.toMap - CLIENT) // client is always ready
+    val replayConf = planner.generateReplayPlan(req.replayPos)
+//    val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
+//      worker =>
+//        val workerStats = snapshot.getStats(worker)
+//        val replayTo = workerStats.alignment
+//        val checkpointOpt = chkpts(worker)
+//        if (checkpointOpt.isDefined) {
+//          worker -> ReplayConfig(Some(checkpointOpt.get._1), Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
+//        } else {
+//          worker -> ReplayConfig(None, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
+//        }
+//    }.toMap - CLIENT) // client is always ready
     replayId += 1
     client.executeAsync(actor => {
       replayConf.confs.keys.foreach(pendingReplay.add)

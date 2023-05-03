@@ -7,9 +7,4 @@ trait WorkflowDPMessagePayload
 // two kinds of internal system-level message
 // not covered by fault-tolerance!
 
-case class FuncDelegate[T](func: () => T, future: CompletableFuture[T]) extends WorkflowDPMessagePayload{
-  type returnType = T
-}
-
-
-case class MarkerBarrier(markerId:String)
+case class StartSync() extends WorkflowDPMessagePayload

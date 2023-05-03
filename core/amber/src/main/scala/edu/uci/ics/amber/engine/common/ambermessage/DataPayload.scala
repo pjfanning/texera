@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipR
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-sealed trait DataPayload extends WorkflowDPMessagePayload with WorkflowFIFOMessagePayloadWithPiggyback
+sealed trait DataPayload extends WorkflowDPMessagePayload with WorkflowExecutionPayload
 
 final case class EpochMarker(
                               id: String,

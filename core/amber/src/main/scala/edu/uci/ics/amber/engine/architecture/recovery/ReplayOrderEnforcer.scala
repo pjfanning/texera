@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
 
 import scala.collection.mutable
 
@@ -13,8 +13,8 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelEndpointID = _
   private var recoveryCompleted = false
-  private var recordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
-  private var nextRecordedPayload:WorkflowFIFOMessagePayloadWithPiggyback = _
+  private var recordedPayload:WorkflowExecutionPayload = _
+  private var nextRecordedPayload:WorkflowExecutionPayload = _
 
   def isReplayCompleted(currentStep:Long):Boolean = replayTo == currentStep
 
@@ -28,7 +28,7 @@ class ReplayOrderEnforcer( records: mutable.Queue[StepsOnChannel], onRecoveryCom
     recordedPayload != null
   }
 
-  def getRecordedPayload:WorkflowFIFOMessagePayloadWithPiggyback ={
+  def getRecordedPayload:WorkflowExecutionPayload ={
     val res = recordedPayload
     recordedPayload = null
     res

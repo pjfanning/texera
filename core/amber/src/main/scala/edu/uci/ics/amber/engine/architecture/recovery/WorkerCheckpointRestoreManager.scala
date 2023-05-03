@@ -7,15 +7,15 @@ import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{Ch
 import edu.uci.ics.amber.engine.architecture.worker.processing.DPThread
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue, WorkerInternalQueueImpl, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.CheckpointSupport
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, InternalChannelEndpointID, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted}
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessagePayload
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 
 class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends CheckpointRestoreManager(worker) {
 
 
   def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
-    worker.executeThroughDP(() =>{
+    worker.initiateSyncActionFromMain(() =>{
       val stats = finalizeCheckpoint(pendingCheckpoint)
       worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, pendingCheckpoint.markerId, stats))
     })
@@ -23,6 +23,7 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
 
   override def overwriteState(chkpt:SavedCheckpoint):Unit = {
     var outputIter:Iterator[(ITuple, Option[Int])] = Iterator.empty
+    worker.inputPort.setFIFOState(chkpt.load("fifoState"))
     worker.dataProcessor = chkpt.load("dataProcessor")
     logger.info(s"DP restored")
     if(worker.dataProcessor.operatorOpened) {
@@ -37,14 +38,6 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
       worker,
       outputIter
     )
-  }
-
-  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long ={
-    worker.executeThroughDP(() => {
-      var existing = worker.dataProcessor.processedPayloadCountMap.getOrElse(channel, 0L)
-      existing += worker.internalQueue.getQueuedMessageCount(channel)
-      existing
-    })
   }
 
   override def setupReplay(replayId:String, logReader: DeterminantLogReader, replayTo:Option[Long]):ReplayOrderEnforcer = {
@@ -67,18 +60,10 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
 
   override def fillCheckpoint(checkpoint: PendingCheckpoint): Long = {
     val startTime = System.currentTimeMillis()
-    val markerCountMap = checkpoint.markerProcessedCountMap
-    val processedCountMap = worker.dataProcessor.processedPayloadCountMap
+    checkpoint.chkpt.save("fifoState", worker.inputPort.getFIFOState)
     worker.internalQueue.getAllMessages.foreach{
       case (d, messages) =>
-        if(markerCountMap.contains(d)){
-          val debt = markerCountMap(d) - processedCountMap.getOrElse(d, 0L)
-          if(debt > 0) {
-            messages.take(debt.toInt).foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
-          }
-        }else if(d != InternalChannelEndpointID){
-          messages.foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
-        }
+      messages.foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
     }
     if(worker.dataProcessor.operatorOpened){
       worker.dataProcessor.operator match {
@@ -96,24 +81,22 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
   override def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf: ReplayCheckpointConfig): () => Unit = {
     () => {
       // now inside DP thread
-      worker.dpThread.dpInterrupted {
+      worker.initiateSyncActionFromDP(()=>{
         logger.info(s"taking checkpoint during replay at step ${worker.dataProcessor.cursor.getStep}")
-        pendingCheckpoint.recordingLock.lock()
         worker.dataProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
         fillCheckpoint(pendingCheckpoint)
         pendingCheckpoint.fifoOutputState = worker.dataProcessor.outputPort.getFIFOState
         pendingCheckpoint.checkpointDone = true
         logger.info(s"state serialization done, pending checkpoint aligned = ${pendingCheckpoint.isNoLongerPending}")
         pendingCheckpoint.checkCompletion()
-        pendingCheckpoint.recordingLock.unlock()
-      }
+      })
     }
   }
 
   override def startProcessing(stateReloaded:Boolean, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
     logger.info(s"worker restored! input Seq: ${worker.inputPort.getFIFOState}")
     logger.info(s"worker restored! output Seq: ${worker.dataProcessor.outputPort.getFIFOState}")
-    worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue, replayOrderEnforcer)
+    worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue, worker, replayOrderEnforcer)
     logger.info("starting new DP thread...")
     assert(worker.internalQueue.isInstanceOf[RecoveryInternalQueueImpl])
     worker.dpThread.start() // new DP is not started yet.

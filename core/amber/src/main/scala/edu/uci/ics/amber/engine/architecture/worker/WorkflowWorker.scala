@@ -5,14 +5,16 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{InternalPayloadFromDP, ReplaceRecoveryQueue, getWorkerLogName}
+import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ThreadSyncChannelID
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{DPSynchronized, SyncAction, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, FuncDelegate, InternalChannelEndpointID, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, StartSync, WorkflowExecutionPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import java.util.concurrent.CompletableFuture
+import java.util
+import java.util.concurrent.LinkedBlockingQueue
 
 object WorkflowWorker {
   def props(
@@ -32,9 +34,9 @@ object WorkflowWorker {
 
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
-  case class ReplaceRecoveryQueue()
+  case class DPSynchronized()
 
-  case class InternalPayloadFromDP(internalPayload: AmberInternalPayload)
+  case class SyncAction(action: () => Unit)
 
 }
 
@@ -50,17 +52,18 @@ class WorkflowWorker(
   var operator: IOperatorExecutor = workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
   val creditMonitor = new CreditMonitorImpl()
 
-
   var dataProcessor: DataProcessor = new DataProcessor(this)
   var internalQueue: WorkerInternalQueue = new WorkerInternalQueueImpl(creditMonitor)
   var dpThread: DPThread = _
+
+  private val syncActions = new LinkedBlockingQueue[SyncAction]()
 
   override def initState(): Unit = {
     dataProcessor.initDP(
       this,
       Iterator.empty,
     )
-    dpThread = new DPThread(actorId, dataProcessor, internalQueue)
+    dpThread = new DPThread(actorId, dataProcessor, internalQueue, this)
     dpThread.start()
     logger.info(s"Worker:$actorId = ${context.self} started")
   }
@@ -71,39 +74,54 @@ class WorkflowWorker(
     creditMonitor.getSenderCredits(actorVirtualIdentity)
   }
 
+
+  def replaceRecoveryQueue(): Unit ={
+    logger.info("replace recovery queue with normal queue")
+    val newQueue = new WorkerInternalQueueImpl(creditMonitor)
+    WorkerInternalQueue.transferContent(internalQueue, newQueue)
+    internalQueue = newQueue
+    this.dpThread.internalQueue = newQueue
+    logger.info("replace queue done!")
+  }
+
+
+  def doSyncActionsAndUnBlockDP(): Unit ={
+    while(!syncActions.isEmpty){
+      // DP paused, do action in a single-threaded manner
+      syncActions.take().action()
+    }
+    dpThread.blockingFuture.complete(Unit)
+  }
+
+  def waitingForSync:Receive = {
+    case DPSynchronized() =>
+      doSyncActionsAndUnBlockDP()
+      context.become(receive)
+      unstashAll()
+    case other =>
+      stash()
+  }
+
    override def receive: Receive =
     super.receive orElse {
-      case ReplaceRecoveryQueue() =>
-        logger.info("replace recovery queue with normal queue")
-        val newQueue = new WorkerInternalQueueImpl(creditMonitor)
-        WorkerInternalQueue.transferContent(internalQueue, newQueue)
-        internalQueue = newQueue
-        this.dpThread.internalQueue = newQueue
-        logger.info("replace queue done!")
-      case InternalPayloadFromDP(payload) =>
-        acceptDirectInternalCommands(payload)
+      case DPSynchronized() =>
+        doSyncActionsAndUnBlockDP()
       case other =>
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }
 
-  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit = {
+  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
     internalQueue.enqueuePayload(DPMessage(channelId, payload))
   }
 
-  def executeThroughDP[T](
-                           func: () => T
-                         ): T = {
-    logger.info("start to execute through DP")
-    val res = if(Thread.currentThread().getName == dpThread.getThreadName){
-      //inside dp thread
-      func()
-    }else{
-      val future = new CompletableFuture[T]()
-      internalQueue.enqueuePayload(DPMessage(InternalChannelEndpointID, FuncDelegate(func, future)))
-      future.get()
-    }
-    logger.info("execution completed")
-    res
+  def initiateSyncActionFromMain(func: () => Unit): Unit = {
+    initiateSyncActionFromDP(func)
+    context.become(waitingForSync)
+  }
+
+  def initiateSyncActionFromDP(func: () => Unit): Unit = {
+    syncActions.add(SyncAction(func))
+    internalQueue.enqueuePayload(DPMessage(ThreadSyncChannelID, StartSync()))
   }
 
   override def postStop(): Unit = {

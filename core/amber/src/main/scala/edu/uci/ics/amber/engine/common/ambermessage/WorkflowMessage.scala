@@ -34,9 +34,6 @@ class ChannelEndpointID(val endpointWorker:ActorVirtualIdentity, val isControlCh
 // always log.
 case object OutsideWorldChannelEndpointID extends ChannelEndpointID(CLIENT, true)
 
-// not covered by fault-tolerance layer
-case object InternalChannelEndpointID extends ChannelEndpointID(ActorVirtualIdentity("Internal"), true)
-
 sealed trait WorkflowMessage extends Serializable
 
 case class WorkflowFIFOMessage(channel: ChannelEndpointID, sequenceNumber: Long, payload:WorkflowFIFOMessagePayload) extends WorkflowMessage

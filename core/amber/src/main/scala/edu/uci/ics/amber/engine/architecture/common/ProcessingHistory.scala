@@ -10,7 +10,7 @@ class ProcessingHistory extends Serializable {
   private val history = mutable.HashMap[Long, LogicalExecutionSnapshot]()
   private val idMapping = mutable.HashMap[String, Long]()
   var historyArray:Array[Long] = _
-  var inputConstant = 100
+  var inputConstant = 1
 
   def hasSnapshotWithID(id:String): Boolean ={
     idMapping.contains(id)
@@ -88,6 +88,11 @@ class ProcessingHistory extends Serializable {
         cost += getOperatorCost(k, chkptPos(k), chkptPos)
     }
     cost
+  }
+
+  def getPlanCost(idx: Int): Long ={
+    val chkptPos = history(historyArray(idx)).getParticipants.map(x => x -> idx).toMap
+    getPlanCost(chkptPos)
   }
 
   override def toString: String = {

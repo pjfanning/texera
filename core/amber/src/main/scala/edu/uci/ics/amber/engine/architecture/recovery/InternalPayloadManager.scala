@@ -25,7 +25,7 @@ object InternalPayloadManager{
                                    saveStateCost: Long)
 
   // replay related:
-  case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], seqMap:Map[ChannelEndpointID, Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
+  case class LoadStateAndReplay(id:String, checkpointStep:Option[Long], replayTo:Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
   case class ContinueReplay(id:String, replayTo: Option[Long], checkpointConfigs:Array[ReplayCheckpointConfig]) extends OneTimeInternalPayload
   case class PauseReplay(id:String) extends OneTimeInternalPayload
 
@@ -63,7 +63,7 @@ class EmptyInternalPayloadManager extends InternalPayloadManager{
 
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit = {}
 
-  override def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload): MarkerCollectionSupport = {null}
+  override def markerAlignmentStart(channel:ChannelEndpointID, markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, pendingCollections: mutable.HashMap[String, MarkerCollectionSupport]): Unit = {}
 }
 
 
@@ -76,7 +76,7 @@ abstract class InternalPayloadManager {
 
   def handlePayload(channel:ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload):Unit
 
-  def markerAlignmentStart(markerAlignmentInternalPayload: MarkerAlignmentInternalPayload):MarkerCollectionSupport
+  def markerAlignmentStart(channel: ChannelEndpointID, markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, pendingCollections: mutable.HashMap[String, MarkerCollectionSupport]):Unit
 
   def inputMarker(channel: ChannelEndpointID, payload:AmberInternalPayload):Unit = {
     payload match {
@@ -89,11 +89,12 @@ abstract class InternalPayloadManager {
         }
       case mp: MarkerAlignmentInternalPayload =>
         if(!pending.contains(mp.id)){
-          pending(mp.id) = markerAlignmentStart(mp)
-        }
-        pending(mp.id).onReceiveMarker(channel)
-        if(pending(mp.id).isNoLongerPending){
-          pending.remove(mp.id)
+          markerAlignmentStart(channel, mp, pending)
+        }else {
+          pending(mp.id).onReceiveMarker(channel)
+          if (pending(mp.id).isNoLongerPending) {
+            pending.remove(mp.id)
+          }
         }
     }
   }

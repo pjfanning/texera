@@ -30,8 +30,6 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
 
   def onCheckpointCompleted(checkpoint: PendingCheckpoint): Unit
 
-  def getProjectedProcessedCountForMarker(channel:ChannelEndpointID): Long
-
   protected def finalizeCheckpoint(checkpoint: PendingCheckpoint): CheckpointStats ={
     CheckpointHolder.addCheckpoint(
       actorId,
@@ -52,14 +50,15 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       checkpoint.initialCheckpointTime)
   }
 
-  def restoreFromCheckpointAndSetupReplay(replayId:String, fromCheckpoint:Option[Long], fifoState:Map[ChannelEndpointID, Long], replayTo:Option[Long], confs:Array[ReplayCheckpointConfig], pendingCheckpoints:mutable.HashMap[String, MarkerCollectionSupport]): Unit ={
+  def restoreFromCheckpointAndSetupReplay(replayId:String, fromCheckpoint:Option[Long], replayTo:Option[Long], confs:Array[ReplayCheckpointConfig], pendingCheckpoints:mutable.HashMap[String, MarkerCollectionSupport]): Unit ={
     var recordedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
+    var queuedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
     if(fromCheckpoint.isDefined){
-      actor.inputPort.setFIFOState(fifoState)
       val existingChkpt = CheckpointHolder.getCheckpoint(actor.actorId, fromCheckpoint.get)
       existingChkpt.attachSerialization(SerializationExtension(actor.context.system))
       overwriteState(existingChkpt)
       recordedInput = existingChkpt.getInputData
+      queuedInput = existingChkpt.getInternalData
       logger.info(s"recorded data: ${recordedInput.map(x => s"${x._1} -> ${x._2.size}")}")
     }
     val logReader = InternalPayloadManager.retrieveLogForWorkflowActor(actor)
@@ -79,7 +78,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
         Map.empty,
         0,
         planned,
-        conf.waitingForMarker, getProjectedProcessedCountForMarker)
+        conf.waitingForMarker)
       pendingCheckpoint.setOnComplete(onCheckpointCompleted)
       // add this checkpoint to pending checkpoints
       pendingCheckpoints(conf.id) = pendingCheckpoint
@@ -87,10 +86,15 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
     })
     orderEnforcer.setCallbackOnStep(replayTo.get, replayCompletedCallback(replayId))
     InternalPayloadManager.setupLoggingForWorkflowActor(actor, false)
+    queuedInput.foreach{
+      case (c, payloads) =>
+        logger.info(s"restore queued input for channel $c, number of payload = ${payloads.size}")
+        payloads.foreach(x => actor.handlePayloadAndMarker(c, x))
+    }
     recordedInput.foreach{
       case (c, payloads) =>
-        logger.info(s"restore input for channel $c, number of payload = ${payloads.size}")
-        payloads.foreach(x => actor.handlePayloadAndMarker(c, x))
+        logger.info(s"restore recorded input for channel $c, number of payload = ${payloads.size}")
+        payloads.foreach(x => actor.inputPort.handleFIFOPayload(c, x))
     }
     startProcessing(fromCheckpoint.isDefined, orderEnforcer)
   }

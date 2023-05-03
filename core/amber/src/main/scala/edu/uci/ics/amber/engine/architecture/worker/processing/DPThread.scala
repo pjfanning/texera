@@ -2,11 +2,12 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.recovery.ReplayOrderEnforcer
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.DPSynchronized
+import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DPMessage, DataPayload, FuncDelegate}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DPMessage, DataPayload, StartSync}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -16,6 +17,7 @@ import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Futu
 class DPThread(val actorId: ActorVirtualIdentity,
                dp:DataProcessor,
                var internalQueue: WorkerInternalQueue,
+               worker:WorkflowWorker,
                replayOrderEnforcer: ReplayOrderEnforcer = null) extends AmberLogging{
 
   // initialize dp thread upon construction
@@ -102,10 +104,12 @@ class DPThread(val actorId: ActorVirtualIdentity,
           case Some(msg: DPMessage) if msg.channel.isControlChannel =>
             val controlOrSystemMsg = internalQueue.take(dp)
             controlOrSystemMsg match{
-              case DPMessage(channel, delegate: FuncDelegate[_]) =>
-                // received system message
+              case DPMessage(channel, delegate: StartSync) =>
+                // received sync request
                 dpInterrupted {
-                  delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+                  worker.context.self ! DPSynchronized()
+                  blockingFuture.get()
+                  blockingFuture = new CompletableFuture[Unit]() // reset
                 }
               case DPMessage(channel, payload:ControlPayload) =>
                 dp.processControlPayload(channel, payload)
@@ -121,10 +125,12 @@ class DPThread(val actorId: ActorVirtualIdentity,
             dp.processDataPayload(msg.channel, data)
           case control: ControlPayload =>
             dp.processControlPayload(msg.channel, control)
-          case delegate: FuncDelegate[_] =>
-            // received system message
+          case delegate: StartSync =>
+            // received sync request
             dpInterrupted {
-              delegate.future.complete(delegate.func().asInstanceOf[delegate.returnType])
+              worker.context.self ! DPSynchronized()
+              blockingFuture.get()
+              blockingFuture = new CompletableFuture[Unit]() // reset
             }
           case other =>
             throw new RuntimeException(s"DP thread cannot handle message $other")

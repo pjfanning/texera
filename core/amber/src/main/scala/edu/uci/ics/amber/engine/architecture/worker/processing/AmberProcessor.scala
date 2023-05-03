@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.logging.{ChannelStepCursor, DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowExecutionPayload, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -38,16 +38,8 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
     new AsyncRPCServer(outputPort, actorId)
 
   var cursor = new ChannelStepCursor()
-  val processedPayloadCountMap = new mutable.HashMap[ChannelEndpointID, Long]()
 
-  def increaseProcessedCount(channel:ChannelEndpointID): Unit ={
-    if(!processedPayloadCountMap.contains(channel)){
-      processedPayloadCountMap(channel) = 0L
-    }
-    processedPayloadCountMap(channel) += 1
-  }
-
-  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID, payload:WorkflowFIFOMessagePayloadWithPiggyback)(code: => Unit): Unit ={
+  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID, payload:WorkflowExecutionPayload)(code: => Unit): Unit ={
     determinantLogger.setCurrentSenderWithPayload(channelEndpointID, cursor.getStep, payload)
     determinantLogger.enableOutputCommit(true)
     cursor.setCurrentChannel(channelEndpointID)
@@ -68,7 +60,6 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
                              payload: ControlPayload
                            ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    increaseProcessedCount(channel)
     doFaultTolerantProcessing(channel, payload){
       payload match {
         case invocation: ControlInvocation =>

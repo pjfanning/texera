@@ -41,21 +41,14 @@ class AsyncRPCClient(
 
   class Convertable[T, U](val convertFunc: ControlCommand[T] => U)
 
-  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity, attachedMarker:AmberInternalPayload = null): Future[T] = {
+  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
     val (p, id) = createPromise[T]()
     logger.info(
       s"send request: ${cmd} to $to (controlID: ${id})"
     )
     val control = ControlInvocation(id, cmd)
-    control.piggybacked = attachedMarker
     controlOutputEndpoint.sendTo(to, control)
     p
-  }
-
-  def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity, attachedMarker:AmberInternalPayload): Unit = {
-    val control = ControlInvocation(cmd)
-    control.piggybacked = attachedMarker
-    controlOutputEndpoint.sendTo(to, control)
   }
 
   def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit = {

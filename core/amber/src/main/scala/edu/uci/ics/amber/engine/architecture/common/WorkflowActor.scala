@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkCommunicatio
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, CreditRequest, InternalChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowDPMessagePayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowFIFOMessagePayloadWithPiggyback}
+import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, ControlInvocation, CreditRequest, OutsideWorldChannelEndpointID, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 
@@ -73,19 +73,13 @@ abstract class WorkflowActor(
   def internalPayloadManager:InternalPayloadManager
 
   def handlePayloadAndMarker(channelId:ChannelEndpointID, payload: WorkflowFIFOMessagePayload): Unit = {
+    internalPayloadManager.inputPayload(channelId, payload)
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal")
         internalPayloadManager.inputMarker(channelId, internal)
-      case payload: WorkflowFIFOMessagePayloadWithPiggyback =>
-        // take piggybacked payload out and clear the original payload
-        val piggybacked = payload.piggybacked
-        payload.piggybacked = null
-        internalPayloadManager.inputPayload(channelId, payload)
+      case payload: WorkflowExecutionPayload =>
         handlePayload(channelId, payload)
-        if(piggybacked != null){
-          handlePayloadAndMarker(channelId, piggybacked)
-        }
       case other =>
         logger.warn(s"workflow actor cannot handle $other")
     }
@@ -123,7 +117,7 @@ abstract class WorkflowActor(
     case init: CheckInitialized =>
       sender ! Ack
       init.setupCommands.foreach{
-        cmd => this.handlePayloadAndMarker(InternalChannelEndpointID, cmd)
+        cmd => this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, cmd)
       }
   }
 
@@ -141,11 +135,11 @@ abstract class WorkflowActor(
 
   def acceptDirectInternalCommands:Receive = {
     case internalPayload: AmberInternalPayload =>
-      this.handlePayloadAndMarker(InternalChannelEndpointID, internalPayload)
+      this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, internalPayload)
   }
 
   // custom logic for payload handling (override by Worker and Controller)
-  def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowFIFOMessagePayloadWithPiggyback): Unit
+  def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit
 
   override def receive: Receive = {
       disallowActorRefRelatedMessages orElse

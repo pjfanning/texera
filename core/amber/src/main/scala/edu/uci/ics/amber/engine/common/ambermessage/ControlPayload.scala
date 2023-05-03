@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 
-sealed trait ControlPayload extends WorkflowDPMessagePayload with WorkflowFIFOMessagePayloadWithPiggyback
+sealed trait ControlPayload extends WorkflowDPMessagePayload with WorkflowExecutionPayload
 
 object ControlInvocation {
   def apply(controlCommand: ControlCommand[_] with SkipReply): ControlInvocation = {
