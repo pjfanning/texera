@@ -9,10 +9,11 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.B
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, CreditRequest, WorkflowFIFOMessage, WorkflowMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 
 import scala.collection.mutable
 import scala.concurrent.duration._
+import scala.util.Random
 
 object NetworkCommunicationActor {
 
@@ -283,6 +284,9 @@ class NetworkCommunicationActor(
   @inline
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
+      if(actorId != CONTROLLER){
+        Thread.sleep(Random.nextInt(50))
+      }
       Future{
         idToActorRefs(actorID) ! msg
       }

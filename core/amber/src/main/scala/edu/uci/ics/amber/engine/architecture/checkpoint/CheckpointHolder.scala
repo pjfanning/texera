@@ -26,7 +26,7 @@ object CheckpointHolder {
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 
-  private val checkpointIdMap = mutable.HashMap[(ActorVirtualIdentity, Long), (String, String)]()
+  private val checkpointsId = mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[String, Long]]()
 
   private val completedCheckpoint = mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[String]]()
 
@@ -47,36 +47,39 @@ object CheckpointHolder {
     checkpoints(id)(alignment)
   }
 
-  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[(Long, String, String)] = {
-    if (checkpoints.contains(id)) {
-      val res = Try(
-        checkpoints(id).map(x => (alignment - x._1, x._1)).filter(_._1 >= 0).minBy(_._1)._2
-      ).toOption
-      if(res.isDefined){
-        val ids = checkpointIdMap((id, res.get))
-        Some((res.get, ids._1, ids._2))
-      }else{
-        None
-      }
-    } else {
-      None
-    }
+  def getCheckpointAlignment(id: ActorVirtualIdentity, name: String): Option[Long] = {
+    checkpointsId.get(id).flatMap(_.get(name))
   }
+
+//  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[(Long, String, String)] = {
+//    if (checkpoints.contains(id)) {
+//      val res = Try(
+//        checkpoints(id).map(x => (alignment - x._1, x._1)).filter(_._1 >= 0).minBy(_._1)._2
+//      ).toOption
+//      if(res.isDefined){
+//        val ids = checkpointIdMap((id, res.get))
+//        Some((res.get, ids._1, ids._2))
+//      }else{
+//        None
+//      }
+//    } else {
+//      None
+//    }
+//  }
 
   def addCheckpoint(
                      id: ActorVirtualIdentity,
                      alignment: Long,
-                     snapshotId:String,
-                     markerId:String,
+                     checkpointId:String,
                      checkpoint: SavedCheckpoint
   ): Unit = {
-    completedCheckpoint.getOrElseUpdate(id, new mutable.HashSet[String]()).add(snapshotId)
-    checkpointIdMap((id, alignment)) = (snapshotId, markerId)
+    completedCheckpoint.getOrElseUpdate(id, new mutable.HashSet[String]()).add(checkpointId)
+    checkpointsId.getOrElseUpdate(id, new mutable.HashMap[String, Long]())(checkpointId) = alignment
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
     if(checkpoint != null){
       println(
-        s"checkpoint $markerId stored for $id at alignment = ${alignment} size = ${checkpoint.size()} bytes"
+        s"checkpoint $checkpointId stored for $id at alignment = ${alignment} size = ${checkpoint.size()} bytes"
       )
     }
   }

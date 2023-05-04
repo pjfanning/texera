@@ -18,7 +18,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   override def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
     val stats = finalizeCheckpoint(pendingCheckpoint)
-    controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId,pendingCheckpoint.markerId, stats))
+    controller.controlProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.logicalSnapshotId,pendingCheckpoint.checkpointId, stats))
   }
 
   def killAllExistingWorkers(): Unit = {
@@ -80,7 +80,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
 
   override def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf: ReplayCheckpointConfig): () => Unit = {
     () => {
-      controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
+      controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.checkpointId, Map.empty))
       pendingCheckpoint.fifoOutputState = controller.controlProcessor.outputPort.getFIFOState
       fillCheckpoint(pendingCheckpoint)
       pendingCheckpoint.checkpointDone = true

@@ -64,6 +64,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
 
   addSubscription(client.registerCallback[EstimationCompleted](cmd =>{
     val snapshot = history.getSnapshot(cmd.id)
+    println(cmd.actorId)
+    println(cmd.checkpointStats.inputWatermarks)
+    println(cmd.checkpointStats.outputWatermarks)
     snapshot.addParticipant(cmd.actorId, cmd.checkpointStats)
   }))
 
@@ -71,12 +74,12 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     val actor = cmd.actorId
     val checkpointStats = cmd.checkpointStats
     if(!CheckpointHolder.hasCheckpoint(actor, checkpointStats.step)){
-      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.id, cmd.markerId, null)
+      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.checkpointId, null)
     }
     checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
-    val snapshot = history.getSnapshot(cmd.id)
+    val snapshot = history.getSnapshot(cmd.logicalSnapshotId)
     snapshot.addParticipant(actor, checkpointStats, true)
-    val time = history.getSnapshotTime(cmd.id)
+    val time = history.getSnapshotTime(cmd.logicalSnapshotId)
     stateStore.jobMetadataStore.updateState(state => {
       state.withCheckpointedStates(state.checkpointedStates + (time.toInt -> snapshot.isAllCheckpointed))
     })
@@ -141,17 +144,6 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       planner = new ReplayCheckpointPlanner(history, req.replayTimeLimit)
     }
     val replayConf = planner.generateReplayPlan(req.replayPos)
-//    val replayConf = WorkflowReplayConfig(snapshot.getParticipants.map {
-//      worker =>
-//        val workerStats = snapshot.getStats(worker)
-//        val replayTo = workerStats.alignment
-//        val checkpointOpt = chkpts(worker)
-//        if (checkpointOpt.isDefined) {
-//          worker -> ReplayConfig(Some(checkpointOpt.get._1), Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
-//        } else {
-//          worker -> ReplayConfig(None, Some(replayTo), converted.getOrElse(worker, ArrayBuffer[ReplayCheckpointConfig]()).toArray)
-//        }
-//    }.toMap - CLIENT) // client is always ready
     replayId += 1
     client.executeAsync(actor => {
       replayConf.confs.keys.foreach(pendingReplay.add)

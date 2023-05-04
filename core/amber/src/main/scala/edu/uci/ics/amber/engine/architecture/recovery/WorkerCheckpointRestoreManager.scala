@@ -17,7 +17,7 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
   def onCheckpointCompleted(pendingCheckpoint: PendingCheckpoint): Unit ={
     worker.initiateSyncActionFromMain(() =>{
       val stats = finalizeCheckpoint(pendingCheckpoint)
-      worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.checkpointId, pendingCheckpoint.markerId, stats))
+      worker.dataProcessor.outputPort.sendToClient(RuntimeCheckpointCompleted(actorId, pendingCheckpoint.logicalSnapshotId, pendingCheckpoint.checkpointId, stats))
     })
   }
 
@@ -83,7 +83,7 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
       // now inside DP thread
       worker.initiateSyncActionFromDP(()=>{
         logger.info(s"taking checkpoint during replay at step ${worker.dataProcessor.cursor.getStep}")
-        worker.dataProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.id, Map.empty))
+        worker.dataProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.checkpointId, Map.empty))
         fillCheckpoint(pendingCheckpoint)
         pendingCheckpoint.fifoOutputState = worker.dataProcessor.outputPort.getFIFOState
         pendingCheckpoint.checkpointDone = true

@@ -8,5 +8,5 @@ case class ReplayConfig(fromCheckpoint: Option[Long],
                         checkpointConfig: Array[ReplayCheckpointConfig])
 
 
-case class ReplayCheckpointConfig(id:String, waitingForMarker: Set[ChannelEndpointID],
-                                  checkpointAt: Long, estimationId:String)
+case class ReplayCheckpointConfig(checkpointId:String, waitingForMarker: Set[ChannelEndpointID],
+                                  checkpointAt: Long, logicalSnapshotId:String)

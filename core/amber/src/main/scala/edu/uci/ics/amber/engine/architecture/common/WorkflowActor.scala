@@ -76,7 +76,7 @@ abstract class WorkflowActor(
     internalPayloadManager.inputPayload(channelId, payload)
     payload match {
       case internal: AmberInternalPayload =>
-        logger.info(s"process internal payload $internal")
+        logger.info(s"process internal payload $internal from channel $channelId")
         internalPayloadManager.inputMarker(channelId, internal)
       case payload: WorkflowExecutionPayload =>
         handlePayload(channelId, payload)
@@ -127,7 +127,7 @@ abstract class WorkflowActor(
     case invocation: ControlInvocation =>
       // during replay, cannot take outside world normal control message
       if(!isReplaying){
-        inputPort.handleFIFOPayload(OutsideWorldChannelEndpointID, invocation)
+        this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, invocation)
       }else{
         logger.info(s"doing replay! ignore $invocation from outside world")
       }

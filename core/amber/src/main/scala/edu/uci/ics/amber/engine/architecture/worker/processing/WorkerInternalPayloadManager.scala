@@ -47,7 +47,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.inputPort.getFIFOState,
             worker.dataProcessor.outputPort.getFIFOState,
             0,
-            estimatedCheckpointCost)
+            estimatedCheckpointCost + worker.internalQueue.getDataQueueLength)
           worker.dataProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
         })
       case LoadStateAndReplay(id, fromCheckpoint, replayTo, confs) =>

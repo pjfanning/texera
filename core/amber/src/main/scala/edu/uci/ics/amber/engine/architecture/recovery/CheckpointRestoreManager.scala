@@ -35,11 +35,10 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       actorId,
       checkpoint.stepCursorAtCheckpoint,
       checkpoint.checkpointId,
-      checkpoint.markerId,
       checkpoint.chkpt
     )
     logger.info(
-      s"local checkpoint completed! checkpoint id = ${checkpoint.checkpointId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - checkpoint.startTime) / 1000f}s"
+      s"local checkpoint completed! checkpoint id = ${checkpoint.logicalSnapshotId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - checkpoint.startTime) / 1000f}s"
     )
     val alignmentCost = System.currentTimeMillis() - checkpoint.startTime
     CheckpointStats(
@@ -69,8 +68,8 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       val planned = new SavedCheckpoint()
       planned.attachSerialization(SerializationExtension(actor.context.system))
       val pendingCheckpoint = new PendingCheckpoint(
-        conf.id,
-        conf.estimationId,
+        conf.checkpointId,
+        conf.logicalSnapshotId,
         actor.actorId,
         0,
         conf.checkpointAt,
@@ -81,7 +80,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
         conf.waitingForMarker)
       pendingCheckpoint.setOnComplete(onCheckpointCompleted)
       // add this checkpoint to pending checkpoints
-      pendingCheckpoints(conf.id) = pendingCheckpoint
+      pendingCheckpoints(conf.checkpointId) = pendingCheckpoint
       orderEnforcer.setCallbackOnStep(conf.checkpointAt, doCheckpointDuringReplay(pendingCheckpoint, conf))
     })
     orderEnforcer.setCallbackOnStep(replayTo.get, replayCompletedCallback(replayId))

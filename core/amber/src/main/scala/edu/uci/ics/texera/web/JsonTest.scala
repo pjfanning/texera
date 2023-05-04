@@ -31,8 +31,11 @@ object JsonTest {
     val history = ois.readObject.asInstanceOf[ProcessingHistory]
     ois.close()
 
-    val planner = new ReplayCheckpointPlanner(history, 5000)
-    planner.generateReplayPlan(1)
+    val planner = new ReplayCheckpointPlanner(history, 20000)
+    val plan = planner.generateReplayPlan(history.getInteractionTimes.last)
+    println(plan)
+    val plan2 = planner.generateReplayPlan(history.getInteractionTimes.last)
+    println(plan2)
   }
 }
 

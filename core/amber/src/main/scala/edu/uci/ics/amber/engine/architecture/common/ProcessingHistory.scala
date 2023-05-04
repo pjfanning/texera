@@ -80,6 +80,10 @@ class ProcessingHistory extends Serializable {
     currentCost
   }
 
+  def getOperatorCostOverTime(op:ActorVirtualIdentity): Seq[Long] ={
+    historyArray.map(history).map(_.getStats(op).checkpointCost)
+  }
+
 
   def getPlanCost(chkptPos:Map[ActorVirtualIdentity, Int]): Long ={
     var cost = 0L

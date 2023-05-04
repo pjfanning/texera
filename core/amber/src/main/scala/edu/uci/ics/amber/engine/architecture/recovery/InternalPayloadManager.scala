@@ -85,6 +85,7 @@ abstract class InternalPayloadManager {
       case op: OneTimeInternalPayload =>
         if(!seen.contains(op.id)){
           seen.add(op.id)
+          println(s"processing marker from channel $channel")
           handlePayload(op)
         }
       case mp: MarkerAlignmentInternalPayload =>

@@ -10,8 +10,8 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 
 
-class PendingCheckpoint(val markerId:String,
-                        val checkpointId:String,
+class PendingCheckpoint(val checkpointId:String,
+                        val logicalSnapshotId:String,
                         val actorId:ActorVirtualIdentity,
                         var startTime:Long,
                         val stepCursorAtCheckpoint:Long,
