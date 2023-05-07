@@ -110,6 +110,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
   var operatorOpened:Boolean = false
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
+    internalQueue.addSubQueue(ChannelEndpointID(identifier, false))
     upstreamLinkStatus.registerInput(identifier, input)
   }
 

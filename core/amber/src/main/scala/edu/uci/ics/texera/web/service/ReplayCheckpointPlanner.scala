@@ -16,41 +16,6 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
   private val plannedCheckpoints = getPartialPlan(getGlobalPlan(0, history.historyArray.length, timeLimit))
   private val unscheduledCheckpoints = plannedCheckpoints.keySet.to[collection.mutable.Set]
 
-
-//  def bruteforce(start:Int, end:Int): (Map[ActorVirtualIdentity, Int], Long, Int) = {
-
-
-
-//    while(true){
-//      iteration += 1
-//      var nextCost = Long.MaxValue
-//      var nextPlan = currentPlan
-//      var currentDecision:Option[(ActorVirtualIdentity, Int)] = None
-//      (start + 1 until end).foreach{
-//        i =>
-//          val snapshot = history.getSnapshot(i)
-//          snapshot.getParticipants.foreach{
-//            op =>
-//              val plan = currentPlan.updated(op, i)
-//              val planCost = history.getPlanCost(plan)
-//              if (planCost < nextCost){
-//                nextCost = planCost
-//                nextPlan = plan
-//                currentDecision = Some((op, i))
-//              }
-//          }
-//      }
-//      if(nextCost < currentCost){
-//        println(s"iter $iteration: $nextPlan")
-//        currentCost = nextCost
-//        currentPlan = nextPlan
-//      }else{
-//        return (currentPlan, currentCost, iteration)
-//      }
-//    }
-//    (currentPlan, currentCost, iteration)
-//  }
-
   def pickInRange(start:Int, end:Int): (Map[ActorVirtualIdentity, Int], Long, Int) ={
     var currentPlan = history.getSnapshot(start).getParticipants.map(x => x -> start).toMap
     var currentCost = history.getPlanCost(currentPlan)
@@ -63,13 +28,14 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
       var nextCost = Long.MaxValue
       var nextPlan = currentPlan
       var currentDecision:Option[(ActorVirtualIdentity, Int)] = None
-      (start + 1 until end).foreach{
+      (start + 1 to end).foreach{
         i =>
           val snapshot = history.getSnapshot(i)
           snapshot.getParticipants.foreach{
             op =>
               val plan = currentPlan.updated(op, i)
               val planCost = history.getPlanCost(plan)
+              //println(s"$plan  => $planCost")
               if (planCost < nextCost){
                 nextCost = planCost
                 nextPlan = plan

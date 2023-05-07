@@ -81,7 +81,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     snapshot.addParticipant(actor, checkpointStats, true)
     val time = history.getSnapshotTime(cmd.logicalSnapshotId)
     stateStore.jobMetadataStore.updateState(state => {
-      state.withCheckpointedStates(state.checkpointedStates + (time.toInt -> snapshot.isAllCheckpointed))
+      state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
     })
   }))
 
@@ -126,9 +126,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
         }
       case WorkflowAggregatedState.COMPLETED =>
         estimationHandler.cancel()
-        stateStore.jobMetadataStore.updateState(jobMetadata =>
-          jobMetadata.withInteractionHistory(history.getInteractionTimes.map(_.toInt)).withCurrentReplayPos(-1)
-        )
+        stateStore.jobMetadataStore.updateState(state => {
+          state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
+        })
         val file = Paths.get("").resolve("latest-interation-history")
         val oos = new ObjectOutputStream(new FileOutputStream(file.toFile))
         oos.writeObject(history)

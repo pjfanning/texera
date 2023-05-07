@@ -157,6 +157,8 @@ export type ModifyLogicCompletedEvent = Readonly<{
 
 export type WorkflowInteractionHistoryEvent = Readonly<{
   history: readonly number[];
+  isInteraction:readonly boolean[];
+  checkpointStatus:readonly string[];
 }>;
 
 export type  WorkflowAdditionalOperatorInfoEvent = Readonly<{

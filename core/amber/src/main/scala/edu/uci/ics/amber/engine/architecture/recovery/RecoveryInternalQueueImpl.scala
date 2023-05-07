@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 class RecoveryInternalQueueImpl(val actorId:ActorVirtualIdentity, @transient creditMonitor: CreditMonitor, @transient val replayOrderEnforcer: ReplayOrderEnforcer) extends WorkerInternalQueueImpl(creditMonitor) with AmberLogging {
 
   replayOrderEnforcer.getAllReplayChannels.foreach{
-    channel => lbmq.addSubQueue(channel, getPriority(channel))
+    channel => addSubQueue(channel)
   }
   private val systemCmdQueue = lbmq.getSubQueue(ThreadSyncChannelID)
 

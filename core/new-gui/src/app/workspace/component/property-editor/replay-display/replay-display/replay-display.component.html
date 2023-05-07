@@ -1,16 +1,18 @@
 <nz-timeline
 [nzPending]="replay.isReplaying ? 'Replaying to ' + (replay.selectedKey / 1000) + 's ...' : false">
   <nz-timeline-item
-  *ngFor="let t of replay.historyStatus | keys;"
-  [nzColor]="replay.selectedKey === t ? 'red': (replay.historyStatus[t] ==='interaction' ? 'gray': (replay.historyStatus[t] === 'partial' ? 'green' :'blue'))"
+  *ngFor="let t of replay.history.keys();"
+  [nzColor]="replay.selectedKey === t ? 'red': (replay.history.get(t)!.isInteraction ? 'gray': (replay.history.get(t)!.checkpointStatus === 'partial' ? 'green' :'blue'))"
   >
     <div
       [style]="{
-        'padding-bottom': '10px',
+        'padding-bottom': replay.history.get(t)!.padding+'px',
+        'padding-top': '0px',
+        'margin-top': '0px',
         'margin-bottom': '0px'
         }"
       (click)="replay.selectReplayPoint(t)">
-      <p [style]="{'cursor': 'pointer'}">{{t / 1000}}s</p>
+      <p [style]="{'cursor': 'pointer', 'margin-bottom': '0px'}">{{t / 1000}}s</p>
     </div>
   </nz-timeline-item>
 </nz-timeline>
@@ -21,10 +23,6 @@
   <input type="number" name="input"
          min="1" max="99" [(ngModel)]="replay.replayTimeLimit" required>
 </label>
-<label>Replay Planner Strategy:</label>
-<select [(ngModel)]="replay.selectedMode">
-  <option *ngFor="let mode of replay.plannerStrategies;" [value]="mode">{{mode}}</option>
-</select>
 <button mat-stroked-button (click)="replay.clickButton()">
   Request Operator Info
 </button>

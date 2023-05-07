@@ -31,7 +31,10 @@ object JsonTest {
     val history = ois.readObject.asInstanceOf[ProcessingHistory]
     ois.close()
 
-    val planner = new ReplayCheckpointPlanner(history, 20000)
+    val planner = new ReplayCheckpointPlanner(history, 5000)
+//    val a = planner.pickInRange(50,55)
+//    val aplus = a._1 + (ActorVirtualIdentity("Worker:WF1-SimpleSink-operator-058c6027-5134-4a0d-b345-77227115ee76-main-0") -> 55)
+//    val b = history.getPlanCost(aplus)
     val plan = planner.generateReplayPlan(history.getInteractionTimes.last)
     println(plan)
     val plan2 = planner.generateReplayPlan(history.getInteractionTimes.last)

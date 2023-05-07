@@ -8,7 +8,6 @@ import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, Worker
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted}
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport, ambermessage}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, IdempotentInternalPayload, MarkerAlignmentInternalPayload, MarkerCollectionSupport, NeverCompleteMarkerCollection, OneTimeInternalPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -47,7 +46,7 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.inputPort.getFIFOState,
             worker.dataProcessor.outputPort.getFIFOState,
             0,
-            estimatedCheckpointCost + worker.internalQueue.getDataQueueLength)
+            estimatedCheckpointCost + worker.internalQueue.getDataQueueLength*400)
           worker.dataProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
         })
       case LoadStateAndReplay(id, fromCheckpoint, replayTo, confs) =>

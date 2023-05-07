@@ -64,6 +64,10 @@ class ProcessingHistory extends Serializable {
     historyArray.indices.filter(i => history(historyArray(i)).isInteraction).toArray
   }
 
+  def getSnapshotStatus:Array[String] = {
+    historyArray.map(history).map(x => if(x.isAllCheckpointed){"all"}else if(x.isNoneCheckpointed){"none"}else{"partial"})
+  }
+
   def getOperatorCost(op: ActorVirtualIdentity, currentIdx: Int, chkptPos:Map[ActorVirtualIdentity, Int]):Long = {
     var currentCost = 0L
     val info = getSnapshot(currentIdx).getStats(op)
@@ -72,9 +76,9 @@ class ProcessingHistory extends Serializable {
       k:ActorVirtualIdentity =>
         val pos = chkptPos.getOrElse(k, 0)
         if(pos >= currentIdx){
-          val toReceive = getSnapshot(pos).getStats(op).inputStatus.getToReceive(k)
-          val received = info.inputStatus.getReceived(k)
-          currentCost += (toReceive - received) / inputConstant
+          val toReceive = getSnapshot(pos).getStats(op).inputStatus.getDataToReceive(k)
+          val received = info.inputStatus.getDataReceived(k)
+          currentCost += (toReceive - received) * inputConstant
         }
     }
     currentCost

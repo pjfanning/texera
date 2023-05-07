@@ -6,11 +6,23 @@ import {ExecutionState} from "../../types/execute-workflow.interface";
 
 export const DISPLAY_WORKFLOW_EXECUTION_REPLAY = "display_workflow_execution_replay";
 
+export class HistoryNode {
+  public isInteraction: boolean;
+  public checkpointStatus:string;
+  public padding:number;
+  constructor(isInteraction:boolean, checkpointStatus:string, padding:number){
+    this.isInteraction = isInteraction;
+    this.checkpointStatus = checkpointStatus;
+    this.padding = padding;
+  }
+}
+
+
 @Injectable({
   providedIn: "root",
 })
 export class ReplayWorkflowService {
-  public historyStatus: Record<number, string> = {};
+  public history: Map<number, HistoryNode> = new Map();
   private displayWorkflowReplay = new Subject<string>();
   public operatorInfo: string[][] = [];
   public selectedKey = -1;
@@ -23,9 +35,21 @@ export class ReplayWorkflowService {
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
-      e.history.forEach(x => {
-        this.historyStatus[x] = "interaction";
-      });
+      if(e.history.length > 0){
+        this.history.clear();
+        let pxRange = 500;
+        let entireRange = e.history[e.history.length-1] - e.history[0];
+        let padding = 0;
+        for (let i = 0; i < e.history.length; i++) {
+          if(i != e.history.length-1){
+            padding += ((e.history[i+1] - e.history[i])/entireRange)*pxRange;
+          }
+          if(e.checkpointStatus[i] !== "none" || e.isInteraction[i]){
+            this.history.set(e.history[i], new HistoryNode(e.isInteraction[i], e.checkpointStatus[i], padding));
+            padding = 0;
+          }
+        }
+      }
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowAdditionalOperatorInfoEvent").subscribe(e =>{
@@ -34,17 +58,11 @@ export class ReplayWorkflowService {
 
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(e => {
       if(e.state === ExecutionState.Initializing || e.state === ExecutionState.Aborted){
-        this.historyStatus = {};
+        this.history = new Map();
         this.selectedKey = -1;
         this.operatorInfo = [];
         this.isReplaying = false;
       }
-    });
-
-    workflowWebsocketService.subscribeToEvent("WorkflowCheckpointedEvent").subscribe(e => {
-      Object.entries(e.checkpointed).forEach(entry => {
-        this.historyStatus[Number(entry[0])] = entry[1]?"full":"partial";
-      });
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowReplayCompletedEvent").subscribe(e => {
@@ -63,7 +81,7 @@ export class ReplayWorkflowService {
   }
 
   public selectReplayPoint(key: number): void {
-    if(key in this.historyStatus){
+    if(this.history.get(key)!.isInteraction){
       if(!this.isReplaying && this.selectedMode != "") {
         this.selectedKey = key;
         this.isReplaying = true;

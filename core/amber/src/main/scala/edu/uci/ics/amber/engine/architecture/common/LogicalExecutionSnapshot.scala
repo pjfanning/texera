@@ -19,12 +19,16 @@ object LogicalExecutionSnapshot{
 
     def keys:Iterable[ChannelEndpointID] = map.keys
 
-    def getToReceive(actorVirtualIdentity: ActorVirtualIdentity):Long = {
-      map.filter(_._1.endpointWorker == actorVirtualIdentity).map(_._2.toReceive).sum
+    def getDataToReceive(actorVirtualIdentity: ActorVirtualIdentity):Long = {
+      map.filter{ x =>
+        x._1.endpointWorker == actorVirtualIdentity && !x._1.isControlChannel
+      }.map(_._2.toReceive).sum
     }
 
-    def getReceived(actorVirtualIdentity: ActorVirtualIdentity):Long = {
-      map.filter(_._1.endpointWorker == actorVirtualIdentity).map(_._2.actualReceived).sum
+    def getDataReceived(actorVirtualIdentity: ActorVirtualIdentity):Long = {
+      map.filter{ x =>
+        x._1.endpointWorker == actorVirtualIdentity && !x._1.isControlChannel
+      }.map(_._2.actualReceived).sum
     }
   }
 
@@ -43,6 +47,8 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
   }
 
   def isAllCheckpointed:Boolean = (participants.keys.toSet - CLIENT) == checkpointed.keys.toSet
+
+  def isNoneCheckpointed:Boolean = checkpointed.isEmpty
 
   def addParticipant(
       id: ActorVirtualIdentity,

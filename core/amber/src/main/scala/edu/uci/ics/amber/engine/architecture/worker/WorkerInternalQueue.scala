@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
+import edu.uci.ics.amber.engine.common.lbmq.{LinkedBlockingMultiQueue, LinkedBlockingSubQueue}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -50,6 +50,8 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]]
 
+  def addSubQueue(channel:ChannelEndpointID):LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]
+
 }
 
 class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends WorkerInternalQueue {
@@ -75,13 +77,7 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
   override def enqueuePayload(message:DPMessage): Unit = {
     val subQueue = lbmq.getSubQueue(message.channel)
     if(subQueue == null){
-      val priority =
-        if(message.channel.isControlChannel){
-          CONTROL_QUEUE_PRIORITY
-        }else{
-          DATA_QUEUE_PRIORITY
-        }
-      lbmq.addSubQueue(message.channel, priority).add(message)
+      addSubQueue(message.channel).add(message)
     }else{
       subQueue.add(message)
     }
@@ -143,5 +139,15 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
     }else{
       subQueue.size
     }
+  }
+
+  override def addSubQueue(channel: ChannelEndpointID): LinkedBlockingSubQueue[ChannelEndpointID, DPMessage] = {
+    val priority =
+      if(channel.isControlChannel){
+        CONTROL_QUEUE_PRIORITY
+      }else{
+        DATA_QUEUE_PRIORITY
+      }
+    lbmq.addSubQueue(channel, priority)
   }
 }

@@ -53,14 +53,12 @@ class JobRuntimeService(
       if(newState.replayElapsed != oldState.replayElapsed || newState.checkpointElapsed != oldState.checkpointElapsed){
         outputEvts.append(WorkflowReplayCompletedEvent(newState.replayElapsed, newState.checkpointElapsed))
       }
-      if (newState.interactionHistory != oldState.interactionHistory) {
-        outputEvts.append(WorkflowInteractionHistoryEvent(newState.interactionHistory))
+      if (newState.needRefreshReplayState != oldState.needRefreshReplayState) {
+        val interactions = planner.history.getInteractionIdxes
+        outputEvts.append(WorkflowInteractionHistoryEvent(planner.history.historyArray.map(_.toInt), planner.history.historyArray.indices.map(interactions.contains), planner.history.getSnapshotStatus))
       }
       if (newState.operatorInfoStr != oldState.operatorInfoStr) {
         outputEvts.append(WorkflowAdditionalOperatorInfoEvent(newState.operatorInfoStr))
-      }
-      if (newState.checkpointedStates != oldState.checkpointedStates) {
-        outputEvts.append(WorkflowCheckpointedEvent(newState.checkpointedStates))
       }
       outputEvts
     })

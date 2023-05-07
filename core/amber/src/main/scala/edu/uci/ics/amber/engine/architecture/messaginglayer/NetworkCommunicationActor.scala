@@ -65,6 +65,7 @@ class NetworkCommunicationActor(
   val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
   val messageStash = new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]
   val messageIDToIdentity = new mutable.LongMap[ActorVirtualIdentity]
+  var sendRequestCount = 0
   // register timer for resending messages
   val resendHandle: Cancellable = context.system.scheduler.scheduleWithFixedDelay(
     30.seconds,
@@ -211,6 +212,13 @@ class NetworkCommunicationActor(
 
   def sendMessagesAndReceiveAcks: Receive = {
     case SendRequest(id, msg) =>
+      // simulate network delay
+//      if(id != CONTROLLER && actorId != CONTROLLER){
+//        if(sendRequestCount%100 == 0) {
+//          Thread.sleep(Random.nextInt(1000))
+//        }
+//        sendRequestCount += 1
+//      }
       val msgToForward = flowControl.getMessageToForward(id, msg)
       if (msgToForward.nonEmpty) {
         forwardMessageFromFlowControl(id, msgToForward.get)
@@ -284,9 +292,6 @@ class NetworkCommunicationActor(
   @inline
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
-      if(actorId != CONTROLLER){
-        Thread.sleep(Random.nextInt(50))
-      }
       Future{
         idToActorRefs(actorID) ! msg
       }
