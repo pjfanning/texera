@@ -11,18 +11,6 @@ import scala.util.Try
 
 object CheckpointHolder {
 
-  private var uniqueId = 0L
-
-  def generateCheckpointId: String = {
-    uniqueId += 1
-    s"global_checkpoint-$uniqueId"
-  }
-
-  def generateEstimationId(time:Long):String = {
-    uniqueId += 1
-    s"estimation-$time-$uniqueId"
-  }
-
   private val checkpoints =
     new mutable.HashMap[ActorVirtualIdentity, mutable.HashMap[Long, SavedCheckpoint]]()
 

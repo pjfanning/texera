@@ -10,10 +10,12 @@ export class HistoryNode {
   public isInteraction: boolean;
   public checkpointStatus:string;
   public padding:number;
-  constructor(isInteraction:boolean, checkpointStatus:string, padding:number){
+  public isStartingPoint:boolean;
+  constructor(isInteraction:boolean, checkpointStatus:string, padding:number, isStartingPoint:boolean){
     this.isInteraction = isInteraction;
     this.checkpointStatus = checkpointStatus;
     this.padding = padding;
+    this.isStartingPoint = isStartingPoint;
   }
 }
 
@@ -45,7 +47,7 @@ export class ReplayWorkflowService {
             padding += ((e.history[i+1] - e.history[i])/entireRange)*pxRange;
           }
           if(e.checkpointStatus[i] !== "none" || e.isInteraction[i]){
-            this.history.set(e.history[i], new HistoryNode(e.isInteraction[i], e.checkpointStatus[i], padding));
+            this.history.set(e.history[i], new HistoryNode(e.isInteraction[i], e.checkpointStatus[i], padding, i == 0));
             padding = 0;
           }
         }

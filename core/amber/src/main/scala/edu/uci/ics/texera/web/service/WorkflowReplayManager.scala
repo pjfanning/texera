@@ -39,6 +39,19 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   private val estimationInterval = 1.seconds
   private var estimationHandler = Cancellable.alreadyCancelled
 
+  private var uniqueId = 0L
+
+  def generateCheckpointId: String = {
+    uniqueId += 1
+    s"global_checkpoint-$uniqueId"
+  }
+
+  def generateEstimationId(time:Long):String = {
+    uniqueId += 1
+    s"estimation-$time-$uniqueId"
+  }
+
+
   def setupEstimation(): Cancellable ={
     TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds, estimationInterval){
       doEstimation(false)
@@ -51,7 +64,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       if(history.hasSnapshotAtTime(time)) {
         time +=1
       }
-      val id = CheckpointHolder.generateEstimationId(time) + (if(interaction){"-interaction"}else{""})
+      val id = generateEstimationId(time) + (if(interaction){"-interaction"}else{""})
       history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
       actor.controller ! EstimateCheckpointCost(id)
     })
@@ -79,7 +92,6 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
     val snapshot = history.getSnapshot(cmd.logicalSnapshotId)
     snapshot.addParticipant(actor, checkpointStats, true)
-    val time = history.getSnapshotTime(cmd.logicalSnapshotId)
     stateStore.jobMetadataStore.updateState(state => {
       state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
     })
@@ -106,7 +118,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
           TexeraWebApplication.scheduleCallThroughActorSystem(1.seconds) {
             client.executeAsync(actor => {
               val time = System.currentTimeMillis() - startTime
-              val id = CheckpointHolder.generateCheckpointId
+              val id = generateCheckpointId
               history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
               actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
             })
