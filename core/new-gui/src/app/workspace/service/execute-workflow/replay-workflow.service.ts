@@ -42,13 +42,18 @@ export class ReplayWorkflowService {
         let pxRange = 500;
         let entireRange = e.history[e.history.length-1] - e.history[0];
         let padding = 0;
+        let last = -1;
         for (let i = 0; i < e.history.length; i++) {
+          if(e.checkpointStatus[i] !== "none" || e.isInteraction[i]){
+            this.history.set(e.history[i], new HistoryNode(e.isInteraction[i], e.checkpointStatus[i], 0, i == 0));
+            padding = 0;
+            last = i;
+          }
           if(i != e.history.length-1){
             padding += ((e.history[i+1] - e.history[i])/entireRange)*pxRange;
           }
-          if(e.checkpointStatus[i] !== "none" || e.isInteraction[i]){
-            this.history.set(e.history[i], new HistoryNode(e.isInteraction[i], e.checkpointStatus[i], padding, i == 0));
-            padding = 0;
+          if(last != -1){
+            this.history.get(e.history[last])!.padding = padding;
           }
         }
       }

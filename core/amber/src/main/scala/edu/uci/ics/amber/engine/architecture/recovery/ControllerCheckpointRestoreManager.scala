@@ -98,6 +98,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
   override protected def replayCompletedCallback(replayId:String): () => Unit = {
     () => {
       logger.info("replay completed, waiting for next instruction")
+      controller.controlProcessor.asyncRPCClient.sendToClient(WorkflowStatusUpdate(controller.controlProcessor.execution.getWorkflowStatus))
       controller.controlProcessor.outputPort.sendToClient(ReplayCompleted(actorId, replayId))
     }
   }

@@ -3,14 +3,15 @@
   <nz-timeline-item
   *ngFor="let t of replay.history.keys();"
   [nzDot]="replay.history.get(t)!.isInteraction? interaction:nonInteraction"
-  [nzColor]="replay.selectedKey === t ? 'red': (replay.history.get(t)!.checkpointStatus === 'partial' ? 'green' : (replay.history.get(t)!.checkpointStatus === 'none' ? 'gray': 'blue'))"
+  [nzColor]="(replay.history.get(t)!.checkpointStatus === 'partial' ? 'green' : (replay.history.get(t)!.checkpointStatus === 'none' ? 'gray': 'blue'))"
   >
     <div
       [style]="{
         'padding-bottom': replay.history.get(t)!.padding+'px',
         'padding-top': '0px',
         'margin-top': '0px',
-        'margin-bottom': '0px'
+        'margin-bottom': '0px',
+        'font-weight': replay.selectedKey === t? 'bold': 'normal'
         }">
       <p *ngIf="!replay.history.get(t)!.isInteraction" [style]="{'cursor':'default','margin-bottom': '0px'}">{{replay.history.get(t)!.isStartingPoint? "start": (t / 1000) + 's'}}</p>
       <p *ngIf="replay.history.get(t)!.isInteraction" (click)="replay.selectReplayPoint(t)" [style]="{'cursor': 'pointer', 'margin-bottom': '0px'}">{{replay.history.get(t)!.isStartingPoint? "start": (t / 1000) + 's'}}</p>

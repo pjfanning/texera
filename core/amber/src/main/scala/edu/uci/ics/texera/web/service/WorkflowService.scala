@@ -159,9 +159,8 @@ class WorkflowService(
     if (jobService.getValue != null) {
       //unsubscribe all
       jobService.getValue.unsubscribeAll()
-      CheckpointHolder.clear()
     }
-
+    CheckpointHolder.clear()
     val job = new WorkflowJobService(
       createWorkflowContext(req, uidOpt),
       wsInput,

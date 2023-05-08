@@ -24,6 +24,8 @@ object CheckpointHolder {
 
   def clear(): Unit = {
     checkpoints.clear()
+    checkpointsId.clear()
+    completedCheckpoint.clear()
   }
 
   def hasCheckpoint(id: ActorVirtualIdentity, alignment: Long): Boolean = {
