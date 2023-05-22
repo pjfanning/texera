@@ -15,7 +15,17 @@ interface AttributeType1 {
     enum?: string[];
     const?: {
       "$data": string
-    }
+    },
+    allOf?: {
+      if: {
+        [key: string]: {
+          enum?: string[];
+        }
+      };
+      then: {
+        enum?: string[];
+      }
+    }[]
   }
 }
 

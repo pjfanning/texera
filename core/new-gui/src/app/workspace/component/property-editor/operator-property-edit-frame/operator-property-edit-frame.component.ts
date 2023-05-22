@@ -596,6 +596,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         // TODO: Add instead of replace
         mappedField.validators = {
           checkAttributeType1: {
+            
+
             expression: (c: AbstractControl, field: FormlyFieldConfig) => {
               const findAttributeType = (propertyName: string) => {
                 if (!this.currentOperatorId || !mapSource || !mapSource.properties || !mapSource.properties[propertyName])
@@ -610,8 +612,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
                 if (!inputSchema)
                   return undefined;
                 console.log('check2', inputSchema[port])
-                const attributeName = mappedField.formControl?.value[propertyName];
-                console.log('check3', attributeName)
+                const attributeName = c.value[propertyName];
+                console.log('check3', mappedField, this.formData, c, attributeName)
                 const inputAttributeType = inputSchema[port]?.find(e => e.attributeName === attributeName)?.attributeType;
                 console.log('check4', inputAttributeType)
                 return inputAttributeType;
@@ -644,7 +646,7 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
                   console.log('enum failed')
                   return false;
                 }
-                
+
                 // Check if "const" is satisfied
 
                 if (typ.const) {
@@ -656,6 +658,22 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
                     if (inputAttributeType !== dataAttributeType) {
                       console.log('const failed')
                       return false;
+                    }
+                  }
+                }
+
+                if (typ.allOf) {
+                  for (const allOf of typ.allOf) {
+                    for (const [ifProp, ifTyp] of Object.entries(allOf.if)) {
+                      // Find attribute value
+                      const ifAttributeValue = c.value[ifProp];
+                      // Check if attribute value is satisfied
+                      if (ifTyp.enum?.includes(ifAttributeValue)) {
+                        if (!allOf.then.enum?.includes(inputAttributeType)) {
+                          console.log('allOf failed')
+                          return false;
+                        }
+                      }
                     }
                   }
                 }
