@@ -530,76 +530,14 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
         };
       }
 
-      if (isDefined(mapSource.attributeType)) {
-        // TODO: Add instead of replace
-        mappedField.validators = {
-          checkAttributeType: {
-            expression: (c: AbstractControl) => {
-              console.log('=====check attribute type====')
-              // TODO: inject and auto fill conflict, workaround:
-              console.log('this.currentOperatorId', this.currentOperatorId)
-              console.log('mapSource.autofillAttributeOnPort', mapSource.autofillAttributeOnPort)
-
-              if (!(isDefined(this.currentOperatorId) && isDefined(mapSource.autofillAttributeOnPort)))
-              {
-                console.log('failed 1')
-                return false;
-              }
-                
-              const inputSchema = this.schemaPropagationService.getOperatorInputSchema(this.currentOperatorId)
-              console.log('input schema', inputSchema)
-              if (!inputSchema)
-                return false;
-
-
-              const inputAttributeType = inputSchema[mapSource.autofillAttributeOnPort]?.find(e => e.attributeName === c.value)?.attributeType
-              console.log('attribute type', inputAttributeType)
-              if (!inputAttributeType)
-                  return false
-
-              
-              if (mapSource.attributeType?.enum) {
-                console.log('=====END check attribute type====')
-                return mapSource.attributeType?.enum?.includes(inputAttributeType)
-              } else if (mapSource.attributeType?.const) {
-                // Get $data
-                const dataStr = mapSource.attributeType?.const.$data
-                const data = dataStr.split('/')
-                const dataPropertyName = data[1]
-                // Get attribute name from some service
-                console.log("schemaProp", this.schemaPropagationService.getOperatorInputSchemaMap());
-                console.log("controls", this.formlyFormGroup?.controls?.[dataPropertyName]?.value);
-                const dataAttributeName = this.formlyFormGroup?.controls?.[dataPropertyName]?.value
-                const dataAttributePort = parseInt(data[0])
-                console.log("data", dataAttributeName, dataAttributePort)
-                const dataAttributeType = inputSchema[dataAttributePort]?.find(e => e.attributeName === dataAttributeName)?.attributeType
-                console.log('$data attribute type', dataAttributeType)
-                if (!dataAttributeType)
-                    return false
-                console.log('=====END check attribute type====')
-                return inputAttributeType === dataAttributeType
-              }
-            },
-            message: (error: any, field: FormlyFieldConfig) =>
-              `"${field.formControl?.value}" does not match attribute type`,
-          },
-        };
-        mappedField.validation = {
-          show: false,
-          
-        };
-      }
-
       console.log("at1 defined", isDefined(mapSource.attributeType1))
-      console.log(mappedField)
       if (isDefined(mapSource.attributeType1)) {
         // TODO: Add instead of replace
         mappedField.validators = {
           checkAttributeType1: {
-            
-
             expression: (c: AbstractControl, field: FormlyFieldConfig) => {
               const findAttributeType = (propertyName: string) => {
+                console.log('findAttributeType', propertyName, mapSource)
                 if (!this.currentOperatorId || !mapSource || !mapSource.properties || !mapSource.properties[propertyName])
                   return undefined;
                 const port = (mapSource.properties[propertyName] as CustomJSONSchema7).autofillAttributeOnPort;
