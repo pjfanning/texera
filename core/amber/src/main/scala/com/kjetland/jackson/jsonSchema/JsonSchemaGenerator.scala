@@ -387,6 +387,11 @@ class JsonSchemaGenerator
       .filter(annotationIsApplicable(_))
   }
 
+  private def selectAnnotations[T <: Annotation](property: BeanProperty, annotationClass: Class[T]): Option[Array[T]] = {
+    Option(property.getType.getRawClass.getAnnotationsByType(annotationClass)
+      .filter(annotationIsApplicable(_)))
+  }
+
   // Tries to retrieve a annotation and validates that it is applicable
   private def selectAnnotation[T <: Annotation](annotatedClass:AnnotatedClass, annotationClass:Class[T]):Option[T] = {
     Option(annotatedClass.getAnnotation(annotationClass))
@@ -1294,6 +1299,13 @@ class JsonSchemaGenerator
                       a.value().foreach(b => injectFromJsonSchemaInject(b, thisPropertyNode.meta))
                     }
                   }
+
+//                  prop.foreach {
+//                    p: BeanProperty =>
+//                      p.getType.getRawClass.getAnnotationsByType(classOf[JsonSchemaInject])
+//                        .filter(annotationIsApplicable(_))
+//                        .foreach(injectFromJsonSchemaInject(_, thisPropertyNode.meta))
+//                  }
                 }
 
                 override def optionalProperty(prop: BeanProperty): Unit = {
