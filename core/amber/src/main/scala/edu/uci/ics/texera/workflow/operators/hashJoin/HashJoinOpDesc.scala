@@ -2,18 +2,10 @@ package edu.uci.ics.texera.workflow.operators.hashJoin
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{
-  AutofillAttributeName,
-  AutofillAttributeNameOnPort1
-}
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo}
@@ -25,12 +17,33 @@ class HashJoinOpDesc[K] extends OperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Left Input Attribute")
   @JsonPropertyDescription("attribute to be joined on the Left Input")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json = """
+      {
+        "attributeType": {
+          "const": { "$data": "1/probeAttributeName" }
+        }
+      }
+    """
+  )
   @AutofillAttributeName
   var buildAttributeName: String = _
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Right Input Attribute")
   @JsonPropertyDescription("attribute to be joined on the Right Input")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json =
+      """
+      {
+        "attributeType": {
+          "const": { "$data": "0/buildAttributeName" }
+        }
+      }
+    """
+  )
   @AutofillAttributeNameOnPort1
   var probeAttributeName: String = _
 

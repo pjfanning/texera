@@ -2,15 +2,10 @@ package edu.uci.ics.texera.workflow.operators.sortPartitions
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.RangePartition
@@ -20,6 +15,15 @@ class SortPartitionsOpDesc extends OperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Attribute")
   @JsonPropertyDescription("Attribute to sort (must be numerical).")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json =
+      """{
+      "attributeType": {
+        "enum": ["integer", "long", "double"]
+      }
+    }"""
+  )
   @AutofillAttributeName
   var sortAttributeName: String = _
 

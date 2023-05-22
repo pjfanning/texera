@@ -1,14 +1,10 @@
 package edu.uci.ics.texera.workflow.operators.linearregression
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 
@@ -16,11 +12,29 @@ class LinearRegressionOpDesc extends MLModelOpDesc {
 
   @JsonProperty(value = "x attribute", required = true)
   @JsonPropertyDescription("column representing x in y=wx+b")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json =
+      """{
+      "attributeType": {
+        "enum": ["integer", "long", "double"]
+      }
+    }"""
+  )
   @AutofillAttributeName
   var xAttr: String = _
 
   @JsonProperty(value = "y attribute", required = true)
   @JsonPropertyDescription("column representing y in y=wx+b")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json =
+      """{
+      "attributeType": {
+        "enum": ["integer", "long", "double"]
+      }
+    }"""
+  )
   @AutofillAttributeName
   var yAttr: String = _
 

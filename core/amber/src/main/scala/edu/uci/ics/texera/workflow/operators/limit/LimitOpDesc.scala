@@ -4,16 +4,12 @@ import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.operators.util.OperatorDescriptorUtils.equallyPartitionGoal
 
+import javax.validation.constraints.Min
 import scala.util.{Success, Try}
 
 class LimitOpDesc extends OperatorDescriptor {
@@ -21,6 +17,7 @@ class LimitOpDesc extends OperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Limit")
   @JsonPropertyDescription("the max number of output rows")
+  @Min(value = 0)
   var limit: Int = _
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {

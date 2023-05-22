@@ -2,13 +2,9 @@ package edu.uci.ics.texera.workflow.operators.unneststring
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.operators.flatmap.FlatMapOpDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorSchemaInfo, Schema}
@@ -20,6 +16,15 @@ class UnnestStringOpDesc extends FlatMapOpDesc {
 
   @JsonProperty(value = "Attribute", required = true)
   @JsonPropertyDescription("column of the string to unnest")
+  @JsonSchemaInject
+  @JsonSchemaInject(
+    json =
+      """{
+      "attributeType": {
+        "enum": ["string"]
+      }
+    }"""
+  )
   @AutofillAttributeName
   var attribute: String = _
 
