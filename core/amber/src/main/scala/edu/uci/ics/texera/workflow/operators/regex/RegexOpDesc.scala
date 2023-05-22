@@ -8,19 +8,21 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttribute
 import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 
+@JsonSchemaInject(json =
+"""
+{
+  "attributeType1": {
+    "attribute":{
+      "enum": ["string"]
+    }
+  }
+}
+"""
+)
 class RegexOpDesc extends FilterOpDesc {
 
   @JsonProperty(value = "attribute", required = true)
   @JsonPropertyDescription("column to search regex on")
-  @JsonSchemaInject
-  @JsonSchemaInject(
-    json =
-      """{
-      "attributeType": {
-        "enum": ["string"]
-      }
-    }"""
-  )
   @AutofillAttributeName
   var attribute: String = _
 

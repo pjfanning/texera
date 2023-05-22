@@ -14,18 +14,20 @@ import java.util.Collections
 import java.util.Collections.singletonList
 import scala.collection.JavaConverters.{asScalaBuffer, mapAsScalaMap}
 
+@JsonSchemaInject(json =
+"""
+{
+  "attributeType1": {
+    "attribute":{
+      "enum": ["string"]
+    }
+  }
+}
+"""
+)
 class SentimentAnalysisOpDesc extends MapOpDesc {
   @JsonProperty(value = "attribute", required = true)
   @JsonPropertyDescription("column to perform sentiment analysis on")
-  @JsonSchemaInject
-  @JsonSchemaInject(
-    json =
-      """{
-      "attributeType": {
-        "enum": ["string"]
-      }
-    }"""
-  )
   @AutofillAttributeName
   var attribute: String = _
 

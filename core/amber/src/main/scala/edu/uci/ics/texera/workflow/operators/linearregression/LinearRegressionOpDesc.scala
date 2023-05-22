@@ -8,6 +8,20 @@ import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupCons
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 
+@JsonSchemaInject(json =
+"""
+{
+    "attributeType1": {
+      "xAttr":{
+        "enum": ["integer", "long", "double"]
+      },
+      "yAttr":{
+        "enum": ["integer", "long", "double"]
+      }
+    }
+  }
+"""
+)
 class LinearRegressionOpDesc extends MLModelOpDesc {
 
   @JsonProperty(value = "x attribute", required = true)

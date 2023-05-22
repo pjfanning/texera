@@ -10,20 +10,22 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.RangePartition
 
+@JsonSchemaInject(json =
+"""
+{
+  "attributeType1": {
+    "sortAttributeName":{
+      "enum": ["integer", "long", "double"]
+    }
+  }
+}
+"""
+)
 class SortPartitionsOpDesc extends OperatorDescriptor {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Attribute")
   @JsonPropertyDescription("Attribute to sort (must be numerical).")
-  @JsonSchemaInject
-  @JsonSchemaInject(
-    json =
-      """{
-      "attributeType": {
-        "enum": ["integer", "long", "double"]
-      }
-    }"""
-  )
   @AutofillAttributeName
   var sortAttributeName: String = _
 

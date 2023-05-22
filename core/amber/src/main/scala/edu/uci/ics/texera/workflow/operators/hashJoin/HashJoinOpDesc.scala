@@ -12,38 +12,35 @@ import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo
 
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
+@JsonSchemaInject(json =
+"""
+{
+  "attributeType1": {
+    "buildAttributeName": {
+      "const": {
+        "$data": "probeAttributeName"
+      }
+    },
+    "probeAttributeName": {
+      "const": {
+        "$data": "buildAttributeName"
+      }
+    }
+  }
+}
+"""
+)
 class HashJoinOpDesc[K] extends OperatorDescriptor {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Left Input Attribute")
   @JsonPropertyDescription("attribute to be joined on the Left Input")
-  @JsonSchemaInject
-  @JsonSchemaInject(
-    json = """
-      {
-        "attributeType": {
-          "const": { "$data": "1/probeAttributeName" }
-        }
-      }
-    """
-  )
   @AutofillAttributeName
   var buildAttributeName: String = _
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Right Input Attribute")
   @JsonPropertyDescription("attribute to be joined on the Right Input")
-  @JsonSchemaInject
-  @JsonSchemaInject(
-    json =
-      """
-      {
-        "attributeType": {
-          "const": { "$data": "0/buildAttributeName" }
-        }
-      }
-    """
-  )
   @AutofillAttributeNameOnPort1
   var probeAttributeName: String = _
 
