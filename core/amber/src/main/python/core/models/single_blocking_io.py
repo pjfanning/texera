@@ -25,15 +25,16 @@ class SingleBlockingIO(IO):
         self.condition: Condition = condition
 
     @overrides
-    def write(self, __s: AnyStr) -> int:
+    def write(self, s: AnyStr) -> int:
         """
         Writes a partial string, append to the buffer.
         :param __s: a string.
         :return: the number of characters written.
         """
-        self.buf += __s
-        return len(__s)
+        self.buf += s
+        return len(s)
 
+    @overrides
     def flush(self) -> None:
         """
         Denotes the end of buffer, adds a "\n" to complete the string.
@@ -44,6 +45,7 @@ class SingleBlockingIO(IO):
         self.write("\n")
         self.value, self.buf = self.buf, ""
 
+    @overrides
     def readline(self, limit=None) -> str:
         """
         Fetches a string value by removing it from the IO. It blocks the current
@@ -113,9 +115,9 @@ class SingleBlockingIO(IO):
         pass
 
     def __exit__(
-            self,
-            __t: Type[BaseException] | None,
-            __value: BaseException | None,
-            __traceback: TracebackType | None,
+        self,
+        __t: Type[BaseException] | None,
+        __value: BaseException | None,
+        __traceback: TracebackType | None,
     ) -> bool | None:
         pass

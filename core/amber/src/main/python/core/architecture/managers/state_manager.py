@@ -1,6 +1,6 @@
 from typing import Dict, Set, Tuple, Union, TypeVar, Generic
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class InvalidStateException(Exception):

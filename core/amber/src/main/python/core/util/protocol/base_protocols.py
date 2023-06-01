@@ -6,6 +6,7 @@ T_con = TypeVar("T_con", contravariant=True)
 K_con = TypeVar("K_con", contravariant=True)
 T_co = TypeVar("T_co", covariant=True)
 
+
 class Putable(Protocol[T_con]):
     @abstractmethod
     def put(self, item: T_con) -> None:

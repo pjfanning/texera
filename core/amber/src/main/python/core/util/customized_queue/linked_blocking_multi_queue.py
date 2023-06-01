@@ -14,7 +14,7 @@ class LinkedBlockingMultiQueue(IKeyedQueue):
     @inner
     class Node(Generic[T]):
         def __init__(self, item: T):
-            self.item = item
+            self.item: T = item
             self.next: Optional[LinkedBlockingMultiQueue.Node[T]] = None
 
     @inner
@@ -25,16 +25,16 @@ class LinkedBlockingMultiQueue(IKeyedQueue):
             self.put_lock: RLock = RLock()
             self.count: AtomicInteger = AtomicInteger()
             self.enabled: bool = True
-            self.head: LinkedBlockingMultiQueue.Node = LinkedBlockingMultiQueue.Node(
-                None
-            )
-            self.last: Optional[LinkedBlockingMultiQueue.Node[T]] = self.head
+            self.head: LinkedBlockingMultiQueue.Node[
+                Optional[T]
+            ] = LinkedBlockingMultiQueue.Node(None)
+            self.last: LinkedBlockingMultiQueue.Node[Optional[T]] = self.head
 
         def clear(self) -> None:
             self.fully_lock()
             try:
-                h: LinkedBlockingMultiQueue.Node[T] = self.head
-                p: LinkedBlockingMultiQueue.Node = h.next
+                h: LinkedBlockingMultiQueue.Node[Optional[T]] = self.head
+                p: Optional[LinkedBlockingMultiQueue.Node[Optional[T]]] = h.next
                 while p is not None:
                     h.next = h
                     p.item = None
@@ -80,7 +80,7 @@ class LinkedBlockingMultiQueue(IKeyedQueue):
             finally:
                 self.owner.take_lock.release()
 
-        def enqueue(self, node: LinkedBlockingMultiQueue.Node[T]) -> None:
+        def enqueue(self, node: LinkedBlockingMultiQueue.Node[Optional[T]]) -> None:
             self.last.next = node
             self.last = node
 
@@ -88,7 +88,7 @@ class LinkedBlockingMultiQueue(IKeyedQueue):
             res = ""
             h = self.head
             while h.next is not None:
-                res += h.next.item
+                res += str(h.next.item)
                 res += " -> "
                 h = h.next
             return res
