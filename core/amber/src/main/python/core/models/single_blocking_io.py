@@ -4,6 +4,8 @@ from threading import Condition
 from types import TracebackType
 from typing import IO, Type, AnyStr, Iterator, Iterable, Optional
 
+from overrides import overrides
+
 
 class SingleBlockingIO(IO):
     """
@@ -22,13 +24,15 @@ class SingleBlockingIO(IO):
         self.buf: str = ""
         self.condition: Condition = condition
 
-    def write(self, s: str) -> None:
+    @overrides
+    def write(self, __s: AnyStr) -> int:
         """
         Writes a partial string, append to the buffer.
-        :param s: a string.
-        :return:
+        :param __s: a string.
+        :return: the number of characters written.
         """
-        self.buf += s
+        self.buf += __s
+        return len(__s)
 
     def flush(self) -> None:
         """
@@ -109,9 +113,9 @@ class SingleBlockingIO(IO):
         pass
 
     def __exit__(
-        self,
-        __t: Type[BaseException] | None,
-        __value: BaseException | None,
-        __traceback: TracebackType | None,
+            self,
+            __t: Type[BaseException] | None,
+            __value: BaseException | None,
+            __traceback: TracebackType | None,
     ) -> bool | None:
         pass

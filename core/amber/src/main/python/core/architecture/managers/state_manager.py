@@ -1,6 +1,6 @@
-from typing import Dict, Set, Tuple, Union
+from typing import Dict, Set, Tuple, Union, TypeVar, Generic
 
-from typing_extensions import T
+T = TypeVar('T')
 
 
 class InvalidStateException(Exception):
@@ -11,7 +11,7 @@ class InvalidTransitionException(Exception):
     pass
 
 
-class StateManager:
+class StateManager(Generic[T]):
     """
     A generalized StateManager that provides APIs for state transition, assertion,
     and confirmation.
