@@ -1,6 +1,7 @@
 wheel
 numpy
 pandas
+pandas-stubs
 flake8
 black
 attrs==21.2.0
@@ -10,6 +11,7 @@ packaging==20.9
 pluggy==1.0.0
 py==1.10.0
 pyarrow==11.0.0
+pyarrow-stubs
 pyparsing==2.4.7
 pytest==6.2.5
 python-dateutil==2.8.1
