@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import TypeVar, Sized, Optional, Generic
+from typing import TypeVar, Sized, Optional
 from typing_extensions import Protocol
 
 T_con = TypeVar("T_con", contravariant=True)
