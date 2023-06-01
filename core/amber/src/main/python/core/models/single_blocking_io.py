@@ -28,7 +28,7 @@ class SingleBlockingIO(IO):
     def write(self, s: AnyStr) -> int:
         """
         Writes a partial string, append to the buffer.
-        :param __s: a string.
+        :param s: a string.
         :return: the number of characters written.
         """
         self.buf += s
@@ -115,9 +115,9 @@ class SingleBlockingIO(IO):
         pass
 
     def __exit__(
-        self,
-        __t: Type[BaseException] | None,
-        __value: BaseException | None,
-        __traceback: TracebackType | None,
+            self,
+            __t: Type[BaseException] | None,
+            __value: BaseException | None,
+            __traceback: TracebackType | None,
     ) -> bool | None:
         pass
