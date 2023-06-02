@@ -322,8 +322,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 self.context.input_queue.enable_data()
             self.context.state_manager.transit_to(WorkerState.RUNNING)
 
-
-
     def _send_console_message(self, console_message: PythonConsoleMessageV2):
         self._async_rpc_client.send(
             ActorVirtualIdentity(name="CONTROLLER"),
