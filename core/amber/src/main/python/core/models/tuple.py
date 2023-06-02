@@ -1,13 +1,17 @@
 import datetime
-import pyarrow
+import pickle
 import typing
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Mapping, Iterator, TypeVar, Dict, Callable
 
 import pandas
+import pyarrow
+from pandas._libs.missing import checknull
+from pyarrow import Schema, lib
 
-AttributeType = TypeVar("AttributeType", int, float, str, datetime.datetime)
+AttributeType = TypeVar("AttributeType", int, float, str, datetime.datetime, bytes,
+                        bool, None)
 
 TupleLike = TypeVar(
     "TupleLike",
@@ -114,9 +118,9 @@ class Tuple:
             item: str = self.get_field_names()[item]
 
         if (
-            callable(self._field_data[item])
-            and getattr(self._field_data[item], "__name__", "Unknown")
-            == "field_accessor"
+                callable(self._field_data[item])
+                and getattr(self._field_data[item], "__name__", "Unknown")
+                == "field_accessor"
         ):
             # evaluate the field now
             field_accessor = self._field_data[item]
@@ -162,6 +166,38 @@ class Tuple:
             output_field_names = self.get_field_names()
         return tuple(self[i] for i in output_field_names)
 
+    def cast_tuple_to_match_schema(self, schema: Schema):
+        for field_name in self.get_field_names():
+            # convert NaN to None to support null value conversion
+            if checknull(self[field_name]):
+                self[field_name] = None
+            field_value = self[field_name]
+            field = schema.field(field_name)
+            field_type = None if field is None else field.type
+            if field_type == pyarrow.binary():
+                self[field_name] = b"pickle    " + pickle.dumps(field_value)
+
+    def check_against_schema(self, schema: Schema):
+        # TODO: move it into texera Schema definition.
+        allowed_types = {
+            lib.Type_INT32: (int,),
+            lib.Type_INT64: (int,),
+            lib.Type_STRING: (str,),
+            lib.Type_DOUBLE: (float,),
+            lib.Type_BOOL: (bool,),
+            lib.Type_BINARY: (bytes,),
+            lib.Type_DATE64: (datetime.datetime,),
+            lib.Type_TIMESTAMP: (datetime.datetime,),
+            lib.Type_TIME64: (datetime.datetime,),
+        }
+        for field_name, field_value in self.as_key_value_pairs():
+            expected = schema.field(
+                field_name).type
+
+            assert isinstance(field_value, allowed_types.get(expected.id)), \
+                f"Unmatched schema for field '{field_name}', " \
+                f"expected {expected}, got {field_value}  ({type(field_value)}) "
+
     def __iter__(self) -> Iterator[AttributeType]:
         return iter(self.get_fields())
 
@@ -172,9 +208,9 @@ class Tuple:
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, Tuple)
-            and self.get_field_names() == other.get_field_names()
-            and all(self[i] == other[i] for i in self.get_field_names())
+                isinstance(other, Tuple)
+                and self.get_field_names() == other.get_field_names()
+                and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:
