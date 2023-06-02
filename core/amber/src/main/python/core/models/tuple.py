@@ -177,7 +177,12 @@ class Tuple:
             if field_type == pyarrow.binary():
                 self[field_name] = b"pickle    " + pickle.dumps(field_value)
 
-    def check_against_schema(self, schema: Schema):
+    def validate_schema(self, schema: Schema) -> None:
+        """
+        Checks if the field values in the Tuple matches the expected Schema.
+        :param schema: pyarrow.Schema instance
+        :return:
+        """
         # TODO: move it into texera Schema definition.
         allowed_types = {
             lib.Type_INT32: (int,),
@@ -190,10 +195,9 @@ class Tuple:
             lib.Type_TIMESTAMP: (datetime.datetime,),
             lib.Type_TIME64: (datetime.datetime,),
         }
-        for field_name, field_value in self.as_key_value_pairs():
-            expected = schema.field(
-                field_name).type
 
+        for field_name, field_value in self.as_key_value_pairs():
+            expected = schema.field(field_name).type
             assert isinstance(field_value, allowed_types.get(expected.id)), \
                 f"Unmatched schema for field '{field_name}', " \
                 f"expected {expected}, got {field_value}  ({type(field_value)}) "
