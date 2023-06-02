@@ -119,9 +119,9 @@ class Tuple:
             item: str = self.get_field_names()[item]
 
         if (
-            callable(self._field_data[item])
-            and getattr(self._field_data[item], "__name__", "Unknown")
-            == "field_accessor"
+                callable(self._field_data[item])
+                and getattr(self._field_data[item], "__name__", "Unknown")
+                == "field_accessor"
         ):
             # evaluate the field now
             field_accessor = self._field_data[item]
@@ -199,10 +199,12 @@ class Tuple:
 
         for field_name, field_value in self.as_key_value_pairs():
             expected = schema.field(field_name).type
-            assert isinstance(field_value, allowed_types.get(expected.id)), (
-                f"Unmatched schema for field '{field_name}', "
-                f"expected {expected}, got {field_value}  ({type(field_value)}) "
-            )
+
+            if not isinstance(field_value, allowed_types.get(expected.id)):
+                raise TypeError(
+                    f"Unmatched type for field '{field_name}', expected {expected}, "
+                    f"got {field_value} ({type(field_value)}) instead."
+                )
 
     def __iter__(self) -> Iterator[AttributeType]:
         return iter(self.get_fields())
@@ -214,9 +216,9 @@ class Tuple:
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, Tuple)
-            and self.get_field_names() == other.get_field_names()
-            and all(self[i] == other[i] for i in self.get_field_names())
+                isinstance(other, Tuple)
+                and self.get_field_names() == other.get_field_names()
+                and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:
