@@ -2462,13 +2462,6 @@
   resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-13.2.5.tgz#083ac647926403df741d5f6b5a3edd3a545a9b2f"
   integrity sha512-obiPvwPe+UJUO8cfNbBxukLKG30F+gLF5/erexwklRknJzS4KP8ciH2on6XlTuXUahpDjbO0pffugFE2I/IszQ==
 
-"@ngx-formly/bootstrap@5.11.1":
-  version "5.11.1"
-  resolved "https://registry.yarnpkg.com/@ngx-formly/bootstrap/-/bootstrap-5.11.1.tgz#178429756bb55cabe9f7d9f231a2aa6797c1f05f"
-  integrity sha512-g6QIBvvj0d8l5JN6rhd9bYw0e3A5zsLkRYfKOA6izJ0dpW/9mjXNsQk6dGr6INTcqftO5A/AiGMV5FlqbB+oHA==
-  dependencies:
-    tslib "^1.9.0"
-
 "@ngx-formly/core@5.11.1":
   version "5.11.1"
   resolved "https://registry.yarnpkg.com/@ngx-formly/core/-/core-5.11.1.tgz#9a9e91235f8d2e5d1d90de6c55a7f69350d1da0f"
@@ -7529,11 +7522,11 @@ expression-eval@^2.0.0:
     jsep "^0.3.0"
 
 ext@^1.1.2:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/ext/-/ext-1.6.0.tgz#3871d50641e874cc172e2b53f919842d19db4c52"
-  integrity sha512-sdBImtzkq2HpkdRLtlLWDa6w4DX22ijZLKx8BMPUuKe1c5lbN6xwQDQCxSfxBQnHZ13ls/FH0MQZx/q/gr6FQg==
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/ext/-/ext-1.7.0.tgz#0ea4383c0103d60e70be99e9a7f11027a33c4f5f"
+  integrity sha512-6hxeJYaL110a9b5TEJSj0gojyHQAmA2ch5Os+ySCiA1QGdS697XWY1pzsrSjqA9LDEEgdB/KypIlR59RcLuHYw==
   dependencies:
-    type "^2.5.0"
+    type "^2.7.2"
 
 extend@^3.0.0, extend@^3.0.2, extend@~3.0.2:
   version "3.0.2"
@@ -13312,7 +13305,7 @@ type@^1.0.1:
   resolved "https://registry.yarnpkg.com/type/-/type-1.2.0.tgz#848dd7698dafa3e54a6c479e759c4bc3f18847a0"
   integrity sha512-+5nt5AAniqsCnu2cEQQdpzCAh33kVx8n0VoFidKpB1dVVLAN/F+bgVOqOJqOnEnrhp222clB5p3vUlD+1QAnfg==
 
-type@^2.5.0:
+type@^2.7.2:
   version "2.7.2"
   resolved "https://registry.yarnpkg.com/type/-/type-2.7.2.tgz#2376a15a3a28b1efa0f5350dcf72d24df6ef98d0"
   integrity sha512-dzlvlNlt6AXU7EBSfpAscydQ7gXB+pPGsPnfJnZpiNJBDj7IaJzQlBZYGdEi4R9HmPdBv2XmWJ6YUtoTa7lmCw==
