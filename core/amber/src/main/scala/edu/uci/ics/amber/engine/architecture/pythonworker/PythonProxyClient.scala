@@ -24,7 +24,7 @@ import scala.collection.mutable
 import scala.math.pow
 
 class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
-  extends Runnable
+    extends Runnable
     with AmberLogging
     with AutoCloseable
     with WorkerBatchInternalQueue {
@@ -96,9 +96,9 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
   }
 
   def sendControlV2(
-                     from: ActorVirtualIdentity,
-                     payload: ControlPayloadV2
-                   ): Result = {
+      from: ActorVirtualIdentity,
+      payload: ControlPayloadV2
+  ): Result = {
     val controlMessage = PythonControlMessage(from, payload)
     val action: Action = new Action("control", controlMessage.toByteArray)
 
@@ -128,10 +128,10 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
   }
 
   private def writeArrowStream(
-                                tuples: mutable.Queue[Tuple],
-                                from: ActorVirtualIdentity,
-                                isEnd: Boolean
-                              ): Unit = {
+      tuples: mutable.Queue[Tuple],
+      from: ActorVirtualIdentity,
+      isEnd: Boolean
+  ): Unit = {
 
     val schema = if (tuples.isEmpty) new Schema() else tuples.front.getSchema
     val descriptor = FlightDescriptor.command(PythonDataHeader(from, isEnd).toByteArray)
