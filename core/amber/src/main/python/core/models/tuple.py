@@ -3,7 +3,6 @@ import pickle
 import typing
 from copy import deepcopy
 from dataclasses import dataclass
-from types import NoneType
 from typing import Any, List, Mapping, Iterator, TypeVar, Dict, Callable
 
 import pandas
@@ -227,7 +226,9 @@ class Tuple:
         for field_name, field_value in self.as_key_value_pairs():
             expected = schema.field(field_name).type
 
-            if not isinstance(field_value, (allowed_types.get(expected.id), NoneType)):
+            if not isinstance(
+                field_value, (allowed_types.get(expected.id), type(None))
+            ):
                 raise TypeError(
                     f"Unmatched type for field '{field_name}', expected {expected}, "
                     f"got {field_value} ({type(field_value)}) instead."
