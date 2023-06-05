@@ -119,9 +119,9 @@ class Tuple:
             item: str = self.get_field_names()[item]
 
         if (
-                callable(self._field_data[item])
-                and getattr(self._field_data[item], "__name__", "Unknown")
-                == "field_accessor"
+            callable(self._field_data[item])
+            and getattr(self._field_data[item], "__name__", "Unknown")
+            == "field_accessor"
         ):
             # evaluate the field now
             field_accessor = self._field_data[item]
@@ -209,10 +209,12 @@ class Tuple:
         expected_but_missing = set(schema_fields) - set(tuple_fields)
         unexpected = set(tuple_fields) - set(schema_fields)
         if expected_but_missing:
-            raise KeyError(f"field{'' if len(expected_but_missing) == 1 else 's'} "
-                           f"{', '.join(map(repr, expected_but_missing))} "
-                           f"{'is' if len(expected_but_missing) == 1 else 'are'} "
-                           f"expected but missing in the {self}.")
+            raise KeyError(
+                f"field{'' if len(expected_but_missing) == 1 else 's'} "
+                f"{', '.join(map(repr, expected_but_missing))} "
+                f"{'is' if len(expected_but_missing) == 1 else 'are'} "
+                f"expected but missing in the {self}."
+            )
 
         if unexpected:
             raise KeyError(
@@ -240,9 +242,9 @@ class Tuple:
 
     def __eq__(self, other: Any) -> bool:
         return (
-                isinstance(other, Tuple)
-                and self.get_field_names() == other.get_field_names()
-                and all(self[i] == other[i] for i in self.get_field_names())
+            isinstance(other, Tuple)
+            and self.get_field_names() == other.get_field_names()
+            and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:
