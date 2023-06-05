@@ -11,10 +11,10 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorS
 import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetchUtil.getInputStreamFromURL
 
 import java.net.URL
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.collection.JavaConversions._
 import scala.collection.mutable
 
 class BulkDownloaderOpExec(
