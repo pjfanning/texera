@@ -25,17 +25,17 @@ class SingleBlockingIO(IO):
         self.condition: Condition = condition
 
     @overrides
-    def write(self, s: AnyStr) -> int:
+    def write(self, s: AnyStr) -> int: # type: ignore
         """
         Writes a partial string, append to the buffer.
         :param s: a string.
         :return: the number of characters written.
         """
-        self.buf += s
+        self.buf += str(s)
         return len(s)
 
     @overrides
-    def flush(self) -> None:
+    def flush(self) -> None: # type: ignore
         """
         Denotes the end of buffer, adds a "\n" to complete the string.
         Flushes the completed string in the buffer to value.
@@ -46,7 +46,7 @@ class SingleBlockingIO(IO):
         self.value, self.buf = self.buf, ""
 
     @overrides
-    def readline(self, limit=None) -> str:
+    def readline(self, limit=None) -> str: # type: ignore
         """
         Fetches a string value by removing it from the IO. It blocks the current
         thread until there is a valid string to fetch.
@@ -69,49 +69,49 @@ class SingleBlockingIO(IO):
     ####################################################################################
     # The following IO methods are not implemented as they are not used in pdb.
     ####################################################################################
-    def close(self) -> None:
+    def close(self) -> None: # type: ignore
         pass
 
-    def fileno(self) -> int:
+    def fileno(self) -> int: # type: ignore
         pass
 
-    def isatty(self) -> bool:
+    def isatty(self) -> bool: # type: ignore
         pass
 
-    def read(self, __n: int = ...) -> AnyStr:
+    def read(self, __n: int = ...) -> AnyStr: # type: ignore
         pass
 
-    def readable(self) -> bool:
+    def readable(self) -> bool: # type: ignore
         pass
 
-    def readlines(self, __hint: int = ...) -> list[AnyStr]:
+    def readlines(self, __hint: int = ...) -> list[AnyStr]: # type: ignore
         pass
 
-    def seek(self, __offset: int, __whence: int = ...) -> int:
+    def seek(self, __offset: int, __whence: int = ...) -> int: # type: ignore
         pass
 
-    def seekable(self) -> bool:
+    def seekable(self) -> bool: # type: ignore
         pass
 
-    def tell(self) -> int:
+    def tell(self) -> int: # type: ignore
         pass
 
-    def truncate(self, __size: int | None = ...) -> int:
+    def truncate(self, __size: int | None = ...) -> int: # type: ignore
         pass
 
-    def writable(self) -> bool:
+    def writable(self) -> bool: # type: ignore
         pass
 
-    def writelines(self, __lines: Iterable[AnyStr]) -> None:
+    def writelines(self, __lines: Iterable[AnyStr]) -> None: # type: ignore
         pass
 
-    def __next__(self) -> AnyStr:
+    def __next__(self) -> AnyStr: # type: ignore
         pass
 
-    def __iter__(self) -> Iterator[AnyStr]:
+    def __iter__(self) -> Iterator[AnyStr]: # type: ignore
         pass
 
-    def __enter__(self) -> IO[AnyStr]:
+    def __enter__(self) -> IO[AnyStr]: # type: ignore
         pass
 
     def __exit__(
@@ -119,5 +119,5 @@ class SingleBlockingIO(IO):
             __t: Type[BaseException] | None,
             __value: BaseException | None,
             __traceback: TracebackType | None,
-    ) -> bool | None:
+    ) ->None: # type: ignore
         pass
