@@ -119,9 +119,9 @@ class Tuple:
             item: str = self.get_field_names()[item]
 
         if (
-            callable(self._field_data[item])
-            and getattr(self._field_data[item], "__name__", "Unknown")
-            == "field_accessor"
+                callable(self._field_data[item])
+                and getattr(self._field_data[item], "__name__", "Unknown")
+                == "field_accessor"
         ):
             # evaluate the field now
             field_accessor = self._field_data[item]
@@ -168,15 +168,22 @@ class Tuple:
         return tuple(self[i] for i in output_field_names)
 
     def cast_tuple_to_match_schema(self, schema: Schema):
+        # TODO: refactor this function.
         for field_name in self.get_field_names():
             # convert NaN to None to support null value conversion
-            if checknull(self[field_name]):
-                self[field_name] = None
-            field_value = self[field_name]
-            field = schema.field(field_name)
-            field_type = None if field is None else field.type
-            if field_type == pyarrow.binary():
-                self[field_name] = b"pickle    " + pickle.dumps(field_value)
+            try:
+                if checknull(self[field_name]):
+                    self[field_name] = None
+                field_value = self[field_name]
+                field = schema.field(field_name)
+                field_type = None if field is None else field.type
+                if field_type == pyarrow.binary():
+                    self[field_name] = b"pickle    " + pickle.dumps(field_value)
+            except Exception:
+                # Surpass exceptions during cast.
+                # Keep the value as it is if the cast fails, and continue to attempt
+                # on the next one.
+                continue
 
     def validate_schema(self, schema: Schema) -> None:
         """
@@ -197,6 +204,23 @@ class Tuple:
             lib.Type_TIME64: (datetime.datetime,),
         }
 
+        schema_fields = schema.names
+        tuple_fields = self.get_field_names()
+        expected_but_missing = set(schema_fields) - set(tuple_fields)
+        unexpected = set(tuple_fields) - set(schema_fields)
+        if expected_but_missing:
+            raise KeyError(f"field{'' if len(expected_but_missing) == 1 else 's'} "
+                           f"{', '.join(map(repr, expected_but_missing))} "
+                           f"{'is' if len(expected_but_missing) == 1 else 'are'} "
+                           f"expected but missing in the {self}.")
+
+        if unexpected:
+            raise KeyError(
+                f"{self} contains {'an' if len(unexpected) == 1 else ''} unexpected "
+                f"field{'' if len(unexpected) == 1 else 's'}: "
+                f"{', '.join(map(repr,unexpected))}."
+            )
+
         for field_name, field_value in self.as_key_value_pairs():
             expected = schema.field(field_name).type
 
@@ -216,9 +240,9 @@ class Tuple:
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, Tuple)
-            and self.get_field_names() == other.get_field_names()
-            and all(self[i] == other[i] for i in self.get_field_names())
+                isinstance(other, Tuple)
+                and self.get_field_names() == other.get_field_names()
+                and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:
