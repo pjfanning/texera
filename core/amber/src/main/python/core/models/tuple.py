@@ -170,8 +170,8 @@ class Tuple:
     def cast_tuple_to_match_schema(self, schema: Schema):
         # TODO: refactor this function.
         for field_name in self.get_field_names():
-            # convert NaN to None to support null value conversion
             try:
+                # convert NaN to None to support null value conversion
                 if checknull(self[field_name]):
                     self[field_name] = None
                 field_value = self[field_name]
