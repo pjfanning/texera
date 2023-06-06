@@ -60,10 +60,9 @@ case class LogicalPlan(
   lazy val sourceOperators: List[String] =
     operatorMap.keys.filter(op => jgraphtDag.inDegreeOf(op) == 0).toList
 
-  lazy val sinkOperators: List[String] =
+  lazy val terminalOperators: List[String] =
     operatorMap.keys
-      .filter(op => operatorMap(op).isInstanceOf[SinkOpDesc])
-      .toList
+      .filter(op => jgraphtDag.outDegreeOf(op) == 0).toList
 
   lazy val (inputSchemaMap, errorList) = propagateWorkflowSchema()
 
@@ -83,7 +82,7 @@ case class LogicalPlan(
 
   def getSourceOperators: List[String] = this.sourceOperators
 
-  def getSinkOperators: List[String] = this.sinkOperators
+  def getTerminalOperators: List[String] = this.terminalOperators
 
   def getUpstream(operatorID: String): List[OperatorDescriptor] = {
     val upstream = new mutable.MutableList[OperatorDescriptor]
@@ -91,6 +90,41 @@ case class LogicalPlan(
       .incomingEdgesOf(operatorID)
       .forEach(e => upstream += operatorMap(e.origin.operatorID))
     upstream.toList
+  }
+
+  def addOperator(operatorDescriptor: OperatorDescriptor): LogicalPlan = {
+    this.copy(operators :+ operatorDescriptor, links, breakpoints, cachedOperatorIds)
+  }
+
+  def removeOperator(operatorId: String): LogicalPlan = {
+    this.copy(
+      operators.filter(o => o.operatorID == operatorId),
+      links,
+      breakpoints, cachedOperatorIds)
+  }
+
+  // returns a new physical plan with the edges added
+  def addEdge(
+    from: String,
+    to: String,
+    fromPort: Int = 0,
+    toPort: Int = 0
+  ): LogicalPlan = {
+    val newLink = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val newLinks = links :+ newLink
+    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
+  }
+
+  // returns a new physical plan with the edges removed
+  def removeEdge(
+    from: String,
+    to: String,
+    fromPort: Int = 0,
+    toPort: Int = 0
+  ): LogicalPlan = {
+    val linkToRemove = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val newLinks = links.filter(l => l != linkToRemove)
+    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
   }
 
   def getDownstream(operatorID: String): List[OperatorDescriptor] = {

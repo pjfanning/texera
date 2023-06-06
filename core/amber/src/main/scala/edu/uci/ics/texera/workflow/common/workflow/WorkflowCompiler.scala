@@ -35,23 +35,10 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       .filter(o => o._2.nonEmpty)
 
   def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
-    // pre-process: set output mode for sink based on the visualization operator before it
-    logicalPlan.getSinkOperators.foreach(sinkOpId => {
-      val sinkOp = logicalPlan.getOperator(sinkOpId)
-      val upstream = logicalPlan.getUpstream(sinkOpId)
-      if (upstream.nonEmpty) {
-        (upstream.head, sinkOp) match {
-          // match the combination of a visualization operator followed by a sink operator
-          case (viz: VisualizationOperator, sink: ProgressiveSinkOpDesc) =>
-            sink.setOutputMode(viz.outputMode())
-            sink.setChartType(viz.chartType())
-          case _ =>
-          //skip
-        }
-      }
-    })
+    // logical plan transformation: add a sink operator for terminal operators without a sink
+    val logicalPlan0 = SinkInjectionTransformer.transform(logicalPlan)
 
-    val physicalPlan0 = logicalPlan.toPhysicalPlan(this.context, opResultStorage)
+    val physicalPlan0 = logicalPlan0.toPhysicalPlan(this.context, opResultStorage)
 
     // create pipelined regions.
     val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(

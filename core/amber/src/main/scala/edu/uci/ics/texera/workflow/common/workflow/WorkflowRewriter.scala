@@ -90,7 +90,7 @@ class WorkflowRewriter(
       logger.info("Rewriting workflow {}", logicalPlan)
       checkCacheValidity()
 
-      workflowDAG.getSinkOperators.foreach(addCacheSourceOpIdQue.+=)
+      workflowDAG.getTerminalOperators.foreach(addCacheSourceOpIdQue.+=)
 
       // Topological traverse and add cache source operators.
       while (addCacheSourceOpIdQue.nonEmpty) {
@@ -115,7 +115,7 @@ class WorkflowRewriter(
         addCacheSourceNewLinks.toList,
         addCacheSourceNewBreakpoints.toList
       )
-      addCacheSourceLogicalPlan.getSinkOperators.foreach(addCacheSourceOpIdQue.+=)
+      addCacheSourceLogicalPlan.getTerminalOperators.foreach(addCacheSourceOpIdQue.+=)
 
       // Topological traverse and add cache sink operators.
       val addCacheSinkOpIdIter = addCacheSourceLogicalPlan.jgraphtDag.iterator()

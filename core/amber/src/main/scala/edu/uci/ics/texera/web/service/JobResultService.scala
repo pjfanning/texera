@@ -184,11 +184,8 @@ class JobResultService(
         newState.operatorInfo.foreach {
           case (opId, info) =>
             val oldInfo = oldState.operatorInfo.getOrElse(opId, new OperatorResultMetadata())
-            // TODO: frontend now receives snapshots instead of deltas, we can optimize this
-            // if (oldInfo.tupleCount != info.tupleCount) {
             buf(opId) =
               progressiveResults(opId).convertWebResultUpdate(oldInfo.tupleCount, info.tupleCount)
-          //}
         }
         Iterable(WebResultUpdateEvent(buf.toMap))
       })
@@ -217,7 +214,7 @@ class JobResultService(
     })
 
     // For cached operators and sinks, create result service so that the results can be displayed.
-    logicalPlan.getSinkOperators.map(sink => {
+    logicalPlan.getTerminalOperators.map(sink => {
       logicalPlan.getOperator(sink) match {
         case sinkOp: ProgressiveSinkOpDesc =>
           val service = new ProgressiveResultService(sinkOp)
