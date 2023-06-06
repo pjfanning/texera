@@ -3,24 +3,18 @@ import pickle
 import typing
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, List, Mapping, Iterator, TypeVar, Dict, Callable
+from typing import Any, List, Iterator, TypeVar, Dict, Callable
 
 import pandas
 import pyarrow
 from pandas._libs.missing import checknull
 from pyarrow import Schema, lib
 
-AttributeType = TypeVar(
-    "AttributeType", int, float, str, datetime.datetime, bytes, bool, None
+Field = TypeVar(
+    "Field", int, float, str, datetime.datetime, bytes, bool, type(None)
 )
 
-TupleLike = TypeVar(
-    "TupleLike",
-    pandas.Series,
-    Iterator[typing.Tuple[str, AttributeType]],
-    Mapping[str, typing.Callable],
-    Mapping[str, AttributeType],
-)
+TupleLike = TypeVar("TupleLike")
 
 
 @dataclass
@@ -62,7 +56,7 @@ class ArrowTableTupleProvider:
         chunk_idx = self._current_chunk
         tuple_idx = self._current_idx
 
-        def field_accessor(field_name: str) -> AttributeType:
+        def field_accessor(field_name: str) -> Field:
             """
             Retrieve the field value by a given field name.
             This abstracts and hides the underlying implementation of the tuple data
@@ -103,7 +97,7 @@ class Tuple:
         else:
             self._field_data = dict(tuple_like) if tuple_like else dict()
 
-    def __getitem__(self, item: typing.Union[int, str]) -> AttributeType:
+    def __getitem__(self, item: typing.Union[int, str]) -> Field:
         """
         Get a field value with given item. If the value is an accessor, fetch it from
         the accessor.
@@ -128,7 +122,7 @@ class Tuple:
             self._field_data[item] = field_accessor(field_name=item)
         return self._field_data[item]
 
-    def __setitem__(self, field_name: str, field_value: AttributeType) -> None:
+    def __setitem__(self, field_name: str, field_value: Field) -> None:
         """
         Set a field with the given value.
         :param field_name
@@ -142,7 +136,7 @@ class Tuple:
         """Convert the tuple to Pandas series format"""
         return pandas.Series(self.as_dict())
 
-    def as_dict(self) -> Dict[str, AttributeType]:
+    def as_dict(self) -> Dict[str, Field]:
         """
         Return a dictionary copy of this tuple.
         Fields will be fetched from accessor if absent.
@@ -153,13 +147,13 @@ class Tuple:
             self.__getitem__(i)
         return deepcopy(self._field_data)
 
-    def as_key_value_pairs(self) -> List[typing.Tuple[str, AttributeType]]:
+    def as_key_value_pairs(self) -> List[typing.Tuple[str, Field]]:
         return [(k, v) for k, v in self.as_dict().items()]
 
     def get_field_names(self) -> typing.Tuple[str]:
         return tuple(map(str, self._field_data.keys()))
 
-    def get_fields(self, output_field_names=None) -> typing.Tuple[AttributeType]:
+    def get_fields(self, output_field_names=None) -> typing.Tuple[Field]:
         """
         Get values from tuple for selected fields.
         """
@@ -234,7 +228,7 @@ class Tuple:
                     f"got {field_value} ({type(field_value)}) instead."
                 )
 
-    def __iter__(self) -> Iterator[AttributeType]:
+    def __iter__(self) -> Iterator[Field]:
         return iter(self.get_fields())
 
     def __str__(self) -> str:
