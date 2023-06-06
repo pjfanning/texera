@@ -1,3 +1,4 @@
+import datetime
 from enum import Enum
 
 from bidict import bidict
@@ -33,3 +34,14 @@ ARROW_TYPE_MAPPING = bidict({
     lib.Type_BINARY: AttributeType.BINARY,
     lib.Type_TIMESTAMP: AttributeType.TIMESTAMP,
 })
+
+# Only single-directional mapping.
+PYOBJECT_TYPE_MAPPING = {
+    AttributeType.STRING: str,
+    AttributeType.INT: int,
+    AttributeType.LONG: int,  # Python3 unifies long into int.
+    AttributeType.DOUBLE: float,
+    AttributeType.BOOL: bool,
+    AttributeType.BINARY: bytes,
+    AttributeType.TIMESTAMP: datetime.datetime,
+}

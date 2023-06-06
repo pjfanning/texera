@@ -41,10 +41,16 @@ class Schema:
             ]
         )
 
+    def get_attr_names(self) -> List[str]:
+        return list(self._name_type_mapping.keys())
+
+    def get_attr_type(self, attr_name: str) -> AttributeType:
+        return self._name_type_mapping[attr_name]
+
     def to_key_value_pairs(self) -> List[Tuple[str, AttributeType]]:
         return [(k, v) for k, v in self._name_type_mapping.items()]
 
-    def __eq__(self, other: "Schema"):
+    def __eq__(self, other: "Schema") -> bool:
         if not isinstance(other, Schema):
             return False
         left_pairs = self.to_key_value_pairs()

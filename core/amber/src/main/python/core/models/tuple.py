@@ -8,7 +8,9 @@ from typing import Any, List, Iterator, TypeVar, Dict, Callable
 import pandas
 import pyarrow
 from pandas._libs.missing import checknull
-from pyarrow import Schema, lib
+
+from core.models.attribute_type import ARROW_TYPE_MAPPING, PYOBJECT_TYPE_MAPPING
+from core.models.schema import Schema
 
 Field = TypeVar(
     "Field", int, float, str, datetime.datetime, bytes, bool, type(None)
@@ -81,7 +83,8 @@ class Tuple:
     Lazy-Tuple implementation.
     """
 
-    def __init__(self, tuple_like: typing.Optional[TupleLike] = None):
+    def __init__(self, tuple_like: typing.Optional[TupleLike] = None,
+                 schema: typing.Optional[Schema] = None):
         """
         Construct a lazy-tuple with given TupleLike object. If the field value is a
         accessor callable, the actual value is fetched upon first reference.
@@ -96,6 +99,9 @@ class Tuple:
             self._field_data = tuple_like.to_dict()
         else:
             self._field_data = dict(tuple_like) if tuple_like else dict()
+        self._schema: typing.Optional[Schema] = schema
+        if self._schema:
+            self.finalize(schema)
 
     def __getitem__(self, item: typing.Union[int, str]) -> Field:
         """
@@ -113,9 +119,9 @@ class Tuple:
             item: str = self.get_field_names()[item]
 
         if (
-            callable(self._field_data[item])
-            and getattr(self._field_data[item], "__name__", "Unknown")
-            == "field_accessor"
+                callable(self._field_data[item])
+                and getattr(self._field_data[item], "__name__", "Unknown")
+                == "field_accessor"
         ):
             # evaluate the field now
             field_accessor = self._field_data[item]
@@ -161,6 +167,21 @@ class Tuple:
             output_field_names = self.get_field_names()
         return tuple(self[i] for i in output_field_names)
 
+    def finalize(self, schema: Schema) -> None:
+        """
+        Finalizes a Tuple by adding a schema to it. This convert all Fields into the
+        AttributeType defined in the Schema and make the Tuple immutable.
+
+        A Tuple can have no Schema initially. The types of Fields are not restricted.
+        This is to provide the maximum flexibility for users to construct Tuples as
+        they wish. When a Schema is added, the Tuple is finalized to match the Schema.
+
+        :param schema: target Schema to finalize the Tuple.
+        :return:
+        """
+        self.cast_tuple_to_match_schema(schema)
+        self.validate_schema(schema)
+
     def cast_tuple_to_match_schema(self, schema: Schema):
         # TODO: refactor this function.
         for field_name in self.get_field_names():
@@ -182,23 +203,11 @@ class Tuple:
     def validate_schema(self, schema: Schema) -> None:
         """
         Checks if the field values in the Tuple matches the expected Schema.
-        :param schema: pyarrow.Schema instance
+        :param schema: Schema
         :return:
         """
-        # TODO: move it into texera Schema definition.
-        allowed_types = {
-            lib.Type_INT32: (int,),
-            lib.Type_INT64: (int,),
-            lib.Type_STRING: (str,),
-            lib.Type_DOUBLE: (float,),
-            lib.Type_BOOL: (bool,),
-            lib.Type_BINARY: (bytes,),
-            lib.Type_DATE64: (datetime.datetime,),
-            lib.Type_TIMESTAMP: (datetime.datetime,),
-            lib.Type_TIME64: (datetime.datetime,),
-        }
 
-        schema_fields = schema.names
+        schema_fields = schema.get_attr_names()
         tuple_fields = self.get_field_names()
         expected_but_missing = set(schema_fields) - set(tuple_fields)
         unexpected = set(tuple_fields) - set(schema_fields)
@@ -214,14 +223,13 @@ class Tuple:
             raise KeyError(
                 f"{self} contains {'an' if len(unexpected) == 1 else ''} unexpected "
                 f"field{'' if len(unexpected) == 1 else 's'}: "
-                f"{', '.join(map(repr,unexpected))}."
+                f"{', '.join(map(repr, unexpected))}."
             )
 
         for field_name, field_value in self.as_key_value_pairs():
-            expected = schema.field(field_name).type
-
+            expected = schema.get_attr_type(field_name)
             if not isinstance(
-                field_value, (allowed_types.get(expected.id), type(None))
+                    field_value, (PYOBJECT_TYPE_MAPPING.get(expected), type(None))
             ):
                 raise TypeError(
                     f"Unmatched type for field '{field_name}', expected {expected}, "
@@ -238,9 +246,9 @@ class Tuple:
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, Tuple)
-            and self.get_field_names() == other.get_field_names()
-            and all(self[i] == other[i] for i in self.get_field_names())
+                isinstance(other, Tuple)
+                and self.get_field_names() == other.get_field_names()
+                and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:

@@ -4,10 +4,11 @@ from typing import Iterator, List, Mapping, Optional, Union, MutableMapping
 
 import overrides
 import pandas
-from pyarrow.lib import Schema
+
 from deprecated import deprecated
 
 from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
+from .schema import Schema
 from ..util.arrow_utils import to_arrow_schema
 
 
@@ -44,12 +45,12 @@ class Operator(ABC):
     @output_schema.setter
     @overrides.final
     def output_schema(
-        self, raw_output_schema: Union[Schema, Mapping[str, str]]
+            self, raw_output_schema: Union[Schema, Mapping[str, str]]
     ) -> None:
         self.__internal_output_schema = (
             raw_output_schema
             if isinstance(raw_output_schema, Schema)
-            else to_arrow_schema(raw_output_schema)
+            else Schema.from_raw_schema(raw_output_schema)
         )
 
     def open(self) -> None:
@@ -153,8 +154,8 @@ class BatchOperator(TupleOperatorV2):
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
         self.__batch_data[port].append(tuple_)
         if (
-            self.BATCH_SIZE is not None
-            and len(self.__batch_data[port]) >= self.BATCH_SIZE
+                self.BATCH_SIZE is not None
+                and len(self.__batch_data[port]) >= self.BATCH_SIZE
         ):
             yield from self._process_batch(port)
 
@@ -252,7 +253,7 @@ class TupleOperator(Operator):
 
     @abstractmethod
     def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
+            self, tuple_: Union[Tuple, InputExhausted], input_: int
     ) -> Iterator[Optional[TupleLike]]:
         """
         Process an input Tuple from the given link.
