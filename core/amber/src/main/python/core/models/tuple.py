@@ -21,7 +21,7 @@ Field = TypeVar(
 class TupleLike(
     typing.Protocol,
     typing.Sized,
-    typing.Container
+    typing.Container,
 ):
     def __getitem__(self, item): ...
 
@@ -147,9 +147,6 @@ class Tuple(TupleLike):
         assert not callable(field_value), "field cannot be of type callable"
         self._field_data[field_name] = field_value
 
-    def __contains__(self, __x: object) -> bool:
-        return __x in self._field_data
-
     def as_series(self) -> pandas.Series:
         """Convert the tuple to Pandas series format"""
         return pandas.Series(self.as_dict())
@@ -269,3 +266,6 @@ class Tuple(TupleLike):
 
     def __len__(self) -> int:
         return len(self._field_data)
+
+    def __contains__(self, __x: object) -> bool:
+        return __x in self._field_data
