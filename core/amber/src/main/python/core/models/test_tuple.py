@@ -94,8 +94,9 @@ class TestTuple:
         assert deepcopy(tuple_) == chr_tuple
 
     def test_finalize_tuple(self):
-        tuple_ = Tuple({"name": "texera", "age": 21, "scores": [85, 94, 100],
-                        'height': NaN})
+        tuple_ = Tuple(
+            {"name": "texera", "age": 21, "scores": [85, 94, 100], "height": NaN}
+        )
         schema = Schema(
             raw_schema={
                 "name": "string",
@@ -105,5 +106,5 @@ class TestTuple:
             }
         )
         tuple_.finalize(schema)
-        assert isinstance(tuple_['scores'], bytes)
-        assert tuple_['height'] is None
+        assert isinstance(tuple_["scores"], bytes)
+        assert tuple_["height"] is None

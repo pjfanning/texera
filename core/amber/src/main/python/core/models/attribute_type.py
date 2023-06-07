@@ -15,25 +15,29 @@ class AttributeType(Enum):
     BINARY = 7
 
 
-RAW_TYPE_MAPPING = bidict({
-    "string": AttributeType.STRING,
-    "integer": AttributeType.INT,
-    "long": AttributeType.LONG,
-    "double": AttributeType.DOUBLE,
-    "boolean": AttributeType.BOOL,
-    "timestamp": AttributeType.TIMESTAMP,
-    "binary": AttributeType.BINARY,
-})
+RAW_TYPE_MAPPING = bidict(
+    {
+        "string": AttributeType.STRING,
+        "integer": AttributeType.INT,
+        "long": AttributeType.LONG,
+        "double": AttributeType.DOUBLE,
+        "boolean": AttributeType.BOOL,
+        "timestamp": AttributeType.TIMESTAMP,
+        "binary": AttributeType.BINARY,
+    }
+)
 
-ARROW_TYPE_MAPPING = bidict({
-    lib.Type_INT32: AttributeType.INT,
-    lib.Type_INT64: AttributeType.LONG,
-    lib.Type_STRING: AttributeType.STRING,
-    lib.Type_DOUBLE: AttributeType.DOUBLE,
-    lib.Type_BOOL: AttributeType.BOOL,
-    lib.Type_BINARY: AttributeType.BINARY,
-    lib.Type_TIMESTAMP: AttributeType.TIMESTAMP,
-})
+ARROW_TYPE_MAPPING = bidict(
+    {
+        lib.Type_INT32: AttributeType.INT,
+        lib.Type_INT64: AttributeType.LONG,
+        lib.Type_STRING: AttributeType.STRING,
+        lib.Type_DOUBLE: AttributeType.DOUBLE,
+        lib.Type_BOOL: AttributeType.BOOL,
+        lib.Type_BINARY: AttributeType.BINARY,
+        lib.Type_TIMESTAMP: AttributeType.TIMESTAMP,
+    }
+)
 
 # Only single-directional mapping.
 PYOBJECT_TYPE_MAPPING = {
