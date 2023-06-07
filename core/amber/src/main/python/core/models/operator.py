@@ -9,7 +9,6 @@ from deprecated import deprecated
 
 from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
 from .schema import Schema
-from ..util.arrow_utils import to_arrow_schema
 
 
 class Operator(ABC):

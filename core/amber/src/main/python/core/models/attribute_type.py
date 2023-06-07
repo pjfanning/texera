@@ -7,6 +7,12 @@ import pyarrow as pa
 
 
 class AttributeType(Enum):
+    """
+    Types supported by PyTexera & PyAmber.
+
+    The definitions are mapped and following the AttributeType.java
+    (src/main/scala/edu/uci/ics/texera/workflow/common/tuple/schema/AttributeType.java)
+    """
     STRING = 1
     INT = 2
     LONG = 3
