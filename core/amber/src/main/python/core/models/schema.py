@@ -4,8 +4,9 @@ import pyarrow as pa
 
 from core.models.attribute_type import (
     AttributeType,
-    ARROW_TYPE_MAPPING,
     RAW_TYPE_MAPPING,
+    FROM_ARROW_MAPPING,
+    TO_ARROW_MAPPING,
 )
 
 
@@ -36,13 +37,13 @@ class Schema:
         self._name_type_mapping = dict()
         for attr_name in arrow_schema.names:
             arrow_type = arrow_schema.field(attr_name).type
-            attr_type = ARROW_TYPE_MAPPING[arrow_type]
+            attr_type = FROM_ARROW_MAPPING[arrow_type]
             self.add(attr_name, attr_type)
 
     def to_arrow_schema(self) -> pa.Schema:
         return pa.schema(
             [
-                pa.field(attr_name, ARROW_TYPE_MAPPING.inverse[attr_type])
+                pa.field(attr_name, TO_ARROW_MAPPING[attr_type])
                 for attr_name, attr_type in self._name_type_mapping.items()
             ]
         )

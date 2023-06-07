@@ -10,7 +10,7 @@ import pyarrow
 from loguru import logger
 from pandas._libs.missing import checknull
 
-from core.models.attribute_type import PYOBJECT_TYPE_MAPPING, AttributeType
+from core.models.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
 from core.models.schema import Schema
 
 Field = TypeVar("Field", int, float, str, datetime.datetime, bytes, bool, type(None))
@@ -256,7 +256,7 @@ class Tuple(TupleLike):
         for field_name, field_value in self.as_key_value_pairs():
             expected = schema.get_attr_type(field_name)
             if not isinstance(
-                field_value, (PYOBJECT_TYPE_MAPPING.get(expected), type(None))
+                field_value, (TO_PYOBJECT_MAPPING.get(expected), type(None))
             ):
                 raise TypeError(
                     f"Unmatched type for field '{field_name}', expected {expected}, "

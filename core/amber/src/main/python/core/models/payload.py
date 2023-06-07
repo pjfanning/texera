@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from pyarrow.lib import Table
 from typing import List
 
-from pyarrow.lib import Schema
-
+from core.models.schema import Schema
 from core.models.tuple import Tuple
 
 
