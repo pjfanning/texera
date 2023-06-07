@@ -13,9 +13,7 @@ from pandas._libs.missing import checknull
 from core.models.attribute_type import PYOBJECT_TYPE_MAPPING, AttributeType
 from core.models.schema import Schema
 
-Field = TypeVar(
-    "Field", int, float, str, datetime.datetime, bytes, bool, type(None)
-)
+Field = TypeVar("Field", int, float, str, datetime.datetime, bytes, bool, type(None))
 
 
 class TupleLike(
@@ -23,9 +21,11 @@ class TupleLike(
     typing.Sized,
     typing.Container,
 ):
-    def __getitem__(self, item): ...
+    def __getitem__(self, item):
+        ...
 
-    def __setitem__(self, key, value): ...
+    def __setitem__(self, key, value):
+        ...
 
 
 @dataclass
@@ -92,8 +92,11 @@ class Tuple(TupleLike):
     Lazy-Tuple implementation.
     """
 
-    def __init__(self, tuple_like: typing.Optional[TupleLike] = None,
-                 schema: typing.Optional[Schema] = None):
+    def __init__(
+            self,
+            tuple_like: typing.Optional[TupleLike] = None,
+            schema: typing.Optional[Schema] = None,
+    ):
         """
         Construct a lazy-tuple with given TupleLike object. If the field value is a
         accessor callable, the actual value is fetched upon first reference.
@@ -188,21 +191,35 @@ class Tuple(TupleLike):
         :param schema: target Schema to finalize the Tuple.
         :return:
         """
-        self.cast_tuple_to_match_schema(schema)
+        self.cast_to_schema(schema)
         self.validate_schema(schema)
 
-    def cast_tuple_to_match_schema(self, schema: Schema):
-        # TODO: refactor this function.
+    def cast_to_schema(self, schema: Schema) -> None:
+        """
+        Safely cast each field value to match the target schema.
+        If failed, the value will stay not changed.
+
+        This current conducts two kinds of casts:
+            1. cast NaN to None;
+            2. cast any object to bytes (using pickle).
+        :param schema: The target Schema that describes the target AttributeType to
+            cast.
+        :return:
+        """
         for field_name in self.get_field_names():
             try:
+
+                field_value: Field = self[field_name]
+
                 # convert NaN to None to support null value conversion
-                if checknull(self[field_name]):
-                    self[field_name] = None
-                field_value = self[field_name]
-                field_type = type(None) if field_value is None else \
-                    schema.get_attr_type(field_name)
-                if field_type == AttributeType.BINARY:
-                    self[field_name] = b"pickle    " + pickle.dumps(field_value)
+                if checknull(field_value):
+                    field_value = None
+
+                if field_value is not None:
+                    field_type = schema.get_attr_type(field_name)
+                    if field_type == AttributeType.BINARY:
+                        field_value = b"pickle    " + pickle.dumps(field_value)
+                self[field_name] = field_value
             except Exception as err:
                 # Surpass exceptions during cast.
                 # Keep the value as it is if the cast fails, and continue to attempt

@@ -2,36 +2,42 @@ from typing import MutableMapping, Optional, Mapping, List, Tuple
 
 import pyarrow as pa
 
-from core.models.attribute_type import AttributeType, ARROW_TYPE_MAPPING, \
-    RAW_TYPE_MAPPING
+from core.models.attribute_type import (
+    AttributeType,
+    ARROW_TYPE_MAPPING,
+    RAW_TYPE_MAPPING,
+)
 
 
 class Schema:
+    def __init__(
+        self,
+        arrow_schema: Optional[pa.Schema] = None,
+        raw_schema: Optional[Mapping[str, str]] = None,
+    ):
 
-    def __init__(self, pyarrow_schema: Optional[pa.Schema] = None):
-        if pyarrow_schema is not None:
-            pass
         self._name_type_mapping: MutableMapping[str, AttributeType] = dict()
+
+        if arrow_schema is not None:
+            self.from_arrow_schema(arrow_schema)
+        if raw_schema is not None:
+            self.from_raw_schema(raw_schema)
 
     def add(self, attribute_name: str, attribute_type: AttributeType) -> None:
         self._name_type_mapping[attribute_name] = attribute_type
 
-    @classmethod
-    def from_raw_schema(cls, raw_schema: Mapping[str, str]) -> "Schema":
-        s = Schema()
+    def from_raw_schema(self, raw_schema: Mapping[str, str]) -> None:
+        self._name_type_mapping = dict()
         for attr_name, raw_type in raw_schema.items():
             attr_type = RAW_TYPE_MAPPING[raw_type]
-            s.add(attr_name, attr_type)
-        return s
+            self.add(attr_name, attr_type)
 
-    @classmethod
-    def from_arrow_schema(cls, arrow_schema: pa.Schema) -> "Schema":
-        s = Schema()
+    def from_arrow_schema(self, arrow_schema: pa.Schema) -> None:
+        self._name_type_mapping = dict()
         for attr_name in arrow_schema.names:
             arrow_type = arrow_schema.field(attr_name).type
             attr_type = ARROW_TYPE_MAPPING[arrow_type]
-            s.add(attr_name, attr_type)
-        return s
+            self.add(attr_name, attr_type)
 
     def to_arrow_schema(self) -> pa.Schema:
         return pa.schema(
