@@ -49,7 +49,7 @@ class NetworkSender(StoppableQueueBlockingRunnable):
             field_names = data_payload.schema.get_attr_names()
             table = Table.from_pydict(
                 {name: [t[name] for t in data_payload.frame] for name in field_names},
-                schema=data_payload.schema.to_arrow_schema(),
+                schema=data_payload.schema.as_arrow_schema(),
             )
             data_header = PythonDataHeader(tag=to, is_end=False)
             self._proxy_client.send_data(bytes(data_header), table)

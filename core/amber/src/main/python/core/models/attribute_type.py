@@ -55,6 +55,7 @@ FROM_ARROW_MAPPING = {
     lib.Type_TIMESTAMP: AttributeType.TIMESTAMP,
 }
 
+
 # Only single-directional mapping.
 TO_PYOBJECT_MAPPING = {
     AttributeType.STRING: str,
