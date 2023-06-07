@@ -5,7 +5,7 @@ from copy import deepcopy
 from numpy import NaN
 
 from core.models import Tuple
-from core.models.schema import Schema
+from core.models.schema.schema import Schema
 
 
 class TestTuple:

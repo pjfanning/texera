@@ -10,8 +10,8 @@ import pyarrow
 from loguru import logger
 from pandas._libs.missing import checknull
 
-from core.models.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
-from core.models.schema import Schema
+from core.models.schema.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
+from core.models.schema.schema import Schema
 
 Field = TypeVar("Field", int, float, str, datetime.datetime, bytes, bool, type(None))
 

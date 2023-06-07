@@ -1,8 +1,8 @@
 import pytest
 import pyarrow as pa
 
-from core.models.attribute_type import AttributeType
-from core.models.schema import Schema
+from core.models.schema.attribute_type import AttributeType
+from core.models.schema.schema import Schema
 
 
 class TestSchema:

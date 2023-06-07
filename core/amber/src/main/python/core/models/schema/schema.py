@@ -2,7 +2,7 @@ from typing import MutableMapping, Optional, Mapping, List, Tuple
 
 import pyarrow as pa
 
-from core.models.attribute_type import (
+from core.models.schema.attribute_type import (
     AttributeType,
     RAW_TYPE_MAPPING,
     FROM_ARROW_MAPPING,

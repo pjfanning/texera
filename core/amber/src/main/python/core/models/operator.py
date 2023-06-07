@@ -8,7 +8,7 @@ import pandas
 from deprecated import deprecated
 
 from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
-from .schema import Schema
+from core.models.schema.schema import Schema
 
 
 class Operator(ABC):

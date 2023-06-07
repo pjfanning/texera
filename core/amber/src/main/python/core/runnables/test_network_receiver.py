@@ -6,7 +6,7 @@ import pytest
 from core.models import Tuple
 from core.models.internal_queue import InternalQueue, ControlElement, DataElement
 from core.models.payload import OutputDataFrame, EndOfUpstream
-from core.models.schema import Schema
+from core.models.schema.schema import Schema
 from core.runnables.network_receiver import NetworkReceiver
 from core.runnables.network_sender import NetworkSender
 from core.util.proto import set_one_of
