@@ -4,7 +4,7 @@ from typing import TypeVar, Optional
 Field = TypeVar(
     "Field",
     Optional[str],
-    Optional[int],
+    Optional[int],  # for both INT and LONG
     Optional[float],
     Optional[bool],
     Optional[datetime.datetime],
