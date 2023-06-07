@@ -62,7 +62,7 @@ class TestSchema:
         with pytest.raises(TypeError):
             schema["illegal_assign"] = "value"
         with pytest.raises(TypeError):
-            a = schema["illegal_access"]
+            _ = schema["illegal_access"]
         with pytest.raises(KeyError):
             schema.add("field-2", AttributeType.LONG)
 
