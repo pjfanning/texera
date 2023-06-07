@@ -1,4 +1,4 @@
-from typing import MutableMapping, Optional, Generic, Mapping, List, Tuple
+from typing import MutableMapping, Optional, Mapping, List, Tuple
 
 import pyarrow as pa
 

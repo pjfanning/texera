@@ -7,16 +7,25 @@ from typing import Any, List, Iterator, TypeVar, Dict, Callable
 
 import pandas
 import pyarrow
+from loguru import logger
 from pandas._libs.missing import checknull
 
-from core.models.attribute_type import ARROW_TYPE_MAPPING, PYOBJECT_TYPE_MAPPING
+from core.models.attribute_type import PYOBJECT_TYPE_MAPPING, AttributeType
 from core.models.schema import Schema
 
 Field = TypeVar(
     "Field", int, float, str, datetime.datetime, bytes, bool, type(None)
 )
 
-TupleLike = TypeVar("TupleLike")
+
+class TupleLike(
+    typing.Protocol,
+    typing.Sized,
+    typing.Container
+):
+    def __getitem__(self, item): ...
+
+    def __setitem__(self, key, value): ...
 
 
 @dataclass
@@ -78,7 +87,7 @@ class ArrowTableTupleProvider:
         return field_accessor
 
 
-class Tuple:
+class Tuple(TupleLike):
     """
     Lazy-Tuple implementation.
     """
@@ -138,6 +147,9 @@ class Tuple:
         assert not callable(field_value), "field cannot be of type callable"
         self._field_data[field_name] = field_value
 
+    def __contains__(self, __x: object) -> bool:
+        return __x in self._field_data
+
     def as_series(self) -> pandas.Series:
         """Convert the tuple to Pandas series format"""
         return pandas.Series(self.as_dict())
@@ -190,14 +202,15 @@ class Tuple:
                 if checknull(self[field_name]):
                     self[field_name] = None
                 field_value = self[field_name]
-                field = schema.field(field_name)
-                field_type = None if field is None else field.type
-                if field_type == pyarrow.binary():
+                field_type = type(None) if field_value is None else \
+                    schema.get_attr_type(field_name)
+                if field_type == AttributeType.BINARY:
                     self[field_name] = b"pickle    " + pickle.dumps(field_value)
-            except Exception:
+            except Exception as err:
                 # Surpass exceptions during cast.
                 # Keep the value as it is if the cast fails, and continue to attempt
                 # on the next one.
+                logger.warning(err)
                 continue
 
     def validate_schema(self, schema: Schema) -> None:
