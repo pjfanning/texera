@@ -1,19 +1,17 @@
-import datetime
 import pickle
 import typing
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, List, Iterator, TypeVar, Dict, Callable
+from typing import Any, List, Iterator, Dict, Callable
 
 import pandas
 import pyarrow
 from loguru import logger
 from pandas._libs.missing import checknull
 
-from core.models.schema.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
-from core.models.schema.schema import Schema
-
-Field = TypeVar("Field", int, float, str, datetime.datetime, bytes, bool, type(None))
+from .schema.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
+from .schema.field import Field
+from .schema.schema import Schema
 
 
 class TupleLike(
