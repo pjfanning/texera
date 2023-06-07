@@ -2,8 +2,8 @@ import pickle
 import typing
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, List, Iterator, Dict, Callable
-
+from typing import Any, List, Iterator, Dict, Callable, Sized, Container
+from typing_extensions import Protocol
 import pandas
 import pyarrow
 from loguru import logger
@@ -15,9 +15,9 @@ from .schema.schema import Schema
 
 
 class TupleLike(
-    typing.Protocol,
-    typing.Sized,
-    typing.Container,
+    Protocol,
+    Sized,
+    Container,
 ):
     def __getitem__(self, item):
         ...

@@ -50,9 +50,7 @@ class TestNetworkReceiver:
         )
         return OutputDataFrame(
             frame=[Tuple(r) for _, r in df_to_sent.iterrows()],
-            schema=Schema(
-                raw_schema={"Brand": "string", "Price": "integer"}
-            ).as_arrow_schema(),
+            schema=Schema(raw_schema={"Brand": "string", "Price": "integer"}),
         )
 
     @pytest.mark.timeout(2)
