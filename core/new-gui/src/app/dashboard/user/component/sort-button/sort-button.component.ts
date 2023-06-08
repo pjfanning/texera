@@ -10,6 +10,7 @@ import { DashboardEntry } from "../../type/dashboard-entry";
 export class SortButtonComponent {
   public sortMethod = SortMethod.EditTimeDesc;
   _entries?: ReadonlyArray<DashboardEntry>;
+
   @Input() get entries(): ReadonlyArray<DashboardEntry> {
     if (!this._entries) {
       throw new Error("entries property must be set for SortButtonComponent.");
@@ -19,11 +20,13 @@ export class SortButtonComponent {
   set entries(value: ReadonlyArray<DashboardEntry>) {
     const update = () => {
       this._entries = value;
-      this.entriesChange.emit(value);
+      this.sort();
+      this.entriesChange.emit(this._entries);
     };
     // Update entries property only if the input differ from existing value. This breaks the infinite recursion.
     if (this._entries === undefined || value.length != this._entries.length) {
       update();
+      return;
     }
     for (let i = 0; i < value.length; i++) {
       if (value[i] != this.entries[i]) {
@@ -61,8 +64,7 @@ export class SortButtonComponent {
   public ascSort(): void {
     this.sortMethod = SortMethod.NameAsc;
     this.entries = this.entries.slice().sort((t1, t2) => {
-      if (t1.workflow && t2.workflow)
-        return t1.workflow.name.toLowerCase().localeCompare(t2.workflow.name.toLowerCase());
+      if (t1.workflow && t2.workflow) return t1.name.toLowerCase().localeCompare(t2.name.toLowerCase());
       else throw new Error("No sortable entry provided.");
     });
   }
@@ -73,8 +75,7 @@ export class SortButtonComponent {
   public dscSort(): void {
     this.sortMethod = SortMethod.NameDesc;
     this.entries = this.entries.slice().sort((t1, t2) => {
-      if (t1.workflow && t2.workflow)
-        return t2.workflow.name.toLowerCase().localeCompare(t1.workflow.name.toLowerCase());
+      if (t1.workflow && t2.workflow) return t2.name.toLowerCase().localeCompare(t1.name.toLowerCase());
       else throw new Error("No sortable entry provided.");
     });
   }
@@ -86,9 +87,7 @@ export class SortButtonComponent {
     this.sortMethod = SortMethod.CreateTimeDesc;
     this.entries = this.entries.slice().sort((t1, t2) => {
       if (t1.workflow && t2.workflow)
-        return t1.workflow.creationTime !== undefined && t2.workflow.creationTime !== undefined
-          ? t2.workflow.creationTime - t1.workflow.creationTime
-          : 0;
+        return t1.creationTime !== undefined && t2.creationTime !== undefined ? t2.creationTime - t1.creationTime : 0;
       else throw new Error("No sortable entry provided.");
     });
   }
@@ -100,8 +99,8 @@ export class SortButtonComponent {
     this.sortMethod = SortMethod.EditTimeDesc;
     this.entries = this.entries.slice().sort((t1, t2) => {
       if (t1.workflow && t2.workflow)
-        return t1.workflow.lastModifiedTime !== undefined && t2.workflow.lastModifiedTime !== undefined
-          ? t2.workflow.lastModifiedTime - t1.workflow.lastModifiedTime
+        return t1.lastModifiedTime !== undefined && t2.lastModifiedTime !== undefined
+          ? t2.lastModifiedTime - t1.lastModifiedTime
           : 0;
       else throw new Error("No sortable entry provided.");
     });
