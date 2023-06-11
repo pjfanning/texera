@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from loguru import logger
 from overrides import overrides
 from typing import Iterator, Optional, Union

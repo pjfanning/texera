@@ -1,3 +1,4 @@
+import datetime
 from typing import MutableMapping, Optional, Mapping, List, Tuple
 
 import pyarrow as pa
@@ -6,7 +7,7 @@ from core.models.schema.attribute_type import (
     AttributeType,
     RAW_TYPE_MAPPING,
     FROM_ARROW_MAPPING,
-    TO_ARROW_MAPPING,
+    TO_ARROW_MAPPING, TO_PYOBJECT_MAPPING,
 )
 
 
@@ -28,9 +29,9 @@ class Schema:
     """
 
     def __init__(
-        self,
-        arrow_schema: Optional[pa.Schema] = None,
-        raw_schema: Optional[Mapping[str, str]] = None,
+            self,
+            arrow_schema: Optional[pa.Schema] = None,
+            raw_schema: Optional[Mapping[str, str]] = None,
     ):
         self._name_type_mapping: MutableMapping[str, AttributeType] = dict()
 
@@ -84,6 +85,13 @@ class Schema:
                 for attr_name, attr_type in self._name_type_mapping.items()
             ]
         )
+
+    def to_python_object_type_schema(self):
+
+
+        return {attr_name: TO_PYOBJECT_MAPPING[attr_type].__name__ for attr_name,
+                                                                       attr_type in
+                self._name_type_mapping.items()}
 
     def get_attr_names(self) -> List[str]:
         """
