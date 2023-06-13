@@ -4,14 +4,23 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
+import typing
 from _ast import FunctionDef, arg, Name, Subscript, Yield, Expr, Return, Dict, Tuple, \
     Load, AST
 import argparse
+from pathlib import Path
 
 from core.models import Schema
 
 
 class FuncArgsTransformer(ast.NodeTransformer):
+
+    def __init__(self, input_schema: Schema):
+        super().__init__()
+        self.input_schema = input_schema
+        self.target_line = 0
+
     def generic_visit(self, node: AST) -> AST:
         super().generic_visit(node)
 
@@ -19,11 +28,10 @@ class FuncArgsTransformer(ast.NodeTransformer):
                 isinstance(node, FunctionDef) and node.name == "process_tuple"
         )
         if process_tuple_func_cond:
-            global target_line
-            target_line = node.lineno
+            self.target_line = node.lineno
             args = list()
             args.append(node.args.args[0])
-            for attr_name, attr_type in schema.items():
+            for attr_name, attr_type in self.input_schema.to_python_object_type_schema().items():
                 new_arg = arg()
                 new_arg.arg = attr_name
                 new_arg.annotation = Name()
@@ -38,33 +46,93 @@ class FuncArgsTransformer(ast.NodeTransformer):
 
 
 class TexeraTupleAccessorTransformer(ast.NodeTransformer):
+    def __init__(self, output_fields: typing.List[str]):
+        self.output_fields = output_fields
+
     def generic_visit(self, node: AST) -> AST:
         super().generic_visit(node)
         if isinstance(node, Subscript) and isinstance(node.value,
                                                       Name) and node.value.id == "tuple_":
             field_name = node.slice.value
-            global output_fields
-            if field_name not in output_fields:
-                output_fields.append(field_name)
+
+            if field_name not in self.output_fields:
+                self.output_fields.append(field_name)
             return Name(node.slice.value)
         return node
 
 
 class YieldTransformer(ast.NodeTransformer):
+
+    def __init__(self, output_fields: typing.List[str]):
+        self.output_fields = output_fields
+
     def generic_visit(self, node: AST) -> AST:
         super().generic_visit(node)
         if isinstance(node, Expr):
 
             if isinstance(node.value, Yield):
-                global output_fields
+
                 exp = node.value.value
                 if isinstance(exp, Name):
                     if exp.id == "tuple_":
-                        return Return(Tuple([Name(x) for x in output_fields], Load()))
+                        return Return(Tuple([Name(x) for x in self.output_fields],
+                                            Load()))
                 if isinstance(exp, Dict):
-                    output_fields = [key.n for key in exp.keys]
+                    self.output_fields = [key.n for key in exp.keys]
                     return Return(Tuple(exp.values, Load()))
         return node
+
+
+class FunctionLocator(ast.NodeVisitor):
+
+    def __init__(self):
+        self.target_line = 0
+
+    def visit_FunctionDef(self, node: FunctionDef):
+        if node.name == "process_tuple":
+            self.target_line = node.lineno
+
+
+class OutputSchemaInferencer:
+    def inference_schema(self, input_schema: Schema, code: str):
+        root = ast.parse(code)
+        output_fields = [name for name in input_schema.to_python_object_type_schema()]
+        updated_root = FuncArgsTransformer(input_schema).visit(root)
+        updated_root = TexeraTupleAccessorTransformer(output_fields).visit(updated_root)
+        updated_root = YieldTransformer(output_fields).visit(updated_root)
+        generated_code = ast.unparse(updated_root)
+        locator = FunctionLocator()
+        locator.visit(ast.parse(generated_code))
+        target_line = locator.target_line
+        with tempfile.NamedTemporaryFile(mode='w', suffix=".py") as fp:
+            fp.write(generated_code)
+            fp.flush()
+            dmypy_path = Path(os.path.dirname(sys.executable)).joinpath("dmypy")
+            subprocess.call(
+                [dmypy_path, "run", fp.name]
+                , stdout=subprocess.DEVNULL
+                , stderr=subprocess.DEVNULL
+            )
+
+            output = subprocess.run(
+                [dmypy_path, "suggest", '--json',
+                 # '--no-errors',
+                 f'{fp.name}:{target_line}'],
+                capture_output=True
+            )
+            annotations = json.loads(output.stdout.decode("utf-8").strip())
+
+            output_types = annotations[0]['signature']['return_type']
+            allowed_types = ['int', 'float', 'datetime', 'str', 'bool', 'bytes']
+            raw_types = [type.strip("?") for type in output_types.strip("Tuple[").strip(
+                "]").split(", ")]
+            final_types = [type if type in allowed_types else 'binary' for type in
+                           raw_types]
+
+            output_json_dict = {
+                "outputSchema": dict(zip(output_fields, final_types))
+            }
+            return output_json_dict
 
 
 if __name__ == '__main__':
@@ -79,52 +147,14 @@ if __name__ == '__main__':
         with open(args.json) as file:
             input_data = json.load(file)
 
-    if args.stdin:
+    elif args.stdin:
         input_data = json.load(sys.stdin)
     schema = Schema(raw_schema={attr['attributeName']: attr['attributeType'] for attr
-                                in \
-                                input_data['inputSchema'][
-                                    'attributes']}).to_python_object_type_schema()
+                                in input_data['inputSchema']['attributes']})
 
     code = input_data['code'].replace("from pytexera import *", "import datetime")
-    root = ast.parse(code)
-    output_fields = [name for name in schema]
-    target_line = 0
-    updated_root = FuncArgsTransformer().visit(root)
-    updated_root = TexeraTupleAccessorTransformer().visit(updated_root)
-    updated_root = YieldTransformer().visit(updated_root)
-    generated_code = ast.unparse(updated_root)
 
-    # print(generated_code)
-    with open(
-            '/Users/yicong-huang/IdeaProjects/texera/core/amber/src/main/python/output.py',
-            'w') as fp:
-        fp.write(generated_code)
+    output_json_dict = OutputSchemaInferencer().inference_schema(schema, code)
 
-    subprocess.call(["/Users/yicong-huang/IdeaProjects/texera/venv/bin/dmypy", "run",
-                     f'/Users/yicong-huang/IdeaProjects/texera/core/amber/src/main/python/output.py']
-                    , stdout=subprocess.DEVNULL
-                    , stderr=subprocess.DEVNULL
-                    )
-
-    output = subprocess.run(
-        ["/Users/yicong-huang/IdeaProjects/texera/venv/bin/dmypy", "suggest", '--json',
-         # '--no-errors',
-         f'/Users/yicong-huang/IdeaProjects/texera/core/amber/src/main/python/output.py'
-         f':{target_line}'],
-        capture_output=True)
-
-    annotations = json.loads(output.stdout.decode("utf-8").strip())
-
-    output_types = annotations[0]['signature']['return_type']
-    allowed_types = ['int', 'float', 'datetime', 'str', 'bool', 'bytes']
-    raw_types = [type.strip("?") for type in output_types.strip("Tuple[").strip(
-        "]").split(", ")]
-    final_types = [type if type in allowed_types else 'binary' for type in raw_types]
-
-    output_json_dict = {
-        "output_schema": dict(
-            zip(output_fields, final_types))
-    }
     print(json.dumps(output_json_dict))
     # os.remove("output.py")
