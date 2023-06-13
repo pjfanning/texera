@@ -1,25 +1,21 @@
 package edu.uci.ics.texera.workflow.operators.udf.python
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.UnknownPartition
+import scalaj.http.{Http, HttpOptions}
 
-import java.io.{InputStream, OutputStream}
-import java.nio.file.Path
 import java.util.Collections.singletonList
 import scala.collection.JavaConverters._
-import scala.concurrent.SyncVar
-import scala.io.Source
-import scala.sys.process.{BasicIO, Process, ProcessIO}
+import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.util.{Success, Try}
 
 class PythonUDFOpDescV2 extends OperatorDescriptor {
@@ -56,16 +52,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor {
   @JsonSchemaTitle("Worker count")
   @JsonPropertyDescription("Specify how many parallel workers to lunch")
   var workers: Int = Int.box(1)
-  @JsonProperty(required = true, defaultValue = "true")
-  @JsonSchemaTitle("Retain input columns")
-  @JsonPropertyDescription("Keep the original input columns?")
-  var retainInputColumns: Boolean = Boolean.box(false)
-  @JsonProperty
-  @JsonSchemaTitle("Extra output column(s)")
-  @JsonPropertyDescription(
-    "Name of the newly added output columns that the UDF will produce, if any"
-  )
-  var outputColumns: List[Attribute] = List()
+
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
@@ -97,74 +84,43 @@ class PythonUDFOpDescV2 extends OperatorDescriptor {
       supportReconfiguration = true
     )
 
-  case class Request(inputSchema:Schema, code: String)
+  case class Request(inputSchema: Schema, code: String)
+
+  case class Result(@JsonProperty("outputSchema") outputSchema: Schema)
+
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Preconditions.checkArgument(schemas.length == 1)
     val inputSchema = schemas(0)
-    val json = objectMapper.writeValueAsString( Request(inputSchema, code))
-    val config: Config = ConfigFactory.load("python_udf")
-    val pythonENVPath: String = config.getString("python.path").trim
-
-    val pythonSrcDirectory: Path = Utils.amberHomePath
-      .resolve("src")
-      .resolve("main")
-      .resolve("python")
-    val udfEntryScriptPath: String =
-      pythonSrcDirectory.resolve("osi_cli.py").toString
-
-    val inputStream = new SyncVar[OutputStream];
-    val pio = new ProcessIO(
-      (stdin: OutputStream) => {
-        inputStream.put(stdin)
-      },
-      (stdout: InputStream) => {
-        while (true) {
-          if (stdout.available > 0) {
-            Source.fromInputStream(stdout).getLines.foreach(println)
-          }
-        }
-      },
-      stderr => Source.fromInputStream(stderr).getLines.foreach(println),
-      daemonizeThreads = true
-    )
-
-    def write(s: String): Unit = {
-      inputStream.get.write((s + "\n").getBytes)
-      inputStream.get.flush()
-    }
-
-    def close(): Unit = {
-      inputStream.get.close
-    }
-
-    val pythonServerProcess = Process(
-      Seq(
-        if (pythonENVPath.isEmpty) "python3"
-        else pythonENVPath, // add fall back in case of empty
-        "-u",
-        udfEntryScriptPath
-      )
-    ).run(pio)
-
-    write(json)
-    close()
+    val json = objectMapper.writeValueAsString(Request(inputSchema, code))
 
 
+    val output = Http("http://localhost:8000").postData(json)
+      .header("Content-Type", "application/json")
+      .header("Charset", "UTF-8")
+      .option(HttpOptions.readTimeout(10000)).asString
+
+    val result: JsonNode = Utils.objectMapper.readTree(output.body)
+
+
+    val attributes = result.get("outputSchema")
     val outputSchemaBuilder = Schema.newBuilder
-    // keep the same schema from input
-    if (retainInputColumns) outputSchemaBuilder.add(inputSchema)
-    // for any pythonUDFType, it can add custom output columns (attributes).
-    if (outputColumns != null) {
-      if (retainInputColumns) { // check if columns are duplicated
 
-        for (column <- outputColumns) {
-          if (inputSchema.containsAttribute(column.getName))
-            throw new RuntimeException("Column name " + column.getName + " already exists!")
-        }
-      }
-      outputSchemaBuilder.add(outputColumns.asJava).build
+
+    val mapping = Map(
+      "str" -> AttributeType.STRING,
+      "int" -> AttributeType.LONG,
+      "float" -> AttributeType.DOUBLE,
+      "bool" -> AttributeType.BOOLEAN,
+      "datetime" -> AttributeType.TIMESTAMP,
+      "binary" -> AttributeType.BINARY
+    )
+    for ((key, value) <- attributes.fields() zip attributes.iterator()) {
+      outputSchemaBuilder.add(new Attribute(key.getKey, mapping.apply(key.getValue.textValue())))
+
     }
-    outputSchemaBuilder.build
+    val out = outputSchemaBuilder.build
+    println(out)
+    out
   }
 
   override def runtimeReconfiguration(
