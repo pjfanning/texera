@@ -24,7 +24,7 @@ import static scala.collection.JavaConverters.asScalaBuffer;
 public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
 
     @JsonProperty(required = true, defaultValue =
-                    "import pytexera as pt\n" +
+            "import pytexera as pt\n" +
                     "from overrides import overrides\n" +
                     "from typing import Iterator, Union\n" +
                     "\n" +
