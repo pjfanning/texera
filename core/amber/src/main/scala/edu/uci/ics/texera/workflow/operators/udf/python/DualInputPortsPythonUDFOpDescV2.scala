@@ -22,25 +22,27 @@ class DualInputPortsPythonUDFOpDescV2 extends OperatorDescriptor {
     defaultValue =
       "# Choose from the following templates:\n" +
         "# \n" +
-        "# from pytexera import *\n" +
+        "# import pytexera as pt\n" +
+        "# from overrides import overrides\n" +
+        "# from typing import Iterator, Optional\n" +
         "# \n" +
-        "# class ProcessTupleOperator(UDFOperatorV2):\n" +
+        "# class ProcessTupleOperator(pt.UDFOperatorV2):\n" +
         "#     \n" +
         "#     @overrides\n" +
-        "#     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:\n" +
+        "#     def process_tuple(self, tuple_: pt.Tuple, port: int) -> Iterator[Optional[pt.TupleLike]]:\n" +
         "#         yield tuple_\n" +
         "# \n" +
-        "# class ProcessBatchOperator(UDFBatchOperator):\n" +
+        "# class ProcessBatchOperator(pt.UDFBatchOperator):\n" +
         "#     BATCH_SIZE = 10 # must be a positive integer\n" +
         "# \n" +
         "#     @overrides\n" +
-        "#     def process_batch(self, batch: Batch, port: int) -> Iterator[Optional[BatchLike]]:\n" +
+        "#     def process_batch(self, batch: pt.Batch, port: int) -> Iterator[Optional[pt.BatchLike]]:\n" +
         "#         yield batch\n" +
         "# \n" +
-        "# class ProcessTableOperator(UDFTableOperator):\n" +
+        "# class ProcessTableOperator(pt.UDFTableOperator):\n" +
         "# \n" +
         "#     @overrides\n" +
-        "#     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:\n" +
+        "#     def process_table(self, table: pt.Table, port: int) -> Iterator[Optional[pt.TableLike]]:\n" +
         "#         yield table\n"
   )
   @JsonSchemaTitle("Python script")
