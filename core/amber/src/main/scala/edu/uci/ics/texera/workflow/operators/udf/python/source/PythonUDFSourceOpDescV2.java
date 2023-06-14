@@ -28,6 +28,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
                     "from overrides import overrides\n" +
                     "from typing import Iterator, Union\n" +
                     "\n" +
+                    "\n" +
                     "class GenerateOperator(pt.UDFSourceOperator):\n" +
                     "\n" +
                     "    @overrides\n" +

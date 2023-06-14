@@ -31,6 +31,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
         "# from overrides import overrides\n" +
         "# from typing import Iterator, Optional\n" +
         "# \n" +
+        "# \n" +
         "# class ProcessTupleOperator(pt.UDFOperatorV2):\n" +
         "#     \n" +
         "#     @overrides\n" +
