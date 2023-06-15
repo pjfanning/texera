@@ -10,10 +10,10 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
   WorkflowOfProjectDao
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
-import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFileEntry
+import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFile
 import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource._
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflowEntry
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
 import io.dropwizard.auth.Auth
 import org.apache.commons.lang3.StringUtils
 import org.jooq.types.UInteger
@@ -164,12 +164,12 @@ class ProjectResource {
   }
 
   /**
-    * This method returns a list of DashboardWorkflowEntry objects, which represents
+    * This method returns a list of DashboardWorkflow objects, which represents
     * all the workflows that are part of the specified project.
     *
     * @param pid project ID
     * @param sessionUser the session user
-    * @return list of DashboardWorkflowEntry objects
+    * @return list of DashboardWorkflow objects
     */
   @GET
   @Path("/{pid}/workflows")
@@ -177,7 +177,7 @@ class ProjectResource {
   def listProjectWorkflows(
       @PathParam("pid") pid: UInteger,
       @Auth sessionUser: SessionUser
-  ): List[DashboardWorkflowEntry] = {
+  ): List[DashboardWorkflow] = {
     verifyProjectExists(pid)
 
     val uid = sessionUser.getUser.getUid
@@ -204,7 +204,7 @@ class ProjectResource {
       .fetch()
     workflowEntries
       .map(workflowRecord =>
-        DashboardWorkflowEntry(
+        DashboardWorkflow(
           workflowRecord.into(WORKFLOW_OF_USER).getUid.eq(uid),
           workflowRecord
             .into(WORKFLOW_USER_ACCESS)
@@ -223,12 +223,12 @@ class ProjectResource {
   }
 
   /**
-    * This method returns a list of DashboardFileEntry objects, which represents
+    * This method returns a list of DashboardFile objects, which represents
     * all the file objects that are part of the specified project.
     *
     * @param pid project ID
     * @param user the session user
-    * @return a list of DashboardFileEntry objects
+    * @return a list of DashboardFile objects
     */
   @GET
   @Path("/{pid}/files")
@@ -236,7 +236,7 @@ class ProjectResource {
   def listProjectFiles(
       @PathParam("pid") pid: UInteger,
       @Auth user: SessionUser
-  ): List[DashboardFileEntry] = {
+  ): List[DashboardFile] = {
     verifyProjectExists(pid)
     context
       .select()
@@ -250,7 +250,7 @@ class ProjectResource {
       .where(FILE_OF_PROJECT.PID.eq(pid).and(USER_FILE_ACCESS.UID.eq(user.getUid)))
       .fetch()
       .map(fileRecord =>
-        DashboardFileEntry(
+        DashboardFile(
           fileRecord.into(USER).getName,
           fileRecord.into(USER_FILE_ACCESS).getPrivilege == UserFileAccessPrivilege.WRITE,
           fileRecord.into(FILE).into(classOf[File])
