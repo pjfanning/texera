@@ -2,7 +2,7 @@ import typing
 from collections import OrderedDict
 from itertools import chain
 from loguru import logger
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Dict, Type
 
 from core.architecture.sendsemantics.hash_based_shuffle_partitioner import (
     HashBasedShufflePartitioner,

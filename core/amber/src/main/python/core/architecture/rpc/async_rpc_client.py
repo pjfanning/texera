@@ -1,6 +1,6 @@
 from collections import defaultdict
 from concurrent.futures import Future
-from typing import Dict
+from typing import Dict, Tuple, Optional
 
 from loguru import logger
 
@@ -24,10 +24,11 @@ class AsyncRPCClient:
         self._context = context
         self._output_queue = output_queue
         self._send_sequences: Dict[ActorVirtualIdentity, int] = defaultdict(int)
-        self._unfulfilled_promises: Dict[(ActorVirtualIdentity, int), Future] = dict()
+        self._unfulfilled_promises: \
+            Dict[Tuple[ActorVirtualIdentity, int], Future[ControlReturnV2]] = dict()
 
     def send(
-        self, to: ActorVirtualIdentity, control_command: ControlCommandV2
+            self, to: ActorVirtualIdentity, control_command: ControlCommandV2
     ) -> Future:
         """
         Send the ControlCommand to the target actor.
@@ -50,13 +51,13 @@ class AsyncRPCClient:
 
         :param to: ActorVirtualIdentity, the receiver.
         """
-        future = Future()
+        future: Future[ControlReturnV2] = Future()
         self._unfulfilled_promises[(to, self._send_sequences[to])] = future
         self._send_sequences[to] += 1
         return future
 
     def receive(
-        self, from_: ActorVirtualIdentity, return_invocation: ReturnInvocationV2
+            self, from_: ActorVirtualIdentity, return_invocation: ReturnInvocationV2
     ) -> None:
         """
         Receive the ReturnInvocation from the given actor.
@@ -67,10 +68,10 @@ class AsyncRPCClient:
         self._fulfill_promise(from_, command_id, return_invocation.control_return)
 
     def _fulfill_promise(
-        self,
-        from_: ActorVirtualIdentity,
-        command_id: int,
-        control_return: ControlReturnV2,
+            self,
+            from_: ActorVirtualIdentity,
+            command_id: int,
+            control_return: ControlReturnV2,
     ) -> None:
         """
         Fulfill the promise with the CommandInvocation, referenced by the sequence id
@@ -82,7 +83,8 @@ class AsyncRPCClient:
         :param control_return: ControlReturnV2m, to be used to fulfill the promise.
         """
 
-        future: Future = self._unfulfilled_promises.get((from_, command_id))
+        future: Optional[Future[ControlReturnV2]] = self._unfulfilled_promises.get(
+            (from_, command_id))
         if future is not None:
             future.set_result(control_return)
             del self._unfulfilled_promises[(from_, command_id)]

@@ -1,4 +1,5 @@
 from loguru import logger
+from typing import Dict, Type
 
 from core.architecture.handlers.add_partitioning_handler import AddPartitioningHandler
 from core.architecture.handlers.debug_command_handler import WorkerDebugCommandHandler
@@ -50,7 +51,7 @@ class AsyncRPCServer:
     def __init__(self, output_queue: InternalQueue, context: Context):
         self._context = context
         self._output_queue = output_queue
-        self._handlers: dict[type(ControlCommandV2), Handler] = dict()
+        self._handlers: Dict[Type[ControlCommandV2], Handler] = dict()
         self.register(StartWorkerHandler())
         self.register(PauseWorkerHandler())
         self.register(ResumeWorkerHandler())
@@ -72,15 +73,16 @@ class AsyncRPCServer:
     ):
         command: ControlCommandV2 = get_one_of(control_invocation.command)
         logger.debug(f"PYTHON receives a ControlInvocation: {control_invocation}")
+        control_return: ControlReturnV2
         try:
             handler = self.look_up(command)
-            control_return: ControlReturnV2 = set_one_of(
+            control_return = set_one_of(
                 ControlReturnV2, handler(self._context, command)
             )
 
         except Exception as exception:
             logger.exception(exception)
-            control_return: ControlReturnV2 = set_one_of(
+            control_return= set_one_of(
                 ControlReturnV2, ControlException(str(exception))
             )
 
