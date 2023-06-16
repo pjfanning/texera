@@ -11,7 +11,7 @@ from ...models.internal_queue import DataElement
 class StartWorkerHandler(Handler):
     cmd = StartWorkerV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: StartWorkerV2, *args, **kwargs):
         if context.operator_manager.operator.is_source:
             context.state_manager.transit_to(WorkerState.RUNNING)
             context.input_queue.put(

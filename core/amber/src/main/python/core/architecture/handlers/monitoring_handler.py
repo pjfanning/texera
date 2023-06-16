@@ -10,7 +10,7 @@ from ..managers.context import Context
 class MonitoringHandler(Handler):
     cmd = QuerySelfWorkloadMetricsV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: QuerySelfWorkloadMetricsV2, *args, **kwargs):
         return SelfWorkloadReturn(
             SelfWorkloadMetrics(
                 context.input_queue.size_data(),

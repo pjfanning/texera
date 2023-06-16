@@ -10,7 +10,7 @@ from ...util.expression_evaluator import ExpressionEvaluator
 class EvaluateExpressionHandler(Handler):
     cmd = EvaluateExpressionV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: EvaluateExpressionV2, *args, **kwargs):
         runtime_context = {
             r"self": context.operator_manager.operator,
             r"tuple_": context.tuple_processing_manager.current_input_tuple,

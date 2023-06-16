@@ -42,7 +42,7 @@ class OperatorManager:
         file_name = f"{module_name}.py"
         return module_name, file_name
 
-    def load_operator(self, code: str) -> type(Operator):
+    def load_operator(self, code: str) -> type[Operator]:
         """
         Load the given operator code in string into a class definition
         :param code: str, python code that defines an Operator, should contain one
@@ -105,7 +105,7 @@ class OperatorManager:
         :param output_schema: the raw mapping of output schema, name -> type_str.
         :return:
         """
-        operator: type(Operator) = self.load_operator(code)
+        operator: type[Operator] = self.load_operator(code)
         self.operator = operator()
         self.operator.is_source = is_source
         self.operator.output_schema = output_schema
@@ -124,7 +124,7 @@ class OperatorManager:
         :return:
         """
         original_internal_state = self.operator.__dict__
-        operator: type(Operator) = self.load_operator(code)
+        operator: type[Operator] = self.load_operator(code)
         self.operator = operator()
         self.operator.is_source = is_source
         assert (

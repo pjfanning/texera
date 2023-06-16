@@ -6,6 +6,6 @@ from ..managers.context import Context
 class OpenOperatorHandler(Handler):
     cmd = OpenOperatorV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: OpenOperatorV2, *args, **kwargs):
         context.operator_manager.operator.open()
         return None

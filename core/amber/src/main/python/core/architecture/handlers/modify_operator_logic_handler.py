@@ -6,6 +6,6 @@ from ..managers.context import Context
 class ModifyOperatorLogicHandler(Handler):
     cmd = ModifyOperatorLogicV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: ModifyOperatorLogicV2, *args, **kwargs):
         context.operator_manager.update_operator(command.code, command.is_source)
         return None

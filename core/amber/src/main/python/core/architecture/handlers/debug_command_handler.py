@@ -8,7 +8,7 @@ from ..managers.context import Context
 class WorkerDebugCommandHandler(Handler):
     cmd = WorkerDebugCommandV2
 
-    def __call__(self, context: Context, command: cmd, *args, **kwargs):
+    def __call__(self, context: Context, command: WorkerDebugCommandV2, *args, **kwargs):
         # translate the command with the context.
         translated_command = self.translate_debug_command(command, context)
 
@@ -19,7 +19,7 @@ class WorkerDebugCommandHandler(Handler):
         context.main_loop._resume_dp()
 
     @staticmethod
-    def translate_debug_command(command: cmd, context: Context) -> str:
+    def translate_debug_command(command: WorkerDebugCommandV2, context: Context) -> str:
         """
         This method cleans up, reformats, and then translates a debug command into
         a command that can be understood by the debugger.
