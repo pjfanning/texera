@@ -1,5 +1,5 @@
 import typing
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Iterator
 
 from betterproto import Message
@@ -15,14 +15,17 @@ class Partitioner(ABC):
     def __init__(self, partitioning: Message):
         self.partitioning: Partitioning = get_one_of(partitioning)
 
+    @abstractmethod
     def add_tuple_to_batch(
         self, tuple_: Tuple
     ) -> Iterator[typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
         pass
 
+    @abstractmethod
     def no_more(self) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         pass
 
+    @abstractmethod
     def reset(self) -> None:
         pass
 
