@@ -34,12 +34,10 @@ from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity, LinkIden
 
 class TupleToBatchConverter:
     def __init__(
-        self,
+            self,
     ):
         self._partitioners: OrderedDict[LinkIdentity, Partitioning] = OrderedDict()
-        self._partitioning_to_partitioner: dict[
-            type(Partitioning), type(Partitioner)
-        ] = {
+        self._partitioning_to_partitioner = {
             OneToOnePartitioning: OneToOnePartitioner,
             RoundRobinPartitioning: RoundRobinPartitioner,
             HashBasedShufflePartitioning: HashBasedShufflePartitioner,
@@ -60,7 +58,7 @@ class TupleToBatchConverter:
         self._partitioners.update({tag: partitioner(the_partitioning)})
 
     def tuple_to_batch(
-        self, tuple_: Tuple
+            self, tuple_: Tuple
     ) -> Iterator[typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
         return chain(
             *(
@@ -70,7 +68,7 @@ class TupleToBatchConverter:
         )
 
     def emit_end_of_upstream(
-        self,
+            self,
     ) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         return chain(
             *(partitioner.no_more() for partitioner in self._partitioners.values())
