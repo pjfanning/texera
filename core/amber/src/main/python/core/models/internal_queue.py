@@ -48,10 +48,10 @@ class InternalQueue(IQueue):
     def is_empty(self, key=None) -> bool:
         return self._queue.is_empty(key)
 
-    def get(self) -> T:
+    def get(self) -> InternalQueueElement:
         return self._queue.get()
 
-    def put(self, item: T) -> None:
+    def put(self, item: InternalQueueElement) -> None:
         if isinstance(item, (DataElement, Marker)):
             self._queue.put(InternalQueue.QueueID.DATA.value, item)
         elif isinstance(item, ControlElement):

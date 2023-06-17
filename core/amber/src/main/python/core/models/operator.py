@@ -82,7 +82,7 @@ class TupleOperatorV2(Operator):
         :return: Iterator[Optional[TupleLike]], producing one TupleLike object at a
             time, or None.
         """
-        yield
+        yield # type: ignore
 
     def on_finish(self, port: int) -> Iterator[Optional[TupleLike]]:
         """
@@ -92,7 +92,7 @@ class TupleOperatorV2(Operator):
         :return: Iterator[Optional[TupleLike]], producing one TupleLike object at a
             time, or None.
         """
-        yield
+        yield # type: ignore
 
 
 class SourceOperator(TupleOperatorV2):
@@ -106,7 +106,7 @@ class SourceOperator(TupleOperatorV2):
         :return: Iterator[Union[TupleLike, TableLike, None]], producing
             one TupleLike object, one TableLike object, or None, at a time.
         """
-        yield
+        yield # type: ignore
 
     @overrides.final
     def on_finish(self, port: int) -> Iterator[Optional[TupleLike]]:
@@ -123,7 +123,7 @@ class SourceOperator(TupleOperatorV2):
 
     @overrides.final
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
-        yield
+        yield # type: ignore
 
 
 class BatchOperator(TupleOperatorV2):
@@ -195,7 +195,7 @@ class BatchOperator(TupleOperatorV2):
         :return: Iterator[Optional[BatchLike]], producing one BatchLike object at a
             time, or None.
         """
-        yield
+        yield # type: ignore
 
 
 class TableOperator(TupleOperatorV2):
@@ -212,7 +212,7 @@ class TableOperator(TupleOperatorV2):
     @overrides.final
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
         self.__table_data[port].append(tuple_)
-        yield
+        yield None
 
     def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
         table = Table(
@@ -240,7 +240,7 @@ class TableOperator(TupleOperatorV2):
         :return: Iterator[Optional[TableLike]], producing one TableLike object at a
             time, or None.
         """
-        yield
+        yield # type: ignore
 
 
 @deprecated(reason="Use TupleOperatorV2 instead")
@@ -264,7 +264,7 @@ class TupleOperator(Operator):
         :return: Iterator[Optional[TupleLike]], producing one TupleLike object at a
             time, or None.
         """
-        yield
+        yield # type: ignore
 
     def on_finish(self, port: int) -> Iterator[Optional[TupleLike]]:
         """

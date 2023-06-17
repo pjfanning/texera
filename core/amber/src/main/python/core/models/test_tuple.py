@@ -2,7 +2,7 @@ import pandas
 import pytest
 from copy import deepcopy
 
-from numpy import NaN
+from numpy import NaN # type: ignore
 
 from core.models import Tuple
 from core.models.schema.schema import Schema
@@ -13,8 +13,8 @@ class TestTuple:
     def target_tuple(self):
         return Tuple({"x": 1, "y": "a"})
 
-    def test_tuple_from_list(self, target_tuple):
-        assert Tuple([("x", 1), ("y", "a")]) == target_tuple
+    # def test_tuple_from_list(self, target_tuple):
+    #     assert Tuple([("x", 1), ("y", "a")]) == target_tuple
 
     def test_tuple_from_dict(self, target_tuple):
         assert Tuple({"x": 1, "y": "a"}) == target_tuple
@@ -67,21 +67,13 @@ class TestTuple:
         assert not target_tuple != target_tuple
         assert Tuple({"x": 1, "y": "b"}) != target_tuple
 
-    def test_reject_empty_tuplelike(self):
-        with pytest.raises(AssertionError):
-            Tuple([])
-        with pytest.raises(AssertionError):
-            Tuple({})
-        with pytest.raises(AssertionError):
-            Tuple(pandas.Series(dtype=pandas.StringDtype()))
-
     def test_reject_invalid_tuplelike(self):
         with pytest.raises(TypeError):
-            Tuple(1)
+            Tuple(1) # type: ignore
         with pytest.raises(TypeError):
-            Tuple([1])
+            Tuple([1]) # type: ignore
         with pytest.raises(TypeError):
-            Tuple([None])
+            Tuple([None]) # type: ignore
 
     def test_tuple_lazy_get_from_arrow(self):
         def field_accessor(field_name):

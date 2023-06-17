@@ -3,26 +3,27 @@ import typing
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Iterator, Dict, Callable, Sized, Container
+
+from pandas._libs.missing import checknull  # type: ignore
 from typing_extensions import Protocol
 import pandas
 import pyarrow
 from loguru import logger
-from pandas._libs.missing import checknull
-
 from .schema.attribute_type import TO_PYOBJECT_MAPPING, AttributeType
 from .schema.field import Field
 from .schema.schema import Schema
 
 
 class TupleLike(
-    Protocol,
+    Protocol[Field],
     Sized,
     Container,
+    typing.Iterable[typing.Tuple[str, Field]]
 ):
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Field:
         ...
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Field):
         ...
 
 
@@ -72,7 +73,7 @@ class ArrowTableTupleProvider:
             storage from the user.
             """
             value = self._table.column(field_name).chunks[chunk_idx][tuple_idx].as_py()
-            field_type = self._table.schema.field(field_name).type
+            field_type = self._table.schema.field(field_name).type  # type: ignore
 
             # for binary types, convert pickled objects back.
             if field_type == pyarrow.binary() and value[:6] == b"pickle":
@@ -85,15 +86,15 @@ class ArrowTableTupleProvider:
         return field_accessor
 
 
-class Tuple(TupleLike):
+class Tuple(TupleLike[Field]):
     """
     Lazy-Tuple implementation.
     """
 
     def __init__(
-        self,
-        tuple_like: typing.Optional[TupleLike] = None,
-        schema: typing.Optional[Schema] = None,
+            self,
+            tuple_like: typing.Optional[TupleLike[Field]] = None,
+            schema: typing.Optional[Schema] = None,
     ):
         """
         Construct a lazy-tuple with given TupleLike object. If the field value is a
@@ -102,16 +103,19 @@ class Tuple(TupleLike):
         :param tuple_like: in which the field value could be the actual value in
             memory, or a callable accessor.
         """
-        assert len(tuple_like) != 0
+        self._field_data: typing.MutableMapping[str, typing.Union[Field, Callable]]
         if isinstance(tuple_like, Tuple):
             self._field_data = tuple_like._field_data
         elif isinstance(tuple_like, pandas.Series):
-            self._field_data = tuple_like.to_dict()
+            self._field_data = {str(key): value for key, value in \
+                                tuple_like.to_dict()}
+        elif tuple_like is None:
+            self._field_data = dict()
         else:
-            self._field_data = dict(tuple_like) if tuple_like else dict()
+            self._field_data = dict(iter(tuple_like))
         self._schema: typing.Optional[Schema] = schema
-        if self._schema:
-            self.finalize(schema)
+        if self._schema is not None:
+            self.finalize(self._schema)
 
     def __getitem__(self, item: typing.Union[int, str]) -> Field:
         """
@@ -121,22 +125,23 @@ class Tuple(TupleLike):
         :param item: field name or field index
         :return: field value
         """
-        assert isinstance(
-            item, (int, str)
-        ), "field can only be retrieved by index or name"
-
+        key: str
         if isinstance(item, int):
-            item: str = self.get_field_names()[item]
-
+            key = self.get_field_names()[item]
+        elif isinstance(item, str):
+            key = item
+        else:
+            key = str(item)
+            raise KeyError(f"field can only be retrieved by index or name, got {key}")
         if (
-            callable(self._field_data[item])
-            and getattr(self._field_data[item], "__name__", "Unknown")
-            == "field_accessor"
+                callable(self._field_data[key])
+                and getattr(self._field_data[key], "__name__", "Unknown")
+                == "field_accessor"
         ):
             # evaluate the field now
-            field_accessor = self._field_data[item]
-            self._field_data[item] = field_accessor(field_name=item)
-        return self._field_data[item]
+            field_accessor:Callable = self._field_data[key]
+            self._field_data[key] = field_accessor(field_name=key)
+        return self._field_data[key]
 
     def __setitem__(self, field_name: str, field_value: Field) -> None:
         """
@@ -166,10 +171,10 @@ class Tuple(TupleLike):
     def as_key_value_pairs(self) -> List[typing.Tuple[str, Field]]:
         return [(k, v) for k, v in self.as_dict().items()]
 
-    def get_field_names(self) -> typing.Tuple[str]:
+    def get_field_names(self) -> typing.Tuple[str, ...]:
         return tuple(map(str, self._field_data.keys()))
 
-    def get_fields(self, output_field_names=None) -> typing.Tuple[Field]:
+    def get_fields(self, output_field_names=None) -> typing.Tuple[Field, ...]:
         """
         Get values from tuple for selected fields.
         """
@@ -216,7 +221,9 @@ class Tuple(TupleLike):
                 if field_value is not None:
                     field_type = schema.get_attr_type(field_name)
                     if field_type == AttributeType.BINARY:
-                        self[field_name] = b"pickle    " + pickle.dumps(field_value)
+                        self[field_name] = b"pickle    " + pickle.dumps(
+                            # type: ignore
+                            field_value)
             except Exception as err:
                 # Surpass exceptions during cast.
                 # Keep the value as it is if the cast fails, and continue to attempt
@@ -253,11 +260,11 @@ class Tuple(TupleLike):
         for field_name, field_value in self.as_key_value_pairs():
             expected = schema.get_attr_type(field_name)
             if not isinstance(
-                field_value, (TO_PYOBJECT_MAPPING.get(expected), type(None))
+                    field_value, (TO_PYOBJECT_MAPPING[expected], type(None))
             ):
                 raise TypeError(
                     f"Unmatched type for field '{field_name}', expected {expected}, "
-                    f"got {field_value} ({type(field_value)}) instead."
+                    f"got {field_value!r} ({type(field_value)}) instead."
                 )
 
     def __iter__(self) -> Iterator[Field]:
@@ -270,9 +277,9 @@ class Tuple(TupleLike):
 
     def __eq__(self, other: Any) -> bool:
         return (
-            isinstance(other, Tuple)
-            and self.get_field_names() == other.get_field_names()
-            and all(self[i] == other[i] for i in self.get_field_names())
+                isinstance(other, Tuple)
+                and self.get_field_names() == other.get_field_names()
+                and all(self[i] == other[i] for i in self.get_field_names())
         )
 
     def __ne__(self, other) -> bool:
