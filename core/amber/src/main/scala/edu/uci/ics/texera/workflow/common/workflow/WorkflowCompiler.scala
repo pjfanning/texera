@@ -6,8 +6,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
-import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 object WorkflowCompiler {
 
@@ -25,6 +23,8 @@ object WorkflowCompiler {
 class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContext) {
   logicalPlan.operatorMap.values.foreach(initOperator)
 
+  lazy val finalLogicalPlan = transformLogicalPlan(logicalPlan)
+
   def initOperator(operator: OperatorDescriptor): Unit = {
     operator.setContext(context)
   }
@@ -34,11 +34,14 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       .map(o => (o._1, o._2.validate().toSet))
       .filter(o => o._2.nonEmpty)
 
-  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
-    // logical plan transformation: add a sink operator for terminal operators without a sink
-    val logicalPlan0 = SinkInjectionTransformer.transform(logicalPlan)
+  def transformLogicalPlan(originalPlan: LogicalPlan): LogicalPlan = {
 
-    val physicalPlan0 = logicalPlan0.toPhysicalPlan(this.context, opResultStorage)
+    // logical plan transformation: add a sink operator for terminal operators without a sink
+    SinkInjectionTransformer.transform(originalPlan, context)
+  }
+
+  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
+    val physicalPlan0 = finalLogicalPlan.toPhysicalPlan(this.context, opResultStorage)
 
     // create pipelined regions.
     val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(

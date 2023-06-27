@@ -213,15 +213,14 @@ class JobResultService(
       }
     })
 
-    // For cached operators and sinks, create result service so that the results can be displayed.
+    // For operators connected to a sink and sinks,
+    // create result service so that the results can be displayed.
     logicalPlan.getTerminalOperators.map(sink => {
       logicalPlan.getOperator(sink) match {
         case sinkOp: ProgressiveSinkOpDesc =>
           val service = new ProgressiveResultService(sinkOp)
-          sinkOp.getCachedUpstreamId match {
-            case Some(upstreamId) => progressiveResults += ((upstreamId, service))
-            case None             => progressiveResults += ((sink, service))
-          }
+          progressiveResults += ((sinkOp.getUpstreamId.get, service))
+          progressiveResults += ((sink, service))
         case other => // skip other non-texera-managed sinks, if any
       }
     })

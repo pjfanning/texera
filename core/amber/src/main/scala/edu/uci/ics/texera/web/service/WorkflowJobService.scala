@@ -31,8 +31,8 @@ class WorkflowJobService(
     with LazyLogging {
 
   val stateStore = new JobStateStore()
-  val logicalPlan: LogicalPlan = createLogicalPlan()
-  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(logicalPlan)
+//  val logicalPlan: LogicalPlan = createLogicalPlan()
+  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(LogicalPlan(request.logicalPlan))
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
     resultService.opResultStorage
@@ -40,7 +40,7 @@ class WorkflowJobService(
   private val controllerConfig = {
     val conf = ControllerConfig.default
     if (
-      logicalPlan.operators.exists {
+      workflowCompiler.finalLogicalPlan.operators.exists {
         case x: DualInputPortsPythonUDFOpDescV2 => true
         case x: PythonUDFOpDescV2               => true
         case x: PythonUDFSourceOpDescV2         => true
@@ -77,13 +77,13 @@ class WorkflowJobService(
   workflowContext.executionID = -1 // for every new execution,
   // reset it so that the value doesn't carry over across executions
   def startWorkflow(): Unit = {
-    for (pair <- logicalPlan.breakpoints) {
+    for (pair <- workflowCompiler.finalLogicalPlan.breakpoints) {
       Await.result(
         jobBreakpointService.addBreakpoint(pair.operatorID, pair.breakpoint),
         Duration.fromSeconds(10)
       )
     }
-    resultService.attachToJob(stateStore, logicalPlan, client)
+    resultService.attachToJob(stateStore, workflowCompiler.finalLogicalPlan, client)
     if (WorkflowService.userSystemEnabled) {
       workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
         workflowContext.wId,
@@ -101,30 +101,30 @@ class WorkflowJobService(
     )
   }
 
-  private[this] def createLogicalPlan(): LogicalPlan = {
-    var logicalPlan = LogicalPlan(request.logicalPlan)
-    if (WorkflowCacheService.isAvailable) {
-      logger.debug(
-        s"Cached operators: ${operatorCache.cachedOperators} with ${logicalPlan.cachedOperatorIds}"
-      )
-      val workflowRewriter = new WorkflowRewriter(
-        logicalPlan,
-        operatorCache.cachedOperators,
-        operatorCache.cacheSourceOperators,
-        operatorCache.cacheSinkOperators,
-        operatorCache.operatorRecord,
-        resultService.opResultStorage
-      )
-      val newWorkflowInfo = workflowRewriter.rewrite
-      val oldWorkflowInfo = logicalPlan
-      logicalPlan = newWorkflowInfo
-      logicalPlan.cachedOperatorIds = oldWorkflowInfo.cachedOperatorIds
-      logger.info(
-        s"Rewrite the original workflow: $oldWorkflowInfo to be: $logicalPlan"
-      )
-    }
-    logicalPlan
-  }
+//  private[this] def createLogicalPlan(): LogicalPlan = {
+//    var logicalPlan = LogicalPlan(request.logicalPlan)
+//    if (WorkflowCacheService.isAvailable) {
+////      logger.debug(
+////        s"Cached operators: ${operatorCache.cachedOperators} with ${logicalPlan.cachedOperatorIds}"
+////      )
+////      val workflowRewriter = new WorkflowRewriter(
+////        logicalPlan,
+////        operatorCache.cachedOperators,
+////        operatorCache.cacheSourceOperators,
+////        operatorCache.cacheSinkOperators,
+////        operatorCache.operatorRecord,
+////        resultService.opResultStorage
+////      )
+////      val newWorkflowInfo = workflowRewriter.rewrite
+////      val oldWorkflowInfo = logicalPlan
+////      logicalPlan = newWorkflowInfo
+////      logicalPlan.cachedOperatorIds = oldWorkflowInfo.cachedOperatorIds
+////      logger.info(
+////        s"Rewrite the original workflow: $oldWorkflowInfo to be: $logicalPlan"
+////      )
+//    }
+//    logicalPlan
+//  }
 
   private[this] def createWorkflowCompiler(
       logicalPlan: LogicalPlan

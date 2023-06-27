@@ -62,7 +62,8 @@ case class LogicalPlan(
 
   lazy val terminalOperators: List[String] =
     operatorMap.keys
-      .filter(op => jgraphtDag.outDegreeOf(op) == 0).toList
+      .filter(op => jgraphtDag.outDegreeOf(op) == 0)
+      .toList
 
   lazy val (inputSchemaMap, errorList) = propagateWorkflowSchema()
 
@@ -100,15 +101,17 @@ case class LogicalPlan(
     this.copy(
       operators.filter(o => o.operatorID == operatorId),
       links,
-      breakpoints, cachedOperatorIds)
+      breakpoints,
+      cachedOperatorIds
+    )
   }
 
   // returns a new physical plan with the edges added
   def addEdge(
-    from: String,
-    to: String,
-    fromPort: Int = 0,
-    toPort: Int = 0
+      from: String,
+      to: String,
+      fromPort: Int = 0,
+      toPort: Int = 0
   ): LogicalPlan = {
     val newLink = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links :+ newLink
@@ -117,10 +120,10 @@ case class LogicalPlan(
 
   // returns a new physical plan with the edges removed
   def removeEdge(
-    from: String,
-    to: String,
-    fromPort: Int = 0,
-    toPort: Int = 0
+      from: String,
+      to: String,
+      fromPort: Int = 0,
+      toPort: Int = 0
   ): LogicalPlan = {
     val linkToRemove = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links.filter(l => l != linkToRemove)
@@ -232,7 +235,7 @@ case class LogicalPlan(
     // assign storage to texera-managed sinks before generating exec config
     operators.foreach {
       case o @ (sink: ProgressiveSinkOpDesc) =>
-        val storageKey = sink.getCachedUpstreamId.getOrElse(o.operatorID)
+        val storageKey = sink.getUpstreamId.getOrElse(o.operatorID)
         // due to the size limit of single document in mongoDB (16MB)
         // for sinks visualizing HTMLs which could possibly be large in size, we always use the memory storage.
         val storageType =
