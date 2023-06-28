@@ -243,7 +243,6 @@ export class ValidationWorkflowService {
   /**
    * This method is used to check whether all input ports of the operator have been connected.
    *  if all input ports of the operator are connected, the operator is valid.
-   * All output ports without a connection will be implicitly treated as a final result operator.
    */
   private validateOperatorConnection(operatorID: string): Validation {
     const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
