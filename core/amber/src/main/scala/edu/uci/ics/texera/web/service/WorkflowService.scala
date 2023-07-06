@@ -68,8 +68,8 @@ class WorkflowService(
   }
   val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new WorkflowStateStore()
-  val resultService: WorkflowResultService =
-    new WorkflowResultService(opResultStorage, stateStore)
+  val resultService: JobResultService =
+    new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
     new ResultExportService(opResultStorage, UInteger.valueOf(wId))
   val operatorCache: WorkflowCacheService =

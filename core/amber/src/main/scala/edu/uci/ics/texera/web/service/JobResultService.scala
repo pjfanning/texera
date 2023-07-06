@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.WorkflowResultService.WebResultUpdate
+import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.web.storage.{JobStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
@@ -26,7 +26,7 @@ import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
-object WorkflowResultService {
+object JobResultService {
 
   val defaultPageSize: Int = 5
 
@@ -113,7 +113,7 @@ object WorkflowResultService {
   *  - update the result data for each operator,
   *  - send result update event to the frontend
   */
-class WorkflowResultService(
+class JobResultService(
     val opResultStorage: OpResultStorage,
     val workflowStateStore: WorkflowStateStore
 ) extends SubscriptionManager {

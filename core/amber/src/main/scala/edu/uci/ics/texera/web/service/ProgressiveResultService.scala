@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.texera.web.service.WorkflowResultService._
+import edu.uci.ics.texera.web.service.JobResultService._
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 
@@ -35,7 +35,7 @@ class ProgressiveResultService(
     val webUpdate = (webOutputMode, sink.getOutputMode) match {
       case (PaginationMode(), SET_SNAPSHOT) =>
         val numTuples = storage.getCount
-        val maxPageIndex = Math.ceil(numTuples / WorkflowResultService.defaultPageSize.toDouble).toInt
+        val maxPageIndex = Math.ceil(numTuples / JobResultService.defaultPageSize.toDouble).toInt
         WebPaginationUpdate(
           PaginationMode(),
           newTupleCount,
