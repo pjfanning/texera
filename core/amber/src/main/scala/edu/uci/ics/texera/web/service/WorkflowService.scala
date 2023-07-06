@@ -7,7 +7,6 @@ import scala.collection.JavaConverters._
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.model.websocket.request.{
-  CacheStatusUpdateRequest,
   WorkflowExecuteRequest,
   WorkflowKillRequest
 }
@@ -69,8 +68,8 @@ class WorkflowService(
   }
   val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new WorkflowStateStore()
-  val resultService: JobResultService =
-    new JobResultService(opResultStorage, stateStore)
+  val resultService: WorkflowResultService =
+    new WorkflowResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
     new ResultExportService(opResultStorage, UInteger.valueOf(wId))
   val operatorCache: WorkflowCacheService =
@@ -124,20 +123,9 @@ class WorkflowService(
   }
 
   private[this] def createWorkflowContext(
-      request: WorkflowExecuteRequest,
       uidOpt: Option[UInteger]
   ): WorkflowContext = {
     val jobID: String = String.valueOf(WorkflowWebsocketResource.nextExecutionID.incrementAndGet)
-    if (WorkflowCacheService.isAvailable) {
-      operatorCache.updateCacheStatus(
-        CacheStatusUpdateRequest(
-          request.logicalPlan.operators,
-          request.logicalPlan.links,
-          request.logicalPlan.breakpoints,
-          request.logicalPlan.cachedOperatorIds
-        )
-      )
-    }
     new WorkflowContext(jobID, uidOpt, UInteger.valueOf(wId))
   }
 
@@ -148,9 +136,8 @@ class WorkflowService(
     }
 
     val job = new WorkflowJobService(
-      createWorkflowContext(req, uidOpt),
+      createWorkflowContext(uidOpt),
       wsInput,
-      operatorCache,
       resultService,
       req,
       errorHandler,

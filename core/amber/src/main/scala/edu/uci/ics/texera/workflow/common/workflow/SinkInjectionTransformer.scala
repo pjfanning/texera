@@ -7,27 +7,37 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 object SinkInjectionTransformer {
 
-  def transform(logicalPlan: LogicalPlan, context: WorkflowContext): LogicalPlan = {
+  def transform(logicalPlan: LogicalPlan): LogicalPlan = {
     var resultPlan = logicalPlan
 
     // for any terminal operator without a sink, add a sink
-    logicalPlan.getTerminalOperators.foreach(terminalOpId => {
-      val terminalOp = logicalPlan.getOperator(terminalOpId)
-      if (!terminalOp.isInstanceOf[SinkOpDesc]) {
-        terminalOp.operatorInfo.outputPorts.indices.foreach(out => {
-          val sink = new ProgressiveSinkOpDesc()
-          sink.setContext(context)
-          resultPlan = resultPlan
-            .addOperator(sink)
-            .addEdge(terminalOp.operatorID, sink.operatorID, out, 0)
-        })
-      }
+    val nonSinkTerminalOps = logicalPlan.getTerminalOperators.filter(opId =>
+      ! logicalPlan.getOperator(opId).isInstanceOf[SinkOpDesc]
+    )
+    // for any operators marked as cache (view result) without a sink, add a sink
+    val viewResultOps = logicalPlan.cachedOperatorIds.filter(opId =>
+      ! logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc])
+    )
+
+    val operatorsToAddSink = (nonSinkTerminalOps ++ viewResultOps).toSet
+    operatorsToAddSink.foreach(opId => {
+      val op = logicalPlan.getOperator(opId)
+      op.operatorInfo.outputPorts.indices.foreach(outPort => {
+        val sink = new ProgressiveSinkOpDesc()
+        resultPlan = resultPlan
+          .addOperator(sink)
+          .addEdge(op.operatorID, sink.operatorID, outPort)
+      })
     })
+
+    // check precondition: all the terminal operators should sinks now
+    assert(resultPlan.getTerminalOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc]))
+
+    var finalCachedOpIds = Set[String]()
 
     // for each sink:
     // set the corresponding upstream ID and port
     // set output mode based on the visualization operator before it
-    // precondition: all the terminal operators are sinks
     resultPlan.getTerminalOperators.foreach(sinkOpId => {
       val sinkOp = resultPlan.getOperator(sinkOpId).asInstanceOf[ProgressiveSinkOpDesc]
       val upstream = resultPlan.getUpstream(sinkOpId).headOption
@@ -35,7 +45,9 @@ object SinkInjectionTransformer {
         l.origin.operatorID == upstream.map(_.operatorID).orNull
           && l.destination.operatorID == sinkOpId
       )
+      assert(upstream.nonEmpty)
       if (upstream.nonEmpty && edge.nonEmpty) {
+        finalCachedOpIds += upstream.get
         // set upstream ID and port
         sinkOp.setUpstreamId(upstream.get.operatorID)
         sinkOp.setUpstreamPort(edge.get.origin.portOrdinal)
@@ -51,7 +63,7 @@ object SinkInjectionTransformer {
       }
     })
 
-    resultPlan
+    resultPlan.copy(cachedOperatorIds = finalCachedOpIds.toList)
   }
 
 }

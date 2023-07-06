@@ -34,7 +34,7 @@ class CacheSourceOpDesc(val targetSinkStorageId: String, opResultStorage: OpResu
     OperatorInfo(
       "Cache Source Operator",
       "Retrieve the cached output to src",
-      OperatorGroupConstants.RESULT_GROUP,
+      OperatorGroupConstants.UTILITY_GROUP,
       List.empty,
       asScalaBuffer(singletonList(OutputPort(""))).toList
     )

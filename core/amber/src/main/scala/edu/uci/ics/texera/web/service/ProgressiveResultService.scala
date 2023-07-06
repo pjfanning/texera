@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.texera.web.service.JobResultService._
+import edu.uci.ics.texera.web.service.WorkflowResultService._
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 
@@ -12,34 +12,30 @@ class ProgressiveResultService(
     val sink: ProgressiveSinkOpDesc
 ) {
 
-  // derive the web output mode from the sink operator type
-  val webOutputMode: WebOutputMode = {
-    (sink.getOutputMode, sink.getChartType) match {
-      // visualization sinks use its corresponding mode
-      case (SET_SNAPSHOT, Some(_)) => SetSnapshotMode()
-      case (SET_DELTA, Some(_))    => SetDeltaMode()
-      // Non-visualization sinks use pagination mode
-      case (_, None) => PaginationMode()
-    }
-  }
-
   /**
-    * All execution result tuples for this operator to this moment.
     * For SET_SNAPSHOT output mode: result is the latest snapshot
     * FOR SET_DELTA output mode:
     *   - for insert-only delta: effectively the same as latest snapshot
     *   - for insert-retract delta: the union of all delta outputs, not compacted to a snapshot
-    */
-
-  /**
+    *
     * Produces the WebResultUpdate to send to frontend from a result update from the engine.
     */
   def convertWebResultUpdate(oldTupleCount: Int, newTupleCount: Int): WebResultUpdate = {
+    val webOutputMode: WebOutputMode = {
+      (sink.getOutputMode, sink.getChartType) match {
+        // visualization sinks use its corresponding mode
+        case (SET_SNAPSHOT, Some(_)) => SetSnapshotMode()
+        case (SET_DELTA, Some(_))    => SetDeltaMode()
+        // Non-visualization sinks use pagination mode
+        case (_, None) => PaginationMode()
+      }
+    }
+
     val storage = sink.getStorage
     val webUpdate = (webOutputMode, sink.getOutputMode) match {
       case (PaginationMode(), SET_SNAPSHOT) =>
         val numTuples = storage.getCount
-        val maxPageIndex = Math.ceil(numTuples / JobResultService.defaultPageSize.toDouble).toInt
+        val maxPageIndex = Math.ceil(numTuples / WorkflowResultService.defaultPageSize.toDouble).toInt
         WebPaginationUpdate(
           PaginationMode(),
           newTupleCount,

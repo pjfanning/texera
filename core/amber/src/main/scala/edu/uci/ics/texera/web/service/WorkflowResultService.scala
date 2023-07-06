@@ -8,15 +8,10 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
-import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
-import edu.uci.ics.texera.web.workflowresultstate.OperatorResultMetadata
+import edu.uci.ics.texera.web.service.WorkflowResultService.WebResultUpdate
+import edu.uci.ics.texera.web.storage.{JobStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
@@ -31,7 +26,7 @@ import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
-object JobResultService {
+object WorkflowResultService {
 
   val defaultPageSize: Int = 5
 
@@ -118,7 +113,7 @@ object JobResultService {
   *  - update the result data for each operator,
   *  - send result update event to the frontend
   */
-class JobResultService(
+class WorkflowResultService(
     val opResultStorage: OpResultStorage,
     val workflowStateStore: WorkflowStateStore
 ) extends SubscriptionManager {
@@ -181,9 +176,9 @@ class JobResultService(
     addSubscription(
       workflowStateStore.resultStore.registerDiffHandler((oldState, newState) => {
         val buf = mutable.HashMap[String, WebResultUpdate]()
-        newState.operatorInfo.foreach {
+        newState.resultInfo.foreach {
           case (opId, info) =>
-            val oldInfo = oldState.operatorInfo.getOrElse(opId, new OperatorResultMetadata())
+            val oldInfo = oldState.resultInfo.getOrElse(opId, OperatorResultMetadata())
             buf(opId) =
               progressiveResults(opId).convertWebResultUpdate(oldInfo.tupleCount, info.tupleCount)
         }
@@ -193,8 +188,8 @@ class JobResultService(
 
     // first clear all the results
     progressiveResults.clear()
-    workflowStateStore.resultStore.updateState { state =>
-      state.withOperatorInfo(Map.empty)
+    workflowStateStore.resultStore.updateState { _ =>
+      WorkflowResultStore() // empty result store
     }
 
     // If we have cache sources, make dummy sink operators for displaying results on the frontend.
@@ -243,7 +238,7 @@ class JobResultService(
   }
 
   def onResultUpdate(): Unit = {
-    workflowStateStore.resultStore.updateState { oldState =>
+    workflowStateStore.resultStore.updateState { _ =>
       val newInfo: Map[String, OperatorResultMetadata] = progressiveResults.map {
         case (id, service) =>
           val count = service.sink.getStorage.getCount.toInt
@@ -254,7 +249,7 @@ class JobResultService(
             } else ""
           (id, OperatorResultMetadata(count, changeDetector))
       }.toMap
-      oldState.withOperatorInfo(newInfo)
+      WorkflowResultStore(newInfo)
     }
   }
 

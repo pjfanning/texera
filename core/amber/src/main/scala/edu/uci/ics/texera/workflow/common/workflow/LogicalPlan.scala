@@ -15,7 +15,7 @@ import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
 import org.jgrapht.graph.DirectedAcyclicGraph
 
-import scala.collection.mutable
+import scala.collection.{JavaConverters, mutable}
 import scala.collection.mutable.ArrayBuffer
 
 case class BreakpointInfo(operatorID: String, breakpoint: Breakpoint)
@@ -40,8 +40,7 @@ object LogicalPlan {
   }
 
   def apply(pojo: LogicalPlanPojo): LogicalPlan =
-    LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints, List())
-
+    LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints, List()).normalize()
 }
 
 case class LogicalPlan(
@@ -85,12 +84,20 @@ case class LogicalPlan(
 
   def getTerminalOperators: List[String] = this.terminalOperators
 
+  def getAncestorOpIds(operatorID: String): Set[String] = {
+    JavaConverters.asScalaSet(jgraphtDag.getAncestors(operatorID)).toSet
+  }
+
   def getUpstream(operatorID: String): List[OperatorDescriptor] = {
     val upstream = new mutable.MutableList[OperatorDescriptor]
     jgraphtDag
       .incomingEdgesOf(operatorID)
       .forEach(e => upstream += operatorMap(e.origin.operatorID))
     upstream.toList
+  }
+
+  def getUpstreamEdges(operatorID: String): List[OperatorLink] = {
+    links.filter(l => l.destination.operatorID == operatorID)
   }
 
   def addOperator(operatorDescriptor: OperatorDescriptor): LogicalPlan = {
@@ -100,9 +107,9 @@ case class LogicalPlan(
   def removeOperator(operatorId: String): LogicalPlan = {
     this.copy(
       operators.filter(o => o.operatorID == operatorId),
-      links,
-      breakpoints,
-      cachedOperatorIds
+      links.filter(l => l.origin.operatorID == operatorId || l.destination.operatorID == operatorId),
+      breakpoints.filter(b => b.operatorID == operatorId),
+      cachedOperatorIds.filter(c => c == operatorId)
     )
   }
 
@@ -130,12 +137,23 @@ case class LogicalPlan(
     this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
   }
 
+  def removeEdge(
+    edge: OperatorLink
+  ): LogicalPlan = {
+    val newLinks = links.filter(l => l != edge)
+    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
+  }
+
   def getDownstream(operatorID: String): List[OperatorDescriptor] = {
     val downstream = new mutable.MutableList[OperatorDescriptor]
     jgraphtDag
       .outgoingEdgesOf(operatorID)
       .forEach(e => downstream += operatorMap(e.destination.operatorID))
     downstream.toList
+  }
+
+  def getDownstreamEdges(operatorID: String): List[OperatorLink] = {
+    links.filter(l => l.origin.operatorID == operatorID)
   }
 
   def opSchemaInfo(operatorID: String): OperatorSchemaInfo = {
@@ -303,6 +321,10 @@ case class LogicalPlan(
     })
 
     physicalPlan
+  }
+
+  def normalize(): LogicalPlan = {
+    SinkInjectionTransformer.transform(this)
   }
 
 }

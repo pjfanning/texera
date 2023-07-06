@@ -22,7 +22,7 @@ import edu.uci.ics.texera.workflow.operators.udf.python.{
 class WorkflowJobService(
     workflowContext: WorkflowContext,
     wsInput: WebsocketInput,
-    resultService: JobResultService,
+    resultService: WorkflowResultService,
     request: WorkflowExecuteRequest,
     errorHandler: Throwable => Unit,
     engineVersion: String
