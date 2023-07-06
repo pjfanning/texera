@@ -93,6 +93,7 @@ class WorkflowJobService(
     stateStore.jobMetadataStore.updateState(jobInfo =>
       jobInfo.withState(READY).withEid(workflowContext.executionID).withError(null)
     )
+    stateStore.statsStore.updateState(stats => stats.withStartTimeStamp(System.currentTimeMillis()))
     client.sendAsyncWithCallback[Unit](
       StartWorkflow(),
       _ => stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RUNNING))
