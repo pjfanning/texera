@@ -8,15 +8,16 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 object SinkInjectionTransformer {
 
   def transform(pojo: LogicalPlanPojo): LogicalPlan = {
-    var logicalPlan = LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints, pojo.opsToReuseResult)
+    var logicalPlan =
+      LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints, pojo.opsToReuseResult)
 
     // for any terminal operator without a sink, add a sink
     val nonSinkTerminalOps = logicalPlan.getTerminalOperators.filter(opId =>
-      ! logicalPlan.getOperator(opId).isInstanceOf[SinkOpDesc]
+      !logicalPlan.getOperator(opId).isInstanceOf[SinkOpDesc]
     )
     // for any operators marked as view result without a sink, add a sink
     val viewResultOps = pojo.opsToViewResult.filter(opId =>
-      ! logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc])
+      !logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc])
     )
 
     val operatorsToAddSink = (nonSinkTerminalOps ++ viewResultOps).toSet
@@ -31,7 +32,11 @@ object SinkInjectionTransformer {
     })
 
     // check precondition: all the terminal operators should sinks now
-    assert(logicalPlan.getTerminalOperators.forall(o => logicalPlan.getOperator(o).isInstanceOf[SinkOpDesc]))
+    assert(
+      logicalPlan.getTerminalOperators.forall(o =>
+        logicalPlan.getOperator(o).isInstanceOf[SinkOpDesc]
+      )
+    )
 
     // for each sink:
     // set the corresponding upstream ID and port

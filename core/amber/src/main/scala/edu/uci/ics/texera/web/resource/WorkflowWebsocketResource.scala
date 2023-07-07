@@ -5,7 +5,12 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.{CacheStatusUpdateEvent, TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  CacheStatusUpdateEvent,
+  TexeraWebSocketEvent,
+  WorkflowErrorEvent,
+  WorkflowStateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
@@ -82,8 +87,9 @@ class WorkflowWebsocketResource extends LazyLogging {
             if (oldPlan != null) {
               val newPlan = LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo())
               val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
-              val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult.map(o =>
-                (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid")).toMap
+              val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult
+                .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))
+                .toMap
               send(session, CacheStatusUpdateEvent(cacheUpdateResult))
             }
           }

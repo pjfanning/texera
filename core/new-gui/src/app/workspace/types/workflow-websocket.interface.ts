@@ -95,8 +95,6 @@ export type ResultExportRequest = Readonly<{
   operatorName: string;
 }>;
 
-export type CacheStatusUpdateRequest = LogicalPlan;
-
 export type ResultExportResponse = Readonly<{
   status: "success" | "error";
   message: string;
@@ -112,7 +110,7 @@ export type WorkflowAvailableResultEvent = Readonly<{
   availableOperators: ReadonlyArray<OperatorAvailableResult>;
 }>;
 
-export type OperatorResultCacheStatus = "cache invalid" | "cache valid" | "cache not enabled";
+export type OperatorResultCacheStatus = "cache invalid" | "cache valid";
 
 export interface CacheStatusUpdateEvent
   extends Readonly<{
@@ -173,7 +171,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   AddBreakpointRequest: BreakpointInfo;
-  CacheStatusUpdateRequest: CacheStatusUpdateRequest;
+  CacheStatusUpdateRequest: LogicalPlan;
   HeartBeatRequest: {};
   ModifyLogicRequest: ModifyOperatorLogic;
   ResultExportRequest: ResultExportRequest;

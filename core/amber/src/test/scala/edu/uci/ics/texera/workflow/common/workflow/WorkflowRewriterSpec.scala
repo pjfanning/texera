@@ -83,7 +83,12 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
     breakpoints += breakpointInfo
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(sourceOperator.operatorID))
+    val logicalPlan = LogicalPlan(
+      operators.toList,
+      links.toList,
+      breakpoints.toList,
+      List(sourceOperator.operatorID)
+    )
 
     val tuples = mutable.MutableList[Tuple]()
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
@@ -140,7 +145,12 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val destination = OperatorPort(sinkOperator.operatorID, 0)
     links += OperatorLink(origin, destination)
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(sourceOperator.operatorID))
+    val logicalPlan = LogicalPlan(
+      operators.toList,
+      links.toList,
+      breakpoints.toList,
+      List(sourceOperator.operatorID)
+    )
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
@@ -196,7 +206,12 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
     breakpoints += breakpointInfo
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(sourceOperator.operatorID))
+    val logicalPlan = LogicalPlan(
+      operators.toList,
+      links.toList,
+      breakpoints.toList,
+      List(sourceOperator.operatorID)
+    )
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     val cacheSourceOperators = mutable.HashMap[String, CacheSourceOpDesc]()
@@ -246,7 +261,6 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val destination2 = OperatorPort(sinkOperator.operatorID, 0)
     links += OperatorLink(origin2, destination2)
 
-
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
@@ -257,7 +271,8 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val cachedOperatorID = filterOperator.operatorID
 
     operatorOutputCache += ((cachedOperatorID, tuples))
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(cachedOperatorID))
+    val logicalPlan =
+      LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(cachedOperatorID))
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
     cachedOperators += ((cachedOperatorID, operatorToString(filterOperator)))
@@ -327,7 +342,6 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val breakpointInfo = BreakpointInfo(sourceOperator.operatorID, CountBreakpoint(0))
     breakpoints += breakpointInfo
 
-
     val tuples = mutable.MutableList[Tuple]()
     val uuid = UUID.randomUUID().toString
     val cacheSourceOperator = new CacheSourceOpDesc(uuid, opResultStorage)
@@ -336,7 +350,8 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val cachedOperatorID = filterOperator.operatorID
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(cachedOperatorID))
+    val logicalPlan =
+      LogicalPlan(operators.toList, links.toList, breakpoints.toList, List(cachedOperatorID))
     operatorOutputCache += ((cachedOperatorID, tuples))
 
     val cachedOperators = mutable.HashMap[String, OperatorDescriptor]()
@@ -409,7 +424,6 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     links += create00Link(filterOperator2, filterOperator3)
     links += create00Link(filterOperator3, sinkOperator)
 
-
     val uuidForFilter3 = UUID.randomUUID().toString
     val cacheSourceForFilter3 = new CacheSourceOpDesc(uuidForFilter3, opResultStorage)
     val cacheSinkForFilter3 = new ProgressiveSinkOpDesc()
@@ -423,9 +437,12 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorIDForFilter3, cacheSinkForFilter3))
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList,
-      List(cachedOperatorIDForFilter3, filterOperator.operatorID))
-
+    val logicalPlan = LogicalPlan(
+      operators.toList,
+      links.toList,
+      breakpoints.toList,
+      List(cachedOperatorIDForFilter3, filterOperator.operatorID)
+    )
 
     rewriter = new WorkflowRewriter(
       logicalPlan,
@@ -495,7 +512,6 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     links += create00Link(filterOperator2, filterOperator3)
     links += create00Link(filterOperator3, sinkOperator)
 
-
     val uuidForFilter = UUID.randomUUID().toString
     val cacheSourceForFilter = new CacheSourceOpDesc(uuidForFilter, opResultStorage)
     val cacheSinkForFilter = new ProgressiveSinkOpDesc()
@@ -509,8 +525,12 @@ class WorkflowRewriterSpec extends AnyFlatSpec with BeforeAndAfter {
     val cacheSinkOperators = mutable.HashMap[String, ProgressiveSinkOpDesc]()
     cacheSinkOperators += ((cachedOperatorIDForFilter, cacheSinkForFilter))
 
-    val logicalPlan = LogicalPlan(operators.toList, links.toList, breakpoints.toList,
-      List(cachedOperatorIDForFilter, filterOperator3.operatorID))
+    val logicalPlan = LogicalPlan(
+      operators.toList,
+      links.toList,
+      breakpoints.toList,
+      List(cachedOperatorIDForFilter, filterOperator3.operatorID)
+    )
 
     rewriter = new WorkflowRewriter(
       logicalPlan,

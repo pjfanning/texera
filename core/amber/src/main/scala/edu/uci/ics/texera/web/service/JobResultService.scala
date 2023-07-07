@@ -8,10 +8,19 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  PaginatedResultEvent,
+  TexeraWebSocketEvent,
+  WebResultUpdateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.WebResultUpdate.{WebResultUpdate, convertWebResultUpdate}
-import edu.uci.ics.texera.web.storage.{JobStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
+import edu.uci.ics.texera.web.storage.{
+  JobStateStore,
+  OperatorResultMetadata,
+  WorkflowResultStore,
+  WorkflowStateStore
+}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
@@ -29,9 +38,9 @@ import scala.concurrent.duration.DurationInt
 object WebResultUpdate {
   // convert Tuple from engine's format to JSON format
   def webDataFromTuple(
-    mode: WebOutputMode,
-    table: List[ITuple],
-    chartType: Option[String]
+      mode: WebOutputMode,
+      table: List[ITuple],
+      chartType: Option[String]
   ): WebDataUpdate = {
     val tableInJson = table.map(t => t.asInstanceOf[Tuple].asKeyValuePairJson())
     WebDataUpdate(mode, tableInJson, chartType)
@@ -45,9 +54,9 @@ object WebResultUpdate {
     * @return list of indices of modified pages, index starts from 1
     */
   def calculateDirtyPageIndices(
-    beforeSnapshot: List[ITuple],
-    afterSnapshot: List[ITuple],
-    pageSize: Int
+      beforeSnapshot: List[ITuple],
+      afterSnapshot: List[ITuple],
+      pageSize: Int
   ): List[Int] = {
     var currentIndex = 1
     var currentIndexPageCount = 0
@@ -94,14 +103,13 @@ object WebResultUpdate {
   final case class SetDeltaMode() extends WebOutputMode
 
   case class WebPaginationUpdate(
-    mode: PaginationMode,
-    totalNumTuples: Long,
-    dirtyPageIndices: List[Int]
+      mode: PaginationMode,
+      totalNumTuples: Long,
+      dirtyPageIndices: List[Int]
   ) extends WebResultUpdate
 
   case class WebDataUpdate(mode: WebOutputMode, table: List[ObjectNode], chartType: Option[String])
-    extends WebResultUpdate
-
+      extends WebResultUpdate
 
   /**
     * For SET_SNAPSHOT output mode: result is the latest snapshot
@@ -111,8 +119,11 @@ object WebResultUpdate {
     *
     * Produces the WebResultUpdate to send to frontend from a result update from the engine.
     */
-  def convertWebResultUpdate(sink: ProgressiveSinkOpDesc,
-    oldTupleCount: Int, newTupleCount: Int): WebResultUpdate = {
+  def convertWebResultUpdate(
+      sink: ProgressiveSinkOpDesc,
+      oldTupleCount: Int,
+      newTupleCount: Int
+  ): WebResultUpdate = {
     val webOutputMode: WebOutputMode = {
       (sink.getOutputMode, sink.getChartType) match {
         // visualization sinks use its corresponding mode

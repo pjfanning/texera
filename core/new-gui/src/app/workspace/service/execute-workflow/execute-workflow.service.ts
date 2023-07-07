@@ -441,11 +441,15 @@ export class ExecuteWorkflowService {
       ExecuteWorkflowService.transformBreakpoint(workflowGraph, e[0], e[1])
     );
 
-    const cachedOperatorIds: string[] = Array.from(workflowGraph.getCachedOperators()).filter(
+    const opsToViewResult: string[] = Array.from(workflowGraph.getCachedOperators()).filter(
       op => !workflowGraph.isOperatorDisabled(op)
     );
 
-    return { operators, links, breakpoints, cachedOperatorIds };
+    const opsToReuseResult: string[] = Array.from(workflowGraph.getOperatorsMarkedForReuseResult()).filter(
+      op => !workflowGraph.isOperatorDisabled(op)
+    );
+
+    return { operators, links, breakpoints, opsToViewResult, opsToReuseResult };
   }
 
   public static transformBreakpoint(

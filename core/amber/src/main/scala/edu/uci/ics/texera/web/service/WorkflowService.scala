@@ -88,14 +88,18 @@ class WorkflowService(
 
   var lastCompletedLogicalPlan: LogicalPlan = null
 
-  jobService.subscribe { job: WorkflowJobService => {
-    job.stateStore.jobMetadataStore.registerDiffHandler { (oldState, newState) => {
-      if (oldState.state != COMPLETED && newState.state == COMPLETED) {
-        lastCompletedLogicalPlan = job.workflowCompiler.logicalPlan
+  jobService.subscribe { job: WorkflowJobService =>
+    {
+      job.stateStore.jobMetadataStore.registerDiffHandler { (oldState, newState) =>
+        {
+          if (oldState.state != COMPLETED && newState.state == COMPLETED) {
+            lastCompletedLogicalPlan = job.workflowCompiler.logicalPlan
+          }
+          Iterable.empty
+        }
       }
-      Iterable.empty
-    }}
-  }}
+    }
+  }
 
   addSubscription(
     wsInput.subscribe((evt: WorkflowExecuteRequest, uidOpt) => initJobService(evt, uidOpt))

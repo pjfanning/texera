@@ -108,7 +108,9 @@ case class LogicalPlan(
   def removeOperator(operatorId: String): LogicalPlan = {
     this.copy(
       operators.filter(o => o.operatorID != operatorId),
-      links.filter(l => l.origin.operatorID != operatorId && l.destination.operatorID != operatorId),
+      links.filter(l =>
+        l.origin.operatorID != operatorId && l.destination.operatorID != operatorId
+      ),
       breakpoints.filter(b => b.operatorID != operatorId),
       opsToReuseCache.filter(c => c != operatorId)
     )
@@ -139,7 +141,7 @@ case class LogicalPlan(
   }
 
   def removeEdge(
-    edge: OperatorLink
+      edge: OperatorLink
   ): LogicalPlan = {
     val newLinks = links.filter(l => l != edge)
     this.copy(operators, newLinks, breakpoints, opsToReuseCache)

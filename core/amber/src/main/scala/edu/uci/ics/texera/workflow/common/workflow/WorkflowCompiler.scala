@@ -35,10 +35,10 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       .map(o => (o._1, o._2.validate().toSet))
       .filter(o => o._2.nonEmpty)
 
-
   private def assignSinkStorage(
-    logicalPlan: LogicalPlan, storage: OpResultStorage,
-    reuseStorageSet: Set[String] = Set()
+      logicalPlan: LogicalPlan,
+      storage: OpResultStorage,
+      reuseStorageSet: Set[String] = Set()
   ) = {
     // assign storage to texera-managed sinks before generating exec config
     logicalPlan.operators.foreach {
@@ -66,13 +66,14 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
   }
 
   def amberWorkflow(
-    workflowId: WorkflowIdentity,
-    opResultStorage: OpResultStorage,
+      workflowId: WorkflowIdentity,
+      opResultStorage: OpResultStorage,
       lastCompletedJob: LogicalPlan = null
   ): Workflow = {
     val cacheReuses = new WorkflowCacheChecker(lastCompletedJob, logicalPlan).getValidCacheReuse()
     val opsToReuseCache = cacheReuses.intersect(logicalPlan.opsToReuseCache.toSet)
-    val rewrittenLogicalPlan = WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
+    val rewrittenLogicalPlan =
+      WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
     rewrittenLogicalPlan.operatorMap.values.foreach(initOperator)
 
     assignSinkStorage(logicalPlan, opResultStorage, opsToReuseCache)

@@ -7,9 +7,9 @@ import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 object WorkflowCacheRewriter {
 
   def transform(
-    logicalPlan: LogicalPlan,
-    storage: OpResultStorage,
-    availableCache: Set[String],
+      logicalPlan: LogicalPlan,
+      storage: OpResultStorage,
+      availableCache: Set[String]
   ): LogicalPlan = {
     var resultPlan = logicalPlan
 
@@ -32,22 +32,35 @@ object WorkflowCacheRewriter {
       // replace the connection of all outgoing edges of opId with the cache
       val edgesToReplace = resultPlan.getDownstreamEdges(opId)
       edgesToReplace.foreach(e => {
-        resultPlan = resultPlan.removeEdge(e.origin.operatorID, e.destination.operatorID,
-          e.origin.portOrdinal, e.destination.portOrdinal)
-        resultPlan = resultPlan.addEdge(materializationReader.operatorID, e.destination.operatorID,
-          0, e.destination.portOrdinal)
+        resultPlan = resultPlan.removeEdge(
+          e.origin.operatorID,
+          e.destination.operatorID,
+          e.origin.portOrdinal,
+          e.destination.portOrdinal
+        )
+        resultPlan = resultPlan.addEdge(
+          materializationReader.operatorID,
+          e.destination.operatorID,
+          0,
+          e.destination.portOrdinal
+        )
       })
     })
 
     // operators that are no longer reachable by any sink don't need to run
     val allOperators = resultPlan.operators.map(op => op.operatorID).toSet
-    val sinkOps = resultPlan.operators.filter(op => op.isInstanceOf[SinkOpDesc]).map(o => o.operatorID)
+    val sinkOps =
+      resultPlan.operators.filter(op => op.isInstanceOf[SinkOpDesc]).map(o => o.operatorID)
     val usefulOperators = sinkOps ++ sinkOps.flatMap(o => resultPlan.getAncestorOpIds(o)).toSet
-    allOperators.diff(usefulOperators.toSet).foreach(o => {
-      resultPlan = resultPlan.removeOperator(o)
-    })
+    allOperators
+      .diff(usefulOperators.toSet)
+      .foreach(o => {
+        resultPlan = resultPlan.removeOperator(o)
+      })
 
-    assert(resultPlan.terminalOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc]))
+    assert(
+      resultPlan.terminalOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc])
+    )
 
     resultPlan
   }

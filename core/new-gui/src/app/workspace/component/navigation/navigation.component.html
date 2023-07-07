@@ -282,27 +282,49 @@
             nzType="stop"></i>
         </button>
         <button
-          *ngIf="operatorMenu.operatorCacheEnabled && (operatorMenu.isCacheOperator || ! operatorMenu.isCacheOperatorClickable)"
+          *ngIf="(operatorMenu.isCacheOperator || ! operatorMenu.isCacheOperatorClickable)"
           [disabled]="! operatorMenu.isCacheOperatorClickable"
           (click)="operatorMenu.cacheHighlightedOperators()"
           nz-button
-          title="cache operators">
+          title="view result">
           <i
             nz-icon
-            nzType="database"
+            nzType="eye"
             nzTheme="outline"></i>
         </button>
         <button
-          *ngIf="operatorMenu.operatorCacheEnabled && (! operatorMenu.isCacheOperator && operatorMenu.isCacheOperatorClickable)"
+          *ngIf="(! operatorMenu.isCacheOperator && operatorMenu.isCacheOperatorClickable)"
           [disabled]="! operatorMenu.isCacheOperatorClickable"
           (click)="operatorMenu.cacheHighlightedOperators()"
           nz-button
-          title="operators cached, click to remove cache">
+          title="click to remove view result">
           <i
             nz-icon
-            nzType="database"
+            nzType="eye-invisible"
             nzTheme="twotone"></i>
         </button>
+        <button
+        *ngIf="(operatorMenu.isMarkForReuse || ! operatorMenu.isReuseResultClickable)"
+        [disabled]="! operatorMenu.isReuseResultClickable"
+        (click)="operatorMenu.reuseResultHighlightedOperator()"
+        nz-button
+        title="reuse result if possible">
+        <i
+          nz-icon
+          nzType="database"
+          nzTheme="outline"></i>
+      </button>
+      <button
+      *ngIf="(! operatorMenu.isMarkForReuse && operatorMenu.isReuseResultClickable)"
+      [disabled]="! operatorMenu.isReuseResultClickable"
+        (click)="operatorMenu.reuseResultHighlightedOperator()"
+        nz-button
+        title="remove reusing previous result">
+        <i
+          nz-icon
+          nzType="database"
+          nzTheme="twotone"></i>
+      </button>
       </nz-button-group>
     </div>
     <div

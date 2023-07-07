@@ -5,7 +5,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileAccessResource
 import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo, OutputPort}
+import edu.uci.ics.texera.workflow.common.metadata.{
+  OperatorGroupConstants,
+  OperatorInfo,
+  OutputPort
+}
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.apache.commons.lang3.builder.EqualsBuilder
@@ -94,6 +98,6 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
 
   def inferSchema(): Schema
 
-  override def equals(that: Any): Boolean =  EqualsBuilder.reflectionEquals(this, that,
-    "context", "filePath")
+  override def equals(that: Any): Boolean =
+    EqualsBuilder.reflectionEquals(this, that, "context", "filePath")
 }
