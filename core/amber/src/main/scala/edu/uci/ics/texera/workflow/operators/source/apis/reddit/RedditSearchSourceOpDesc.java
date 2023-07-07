@@ -130,6 +130,7 @@ public class RedditSearchSourceOpDesc extends PythonSourceOperatorDescriptor {
                 false,
                 false,
                 false,
+                false,
                 false
         );
     }

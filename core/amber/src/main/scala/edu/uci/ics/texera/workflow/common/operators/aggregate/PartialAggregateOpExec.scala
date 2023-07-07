@@ -6,14 +6,10 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.operators.aggregate.PartialAggregateOpExec.internalAggObjKey
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
 
-import scala.collection.mutable
+import java.util.Collections
+import scala.collection.{JavaConverters, mutable}
 import scala.jdk.CollectionConverters.asJavaIterableConverter
 
 object PartialAggregateOpExec {
@@ -38,6 +34,10 @@ class PartialAggregateOpExec(
     .build()
 
   var partialObjectsPerKey = new mutable.HashMap[List[Object], List[Object]]()
+
+  // for incremental computation
+  val UPDATE_INTERVAL_MS = 500
+  private var lastUpdatedTime: Long = 0
 
   override def open(): Unit = {}
   override def close(): Unit = {}
@@ -67,13 +67,27 @@ class PartialAggregateOpExec(
             aggFunc.iterate(partial, t)
         }
         partialObjectsPerKey.put(key, updatedPartialObjects)
-        Iterator()
+
+        val condition = System.currentTimeMillis - lastUpdatedTime > UPDATE_INTERVAL_MS
+        if (condition) {
+          lastUpdatedTime = System.currentTimeMillis
+          val resultIterator = getPartialOutputs()
+          this.partialObjectsPerKey = new mutable.HashMap[List[Object], List[Object]]()
+          resultIterator
+        }
+        else Iterator()
       case Right(_) =>
-        partialObjectsPerKey.iterator.map(pair => {
-          val tupleFields = pair._1 ++ pair._2
-          Tuple.newBuilder(schema).addSequentially(tupleFields.toArray).build()
-        })
+        val resultIterator = getPartialOutputs()
+        this.partialObjectsPerKey = new mutable.HashMap[List[Object], List[Object]]()
+        resultIterator
     }
+  }
+
+  private def getPartialOutputs(): scala.Iterator[Tuple] = {
+    partialObjectsPerKey.iterator.map(pair => {
+      val tupleFields = pair._1 ++ pair._2
+      Tuple.newBuilder(schema).addSequentially(tupleFields.toArray).build()
+    })
   }
 
 }

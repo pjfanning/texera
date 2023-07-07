@@ -6,9 +6,12 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.service.WorkflowCacheChecker
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
+import edu.uci.ics.texera.workflow.common.{ConstraintViolation, ProgressiveUtils, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object WorkflowCompiler {
 
@@ -70,16 +73,23 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       opResultStorage: OpResultStorage,
       lastCompletedJob: LogicalPlan = null
   ): Workflow = {
+
+    // do rewriting to use previous cache results
     val cacheReuses = new WorkflowCacheChecker(lastCompletedJob, logicalPlan).getValidCacheReuse()
     val opsToReuseCache = cacheReuses.intersect(logicalPlan.opsToReuseCache.toSet)
-    val rewrittenLogicalPlan =
+    val logicalPlan1 =
       WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
-    rewrittenLogicalPlan.operatorMap.values.foreach(initOperator)
+    logicalPlan1.operatorMap.values.foreach(initOperator)
 
     assignSinkStorage(logicalPlan, opResultStorage, opsToReuseCache)
-    assignSinkStorage(rewrittenLogicalPlan, opResultStorage, opsToReuseCache)
+    assignSinkStorage(logicalPlan1, opResultStorage, opsToReuseCache)
 
-    val physicalPlan0 = rewrittenLogicalPlan.toPhysicalPlan(this.context, opResultStorage)
+    // add necessary consolidate operator if an operator can't handle retractable inputs
+    val logicalPlan2 = ProgressiveRetractionEnforcer.enforceDelta(logicalPlan1)
+
+
+    // convert to physical plan
+    val physicalPlan0 = logicalPlan2.toPhysicalPlan(this.context, opResultStorage)
 
     // create pipelined regions.
     val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(

@@ -1,33 +1,12 @@
 package edu.uci.ics.texera.workflow.operators.visualization.barChart
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.texera.workflow.common.metadata.{
-  InputPort,
-  OperatorGroupConstants,
-  OperatorInfo,
-  OutputPort
-}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{
-  AutofillAttributeName,
-  AutofillAttributeNameList
-}
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
-import edu.uci.ics.texera.workflow.operators.aggregate.{
-  AggregationFunction,
-  AggregationOperation,
-  SpecializedAggregateOpDesc
-}
-import edu.uci.ics.texera.workflow.operators.visualization.{
-  VisualizationConstants,
-  VisualizationOperator
-}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList}
+import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.operators.aggregate.{AggregationFunction, AggregationOperation, SpecializedAggregateOpDesc}
+import edu.uci.ics.texera.workflow.operators.visualization.{VisualizationConstants, VisualizationOperator}
 
 import java.util.Collections.singletonList
 import scala.jdk.CollectionConverters.asScalaBuffer
@@ -52,11 +31,8 @@ class BarChartOpDesc extends VisualizationOperator {
 
   def resultAttributeNames: List[String] = if (noDataCol) List("count") else dataColumns
 
-  override def operatorExecutorMultiLayer(operatorSchemaInfo: OperatorSchemaInfo) = {
-    if (nameColumn == null || nameColumn == "") {
-      throw new RuntimeException("bar chart: name column is null or empty")
-    }
-
+  @JsonIgnore
+  lazy val aggOperator: SpecializedAggregateOpDesc = {
     val aggOperator = new SpecializedAggregateOpDesc()
     aggOperator.context = this.context
     aggOperator.operatorID = this.operatorID
@@ -78,21 +54,20 @@ class BarChartOpDesc extends VisualizationOperator {
       aggOperator.aggregations = aggOperations
       aggOperator.groupByKeys = List(nameColumn)
     }
+    aggOperator
+  }
 
-    val aggPlan = aggOperator.aggregateOperatorExecutor(
+  override def operatorExecutorMultiLayer(operatorSchemaInfo: OperatorSchemaInfo) = {
+    if (nameColumn == null || nameColumn == "") {
+      throw new RuntimeException("bar chart: name column is null or empty")
+    }
+
+    aggOperator.aggregateOperatorExecutor(
       OperatorSchemaInfo(
         operatorSchemaInfo.inputSchemas,
         Array(aggOperator.getOutputSchema(operatorSchemaInfo.inputSchemas))
       )
     )
-
-    val barChartViz = OpExecConfig.oneToOneLayer(
-      makeLayer(operatorIdentifier, "visualize"),
-      _ => new BarChartOpExec(this, operatorSchemaInfo)
-    )
-
-    val finalAggOp = aggPlan.sinkOperators.head
-    aggPlan.addOperator(barChartViz).addEdge(finalAggOp, barChartViz.id)
   }
 
   override def operatorInfo: OperatorInfo =
@@ -105,33 +80,7 @@ class BarChartOpDesc extends VisualizationOperator {
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema
-      .newBuilder()
-      .add(getGroupByKeysSchema(schemas).getAttributes)
-      .add(getFinalAggValueSchema.getAttributes)
-      .build()
-  }
-
-  private def getGroupByKeysSchema(schemas: Array[Schema]): Schema = {
-    val groupByKeys = List(this.nameColumn)
-    Schema
-      .newBuilder()
-      .add(groupByKeys.map(key => schemas(0).getAttribute(key)).toArray: _*)
-      .build()
-  }
-
-  private def getFinalAggValueSchema: Schema = {
-    if (noDataCol) {
-      Schema
-        .newBuilder()
-        .add(resultAttributeNames.head, AttributeType.INTEGER)
-        .build()
-    } else {
-      Schema
-        .newBuilder()
-        .add(resultAttributeNames.map(key => new Attribute(key, AttributeType.DOUBLE)).toArray: _*)
-        .build()
-    }
+    aggOperator.getOutputSchema(schemas)
   }
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
