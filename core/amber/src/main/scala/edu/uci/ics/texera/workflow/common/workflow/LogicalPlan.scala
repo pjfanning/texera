@@ -39,15 +39,16 @@ object LogicalPlan {
     workflowDag
   }
 
-  def apply(pojo: LogicalPlanPojo): LogicalPlan =
-    LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints, List()).normalize()
+  def apply(pojo: LogicalPlanPojo): LogicalPlan = {
+    SinkInjectionTransformer.transform(pojo)
+  }
 }
 
 case class LogicalPlan(
     operators: List[OperatorDescriptor],
     links: List[OperatorLink],
     breakpoints: List[BreakpointInfo],
-    var cachedOperatorIds: List[String] = List()
+    opsToReuseCache: List[String] = List()
 ) {
 
   lazy val operatorMap: Map[String, OperatorDescriptor] =
@@ -101,15 +102,15 @@ case class LogicalPlan(
   }
 
   def addOperator(operatorDescriptor: OperatorDescriptor): LogicalPlan = {
-    this.copy(operators :+ operatorDescriptor, links, breakpoints, cachedOperatorIds)
+    this.copy(operators :+ operatorDescriptor, links, breakpoints, opsToReuseCache)
   }
 
   def removeOperator(operatorId: String): LogicalPlan = {
     this.copy(
-      operators.filter(o => o.operatorID == operatorId),
-      links.filter(l => l.origin.operatorID == operatorId || l.destination.operatorID == operatorId),
-      breakpoints.filter(b => b.operatorID == operatorId),
-      cachedOperatorIds.filter(c => c == operatorId)
+      operators.filter(o => o.operatorID != operatorId),
+      links.filter(l => l.origin.operatorID != operatorId && l.destination.operatorID != operatorId),
+      breakpoints.filter(b => b.operatorID != operatorId),
+      opsToReuseCache.filter(c => c != operatorId)
     )
   }
 
@@ -122,7 +123,7 @@ case class LogicalPlan(
   ): LogicalPlan = {
     val newLink = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links :+ newLink
-    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
+    this.copy(operators, newLinks, breakpoints, opsToReuseCache)
   }
 
   // returns a new physical plan with the edges removed
@@ -134,14 +135,14 @@ case class LogicalPlan(
   ): LogicalPlan = {
     val linkToRemove = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links.filter(l => l != linkToRemove)
-    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
+    this.copy(operators, newLinks, breakpoints, opsToReuseCache)
   }
 
   def removeEdge(
     edge: OperatorLink
   ): LogicalPlan = {
     val newLinks = links.filter(l => l != edge)
-    this.copy(operators, newLinks, breakpoints, cachedOperatorIds)
+    this.copy(operators, newLinks, breakpoints, opsToReuseCache)
   }
 
   def getDownstream(operatorID: String): List[OperatorDescriptor] = {
@@ -250,25 +251,6 @@ case class LogicalPlan(
       throw new RuntimeException(s"${errorList.size} error(s) occurred in schema propagation.")
     }
 
-    // assign storage to texera-managed sinks before generating exec config
-    operators.foreach {
-      case o @ (sink: ProgressiveSinkOpDesc) =>
-        val storageKey = sink.getUpstreamId.getOrElse(o.operatorID)
-        // due to the size limit of single document in mongoDB (16MB)
-        // for sinks visualizing HTMLs which could possibly be large in size, we always use the memory storage.
-        val storageType =
-          if (sink.getChartType.contains(VisualizationConstants.HTML_VIZ)) OpResultStorage.MEMORY
-          else OpResultStorage.defaultStorageMode
-        sink.setStorage(
-          opResultStorage.create(
-            storageKey,
-            outputSchemaMap(o.operatorIdentifier).head,
-            storageType
-          )
-        )
-      case _ =>
-    }
-
     var physicalPlan = PhysicalPlan(List(), List())
 
     operators.foreach(o => {
@@ -323,8 +305,8 @@ case class LogicalPlan(
     physicalPlan
   }
 
-  def normalize(): LogicalPlan = {
-    SinkInjectionTransformer.transform(this)
-  }
+//  def normalize(): LogicalPlan = {
+//    SinkInjectionTransformer.transform(this)
+//  }
 
 }

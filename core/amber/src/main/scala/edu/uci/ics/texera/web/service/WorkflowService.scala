@@ -3,18 +3,18 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
+
 import scala.collection.JavaConverters._
 import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  WorkflowExecuteRequest,
-  WorkflowKillRequest
-}
+import edu.uci.ics.texera.web.model.websocket.request.{WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
+import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import org.jooq.types.UInteger
@@ -68,13 +68,13 @@ class WorkflowService(
   }
   val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new WorkflowStateStore()
+  var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+
   val resultService: JobResultService =
     new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
     new ResultExportService(opResultStorage, UInteger.valueOf(wId))
-  val operatorCache: WorkflowCacheService =
-    new WorkflowCacheService(opResultStorage, stateStore, wsInput)
-  var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"wid=$wId",
     cleanUpTimeout,
@@ -85,6 +85,17 @@ class WorkflowService(
       unsubscribeAll()
     }
   )
+
+  var lastCompletedLogicalPlan: LogicalPlan = null
+
+  jobService.subscribe { job: WorkflowJobService => {
+    job.stateStore.jobMetadataStore.registerDiffHandler { (oldState, newState) => {
+      if (oldState.state != COMPLETED && newState.state == COMPLETED) {
+        lastCompletedLogicalPlan = job.workflowCompiler.logicalPlan
+      }
+      Iterable.empty
+    }}
+  }}
 
   addSubscription(
     wsInput.subscribe((evt: WorkflowExecuteRequest, uidOpt) => initJobService(evt, uidOpt))
@@ -141,7 +152,8 @@ class WorkflowService(
       resultService,
       req,
       errorHandler,
-      convertToJson(req.engineVersion)
+      convertToJson(req.engineVersion),
+      lastCompletedLogicalPlan
     )
     lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
     jobService.onNext(job)
@@ -158,7 +170,6 @@ class WorkflowService(
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
     Option(jobService.getValue).foreach(_.unsubscribeAll())
-    operatorCache.unsubscribeAll()
     resultService.unsubscribeAll()
   }
 

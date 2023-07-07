@@ -3,9 +3,12 @@ package edu.uci.ics.texera.workflow.common.workflow
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
+import edu.uci.ics.texera.web.service.WorkflowCacheChecker
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
+import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
 
 object WorkflowCompiler {
 
@@ -23,8 +26,6 @@ object WorkflowCompiler {
 class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContext) {
   logicalPlan.operatorMap.values.foreach(initOperator)
 
-  lazy val finalLogicalPlan = transformLogicalPlan(logicalPlan)
-
   def initOperator(operator: OperatorDescriptor): Unit = {
     operator.setContext(context)
   }
@@ -34,14 +35,50 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       .map(o => (o._1, o._2.validate().toSet))
       .filter(o => o._2.nonEmpty)
 
-  def transformLogicalPlan(originalPlan: LogicalPlan): LogicalPlan = {
 
-    // logical plan transformation: add a sink operator for terminal operators without a sink
-    SinkInjectionTransformer.transform(originalPlan, context)
+  private def assignSinkStorage(
+    logicalPlan: LogicalPlan, storage: OpResultStorage,
+    reuseStorageSet: Set[String] = Set()
+  ) = {
+    // assign storage to texera-managed sinks before generating exec config
+    logicalPlan.operators.foreach {
+      case o @ (sink: ProgressiveSinkOpDesc) =>
+        val storageKey = sink.getUpstreamId.getOrElse(o.operatorID)
+        // due to the size limit of single document in mongoDB (16MB)
+        // for sinks visualizing HTMLs which could possibly be large in size, we always use the memory storage.
+        val storageType = {
+          if (sink.getChartType.contains(VisualizationConstants.HTML_VIZ)) OpResultStorage.MEMORY
+          else OpResultStorage.defaultStorageMode
+        }
+        if (reuseStorageSet.contains(storageKey) && storage.contains(storageKey)) {
+          sink.setStorage(storage.get(storageKey))
+        } else {
+          sink.setStorage(
+            storage.create(
+              storageKey,
+              logicalPlan.outputSchemaMap(o.operatorIdentifier).head,
+              storageType
+            )
+          )
+        }
+      case _ =>
+    }
   }
 
-  def amberWorkflow(workflowId: WorkflowIdentity, opResultStorage: OpResultStorage): Workflow = {
-    val physicalPlan0 = finalLogicalPlan.toPhysicalPlan(this.context, opResultStorage)
+  def amberWorkflow(
+    workflowId: WorkflowIdentity,
+    opResultStorage: OpResultStorage,
+      lastCompletedJob: LogicalPlan = null
+  ): Workflow = {
+    val cacheReuses = new WorkflowCacheChecker(lastCompletedJob, logicalPlan).getValidCacheReuse()
+    val opsToReuseCache = cacheReuses.intersect(logicalPlan.opsToReuseCache.toSet)
+    val rewrittenLogicalPlan = WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
+    rewrittenLogicalPlan.operatorMap.values.foreach(initOperator)
+
+    assignSinkStorage(logicalPlan, opResultStorage, opsToReuseCache)
+    assignSinkStorage(rewrittenLogicalPlan, opResultStorage, opsToReuseCache)
+
+    val physicalPlan0 = rewrittenLogicalPlan.toPhysicalPlan(this.context, opResultStorage)
 
     // create pipelined regions.
     val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(

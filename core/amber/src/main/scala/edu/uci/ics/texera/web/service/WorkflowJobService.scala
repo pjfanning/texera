@@ -25,7 +25,8 @@ class WorkflowJobService(
     resultService: JobResultService,
     request: WorkflowExecuteRequest,
     errorHandler: Throwable => Unit,
-    engineVersion: String
+    engineVersion: String,
+  lastCompletedLogicalPlan: LogicalPlan,
 ) extends SubscriptionManager
     with LazyLogging {
 
@@ -33,12 +34,13 @@ class WorkflowJobService(
   val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(LogicalPlan(request.logicalPlan))
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
-    resultService.opResultStorage
+    resultService.opResultStorage,
+    lastCompletedLogicalPlan
   )
   private val controllerConfig = {
     val conf = ControllerConfig.default
     if (
-      workflowCompiler.finalLogicalPlan.operators.exists {
+      workflowCompiler.logicalPlan.operators.exists {
         case x: DualInputPortsPythonUDFOpDescV2 => true
         case x: PythonUDFOpDescV2               => true
         case x: PythonUDFSourceOpDescV2         => true
@@ -75,13 +77,13 @@ class WorkflowJobService(
   workflowContext.executionID = -1 // for every new execution,
   // reset it so that the value doesn't carry over across executions
   def startWorkflow(): Unit = {
-    for (pair <- workflowCompiler.finalLogicalPlan.breakpoints) {
+    for (pair <- workflowCompiler.logicalPlan.breakpoints) {
       Await.result(
         jobBreakpointService.addBreakpoint(pair.operatorID, pair.breakpoint),
         Duration.fromSeconds(10)
       )
     }
-    resultService.attachToJob(stateStore, workflowCompiler.finalLogicalPlan, client)
+    resultService.attachToJob(stateStore, workflowCompiler.logicalPlan, client)
     if (WorkflowService.userSystemEnabled) {
       workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
         workflowContext.wId,

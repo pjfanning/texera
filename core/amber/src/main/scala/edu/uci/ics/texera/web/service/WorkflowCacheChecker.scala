@@ -6,17 +6,21 @@ import scala.collection.mutable
 
 class WorkflowCacheChecker(oldWorkflow: LogicalPlan, newWorkflow: LogicalPlan) {
 
-  val equivalenceClass = new mutable.HashMap[String, Int]()
-  var nextClassId: Int = 0
+  private val equivalenceClass = new mutable.HashMap[String, Int]()
+  private var nextClassId: Int = 0
 
-  def getNextClassId(): Int = {
+  private def getNextClassId(): Int = {
     nextClassId += 1
     nextClassId
   }
 
   // checks the validity of the cache given the old plan and the new plan
-  // returns a map: <NewPlanOpId, CacheStorageId>
-  def checkCacheValidity(): Map[String, String] = {
+  // returns a set of operator IDs that can be reused
+  // the operatorID is also the storage key
+  def getValidCacheReuse(): Set[String] = {
+    if (oldWorkflow == null) {
+      return Set()
+    }
 
     // for each operator in the old workflow, add it to its own equivalence class
     oldWorkflow.jgraphtDag.iterator().forEachRemaining(opId => {
@@ -39,7 +43,7 @@ class WorkflowCacheChecker(oldWorkflow: LogicalPlan, newWorkflow: LogicalPlan) {
       val oldOp = oldWorkflow.operators.find(op => op.equals(newOp)).orNull
 
       // check if the old workflow contains the same operator content
-      val newOpClassId = if (oldOp == null) {
+       val newOpClassId = if (oldOp == null) {
         getNextClassId() // operator not found, create a new class
       } else{
         // check its inputs are all in the same equivalence class
@@ -55,17 +59,19 @@ class WorkflowCacheChecker(oldWorkflow: LogicalPlan, newWorkflow: LogicalPlan) {
       equivalenceClass.put("new-" + opId, newOpClassId)
     })
 
+
     // for each cached operator in the old workflow,
     // check if it can be still used in the new workflow
-    oldWorkflow.cachedOperatorIds.map(cachedOpId => {
-      val oldCachedOpId = "old-" + cachedOpId
+    oldWorkflow.terminalOperators.map(sinkOpId => {
+      val opId = oldWorkflow.getUpstream(sinkOpId).head.operatorID
+      val oldCachedOpId = "old-" + opId
       // find its equivalence class
       val oldClassId = equivalenceClass(oldCachedOpId)
       // find the corresponding operator that can still use this cache
       val newOpId = equivalenceClass.find(p => p._2 == oldClassId && p._1 != oldCachedOpId)
         .map(p => p._1).orNull
-      (newOpId, cachedOpId)
-    }).filter(p => p._1 != null && p._2 != null).toMap
+      if (newOpId == null) null else opId
+    }).filter(o => o != null).toSet
   }
 
 }

@@ -216,7 +216,7 @@ class WorkflowRewriter(
         operatorRecord += ((opId, getWorkflowVertex(workflowDAG.getOperator(opId))))
         logger.info("Vertex {} is not recorded.", operatorRecord(opId))
         true
-      } else if (logicalPlan.cachedOperatorIds.contains(opId)) {
+      } else if (logicalPlan.opsToReuseCache.contains(opId)) {
         !operatorRecord(opId).equals(getWorkflowVertex(workflowDAG.getOperator(opId)))
       } else {
         val vertex = getWorkflowVertex(workflowDAG.getOperator(opId))
@@ -225,7 +225,7 @@ class WorkflowRewriter(
           logger.info("Vertex {} is updated.", operatorRecord(opId))
           true
         } else if (cachedOperatorDescriptors.contains(opId)) {
-          !logicalPlan.cachedOperatorIds.contains(opId)
+          !logicalPlan.opsToReuseCache.contains(opId)
         } else {
           logger.info("Operator: {} is not updated.", operatorRecord(opId))
           false
@@ -297,7 +297,7 @@ class WorkflowRewriter(
       operatorRecord += ((opId, getWorkflowVertex(workflowDAG.getOperator(opId))))
       logger.info("Vertex {} is not recorded.", operatorRecord(opId))
       true
-    } else if (logicalPlan.cachedOperatorIds.contains(opId)) {
+    } else if (logicalPlan.opsToReuseCache.contains(opId)) {
       if (cachedOperatorDescriptors.contains(opId)) {
         val vertex = getWorkflowVertex(workflowDAG.getOperator(opId))
         if (operatorRecord(opId).equals(vertex)) {
@@ -316,7 +316,7 @@ class WorkflowRewriter(
         logger.info("Vertex {} is updated.", operatorRecord(opId))
         true
       } else if (cachedOperatorDescriptors.contains(opId)) {
-        !logicalPlan.cachedOperatorIds.contains(opId)
+        !logicalPlan.opsToReuseCache.contains(opId)
       } else {
         logger.info("Operator: {} is not updated.", operatorRecord(opId))
         false
@@ -344,7 +344,7 @@ class WorkflowRewriter(
   }
 
   private def isCacheEnabled(desc: OperatorDescriptor): Boolean = {
-    if (!logicalPlan.cachedOperatorIds.contains(desc.operatorID)) {
+    if (!logicalPlan.opsToReuseCache.contains(desc.operatorID)) {
       cachedOperatorDescriptors.remove(desc.operatorID)
       logger.info("Operator {} cache not enabled.", desc)
       return false

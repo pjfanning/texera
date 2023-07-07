@@ -9,17 +9,28 @@ object WorkflowCacheRewriter {
   def transform(
     logicalPlan: LogicalPlan,
     storage: OpResultStorage,
-    availableCache: Map[String, String], // key: operator ID in workflow, value: cache key in storage
-    operatorsToUseCache: Set[String], // user-specified operators to reuse cache if possible
+    availableCache: Set[String],
   ): LogicalPlan = {
     var resultPlan = logicalPlan
 
-    operatorsToUseCache.intersect(availableCache.keySet).foreach(opId => {
-      val cacheId = availableCache(opId)
-      val materializationReader = new CacheSourceOpDesc(cacheId, storage)
+    // an operator can reuse cache if
+    // 1: the user wants the operator to reuse past result
+    // 2: the operator is equivalent to the last run
+    val opsToUseCache = logicalPlan.opsToReuseCache.toSet.intersect(availableCache)
+
+    // remove sinks directly connected to operators that are already reusing cache
+    val unnecessarySinks = resultPlan.getTerminalOperators.filter(sink => {
+      opsToUseCache.contains(resultPlan.getUpstream(sink).head.operatorID)
+    })
+    unnecessarySinks.foreach(o => {
+      resultPlan = resultPlan.removeOperator(o)
+    })
+
+    opsToUseCache.foreach(opId => {
+      val materializationReader = new CacheSourceOpDesc(opId, storage)
       resultPlan = resultPlan.addOperator(materializationReader)
       // replace the connection of all outgoing edges of opId with the cache
-      val edgesToReplace = resultPlan.getUpstreamEdges(opId)
+      val edgesToReplace = resultPlan.getDownstreamEdges(opId)
       edgesToReplace.foreach(e => {
         resultPlan = resultPlan.removeEdge(e.origin.operatorID, e.destination.operatorID,
           e.origin.portOrdinal, e.destination.portOrdinal)
@@ -28,21 +39,15 @@ object WorkflowCacheRewriter {
       })
     })
 
-    // remove sinks directly connected to operators that are already cached
-    val unnecessarySinks = resultPlan.getTerminalOperators.filter(sink => {
-      availableCache.contains(resultPlan.getUpstream(sink).head.operatorID)
-    })
-    unnecessarySinks.foreach(o => {
+    // operators that are no longer reachable by any sink don't need to run
+    val allOperators = resultPlan.operators.map(op => op.operatorID).toSet
+    val sinkOps = resultPlan.operators.filter(op => op.isInstanceOf[SinkOpDesc]).map(o => o.operatorID)
+    val usefulOperators = sinkOps ++ sinkOps.flatMap(o => resultPlan.getAncestorOpIds(o)).toSet
+    allOperators.diff(usefulOperators.toSet).foreach(o => {
       resultPlan = resultPlan.removeOperator(o)
     })
 
-    // operators that are no longer reachable by any sink don't need to run
-    val allOperators = resultPlan.operators.map(op => op.operatorID).toSet
-    assert(allOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc]))
-    val usefulOperators = resultPlan.terminalOperators.flatMap(o => resultPlan.getAncestorOpIds(o)).toSet
-    allOperators.diff(usefulOperators).foreach(o => {
-      resultPlan = resultPlan.removeOperator(o)
-    })
+    assert(resultPlan.terminalOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc]))
 
     resultPlan
   }
