@@ -85,7 +85,7 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
     assignSinkStorage(logicalPlan1, opResultStorage, opsToReuseCache)
 
     // add necessary consolidate operator if an operator can't handle retractable inputs
-    val logicalPlan2 = ProgressiveRetractionEnforcer.enforceDelta(logicalPlan1)
+    val logicalPlan2 = ProgressiveRetractionEnforcer.enforceDelta(logicalPlan1, context)
 
 
     // convert to physical plan

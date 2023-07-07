@@ -24,7 +24,7 @@ class ConsolidateOpDesc extends OperatorDescriptor{
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val newAttrs = asScalaBuffer(schemas(0).getAttributes)
-      .filter(attr => attr == ProgressiveUtils.insertRetractFlagAttr)
+      .filter(attr => attr != ProgressiveUtils.insertRetractFlagAttr)
     Schema.newBuilder().add(newAttrs.toArray :_*).build()
   }
 

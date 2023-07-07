@@ -1,13 +1,13 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
-import edu.uci.ics.texera.workflow.common.ProgressiveUtils
+import edu.uci.ics.texera.workflow.common.{ProgressiveUtils, WorkflowContext}
 import edu.uci.ics.texera.workflow.common.operators.consolidate.ConsolidateOpDesc
 
 import scala.collection.mutable.ArrayBuffer
 
 object ProgressiveRetractionEnforcer {
 
-  def enforceDelta(logicalPlan: LogicalPlan): LogicalPlan = {
+  def enforceDelta(logicalPlan: LogicalPlan, context: WorkflowContext): LogicalPlan = {
     // first find the edges that we need to add the consolidate operator
     val edgesToAddConsolidateOp = new ArrayBuffer[OperatorLink]()
     logicalPlan.outputSchemaMap.foreach(kv => {
@@ -28,6 +28,7 @@ object ProgressiveRetractionEnforcer {
     var resultPlan = logicalPlan
     edgesToAddConsolidateOp.foreach(edge => {
       val newOp = new ConsolidateOpDesc()
+      newOp.setContext(context)
       resultPlan = resultPlan.removeEdge(edge)
       resultPlan = resultPlan.addOperator(newOp)
         .addEdge(edge.origin.operatorID, newOp.operatorID, edge.origin.portOrdinal, 0)
