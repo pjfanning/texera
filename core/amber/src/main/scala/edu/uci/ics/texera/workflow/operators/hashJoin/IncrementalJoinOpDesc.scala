@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
@@ -15,9 +15,9 @@ import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 @JsonSchemaInject(json = """
 {
   "attributeTypeRules": {
-    "buildAttributeName": {
+    "leftAttributeName": {
       "const": {
-        "$data": "probeAttributeName"
+        "$data": "rightAttributeName"
       }
     }
   }
@@ -38,6 +38,7 @@ class IncrementalJoinOpDesc[K] extends OperatorDescriptor {
   var rightAttributeName: String = _
 
   // incremental inner join can reuse some logic from hash join
+  @JsonIgnore
   lazy val hashJoinOpDesc: HashJoinOpDesc[K] = {
     val op = new HashJoinOpDesc[K]
     op.buildAttributeName = leftAttributeName
@@ -47,6 +48,7 @@ class IncrementalJoinOpDesc[K] extends OperatorDescriptor {
   }
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+    hashJoinOpDesc.setContext(this.context)
     val hashJoinOpExec = hashJoinOpDesc.operatorExecutor(operatorSchemaInfo)
 
     OpExecConfig

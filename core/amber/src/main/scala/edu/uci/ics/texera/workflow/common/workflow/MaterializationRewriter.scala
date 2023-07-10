@@ -2,7 +2,9 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SOURCE_STARTER_OP
 import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.metadata.InputPort
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
@@ -63,10 +65,14 @@ class MaterializationRewriter(
     materializationReader.setContext(context)
     materializationReader.schema = materializationWriter.getStorage.getSchema
     val matReaderOutputSchema = materializationReader.getOutputSchemas(Array())
-    val matReaderOpExecConfig =
+    var matReaderOpExecConfig =
       materializationReader.operatorExecutor(
         OperatorSchemaInfo(Array(), matReaderOutputSchema)
       )
+    matReaderOpExecConfig = matReaderOpExecConfig.copy(
+      inputPorts = List(InputPort()),
+      inputToOrdinalMapping = Map(LinkIdentity(SOURCE_STARTER_OP, matReaderOpExecConfig.id) -> 0)
+    )
 
     newPlan = newPlan
       .addOperator(matWriterOpExecConfig)
