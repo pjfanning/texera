@@ -1,31 +1,53 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
-sealed trait WorkflowMessage extends Serializable {
-  val from: ActorVirtualIdentity
-  val sequenceNumber: Long
+import scala.util.hashing.MurmurHash3
+
+object ChannelEndpointID {
+  def apply(endpointWorker: ActorVirtualIdentity, isControlChannel: Boolean): ChannelEndpointID = {
+    new ChannelEndpointID(endpointWorker, isControlChannel)
+  }
 }
 
-case class WorkflowControlMessage(
-    from: ActorVirtualIdentity,
+class ChannelEndpointID(val endpointWorker: ActorVirtualIdentity, val isControlChannel: Boolean)
+    extends Serializable {
+  def canEqual(other: Any): Boolean = other.isInstanceOf[ChannelEndpointID]
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case that: ChannelEndpointID =>
+        (that canEqual this) && endpointWorker == that.endpointWorker && isControlChannel == that.isControlChannel
+      case _ => false
+    }
+
+  override def hashCode(): Int = {
+    var h = MurmurHash3.seqSeed
+    h = MurmurHash3.mix(h, endpointWorker.##)
+    h = MurmurHash3.mix(h, isControlChannel.##)
+    MurmurHash3.finalizeHash(h, 2)
+  }
+  override def toString: String = {
+    s"Channel(${endpointWorker.name}, ${if (isControlChannel) "control" else "data"})"
+  }
+}
+
+// always log.
+case object OutsideWorldChannelEndpointID extends ChannelEndpointID(CLIENT, true)
+
+sealed trait WorkflowMessage extends Serializable
+
+case class WorkflowFIFOMessage(
+    channel: ChannelEndpointID,
     sequenceNumber: Long,
-    payload: ControlPayload
+    payload: WorkflowFIFOMessagePayload
 ) extends WorkflowMessage
 
-case class WorkflowDataMessage(
-    from: ActorVirtualIdentity,
-    sequenceNumber: Long,
-    payload: DataPayload
-) extends WorkflowMessage
-
-case class WorkflowRecoveryMessage(
-    from: ActorVirtualIdentity,
-    payload: RecoveryPayload
-)
+case class WorkflowClientMessage(payload: ClientEvent) extends WorkflowMessage
 
 // sent from network communicator to next worker to poll for credit information
 case class CreditRequest(
-    from: ActorVirtualIdentity,
-    sequenceNumber: Long = -1
+    actorVirtualIdentity: ActorVirtualIdentity
 ) extends WorkflowMessage
