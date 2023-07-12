@@ -68,9 +68,4 @@ public class LinearRegressionOpExec extends MLModelOpExec{
 
     System.out.println("Epoch "+ currentEpoch() + " Learning Rate " + learningRate + ", Current w and b values are : " + w_current + " " + b_current);
   }
-
-  @Override
-  public Tuple[] outputPrediction(Tuple[] allData) {
-    return allData;
-  }
 }
