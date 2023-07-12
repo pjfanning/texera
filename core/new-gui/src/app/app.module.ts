@@ -29,7 +29,6 @@ import { NzMenuModule } from "ng-zorro-antd/menu";
 import { NzMessageModule } from "ng-zorro-antd/message";
 import { NzModalModule } from "ng-zorro-antd/modal";
 import { NzTableModule } from "ng-zorro-antd/table";
-import { NzTimelineModule } from "ng-zorro-antd/timeline";
 import { NzToolTipModule } from "ng-zorro-antd/tooltip";
 import { NzCheckboxModule } from "ng-zorro-antd/checkbox";
 import { NzSelectModule } from "ng-zorro-antd/select";
@@ -129,7 +128,6 @@ import { UserFileListItemComponent } from "./dashboard/user/component/user-file/
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import { SearchResultsComponent } from "./dashboard/user/component/search-results/search-results.component";
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
-import { ReplayDisplayComponent } from "./workspace/component/property-editor/replay-display/replay-display/replay-display.component";
 
 registerLocaleData(en);
 
@@ -199,7 +197,6 @@ registerLocaleData(en);
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
-    ReplayDisplayComponent,
   ],
   imports: [
     BrowserModule,
@@ -241,7 +238,6 @@ registerLocaleData(en);
     NzToolTipModule,
     NzCheckboxModule,
     NzTableModule,
-    NzTimelineModule,
     NzModalModule,
     NzSelectModule,
     NzSliderModule,

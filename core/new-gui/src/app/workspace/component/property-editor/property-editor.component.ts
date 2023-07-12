@@ -5,21 +5,18 @@ import { OperatorPropertyEditFrameComponent } from "./operator-property-edit-fra
 import { BreakpointPropertyEditFrameComponent } from "./breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
 import { DynamicComponentConfig } from "../../../common/type/dynamic-component-config";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { auditTime, filter } from "rxjs/operators";
 import {
-  DISPLAY_WORKFLOW_EXECUTION_REPLAY,
-  ReplayWorkflowService,
-} from "../../service/execute-workflow/replay-workflow.service";
-import { ReplayDisplayComponent } from "./replay-display/replay-display/replay-display.component";
+  DISPLAY_WORKFLOW_VERSIONS_EVENT,
+  WorkflowVersionService,
 } from "src/app/dashboard/user/service/workflow-version/workflow-version.service";
 import { VersionsDisplayFrameComponent } from "./versions-display/versions-display-frame.component";
+import { filter } from "rxjs/operators";
 import { PortPropertyEditFrameComponent } from "./port-property-edit-frame/port-property-edit-frame.component";
 
 export type PropertyEditFrameComponent =
   | OperatorPropertyEditFrameComponent
   | BreakpointPropertyEditFrameComponent
   | VersionsDisplayFrameComponent
-  | ReplayDisplayComponent
   | PortPropertyEditFrameComponent;
 
 export type PropertyEditFrameConfig = DynamicComponentConfig<PropertyEditFrameComponent>;
@@ -42,7 +39,6 @@ export class PropertyEditorComponent implements OnInit {
   constructor(
     public workflowActionService: WorkflowActionService,
     public workflowVersionService: WorkflowVersionService,
-    public replayWorkflowService: ReplayWorkflowService,
     private changeDetectorRef: ChangeDetectorRef
   ) {}
 
@@ -80,8 +76,7 @@ export class PropertyEditorComponent implements OnInit {
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxUnhighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointPortHighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointPortUnhighlightStream(),
-      this.workflowVersionService.workflowVersionsDisplayObservable(),
-      this.replayWorkflowService.displayWorkflowReplayStream()
+      this.workflowVersionService.workflowVersionsDisplayObservable()
     )
       .pipe(
         filter(() => this.workflowActionService.getTexeraGraph().getSyncTexeraGraph()),
@@ -89,7 +84,6 @@ export class PropertyEditorComponent implements OnInit {
       )
       .subscribe(event => {
         const isDisplayWorkflowVersions = event.length === 1 && event[0] === DISPLAY_WORKFLOW_VERSIONS_EVENT;
-        const isDisplayWorkflowReplay = event === DISPLAY_WORKFLOW_EXECUTION_REPLAY;
 
         const highlightedOperators = this.workflowActionService
           .getJointGraphWrapper()
@@ -101,10 +95,6 @@ export class PropertyEditorComponent implements OnInit {
         if (isDisplayWorkflowVersions) {
           this.switchFrameComponent({
             component: VersionsDisplayFrameComponent,
-          });
-        } else if (isDisplayWorkflowReplay) {
-          this.switchFrameComponent({
-            component: ReplayDisplayComponent,
           });
         } else if (
           highlightedOperators.length === 1 &&

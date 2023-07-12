@@ -145,8 +145,6 @@ export type WorkerAssignmentUpdateEvent = Readonly<{
   workerIds: readonly string[];
 }>;
 
-
-
 export type ExecutionDurationUpdateEvent = Readonly<{
   duration: number;
   isRunning: boolean;
@@ -160,25 +158,6 @@ export type ModifyLogicResponse = Readonly<{
 
 export type ModifyLogicCompletedEvent = Readonly<{
   opIds: readonly string[];
-}>;
-
-export type WorkflowInteractionHistoryEvent = Readonly<{
-  history: readonly number[];
-  isInteraction:readonly boolean[];
-  checkpointStatus:readonly string[];
-}>;
-
-export type  WorkflowAdditionalOperatorInfoEvent = Readonly<{
-  data: string;
-}>;
-
-export type WorkflowReplayCompletedEvent = Readonly<{
-  replayTime:number;
-  checkpointTime:number;
-}>;
-
-export type WorkflowCheckpointedEvent = Readonly<{
-  checkpointed: Record<number, boolean>;
 }>;
 
 export type DebugCommandRequest = Readonly<{
@@ -207,17 +186,12 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
   DebugCommandRequest: DebugCommandRequest;
-  WorkflowReplayRequest: { replayPos: number , plannerStrategy: String, replayTimeLimit:number};
-  WorkflowAdditionalOperatorInfoRequest: {};
-  WorkflowCheckpointRequest: {};
 };
-
 
 export type TexeraWebsocketEventTypeMap = {
   RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowStateEvent: WorkflowStateInfo;
-  WorkflowCheckpointedEvent: WorkflowCheckpointedEvent;
   WorkflowErrorEvent: WorkflowError;
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
@@ -232,12 +206,9 @@ export type TexeraWebsocketEventTypeMap = {
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
   WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
-  ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
   ModifyLogicResponse: ModifyLogicResponse;
   ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
-  WorkflowInteractionHistoryEvent: WorkflowInteractionHistoryEvent;
-  WorkflowAdditionalOperatorInfoEvent: WorkflowAdditionalOperatorInfoEvent;
-  WorkflowReplayCompletedEvent:WorkflowReplayCompletedEvent;
+  ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
 };
 
 // helper type definitions to generate the request and event types

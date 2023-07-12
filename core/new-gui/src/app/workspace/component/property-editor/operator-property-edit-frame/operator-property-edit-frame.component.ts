@@ -26,7 +26,7 @@ import {
   hideTypes,
 } from "../../../types/custom-json-schema.interface";
 import { isDefined } from "../../../../common/util/predicate";
-import { ExecutionState, OperatorStatistics, OperatorState } from "src/app/workspace/types/execute-workflow.interface";
+import { ExecutionState, OperatorState, OperatorStatistics } from "src/app/workspace/types/execute-workflow.interface";
 import { DynamicSchemaService } from "../../../service/dynamic-schema/dynamic-schema.service";
 import {
   PortInputSchema,
@@ -45,7 +45,7 @@ import {
 } from "../typecasting-display/type-casting-display.component";
 import { DynamicComponentConfig } from "../../../../common/type/dynamic-component-config";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { filter, takeUntil } from "rxjs/operators";
+import { filter } from "rxjs/operators";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { PresetWrapperComponent } from "src/app/common/formly/preset-wrapper/preset-wrapper.component";
 import { environment } from "src/environments/environment";
@@ -192,22 +192,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
 
     this.registerOperatorDisplayNameChangeHandler();
 
-    let workflow = this.workflowActionService.getWorkflow();
-    if (workflow) this.refreshGrantedList(workflow);
-
     this.workflowStatusSerivce
       .getStatusUpdateStream()
-      .pipe(untilDestroyed(this))
-      .subscribe(update => {
-        if (this.currentOperatorId) {
-          this.currentOperatorStatus = update[this.currentOperatorId];
-        }
-      });
-  }
-
-  public refreshGrantedList(workflow: Workflow): void {
-    this.workflowGrantAccessService
-      .retrieveGrantedWorkflowAccessList(workflow)
       .pipe(untilDestroyed(this))
       .subscribe(update => {
         if (this.currentOperatorId) {

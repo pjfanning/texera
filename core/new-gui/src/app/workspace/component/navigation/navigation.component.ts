@@ -28,7 +28,6 @@ import { OperatorMenuService } from "../../service/operator-menu/operator-menu.s
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
 import { isDefined } from "../../../common/util/predicate";
 import { Subscription, timer } from "rxjs";
-import { ReplayWorkflowService } from "../../service/execute-workflow/replay-workflow.service";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -89,7 +88,6 @@ export class NavigationComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public workflowVersionService: WorkflowVersionService,
-    public workflowReplayService: ReplayWorkflowService,
     public userService: UserService,
     private datePipe: DatePipe,
     public workflowResultExportService: WorkflowResultExportService,
