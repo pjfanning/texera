@@ -39,16 +39,6 @@ class WorkflowJobService(
   )
   private val controllerConfig = {
     val conf = ControllerConfig.default
-    if (
-      logicalPlan.operators.exists {
-        case x: DualInputPortsPythonUDFOpDescV2 => true
-        case x: PythonUDFOpDescV2               => true
-        case x: PythonUDFSourceOpDescV2         => true
-        case other                              => false
-      }
-    ) {
-//      conf.supportFaultTolerance = false
-    }
     conf
   }
 

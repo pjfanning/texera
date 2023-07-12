@@ -18,8 +18,6 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
   var MINI_BATCH_SIZE: Int = 1000
   var nextOperation: String = "predict"
   var hasMoreIterations: Boolean = true
-  var receivedAll = false
-  var outputIterator: Iterator[Tuple] = Iterator()
 
   def getTotalEpochsCount: Int
 
@@ -38,10 +36,6 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
         allData += t
         Iterator()
       case Right(_) =>
-        receivedAll = true
-        println(
-          s"received all data size = ${allData.length} current Epoch = ${currentEpoch} nextMiniBatchStartIdx = $nextMiniBatchStartIdx nextOperation = $nextOperation"
-        )
         getIterativeTrainingIterator
     }
   }
@@ -49,54 +43,44 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
   def getIterativeTrainingIterator: Iterator[Tuple] = {
     new Iterator[Tuple] {
       override def hasNext(): Boolean = {
-        hasMoreIterations || outputIterator.hasNext
+        hasMoreIterations
       }
 
       override def next(): Tuple = {
-        if (!hasMoreIterations) {
-          outputIterator.next()
-        } else {
-          performTrainingStep()
-          null
+        if (nextOperation.equalsIgnoreCase("predict")) {
+          // set the miniBatch
+          if (nextMiniBatchStartIdx + MINI_BATCH_SIZE <= allData.size) {
+            miniBatch =
+              allData.slice(nextMiniBatchStartIdx, nextMiniBatchStartIdx + MINI_BATCH_SIZE).toArray
+            nextMiniBatchStartIdx = nextMiniBatchStartIdx + MINI_BATCH_SIZE
+          } else if (nextMiniBatchStartIdx < allData.size) {
+            // remaining data is less than MINI_BATCH_SIZE
+            miniBatch = allData.slice(nextMiniBatchStartIdx, allData.size).toArray
+            nextMiniBatchStartIdx = 0
+          } else {
+            // will reach if no data present in allData
+            hasMoreIterations = false
+            return null
+          }
+
+          predict(miniBatch)
+          nextOperation = "calculateLossGradient"
+        } else if (nextOperation.equalsIgnoreCase("calculateLossGradient")) {
+          calculateLossGradient(miniBatch)
+          nextOperation = "readjustWeight"
+        } else if (nextOperation.equalsIgnoreCase("readjustWeight")) {
+          readjustWeight()
+          nextOperation = "predict"
+
+          if (nextMiniBatchStartIdx == 0) {
+            // current epoch is over
+            currentEpoch += 1
+          }
+          if (currentEpoch == getTotalEpochsCount) {
+            hasMoreIterations = false
+          }
         }
-      }
-    }
-  }
-
-  def performTrainingStep(): Unit = {
-    if (nextOperation.equalsIgnoreCase("predict")) {
-      // set the miniBatch
-      if (nextMiniBatchStartIdx + MINI_BATCH_SIZE <= allData.size) {
-        miniBatch =
-          allData.slice(nextMiniBatchStartIdx, nextMiniBatchStartIdx + MINI_BATCH_SIZE).toArray
-        nextMiniBatchStartIdx = nextMiniBatchStartIdx + MINI_BATCH_SIZE
-      } else if (nextMiniBatchStartIdx < allData.size) {
-        // remaining data is less than MINI_BATCH_SIZE
-        miniBatch = allData.slice(nextMiniBatchStartIdx, allData.size).toArray
-        nextMiniBatchStartIdx = 0
-      } else {
-        // will reach if no data present in allData
-        hasMoreIterations = false
-        outputIterator = outputPrediction(allData.toArray).toIterator
-        return
-      }
-
-      predict(miniBatch)
-      nextOperation = "calculateLossGradient"
-    } else if (nextOperation.equalsIgnoreCase("calculateLossGradient")) {
-      calculateLossGradient(miniBatch)
-      nextOperation = "readjustWeight"
-    } else if (nextOperation.equalsIgnoreCase("readjustWeight")) {
-      readjustWeight()
-      nextOperation = "predict"
-
-      if (nextMiniBatchStartIdx == 0) {
-        // current epoch is over
-        currentEpoch += 1
-      }
-      if (currentEpoch == getTotalEpochsCount) {
-        hasMoreIterations = false
-        outputIterator = outputPrediction(allData.toArray).toIterator
+        return null
       }
     }
   }
@@ -104,5 +88,5 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
   def predict(miniBatch: Array[Tuple]): Unit
   def calculateLossGradient(miniBatch: Array[Tuple]): Unit
   def readjustWeight(): Unit
-  def outputPrediction(allData: Array[Tuple]): Array[Tuple]
+
 }
