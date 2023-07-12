@@ -103,9 +103,10 @@ class PythonWorkflowWorker(
   private def startProxyServer(): Unit = {
     // Try to start the server until it succeeds
     var serverStart = false
+    val outputPort = new NetworkOutputPort(actorId, outputPayload)
     while (!serverStart) {
       pythonProxyServer =
-        new PythonProxyServer(controlOutputPort, dataOutputPort, actorId, portNumberPromise)
+        new PythonProxyServer(outputPort, actorId, portNumberPromise)
       val future = serverThreadExecutor.submit(pythonProxyServer)
       try {
         future.get()

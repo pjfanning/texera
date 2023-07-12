@@ -6,6 +6,7 @@ import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.SkewDetectionHandler.ControllerInitiateSkewDetection
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ModifyLogicHandler
 import edu.uci.ics.amber.engine.common.ambermessage.ControlInvocation
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer

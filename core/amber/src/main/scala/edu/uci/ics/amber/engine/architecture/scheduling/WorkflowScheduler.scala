@@ -165,18 +165,15 @@ class WorkflowScheduler(
             val pythonUDFOpExec = pythonUDFOpExecConfig
               .initIOperatorExecutor((0, pythonUDFOpExecConfig))
               .asInstanceOf[PythonUDFOpExecV2]
-            val inputMappingList = pythonUDFOpExecConfig.inputToOrdinalMapping
+            val inputMappingList = pythonUDFOpExecConfig.ordinalMapping.input
               .map(kv => LinkOrdinal(kv._1, kv._2))
               .toList
-            val outputMappingList = pythonUDFOpExecConfig.outputToOrdinalMapping
+            val outputMappingList = pythonUDFOpExecConfig.ordinalMapping.output
               .map(kv => LinkOrdinal(kv._1, kv._2))
               .toList
             getAsyncRPCClient.send(
               InitializeOperatorLogic(
                 pythonUDFOpExec.getCode,
-                getWorkflow
-                  .getInlinksIdsToWorkerLayer(VirtualIdentityUtils.getOperator(workerID))
-                  .toArray,
                 pythonUDFOpExec.isInstanceOf[ISourceOperatorExecutor],
                 inputMappingList,
                 outputMappingList,

@@ -115,17 +115,6 @@ class OutputManager(
     })
   }
 
-  def emitEpochMarker(epochMarker: EpochMarker): Unit = {
-    // find the network output ports within the scope of the marker
-    val outputsWithinScope =
-      networkOutputBuffers.filter(out => epochMarker.scope.links.contains(out._1._1))
-    // flush all network buffers of this operator, emit epoch marker to network
-    outputsWithinScope.foreach(kv => {
-      kv._2.flush()
-      kv._2.addEpochMarker(epochMarker)
-    })
-  }
-
   /**
     * Send the last batch and EOU marker to all down streams
     */
