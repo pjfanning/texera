@@ -5,9 +5,9 @@ import edu.uci.ics.amber.engine.architecture.recovery.RecoveryQueue
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, EpochMarker}
+import edu.uci.ics.amber.engine.common.lbmq.{LinkedBlockingMultiQueue, LinkedBlockingSubQueue}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import lbmq.LinkedBlockingMultiQueue
 
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
@@ -50,7 +50,7 @@ class WorkerInternalQueue(
   lbmq.addSubQueue(CONTROL_QUEUE_KEY, CONTROL_QUEUE_PRIORITY)
 
   private[architecture] val dataQueues =
-    new mutable.HashMap[String, LinkedBlockingMultiQueue[String, InternalQueueElement]#SubQueue]()
+    new mutable.HashMap[String, LinkedBlockingSubQueue[String, InternalQueueElement]]()
   private[architecture] val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE_KEY)
 
   protected lazy val determinantLogger: DeterminantLogger = logManager.getDeterminantLogger
@@ -128,9 +128,9 @@ class WorkerInternalQueue(
     elem
   }
 
-  def getDataQueueLength: Int = dataQueues.values.map(q => q.size()).sum
+  def getDataQueueLength: Int = dataQueues.values.map(q => q.size).sum
 
-  def getControlQueueLength: Int = controlQueue.size()
+  def getControlQueueLength: Int = controlQueue.size
 
   def restoreInputs(): Unit = {
     lock.lock()
