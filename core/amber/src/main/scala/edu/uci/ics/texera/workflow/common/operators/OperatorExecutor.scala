@@ -1,6 +1,5 @@
 package edu.uci.ics.texera.workflow.common.operators
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.SerializedState
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}

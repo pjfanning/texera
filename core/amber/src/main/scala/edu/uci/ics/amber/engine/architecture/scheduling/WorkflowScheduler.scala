@@ -1,19 +1,21 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
-import akka.actor.{ActorContext, ActorRef, Address}
+import akka.actor.Address
 import com.twitter.util.Future
 import com.typesafe.scalalogging.Logger
-import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{FatalErrorToClient, WorkerAssignmentUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActorService
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{
+  FatalErrorToClient,
+  WorkerAssignmentUpdate,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkWorkersHandler.LinkWorkers
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
+import edu.uci.ics.amber.engine.architecture.controller.{Workflow, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.OpenOperatorHandler.OpenOperator
@@ -23,10 +25,13 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{Constants, ISourceOperatorExecutor}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
+import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
-import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
 
 import scala.collection.mutable
@@ -185,7 +190,9 @@ class WorkflowScheduler(
           .toSeq
       )
       .onSuccess(_ =>
-        uninitializedPythonOperators.foreach(opId => getExecution.initializedPythonOperators.add(opId))
+        uninitializedPythonOperators.foreach(opId =>
+          getExecution.initializedPythonOperators.add(opId)
+        )
       )
       .onFailure((err: Throwable) => {
         logger.error("Failure when sending Python UDF code", err)
@@ -282,7 +289,8 @@ class WorkflowScheduler(
       .flatMap(_ => startRegion(region))
       .map(_ => {
         getExecution.constructingRegions.remove(region.getId())
-        getSchedulingPolicy.addToRunningRegions(Set(region.id), getPipelinedRegionPlan, getActorService)
+        getSchedulingPolicy
+          .addToRunningRegions(Set(region.id), getPipelinedRegionPlan, getActorService)
         getExecution.startedRegions.add(region.getId())
       })
   }
@@ -300,7 +308,11 @@ class WorkflowScheduler(
             .toSeq
         )
         .map { _ =>
-          getSchedulingPolicy.addToRunningRegions(Set(region.id), getPipelinedRegionPlan, getActorService)
+          getSchedulingPolicy.addToRunningRegions(
+            Set(region.id),
+            getPipelinedRegionPlan,
+            getActorService
+          )
         }
     } else {
       throw new WorkflowRuntimeException(

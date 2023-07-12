@@ -6,13 +6,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Li
 
 import scala.collection.mutable
 
-class UpstreamLinkStatus(opExecConfig: OpExecConfig) extends Serializable {
+class UpstreamLinkStatus(@transient opExecConfig: OpExecConfig) extends Serializable {
 
   private val allUpstreamLinkIds: Set[LinkIdentity] = {
     if (opExecConfig.isSourceOperator)
       Set(LinkIdentity(SOURCE_STARTER_OP, opExecConfig.id)) // special case for source operator
     else
-      opExecConfig.inputToOrdinalMapping.keySet
+      opExecConfig.ordinalMapping.input.keySet
   }
 
   /**
@@ -38,8 +38,6 @@ class UpstreamLinkStatus(opExecConfig: OpExecConfig) extends Serializable {
     upstreamMap.update(input, upstreamMap(input) + identifier)
     upstreamMapReverse.update(identifier, input)
   }
-
-  def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = upstreamMapReverse(identifier)
 
   def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = upstreamMapReverse(identifier)
 

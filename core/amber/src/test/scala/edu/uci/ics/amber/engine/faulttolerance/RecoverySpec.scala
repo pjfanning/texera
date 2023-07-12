@@ -1,15 +1,13 @@
 package edu.uci.ics.amber.engine.faulttolerance
 
-import akka.actor.{ActorContext, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
-import com.twitter.util.Promise
 import edu.uci.ics.amber.clustering.SingleNodeListener
-import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
-import edu.uci.ics.amber.engine.architecture.recovery.{RecoveryInternalQueueImpl, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.recovery.ReplayOrderEnforcer
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
@@ -169,29 +167,32 @@ class RecoverySpec
   "Logreader" should "not read anything from empty log2" in {
     val workerName = "WF2-CSVFileScan-operator-af9e2501-8c04-481e-8a54-bf2ab2b60898-main-0"
     val logStorage = new LocalFSLogStorage(workerName)
-    for (elem <- logStorage.getReader.getLogs[InMemDeterminant]){
+    for (elem <- logStorage.getReader.getLogs[InMemDeterminant]) {
       println(elem)
     }
     var step = 188831
     var stop = false
-    val orderEnforcer = new ReplayOrderEnforcer(logStorage.getReader.getLogs[StepsOnChannel], ()=> {
-      println("recovery completed!")
-      stop = true
-    })
+    val orderEnforcer = new ReplayOrderEnforcer(
+      logStorage.getReader.getLogs[StepsOnChannel],
+      () => {
+        println("recovery completed!")
+        stop = true
+      }
+    )
     orderEnforcer.initialize(step)
     orderEnforcer.forwardReplayProcess(step)
     println(orderEnforcer.currentChannel, step)
-    step+=1
+    step += 1
     orderEnforcer.forwardReplayProcess(step)
     println(orderEnforcer.currentChannel, step)
-    step+=1
+    step += 1
     orderEnforcer.forwardReplayProcess(step)
     println(orderEnforcer.currentChannel, step)
     orderEnforcer.forwardReplayProcess(step)
     println(orderEnforcer.currentChannel, step)
-    step+=1
+    step += 1
     orderEnforcer.forwardReplayProcess(step)
     println(orderEnforcer.currentChannel, step)
-    step+=1
+    step += 1
   }
 }

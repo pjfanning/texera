@@ -50,9 +50,8 @@ class PauseManager extends Serializable {
     // need to resume specific input channels
     val pausedChannels = specificInputPauses.values.flatten.toSet
     internalQueue.enableAllDataQueue(true)
-    pausedChannels.foreach{
-      input =>
-        internalQueue.enableDataQueue(ChannelEndpointID(input, false), false)
+    pausedChannels.foreach { input =>
+      internalQueue.enableDataQueue(ChannelEndpointID(input, false), false)
     }
   }
 

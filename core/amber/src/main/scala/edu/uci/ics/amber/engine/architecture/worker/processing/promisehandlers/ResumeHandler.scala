@@ -2,9 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
   DataProcessorRPCHandlerInitializer,
-  PauseType,
   UserPause
 }
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState

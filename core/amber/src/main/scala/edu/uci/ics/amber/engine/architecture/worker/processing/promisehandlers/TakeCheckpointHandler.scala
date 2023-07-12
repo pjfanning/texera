@@ -1,17 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
-import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint, SerializedState}
-import akka.serialization.SerializationExtension
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DataProcessor, DataProcessorRPCHandlerInitializer}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
-import edu.uci.ics.amber.engine.common.CheckpointSupport
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-
-import java.util.concurrent.{CompletableFuture, TimeUnit}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
 
 object TakeCheckpointHandler {
 
@@ -58,6 +47,5 @@ trait TakeCheckpointHandler {
 //    msg.syncFuture.complete(dp.determinantLogger.getStep)
 //    Future.Unit
 //  }
-
 
 }

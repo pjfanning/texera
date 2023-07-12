@@ -6,14 +6,17 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
-import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, CreditRequest, WorkflowFIFOMessage, WorkflowMessage}
+import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlInvocation,
+  CreditRequest,
+  WorkflowMessage
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 
 import scala.collection.mutable
 import scala.concurrent.duration._
-import scala.util.Random
 
 object NetworkCommunicationActor {
 
@@ -292,7 +295,7 @@ class NetworkCommunicationActor(
   @inline
   private[this] def sendOrGetActorRef(actorID: ActorVirtualIdentity, msg: NetworkMessage): Unit = {
     if (idToActorRefs.contains(actorID)) {
-      Future{
+      Future {
         idToActorRefs(actorID) ! msg
       }
     } else {

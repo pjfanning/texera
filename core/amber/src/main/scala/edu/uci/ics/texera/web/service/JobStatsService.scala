@@ -90,9 +90,7 @@ class JobStatsService(
   private[this] def registerCallbacks(): Unit = {
     registerCallbackOnWorkflowStatusUpdate()
     registerCallbackOnWorkerAssignedUpdate()
-//    registerCallbackOnWorkflowRecoveryUpdate()
     registerCallbackOnFatalError()
-    registerCallbackOnWorkflowComplete()
     registerCallbackOnWorkflowStateUpdate()
   }
 
@@ -124,17 +122,6 @@ class JobStatsService(
     )
   }
 
-//  private[this] def registerCallbackOnWorkflowRecoveryUpdate(): Unit = {
-//    addSubscription(
-//      client
-//        .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
-//          stateStore.jobMetadataStore.updateState { jobMetadata =>
-//            jobMetadata.withIsRecovering(evt.isRecovering)
-//          }
-//        })
-//    )
-//  }
-
   private[this] def registerCallbackOnWorkflowStateUpdate(): Unit = {
     addSubscription(
       client
@@ -142,19 +129,12 @@ class JobStatsService(
           stateStore.jobMetadataStore.updateState { jobMetadata =>
             jobMetadata.withState(evt.aggState)
           }
-        })
-    )
-  }
-
-  private[this] def registerCallbackOnWorkflowComplete(): Unit = {
-    addSubscription(
-      client
-        .registerCallback[WorkflowCompleted]((evt: WorkflowCompleted) => {
-          client.shutdown()
-          stateStore.statsStore.updateState(stats =>
-            stats.withEndTimeStamp(System.currentTimeMillis())
-          )
-          stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(COMPLETED))
+          if (evt.aggState == COMPLETED) {
+            client.shutdown()
+            stateStore.statsStore.updateState(stats =>
+              stats.withEndTimeStamp(System.currentTimeMillis())
+            )
+          }
         })
     )
   }

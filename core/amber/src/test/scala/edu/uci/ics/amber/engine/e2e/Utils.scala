@@ -5,7 +5,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalPlan, OperatorLink, PipelinedRegionPlan, WorkflowCompiler}
+import edu.uci.ics.texera.workflow.common.workflow.{
+  BreakpointInfo,
+  LogicalPlan,
+  OperatorLink,
+  PipelinedRegionPlan,
+  WorkflowCompiler
+}
 
 object Utils {
 

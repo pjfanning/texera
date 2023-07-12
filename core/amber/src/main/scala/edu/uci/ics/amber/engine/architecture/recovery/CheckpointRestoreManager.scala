@@ -5,32 +5,46 @@ import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, Saved
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, WorkerInternalQueue, WorkerInternalQueueImpl}
-import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointSupport}
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, MarkerCollectionSupport, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
+import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  MarkerCollectionSupport,
+  WorkflowFIFOMessagePayload
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends AmberLogging{
+abstract class CheckpointRestoreManager(@transient actor: WorkflowActor) extends AmberLogging {
 
   override def actorId: ActorVirtualIdentity = actor.actorId
 
-  protected def overwriteState(chkpt:SavedCheckpoint):Unit
+  protected def overwriteState(chkpt: SavedCheckpoint): Unit
 
-  protected def setupReplay(replayId:String, logReader: DeterminantLogReader, replayTo:Option[Long]):ReplayOrderEnforcer
+  protected def setupReplay(
+      replayId: String,
+      logReader: DeterminantLogReader,
+      replayTo: Option[Long]
+  ): ReplayOrderEnforcer
 
-  def fillCheckpoint(checkpoint: PendingCheckpoint):Long
+  def fillCheckpoint(checkpoint: PendingCheckpoint): Long
 
-  protected def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf:ReplayCheckpointConfig): () => Unit
+  protected def doCheckpointDuringReplay(
+      pendingCheckpoint: PendingCheckpoint,
+      conf: ReplayCheckpointConfig
+  ): () => Unit
 
-  protected def startProcessing(stateReloaded:Boolean, replayOrderEnforcer: ReplayOrderEnforcer):Unit
+  protected def startProcessing(
+      stateReloaded: Boolean,
+      replayOrderEnforcer: ReplayOrderEnforcer
+  ): Unit
 
-  protected def replayCompletedCallback(replayId:String): () => Unit
+  protected def replayCompletedCallback(replayId: String): () => Unit
 
   def onCheckpointCompleted(checkpoint: PendingCheckpoint): Unit
 
-  protected def finalizeCheckpoint(checkpoint: PendingCheckpoint): CheckpointStats ={
+  protected def finalizeCheckpoint(checkpoint: PendingCheckpoint): CheckpointStats = {
     CheckpointHolder.addCheckpoint(
       actorId,
       checkpoint.stepCursorAtCheckpoint,
@@ -38,7 +52,8 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       checkpoint.chkpt
     )
     logger.info(
-      s"local checkpoint completed! checkpoint id = ${checkpoint.logicalSnapshotId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - checkpoint.startTime) / 1000f}s"
+      s"local checkpoint completed! checkpoint id = ${checkpoint.logicalSnapshotId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System
+        .currentTimeMillis() - checkpoint.startTime) / 1000f}s"
     )
     val alignmentCost = System.currentTimeMillis() - checkpoint.startTime
     CheckpointStats(
@@ -46,13 +61,22 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       checkpoint.fifoInputState,
       checkpoint.fifoOutputState,
       alignmentCost,
-      checkpoint.initialCheckpointTime)
+      checkpoint.initialCheckpointTime
+    )
   }
 
-  def restoreFromCheckpointAndSetupReplay(replayId:String, fromCheckpoint:Option[Long], replayTo:Option[Long], confs:Array[ReplayCheckpointConfig], pendingCheckpoints:mutable.HashMap[String, MarkerCollectionSupport]): Unit ={
-    var recordedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
-    var queuedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
-    if(fromCheckpoint.isDefined){
+  def restoreFromCheckpointAndSetupReplay(
+      replayId: String,
+      fromCheckpoint: Option[Long],
+      replayTo: Option[Long],
+      confs: Array[ReplayCheckpointConfig],
+      pendingCheckpoints: mutable.HashMap[String, MarkerCollectionSupport]
+  ): Unit = {
+    var recordedInput =
+      mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
+    var queuedInput =
+      mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
+    if (fromCheckpoint.isDefined) {
       val existingChkpt = CheckpointHolder.getCheckpoint(actor.actorId, fromCheckpoint.get)
       existingChkpt.attachSerialization(SerializationExtension(actor.context.system))
       overwriteState(existingChkpt)
@@ -77,20 +101,24 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
         Map.empty,
         0,
         planned,
-        conf.waitingForMarker)
+        conf.waitingForMarker
+      )
       pendingCheckpoint.setOnComplete(onCheckpointCompleted)
       // add this checkpoint to pending checkpoints
       pendingCheckpoints(conf.checkpointId) = pendingCheckpoint
-      orderEnforcer.setCallbackOnStep(conf.checkpointAt, doCheckpointDuringReplay(pendingCheckpoint, conf))
+      orderEnforcer.setCallbackOnStep(
+        conf.checkpointAt,
+        doCheckpointDuringReplay(pendingCheckpoint, conf)
+      )
     })
     orderEnforcer.setCallbackOnStep(replayTo.get, replayCompletedCallback(replayId))
     InternalPayloadManager.setupLoggingForWorkflowActor(actor, false)
-    queuedInput.foreach{
+    queuedInput.foreach {
       case (c, payloads) =>
         logger.info(s"restore queued input for channel $c, number of payload = ${payloads.size}")
         payloads.foreach(x => actor.handlePayloadAndMarker(c, x))
     }
-    recordedInput.foreach{
+    recordedInput.foreach {
       case (c, payloads) =>
         logger.info(s"restore recorded input for channel $c, number of payload = ${payloads.size}")
         payloads.foreach(x => actor.inputPort.handleFIFOPayload(c, x))

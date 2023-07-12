@@ -1,23 +1,33 @@
 package edu.uci.ics.amber.engine.architecture.deploysemantics.layer
 
-import akka.actor.{ActorContext, ActorRef, Address, Deploy, Props}
+import akka.actor.{ActorRef, Deploy}
 import akka.remote.RemoteScope
-import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import com.twitter.util.{Await, Future}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
+  AddressInfo,
+  LocationPreference,
+  PreferController,
+  RoundRobinPreference
+}
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{LoadStateAndReplay, SetupLogging}
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{
+  LoadStateAndReplay,
+  SetupLogging
+}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
+import edu.uci.ics.amber.engine.common.ambermessage.AmberInternalPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
-import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISinkOperatorExecutor, ISourceOperatorExecutor}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
+import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
@@ -245,22 +255,33 @@ case class OpExecConfig(
       opExecution: OperatorExecution,
       replayPlan: WorkflowReplayConfig
   ): Unit = {
-    Await.result(Future.collect((0 until numWorkers)
-      .map(i => {
-        val workerId: ActorVirtualIdentity = identifier(i)
-          buildWorker(
-            workerId,
-            addressInfo,
-            actorService,
-            opExecution,
-           (if(replayPlan.confs.contains(workerId)){
-          val replayConfig = replayPlan.confs(workerId)
-          Array(LoadStateAndReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
-        }else{
-          Array(SetupLogging())
-        })
-          )
-      })))
+    Await.result(
+      Future.collect(
+        (0 until numWorkers)
+          .map(i => {
+            val workerId: ActorVirtualIdentity = identifier(i)
+            buildWorker(
+              workerId,
+              addressInfo,
+              actorService,
+              opExecution,
+              (if (replayPlan.confs.contains(workerId)) {
+                 val replayConfig = replayPlan.confs(workerId)
+                 Array(
+                   LoadStateAndReplay(
+                     "replay - respawn",
+                     replayConfig.fromCheckpoint,
+                     replayConfig.replayTo,
+                     replayConfig.checkpointConfig
+                   )
+                 )
+               } else {
+                 Array(SetupLogging())
+               })
+            )
+          })
+      )
+    )
   }
 
   def buildWorker(
@@ -286,11 +307,10 @@ case class OpExecConfig(
     val ref =
       actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
     actorService.registerActorForNetworkCommunication(workerId, ref)
-    actorService.ask(ref, CheckInitialized(extraCommands)).map{
-      _ =>
-        println(s"Worker Built! Actor for $workerId is at $ref")
-        opExecution.getWorkerInfo(workerId).ref = ref
-        ref
+    actorService.ask(ref, CheckInitialized(extraCommands)).map { _ =>
+      println(s"Worker Built! Actor for $workerId is at $ref")
+      opExecution.getWorkerInfo(workerId).ref = ref
+      ref
     }
   }
 }

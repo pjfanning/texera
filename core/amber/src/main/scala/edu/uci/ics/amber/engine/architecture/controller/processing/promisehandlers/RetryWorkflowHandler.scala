@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.Controller
 import ResumeHandler.ResumeWorkflow
 import RetryWorkflowHandler.RetryWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer

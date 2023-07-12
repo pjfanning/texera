@@ -2,9 +2,16 @@ package edu.uci.ics.amber.engine.architecture.control.utils
 
 import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.recovery.{EmptyInternalPayloadManager, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{
+  EmptyInternalPayloadManager,
+  InternalPayloadManager
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, WorkflowExecutionPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlPayload,
+  WorkflowExecutionPayload
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class TrivialControlTester(
@@ -26,9 +33,12 @@ class TrivialControlTester(
     1000
   }
 
-  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
-    payload match{
-      case control:ControlPayload =>
+  override def handlePayload(
+      channelEndpointID: ChannelEndpointID,
+      payload: WorkflowExecutionPayload
+  ): Unit = {
+    payload match {
+      case control: ControlPayload =>
         processor.processControlPayload(channelEndpointID, control)
       case other => //skip
     }

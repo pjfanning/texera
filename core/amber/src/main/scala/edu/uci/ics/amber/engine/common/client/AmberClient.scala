@@ -4,16 +4,19 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{CommandRequest, ExecuteRequest, InitializeRequest, ObservableRequest}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{
+  CommandRequest,
+  ExecuteRequest,
+  InitializeRequest,
+  ObservableRequest
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.PublishSubject
 
-import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -21,7 +24,7 @@ import scala.reflect.ClassTag
 
 class AmberClient(
     system: ActorSystem,
-    workflowGen: () => (Workflow,PipelinedRegionPlan),
+    workflowGen: () => (Workflow, PipelinedRegionPlan),
     controllerConfig: ControllerConfig,
     errorHandler: Throwable => Unit
 ) {
@@ -72,7 +75,7 @@ class AmberClient(
     }
   }
 
-  def notifyNodeFailure(address: Address): Future[Unit] ={
+  def notifyNodeFailure(address: Address): Future[Unit] = {
     if (isActive) {
       println(s"received node failure")
       // get actor ref of existing workers on that node
@@ -81,7 +84,7 @@ class AmberClient(
     Future.Unit
   }
 
-  def executeAsync(closure: (ClientActor) => Unit): Unit ={
+  def executeAsync(closure: (ClientActor) => Unit): Unit = {
     clientActor ! ExecuteRequest(closure)
   }
 

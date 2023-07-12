@@ -7,14 +7,13 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 object ReplayControlMessageHandler {
 
   final case class ContinueReplay(workflowStateRestoreConfig: WorkflowReplayConfig)
-    extends ControlCommand[Unit]
+      extends ControlCommand[Unit]
 
   //for notifying client only
   final case class WorkflowReplayCompleted() extends ControlCommand[Unit]
 }
 
-
-trait ReplayControlMessageHandler{
+trait ReplayControlMessageHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
 }

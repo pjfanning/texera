@@ -3,14 +3,9 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 import BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.architecture.worker.processing.{
   BackpressurePause,
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer,
-  PauseType
+  DataProcessorRPCHandlerInitializer
 }
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipReply
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 
 object BackpressureHandler {
   final case class Backpressure(enableBackpressure: Boolean)

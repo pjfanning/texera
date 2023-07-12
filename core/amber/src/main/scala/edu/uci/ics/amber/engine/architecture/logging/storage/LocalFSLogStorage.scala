@@ -1,24 +1,25 @@
 package edu.uci.ics.amber.engine.architecture.logging.storage
 
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{DeterminantLogReader, DeterminantLogWriter}
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{
+  DeterminantLogReader,
+  DeterminantLogWriter
+}
 import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage.recoveryLogFolder
 import org.apache.commons.io.FileUtils
 
 import java.io.{DataInputStream, DataOutputStream}
-import java.nio.file.{ Files,  Path, Paths, StandardCopyOption, StandardOpenOption}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption, StandardOpenOption}
 
-
-object LocalFSLogStorage{
+object LocalFSLogStorage {
   val recoveryLogFolder: Path = Paths.get("").resolve("recovery-logs")
 
-  def resetLogFolder(): Unit ={
+  def resetLogFolder(): Unit = {
     if (Files.exists(recoveryLogFolder)) {
       FileUtils.deleteDirectory(recoveryLogFolder.toFile)
     }
     Files.createDirectory(recoveryLogFolder)
   }
 }
-
 
 class LocalFSLogStorage(name: String) extends DeterminantLogStorage {
 

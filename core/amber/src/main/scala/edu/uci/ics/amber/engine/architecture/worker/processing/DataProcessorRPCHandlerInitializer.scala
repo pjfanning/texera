@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers._
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -29,7 +28,7 @@ class DataProcessorRPCHandlerInitializer(val dp: DataProcessor)
     with FlushNetworkBufferHandler
     with TakeCheckpointHandler
     with WorkerEpochMarkerHandler
-    with ModifyOperatorLogicHandler{
+    with ModifyOperatorLogicHandler {
   val actorId: ActorVirtualIdentity = dp.actorId
   var lastReportTime = 0L
 }

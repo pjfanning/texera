@@ -1,7 +1,29 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Cancellable
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{AssignBreakpointHandler, DebugCommandHandler, EpochMarkerHandler, EvaluatePythonExpressionHandler, FatalErrorHandler, LinkCompletedHandler, LinkWorkersHandler, LocalBreakpointTriggeredHandler, LocalOperatorExceptionHandler, ModifyLogicHandler, MonitoringHandler, PauseHandler, PythonConsoleMessageHandler, QueryWorkerStatisticsHandler, RegionsTimeSlotExpiredHandler, ResumeHandler, RetryWorkflowHandler, SkewDetectionHandler, StartWorkflowHandler, WorkerExecutionCompletedHandler, WorkerExecutionStartedHandler}
+import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.{
+  AssignBreakpointHandler,
+  DebugCommandHandler,
+  EpochMarkerHandler,
+  EvaluatePythonExpressionHandler,
+  FatalErrorHandler,
+  LinkCompletedHandler,
+  LinkWorkersHandler,
+  LocalBreakpointTriggeredHandler,
+  LocalOperatorExceptionHandler,
+  ModifyLogicHandler,
+  MonitoringHandler,
+  PauseHandler,
+  PythonConsoleMessageHandler,
+  QueryWorkerStatisticsHandler,
+  RegionsTimeSlotExpiredHandler,
+  ResumeHandler,
+  RetryWorkflowHandler,
+  SkewDetectionHandler,
+  StartWorkflowHandler,
+  WorkerExecutionCompletedHandler,
+  WorkerExecutionStartedHandler
+}
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReshapeState
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
@@ -37,7 +59,7 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     with SkewDetectionHandler
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler
-      with EpochMarkerHandler{
+    with EpochMarkerHandler {
 
   val actorId: ActorVirtualIdentity = cp.actorId
 
@@ -54,13 +76,15 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     if (suppressStatusUpdate) {
       return
     }
-    if (cp.controller.controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle == null) {
+    if (
+      cp.controller.controllerConfig.statusUpdateIntervalMs.nonEmpty && statusUpdateAskHandle == null
+    ) {
       println("status update enabled")
-      statusUpdateAskHandle =
-        cp.actorService.scheduleWithFixedDelay(
-          0.milliseconds,
-          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
-          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateQueryStatistics())
+      statusUpdateAskHandle = cp.actorService.scheduleWithFixedDelay(
+        0.milliseconds,
+        FiniteDuration
+          .apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
+        () => cp.actorService.self ! ControlInvocation(ControllerInitiateQueryStatistics())
       )
     }
   }
@@ -72,11 +96,11 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     if (
       Constants.monitoringEnabled && cp.controller.controllerConfig.monitoringIntervalMs.nonEmpty && monitoringHandle == null
     ) {
-      monitoringHandle =
-        cp.actorService.scheduleWithFixedDelay(
-          0.milliseconds,
-          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
-          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateMonitoring())
+      monitoringHandle = cp.actorService.scheduleWithFixedDelay(
+        0.milliseconds,
+        FiniteDuration
+          .apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
+        () => cp.actorService.self ! ControlInvocation(ControllerInitiateMonitoring())
       )
     }
   }
@@ -88,11 +112,11 @@ class ControllerAsyncRPCHandlerInitializer(val cp: ControlProcessor)
     if (
       Constants.reshapeSkewHandlingEnabled && cp.controller.controllerConfig.skewDetectionIntervalMs.nonEmpty && workflowReshapeState.skewDetectionHandle == null
     ) {
-      workflowReshapeState.skewDetectionHandle =
-        cp.actorService.scheduleWithFixedDelay(
-          0.milliseconds,
-          FiniteDuration.apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
-          ()=> cp.actorService.self ! ControlInvocation(ControllerInitiateSkewDetection())
+      workflowReshapeState.skewDetectionHandle = cp.actorService.scheduleWithFixedDelay(
+        0.milliseconds,
+        FiniteDuration
+          .apply(cp.controller.controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
+        () => cp.actorService.self ! ControlInvocation(ControllerInitiateSkewDetection())
       )
     }
   }

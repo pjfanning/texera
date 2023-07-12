@@ -1,11 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
 import com.google.protobuf.timestamp.Timestamp
-import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ConsoleMessageTriggered
 import PythonConsoleMessageHandler.PythonConsoleMessage
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PythonConsoleMessageV2
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.web.workflowruntimestate.ConsoleMessage
 

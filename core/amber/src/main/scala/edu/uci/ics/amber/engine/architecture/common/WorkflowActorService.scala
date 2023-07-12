@@ -5,43 +5,46 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import akka.pattern.ask
 import akka.util.Timeout
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Await
 import edu.uci.ics.amber.engine.common.FutureBijection._
 
 import scala.concurrent.ExecutionContext
 
-class WorkflowActorService(actor:WorkflowActor) {
+class WorkflowActorService(actor: WorkflowActor) {
 
-  private val actorContext:ActorContext = actor.context
+  private val actorContext: ActorContext = actor.context
 
   var networkCommunicationActor: ActorRef = actor.networkCommunicationActor
 
-  implicit def ec:ExecutionContext = actorContext.dispatcher
+  implicit def ec: ExecutionContext = actorContext.dispatcher
   implicit val timeout: Timeout = 5.seconds
 
-  def self:ActorRef = actorContext.self
+  def self: ActorRef = actorContext.self
 
-  def actorOf(props:Props): ActorRef ={
+  def actorOf(props: Props): ActorRef = {
     actorContext.actorOf(props)
   }
 
-  def registerActorForNetworkCommunication(workerId:ActorVirtualIdentity, ref:ActorRef): Unit ={
-    Await.result(ask(networkCommunicationActor,RegisterActorRef(workerId, ref)))
+  def registerActorForNetworkCommunication(workerId: ActorVirtualIdentity, ref: ActorRef): Unit = {
+    Await.result(ask(networkCommunicationActor, RegisterActorRef(workerId, ref)))
   }
 
-  def scheduleOnce(delay:FiniteDuration, callable:() => Unit):Cancellable ={
-    actorContext.system.scheduler.scheduleOnce(delay){
+  def scheduleOnce(delay: FiniteDuration, callable: () => Unit): Cancellable = {
+    actorContext.system.scheduler.scheduleOnce(delay) {
       callable()
     }
   }
 
-  def scheduleWithFixedDelay(initialDelay:FiniteDuration, delay:FiniteDuration, callable: ()=> Unit):Cancellable = {
+  def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      callable: () => Unit
+  ): Cancellable = {
     actorContext.system.scheduler.scheduleWithFixedDelay(initialDelay, delay)(() => callable())
   }
 
-  def ask(ref: ActorRef, message:Any):com.twitter.util.Future[Any] = {
+  def ask(ref: ActorRef, message: Any): com.twitter.util.Future[Any] = {
     akka.pattern.ask(ref, message).asTwitter()
   }
 

@@ -36,7 +36,6 @@ object AggregateOpDesc {
         else groupByKeys.indices.toArray // group by columns are always placed in the beginning
 
       OpExecConfig
-
         .hashLayer(
           makeLayer(id, "globalAgg"),
           _ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schema),

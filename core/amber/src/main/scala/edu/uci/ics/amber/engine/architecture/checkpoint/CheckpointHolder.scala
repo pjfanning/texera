@@ -1,13 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.checkpoint
 
-import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessagePayload
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import javax.swing.GroupLayout.Alignment
 import scala.collection.mutable
-import scala.util.Try
 
 object CheckpointHolder {
 
@@ -18,7 +13,7 @@ object CheckpointHolder {
 
   private val completedCheckpoint = mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[String]]()
 
-  def hasCheckpoint(id:ActorVirtualIdentity, checkpointId:String): Boolean = {
+  def hasCheckpoint(id: ActorVirtualIdentity, checkpointId: String): Boolean = {
     completedCheckpoint.contains(id) && completedCheckpoint(id).contains(checkpointId)
   }
 
@@ -58,16 +53,16 @@ object CheckpointHolder {
 //  }
 
   def addCheckpoint(
-                     id: ActorVirtualIdentity,
-                     alignment: Long,
-                     checkpointId:String,
-                     checkpoint: SavedCheckpoint
+      id: ActorVirtualIdentity,
+      alignment: Long,
+      checkpointId: String,
+      checkpoint: SavedCheckpoint
   ): Unit = {
     completedCheckpoint.getOrElseUpdate(id, new mutable.HashSet[String]()).add(checkpointId)
     checkpointsId.getOrElseUpdate(id, new mutable.HashMap[String, Long]())(checkpointId) = alignment
     checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
       checkpoint
-    if(checkpoint != null){
+    if (checkpoint != null) {
       println(
         s"checkpoint $checkpointId stored for $id at alignment = ${alignment} size = ${checkpoint.size()} bytes"
       )

@@ -20,7 +20,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import java.sql.PreparedStatement
 import com.twitter.util.{Await, Promise}
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{WorkflowStateUpdate, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowStateUpdate
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
@@ -62,13 +62,21 @@ class DataProcessingSpec
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 
-  def executeWorkflow(workflow: Workflow, pipelinedRegionPlan: PipelinedRegionPlan): Map[String, List[ITuple]] = {
+  def executeWorkflow(
+      workflow: Workflow,
+      pipelinedRegionPlan: PipelinedRegionPlan
+  ): Map[String, List[ITuple]] = {
     var results: Map[String, List[ITuple]] = null
-    val client = new AmberClient(system, () => (workflow, pipelinedRegionPlan), ControllerConfig.default, error => {})
+    val client = new AmberClient(
+      system,
+      () => (workflow, pipelinedRegionPlan),
+      ControllerConfig.default,
+      error => {}
+    )
     val completion = Promise[Unit]
     client
       .registerCallback[WorkflowStateUpdate](evt => {
-        if(evt.aggState == COMPLETED){
+        if (evt.aggState == COMPLETED) {
           results = workflow.physicalPlan.getSinkOperators
             .map(sinkOpId => workflow.physicalPlan.operatorMap(sinkOpId))
             .filter(op => resultStorage.contains(op.id.operator))

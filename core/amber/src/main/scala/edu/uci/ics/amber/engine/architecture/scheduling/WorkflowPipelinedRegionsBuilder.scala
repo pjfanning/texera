@@ -2,8 +2,17 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder.replaceVertex
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity, WorkflowIdentity}
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, MaterializationRewriter, PhysicalPlan, PipelinedRegionPlan}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  LayerIdentity,
+  LinkIdentity,
+  WorkflowIdentity
+}
+import edu.uci.ics.texera.workflow.common.workflow.{
+  LogicalPlan,
+  MaterializationRewriter,
+  PhysicalPlan,
+  PipelinedRegionPlan
+}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 
 import scala.collection.mutable

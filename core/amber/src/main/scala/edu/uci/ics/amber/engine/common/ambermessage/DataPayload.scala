@@ -7,10 +7,10 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 sealed trait DataPayload extends WorkflowDPMessagePayload with WorkflowExecutionPayload
 
 final case class EpochMarker(
-                              id: String,
-                              scope: PhysicalPlan,
-                              command: Option[ControlCommand[_] with SkipReply]
-                            ) extends DataPayload
+    id: String,
+    scope: PhysicalPlan,
+    command: Option[ControlCommand[_] with SkipReply]
+) extends DataPayload
 
 final case class EndOfUpstream() extends DataPayload
 

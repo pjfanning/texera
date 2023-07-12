@@ -8,7 +8,7 @@ object WorkflowReplayConfig {
     WorkflowReplayConfig(Map().withDefaultValue(ReplayConfig(None, None, Array.empty)))
 }
 
-case class WorkflowReplayConfig(confs: Map[ActorVirtualIdentity, ReplayConfig]){
+case class WorkflowReplayConfig(confs: Map[ActorVirtualIdentity, ReplayConfig]) {
   override def toString: String = {
     s"${confs.mkString("\n")}"
   }

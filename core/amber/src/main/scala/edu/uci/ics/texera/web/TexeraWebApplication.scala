@@ -10,7 +10,12 @@ import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.auth.JwtAuth.jwtConsumer
-import edu.uci.ics.texera.web.auth.{GuestAuthFilter, SessionUser, UserAuthenticator, UserRoleAuthorizer}
+import edu.uci.ics.texera.web.auth.{
+  GuestAuthFilter,
+  SessionUser,
+  UserAuthenticator,
+  UserRoleAuthorizer
+}
 import edu.uci.ics.texera.web.resource.auth.{AuthResource, GoogleAuthResource}
 import edu.uci.ics.texera.web.resource._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
@@ -20,8 +25,8 @@ import edu.uci.ics.texera.web.resource.dashboard.user.file.{
   UserFileResource
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.project.{
-  ProjectResource,
-  ProjectAccessResource
+  ProjectAccessResource,
+  ProjectResource
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowAccessResource,
@@ -29,6 +34,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowResource,
   WorkflowVersionResource
 }
+import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.dropwizard.auth.{AuthDynamicFeature, AuthValueFactoryProvider}
 import io.dropwizard.setup.{Bootstrap, Environment}
 import io.dropwizard.websockets.WebsocketBundle

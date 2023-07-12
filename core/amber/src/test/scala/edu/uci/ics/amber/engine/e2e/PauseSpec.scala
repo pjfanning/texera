@@ -52,7 +52,7 @@ class PauseSpec
     val completion = Promise[Unit]
     client
       .registerCallback[WorkflowStateUpdate](evt => {
-        if(evt.aggState == COMPLETED){
+        if (evt.aggState == COMPLETED) {
           completion.setDone()
         }
       })

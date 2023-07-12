@@ -1,11 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import AcceptImmutableStateHandler.AcceptImmutableState
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec

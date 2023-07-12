@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.logging.service
 
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, TimeStamp}
+import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 
 class TimeService(determinantLogger: DeterminantLogger) {
 

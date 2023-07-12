@@ -6,7 +6,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{
   WorkflowStatusUpdate
 }
 import ResumeHandler.ResumeWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand

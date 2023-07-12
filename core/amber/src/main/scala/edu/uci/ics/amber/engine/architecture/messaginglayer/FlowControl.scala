@@ -60,7 +60,10 @@ class FlowControl {
       receiverId: ActorVirtualIdentity,
       msg: WorkflowMessage
   ): Option[WorkflowMessage] = {
-    val isDataMessage = msg.isInstanceOf[WorkflowFIFOMessage] && !msg.asInstanceOf[WorkflowFIFOMessage].channel.isControlChannel
+    val isDataMessage = msg.isInstanceOf[WorkflowFIFOMessage] && !msg
+      .asInstanceOf[WorkflowFIFOMessage]
+      .channel
+      .isControlChannel
     if (isDataMessage && Constants.flowControlEnabled) {
       if (
         receiverIdToCredits.getOrElseUpdate(

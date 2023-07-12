@@ -1,22 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.nn
 
-import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
-import edu.uci.ics.amber.engine.common.CheckpointSupport
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import org.deeplearning4j.nn.conf.GradientNormalization
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
-import org.deeplearning4j.nn.conf.layers.LSTM
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer
-import org.nd4j.linalg.activations.Activation
-import org.nd4j.linalg.learning.config.Nadam
-import org.nd4j.linalg.lossfunctions.LossFunctions
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpExec
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import org.deeplearning4j.nn.weights.WeightInit
-import org.nd4j.linalg.api.ndarray.INDArray
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 
 class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLModelOpExec {
 

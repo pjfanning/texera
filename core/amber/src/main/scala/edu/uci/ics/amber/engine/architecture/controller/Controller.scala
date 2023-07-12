@@ -3,9 +3,14 @@ package edu.uci.ics.amber.engine.architecture.controller
 import akka.actor.{ActorRef, Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.Controller.recoveryDelay
-import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor, ControllerInternalPayloadManager}
-import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{
+  ControlProcessor,
+  ControllerInternalPayloadManager
+}
+import edu.uci.ics.amber.engine.architecture.recovery.{
+  ControllerReplayQueue,
+  InternalPayloadManager
+}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
@@ -13,7 +18,12 @@ import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowExecutionPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlPayload,
+  OutsideWorldChannelEndpointID,
+  WorkflowExecutionPayload
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
@@ -71,7 +81,7 @@ class Controller(
 
   // variables to be initialized
   var controlProcessor: ControlProcessor = new ControlProcessor(this)
-  var replayQueue:ControllerReplayQueue = _
+  var replayQueue: ControllerReplayQueue = _
 
   override def initState(): Unit = {
     // register controller itself and client
@@ -81,7 +91,7 @@ class Controller(
     handlePayloadAndMarker(OutsideWorldChannelEndpointID, SetupLogging())
   }
 
-  def getAvailableNodes():Array[Address] = {
+  def getAvailableNodes(): Array[Address] = {
     Await
       .result(
         context.actorSelection("/user/cluster-info") ? GetAvailableNodeAddresses,
@@ -95,15 +105,18 @@ class Controller(
     Constants.unprocessedBatchesCreditLimitPerSender
   }
 
-  override def handlePayload(channelEndpointID: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
-    if(channelEndpointID.endpointWorker == CONTROLLER){
+  override def handlePayload(
+      channelEndpointID: ChannelEndpointID,
+      payload: WorkflowExecutionPayload
+  ): Unit = {
+    if (channelEndpointID.endpointWorker == CONTROLLER) {
       logger.info(s"receive $payload from myself!!!")
     }
     payload match {
-      case control:ControlPayload =>
-        if(replayQueue != null){
+      case control: ControlPayload =>
+        if (replayQueue != null) {
           replayQueue.enqueuePayload(channelEndpointID, control)
-        }else{
+        } else {
           controlProcessor.processControlPayload(channelEndpointID, control)
         }
       case other =>
@@ -128,5 +141,6 @@ class Controller(
     logger.info("stopped successfully!")
   }
 
-  override val internalPayloadManager: InternalPayloadManager = new ControllerInternalPayloadManager(this)
+  override val internalPayloadManager: InternalPayloadManager =
+    new ControllerInternalPayloadManager(this)
 }

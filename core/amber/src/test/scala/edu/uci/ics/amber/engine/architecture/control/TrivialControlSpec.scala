@@ -1,8 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.control
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.pattern.ask
-import akka.remote.Ack
 import akka.testkit.{TestKit, TestProbe}
 import edu.uci.ics.amber.engine.architecture.control.utils.ChainHandler.Chain
 import edu.uci.ics.amber.engine.architecture.control.utils.CollectHandler.Collect
@@ -13,9 +11,18 @@ import edu.uci.ics.amber.engine.architecture.control.utils.PingPongHandler.Ping
 import edu.uci.ics.amber.engine.architecture.control.utils.RecursionHandler.Recursion
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{GetActorRef, NetworkAck, NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage,
+  RegisterActorRef
+}
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ReturnInvocation, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlInvocation,
+  ReturnInvocation,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
@@ -83,8 +90,7 @@ class TrivialControlSpec
         NetworkMessage(
           seqNum,
           WorkflowFIFOMessage(
-            ChannelEndpointID(CONTROLLER,
-            false),
+            ChannelEndpointID(CONTROLLER, false),
             seqNum,
             ControlInvocation(seqNum, evt)
           )

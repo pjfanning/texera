@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.common
 
-import akka.serialization.Serialization
 import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 

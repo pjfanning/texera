@@ -2,7 +2,6 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
-import edu.uci.ics.amber.engine.architecture.scheduling.{PipelinedRegion, PipelinedRegionIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.toOperatorIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   LayerIdentity,
@@ -37,7 +36,8 @@ case class PhysicalPlan(
     pipelinedRegionPlan: PipelinedRegionPlan = PipelinedRegionPlan()
 ) {
 
-  @transient lazy val operatorMap: Map[LayerIdentity, OpExecConfig] = operators.map(o => (o.id, o)).toMap
+  @transient lazy val operatorMap: Map[LayerIdentity, OpExecConfig] =
+    operators.map(o => (o.id, o)).toMap
 
   @transient lazy val dag: DirectedAcyclicGraph[LayerIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[LayerIdentity, DefaultEdge](classOf[DefaultEdge])

@@ -1,27 +1,39 @@
 package edu.uci.ics.amber.engine.common.client
 
-import akka.actor.{Actor, ActorRef, Cancellable, PoisonPill}
+import akka.actor.{Actor, ActorRef, PoisonPill}
 import akka.pattern.StatusReply.Ack
-import akka.pattern.ask
-import akka.util.Timeout
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{NetworkAck, NetworkMessage}
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation, WorkflowClientMessage, WorkflowFIFOMessage}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{CommandRequest, ExecuteRequest, InitializeRequest, ObservableRequest}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
+  NetworkAck,
+  NetworkMessage
+}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlInvocation,
+  ReturnInvocation,
+  WorkflowClientMessage,
+  WorkflowFIFOMessage
+}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{
+  CommandRequest,
+  ExecuteRequest,
+  InitializeRequest,
+  ObservableRequest
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 
-import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
 
 // TODO: Rename or refactor it since it has mixed duties (send/receive messages, execute callbacks)
 private[client] object ClientActor {
-  case class InitializeRequest(workflowAndPipelinedRegionPlan: (Workflow,PipelinedRegionPlan), controllerConfig: ControllerConfig)
+  case class InitializeRequest(
+      workflowAndPipelinedRegionPlan: (Workflow, PipelinedRegionPlan),
+      controllerConfig: ControllerConfig
+  )
   case class ObservableRequest(pf: PartialFunction[Any, Unit])
   case class CommandRequest(command: ControlCommand[_], promise: Promise[Any])
-  case class ExecuteRequest(closure:(ClientActor) => Unit)
+  case class ExecuteRequest(closure: (ClientActor) => Unit)
 }
 
 private[client] class ClientActor extends Actor {
@@ -35,11 +47,12 @@ private[client] class ClientActor extends Actor {
       if (controller != null) {
         controller ! PoisonPill
       }
-      controller = context.actorOf(Controller.props(workflow,pipelinedPlan, controllerConfig, null))
+      controller =
+        context.actorOf(Controller.props(workflow, pipelinedPlan, controllerConfig, null))
       sender ! Ack
     case NetworkMessage(mId, WorkflowClientMessage(payload)) =>
       sender ! NetworkAck(mId)
-      if(handlers.isDefinedAt(payload)){
+      if (handlers.isDefinedAt(payload)) {
         handlers(payload)
       }
     case ExecuteRequest(closure) =>

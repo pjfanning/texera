@@ -6,9 +6,19 @@ import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalPlan, OperatorLink, OperatorPort, PipelinedRegionPlan, WorkflowCompiler}
+import edu.uci.ics.texera.workflow.common.workflow.{
+  BreakpointInfo,
+  LogicalPlan,
+  OperatorLink,
+  OperatorPort,
+  PipelinedRegionPlan,
+  WorkflowCompiler
+}
 import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
-import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.python.{
+  DualInputPortsPythonUDFOpDescV2,
+  PythonUDFOpDescV2
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 

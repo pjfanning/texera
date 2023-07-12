@@ -1,15 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{
-  ControlCommand,
-  SkipReply
-}
-
-import java.util.concurrent.CompletableFuture
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
 
 object ShutdownDPHandler {
 //  final case class ShutdownDP(reason: Option[Throwable], completion: CompletableFuture[Unit])

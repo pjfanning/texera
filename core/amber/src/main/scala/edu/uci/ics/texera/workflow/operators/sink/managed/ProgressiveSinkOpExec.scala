@@ -1,14 +1,13 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.{CheckpointSupport, ISinkOperatorExecutor, InputExhausted}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 import edu.uci.ics.texera.workflow.common.{IncrementalOutputMode, ProgressiveUtils}
-import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
-
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageWriter
 
 class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,

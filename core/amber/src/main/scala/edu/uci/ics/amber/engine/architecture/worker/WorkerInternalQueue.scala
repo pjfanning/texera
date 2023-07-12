@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue._
 import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DPMessage}
 import edu.uci.ics.amber.engine.common.lbmq.{LinkedBlockingMultiQueue, LinkedBlockingSubQueue}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -15,16 +15,18 @@ object WorkerInternalQueue {
   final val CONTROL_QUEUE_PRIORITY = 1
   final val THREAD_SYNC_PRIORITY = 0
   // not covered by fault-tolerance layer
-  case object ThreadSyncChannelID extends ChannelEndpointID(ActorVirtualIdentity("DP-Main Sync"), true)
+  case object ThreadSyncChannelID
+      extends ChannelEndpointID(ActorVirtualIdentity("DP-Main Sync"), true)
 
-  def getPriority(channelEndpointID: ChannelEndpointID): Int ={
-    if(channelEndpointID.isControlChannel){CONTROL_QUEUE_PRIORITY}else{DATA_QUEUE_PRIORITY}
+  def getPriority(channelEndpointID: ChannelEndpointID): Int = {
+    if (channelEndpointID.isControlChannel) { CONTROL_QUEUE_PRIORITY }
+    else { DATA_QUEUE_PRIORITY }
   }
 
-  def transferContent(from :WorkerInternalQueue, to:WorkerInternalQueue): Unit = {
-    from.getAllMessages.foreach{
+  def transferContent(from: WorkerInternalQueue, to: WorkerInternalQueue): Unit = {
+    from.getAllMessages.foreach {
       case (channel, messages) =>
-          messages.foreach(to.enqueuePayload)
+        messages.foreach(to.enqueuePayload)
     }
   }
 
@@ -32,15 +34,15 @@ object WorkerInternalQueue {
 
 abstract class WorkerInternalQueue extends Serializable {
 
-  def enableAllDataQueue(enable:Boolean):Unit
+  def enableAllDataQueue(enable: Boolean): Unit
 
   def enableDataQueue(channelEndpointID: ChannelEndpointID, enable: Boolean): Unit
 
-  def enqueuePayload(message:DPMessage): Unit
+  def enqueuePayload(message: DPMessage): Unit
 
-  def peek(dp:DataProcessor): Option[DPMessage]
+  def peek(dp: DataProcessor): Option[DPMessage]
 
-  def take(dp:DataProcessor): DPMessage
+  def take(dp: DataProcessor): DPMessage
 
   def getDataQueueLength: Int
 
@@ -48,9 +50,9 @@ abstract class WorkerInternalQueue extends Serializable {
 
   def getQueuedMessageCount(channelEndpointID: ChannelEndpointID): Int
 
-  def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]]
+  def getAllMessages: Map[ChannelEndpointID, Iterable[DPMessage]]
 
-  def addSubQueue(channel:ChannelEndpointID):LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]
+  def addSubQueue(channel: ChannelEndpointID): LinkedBlockingSubQueue[ChannelEndpointID, DPMessage]
 
 }
 
@@ -60,46 +62,44 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
 
   lbmq.addSubQueue(ThreadSyncChannelID, THREAD_SYNC_PRIORITY)
 
-  override def getAllMessages:Map[ChannelEndpointID, Iterable[DPMessage]] = {
+  override def getAllMessages: Map[ChannelEndpointID, Iterable[DPMessage]] = {
     val result = mutable.HashMap[ChannelEndpointID, mutable.Queue[DPMessage]]()
-    lbmq.priorityGroups.forEach{
-      g =>
-        g.queues.forEach{
-          q =>
-            val newQ = new mutable.Queue[DPMessage]()
-            q.iterator.forEachRemaining(dp => newQ.enqueue(dp))
-            result(q.key) = newQ
-        }
+    lbmq.priorityGroups.forEach { g =>
+      g.queues.forEach { q =>
+        val newQ = new mutable.Queue[DPMessage]()
+        q.iterator.forEachRemaining(dp => newQ.enqueue(dp))
+        result(q.key) = newQ
+      }
     }
     result.toMap
   }
 
-  override def enqueuePayload(message:DPMessage): Unit = {
+  override def enqueuePayload(message: DPMessage): Unit = {
     val subQueue = lbmq.getSubQueue(message.channel)
-    if(subQueue == null){
+    if (subQueue == null) {
       addSubQueue(message.channel).add(message)
-    }else{
+    } else {
       subQueue.add(message)
     }
-    if(!message.channel.isControlChannel) {
+    if (!message.channel.isControlChannel) {
       creditMonitor.decreaseCredit(message.channel.endpointWorker)
     }
   }
 
-  override def peek(dp:DataProcessor): Option[DPMessage] = {
+  override def peek(dp: DataProcessor): Option[DPMessage] = {
     Option(lbmq.peek())
   }
 
-  override def take(dp:DataProcessor): DPMessage = {
+  override def take(dp: DataProcessor): DPMessage = {
     lbmq.take()
   }
 
   override def getDataQueueLength: Int = {
     var result = 0
-    lbmq.priorityGroups.forEach{
-      group => if(group.priority == DATA_QUEUE_PRIORITY){
-        group.queues.forEach{
-          q => result += q.size
+    lbmq.priorityGroups.forEach { group =>
+      if (group.priority == DATA_QUEUE_PRIORITY) {
+        group.queues.forEach { q =>
+          result += q.size
         }
       }
     }
@@ -108,10 +108,10 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
 
   override def getControlQueueLength: Int = {
     var result = 0
-    lbmq.priorityGroups.forEach{
-      group => if(group.priority == CONTROL_QUEUE_PRIORITY){
-        group.queues.forEach{
-          q => result += q.size
+    lbmq.priorityGroups.forEach { group =>
+      if (group.priority == CONTROL_QUEUE_PRIORITY) {
+        group.queues.forEach { q =>
+          result += q.size
         }
       }
     }
@@ -123,10 +123,10 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
   }
 
   override def enableAllDataQueue(enable: Boolean): Unit = {
-    lbmq.priorityGroups.forEach{
-      group => if(group.priority == DATA_QUEUE_PRIORITY){
-        group.queues.forEach{
-          q => q.enable(enable)
+    lbmq.priorityGroups.forEach { group =>
+      if (group.priority == DATA_QUEUE_PRIORITY) {
+        group.queues.forEach { q =>
+          q.enable(enable)
         }
       }
     }
@@ -134,18 +134,20 @@ class WorkerInternalQueueImpl(@transient creditMonitor: CreditMonitor) extends W
 
   override def getQueuedMessageCount(channelEndpointID: ChannelEndpointID): Int = {
     val subQueue = lbmq.getSubQueue(channelEndpointID)
-    if(subQueue == null){
+    if (subQueue == null) {
       0
-    }else{
+    } else {
       subQueue.size
     }
   }
 
-  override def addSubQueue(channel: ChannelEndpointID): LinkedBlockingSubQueue[ChannelEndpointID, DPMessage] = {
+  override def addSubQueue(
+      channel: ChannelEndpointID
+  ): LinkedBlockingSubQueue[ChannelEndpointID, DPMessage] = {
     val priority =
-      if(channel.isControlChannel){
+      if (channel.isControlChannel) {
         CONTROL_QUEUE_PRIORITY
-      }else{
+      } else {
         DATA_QUEUE_PRIORITY
       }
     lbmq.addSubQueue(channel, priority)

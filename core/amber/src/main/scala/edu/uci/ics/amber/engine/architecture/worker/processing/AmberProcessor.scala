@@ -2,29 +2,35 @@ package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.common.{WorkflowActor, WorkflowActorService}
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
-import edu.uci.ics.amber.engine.architecture.logging.{ChannelStepCursor, DeterminantLogger, LogManager}
+import edu.uci.ics.amber.engine.architecture.logging.{
+  ChannelStepCursor,
+  DeterminantLogger,
+  LogManager
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, ControlPayload, ReturnInvocation, WorkflowFIFOMessage, WorkflowFIFOMessagePayload, WorkflowExecutionPayload, WorkflowMessage}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.SkipConsoleLog
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlInvocation,
+  ControlPayload,
+  ReturnInvocation,
+  WorkflowExecutionPayload,
+  WorkflowMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import scala.collection.mutable
-
-
-class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
-  with Serializable {
+class AmberProcessor(@transient var actor: WorkflowActor) extends AmberLogging with Serializable {
 
   override def actorId: ActorVirtualIdentity = actor.actorId
 
   def logManager: LogManager = actor.logManager
 
-  def actorService:WorkflowActorService = actor.actorService
+  def actorService: WorkflowActorService = actor.actorService
 
   def determinantLogger: DeterminantLogger = actor.determinantLogger
 
-  def initAP(actor:WorkflowActor): Unit ={
+  def initAP(actor: WorkflowActor): Unit = {
     this.actor = actor
   }
 
@@ -39,7 +45,10 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
 
   var cursor = new ChannelStepCursor()
 
-  def doFaultTolerantProcessing(channelEndpointID: ChannelEndpointID, payload:WorkflowExecutionPayload)(code: => Unit): Unit ={
+  def doFaultTolerantProcessing(
+      channelEndpointID: ChannelEndpointID,
+      payload: WorkflowExecutionPayload
+  )(code: => Unit): Unit = {
     determinantLogger.setCurrentSenderWithPayload(channelEndpointID, cursor.getStep, payload)
     determinantLogger.enableOutputCommit(true)
     cursor.setCurrentChannel(channelEndpointID)
@@ -49,24 +58,24 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
   }
 
   def outputPayload(
-                     to: ActorVirtualIdentity,
-                     msg:WorkflowMessage
-                   ): Unit = {
+      to: ActorVirtualIdentity,
+      msg: WorkflowMessage
+  ): Unit = {
     logManager.sendCommitted(SendRequest(to, msg), cursor.getStep)
   }
 
   def processControlPayload(
-                             channel:ChannelEndpointID,
-                             payload: ControlPayload
-                           ): Unit = {
+      channel: ChannelEndpointID,
+      payload: ControlPayload
+  ): Unit = {
     // logger.info(s"process control $payload at step $totalValidStep")
-    doFaultTolerantProcessing(channel, payload){
+    doFaultTolerantProcessing(channel, payload) {
       payload match {
         case invocation: ControlInvocation =>
           //if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
-            logger.info(
-              s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${cursor.getStep})"
-            )
+          logger.info(
+            s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${cursor.getStep})"
+          )
           //}
           asyncRPCServer.receive(invocation, channel.endpointWorker)
         case ret: ReturnInvocation =>
@@ -75,7 +84,5 @@ class AmberProcessor(@transient var actor:WorkflowActor) extends AmberLogging
       }
     }
   }
-
-
 
 }

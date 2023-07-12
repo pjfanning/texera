@@ -1,26 +1,42 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
-import akka.actor.ActorContext
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort, OutputManager}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkflowWorker}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING, UNINITIALIZED}
-import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING
+}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{
+  DPOutputIterator,
+  FinalizeLink,
+  FinalizeOperator
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, DataFrame, DataPayload, EndOfUpstream, EpochMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  EpochMarker
+}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_ACTOR, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
-import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import scala.collection.mutable
@@ -62,16 +78,21 @@ object DataProcessor {
 
 }
 
-class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor(worker)
+class DataProcessor(@transient var worker: WorkflowWorker)
+    extends AmberProcessor(worker)
     with Serializable {
 
   // outer dependencies
   def operator: IOperatorExecutor = worker.operator
-  def internalQueue:WorkerInternalQueue = worker.internalQueue
-  def dpThread:DPThread = worker.dpThread
-  def ordinalMapping:OrdinalMapping = worker.ordinalMapping
+  def internalQueue: WorkerInternalQueue = worker.internalQueue
+  def dpThread: DPThread = worker.dpThread
+  def ordinalMapping: OrdinalMapping = worker.ordinalMapping
+  def opExecConfig: OpExecConfig = worker.opExecConf
 
-  def initDP(worker:WorkflowWorker, currentOutputIterator: Iterator[(ITuple, Option[Int])]): Unit = {
+  def initDP(
+      worker: WorkflowWorker,
+      currentOutputIterator: Iterator[(ITuple, Option[Int])]
+  ): Unit = {
     initAP(worker)
     this.worker = worker
     this.outputIterator.setTupleOutput(currentOutputIterator)
@@ -87,7 +108,9 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
   // 4. pause manager
   private[processing] val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
-  private[processing] val breakpointManager: BreakpointManager = new BreakpointManager(asyncRPCClient)
+  private[processing] val breakpointManager: BreakpointManager = new BreakpointManager(
+    asyncRPCClient
+  )
   // 6. upstream links
   private[processing] val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
   // 7. state manager
@@ -107,7 +130,7 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
   protected var inputTupleCount = 0L
   protected var outputTupleCount = 0L
 
-  var operatorOpened:Boolean = false
+  var operatorOpened: Boolean = false
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
     internalQueue.addSubQueue(ChannelEndpointID(identifier, false))
@@ -131,17 +154,17 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
 
   @transient private var needResumeAdaptiveBatching = false
 
-  def onInterrupt(): Unit ={
-    needResumeAdaptiveBatching = outputManager.adaptiveBatchingMonitor.adaptiveBatchingHandle.isDefined
+  def onInterrupt(): Unit = {
+    needResumeAdaptiveBatching =
+      outputManager.adaptiveBatchingMonitor.adaptiveBatchingHandle.isDefined
     outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
   }
 
-  def onContinue(): Unit ={
-    if(needResumeAdaptiveBatching){
+  def onContinue(): Unit = {
+    if (needResumeAdaptiveBatching) {
       outputManager.adaptiveBatchingMonitor.enableAdaptiveBatching(actorService)
     }
   }
-
 
   /** provide API for actor to get stats of this operator
     *
@@ -201,14 +224,16 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
-        logger.info(s"$operator completed at step = ${cursor.getStep} outputted = $outputTupleCount")
+        logger.info(
+          s"$operator completed at step = ${cursor.getStep} outputted = $outputTupleCount"
+        )
         operator.close() // close operator
         outputManager.adaptiveBatchingMonitor.pauseAdaptiveBatching()
         stateManager.transitTo(COMPLETED)
         asyncRPCClient.send(WorkerExecutionCompleted(cursor.getStep), CONTROLLER)
       case FinalizeLink(link) =>
         logger.info(s"process FinalizeLink message at step = ${cursor.getStep}")
-        if(link != null && link.from != SOURCE_STARTER_OP){
+        if (link != null && link.from != SOURCE_STARTER_OP) {
           asyncRPCClient.send(LinkCompleted(link), CONTROLLER)
         }
       case _ =>
@@ -225,12 +250,12 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
     }
   }
 
-  def hasUnfinishedInput: Boolean = inputBatch != null && currentInputIdx+1 < inputBatch.length
+  def hasUnfinishedInput: Boolean = inputBatch != null && currentInputIdx + 1 < inputBatch.length
 
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
-  def continueDataProcessing(): Unit ={
-    doFaultTolerantProcessing(currentBatchChannel, null){
+  def continueDataProcessing(): Unit = {
+    doFaultTolerantProcessing(currentBatchChannel, null) {
       if (hasUnfinishedOutput) {
         outputOneTuple()
       } else {
@@ -240,35 +265,39 @@ class DataProcessor(@transient var worker:WorkflowWorker) extends AmberProcessor
     }
   }
 
-  private[this] def initBatch(channel:ChannelEndpointID, batch:Array[ITuple]): Unit ={
+  private[this] def initBatch(channel: ChannelEndpointID, batch: Array[ITuple]): Unit = {
     currentBatchChannel = channel
     inputBatch = batch
     currentInputIdx = 0
   }
 
   private[processing] def getCurrentInputTuple: ITuple = {
-    if(inputBatch == null){
+    if (inputBatch == null) {
       null
-    }else if(inputBatch.isEmpty) {
+    } else if (inputBatch.isEmpty) {
       ITuple("Input Exhausted")
-    }else {
+    } else {
       inputBatch(currentInputIdx)
     }
   }
 
   def processDataPayload(
-      channel:ChannelEndpointID,
+      channel: ChannelEndpointID,
       dataPayload: DataPayload
   ): Unit = {
-    doFaultTolerantProcessing(channel, dataPayload){
+    doFaultTolerantProcessing(channel, dataPayload) {
       dataPayload match {
         case DataFrame(tuples) =>
-          stateManager.conditionalTransitTo(READY, RUNNING, ()=> {
-            asyncRPCClient.send(
-              WorkerStateUpdated(stateManager.getCurrentState),
-              CONTROLLER
-            )
-          })
+          stateManager.conditionalTransitTo(
+            READY,
+            RUNNING,
+            () => {
+              asyncRPCClient.send(
+                WorkerStateUpdated(stateManager.getCurrentState),
+                CONTROLLER
+              )
+            }
+          )
           initBatch(channel, tuples)
           processInputTuple(Left(inputBatch(currentInputIdx)))
         case EndOfUpstream() =>

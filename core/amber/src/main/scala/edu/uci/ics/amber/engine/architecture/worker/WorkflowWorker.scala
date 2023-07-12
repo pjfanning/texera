@@ -6,14 +6,26 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ThreadSyncChannelID
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{DPSynchronized, SyncAction, getWorkerLogName}
-import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  DPSynchronized,
+  SyncAction,
+  getWorkerLogName
+}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{
+  DPThread,
+  DataProcessor,
+  WorkerInternalPayloadManager
+}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID, DPMessage, StartSync, WorkflowExecutionPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  DPMessage,
+  StartSync,
+  WorkflowExecutionPayload
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import java.util
 import java.util.concurrent.LinkedBlockingQueue
 
 object WorkflowWorker {
@@ -43,13 +55,13 @@ object WorkflowWorker {
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
-    workerLayer: OpExecConfig,
+    val opExecConf: OpExecConfig,
     parentNetworkCommunicationActorRef: ActorRef
 ) extends WorkflowActor(actorId, parentNetworkCommunicationActorRef) {
 
   // variables unrelated to physical states
-  val ordinalMapping: OrdinalMapping = workerLayer.ordinalMapping
-  var operator: IOperatorExecutor = workerLayer.initIOperatorExecutor((workerIndex, workerLayer))
+  val ordinalMapping: OrdinalMapping = opExecConf.ordinalMapping
+  var operator: IOperatorExecutor = opExecConf.initIOperatorExecutor((workerIndex, opExecConf))
   val creditMonitor = new CreditMonitorImpl()
 
   var dataProcessor: DataProcessor = new DataProcessor(this)
@@ -61,7 +73,7 @@ class WorkflowWorker(
   override def initState(): Unit = {
     dataProcessor.initDP(
       this,
-      Iterator.empty,
+      Iterator.empty
     )
     dpThread = new DPThread(actorId, dataProcessor, internalQueue, this)
     dpThread.start()
@@ -70,12 +82,11 @@ class WorkflowWorker(
 
   override def getLogName: String = getWorkerLogName(actorId)
 
-  override def getSenderCredits(actorVirtualIdentity: ActorVirtualIdentity):Int = {
+  override def getSenderCredits(actorVirtualIdentity: ActorVirtualIdentity): Int = {
     creditMonitor.getSenderCredits(actorVirtualIdentity)
   }
 
-
-  def replaceRecoveryQueue(): Unit ={
+  def replaceRecoveryQueue(): Unit = {
     logger.info("replace recovery queue with normal queue")
     val newQueue = new WorkerInternalQueueImpl(creditMonitor)
     WorkerInternalQueue.transferContent(internalQueue, newQueue)
@@ -84,16 +95,15 @@ class WorkflowWorker(
     logger.info("replace queue done!")
   }
 
-
-  def doSyncActionsAndUnBlockDP(): Unit ={
-    while(!syncActions.isEmpty){
+  def doSyncActionsAndUnBlockDP(): Unit = {
+    while (!syncActions.isEmpty) {
       // DP paused, do action in a single-threaded manner
       syncActions.take().action()
     }
     dpThread.blockingFuture.complete(Unit)
   }
 
-  def waitingForSync:Receive = {
+  def waitingForSync: Receive = {
     case DPSynchronized() =>
       doSyncActionsAndUnBlockDP()
       context.become(receive)
@@ -102,7 +112,7 @@ class WorkflowWorker(
       stash()
   }
 
-   override def receive: Receive =
+  override def receive: Receive =
     super.receive orElse {
       case DPSynchronized() =>
         doSyncActionsAndUnBlockDP()
@@ -110,7 +120,10 @@ class WorkflowWorker(
         throw new WorkflowRuntimeException(s"unhandled message: $other")
     }
 
-  override def handlePayload(channelId: ChannelEndpointID, payload: WorkflowExecutionPayload): Unit = {
+  override def handlePayload(
+      channelId: ChannelEndpointID,
+      payload: WorkflowExecutionPayload
+  ): Unit = {
     internalQueue.enqueuePayload(DPMessage(channelId, payload))
   }
 
@@ -131,6 +144,8 @@ class WorkflowWorker(
     logger.info("stopped!")
   }
 
-  override val internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(this)
+  override val internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(
+    this
+  )
 
 }

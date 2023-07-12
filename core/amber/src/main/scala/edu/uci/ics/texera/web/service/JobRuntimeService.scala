@@ -1,14 +1,26 @@
 package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowAdditionalOperatorInfoEvent, WorkflowCheckpointedEvent, WorkflowExecutionErrorEvent, WorkflowInteractionHistoryEvent, WorkflowReplayCompletedEvent, WorkflowStateEvent}
-import edu.uci.ics.texera.web.model.websocket.request.{ SkipTupleRequest, WorkflowAdditionalOperatorInfoRequest, WorkflowCheckpointRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowReplayRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  WorkflowAdditionalOperatorInfoEvent,
+  WorkflowExecutionErrorEvent,
+  WorkflowInteractionHistoryEvent,
+  WorkflowReplayCompletedEvent,
+  WorkflowStateEvent
+}
+import edu.uci.ics.texera.web.model.websocket.request.{
+  SkipTupleRequest,
+  WorkflowKillRequest,
+  WorkflowPauseRequest,
+  WorkflowReplayRequest,
+  WorkflowResumeRequest
+}
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
@@ -49,12 +61,22 @@ class JobRuntimeService(
       if (newState.error != oldState.error && newState.error != null) {
         outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
       }
-      if(newState.replayElapsed != oldState.replayElapsed || newState.checkpointElapsed != oldState.checkpointElapsed){
-        outputEvts.append(WorkflowReplayCompletedEvent(newState.replayElapsed, newState.checkpointElapsed))
+      if (
+        newState.replayElapsed != oldState.replayElapsed || newState.checkpointElapsed != oldState.checkpointElapsed
+      ) {
+        outputEvts.append(
+          WorkflowReplayCompletedEvent(newState.replayElapsed, newState.checkpointElapsed)
+        )
       }
       if (newState.needRefreshReplayState != oldState.needRefreshReplayState) {
         val interactions = planner.history.getInteractionIdxes
-        outputEvts.append(WorkflowInteractionHistoryEvent(planner.history.historyArray.map(_.toInt), planner.history.historyArray.indices.map(interactions.contains), planner.history.getSnapshotStatus))
+        outputEvts.append(
+          WorkflowInteractionHistoryEvent(
+            planner.history.historyArray.map(_.toInt),
+            planner.history.historyArray.indices.map(interactions.contains),
+            planner.history.getSnapshotStatus
+          )
+        )
       }
       if (newState.operatorInfoStr != oldState.operatorInfoStr) {
         outputEvts.append(WorkflowAdditionalOperatorInfoEvent(newState.operatorInfoStr))
@@ -66,7 +88,6 @@ class JobRuntimeService(
   addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
     planner.scheduleReplay(req)
   }))
-
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {

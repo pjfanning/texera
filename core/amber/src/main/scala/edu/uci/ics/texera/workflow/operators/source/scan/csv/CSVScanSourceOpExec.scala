@@ -1,8 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
-import akka.serialization.Serialization
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
-import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.common.CheckpointSupport
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor

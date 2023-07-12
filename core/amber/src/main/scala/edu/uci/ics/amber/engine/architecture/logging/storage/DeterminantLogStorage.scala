@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.logging.storage
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.engine.architecture.logging.InMemDeterminant
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{DeterminantLogReader, DeterminantLogWriter}
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{
+  DeterminantLogReader,
+  DeterminantLogWriter
+}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation}
@@ -83,7 +86,6 @@ object DeterminantLogStorage {
     }
 
   }
-
 
   def getLogStorage(enabledLogging: Boolean, name: String): DeterminantLogStorage = {
     val storageType: String =

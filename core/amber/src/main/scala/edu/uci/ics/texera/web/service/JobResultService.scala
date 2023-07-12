@@ -7,7 +7,11 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  PaginatedResultEvent,
+  TexeraWebSocketEvent,
+  WebResultUpdateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.web.storage.{JobStateStore, WorkflowStateStore}
@@ -151,7 +155,7 @@ class JobResultService(
             }
           } else {
             if (resultUpdateCancellable != null) resultUpdateCancellable.cancel()
-            if (newState.state == COMPLETED){
+            if (newState.state == COMPLETED) {
               if (resultUpdateCancellable.cancel() || resultUpdateCancellable.isCancelled) {
                 // immediately perform final update
                 onResultUpdate()

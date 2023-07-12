@@ -1,9 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue._
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, ControlPayloadV2, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlPayload,
+  ControlPayloadV2,
+  DataPayload
+}
 import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 object WorkerBatchInternalQueue {
   final val DATA_QUEUE = 1
   final val CONTROL_QUEUE = 0
@@ -11,13 +15,13 @@ object WorkerBatchInternalQueue {
   // 4 kinds of elements can be accepted by internal queue
   sealed trait InternalQueueElement
 
-  case class DataElement(dataPayload: DataPayload, channelID:ChannelEndpointID)
+  case class DataElement(dataPayload: DataPayload, channelID: ChannelEndpointID)
       extends InternalQueueElement
 
-  case class ControlElement(cmd: ControlPayload, channelID:ChannelEndpointID)
+  case class ControlElement(cmd: ControlPayload, channelID: ChannelEndpointID)
       extends InternalQueueElement
 
-  case class ControlElementV2(cmd: ControlPayloadV2, channelID:ChannelEndpointID)
+  case class ControlElementV2(cmd: ControlPayloadV2, channelID: ChannelEndpointID)
       extends InternalQueueElement
 }
 
@@ -42,10 +46,10 @@ trait WorkerBatchInternalQueue {
     dataQueue.add(elem)
   }
 
-  def enqueueCommand(cmd: ControlPayload, channelId:ChannelEndpointID): Unit = {
+  def enqueueCommand(cmd: ControlPayload, channelId: ChannelEndpointID): Unit = {
     controlQueue.add(ControlElement(cmd, channelId))
   }
-  def enqueueCommand(cmd: ControlPayloadV2, channelId:ChannelEndpointID): Unit = {
+  def enqueueCommand(cmd: ControlPayloadV2, channelId: ChannelEndpointID): Unit = {
     controlQueue.add(ControlElementV2(cmd, channelId))
   }
 

@@ -1,15 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
 
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{
-  WorkflowStateUpdate,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowStateUpdate
 import StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
-
-import scala.collection.mutable
 
 object StartWorkflowHandler {
   final case class StartWorkflow() extends ControlCommand[Unit]

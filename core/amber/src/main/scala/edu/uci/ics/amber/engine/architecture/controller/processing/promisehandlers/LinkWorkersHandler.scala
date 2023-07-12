@@ -28,10 +28,9 @@ trait LinkWorkersHandler {
       val futures = cp.workflow.getLink(msg.link).getPartitioning.flatMap {
         case (from, link, partitioning, tos) =>
           // send messages to sender worker and receiver workers
-          tos.foreach{
-            worker =>
-              // add upstream
-              opExecution.getWorkerInfo(worker).upstreamChannels.add(ChannelEndpointID(from, false))
+          tos.foreach { worker =>
+            // add upstream
+            opExecution.getWorkerInfo(worker).upstreamChannels.add(ChannelEndpointID(from, false))
           }
           Seq(send(AddPartitioning(link, partitioning), from)) ++ tos.map(
             send(UpdateInputLinking(from, msg.link), _)

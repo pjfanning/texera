@@ -8,7 +8,9 @@ import scala.collection.JavaConverters.asScalaIterator
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{asScalaIteratorConverter, iterableAsScalaIterableConverter}
 
-case class PipelinedRegionPlan(pipelinedRegionsDAG: DirectedAcyclicGraph[PipelinedRegion, DefaultEdge] = null) {
+case class PipelinedRegionPlan(
+    pipelinedRegionsDAG: DirectedAcyclicGraph[PipelinedRegion, DefaultEdge] = null
+) {
 
   lazy private val pipelinedRegionMap = pipelinedRegionsDAG.asScala.map(x => x.id -> x).toMap
 
@@ -16,7 +18,7 @@ case class PipelinedRegionPlan(pipelinedRegionsDAG: DirectedAcyclicGraph[Pipelin
     asScalaIterator(pipelinedRegionsDAG.iterator()).toList
   }
 
-  def getRegionScheduleOrder(): mutable.Buffer[PipelinedRegionIdentity] ={
+  def getRegionScheduleOrder(): mutable.Buffer[PipelinedRegionIdentity] = {
     new TopologicalOrderIterator(pipelinedRegionsDAG).asScala.map(_.id).toBuffer
   }
 

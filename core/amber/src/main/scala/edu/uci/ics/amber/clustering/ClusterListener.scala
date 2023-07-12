@@ -4,7 +4,7 @@ import akka.actor.{Actor, Address}
 import akka.cluster.ClusterEvent._
 import akka.cluster.Cluster
 import com.twitter.util.{Await, Future}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.texera.web.service.WorkflowService
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{ABORTED, COMPLETED}

@@ -12,20 +12,19 @@ trait WorkflowExecutionPayload extends WorkflowFIFOMessagePayload with WorkflowD
 sealed trait AmberInternalPayload extends WorkflowFIFOMessagePayload
 
 trait IdempotentInternalPayload extends AmberInternalPayload
-trait OneTimeInternalPayload extends AmberInternalPayload{
-  val id:String
+trait OneTimeInternalPayload extends AmberInternalPayload {
+  val id: String
 }
-trait MarkerAlignmentInternalPayload extends AmberInternalPayload{
-  val id:String
-  val alignmentMap:Map[ActorVirtualIdentity,Set[ChannelEndpointID]]
-}
-
-trait MarkerCollectionSupport{
-  def onReceiveMarker(channel:ChannelEndpointID):Unit
-  def onReceivePayload(channel:ChannelEndpointID, p: WorkflowFIFOMessagePayload):Unit
-  def isNoLongerPending:Boolean
+trait MarkerAlignmentInternalPayload extends AmberInternalPayload {
+  val id: String
+  val alignmentMap: Map[ActorVirtualIdentity, Set[ChannelEndpointID]]
 }
 
+trait MarkerCollectionSupport {
+  def onReceiveMarker(channel: ChannelEndpointID): Unit
+  def onReceivePayload(channel: ChannelEndpointID, p: WorkflowFIFOMessagePayload): Unit
+  def isNoLongerPending: Boolean
+}
 
 class NeverCompleteMarkerCollection extends MarkerCollectionSupport {
   def onReceiveMarker(channel: ChannelEndpointID): Unit = {}

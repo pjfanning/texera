@@ -6,10 +6,9 @@ import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlExcept
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
-import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
 import scala.collection.mutable
 
@@ -32,8 +31,8 @@ import scala.collection.mutable
   * (web server, actor that handles control command)
   */
 class AsyncRPCClient(
-                      controlOutputEndpoint: NetworkOutputPort,
-                      val actorId: ActorVirtualIdentity
+    controlOutputEndpoint: NetworkOutputPort,
+    val actorId: ActorVirtualIdentity
 ) extends AmberLogging
     with Serializable {
 
@@ -55,7 +54,6 @@ class AsyncRPCClient(
   def send[T](cmd: ControlCommand[T] with SkipReply, to: ActorVirtualIdentity): Unit = {
     controlOutputEndpoint.sendTo(to, ControlInvocation(cmd))
   }
-
 
   def sendToClient(cmd: ClientEvent): Unit = {
     controlOutputEndpoint.sendToClient(cmd)

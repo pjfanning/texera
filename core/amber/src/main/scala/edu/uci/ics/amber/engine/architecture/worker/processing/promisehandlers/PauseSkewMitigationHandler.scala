@@ -3,11 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners.ReshapePartitioner
 import PauseSkewMitigationHandler.PauseSkewMitigation
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 

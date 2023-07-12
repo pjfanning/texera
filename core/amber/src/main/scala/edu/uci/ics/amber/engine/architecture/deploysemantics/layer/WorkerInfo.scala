@@ -9,9 +9,9 @@ import scala.collection.mutable
 
 // TODO: remove redundant info
 case class WorkerInfo(
-                       id: ActorVirtualIdentity,
-                       var state: WorkerState,
-                       var stats: WorkerStatistics,
-                       upstreamChannels: mutable.HashSet[ChannelEndpointID],
-                       @transient var ref: ActorRef
+    id: ActorVirtualIdentity,
+    var state: WorkerState,
+    var stats: WorkerStatistics,
+    upstreamChannels: mutable.HashSet[ChannelEndpointID],
+    @transient var ref: ActorRef
 )

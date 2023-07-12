@@ -1,14 +1,24 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import akka.actor.{ActorContext, Cancellable}
+import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActorService
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
+  getBatchSize,
+  toPartitioner
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.FlushNetworkBufferHandler.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.Constants.{adaptiveBufferingTimeoutMs, enableAdaptiveNetworkBuffering}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlInvocation, DataPayload, EpochMarker, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.Constants.{
+  adaptiveBufferingTimeoutMs,
+  enableAdaptiveNetworkBuffering
+}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlInvocation,
+  EpochMarker
+}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
@@ -135,7 +145,7 @@ class OutputManager(
 class AdaptiveBatchingMonitor extends Serializable {
   var adaptiveBatchingHandle: Option[Cancellable] = None
 
-  def enableAdaptiveBatching(service:WorkflowActorService): Unit = {
+  def enableAdaptiveBatching(service: WorkflowActorService): Unit = {
     if (!enableAdaptiveNetworkBuffering) {
       return
     }

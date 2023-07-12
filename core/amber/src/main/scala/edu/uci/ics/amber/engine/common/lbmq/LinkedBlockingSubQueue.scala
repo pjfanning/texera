@@ -1,18 +1,20 @@
 package edu.uci.ics.amber.engine.common.lbmq
 
 import java.util
-import java.util.{Iterator, NoSuchElementException}
+import java.util.NoSuchElementException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.{Condition, ReentrantLock}
 
-class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
-                                                    val capacity: Int,
-                                                    totalCount: AtomicInteger,
-                                                    takeLock: ReentrantLock,
-                                                    notEmpty: Condition) extends Serializable {
+class LinkedBlockingSubQueue[K, E >: Null <: AnyRef](
+    val key: K,
+    val capacity: Int,
+    totalCount: AtomicInteger,
+    takeLock: ReentrantLock,
+    notEmpty: Condition
+) extends Serializable {
 
-  if(capacity <= 0){
+  if (capacity <= 0) {
     throw new IllegalArgumentException("capacity must > 0")
   }
 
@@ -46,7 +48,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     try {
       var h: MultiQueueNode[E] = head
       var p: MultiQueueNode[E] = h.next
-      while ( {
+      while ({
         p != null
       }) {
         h.next = h
@@ -81,8 +83,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
           totalCount.getAndAdd(c)
           notEmpty.signal()
         }
-      }
-      else totalCount.getAndAdd(-count.get)
+      } else totalCount.getAndAdd(-count.get)
     } finally fullyUnlock()
   }
 
@@ -125,9 +126,10 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     if (e == null) throw new NullPointerException
     var oldSize: Long = -1
     /*
-             * As this method never fails to insert, it is more efficient to pre-create the node outside the lock, to
-             * reduce contention
-             */ val node: MultiQueueNode[E] = new MultiQueueNode[E](e)
+     * As this method never fails to insert, it is more efficient to pre-create the node outside the lock, to
+     * reduce contention
+     */
+    val node: MultiQueueNode[E] = new MultiQueueNode[E](e)
     putLock.lockInterruptibly()
     try {
       /*
@@ -155,7 +157,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     var oldSize: Long = -1
     putLock.lockInterruptibly()
     try {
-      while ( {
+      while ({
         count.get == capacity
       }) {
         if (nanos <= 0) return false
@@ -169,12 +171,12 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     true
   }
 
-  def add(e:E):Boolean = offer(e)
+  def add(e: E): Boolean = offer(e)
 
   def addAll(c: util.Collection[_ <: E]): Boolean = {
     if (c == null) throw new NullPointerException
     var modified = false
-    c.forEach(e => { if (add(e)) modified = true})
+    c.forEach(e => { if (add(e)) modified = true })
     modified
   }
 
@@ -199,7 +201,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     try {
       var trail: MultiQueueNode[E] = head
       var p: MultiQueueNode[E] = trail.next
-      while ( {
+      while ({
         p != null
       }) {
         if (o == p.item) {
@@ -219,7 +221,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     fullyLock()
     try {
       var p: MultiQueueNode[E] = head.next
-      while ( {
+      while ({
         p != null
       }) {
         if (o == p.item) return true
@@ -293,7 +295,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
         sb.append(", ")
       }
       ""
-    } finally{
+    } finally {
       fullyUnlock()
     }
   }
@@ -305,7 +307,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
       val a: Array[AnyRef] = new Array[AnyRef](size)
       var k: Int = 0
       var p: MultiQueueNode[E] = head.next
-      while ( {
+      while ({
         p != null
       }) {
         a({
@@ -330,6 +332,7 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
   def iterator: util.Iterator[E] = new Itr()
 
   private[lbmq] class Itr() extends util.Iterator[E] {
+
     /**
       * Basic weakly-consistent iterator. At all times hold the next item to hand out so that if
       * hasNext() reports true, we will still have it to return even if lost race with a take, etc.
@@ -366,14 +369,15 @@ class LinkedBlockingSubQueue[K,E >: Null <: AnyRef](val key: K,
     def next: E = {
       fullyLock()
       try {
-        if (current == null){
+        if (current == null) {
           throw new NoSuchElementException()
         }
         val x: E = currentElement
         lastRet = current
         current = nextNode(current)
-        currentElement = if (current == null) null
-        else current.item
+        currentElement =
+          if (current == null) null
+          else current.item
         x
       } finally fullyUnlock()
     }

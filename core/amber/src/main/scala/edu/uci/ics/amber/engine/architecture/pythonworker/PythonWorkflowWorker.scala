@@ -8,7 +8,10 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.recovery.{EmptyInternalPayloadManager, InternalPayloadManager}
+import edu.uci.ics.amber.engine.architecture.recovery.{
+  EmptyInternalPayloadManager,
+  InternalPayloadManager
+}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -55,10 +58,38 @@ class PythonWorkflowWorker(
   private lazy val pythonProxyClient: PythonProxyClient =
     new PythonProxyClient(portNumberPromise, actorId)
 
+  override def getLogName: String = ""
+
+  override def handlePayload(
+      channelEndpointID: ChannelEndpointID,
+      payload: WorkflowExecutionPayload
+  ): Unit = {
+    payload match {
+      case control: ControlPayload =>
+        control match {
+          case ControlInvocation(_, c) =>
+            // TODO: Implement backpressure message handling for python worker
+            if (!c.isInstanceOf[Backpressure]) {
+              pythonProxyClient.enqueueCommand(control, channelEndpointID)
+            }
+          case ReturnInvocation(_, _) =>
+            pythonProxyClient.enqueueCommand(control, channelEndpointID)
+          case _ =>
+            logger.error(s"unhandled control payload: $control")
+        }
+      case data: DataPayload =>
+        pythonProxyClient.enqueueData(DataElement(data, channelEndpointID))
+      case _ => ???
+    }
+  }
+  override def internalPayloadManager: InternalPayloadManager = new EmptyInternalPayloadManager()
+
+  override def initState(): Unit = {}
+
   def outputPayload(
-                     to: ActorVirtualIdentity,
-                     msg:WorkflowMessage
-                   ): Unit = {
+      to: ActorVirtualIdentity,
+      msg: WorkflowMessage
+  ): Unit = {
     logManager.sendCommitted(SendRequest(to, msg), 0)
   }
 
@@ -105,8 +136,7 @@ class PythonWorkflowWorker(
     var serverStart = false
     val outputPort = new NetworkOutputPort(actorId, outputPayload)
     while (!serverStart) {
-      pythonProxyServer =
-        new PythonProxyServer(outputPort, actorId, portNumberPromise)
+      pythonProxyServer = new PythonProxyServer(outputPort, actorId, portNumberPromise)
       val future = serverThreadExecutor.submit(pythonProxyServer)
       try {
         future.get()

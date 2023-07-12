@@ -7,18 +7,25 @@ import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, Workfl
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DPMessage, DataPayload, StartSync}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ControlPayload,
+  DPMessage,
+  DataPayload,
+  StartSync
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future}
 
-class DPThread(val actorId: ActorVirtualIdentity,
-               dp:DataProcessor,
-               var internalQueue: WorkerInternalQueue,
-               worker:WorkflowWorker,
-               replayOrderEnforcer: ReplayOrderEnforcer = null) extends AmberLogging{
+class DPThread(
+    val actorId: ActorVirtualIdentity,
+    dp: DataProcessor,
+    var internalQueue: WorkerInternalQueue,
+    worker: WorkflowWorker,
+    replayOrderEnforcer: ReplayOrderEnforcer = null
+) extends AmberLogging {
 
   // initialize dp thread upon construction
   @transient
@@ -26,13 +33,13 @@ class DPThread(val actorId: ActorVirtualIdentity,
   @transient
   var dpThread: Future[_] = _
 
-  def getThreadName:String = "DP-thread"
+  def getThreadName: String = "DP-thread"
 
   private val endFuture = new CompletableFuture[Unit]()
 
   var blockingFuture = new CompletableFuture[Unit]()
 
-  def stop(): Unit ={
+  def stop(): Unit = {
     dpThread.cancel(true) // interrupt
     stopped = true
     endFuture.get()
@@ -79,7 +86,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
     }
   }
 
-  def dpInterrupted(code: => Unit): Unit ={
+  def dpInterrupted(code: => Unit): Unit = {
     dp.onInterrupt()
     code
     dp.onContinue()
@@ -89,7 +96,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
   private[this] def runDPThreadMainLogicNew(): Unit = {
     // main DP loop
     while (!stopped) {
-      if(replayOrderEnforcer != null){
+      if (replayOrderEnforcer != null) {
         val currentStep = dp.cursor.getStep
         replayOrderEnforcer.triggerCallbacks(currentStep)
         replayOrderEnforcer.forwardReplayProcess(currentStep)
@@ -103,7 +110,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
             dp.continueDataProcessing()
           case Some(msg: DPMessage) if msg.channel.isControlChannel =>
             val controlOrSystemMsg = internalQueue.take(dp)
-            controlOrSystemMsg match{
+            controlOrSystemMsg match {
               case DPMessage(channel, delegate: StartSync) =>
                 // received sync request
                 dpInterrupted {
@@ -111,7 +118,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
                   blockingFuture.get()
                   blockingFuture = new CompletableFuture[Unit]() // reset
                 }
-              case DPMessage(channel, payload:ControlPayload) =>
+              case DPMessage(channel, payload: ControlPayload) =>
                 dp.processControlPayload(channel, payload)
             }
           case other =>
@@ -138,7 +145,5 @@ class DPThread(val actorId: ActorVirtualIdentity,
       }
     }
   }
-
-
 
 }

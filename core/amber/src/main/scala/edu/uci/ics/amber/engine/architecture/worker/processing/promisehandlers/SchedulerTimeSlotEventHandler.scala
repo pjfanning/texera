@@ -2,9 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import SchedulerTimeSlotEventHandler.SchedulerTimeSlotEvent
 import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
   DataProcessorRPCHandlerInitializer,
-  PauseType,
   SchedulerTimeSlotExpiredPause
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand

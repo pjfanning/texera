@@ -2,12 +2,7 @@ package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream, EpochMarker}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 

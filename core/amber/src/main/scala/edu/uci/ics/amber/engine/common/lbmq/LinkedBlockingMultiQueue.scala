@@ -15,8 +15,10 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.util.control.Breaks.{break, breakable}
 
 object LinkedBlockingMultiQueue {
+
   /** Allows to choose the next subQueue. */
   trait SubQueueSelection[K, E >: Null <: AnyRef] {
+
     /**
       * Returns the next subQueue to be used.
       *
@@ -36,32 +38,40 @@ object LinkedBlockingMultiQueue {
       *
       * @param priorityGroups priority groups
       */
-    def setPriorityGroups(priorityGroups: util.ArrayList[LinkedBlockingMultiQueue[K, E]#PriorityGroup]): Unit
+    def setPriorityGroups(
+        priorityGroups: util.ArrayList[LinkedBlockingMultiQueue[K, E]#PriorityGroup]
+    ): Unit
   }
 }
 
-class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the next subQueue to be used. */
-                                     val subQueueSelection: LinkedBlockingMultiQueue.SubQueueSelection[K, E])
-  extends AbstractPollable[E] with Serializable {
+class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](
+    /** Allows to choose the next subQueue to be used. */
+    val subQueueSelection: LinkedBlockingMultiQueue.SubQueueSelection[K, E]
+) extends AbstractPollable[E]
+    with Serializable {
 
   final private val subQueues = new ConcurrentHashMap[K, LinkedBlockingSubQueue[K, E]]
+
   /** Lock held by take, poll, etc */
   final private val takeLock = new ReentrantLock
+
   /** Wait queue for waiting takes */
   final private val notEmpty = takeLock.newCondition
+
   /** Current number of elements in enabled sub-queues */
   final private val totalCount = new AtomicInteger
+
   /** A list of priority groups. Group consists of multiple queues. */
   val priorityGroups = new util.ArrayList[LinkedBlockingMultiQueue[K, E]#PriorityGroup]
 
   this.subQueueSelection.setPriorityGroups(this.priorityGroups)
 
-  def this() ={
-    this(new DefaultSubQueueSelection[K,E]())
+  def this() = {
+    this(new DefaultSubQueueSelection[K, E]())
   }
 
   /** Set of sub-queues with the same priority */
-  private[lbmq] class PriorityGroup (val priority: Int) {
+  private[lbmq] class PriorityGroup(val priority: Int) {
     val queues = new util.ArrayList[LinkedBlockingSubQueue[K, E]](0)
     private[lbmq] var nextIdx = 0
 
@@ -72,7 +82,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
 
     private[lbmq] def removeQueue(removed: LinkedBlockingSubQueue[K, E]): Unit = {
       val it = queues.iterator
-      while ( {
+      while ({
         it.hasNext
       }) {
         val subQueue = it.next
@@ -88,7 +98,8 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
       }
     }
 
-    private[lbmq] def getNextSubQueue: LinkedBlockingSubQueue[K, E] = { // assert takeLock.isHeldByCurrentThread();
+    private[lbmq] def getNextSubQueue
+        : LinkedBlockingSubQueue[K, E] = { // assert takeLock.isHeldByCurrentThread();
       val startIdx = nextIdx
       val queues = this.queues
       do {
@@ -96,7 +107,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
         nextIdx += 1
         if (nextIdx == queues.size) nextIdx = 0
         if (child.enabled && child.size > 0) return child
-      } while ( {
+      } while ({
         nextIdx != startIdx
       })
       null
@@ -115,9 +126,8 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
           drained += 1
           val oldSize = child.count.getAndDecrement
           if (oldSize == child.capacity) child.signalNotFull()
-        }
-        else emptyQueues += 1
-      } while ( {
+        } else emptyQueues += 1
+      } while ({
         drained < maxElements && emptyQueues < queues.size
       })
       drained
@@ -132,7 +142,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
           nextIdx += 1
           if (nextIdx == queues.size) nextIdx = 0
         }
-      } while ( {
+      } while ({
         nextIdx != startIdx
       })
       null
@@ -147,7 +157,8 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
     * @return the previous queue associated with the specified key, or {@code null} if there was no
     *         queue for the key
     */
-  def addSubQueue(key: K, priority: Int): LinkedBlockingSubQueue[K, E] = addSubQueue(key, priority, Integer.MAX_VALUE)
+  def addSubQueue(key: K, priority: Int): LinkedBlockingSubQueue[K, E] =
+    addSubQueue(key, priority, Integer.MAX_VALUE)
 
   /**
     * Add a sub-queue if absent
@@ -172,8 +183,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
               pg.addQueue(subQueue)
               added = true
               break
-            }
-            else if (pg.priority > priority) {
+            } else if (pg.priority > priority) {
               val newPg = new PriorityGroup(priority)
               priorityGroups.add(i, newPg)
               newPg.addQueue(subQueue)
@@ -205,34 +215,32 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
       val removed = subQueues.remove(key)
       if (removed != null) {
         removed.priorityGroup.removeQueue(removed)
-        if (removed.priorityGroup.queues.size == 0) this.priorityGroups.remove(removed.priorityGroup)
+        if (removed.priorityGroup.queues.size == 0)
+          this.priorityGroups.remove(removed.priorityGroup)
       }
       removed
     } finally takeLock.unlock()
   }
 
-  def enableAllSubQueue(): Unit ={
-    subQueues.values().forEach{
-      queue =>
-        if(!queue.isEnabled){
-          queue.enable(true)
-        }
+  def enableAllSubQueue(): Unit = {
+    subQueues.values().forEach { queue =>
+      if (!queue.isEnabled) {
+        queue.enable(true)
+      }
     }
   }
 
-  def disableSubQueueExcept(exceptions:K*): Unit ={
-    subQueues.values().forEach{
-      queue =>
-        if(queue.isEnabled){
-          queue.enable(false)
-        }
+  def disableSubQueueExcept(exceptions: K*): Unit = {
+    subQueues.values().forEach { queue =>
+      if (queue.isEnabled) {
+        queue.enable(false)
+      }
     }
-    exceptions.foreach{
-      k =>
-        val queue = getSubQueue(k)
-        if(queue != null && !queue.isEnabled){
-          queue.enable(true)
-        }
+    exceptions.foreach { k =>
+      val queue = getSubQueue(k)
+      if (queue != null && !queue.isEnabled) {
+        queue.enable(true)
+      }
     }
   }
 
@@ -247,12 +255,12 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
   @throws[InterruptedException]
   override def poll(timeout: Long, unit: TimeUnit): E = {
     var remaining = unit.toNanos(timeout)
-    var subQ: LinkedBlockingSubQueue[K,E] = null
+    var subQ: LinkedBlockingSubQueue[K, E] = null
     var element: E = null
     var oldSize = 0
     takeLock.lockInterruptibly()
     try {
-      while ( {
+      while ({
         totalCount.get == 0
       }) {
         if (remaining <= 0) return null
@@ -274,12 +282,12 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
 
   @throws[InterruptedException]
   override def take: E = {
-    var subQ: LinkedBlockingSubQueue[K,E] = null
+    var subQ: LinkedBlockingSubQueue[K, E] = null
     var oldSize = 0
     var element: E = null
     takeLock.lockInterruptibly()
     try {
-      while ( {
+      while ({
         totalCount.get == 0
       }) notEmpty.await()
       subQ = subQueueSelection.getNext
@@ -292,7 +300,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
   }
 
   override def poll: E = {
-    var subQ: LinkedBlockingSubQueue[K,E] = null
+    var subQ: LinkedBlockingSubQueue[K, E] = null
     var element: E = null
     var oldSize = 0
     takeLock.lock()
@@ -341,7 +349,7 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
       // ordered iteration, begin with lower index (highest priority)
       var drained = 0
       var i = 0
-      while ( {
+      while ({
         i < priorityGroups.size && drained < n
       }) {
         drained += priorityGroups.get(i).drainTo(c, n - drained)
@@ -362,4 +370,3 @@ class LinkedBlockingMultiQueue[K, E >: Null <: AnyRef](/** Allows to choose the 
     */
   def getPriorityGroupsCount: Int = priorityGroups.size
 }
-

@@ -1,7 +1,5 @@
 package edu.uci.ics.amber.engine.common
 
-import akka.serialization.Serialization
-import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple

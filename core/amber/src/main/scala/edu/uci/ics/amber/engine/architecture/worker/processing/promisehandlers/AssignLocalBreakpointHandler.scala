@@ -2,11 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.LocalBreakpoint
 import AssignLocalBreakpointHandler.AssignLocalBreakpoint
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DataProcessor,
-  DataProcessorRPCHandlerInitializer
-}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object AssignLocalBreakpointHandler {

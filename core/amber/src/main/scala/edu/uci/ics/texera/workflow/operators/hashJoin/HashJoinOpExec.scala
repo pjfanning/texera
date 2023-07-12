@@ -1,13 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
-import akka.serialization.Serialization
-import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
 import edu.uci.ics.amber.engine.common.{CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.Tuple.BuilderV2
@@ -291,9 +289,9 @@ class HashJoinOpExec[K](
   }
 
   override def getEstimatedCheckpointTime: Int = {
-    if(buildTableHashMap == null){
+    if (buildTableHashMap == null) {
       0
-    }else{
+    } else {
       buildTableHashMap.map(_._2._1.size).sum
     }
   }

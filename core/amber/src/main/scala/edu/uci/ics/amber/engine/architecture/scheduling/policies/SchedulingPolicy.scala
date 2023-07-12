@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
-import akka.actor.ActorContext
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActorService
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControlProcessor
@@ -10,10 +9,8 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
-import org.jgrapht.traverse.TopologicalOrderIterator
 
 import scala.collection.mutable
-import scala.collection.JavaConverters._
 
 object SchedulingPolicy {
   def createPolicy(
@@ -35,11 +32,14 @@ object SchedulingPolicy {
 
 abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
 
-  def getWorkflow:Workflow = controlProcessor.workflow
+  def getWorkflow: Workflow = controlProcessor.workflow
 
   def getExecution: WorkflowExecution = controlProcessor.execution
 
-  protected def isRegionCompleted(plan:PipelinedRegionPlan, regionId: PipelinedRegionIdentity): Boolean = {
+  protected def isRegionCompleted(
+      plan: PipelinedRegionPlan,
+      regionId: PipelinedRegionIdentity
+  ): Boolean = {
     val region = plan.getPipelinedRegion(regionId)
     getWorkflow
       .getBlockingOutLinksOfRegion(region)
@@ -53,14 +53,20 @@ abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
       )
   }
 
-  protected def checkRegionCompleted(pipelinedRegionPlan: PipelinedRegionPlan,region: PipelinedRegionIdentity): Unit = {
+  protected def checkRegionCompleted(
+      pipelinedRegionPlan: PipelinedRegionPlan,
+      region: PipelinedRegionIdentity
+  ): Unit = {
     if (isRegionCompleted(pipelinedRegionPlan, region)) {
       getExecution.runningRegions.remove(region)
       getExecution.completedRegions.add(region)
     }
   }
 
-  protected def getRegions(plan:PipelinedRegionPlan, workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
+  protected def getRegions(
+      plan: PipelinedRegionPlan,
+      workerId: ActorVirtualIdentity
+  ): Set[PipelinedRegion] = {
     val opId = getWorkflow.getOperator(workerId).id
     getExecution.runningRegions
       .filter(r => plan.getPipelinedRegion(r).getOperators().contains(opId))
@@ -71,7 +77,7 @@ abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
   /**
     * A link's region is the region of the source operator of the link.
     */
-  protected def getRegions(plan:PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
+  protected def getRegions(plan: PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
     getExecution.runningRegions
       .filter(r => plan.getPipelinedRegion(r).getOperators().contains(link.from))
       .map(plan.getPipelinedRegion)
@@ -79,9 +85,9 @@ abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
   }
 
   // gets the ready regions that is not currently running
-  protected def getNextSchedulingWork(plan:PipelinedRegionPlan): Set[PipelinedRegion]
+  protected def getNextSchedulingWork(plan: PipelinedRegionPlan): Set[PipelinedRegion]
 
-  def startWorkflow(plan:PipelinedRegionPlan): Set[PipelinedRegion] = {
+  def startWorkflow(plan: PipelinedRegionPlan): Set[PipelinedRegion] = {
     val regions = getNextSchedulingWork(plan)
     if (regions.isEmpty) {
       throw new WorkflowRuntimeException(
@@ -91,13 +97,16 @@ abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
     regions
   }
 
-  def onWorkerCompletion(plan:PipelinedRegionPlan, workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
+  def onWorkerCompletion(
+      plan: PipelinedRegionPlan,
+      workerId: ActorVirtualIdentity
+  ): Set[PipelinedRegion] = {
     val regions = getRegions(plan, workerId)
     regions.foreach(r => checkRegionCompleted(plan, r.id))
     getNextSchedulingWork(plan)
   }
 
-  def onLinkCompletion(plan:PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
+  def onLinkCompletion(plan: PipelinedRegionPlan, link: LinkIdentity): Set[PipelinedRegion] = {
     val regions = getRegions(plan, link)
     regions.foreach(r =>
       getExecution.completedLinksOfRegion
@@ -108,11 +117,15 @@ abstract class SchedulingPolicy(controlProcessor: ControlProcessor) {
     getNextSchedulingWork(plan)
   }
 
-  def onTimeSlotExpired(plan:PipelinedRegionPlan): Set[PipelinedRegion] = {
+  def onTimeSlotExpired(plan: PipelinedRegionPlan): Set[PipelinedRegion] = {
     getNextSchedulingWork(plan)
   }
 
-  def addToRunningRegions(regions: Set[PipelinedRegionIdentity], plan:PipelinedRegionPlan,  actorService: WorkflowActorService): Unit = {
+  def addToRunningRegions(
+      regions: Set[PipelinedRegionIdentity],
+      plan: PipelinedRegionPlan,
+      actorService: WorkflowActorService
+  ): Unit = {
     getExecution.runningRegions ++= regions
   }
 
