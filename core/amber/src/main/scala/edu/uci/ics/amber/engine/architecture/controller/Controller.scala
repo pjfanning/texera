@@ -3,25 +3,16 @@ package edu.uci.ics.amber.engine.architecture.controller
 import akka.actor.{ActorRef, Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.processing.{
-  ControlProcessor,
-  ControllerInternalPayloadManager
-}
-import edu.uci.ics.amber.engine.architecture.recovery.{
-  ControllerReplayQueue,
-  InternalPayloadManager
-}
+import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelEndpointID,
   ControlPayload,
-  OutsideWorldChannelEndpointID,
   WorkflowExecutionPayload
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -81,14 +72,12 @@ class Controller(
 
   // variables to be initialized
   var controlProcessor: ControlProcessor = new ControlProcessor(this)
-  var replayQueue: ControllerReplayQueue = _
 
   override def initState(): Unit = {
     // register controller itself and client
     controlProcessor.initCP(this)
     actorService.registerActorForNetworkCommunication(CONTROLLER, self)
     actorService.registerActorForNetworkCommunication(CLIENT, context.parent)
-    handlePayloadAndMarker(OutsideWorldChannelEndpointID, SetupLogging())
   }
 
   def getAvailableNodes(): Array[Address] = {
@@ -114,11 +103,7 @@ class Controller(
     }
     payload match {
       case control: ControlPayload =>
-        if (replayQueue != null) {
-          replayQueue.enqueuePayload(channelEndpointID, control)
-        } else {
-          controlProcessor.processControlPayload(channelEndpointID, control)
-        }
+        controlProcessor.processControlPayload(channelEndpointID, control)
       case other =>
         logger.info(s"Controller cannot handle payload: $payload")
     }
@@ -127,20 +112,7 @@ class Controller(
   override def postStop(): Unit = {
     logger.info("Controller start to shutdown")
     logManager.terminate()
-    //    if (workflow.isCompleted) {
-    //      workflow.getAllWorkers.foreach { workerId =>
-    //        DeterminantLogStorage
-    //          .getLogStorage(
-    //            controllerConfig.supportFaultTolerance,
-    //            WorkflowWorker.getWorkerLogName(workerId)
-    //          )
-    //          .deleteLog()
-    //      }
-    //logStorage.deleteLog()
-    //    }
     logger.info("stopped successfully!")
   }
 
-  override val internalPayloadManager: InternalPayloadManager =
-    new ControllerInternalPayloadManager(this)
 }

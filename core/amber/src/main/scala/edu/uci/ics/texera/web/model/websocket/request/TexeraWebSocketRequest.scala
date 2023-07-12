@@ -26,9 +26,7 @@ import edu.uci.ics.texera.web.model.websocket.request.python.{
     new Type(value = classOf[WorkflowResumeRequest]),
     new Type(value = classOf[PythonExpressionEvaluateRequest]),
     new Type(value = classOf[DebugCommandRequest]),
-    new Type(value = classOf[WorkflowReplayRequest]),
-    new Type(value = classOf[WorkflowAdditionalOperatorInfoRequest]),
-    new Type(value = classOf[WorkflowCheckpointRequest])
+    new Type(value = classOf[WorkflowAdditionalOperatorInfoRequest])
   )
 )
 trait TexeraWebSocketRequest {}

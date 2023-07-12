@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.processing
 
 import akka.actor.Address
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, Workflow, WorkflowReplayConfig}
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, Workflow}
 import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
@@ -26,8 +26,6 @@ class ControlProcessor(@transient var controller: Controller) extends AmberProce
   val scheduler: WorkflowScheduler = new WorkflowScheduler(logger, this)
 
   val execution = new WorkflowExecution(workflow)
-
-  var replayPlan: WorkflowReplayConfig = WorkflowReplayConfig.empty
 
   private val initializer = new ControllerAsyncRPCHandlerInitializer(this)
 

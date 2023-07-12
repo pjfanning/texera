@@ -4,18 +4,13 @@ import akka.actor.{ActorRef, Props}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ThreadSyncChannelID
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   DPSynchronized,
   SyncAction,
   getWorkerLogName
 }
-import edu.uci.ics.amber.engine.architecture.worker.processing.{
-  DPThread,
-  DataProcessor,
-  WorkerInternalPayloadManager
-}
+import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor}
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
@@ -143,9 +138,5 @@ class WorkflowWorker(
     dpThread.stop()
     logger.info("stopped!")
   }
-
-  override val internalPayloadManager: InternalPayloadManager = new WorkerInternalPayloadManager(
-    this
-  )
 
 }

@@ -8,17 +8,13 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{
   TexeraWebSocketEvent,
-  WorkflowAdditionalOperatorInfoEvent,
   WorkflowExecutionErrorEvent,
-  WorkflowInteractionHistoryEvent,
-  WorkflowReplayCompletedEvent,
   WorkflowStateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request.{
   SkipTupleRequest,
   WorkflowKillRequest,
   WorkflowPauseRequest,
-  WorkflowReplayRequest,
   WorkflowResumeRequest
 }
 import edu.uci.ics.texera.web.storage.JobStateStore
@@ -35,11 +31,8 @@ class JobRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  var planner: WorkflowReplayManager = new WorkflowReplayManager(client, stateStore)
-
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
-    planner.unsubscribeAll()
   }
 
   addSubscription(
@@ -61,33 +54,9 @@ class JobRuntimeService(
       if (newState.error != oldState.error && newState.error != null) {
         outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
       }
-      if (
-        newState.replayElapsed != oldState.replayElapsed || newState.checkpointElapsed != oldState.checkpointElapsed
-      ) {
-        outputEvts.append(
-          WorkflowReplayCompletedEvent(newState.replayElapsed, newState.checkpointElapsed)
-        )
-      }
-      if (newState.needRefreshReplayState != oldState.needRefreshReplayState) {
-        val interactions = planner.history.getInteractionIdxes
-        outputEvts.append(
-          WorkflowInteractionHistoryEvent(
-            planner.history.historyArray.map(_.toInt),
-            planner.history.historyArray.indices.map(interactions.contains),
-            planner.history.getSnapshotStatus
-          )
-        )
-      }
-      if (newState.operatorInfoStr != oldState.operatorInfoStr) {
-        outputEvts.append(WorkflowAdditionalOperatorInfoEvent(newState.operatorInfoStr))
-      }
       outputEvts
     })
   )
-
-  addSubscription(wsInput.subscribe((req: WorkflowReplayRequest, uidOpt) => {
-    planner.scheduleReplay(req)
-  }))
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
@@ -102,16 +71,7 @@ class JobRuntimeService(
 
   // Receive Resume
   addSubscription(wsInput.subscribe((req: WorkflowResumeRequest, uidOpt) => {
-    if (stateStore.jobMetadataStore.getState.isReplaying) {
-//      client
-//        .interruptReplay()
-//        .onSuccess(ret => {
-//          stateStore.jobMetadataStore.updateState(state => state.withIsReplaying(false))
-//          doResume()
-//        })
-    } else {
-      doResume()
-    }
+    doResume()
   }))
 
   def doResume(): Unit = {

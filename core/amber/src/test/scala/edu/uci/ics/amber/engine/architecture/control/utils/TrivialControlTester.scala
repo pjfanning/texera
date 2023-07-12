@@ -2,10 +2,6 @@ package edu.uci.ics.amber.engine.architecture.control.utils
 
 import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.recovery.{
-  EmptyInternalPayloadManager,
-  InternalPayloadManager
-}
 import edu.uci.ics.amber.engine.architecture.worker.processing.AmberProcessor
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelEndpointID,
@@ -43,8 +39,6 @@ class TrivialControlTester(
       case other => //skip
     }
   }
-
-  override def internalPayloadManager: InternalPayloadManager = new EmptyInternalPayloadManager()
 
   override def initState(): Unit = {}
 }

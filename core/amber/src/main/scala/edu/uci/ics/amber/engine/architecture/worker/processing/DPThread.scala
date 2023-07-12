@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.recovery.ReplayOrderEnforcer
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.DPSynchronized
 import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkflowWorker}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
@@ -23,8 +22,7 @@ class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
     var internalQueue: WorkerInternalQueue,
-    worker: WorkflowWorker,
-    replayOrderEnforcer: ReplayOrderEnforcer = null
+    worker: WorkflowWorker
 ) extends AmberLogging {
 
   // initialize dp thread upon construction
@@ -96,11 +94,6 @@ class DPThread(
   private[this] def runDPThreadMainLogicNew(): Unit = {
     // main DP loop
     while (!stopped) {
-      if (replayOrderEnforcer != null) {
-        val currentStep = dp.cursor.getStep
-        replayOrderEnforcer.triggerCallbacks(currentStep)
-        replayOrderEnforcer.forwardReplayProcess(currentStep)
-      }
       if ((dp.hasUnfinishedInput || dp.hasUnfinishedOutput) && !dp.pauseManager.isPaused()) {
         val input = internalQueue.peek(dp)
         input match {

@@ -1,8 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.{CheckpointSupport, ISinkOperatorExecutor, InputExhausted}
+import edu.uci.ics.amber.engine.common.{ISinkOperatorExecutor, InputExhausted}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
@@ -13,8 +12,7 @@ class ProgressiveSinkOpExec(
     val operatorSchemaInfo: OperatorSchemaInfo,
     val outputMode: IncrementalOutputMode,
     val storage: SinkStorageWriter
-) extends ISinkOperatorExecutor
-    with CheckpointSupport {
+) extends ISinkOperatorExecutor {
 
   var numTupleIntoStorage = 0
 
@@ -52,22 +50,4 @@ class ProgressiveSinkOpExec(
   override def getStateInformation: String = {
     s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
   }
-
-  override def serializeState(
-      currentIteratorState: Iterator[(ITuple, Option[Int])],
-      checkpoint: SavedCheckpoint
-  ): Iterator[(ITuple, Option[Int])] = {
-    checkpoint.save("numTupleIntoStorage", numTupleIntoStorage)
-    currentIteratorState
-  }
-
-  override def deserializeState(
-      checkpoint: SavedCheckpoint
-  ): Iterator[(ITuple, Option[Int])] = {
-    open()
-    numTupleIntoStorage = checkpoint.load("numTupleIntoStorage")
-    Iterator.empty
-  }
-
-  override def getEstimatedCheckpointTime: Int = 0
 }

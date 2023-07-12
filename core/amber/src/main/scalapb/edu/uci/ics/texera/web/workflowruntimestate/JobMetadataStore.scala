@@ -10,13 +10,7 @@ final case class JobMetadataStore(
     state: edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState = edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.UNINITIALIZED,
     error: _root_.scala.Predef.String = "",
     eid: _root_.scala.Long = 0L,
-    isRecovering: _root_.scala.Boolean = false,
-    isReplaying: _root_.scala.Boolean = false,
-    currentReplayPos: _root_.scala.Int = 0,
-    needRefreshReplayState: _root_.scala.Int = 0,
-    operatorInfoStr: _root_.scala.Predef.String = "",
-    replayElapsed: _root_.scala.Double = 0.0,
-    checkpointElapsed: _root_.scala.Double = 0.0
+    isRecovering: _root_.scala.Boolean = false
     ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[JobMetadataStore] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
@@ -48,48 +42,6 @@ final case class JobMetadataStore(
         val __value = isRecovering
         if (__value != false) {
           __size += _root_.com.google.protobuf.CodedOutputStream.computeBoolSize(4, __value)
-        }
-      };
-      
-      {
-        val __value = isReplaying
-        if (__value != false) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeBoolSize(5, __value)
-        }
-      };
-      
-      {
-        val __value = currentReplayPos
-        if (__value != 0) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeInt32Size(6, __value)
-        }
-      };
-      
-      {
-        val __value = needRefreshReplayState
-        if (__value != 0) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeInt32Size(7, __value)
-        }
-      };
-      
-      {
-        val __value = operatorInfoStr
-        if (!__value.isEmpty) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeStringSize(8, __value)
-        }
-      };
-      
-      {
-        val __value = replayElapsed
-        if (__value != 0.0) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeDoubleSize(10, __value)
-        }
-      };
-      
-      {
-        val __value = checkpointElapsed
-        if (__value != 0.0) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeDoubleSize(11, __value)
         }
       };
       __size
@@ -127,53 +79,11 @@ final case class JobMetadataStore(
           _output__.writeBool(4, __v)
         }
       };
-      {
-        val __v = isReplaying
-        if (__v != false) {
-          _output__.writeBool(5, __v)
-        }
-      };
-      {
-        val __v = currentReplayPos
-        if (__v != 0) {
-          _output__.writeInt32(6, __v)
-        }
-      };
-      {
-        val __v = needRefreshReplayState
-        if (__v != 0) {
-          _output__.writeInt32(7, __v)
-        }
-      };
-      {
-        val __v = operatorInfoStr
-        if (!__v.isEmpty) {
-          _output__.writeString(8, __v)
-        }
-      };
-      {
-        val __v = replayElapsed
-        if (__v != 0.0) {
-          _output__.writeDouble(10, __v)
-        }
-      };
-      {
-        val __v = checkpointElapsed
-        if (__v != 0.0) {
-          _output__.writeDouble(11, __v)
-        }
-      };
     }
     def withState(__v: edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState): JobMetadataStore = copy(state = __v)
     def withError(__v: _root_.scala.Predef.String): JobMetadataStore = copy(error = __v)
     def withEid(__v: _root_.scala.Long): JobMetadataStore = copy(eid = __v)
     def withIsRecovering(__v: _root_.scala.Boolean): JobMetadataStore = copy(isRecovering = __v)
-    def withIsReplaying(__v: _root_.scala.Boolean): JobMetadataStore = copy(isReplaying = __v)
-    def withCurrentReplayPos(__v: _root_.scala.Int): JobMetadataStore = copy(currentReplayPos = __v)
-    def withNeedRefreshReplayState(__v: _root_.scala.Int): JobMetadataStore = copy(needRefreshReplayState = __v)
-    def withOperatorInfoStr(__v: _root_.scala.Predef.String): JobMetadataStore = copy(operatorInfoStr = __v)
-    def withReplayElapsed(__v: _root_.scala.Double): JobMetadataStore = copy(replayElapsed = __v)
-    def withCheckpointElapsed(__v: _root_.scala.Double): JobMetadataStore = copy(checkpointElapsed = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -192,30 +102,6 @@ final case class JobMetadataStore(
           val __t = isRecovering
           if (__t != false) __t else null
         }
-        case 5 => {
-          val __t = isReplaying
-          if (__t != false) __t else null
-        }
-        case 6 => {
-          val __t = currentReplayPos
-          if (__t != 0) __t else null
-        }
-        case 7 => {
-          val __t = needRefreshReplayState
-          if (__t != 0) __t else null
-        }
-        case 8 => {
-          val __t = operatorInfoStr
-          if (__t != "") __t else null
-        }
-        case 10 => {
-          val __t = replayElapsed
-          if (__t != 0.0) __t else null
-        }
-        case 11 => {
-          val __t = checkpointElapsed
-          if (__t != 0.0) __t else null
-        }
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
@@ -225,12 +111,6 @@ final case class JobMetadataStore(
         case 2 => _root_.scalapb.descriptors.PString(error)
         case 3 => _root_.scalapb.descriptors.PLong(eid)
         case 4 => _root_.scalapb.descriptors.PBoolean(isRecovering)
-        case 5 => _root_.scalapb.descriptors.PBoolean(isReplaying)
-        case 6 => _root_.scalapb.descriptors.PInt(currentReplayPos)
-        case 7 => _root_.scalapb.descriptors.PInt(needRefreshReplayState)
-        case 8 => _root_.scalapb.descriptors.PString(operatorInfoStr)
-        case 10 => _root_.scalapb.descriptors.PDouble(replayElapsed)
-        case 11 => _root_.scalapb.descriptors.PDouble(checkpointElapsed)
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
@@ -245,12 +125,6 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     var __error: _root_.scala.Predef.String = ""
     var __eid: _root_.scala.Long = 0L
     var __isRecovering: _root_.scala.Boolean = false
-    var __isReplaying: _root_.scala.Boolean = false
-    var __currentReplayPos: _root_.scala.Int = 0
-    var __needRefreshReplayState: _root_.scala.Int = 0
-    var __operatorInfoStr: _root_.scala.Predef.String = ""
-    var __replayElapsed: _root_.scala.Double = 0.0
-    var __checkpointElapsed: _root_.scala.Double = 0.0
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
@@ -264,18 +138,6 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
           __eid = _input__.readInt64()
         case 32 =>
           __isRecovering = _input__.readBool()
-        case 40 =>
-          __isReplaying = _input__.readBool()
-        case 48 =>
-          __currentReplayPos = _input__.readInt32()
-        case 56 =>
-          __needRefreshReplayState = _input__.readInt32()
-        case 66 =>
-          __operatorInfoStr = _input__.readStringRequireUtf8()
-        case 81 =>
-          __replayElapsed = _input__.readDouble()
-        case 89 =>
-          __checkpointElapsed = _input__.readDouble()
         case tag => _input__.skipField(tag)
       }
     }
@@ -283,13 +145,7 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
         state = __state,
         error = __error,
         eid = __eid,
-        isRecovering = __isRecovering,
-        isReplaying = __isReplaying,
-        currentReplayPos = __currentReplayPos,
-        needRefreshReplayState = __needRefreshReplayState,
-        operatorInfoStr = __operatorInfoStr,
-        replayElapsed = __replayElapsed,
-        checkpointElapsed = __checkpointElapsed
+        isRecovering = __isRecovering
     )
   }
   implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore] = _root_.scalapb.descriptors.Reads{
@@ -299,13 +155,7 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
         state = edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.fromValue(__fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scalapb.descriptors.EnumValueDescriptor]).getOrElse(edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.UNINITIALIZED.scalaValueDescriptor).number),
         error = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
         eid = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scala.Long]).getOrElse(0L),
-        isRecovering = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Boolean]).getOrElse(false),
-        isReplaying = __fieldsMap.get(scalaDescriptor.findFieldByNumber(5).get).map(_.as[_root_.scala.Boolean]).getOrElse(false),
-        currentReplayPos = __fieldsMap.get(scalaDescriptor.findFieldByNumber(6).get).map(_.as[_root_.scala.Int]).getOrElse(0),
-        needRefreshReplayState = __fieldsMap.get(scalaDescriptor.findFieldByNumber(7).get).map(_.as[_root_.scala.Int]).getOrElse(0),
-        operatorInfoStr = __fieldsMap.get(scalaDescriptor.findFieldByNumber(8).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
-        replayElapsed = __fieldsMap.get(scalaDescriptor.findFieldByNumber(10).get).map(_.as[_root_.scala.Double]).getOrElse(0.0),
-        checkpointElapsed = __fieldsMap.get(scalaDescriptor.findFieldByNumber(11).get).map(_.as[_root_.scala.Double]).getOrElse(0.0)
+        isRecovering = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Boolean]).getOrElse(false)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
@@ -322,58 +172,28 @@ object JobMetadataStore extends scalapb.GeneratedMessageCompanion[edu.uci.ics.te
     state = edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.UNINITIALIZED,
     error = "",
     eid = 0L,
-    isRecovering = false,
-    isReplaying = false,
-    currentReplayPos = 0,
-    needRefreshReplayState = 0,
-    operatorInfoStr = "",
-    replayElapsed = 0.0,
-    checkpointElapsed = 0.0
+    isRecovering = false
   )
   implicit class JobMetadataStoreLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore](_l) {
     def state: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState] = field(_.state)((c_, f_) => c_.copy(state = f_))
     def error: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.error)((c_, f_) => c_.copy(error = f_))
     def eid: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Long] = field(_.eid)((c_, f_) => c_.copy(eid = f_))
     def isRecovering: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Boolean] = field(_.isRecovering)((c_, f_) => c_.copy(isRecovering = f_))
-    def isReplaying: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Boolean] = field(_.isReplaying)((c_, f_) => c_.copy(isReplaying = f_))
-    def currentReplayPos: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.currentReplayPos)((c_, f_) => c_.copy(currentReplayPos = f_))
-    def needRefreshReplayState: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.needRefreshReplayState)((c_, f_) => c_.copy(needRefreshReplayState = f_))
-    def operatorInfoStr: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.operatorInfoStr)((c_, f_) => c_.copy(operatorInfoStr = f_))
-    def replayElapsed: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Double] = field(_.replayElapsed)((c_, f_) => c_.copy(replayElapsed = f_))
-    def checkpointElapsed: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Double] = field(_.checkpointElapsed)((c_, f_) => c_.copy(checkpointElapsed = f_))
   }
   final val STATE_FIELD_NUMBER = 1
   final val ERROR_FIELD_NUMBER = 2
   final val EID_FIELD_NUMBER = 3
   final val IS_RECOVERING_FIELD_NUMBER = 4
-  final val IS_REPLAYING_FIELD_NUMBER = 5
-  final val CURRENT_REPLAY_POS_FIELD_NUMBER = 6
-  final val NEED_REFRESH_REPLAY_STATE_FIELD_NUMBER = 7
-  final val OPERATOR_INFO_STR_FIELD_NUMBER = 8
-  final val REPLAYELAPSED_FIELD_NUMBER = 10
-  final val CHECKPOINTELAPSED_FIELD_NUMBER = 11
   def of(
     state: edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState,
     error: _root_.scala.Predef.String,
     eid: _root_.scala.Long,
-    isRecovering: _root_.scala.Boolean,
-    isReplaying: _root_.scala.Boolean,
-    currentReplayPos: _root_.scala.Int,
-    needRefreshReplayState: _root_.scala.Int,
-    operatorInfoStr: _root_.scala.Predef.String,
-    replayElapsed: _root_.scala.Double,
-    checkpointElapsed: _root_.scala.Double
+    isRecovering: _root_.scala.Boolean
   ): _root_.edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore = _root_.edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore(
     state,
     error,
     eid,
-    isRecovering,
-    isReplaying,
-    currentReplayPos,
-    needRefreshReplayState,
-    operatorInfoStr,
-    replayElapsed,
-    checkpointElapsed
+    isRecovering
   )
   // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.texera.web.JobMetadataStore])
 }

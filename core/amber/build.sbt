@@ -214,13 +214,14 @@ libraryDependencies += "com.univocity" % "univocity-parsers" % "2.9.1"
 // https://mvnrepository.com/artifact/com.konghq/unirest-java
 libraryDependencies += "com.konghq" % "unirest-java" % "3.11.11"
 
+// For serializable-lbmq native tests
+libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
+
 // https://mvnrepository.com/artifact/io.github.redouane59.twitter/twittered
 libraryDependencies += "io.github.redouane59.twitter" % "twittered" % "2.16"
 
 // https://mvnrepository.com/artifact/org.jooq/jooq
 libraryDependencies += "org.jooq" % "jooq" % "3.14.4"
-
-libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
 
 // https://mvnrepository.com/artifact/mysql/mysql-connector-java
 libraryDependencies += "mysql" % "mysql-connector-java" % "8.0.23"
@@ -259,6 +260,3 @@ libraryDependencies += "org.jasypt" % "jasypt" % "1.9.3"
 // Jgit library for tracking operator version
 // https://mvnrepository.com/artifact/org.eclipse.jgit/org.eclipse.jgit
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit" % "5.13.0.202109080827-r"
-
-libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % "1.0.0-M1"
-libraryDependencies += "org.nd4j" % "nd4j-native-platform" % "1.0.0-M1"

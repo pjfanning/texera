@@ -8,10 +8,6 @@ import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
-import edu.uci.ics.amber.engine.architecture.recovery.{
-  EmptyInternalPayloadManager,
-  InternalPayloadManager
-}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -82,7 +78,6 @@ class PythonWorkflowWorker(
       case _ => ???
     }
   }
-  override def internalPayloadManager: InternalPayloadManager = new EmptyInternalPayloadManager()
 
   override def initState(): Unit = {}
 

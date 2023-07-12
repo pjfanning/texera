@@ -23,7 +23,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkCommunicationActor,
   NetworkInputPort
 }
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
@@ -94,18 +93,13 @@ abstract class WorkflowActor(
   var logManager: LogManager = new EmptyLogManagerImpl(networkCommunicationActor)
   var isReplaying = false
 
-  // custom state ser/de support (override by Worker and Controller)
-  def internalPayloadManager: InternalPayloadManager
-
   def handlePayloadAndMarker(
       channelId: ChannelEndpointID,
       payload: WorkflowFIFOMessagePayload
   ): Unit = {
-    internalPayloadManager.inputPayload(channelId, payload)
     payload match {
       case internal: AmberInternalPayload =>
         logger.info(s"process internal payload $internal from channel $channelId")
-        internalPayloadManager.inputMarker(channelId, internal)
       case payload: WorkflowExecutionPayload =>
         handlePayload(channelId, payload)
       case other =>

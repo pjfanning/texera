@@ -1,16 +1,14 @@
 package edu.uci.ics.texera.workflow.common.operators.mlmodel
 
-import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
-import edu.uci.ics.amber.engine.common.{CheckpointSupport, InputExhausted}
+import edu.uci.ics.amber.engine.common.{InputExhausted}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable.ListBuffer
 
-abstract class MLModelOpExec() extends OperatorExecutor with Serializable with CheckpointSupport {
+abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
 
   var allData: ListBuffer[Tuple] = ListBuffer()
 
@@ -107,45 +105,4 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable with C
   def calculateLossGradient(miniBatch: Array[Tuple]): Unit
   def readjustWeight(): Unit
   def outputPrediction(allData: Array[Tuple]): Array[Tuple]
-
-  override def getStateInformation: String = {
-    s"DNNOp: current Epoch = ${currentEpoch} nextMiniBatchStartIdx = $nextMiniBatchStartIdx nextOperation = $nextOperation"
-  }
-
-  override def serializeState(
-      currentIteratorState: Iterator[(ITuple, Option[Int])],
-      checkpoint: SavedCheckpoint
-  ): Iterator[(ITuple, Option[Int])] = {
-    if (receivedAll) {
-      checkpoint.save("currentEpoch", currentEpoch)
-      checkpoint.save("nextOperation", nextOperation)
-      checkpoint.save("nextMiniBatchStartIdx", nextMiniBatchStartIdx)
-      checkpoint.save("miniBatch", miniBatch)
-      checkpoint.save("hasMoreIterations", hasMoreIterations)
-      val outputArr = outputIterator.toArray
-      checkpoint.save("outputIterator", outputArr)
-      outputIterator = outputArr.toIterator
-    }
-    checkpoint.save("allData", allData)
-    checkpoint.save("receivedAll", receivedAll)
-    currentIteratorState
-  }
-
-  override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
-    receivedAll = checkpoint.load("receivedAll")
-    allData = checkpoint.load("allData")
-    if (receivedAll) {
-      nextOperation = checkpoint.load("nextOperation")
-      currentEpoch = checkpoint.load("currentEpoch")
-      nextMiniBatchStartIdx = checkpoint.load("nextMiniBatchStartIdx")
-      miniBatch = checkpoint.load("miniBatch")
-      hasMoreIterations = checkpoint.load("hasMoreIterations")
-      val outputArr = checkpoint.load("outputIterator").asInstanceOf[Array[Tuple]]
-      outputIterator = outputArr.toIterator
-      getIterativeTrainingIterator.map(x => (x, None))
-    } else {
-      Iterator()
-    }
-  }
-
 }

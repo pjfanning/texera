@@ -6,8 +6,7 @@ import akka.util.Timeout
 import com.twitter.chill.{KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, StepsOnChannel}
-import edu.uci.ics.amber.engine.architecture.recovery.ReplayOrderEnforcer
+import edu.uci.ics.amber.engine.architecture.logging.InMemDeterminant
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
@@ -164,35 +163,35 @@ class RecoverySpec
     logStorage.getReader.getLogs[InMemDeterminant].foreach(println)
   }
 
-  "Logreader" should "not read anything from empty log2" in {
-    val workerName = "WF2-CSVFileScan-operator-af9e2501-8c04-481e-8a54-bf2ab2b60898-main-0"
-    val logStorage = new LocalFSLogStorage(workerName)
-    for (elem <- logStorage.getReader.getLogs[InMemDeterminant]) {
-      println(elem)
-    }
-    var step = 188831
-    var stop = false
-    val orderEnforcer = new ReplayOrderEnforcer(
-      logStorage.getReader.getLogs[StepsOnChannel],
-      () => {
-        println("recovery completed!")
-        stop = true
-      }
-    )
-    orderEnforcer.initialize(step)
-    orderEnforcer.forwardReplayProcess(step)
-    println(orderEnforcer.currentChannel, step)
-    step += 1
-    orderEnforcer.forwardReplayProcess(step)
-    println(orderEnforcer.currentChannel, step)
-    step += 1
-    orderEnforcer.forwardReplayProcess(step)
-    println(orderEnforcer.currentChannel, step)
-    orderEnforcer.forwardReplayProcess(step)
-    println(orderEnforcer.currentChannel, step)
-    step += 1
-    orderEnforcer.forwardReplayProcess(step)
-    println(orderEnforcer.currentChannel, step)
-    step += 1
-  }
+//  "Logreader" should "not read anything from empty log2" in {
+//    val workerName = "WF2-CSVFileScan-operator-af9e2501-8c04-481e-8a54-bf2ab2b60898-main-0"
+//    val logStorage = new LocalFSLogStorage(workerName)
+//    for (elem <- logStorage.getReader.getLogs[InMemDeterminant]) {
+//      println(elem)
+//    }
+//    var step = 188831
+//    var stop = false
+//    val orderEnforcer = new ReplayOrderEnforcer(
+//      logStorage.getReader.getLogs[StepsOnChannel],
+//      () => {
+//        println("recovery completed!")
+//        stop = true
+//      }
+//    )
+//    orderEnforcer.initialize(step)
+//    orderEnforcer.forwardReplayProcess(step)
+//    println(orderEnforcer.currentChannel, step)
+//    step += 1
+//    orderEnforcer.forwardReplayProcess(step)
+//    println(orderEnforcer.currentChannel, step)
+//    step += 1
+//    orderEnforcer.forwardReplayProcess(step)
+//    println(orderEnforcer.currentChannel, step)
+//    orderEnforcer.forwardReplayProcess(step)
+//    println(orderEnforcer.currentChannel, step)
+//    step += 1
+//    orderEnforcer.forwardReplayProcess(step)
+//    println(orderEnforcer.currentChannel, step)
+//    step += 1
+//  }
 }

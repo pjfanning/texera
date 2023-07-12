@@ -2,7 +2,6 @@ package edu.uci.ics.texera.web.service
 
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.common.AmberUtils
 
 import scala.collection.JavaConverters._
@@ -148,7 +147,6 @@ class WorkflowService(
       //unsubscribe all
       jobService.getValue.unsubscribeAll()
     }
-    CheckpointHolder.clear()
     val job = new WorkflowJobService(
       createWorkflowContext(req, uidOpt),
       wsInput,

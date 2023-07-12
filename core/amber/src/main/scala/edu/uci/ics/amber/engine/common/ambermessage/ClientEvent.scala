@@ -1,7 +1,6 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.web.workflowruntimestate.{
@@ -42,21 +41,6 @@ object ClientEvent {
   case class WorkerAssignmentUpdate(workerMapping: Map[String, Seq[String]]) extends ClientEvent
 
   case class WorkerModifyLogicComplete(workerID: ActorVirtualIdentity) extends ClientEvent
-
-  case class ReplayCompleted(actorId: ActorVirtualIdentity, id: String) extends ClientEvent
-
-  case class EstimationCompleted(
-      actorId: ActorVirtualIdentity,
-      id: String,
-      checkpointStats: CheckpointStats
-  ) extends ClientEvent
-
-  case class RuntimeCheckpointCompleted(
-      actorId: ActorVirtualIdentity,
-      logicalSnapshotId: String,
-      checkpointId: String,
-      checkpointStats: CheckpointStats
-  ) extends ClientEvent
 
   case class FatalErrorToClient(e: Throwable) extends ClientEvent
 

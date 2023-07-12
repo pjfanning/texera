@@ -23,7 +23,6 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.nn.DNNOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -136,8 +135,7 @@ trait StateTransferFunc
     new Type(value = classOf[PythonLambdaFunctionOpDesc], name = "PythonLambdaFunction"),
     new Type(value = classOf[BulkDownloaderOpDesc], name = "BulkDownloader"),
     new Type(value = classOf[URLFetcherOpDesc], name = "URLFetcher"),
-    new Type(value = classOf[CartesianProductOpDesc], name = "CartesianProduct"),
-    new Type(value = classOf[DNNOpDesc], name = "DeepNeuralNetwork")
+    new Type(value = classOf[CartesianProductOpDesc], name = "CartesianProduct")
   )
 )
 abstract class OperatorDescriptor extends Serializable {
