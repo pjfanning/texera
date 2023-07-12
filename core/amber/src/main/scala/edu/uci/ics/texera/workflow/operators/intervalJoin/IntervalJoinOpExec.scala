@@ -6,7 +6,12 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{
+  Attribute,
+  AttributeType,
+  OperatorSchemaInfo,
+  Schema
+}
 
 import java.sql.Timestamp
 import scala.collection.mutable.ListBuffer
