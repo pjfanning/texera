@@ -121,7 +121,7 @@ class WorkflowWorker(
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),
-          getSenderCredits(from),
+          getSenderCredits(from.endpointWorker),
           id,
           from,
           seqNum,
@@ -130,7 +130,7 @@ class WorkflowWorker(
       case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
         controlInputPort.handleMessage(
           this.sender(),
-          getSenderCredits(from),
+          getSenderCredits(from.endpointWorker),
           id,
           from,
           seqNum,
@@ -181,7 +181,8 @@ class WorkflowWorker(
       seqNum: Long,
       payload: DataPayload
   ): Unit = {
-    val msg = WorkflowDataMessage(self, seqNum, payload)
+    val msg =
+      WorkflowDataMessage(ChannelEndpointID(self, isControlChannel = false), seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 

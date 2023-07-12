@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.messaginglayer
 import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkAck
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -19,12 +20,13 @@ class NetworkInputPort[T](
       sender: ActorRef,
       senderCredits: Int,
       messageID: Long,
-      from: ActorVirtualIdentity,
+      from: ChannelEndpointID,
       sequenceNumber: Long,
       payload: T
   ): Unit = {
     sender ! NetworkAck(messageID, Some(senderCredits))
-    val entry = idToOrderingEnforcers.getOrElseUpdate(from, new OrderingEnforcer[T]())
+    val entry =
+      idToOrderingEnforcers.getOrElseUpdate(from.endpointWorker, new OrderingEnforcer[T]())
     if (entry.isDuplicated(sequenceNumber)) { // discard duplicate
       logger.info(
         s"receive a duplicated message: $payload from $sender with seqNum = $sequenceNumber while current = ${entry.current}"
@@ -35,7 +37,7 @@ class NetworkInputPort[T](
       )
       entry.stash(sequenceNumber, payload)
     } else {
-      entry.enforceFIFO(payload).foreach(v => handler.apply(from, v))
+      entry.enforceFIFO(payload).foreach(v => handler.apply(from.endpointWorker, v))
     }
   }
 

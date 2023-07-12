@@ -8,6 +8,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
   CreditRequest,
   ResendOutputTo,
   WorkflowControlMessage,
@@ -155,7 +156,7 @@ class NetworkCommunicationActor(
     val msgToSend = NetworkMessage(
       networkMessageID,
       WorkflowControlMessage(
-        actorId,
+        ChannelEndpointID(actorId, isControlChannel = true),
         nextSeqNumForMainActor,
         ControlInvocation(AsyncRPCClient.IgnoreReply, Backpressure(backpressureEnable))
       )

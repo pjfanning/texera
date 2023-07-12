@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
@@ -39,15 +38,24 @@ case object OutsideWorldChannelEndpointID extends ChannelEndpointID(CLIENT, true
 
 sealed trait WorkflowMessage extends Serializable
 
-case class WorkflowFIFOMessage(
+case class WorkflowControlMessage(
     channel: ChannelEndpointID,
     sequenceNumber: Long,
-    payload: WorkflowFIFOMessagePayload
+    payload: ControlPayload
 ) extends WorkflowMessage
 
-case class WorkflowClientMessage(payload: ClientEvent) extends WorkflowMessage
+case class WorkflowDataMessage(
+    channel: ChannelEndpointID,
+    sequenceNumber: Long,
+    payload: DataPayload
+) extends WorkflowMessage
 
+case class WorkflowRecoveryMessage(
+    from: ActorVirtualIdentity,
+    payload: RecoveryPayload
+)
 // sent from network communicator to next worker to poll for credit information
 case class CreditRequest(
-    actorVirtualIdentity: ActorVirtualIdentity
+    from: ActorVirtualIdentity,
+    sequenceNumber: Long = -1
 ) extends WorkflowMessage

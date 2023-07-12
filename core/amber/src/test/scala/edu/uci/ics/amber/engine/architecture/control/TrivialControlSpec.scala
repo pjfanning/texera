@@ -18,7 +18,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
   RegisterActorRef
 }
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowControlMessage
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, WorkflowControlMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -89,7 +89,7 @@ class TrivialControlSpec
         NetworkMessage(
           seqNum,
           WorkflowControlMessage(
-            CONTROLLER,
+            ChannelEndpointID(CONTROLLER, isControlChannel = false),
             seqNum,
             ControlInvocation(seqNum, evt)
           )

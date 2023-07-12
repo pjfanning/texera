@@ -16,7 +16,11 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOn
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  ControlPayload,
+  WorkflowControlMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
@@ -100,7 +104,7 @@ class WorkerSpec
     val invocation = ControlInvocation(0, AddPartitioning(mockTag, mockPolicy))
     worker ! NetworkMessage(
       0,
-      WorkflowControlMessage(CONTROLLER, 0, invocation)
+      WorkflowControlMessage(ChannelEndpointID(CONTROLLER, true), 0, invocation)
     )
 
     //wait test to finish
@@ -146,7 +150,7 @@ class WorkerSpec
       NetworkMessage(
         0,
         WorkflowControlMessage(
-          CONTROLLER,
+          ChannelEndpointID(CONTROLLER, true),
           0,
           ControlInvocation(0, QuerySelfWorkloadMetrics())
         )

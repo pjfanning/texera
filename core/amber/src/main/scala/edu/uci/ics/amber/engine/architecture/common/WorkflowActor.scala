@@ -22,6 +22,7 @@ import edu.uci.ics.amber.engine.architecture.recovery.LocalRecoveryManager
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
   ControlPayload,
   ResendOutputTo,
   WorkflowControlMessage
@@ -78,7 +79,8 @@ abstract class WorkflowActor(
       seqNum: Long,
       payload: ControlPayload
   ): Unit = {
-    val msg = WorkflowControlMessage(self, seqNum, payload)
+    val msg =
+      WorkflowControlMessage(ChannelEndpointID(self, isControlChannel = true), seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
   }
 

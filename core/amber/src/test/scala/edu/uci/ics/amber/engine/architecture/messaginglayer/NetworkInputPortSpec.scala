@@ -4,7 +4,12 @@ import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkAck
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, DataPayload, WorkflowDataMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelEndpointID,
+  DataFrame,
+  DataPayload,
+  WorkflowDataMessage
+}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import org.scalamock.scalatest.MockFactory
@@ -18,11 +23,12 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   "network input port" should "output payload in FIFO order" in {
     val testActor = TestProbe.apply("test")(ActorSystem())
     val inputPort = new NetworkInputPort[DataPayload](fakeID, mockHandler)
+    val channelId = ChannelEndpointID(fakeID, false)
     val payloads = (0 until 4).map { i =>
       DataFrame(Array(ITuple(i)))
     }.toArray
     val messages = (0 until 4).map { i =>
-      WorkflowDataMessage(fakeID, i, payloads(i))
+      WorkflowDataMessage(channelId, i, payloads(i))
     }.toArray
 
     inSequence {
@@ -36,7 +42,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
         testActor.ref,
         Constants.unprocessedBatchesCreditLimitPerSender,
         id,
-        messages(id).from,
+        messages(id).channel,
         messages(id).sequenceNumber,
         messages(id).payload
       )
@@ -46,9 +52,9 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   "network input port" should "de-duplicate payload" in {
     val testActor = TestProbe.apply("test")(ActorSystem())
     val inputPort = new NetworkInputPort[DataPayload](fakeID, mockHandler)
-
+    val channelId = ChannelEndpointID(fakeID, false)
     val payload = DataFrame(Array(ITuple(0)))
-    val message = WorkflowDataMessage(fakeID, 0, payload)
+    val message = WorkflowDataMessage(channelId, 0, payload)
 
     inSequence {
       (mockHandler.apply _).expects(fakeID, payload)
@@ -60,7 +66,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
         testActor.ref,
         Constants.unprocessedBatchesCreditLimitPerSender,
         i,
-        message.from,
+        message.channel,
         message.sequenceNumber,
         message.payload
       )
@@ -70,16 +76,16 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   "network input port" should "send ack to the sender actor ref" in {
     val testActor = TestProbe.apply("test")(ActorSystem())
     val inputPort = new NetworkInputPort[DataPayload](fakeID, (_, _) => {})
-
+    val channelId = ChannelEndpointID(fakeID, false)
     val payload = DataFrame(Array(ITuple(0)))
-    val message = WorkflowDataMessage(fakeID, 0, payload)
+    val message = WorkflowDataMessage(channelId, 0, payload)
     val messageID = 0
 
     inputPort.handleMessage(
       testActor.ref,
       Constants.unprocessedBatchesCreditLimitPerSender,
       messageID,
-      message.from,
+      message.channel,
       message.sequenceNumber,
       message.payload
     )
