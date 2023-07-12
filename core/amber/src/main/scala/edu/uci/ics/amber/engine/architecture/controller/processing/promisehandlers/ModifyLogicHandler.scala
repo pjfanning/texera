@@ -1,32 +1,23 @@
-package edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers
+package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.controller.Controller
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.BreakpointTriggered
-import ModifyLogicHandler.ModifyLogic
-import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.ModifyPythonOperatorLogicHandler.ModifyPythonOperatorLogic
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
-import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogic
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
-import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
-import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpDesc
-import edu.uci.ics.texera.workflow.common.operators.map.MapOpDesc
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{PythonUDFOpDescV2, PythonUDFOpExecV2}
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.source.{
-  PythonUDFSourceOpDescV2,
-  PythonUDFSourceOpExecV2
-}
+import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
+import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpExecV2
 
 import scala.collection.mutable
 
 object ModifyLogicHandler {
 
   final case class ModifyLogic(newOp: OpExecConfig, stateTransferFunc: Option[StateTransferFunc])
-      extends ControlCommand[Unit]
+    extends ControlCommand[Unit]
 }
 
 /** retry the execution of the entire workflow
@@ -37,31 +28,31 @@ trait ModifyLogicHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: ModifyLogic, sender) =>
-    {
-      val operator = cp.workflow.physicalPlan.operatorMap(msg.newOp.id)
+  {
+    val operator = workflow.physicalPlan.operatorMap(msg.newOp.id)
 
-      val workerCommand = if (operator.isPythonOperator) {
-        ModifyPythonOperatorLogic(
-          operator.getPythonCode,
-          isSource = operator.opExecClass.isAssignableFrom(classOf[PythonUDFSourceOpExecV2])
-        )
-      } else {
-        WorkerModifyLogic(msg.newOp, msg.stateTransferFunc)
-      }
-
-      Future
-        .collect(operator.identifiers.map { worker =>
-          send(workerCommand, worker).onFailure((err: Throwable) => {
-            logger.error("Failure when performing reconfiguration", err)
-            // report error to frontend
-            val bpEvt = BreakpointTriggered(
-              mutable.HashMap((worker, FaultedTuple(null, 0)) -> Array(err.toString)),
-              operator.id.operator
-            )
-            sendToClient(bpEvt)
-          })
-        }.toSeq)
-        .unit
+    val workerCommand = if (operator.isPythonOperator) {
+      ModifyPythonOperatorLogic(
+        msg.newOp.getPythonCode,
+        isSource = operator.opExecClass.isInstance(classOf[PythonUDFSourceOpExecV2])
+      )
+    } else {
+      WorkerModifyLogic(msg.newOp, msg.stateTransferFunc)
     }
+
+    Future
+      .collect(operator.getAllWorkers.map { worker =>
+        send(workerCommand, worker).onFailure((err: Throwable) => {
+          logger.error("Failure when performing reconfiguration", err)
+          // report error to frontend
+          val bpEvt = BreakpointTriggered(
+            mutable.HashMap((worker, FaultedTuple(null, 0)) -> Array(err.toString)),
+            operator.id.operator
+          )
+          sendToClient(bpEvt)
+        })
+      }.toSeq)
+      .unit
+  }
   }
 }
