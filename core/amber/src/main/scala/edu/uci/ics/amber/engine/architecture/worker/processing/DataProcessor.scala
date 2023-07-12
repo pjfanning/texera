@@ -8,34 +8,15 @@ import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandle
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
-import edu.uci.ics.amber.engine.architecture.worker.{WorkerInternalQueue, WorkflowWorker}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING
-}
-import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{
-  DPOutputIterator,
-  FinalizeLink,
-  FinalizeOperator
-}
+import edu.uci.ics.amber.engine.architecture.worker.{PauseManager, WorkerInternalQueue, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING}
+import edu.uci.ics.amber.engine.architecture.worker.processing.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelEndpointID,
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, DataFrame, DataPayload, EndOfUpstream, EpochMarker}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 

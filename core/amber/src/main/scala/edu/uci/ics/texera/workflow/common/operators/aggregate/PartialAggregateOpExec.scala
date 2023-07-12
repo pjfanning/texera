@@ -1,17 +1,12 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
-import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
+import edu.uci.ics.amber.engine.architecture.worker.PauseManager
 import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.operators.aggregate.PartialAggregateOpExec.internalAggObjKey
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{
-  Attribute,
-  AttributeType,
-  OperatorSchemaInfo,
-  Schema
-}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asJavaIterableConverter

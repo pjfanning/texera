@@ -1,6 +1,6 @@
-package edu.uci.ics.amber.engine.architecture.worker.processing
+package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue
+import edu.uci.ics.amber.engine.architecture.worker.processing.PauseType
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
