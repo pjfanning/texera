@@ -64,10 +64,4 @@ public class SentimentAnalysisOpExec extends MapOpExec {
         return Tuple.newBuilder(operatorSchemaInfo.outputSchemas()[0]).add(t).add(opDesc.resultAttribute(), AttributeType.INTEGER, sentiment).build();
     }
 
-
-    @Override
-    public String getStateInformation(){
-        return "Sentiment Analysis: average sentiment = "+(sumSentiment/numProcessed);
-    }
-
 }

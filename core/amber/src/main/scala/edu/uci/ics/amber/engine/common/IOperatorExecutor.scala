@@ -21,6 +21,4 @@ trait IOperatorExecutor extends Serializable {
 
   def getParam(query: String): String = { null }
 
-  def getStateInformation: String = ""
-
 }

@@ -249,8 +249,4 @@ class HashJoinOpExec[K](
   override def close(): Unit = {
     buildTableHashMap.clear()
   }
-
-  override def getStateInformation: String = {
-    s"Join: Top-5 matched keys = ${buildTableHits.toSeq.sortBy(_._2).reverse.map(_._1).take(5)}"
-  }
 }

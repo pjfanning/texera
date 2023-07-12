@@ -46,8 +46,4 @@ class ProgressiveSinkOpExec(
       storage.removeOne(tupleValue)
     }
   }
-
-  override def getStateInformation: String = {
-    s"Sink: number of tuple put into the storage is ${numTupleIntoStorage}"
-  }
 }

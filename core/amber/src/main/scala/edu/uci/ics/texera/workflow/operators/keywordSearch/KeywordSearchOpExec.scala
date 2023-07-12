@@ -32,7 +32,4 @@ class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec 
     }
   }
 
-  override def getStateInformation: String =
-    "Keyword search: Last matched tuple = " + last_matched.getFields.toArray.mkString(",")
-
 }

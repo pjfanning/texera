@@ -101,8 +101,4 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       inputReader.close()
     }
   }
-
-  override def getStateInformation: String = {
-    s"Scan: average length of each field in byte = ${sumLen.map(i => i / numRowGenerated).mkString(",")}, current Tuple = $nextRow"
-  }
 }
