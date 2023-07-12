@@ -5,7 +5,6 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 trait OperatorExecutor extends IOperatorExecutor {

@@ -7,15 +7,16 @@ import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{CommandRequest, ExecuteRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
-import io.reactivex.rxjava3.subjects.{PublishSubject, Subject}
+import io.reactivex.rxjava3.subjects.PublishSubject
 
 import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
 import scala.reflect.ClassTag
 
 class AmberClient(

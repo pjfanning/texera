@@ -20,7 +20,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, La
 import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, ISinkOperatorExecutor, ISourceOperatorExecutor}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
+import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -103,6 +103,9 @@ case class OpExecConfig(
     dependency: Map[Int, Int] = Map(),
     isOneToManyOp: Boolean = false
 ) {
+
+  // all the "dependee" links are also blocking inputs
+  lazy val realBlockingInputs: List[Int] = (blockingInputs ++ dependency.values).distinct
 
   // return the runtime class of the corresponding OperatorExecutor
   lazy private val tempOperatorInstance: IOperatorExecutor = initIOperatorExecutor((0, this))
@@ -203,7 +206,7 @@ case class OpExecConfig(
     * outputs all its tuples
     */
   def isInputBlocking(input: LinkIdentity): Boolean = {
-    ordinalMapping.input.get(input).exists(port => blockingInputs.contains(port))
+    ordinalMapping.input.get(input).exists(port => realBlockingInputs.contains(port))
   }
 
   /**

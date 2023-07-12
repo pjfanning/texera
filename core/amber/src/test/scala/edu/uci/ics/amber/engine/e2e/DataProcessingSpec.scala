@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.e2e
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import ch.vorburger.mariadb4j.DB
 import edu.uci.ics.amber.clustering.SingleNodeListener
@@ -25,7 +25,6 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 
 class DataProcessingSpec

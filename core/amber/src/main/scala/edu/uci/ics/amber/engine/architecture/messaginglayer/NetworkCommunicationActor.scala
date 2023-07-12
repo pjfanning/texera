@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorRef, Cancellable, Props}
 import akka.pattern.StatusReply.Ack
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.logging.AsyncLogWriter.SendRequest

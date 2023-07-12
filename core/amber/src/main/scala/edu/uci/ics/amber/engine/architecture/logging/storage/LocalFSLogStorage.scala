@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.LocalFSLogStorage.r
 import org.apache.commons.io.FileUtils
 
 import java.io.{DataInputStream, DataOutputStream}
-import java.nio.file.{CopyOption, Files, OpenOption, Path, Paths, StandardCopyOption, StandardOpenOption}
+import java.nio.file.{ Files,  Path, Paths, StandardCopyOption, StandardOpenOption}
 
 
 object LocalFSLogStorage{

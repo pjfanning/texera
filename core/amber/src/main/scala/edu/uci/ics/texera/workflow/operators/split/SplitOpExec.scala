@@ -4,11 +4,9 @@ import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
 import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
-import scala.collection.mutable
 import scala.util.Random
 
 class SplitOpExec(
@@ -16,7 +14,7 @@ class SplitOpExec(
     val opDesc: SplitOpDesc
 ) extends OperatorExecutor {
 
-  val random = new Random(opDesc.seeds(actor))
+  lazy val random = new Random(opDesc.seeds(actor))
 
   override def processTuple(
       tuple: Either[ITuple, InputExhausted],

@@ -16,11 +16,10 @@ import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, Websoc
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler, WorkflowRewriter}
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.{
+import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
+import edu.uci.ics.texera.workflow.operators.udf.python.{
   DualInputPortsPythonUDFOpDescV2,
-  PythonUDFOpDescV2,
-  PythonUDFOpExecV2
+  PythonUDFOpDescV2
 }
 
 import scala.util.{Failure, Success}
@@ -67,7 +66,7 @@ class WorkflowJobService(
     )
   val jobBreakpointService = new JobBreakpointService(client, stateStore)
   val jobReconfigurationService =
-    new JobReconfigurationService(client, stateStore, workflowCompiler, workflow, pipelinedRegionPlan)
+    new JobReconfigurationService(client, stateStore, workflowCompiler, workflow)
   val jobStatsService = new JobStatsService(client, stateStore)
   val jobRuntimeService =
     new JobRuntimeService(
@@ -101,6 +100,7 @@ class WorkflowJobService(
     stateStore.jobMetadataStore.updateState(jobInfo =>
       jobInfo.withState(READY).withEid(workflowContext.executionID).withError(null)
     )
+    stateStore.statsStore.updateState(stats => stats.withStartTimeStamp(System.currentTimeMillis()))
     client.sendAsyncWithCallback[Unit](
       StartWorkflow(),
       _ => stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(RUNNING))
@@ -126,7 +126,7 @@ class WorkflowJobService(
       logicalPlan = newWorkflowInfo
       logicalPlan.cachedOperatorIds = oldWorkflowInfo.cachedOperatorIds
       logger.info(
-        s"Rewrite the original workflow: ${oldWorkflowInfo} to be: ${logicalPlan}"
+        s"Rewrite the original workflow: $oldWorkflowInfo to be: $logicalPlan"
       )
     }
     logicalPlan

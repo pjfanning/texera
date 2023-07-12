@@ -1,13 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.worker.processing
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OrdinalMapping
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SOURCE_STARTER_OP
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
 
-class UpstreamLinkStatus(ordinalMapping: OrdinalMapping) extends Serializable {
+class UpstreamLinkStatus(opExecConfig: OpExecConfig) extends Serializable {
 
-  val allUpstreamLinkIds: Set[LinkIdentity] = ordinalMapping.input.keySet
+  private val allUpstreamLinkIds: Set[LinkIdentity] = {
+    if (opExecConfig.isSourceOperator)
+      Set(LinkIdentity(SOURCE_STARTER_OP, opExecConfig.id)) // special case for source operator
+    else
+      opExecConfig.inputToOrdinalMapping.keySet
+  }
 
   /**
     * The scheduler may not schedule the entire workflow at once. Consider a 2-phase hash join where the first
@@ -17,21 +23,23 @@ class UpstreamLinkStatus(ordinalMapping: OrdinalMapping) extends Serializable {
     * the build part completes. Therefore, we have a `allUpstreamLinkIds` to track the number of actual upstream
     * links that a worker receives data from.
     */
-  val upstreamMap =
-    new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]]
-  val upstreamMapReverse =
+  private val upstreamMap =
+    new mutable.HashMap[LinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
+  private val upstreamMapReverse =
     new mutable.HashMap[ActorVirtualIdentity, LinkIdentity]
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
   private val completedLinkIds = new mutable.HashSet[LinkIdentity]()
 
   def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
-    if(upstreamMap.contains(input)){
-      upstreamMap(input) = upstreamMap(input) + identifier
-    }else{
-      upstreamMap(input) = Set(identifier)
-    }
+    assert(
+      allUpstreamLinkIds.contains(input),
+      "unexpected input link " + input + " for operator " + opExecConfig.id
+    )
+    upstreamMap.update(input, upstreamMap(input) + identifier)
     upstreamMapReverse.update(identifier, input)
   }
+
+  def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = upstreamMapReverse(identifier)
 
   def getInputLink(identifier: ActorVirtualIdentity): LinkIdentity = upstreamMapReverse(identifier)
 

@@ -1,17 +1,20 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
-import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ModifyLogicHandler.ModifyLogic
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ModifyLogicHandler.ModifyLogic
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.WorkerModifyLogicComplete
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkerModifyLogicComplete
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.SubscriptionManager
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.ModifyLogicRequest
-import edu.uci.ics.texera.web.model.websocket.response.{ModifyLogicCompletedEvent, ModifyLogicResponse}
+import edu.uci.ics.texera.web.model.websocket.response.{
+  ModifyLogicCompletedEvent,
+  ModifyLogicResponse
+}
 import edu.uci.ics.texera.web.storage.{JobReconfigurationStore, JobStateStore}
-import edu.uci.ics.texera.workflow.common.workflow.{PipelinedRegionPlan, WorkflowCompiler}
+import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 
 import java.util.UUID
 import scala.util.{Failure, Success}
@@ -20,8 +23,7 @@ class JobReconfigurationService(
     client: AmberClient,
     stateStore: JobStateStore,
     workflowCompiler: WorkflowCompiler,
-    workflow: Workflow,
-    pipelinedRegionPlan: PipelinedRegionPlan
+    workflow: Workflow
 ) extends SubscriptionManager {
 
   // monitors notification from the engine that a reconfiguration on a worker is completed
@@ -42,7 +44,9 @@ class JobReconfigurationService(
         val diff = newState.completedReconfigs -- oldState.completedReconfigs
         val newlyCompletedOps = diff
           .map(workerId => workflow.getOperator(workerId).id)
-          .filter(opId => workflow.getOperator(opId).numWorkers == newState.completedReconfigs.size)
+          .filter(opId =>
+            workflow.getOperator(opId).getAllWorkers.toSet.subsetOf(newState.completedReconfigs)
+          )
           .map(opId => opId.operator)
         if (newlyCompletedOps.nonEmpty) {
           List(ModifyLogicCompletedEvent(newlyCompletedOps.toList))
@@ -98,7 +102,6 @@ class JobReconfigurationService(
     } else {
       val epochMarkers = FriesReconfigurationAlgorithm.scheduleReconfigurations(
         workflow.physicalPlan,
-        pipelinedRegionPlan,
         reconfigurations,
         reconfigurationId
       )

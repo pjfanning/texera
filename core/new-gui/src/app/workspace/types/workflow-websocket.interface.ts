@@ -145,6 +145,13 @@ export type WorkerAssignmentUpdateEvent = Readonly<{
   workerIds: readonly string[];
 }>;
 
+
+
+export type ExecutionDurationUpdateEvent = Readonly<{
+  duration: number;
+  isRunning: boolean;
+}>;
+
 export type ModifyLogicResponse = Readonly<{
   opId: string;
   isValid: boolean;
@@ -225,6 +232,7 @@ export type TexeraWebsocketEventTypeMap = {
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
   WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
+  ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
   ModifyLogicResponse: ModifyLogicResponse;
   ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
   WorkflowInteractionHistoryEvent: WorkflowInteractionHistoryEvent;

@@ -5,23 +5,22 @@ import { OperatorPropertyEditFrameComponent } from "./operator-property-edit-fra
 import { BreakpointPropertyEditFrameComponent } from "./breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
 import { DynamicComponentConfig } from "../../../common/type/dynamic-component-config";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import {
-  DISPLAY_WORKFLOW_VERIONS_EVENT,
-  WorkflowVersionService,
-} from "src/app/dashboard/service/workflow-version/workflow-version.service";
-import { VersionsListDisplayComponent } from "./versions-display/versions-display.component";
 import { auditTime, filter } from "rxjs/operators";
 import {
   DISPLAY_WORKFLOW_EXECUTION_REPLAY,
   ReplayWorkflowService,
 } from "../../service/execute-workflow/replay-workflow.service";
 import { ReplayDisplayComponent } from "./replay-display/replay-display/replay-display.component";
+} from "src/app/dashboard/user/service/workflow-version/workflow-version.service";
+import { VersionsDisplayFrameComponent } from "./versions-display/versions-display-frame.component";
+import { PortPropertyEditFrameComponent } from "./port-property-edit-frame/port-property-edit-frame.component";
 
 export type PropertyEditFrameComponent =
   | OperatorPropertyEditFrameComponent
   | BreakpointPropertyEditFrameComponent
-  | VersionsListDisplayComponent
-  | ReplayDisplayComponent;
+  | VersionsDisplayFrameComponent
+  | ReplayDisplayComponent
+  | PortPropertyEditFrameComponent;
 
 export type PropertyEditFrameConfig = DynamicComponentConfig<PropertyEditFrameComponent>;
 
@@ -79,6 +78,8 @@ export class PropertyEditorComponent implements OnInit {
       this.workflowActionService.getJointGraphWrapper().getLinkUnhighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxHighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxUnhighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointPortHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointPortUnhighlightStream(),
       this.workflowVersionService.workflowVersionsDisplayObservable(),
       this.replayWorkflowService.displayWorkflowReplayStream()
     )
@@ -87,7 +88,7 @@ export class PropertyEditorComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe(event => {
-        const isDisplayWorkflowVersions = event.length === 1 && event[0] === DISPLAY_WORKFLOW_VERIONS_EVENT;
+        const isDisplayWorkflowVersions = event.length === 1 && event[0] === DISPLAY_WORKFLOW_VERSIONS_EVENT;
         const isDisplayWorkflowReplay = event === DISPLAY_WORKFLOW_EXECUTION_REPLAY;
 
         const highlightedOperators = this.workflowActionService
@@ -95,19 +96,22 @@ export class PropertyEditorComponent implements OnInit {
           .getCurrentHighlightedOperatorIDs();
         const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
         const highlightLinks = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
-        const highlightCommentBoxes = this.workflowActionService
-          .getJointGraphWrapper()
-          .getCurrentHighlightedCommentBoxIDs();
-
+        this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedCommentBoxIDs();
+        const highlightedPorts = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedPortIDs();
         if (isDisplayWorkflowVersions) {
           this.switchFrameComponent({
-            component: VersionsListDisplayComponent,
+            component: VersionsDisplayFrameComponent,
           });
         } else if (isDisplayWorkflowReplay) {
           this.switchFrameComponent({
             component: ReplayDisplayComponent,
           });
-        } else if (highlightedOperators.length === 1 && highlightedGroups.length === 0 && highlightLinks.length === 0) {
+        } else if (
+          highlightedOperators.length === 1 &&
+          highlightedGroups.length === 0 &&
+          highlightLinks.length === 0 &&
+          highlightedPorts.length === 0
+        ) {
           this.switchFrameComponent({
             component: OperatorPropertyEditFrameComponent,
             componentInputs: { currentOperatorId: highlightedOperators[0] },
@@ -116,6 +120,11 @@ export class PropertyEditorComponent implements OnInit {
           this.switchFrameComponent({
             component: BreakpointPropertyEditFrameComponent,
             componentInputs: { currentLinkId: highlightLinks[0] },
+          });
+        } else if (highlightedPorts.length === 1 && highlightedGroups.length === 0 && highlightLinks.length === 0) {
+          this.switchFrameComponent({
+            component: PortPropertyEditFrameComponent,
+            componentInputs: { currentPortID: highlightedPorts[0] },
           });
         } else {
           this.switchFrameComponent(undefined);

@@ -15,6 +15,7 @@ import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
+import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.OpenOperatorHandler.OpenOperator
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SchedulerTimeSlotEventHandler.SchedulerTimeSlotEvent
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.StartHandler.StartWorker
@@ -26,7 +27,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, La
 import edu.uci.ics.amber.engine.common.{Constants, ISourceOperatorExecutor}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.common.workflow.PipelinedRegionPlan
-import edu.uci.ics.texera.workflow.operators.udf.pythonV2.PythonUDFOpExecV2
+import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -164,6 +165,12 @@ class WorkflowScheduler(
             val pythonUDFOpExec = pythonUDFOpExecConfig
               .initIOperatorExecutor((0, pythonUDFOpExecConfig))
               .asInstanceOf[PythonUDFOpExecV2]
+            val inputMappingList = pythonUDFOpExecConfig.inputToOrdinalMapping
+              .map(kv => LinkOrdinal(kv._1, kv._2))
+              .toList
+            val outputMappingList = pythonUDFOpExecConfig.outputToOrdinalMapping
+              .map(kv => LinkOrdinal(kv._1, kv._2))
+              .toList
             getAsyncRPCClient.send(
               InitializeOperatorLogic(
                 pythonUDFOpExec.getCode,
@@ -171,6 +178,8 @@ class WorkflowScheduler(
                   .getInlinksIdsToWorkerLayer(VirtualIdentityUtils.getOperator(workerID))
                   .toArray,
                 pythonUDFOpExec.isInstanceOf[ISourceOperatorExecutor],
+                inputMappingList,
+                outputMappingList,
                 pythonUDFOpExec.getOutputSchema
               ),
               workerID

@@ -80,7 +80,10 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def open(): Unit = {
-    inputReader = new InputStreamReader(new FileInputStream(new File(desc.filePath.get)))
+    inputReader = new InputStreamReader(
+      new FileInputStream(new File(desc.filePath.get)),
+      desc.fileEncoding.getCharset
+    )
     val csvFormat = new CsvFormat()
     csvFormat.setDelimiter(desc.customDelimiter.get.charAt(0))
     csvFormat.setComment(

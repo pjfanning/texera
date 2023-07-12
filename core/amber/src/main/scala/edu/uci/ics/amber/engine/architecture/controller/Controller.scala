@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller
 import akka.actor.{ActorRef, Address, Props}
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
+import edu.uci.ics.amber.engine.architecture.controller.Controller.recoveryDelay
 import edu.uci.ics.amber.engine.architecture.controller.processing.{ControlProcessor, ControllerInternalPayloadManager}
 import edu.uci.ics.amber.engine.architecture.recovery.{ControllerReplayQueue, InternalPayloadManager}
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -35,6 +36,8 @@ final case class ControllerConfig(
 )
 
 object Controller {
+
+  val recoveryDelay: Long = AmberUtils.amberConfig.getLong("fault-tolerance.delay-before-recovery")
 
   def props(
       workflow: Workflow,

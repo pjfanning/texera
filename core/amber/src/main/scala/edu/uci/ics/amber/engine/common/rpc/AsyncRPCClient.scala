@@ -4,6 +4,7 @@ import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
@@ -74,7 +75,7 @@ class AsyncRPCClient(
         case error: Throwable =>
           p.setException(error)
         case ControlException(msg) =>
-          p.setException(new RuntimeException(msg))
+          p.setException(new WorkflowRuntimeException(msg))
         case _ =>
           p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
       }

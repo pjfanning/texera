@@ -5,11 +5,8 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
 import edu.uci.ics.amber.engine.architecture.controller.processing.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
-import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.{ControlCommand, SkipReply}
-
-import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 
 object RegionsTimeSlotExpiredHandler {
   final case class RegionsTimeSlotExpired(regions: Set[PipelinedRegion])
