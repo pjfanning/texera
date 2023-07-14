@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ShutdownDPThreadHandler.ShutdownDPThread
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -14,7 +14,7 @@ object ShutdownDPThreadHandler {
 }
 
 trait ShutdownDPThreadHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: WorkerAsyncRPCService =>
 
   registerHandler { (msg: ShutdownDPThread, sender) =>
     {

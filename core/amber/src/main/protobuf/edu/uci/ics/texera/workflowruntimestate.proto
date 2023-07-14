@@ -3,7 +3,7 @@ syntax = "proto3";
 package edu.uci.ics.texera.web;
 
 import "google/protobuf/timestamp.proto";
-import "edu/uci/ics/amber/engine/architecture/worker/workerrpc.proto";
+import "edu/uci/ics/amber/engine/architecture/worker/workercallservice.proto";
 import "scalapb/scalapb.proto";
 
 option (scalapb.options) = {

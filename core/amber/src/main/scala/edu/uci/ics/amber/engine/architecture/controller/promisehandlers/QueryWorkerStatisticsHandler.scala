@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
@@ -22,7 +22,7 @@ object QueryWorkerStatisticsHandler {
   * possible sender: controller(by statusUpdateAskHandle)
   */
 trait QueryWorkerStatisticsHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler((msg: ControllerInitiateQueryStatistics, sender) => {
     // send to specified workers (or all workers by default)

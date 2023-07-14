@@ -1,9 +1,10 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Promise
+import io.grpc.ClientCall
 
 object WorkflowPromise {
-  def apply[T](): WorkflowPromise[T] = new WorkflowPromise[T]()
+  def apply[T](listener: ClientCall.Listener[T]): WorkflowPromise[T] = new WorkflowPromise[T](listener)
 }
 
 /** This class represents the promise control message, which can be passed
@@ -11,7 +12,7 @@ object WorkflowPromise {
   * participation of multiple actors.
   * @tparam T the return value type.
   */
-class WorkflowPromise[T]() extends Promise[T] {
+class WorkflowPromise[T](listener: ClientCall.Listener[T]) extends Promise[T] {
 
   type returnType = T
 

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -17,7 +17,7 @@ object RegionsTimeSlotExpiredHandler {
   * possible sender: controller (scheduler)
   */
 trait RegionsTimeSlotExpiredHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: RegionsTimeSlotExpired, sender) =>
     {

@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -14,7 +14,7 @@ object StartWorkflowHandler {
   * possible sender: client
   */
 trait StartWorkflowHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: StartWorkflow, sender) =>
     {

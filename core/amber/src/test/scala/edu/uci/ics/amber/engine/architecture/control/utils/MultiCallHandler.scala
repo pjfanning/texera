@@ -12,7 +12,7 @@ object MultiCallHandler {
 }
 
 trait MultiCallHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (m: MultiCall, sender) =>
     send(Chain(m.seq), myID)

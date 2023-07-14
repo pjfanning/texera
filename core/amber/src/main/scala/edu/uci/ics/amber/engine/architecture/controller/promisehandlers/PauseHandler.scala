@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowStatusUpdate
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
@@ -27,7 +27,7 @@ object PauseHandler {
   * possible sender: client, controller
   */
 trait PauseHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: PauseWorkflow, sender) =>
     {

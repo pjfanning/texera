@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
@@ -18,7 +18,7 @@ object MonitoringHandler {
 }
 
 trait MonitoringHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
   var previousCallFinished = true
 
   def updateWorkloadSamples(

@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package edu.uci.ics.amber.engine.architecture.worker;
+
+import "edu/uci/ics/amber/engine/architecture/sendsemantics/partitionings.proto";
+import "edu/uci/ics/amber/engine/common/virtualidentity.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "scalapb/scalapb.proto";
+
+option (scalapb.options) = {
+  scope: FILE,
+  preserve_unknown_fields: false
+};
+
+service WorkerCallService {
+  rpc AcceptImmutableState (AcceptImmutableStateRequest) returns (AcceptImmutableStateResponse);
+  rpc AddPartitioning (AddPartitioningRequest) returns (AddPartitioningResponse);
+  rpc AssignLocalBreakpoint (AssignLocalBreakpointRequest) returns (AssignLocalBreakpointResponse);
+  rpc BackPressure (BackPressureEvent) returns (google.protobuf.Empty);
+  rpc FlushNetworkBuffer (FlushNetworkBufferEvent) returns (google.protobuf.Empty);
+  rpc ModifyOperatorLogic (ModifyOperatorLogicRequest) returns (ModifyOperatorLogicResponse);
+  rpc MonitorWorkerState (MonitorWorkerStateRequest) returns (MonitorWorkerStateResponse);
+  rpc PauseSkewMitigation (PauseSkewMitigationRequest) returns (PauseSkewMitigationResponse);
+  rpc QueryAndRemoveBreakpoints (QueryAndRemoveBreakpointsRequest) returns (QueryAndRemoveBreakpointsResponse);
+  rpc QueryCurrentInputTuple (QueryCurrentInputTupleRequest) returns (QueryCurrentInputTupleResponse);
+  rpc QueryStatistics (QueryStatisticsRequest) returns (QueryStatisticsResponse);
+  rpc StartWorker (StartWorkerRequest) returns (StartWorkerResponse);
+  rpc PauseWorker (PauseWorkerRequest) returns (PauseWorkerResponse);
+  rpc ResumeWorker (ResumeWorkerRequest) returns (ResumeWorkerResponse);
+  rpc SchedulerTimeSlotEvent (SchedulerTimeSlotEventRequest) returns (SchedulerTimeSlotEventResponse);
+  rpc SendImmutableState (SendImmutableStateRequest) returns (SendImmutableStateResponse);
+  rpc SharePartition (SharePartitionRequest) returns (SharePartitionResponse);
+  rpc ShutdownDPThread (ShutdownDPThreadEvent) returns (google.protobuf.Empty);
+  rpc OpenOperator (OpenOperatorRequest) returns (OpenOperatorResponse);
+  rpc UpdateInputLinking (UpdateInputLinkingRequest) returns (UpdateInputLinkingResponse);
+  rpc WorkerPropagateEpochMarker (WorkerPropagateEpochMarkerRequest) returns (google.protobuf.Empty);
+  rpc RetryTuple (RetryTupleRequest) returns (RetryTupleResponse);
+  rpc DebugCommand (DebugCommandRequest) returns (DebugCommandResponse);
+  rpc EvaluatePythonExpression (EvaluatePythonExpressionRequest) returns (EvaluatePythonExpressionResponse);
+  rpc InitializeOperatorLogic (InitializeOperatorLogicRequest) returns (InitializeOperatorLogicResponse);
+}
+
+message EvaluatePythonExpressionRequest {
+  string expression = 1;
+}
+
+message EvaluatePythonExpressionResponse {}
+
+message UpdateInputLinkingResponse {}
+
+message OpenOperatorResponse {}
+
+message SharePartitionResponse {}
+
+message SendImmutableStateResponse {}
+
+message SchedulerTimeSlotEventResponse {}
+
+message ResumeWorkerResponse {}
+
+message PauseWorkerResponse {}
+
+message StartWorkerRequest {}
+
+message QueryCurrentInputTupleResponse {}
+
+message QueryAndRemoveBreakpointsResponse {}
+
+message PauseSkewMitigationResponse {}
+
+message MonitorWorkerStateResponse {}
+
+message ModifyOperatorLogicResponse {}
+
+message AssignLocalBreakpointResponse {}
+
+message AddPartitioningResponse {}
+
+message AcceptImmutableStateResponse {}
+
+message WorkerPropagateEpochMarkerRequest {}
+
+message ShutdownDPThreadEvent {}
+
+message SharePartitionRequest {}
+
+message SendImmutableStateRequest {}
+
+message QueryStatisticsRequest {}
+
+message QueryStatisticsResponse {}
+
+message QueryCurrentInputTupleRequest {}
+
+message QueryAndRemoveBreakpointsRequest {}
+
+message PauseSkewMitigationRequest {}
+
+message MonitorWorkerStateRequest {}
+
+message FlushNetworkBufferEvent {}
+
+message BackPressureEvent {}
+
+message AssignLocalBreakpointRequest {}
+
+message AcceptImmutableStateRequest {}
+
+message StartWorkerResponse {}
+
+message PauseWorkerRequest {}
+
+message ResumeWorkerRequest {}
+
+message DebugCommandRequest {
+  string cmd = 1;
+}
+
+message DebugCommandResponse {}
+
+message SchedulerTimeSlotEventRequest {
+  bool time_slot_expired = 1;
+}
+
+message OpenOperatorRequest {}
+
+message UpdateInputLinkingRequest {
+  common.ActorVirtualIdentity identifier = 1 [(scalapb.field).no_box = true];
+  common.LinkIdentity input_link = 2 [(scalapb.field).no_box = true];
+}
+
+message AddPartitioningRequest {
+  common.LinkIdentity tag = 1 [(scalapb.field).no_box = true];
+  architecture.sendsemantics.Partitioning partitioning = 2 [(scalapb.field).no_box = true];
+}
+
+message LinkOrdinal {
+  common.LinkIdentity link_id = 1 [(scalapb.field).no_box = true];
+  int64 port_ordinal = 2;
+}
+
+message InitializeOperatorLogicRequest {
+  string code = 1;
+  bool is_source = 2;
+  repeated LinkOrdinal input_ordinal_mapping = 3;
+  repeated LinkOrdinal output_ordinal_mapping = 4;
+  map<string, string> output_schema = 5;
+}
+
+message InitializeOperatorLogicResponse {
+
+}
+
+message ModifyOperatorLogicRequest {
+  string code = 1;
+  bool is_source = 2;
+}
+
+message RetryTupleRequest {}
+
+message RetryTupleResponse {}
+
+message CurrentInputTupleInfo {
+}
+
+message ControlException {
+  string msg = 1;
+}
+
+message TypedValue {
+  string expression = 1;
+  string value_ref = 2;
+  string value_str = 3;
+  string value_type = 4;
+  bool expandable = 5;
+}
+
+message EvaluatedValue {
+  TypedValue value = 1;
+  repeated TypedValue attributes = 2;
+}

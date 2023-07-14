@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.{UserPause, WorkerAsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.architecture.worker.{UserPause, WorkerAsyncRPCService}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, RUNNING}
@@ -11,7 +11,7 @@ object ResumeHandler {
 }
 
 trait ResumeHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: WorkerAsyncRPCService =>
 
   registerHandler { (msg: ResumeWorker, sender) =>
     if (stateManager.getCurrentState == PAUSED) {

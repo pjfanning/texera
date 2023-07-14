@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, WorkflowControlMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCService
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
@@ -21,8 +21,8 @@ class TrivialControlTester(
 
   lazy val controlInputPort: NetworkInputPort[ControlPayload] =
     new NetworkInputPort[ControlPayload](id, this.handleControlPayloadWithTryCatch)
-  override val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
-    wire[TesterAsyncRPCHandlerInitializer]
+  override val rpcHandlerInitializer: AsyncRPCService =
+    wire[TesterAsyncRPCService]
 
   override def receive: Receive = {
     disallowActorRefRelatedMessages orElse {

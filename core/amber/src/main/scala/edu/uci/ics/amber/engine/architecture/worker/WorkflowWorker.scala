@@ -24,7 +24,7 @@ import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCHandlerInitializer}
+import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCService}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
@@ -79,8 +79,8 @@ class WorkflowWorker(
   implicit val timeout: Timeout = 5.seconds
   val workerStateManager: WorkerStateManager = new WorkerStateManager()
   val epochManager: EpochManager = wire[EpochManager]
-  val rpcHandlerInitializer: AsyncRPCHandlerInitializer =
-    wire[WorkerAsyncRPCHandlerInitializer]
+  val rpcHandlerInitializer: AsyncRPCService =
+    wire[WorkerAsyncRPCService]
 
   if (parentNetworkCommunicationActorRef != null) {
     parentNetworkCommunicationActorRef.waitUntil(RegisterActorRef(this.actorId, self))

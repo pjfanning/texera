@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.Backpressure
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCService
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.Utils
 
@@ -59,7 +59,7 @@ class PythonWorkflowWorker(
     new PythonProxyClient(portNumberPromise, actorId)
 
   // TODO: find a better way to send Error log to frontend.
-  override val rpcHandlerInitializer: AsyncRPCHandlerInitializer = null
+  override val rpcHandlerInitializer: AsyncRPCService = null
 
   val pythonSrcDirectory: Path = Utils.amberHomePath
     .resolve("src")

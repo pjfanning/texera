@@ -29,7 +29,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
 }
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
-  AsyncRPCHandlerInitializer,
+  AsyncRPCService,
   AsyncRPCServer
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -68,7 +68,7 @@ abstract class WorkflowActor(
   }
   // this variable cannot be lazy
   // because it should be initialized with the actor itself
-  val rpcHandlerInitializer: AsyncRPCHandlerInitializer
+  val rpcHandlerInitializer: AsyncRPCService
 
   // Get log file name
   def getLogName: String = "worker-actor"

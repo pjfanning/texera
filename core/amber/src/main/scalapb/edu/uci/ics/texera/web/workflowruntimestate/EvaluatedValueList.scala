@@ -7,7 +7,7 @@ package edu.uci.ics.texera.web.workflowruntimestate
 
 @SerialVersionUID(0L)
 final case class EvaluatedValueList(
-    values: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue] = _root_.scala.Seq.empty
+    values: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue] = _root_.scala.Seq.empty
     ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[EvaluatedValueList] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
@@ -36,9 +36,9 @@ final case class EvaluatedValueList(
       };
     }
     def clearValues = copy(values = _root_.scala.Seq.empty)
-    def addValues(__vs: edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue*): EvaluatedValueList = addAllValues(__vs)
-    def addAllValues(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]): EvaluatedValueList = copy(values = values ++ __vs)
-    def withValues(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]): EvaluatedValueList = copy(values = __v)
+    def addValues(__vs: edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue*): EvaluatedValueList = addAllValues(__vs)
+    def addAllValues(__vs: Iterable[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]): EvaluatedValueList = copy(values = values ++ __vs)
+    def withValues(__v: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]): EvaluatedValueList = copy(values = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => values
@@ -58,14 +58,14 @@ final case class EvaluatedValueList(
 object EvaluatedValueList extends scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList] {
   implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList] = this
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList = {
-    val __values: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]
+    val __values: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
       _tag__ match {
         case 0 => _done__ = true
         case 10 =>
-          __values += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue](_input__)
+          __values += _root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue](_input__)
         case tag => _input__.skipField(tag)
       }
     }
@@ -77,7 +77,7 @@ object EvaluatedValueList extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
       edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList(
-        values = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]]).getOrElse(_root_.scala.Seq.empty)
+        values = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]]).getOrElse(_root_.scala.Seq.empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
@@ -86,7 +86,7 @@ object EvaluatedValueList extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
-      case 1 => __out = edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue
+      case 1 => __out = edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue
     }
     __out
   }
@@ -96,11 +96,11 @@ object EvaluatedValueList extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
     values = _root_.scala.Seq.empty
   )
   implicit class EvaluatedValueListLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList](_l) {
-    def values: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]] = field(_.values)((c_, f_) => c_.copy(values = f_))
+    def values: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]] = field(_.values)((c_, f_) => c_.copy(values = f_))
   }
   final val VALUES_FIELD_NUMBER = 1
   def of(
-    values: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workerrpc.EvaluatedValue]
+    values: _root_.scala.Seq[edu.uci.ics.amber.engine.architecture.worker.workercallservice.EvaluatedValue]
   ): _root_.edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList = _root_.edu.uci.ics.texera.web.workflowruntimestate.EvaluatedValueList(
     values
   )

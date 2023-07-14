@@ -9,7 +9,7 @@ object RecursionHandler {
 }
 
 trait RecursionHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (r: Recursion, sender) =>
     if (r.i < 5) {

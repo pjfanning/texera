@@ -1,18 +1,21 @@
 package edu.uci.ics.amber.engine.common.rpc
 
-import com.twitter.util.Future
+import com.twitter.util.{Future => TwitterFuture}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
-import edu.uci.ics.amber.engine.architecture.worker.rpctest.GreeterGrpc.Greeter
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation, noReplyNeeded}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.rpcwrapper.{ControlInvocation, ControlPayload, ControlReturn}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.web.MethodFinder.findMethodByName
 import io.grpc.ServerServiceDefinition
+import edu.uci.ics.amber.engine.common.FutureBijection._
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
+import scalapb.GeneratedMessage
 
+import javax.annotation.processing.Generated
 import scala.collection.mutable
+import scala.concurrent.Future
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -36,54 +39,48 @@ object AsyncRPCServer {
 
   trait ControlCommand[T]
 
-  def getMethodMapping(sev:ServerServiceDefinition): Map[String, Any => Any] ={
+  def getMethodMapping(instance:Any, sev:ServerServiceDefinition): Map[String, Any => TwitterFuture[_]] ={
     val methods = sev.getMethods
-    val map = new mutable.HashMap[String, (Any) => Any]
+    val map = new mutable.HashMap[String, Any => TwitterFuture[_]]
     methods.forEach(m => {
-      val methodNameRaw = m.getMethodDescriptor.getBareMethodName
-      val methodName = s"${methodNameRaw.head.toLower}${methodNameRaw.tail}"
-      val method = findMethodByName(handlers, methodName).get
-      val wrappedCall = (req:Any) => {method.apply(req)}
-      map(methodNameRaw) = wrappedCall
+      val fullMethodName = m.getMethodDescriptor.getFullMethodName
+      val localMethodName = m.getMethodDescriptor.getBareMethodName
+      val methodName = s"${localMethodName.head.toLower}${localMethodName.tail}"
+      val method = findMethodByName(instance, methodName).get
+      val wrappedCall = (req:Any) => {method.apply(req).asInstanceOf[Future[_]].asTwitter()}
+      map(fullMethodName) = wrappedCall
     })
     map.toMap
   }
 
 }
 
-class AsyncRPCServer(
+abstract class AsyncRPCServer(
     controlOutputEndpoint: NetworkOutputPort[ControlPayload],
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
-  // all handlers
-  protected var handlers: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]] =
-    PartialFunction.empty
+  def methodMapping:Map[String, Any => TwitterFuture[_]]
 
-  // note that register handler allows multiple handlers for a control message and uses the latest handler.
-  def registerHandler(
-      newHandler: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]]
-  ): Unit = {
-    handlers =
-      newHandler orElse handlers
-
-  }
+  def getContext:RpcContext
 
   def receive(control: ControlInvocation, senderID: ActorVirtualIdentity): Unit = {
     try {
-      execute((control.command, senderID))
+      if(control.enableTracing){
+        logger.trace(s"receive $control")
+      }
+      methodMapping(control.methodName).apply(control.param)
         .onSuccess { ret =>
-          returnResult(senderID, control.commandID, ret)
+          returnResult(senderID, control, ret)
         }
         .onFailure { err =>
           logger.error("Exception occurred", err)
-          returnResult(senderID, control.commandID, err)
+          returnResult(senderID, control, err)
         }
-
     } catch {
       case err: Throwable =>
         // if error occurs, return it to the sender.
-        returnResult(senderID, control.commandID, err)
+        returnResult(senderID, control, err)
 
       // if throw this exception right now, the above message might not be able
       // to be sent out. We do not throw for now.
@@ -91,28 +88,11 @@ class AsyncRPCServer(
     }
   }
 
-  def execute(cmd: (ControlCommand[_], ActorVirtualIdentity)): Future[_] = {
-    handlers(cmd)
-  }
-
   @inline
-  private def returnResult(sender: ActorVirtualIdentity, id: Long, ret: Any): Unit = {
-    if (noReplyNeeded(id)) {
-      return
-    }
-    controlOutputEndpoint.sendTo(sender, ReturnInvocation(id, ret))
+  private def returnResult(sender: ActorVirtualIdentity, control: ControlInvocation, ret: Any): Unit = {
+    val returnValue = ControlReturn(control.controlId, control.enableTracing, com.google.protobuf.any.Any.pack(ret.asInstanceOf[GeneratedMessage]))
+    controlOutputEndpoint.sendTo(sender, ControlPayload.defaultInstance.withReturnValue(returnValue))
   }
 
-  def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
-    if (call.commandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-      return
-    }
-    if (call.command.isInstanceOf[QueryStatistics]) {
-      return
-    }
-    logger.info(
-      s"receive command: ${call.command} from $sender (controlID: ${call.commandID})"
-    )
-  }
 
 }

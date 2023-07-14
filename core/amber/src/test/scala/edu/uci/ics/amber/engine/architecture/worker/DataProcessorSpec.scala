@@ -326,8 +326,8 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     val pauseManager = dp.pauseManager
     val internalQueue = dp.internalQueue
     val epochManager = dp.epochManager
-    val asyncRpcInitializer: WorkerAsyncRPCHandlerInitializer =
-      wire[WorkerAsyncRPCHandlerInitializer]
+    val asyncRpcInitializer: WorkerAsyncRPCService =
+      wire[WorkerAsyncRPCService]
 
     inSequence {
       (operator.processTuple _).expects(*, *, *, *).once()

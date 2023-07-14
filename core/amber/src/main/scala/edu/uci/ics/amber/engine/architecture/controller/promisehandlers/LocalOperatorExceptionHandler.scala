@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.BreakpointTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
@@ -29,7 +29,7 @@ object LocalOperatorExceptionHandler {
   * possible sender: worker
   */
 trait LocalOperatorExceptionHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
   registerHandler { (msg: LocalOperatorException, sender) =>
     {
 

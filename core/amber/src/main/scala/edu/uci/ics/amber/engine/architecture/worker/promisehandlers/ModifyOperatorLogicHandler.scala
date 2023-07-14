@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
   WorkerModifyLogic,
   WorkerModifyLogicComplete,
@@ -28,11 +28,11 @@ object ModifyOperatorLogicHandler {
   * possible sender: controller(by ControllerInitiateMonitoring)
   */
 trait ModifyOperatorLogicHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: WorkerAsyncRPCService =>
 
   registerHandler { (msg: WorkerModifyLogic, _) =>
     performModifyLogic(msg)
-    sendToClient(WorkerModifyLogicComplete(this.actorId))
+    sendToClient(WorkerModifyLogicComplete(this.serviceActorId))
   }
 
   registerHandler { (msg: WorkerModifyLogicMultiple, _) =>
@@ -40,7 +40,7 @@ trait ModifyOperatorLogicHandler {
       msg.modifyLogicList.find(o => o.opExecConfig.id == dataProcessor.opExecConfig.id)
     if (modifyLogic.nonEmpty) {
       performModifyLogic(modifyLogic.get)
-      sendToClient(WorkerModifyLogicComplete(this.actorId))
+      sendToClient(WorkerModifyLogicComplete(this.serviceActorId))
     }
   }
 

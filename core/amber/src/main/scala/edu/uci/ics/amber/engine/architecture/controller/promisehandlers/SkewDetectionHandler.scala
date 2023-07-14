@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler._
 import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerAsyncRPCHandlerInitializer,
+  ControllerAsyncRPCService,
   Workflow
 }
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
@@ -265,7 +265,7 @@ object SkewDetectionHandler {
 }
 
 trait SkewDetectionHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   /**
     * Sends `SharePartition` control message to each worker in `prevWorkerLayer` to start the first phase.

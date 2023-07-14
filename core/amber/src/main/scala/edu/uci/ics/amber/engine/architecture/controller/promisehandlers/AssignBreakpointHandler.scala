@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.LocalBreakpoint
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AssignLocalBreakpointHandler.AssignLocalBreakpoint
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -21,7 +21,7 @@ object AssignBreakpointHandler {
   * possible sender: controller, client
   */
 trait AssignBreakpointHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: AssignGlobalBreakpoint[_], sender) =>
     {

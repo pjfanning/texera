@@ -117,8 +117,8 @@ class Controller(
       controllerConfig
     )
 
-  val rpcHandlerInitializer: ControllerAsyncRPCHandlerInitializer =
-    wire[ControllerAsyncRPCHandlerInitializer]
+  val rpcHandlerInitializer: ControllerAsyncRPCService =
+    wire[ControllerAsyncRPCService]
 
   // register controller itself and client
   networkCommunicationActor.waitUntil(RegisterActorRef(CONTROLLER, self))

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AcceptImmutableStateHandler.AcceptImmutableState
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutableStateHandler.SendImmutableState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -26,7 +26,7 @@ object SendImmutableStateHandler {
 }
 
 trait SendImmutableStateHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: WorkerAsyncRPCService =>
 
   registerHandler { (cmd: SendImmutableState, sender) =>
     dataProcessor.getOperatorExecutor() match {

@@ -10,7 +10,7 @@ object ChainHandler {
 }
 
 trait ChainHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (x: Chain, sender) =>
     println(s"chained $myID")

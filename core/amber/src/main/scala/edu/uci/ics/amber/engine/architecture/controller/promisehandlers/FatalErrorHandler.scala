@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
@@ -13,7 +13,7 @@ object FatalErrorHandler {
   * possible sender: controller, worker
   */
 trait FatalErrorHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: FatalError, sender) =>
     {

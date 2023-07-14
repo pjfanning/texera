@@ -12,7 +12,7 @@ object PingPongHandler {
 }
 
 trait PingPongHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (ping: Ping, sender) =>
     println(s"${ping.i} ping")

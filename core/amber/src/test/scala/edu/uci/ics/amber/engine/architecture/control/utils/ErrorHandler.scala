@@ -8,7 +8,7 @@ object ErrorHandler {
 }
 
 trait ErrorHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (x: ErrorCommand, sender) =>
     throw new RuntimeException("this is an exception")

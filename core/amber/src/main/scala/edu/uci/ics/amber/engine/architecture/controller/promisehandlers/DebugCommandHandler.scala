@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.DebugCommandHandler.DebugCommand
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.WorkerDebugCommandHandler.WorkerDebugCommand
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -11,10 +11,11 @@ object DebugCommandHandler {
 }
 
 trait DebugCommandHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
-  registerHandler { (msg: DebugCommand, sender) =>
-    {
-      send(WorkerDebugCommand(msg.cmd), ActorVirtualIdentity(msg.workerId))
-    }
-  }
+  this: ControllerAsyncRPCService =>
+//  registerHandler { (msg: DebugCommand, sender) =>
+//    {
+//      getStub(ActorVirtualIdentity(msg.workerId))
+//      send(WorkerDebugCommand(msg.cmd), ActorVirtualIdentity(msg.workerId))
+//    }
+//  }
 }

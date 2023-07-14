@@ -5,6 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.rpctest.GreeterGrpc.Greeter
 import edu.uci.ics.amber.engine.architecture.worker.rpctest.{GreeterGrpc, HelloReply, HelloRequest}
+import edu.uci.ics.amber.engine.architecture.worker.workercallservice.{OpenOperatorRequest, OpenOperatorResponse, WorkerCallServiceGrpc}
 import edu.uci.ics.amber.engine.common.rpc.CurrentThreadExecutionContext
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
@@ -42,17 +43,13 @@ object JsonTest {
 
   def main(args: Array[String]): Unit = {
 
-    class GreeterImpl extends GreeterGrpc.Greeter with helloImpl with helloImpl2 {
-      val output = new NetworkOutputPort[GeneratedMessage](CONTROLLER, (a,b,c,d) =>{println(d)})
-      val client = new AsyncRPCClient(output)
+    class GreeterImpl extends WorkerCallServiceGrpc.WorkerCallService {
     }
 
     trait helloImpl{
       this:GreeterImpl =>
-      override def sayHello(req: HelloRequest) = {
-        val reply = HelloReply(message = "Hello " + req.name)
-        client.getStub(ActorVirtualIdentity("dest1")).sayHello2(req)
-        Future.successful(reply)
+      override def openOperator(request: OpenOperatorRequest): Future[OpenOperatorResponse] = {
+
       }
     }
 

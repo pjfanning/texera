@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.WorkerEpochMarkerHandler.WorkerPropagateEpochMarker
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
@@ -16,7 +16,7 @@ object EpochMarkerHandler {
 }
 
 trait EpochMarkerHandler {
-  this: ControllerAsyncRPCHandlerInitializer =>
+  this: ControllerAsyncRPCService =>
 
   registerHandler { (msg: PropagateEpochMarker, sender) =>
     {

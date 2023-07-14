@@ -1,17 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCService
+import edu.uci.ics.amber.engine.architecture.worker.workercallservice.{OpenOperatorRequest, OpenOperatorResponse}
 
-object OpenOperatorHandler {
-
-  final case class OpenOperator() extends ControlCommand[Unit]
-}
+import scala.concurrent.Future
 
 trait OpenOperatorHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
-  registerHandler { (openOperator: OpenOperator, sender) =>
+  this: WorkerAsyncRPCService =>
+  override def openOperator(request: OpenOperatorRequest): Future[OpenOperatorResponse] = {
     operator.open()
+    Future{
+      OpenOperatorResponse()
+    }
   }
 }

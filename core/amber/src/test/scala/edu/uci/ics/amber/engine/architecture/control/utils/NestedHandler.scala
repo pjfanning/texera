@@ -10,7 +10,7 @@ object NestedHandler {
 }
 
 trait NestedHandler {
-  this: TesterAsyncRPCHandlerInitializer =>
+  this: TesterAsyncRPCService =>
 
   registerHandler { (n: Nested, sender) =>
     send(Pass("Hello"), myID)

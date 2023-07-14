@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners.ReshapePartitioner
-import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitializer
+import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -24,7 +24,7 @@ object MonitoringHandler {
   * possible sender: controller(by ControllerInitiateMonitoring)
   */
 trait MonitoringHandler {
-  this: WorkerAsyncRPCHandlerInitializer =>
+  this: WorkerAsyncRPCService =>
 
   def getWorkloadHistory(
       outputManager: OutputManager
