@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
+import edu.uci.ics.amber.engine.architecture.worker.controlcommands.PauseWorkerV2
 import edu.uci.ics.amber.engine.architecture.worker.{UserPause, WorkerAsyncRPCHandlerInitializer}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState

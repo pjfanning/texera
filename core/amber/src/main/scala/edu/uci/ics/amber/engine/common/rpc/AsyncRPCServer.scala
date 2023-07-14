@@ -3,15 +3,16 @@ package edu.uci.ics.amber.engine.common.rpc
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.architecture.worker.rpctest.GreeterGrpc.Greeter
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
-  ControlInvocation,
-  ReturnInvocation,
-  noReplyNeeded
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation, noReplyNeeded}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.web.MethodFinder.findMethodByName
+import io.grpc.ServerServiceDefinition
+
+import scala.collection.mutable
 
 /** Motivation of having a separate module to handle control messages as RPCs:
   * In the old design, every control message and its response are handled by
@@ -34,6 +35,19 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 object AsyncRPCServer {
 
   trait ControlCommand[T]
+
+  def getMethodMapping(sev:ServerServiceDefinition): Map[String, Any => Any] ={
+    val methods = sev.getMethods
+    val map = new mutable.HashMap[String, (Any) => Any]
+    methods.forEach(m => {
+      val methodNameRaw = m.getMethodDescriptor.getBareMethodName
+      val methodName = s"${methodNameRaw.head.toLower}${methodNameRaw.tail}"
+      val method = findMethodByName(handlers, methodName).get
+      val wrappedCall = (req:Any) => {method.apply(req)}
+      map(methodNameRaw) = wrappedCall
+    })
+    map.toMap
+  }
 
 }
 

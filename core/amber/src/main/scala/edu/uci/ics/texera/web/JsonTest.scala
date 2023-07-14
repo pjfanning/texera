@@ -1,21 +1,86 @@
 package edu.uci.ics.texera.web
 
-import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
+import com.twitter.util.Promise
+import edu.uci.ics.amber.engine.architecture.controller.Controller
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.worker.rpctest.GreeterGrpc.Greeter
+import edu.uci.ics.amber.engine.architecture.worker.rpctest.{GreeterGrpc, HelloReply, HelloRequest}
+import edu.uci.ics.amber.engine.common.rpc.CurrentThreadExecutionContext
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.texera.web.MethodFinder.findMethodByName
+import io.grpc.{CallOptions, Channel, ClientCall, ManagedChannelBuilder, Metadata, MethodDescriptor, ServerBuilder}
+import scalapb.GeneratedMessage
+import scalapb.grpc.{ClientCalls, ConcreteProtoMethodDescriptorSupplier}
+
+import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.currentMirror
+
+object MethodFinder {
+  def findMethodByName(instance: Any, methodName: String): Option[ru.MethodMirror] = {
+    val classSymbol = currentMirror.reflect(instance).symbol
+    val classMirror = currentMirror.reflect(instance)
+
+    val methods = classSymbol.toType.members
+      .filter(_.isMethod)
+      .map(_.asMethod)
+      .filter(_.name.toString == methodName)
+
+    if (methods.nonEmpty) {
+      val methodSymbol = methods.head
+      val methodMirror = classMirror.reflectMethod(methodSymbol)
+      Some(methodMirror)
+    } else {
+      None
+    }
+  }
+}
 
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
-    val a = RUNNING
-    val om = Utils.objectMapper
 
-    val str = om.writeValueAsString(a)
-    println(str)
+    class GreeterImpl extends GreeterGrpc.Greeter with helloImpl with helloImpl2 {
+      val output = new NetworkOutputPort[GeneratedMessage](CONTROLLER, (a,b,c,d) =>{println(d)})
+      val client = new AsyncRPCClient(output)
+    }
 
-    val des = om.readValue(str, classOf[WorkflowAggregatedState])
-    println(des)
+    trait helloImpl{
+      this:GreeterImpl =>
+      override def sayHello(req: HelloRequest) = {
+        val reply = HelloReply(message = "Hello " + req.name)
+        client.getStub(ActorVirtualIdentity("dest1")).sayHello2(req)
+        Future.successful(reply)
+      }
+    }
 
+
+    trait helloImpl2{
+      this:GreeterImpl =>
+      override def sayHello2(req: HelloRequest) = {
+        println("sayHello2 called!")
+        val reply = HelloReply(message = "Hello2 " + req.name)
+        Future.successful(reply)
+      }
+    }
+
+    val methodMapping = {
+      val handlers = new GreeterImpl
+      val sev = Greeter.bindService(handlers, new CurrentThreadExecutionContext)
+    }
+
+    def handling(from:ActorVirtualIdentity, to:ActorVirtualIdentity, seq:Long, generatedMessage: GeneratedMessage): Unit ={
+      methodMapping("SayHello2")(generatedMessage).asInstanceOf[Future[_]].map{
+        r =>
+          println(r)
+      }(new CurrentThreadExecutionContext)
+    }
+
+    val output = new NetworkOutputPort[GeneratedMessage](CONTROLLER, handling)
+    val client2 = new AsyncRPCClient(output)
+    client2.getStub(CONTROLLER).sayHello(HelloRequest("234234"))
   }
 }
 

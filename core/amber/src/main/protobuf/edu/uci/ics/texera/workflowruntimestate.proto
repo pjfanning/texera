@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package edu.uci.ics.texera.web;
 
-import "edu/uci/ics/amber/engine/architecture/worker/controlreturns.proto";
 import "google/protobuf/timestamp.proto";
+import "edu/uci/ics/amber/engine/architecture/worker/workerrpc.proto";
 import "scalapb/scalapb.proto";
 
 option (scalapb.options) = {
