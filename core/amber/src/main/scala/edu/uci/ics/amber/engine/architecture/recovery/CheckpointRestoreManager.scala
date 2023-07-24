@@ -54,7 +54,6 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
     var queuedInput = mutable.Map[ChannelEndpointID, mutable.ArrayBuffer[WorkflowFIFOMessagePayload]]()
     if(fromCheckpoint.isDefined){
       val existingChkpt = CheckpointHolder.getCheckpoint(actor.actorId, fromCheckpoint.get)
-      existingChkpt.attachSerialization(SerializationExtension(actor.context.system))
       overwriteState(existingChkpt)
       recordedInput = existingChkpt.getInputData
       queuedInput = existingChkpt.getInternalData
@@ -66,7 +65,6 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       // setup checkpoints during replay
       // create empty checkpoints to fill
       val planned = new SavedCheckpoint()
-      planned.attachSerialization(SerializationExtension(actor.context.system))
       val pendingCheckpoint = new PendingCheckpoint(
         conf.checkpointId,
         conf.logicalSnapshotId,

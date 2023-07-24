@@ -33,10 +33,14 @@ class DPThread(val actorId: ActorVirtualIdentity,
   var blockingFuture = new CompletableFuture[Unit]()
 
   def stop(): Unit ={
-    dpThread.cancel(true) // interrupt
-    stopped = true
-    endFuture.get()
-    dpThreadExecutor.shutdownNow() // destroy thread
+    if(dpThread != null){
+      dpThread.cancel(true) // interrupt
+      stopped = true
+      endFuture.get()
+    }
+    if(dpThreadExecutor != null){
+      dpThreadExecutor.shutdownNow() // destroy thread
+    }
   }
 
   @volatile
@@ -44,6 +48,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
 
   def start(): Unit = {
     if (dpThreadExecutor != null) {
+      logger.info("DP Thread is already running")
       return
     }
     dpThreadExecutor = Executors.newSingleThreadExecutor

@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.{Ch
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.CheckpointStats
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.collection.mutable
 
@@ -41,6 +41,19 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
   private val checkpointed = mutable.HashMap[ActorVirtualIdentity, Map[ChannelEndpointID, Long]]()
+
+  def getSinks:Iterable[ActorVirtualIdentity] = {
+    val dagParticipants = participants.keys.toSet diff Set(CONTROLLER, CLIENT)
+    val senders = dagParticipants.map(participants).flatMap(_.inputStatus.keys.map(_.endpointWorker))
+    dagParticipants diff senders
+  }
+
+  def getUpstreams(id:ActorVirtualIdentity): Iterable[ActorVirtualIdentity] ={
+    if(!participants.contains(id)){
+      return Iterable()
+    }
+    participants(id).inputStatus.keys.filter(x => x!= CLIENT && x!= CONTROLLER).map(_.endpointWorker)
+  }
 
   def getCheckpointedFIFOSeq(id: ActorVirtualIdentity):Map[ChannelEndpointID, Long] = {
     checkpointed(id)

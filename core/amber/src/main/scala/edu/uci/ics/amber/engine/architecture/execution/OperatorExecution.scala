@@ -9,34 +9,36 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
+import java.util
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.iterableAsScalaIterableConverter
 
-class OperatorExecution(numWorkers: Int, val opExecClass: Class[_]) {
+class OperatorExecution(numWorkers: Int) extends java.io.Serializable{
 
   /*
    * Variables related to runtime information
    */
 
   // workers of this operator
-  private val workers: mutable.HashMap[ActorVirtualIdentity, WorkerInfo] =
-    mutable.HashMap[ActorVirtualIdentity, WorkerInfo]()
+  private val workers =
+    new util.concurrent.ConcurrentHashMap[ActorVirtualIdentity, WorkerInfo]()
 
   var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
   var caughtLocalExceptions = new mutable.HashMap[ActorVirtualIdentity, Throwable]()
   var workerToWorkloadInfo = new mutable.HashMap[ActorVirtualIdentity, WorkerWorkloadInfo]()
 
-  def isBuilt: Boolean = workers.nonEmpty
+  def isBuilt: Boolean = workers.size() > 0
 
-  def states: Array[WorkerState] = workers.values.map(_.state).toArray
+  def states: Array[WorkerState] = workers.values.asScala.map(_.state).toArray
 
-  def statistics: Array[WorkerStatistics] = workers.values.map(_.stats).toArray
+  def statistics: Array[WorkerStatistics] = workers.values.asScala.map(_.stats).toArray
 
   def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = {
-    workers.getOrElseUpdate(
-      id,
-      WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), mutable.HashSet(ChannelEndpointID(CONTROLLER, true)),
-        null)
-    )
+    if(!workers.containsKey(id)){
+      workers.put(id, WorkerInfo(id, UNINITIALIZED, WorkerStatistics(UNINITIALIZED, 0, 0), mutable.HashSet(ChannelEndpointID(CONTROLLER, true)),
+        null))
+    }
+    workers.get(id)
   }
 
   def getWorkerWorkloadInfo(id: ActorVirtualIdentity): WorkerWorkloadInfo = {
@@ -52,7 +54,7 @@ class OperatorExecution(numWorkers: Int, val opExecClass: Class[_]) {
 
   def getOutputRowCount: Long = statistics.map(_.outputTupleCount).sum
 
-  def identifiers: Array[ActorVirtualIdentity] = workers.values.map(_.id).toArray
+  def identifiers: Array[ActorVirtualIdentity] = workers.values.asScala.map(_.id).toArray
 
   def assignBreakpoint(breakpoint: GlobalBreakpoint[_]): Array[ActorVirtualIdentity] = {
     identifiers

@@ -1,4 +1,9 @@
+<button *ngIf="!replay.prepPhaseFinished" nz-button nzType="primary" (click)="replay.triggerPrepPhase()" [nzLoading]="replay.triggeredPrepPhase">
+  Start Preparation Phase
+</button>
+
 <nz-timeline
+  *ngIf="replay.prepPhaseFinished"
 [nzPending]="replay.isReplaying ? 'Replaying to ' + (replay.selectedKey / 1000) + 's ...' : false">
   <nz-timeline-item
   *ngFor="let t of replay.history.keys();"

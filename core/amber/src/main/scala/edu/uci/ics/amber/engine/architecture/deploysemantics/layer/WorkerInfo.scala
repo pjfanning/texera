@@ -14,4 +14,4 @@ case class WorkerInfo(
                        var stats: WorkerStatistics,
                        upstreamChannels: mutable.HashSet[ChannelEndpointID],
                        @transient var ref: ActorRef
-)
+) extends java.io.Serializable

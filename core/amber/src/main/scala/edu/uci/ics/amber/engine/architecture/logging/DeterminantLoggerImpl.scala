@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.ChannelStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowFIFOMessagePayload, WorkflowExecutionPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, ControllerChannelEndpointID, OutsideWorldChannelEndpointID, WorkflowExecutionPayload, WorkflowFIFOMessagePayload}
 
 import scala.collection.mutable
 
@@ -9,7 +9,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
 
-  private val channelsToRecord:Set[ChannelEndpointID] = Set(OutsideWorldChannelEndpointID)
+  private val channelsToRecord:Set[ChannelEndpointID] = Set(OutsideWorldChannelEndpointID, ControllerChannelEndpointID)
 
   private var currentChannel:ChannelEndpointID = _
 

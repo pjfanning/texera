@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.deploysemantics.layer
 import akka.actor.{ActorContext, ActorRef, Address, Deploy, Props}
 import akka.remote.RemoteScope
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import akka.util.Timeout
 import com.twitter.util.{Await, Future}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.architecture.common.{VirtualIdentityUtils, WorkflowActorService}
@@ -25,6 +25,7 @@ import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.DurationInt
 
 trait OpExecFunc extends (((Int, OpExecConfig)) => IOperatorExecutor) with java.io.Serializable
 
@@ -103,6 +104,8 @@ case class OpExecConfig(
     dependency: Map[Int, Int] = Map(),
     isOneToManyOp: Boolean = false
 ) {
+
+  implicit val timeout:Timeout = 5.seconds
 
   // return the runtime class of the corresponding OperatorExecutor
   lazy private val tempOperatorInstance: IOperatorExecutor = initIOperatorExecutor((0, this))

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.ClientEvent
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.util.hashing.MurmurHash3
 
@@ -33,6 +33,10 @@ class ChannelEndpointID(val endpointWorker:ActorVirtualIdentity, val isControlCh
 
 // always log.
 case object OutsideWorldChannelEndpointID extends ChannelEndpointID(CLIENT, true)
+
+
+// also always log.
+case object ControllerChannelEndpointID  extends ChannelEndpointID(CONTROLLER, true)
 
 sealed trait WorkflowMessage extends Serializable
 

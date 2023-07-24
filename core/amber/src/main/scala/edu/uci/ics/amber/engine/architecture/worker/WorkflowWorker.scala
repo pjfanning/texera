@@ -64,6 +64,10 @@ class WorkflowWorker(
       Iterator.empty,
     )
     dpThread = new DPThread(actorId, dataProcessor, internalQueue, this)
+    logger.info(s"Worker:$actorId = ${context.self} inited")
+  }
+
+  override def start():Unit = {
     dpThread.start()
     logger.info(s"Worker:$actorId = ${context.self} started")
   }

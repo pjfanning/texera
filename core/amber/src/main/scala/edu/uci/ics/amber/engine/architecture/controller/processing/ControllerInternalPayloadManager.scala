@@ -72,7 +72,6 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
           }.toMap
           controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(id, markerCollectionCountMap))
           val chkpt = new SavedCheckpoint()
-          chkpt.attachSerialization(SerializationExtension(controller.context.system))
           val numControlSteps = controller.controlProcessor.cursor.getStep
           val pending = new PendingCheckpoint(
             id,

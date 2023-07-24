@@ -65,7 +65,6 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             worker.initiateSyncActionFromMain(() => {
               worker.dataProcessor.outputPort.broadcastMarker(payload)
               val chkpt = new SavedCheckpoint()
-              chkpt.attachSerialization(SerializationExtension(worker.context.system))
               val pending = new PendingCheckpoint(
                 id,
                 id,

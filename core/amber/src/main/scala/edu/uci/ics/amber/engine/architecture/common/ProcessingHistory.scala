@@ -88,6 +88,11 @@ class ProcessingHistory extends Serializable {
     historyArray.map(history).map(_.getStats(op).checkpointCost)
   }
 
+  def getPlanCost(chkptPos:Set[(ActorVirtualIdentity, Int)]): Long ={
+    val mapping = chkptPos.toMap
+    getPlanCost(mapping)
+  }
+
 
   def getPlanCost(chkptPos:Map[ActorVirtualIdentity, Int]): Long ={
     var cost = 0L

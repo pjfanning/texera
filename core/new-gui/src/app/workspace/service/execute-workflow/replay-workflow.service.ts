@@ -34,6 +34,14 @@ export class ReplayWorkflowService {
   public replayTime = 0;
   public checkpointTime = 0;
   public replayTimeLimit = 5;
+  public triggeredPrepPhase = false;
+  public prepPhaseFinished = false;
+
+
+  public triggerPrepPhase(){
+    this.triggeredPrepPhase = true;
+    this.workflowWebsocketService.send("WorkflowReplayRequest",{replayPos: -1, plannerStrategy: this.selectedMode, replayTimeLimit: this.replayTimeLimit*1000});
+  }
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {
     workflowWebsocketService.subscribeToEvent("WorkflowInteractionHistoryEvent").subscribe(e => {
@@ -73,6 +81,7 @@ export class ReplayWorkflowService {
     });
 
     workflowWebsocketService.subscribeToEvent("WorkflowReplayCompletedEvent").subscribe(e => {
+      this.prepPhaseFinished = true;
       this.isReplaying = false;
       this.replayTime = e.replayTime;
       this.checkpointTime = e.checkpointTime;

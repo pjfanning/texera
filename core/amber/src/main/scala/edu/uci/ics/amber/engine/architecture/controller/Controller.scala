@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.concurrent.duration.DurationInt
 import akka.pattern.ask
-import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.SetupLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload, OutsideWorldChannelEndpointID, WorkflowExecutionPayload}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -61,6 +61,8 @@ class Controller(
       CONTROLLER,
       parentNetworkCommunicationActorRef
     ) {
+
+  implicit val timeout:Timeout = 5.seconds
 
   override def getLogName: String = "WF" + workflow.getWorkflowId().id + "-CONTROLLER"
 

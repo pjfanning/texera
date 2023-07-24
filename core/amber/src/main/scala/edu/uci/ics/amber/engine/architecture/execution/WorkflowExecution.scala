@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, Workfl
 
 import scala.collection.mutable
 
-class WorkflowExecution(workflow: Workflow) {
+class WorkflowExecution(workflow: Workflow) extends java.io.Serializable {
 
   private val linkExecutions: Map[LinkIdentity, LinkExecution] =
     workflow.physicalPlan.linkStrategies.map { link =>
@@ -18,7 +18,7 @@ class WorkflowExecution(workflow: Workflow) {
     }
   private val operatorExecutions: Map[LayerIdentity, OperatorExecution] =
     workflow.getAllOperators.map { opConf =>
-      opConf.id -> new OperatorExecution(opConf.numWorkers, opConf.opExecClass)
+      opConf.id -> new OperatorExecution(opConf.numWorkers)
     }.toMap
 
   // Since one operator/link(i.e. links within an operator) can belong to multiple regions, we need to keep

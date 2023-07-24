@@ -18,6 +18,8 @@ import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 
+import scala.util.Random
+
 class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLModelOpExec {
 
 //  var confBuilder: NeuralNetConfiguration.ListBuilder = new NeuralNetConfiguration.Builder()
@@ -47,7 +49,7 @@ class DNNOpExec(features: List[String], y: String, numLayers: Int) extends MLMod
   override def outputPrediction(allData: Array[Tuple]): Array[Tuple] = allData
 
   override def getEstimatedCheckpointTime: Int = {
-    3000
+    Random.nextInt(3000)
   }
 
   override def serializeState(

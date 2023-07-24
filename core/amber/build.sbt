@@ -30,7 +30,7 @@ PB.generate / excludeFilter := "scalapb.proto"
 
 /////////////////////////////////////////////////////////////////////////////
 // Akka related
-val akkaVersion = "2.6.12"
+val akkaVersion = "2.8.2"
 val akkaDependencies = Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
@@ -231,7 +231,7 @@ libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "3.9.2"
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "3.9.2" classifier "models"
 
 // https://mvnrepository.com/artifact/com.twitter/chill-akka
-libraryDependencies += "com.twitter" %% "chill-akka" % "0.9.3"
+libraryDependencies += "com.twitter" %% "chill-akka" % "0.10.0"
 
 // https://mvnrepository.com/artifact/com.twitter/util-core
 libraryDependencies += "com.twitter" %% "util-core" % "20.9.0"

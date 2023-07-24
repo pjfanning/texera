@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.common
 
 import akka.actor.{ActorSystem, Address, DeadLetter, Props}
+import akka.serialization.{Serialization, SerializationExtension}
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.amber.engine.architecture.messaginglayer.DeadLetterMonitorActor
@@ -9,6 +10,8 @@ import java.io.{BufferedReader, InputStreamReader}
 import java.net.URL
 
 object AmberUtils {
+
+  var serde:Serialization = null
 
   def reverseMultimap[T1, T2](map: Map[T1, Set[T2]]): Map[T2, Set[T1]] =
     map.toSeq
@@ -74,6 +77,7 @@ object AmberUtils {
     val deadLetterMonitorActor =
       system.actorOf(Props[DeadLetterMonitorActor], name = "dead-letter-monitor-actor")
     system.eventStream.subscribe(deadLetterMonitorActor, classOf[DeadLetter])
+    serde = SerializationExtension(system)
     system
   }
 }

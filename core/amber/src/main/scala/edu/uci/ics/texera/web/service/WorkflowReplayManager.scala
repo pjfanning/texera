@@ -33,6 +33,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
   var history = new ProcessingHistory()
   var planner:ReplayCheckpointPlanner = _
   val pendingReplay = new mutable.HashSet[ActorVirtualIdentity]()
+  val pendingCheckpoint = new mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[String]]()
   var replayStart = 0L
   var checkpointCost = 0L
 
@@ -95,19 +96,31 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     stateStore.jobMetadataStore.updateState(state => {
       state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
     })
+    if(pendingCheckpoint.contains(actor)){
+      pendingCheckpoint(actor).remove(cmd.checkpointId)
+      if(pendingCheckpoint(actor).isEmpty){
+        pendingCheckpoint.remove(actor)
+      }
+      checkReplayCompleted()
+    }
   }))
 
-  addSubscription(client.registerCallback[ReplayCompleted](cmd =>{
-    pendingReplay.remove(cmd.actorId)
-    if(pendingReplay.isEmpty) {
+
+  def checkReplayCompleted(): Unit ={
+    if(pendingReplay.isEmpty && pendingCheckpoint.isEmpty) {
       // replay completed
       println("replay completed! Replay planner can continue to next step")
       stateStore.jobMetadataStore.updateState(state => {
         state.withIsRecovering(false).withIsReplaying(false)
-          .withReplayElapsed((System.currentTimeMillis() - replayStart)/1000d)
+          .withReplayElapsed((System.currentTimeMillis() - replayStart) / 1000d)
           .withCheckpointElapsed(checkpointCost / 1000d)
       })
     }
+  }
+
+  addSubscription(client.registerCallback[ReplayCompleted](cmd =>{
+    pendingReplay.remove(cmd.actorId)
+    checkReplayCompleted()
   }))
 
   addSubscription(client.registerCallback[WorkflowStateUpdate](evt => {
@@ -155,10 +168,22 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     if(planner == null){
       planner = new ReplayCheckpointPlanner(history, req.replayTimeLimit)
     }
-    val replayConf = planner.generateReplayPlan(req.replayPos)
+    val replayConf = if(req.replayPos == -1){
+      planner.doPrepPhase()
+    }else{
+      planner.getReplayPlan(req.replayPos)
+    }
     replayId += 1
     client.executeAsync(actor => {
       replayConf.confs.keys.foreach(pendingReplay.add)
+      replayConf.confs.foreach{
+        case (k,v) =>{
+          if(v.checkpointConfig.nonEmpty){
+            pendingCheckpoint(k) = new mutable.HashSet[String]()
+            v.checkpointConfig.foreach(x => pendingCheckpoint(k).add(x.checkpointId))
+          }
+        }
+      }
       actor.controller ! ReplayWorkflow(s"replay - $replayId", replayConf)
     })
   }

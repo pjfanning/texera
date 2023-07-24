@@ -6,54 +6,13 @@ import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, ReplayConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, OutsideWorldChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.collection.mutable
 
 class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
 
-  private val checkpointMapping = mutable.HashMap[Int, String]().withDefaultValue("global_checkpoint-1")
-  private val plannedCheckpoints = getPartialPlan(getGlobalPlan(0, history.historyArray.length, timeLimit))
-  private val unscheduledCheckpoints = plannedCheckpoints.keySet.to[collection.mutable.Set]
-
-  def pickInRange(start:Int, end:Int): (Map[ActorVirtualIdentity, Int], Long, Int) ={
-    var currentPlan = history.getSnapshot(start).getParticipants.map(x => x -> start).toMap
-    var currentCost = history.getPlanCost(currentPlan)
-    var iteration = 0
-    if(start == end){
-      return (currentPlan, currentCost, iteration)
-    }
-    while(true){
-      iteration += 1
-      var nextCost = Long.MaxValue
-      var nextPlan = currentPlan
-      var currentDecision:Option[(ActorVirtualIdentity, Int)] = None
-      (start + 1 to end).foreach{
-        i =>
-          val snapshot = history.getSnapshot(i)
-          snapshot.getParticipants.foreach{
-            op =>
-              val plan = currentPlan.updated(op, i)
-              val planCost = history.getPlanCost(plan)
-              //println(s"$plan  => $planCost")
-              if (planCost < nextCost){
-                nextCost = planCost
-                nextPlan = plan
-                currentDecision = Some((op, i))
-              }
-          }
-      }
-      if(nextCost < currentCost){
-        println(s"iter $iteration: $nextPlan")
-        currentCost = nextCost
-        currentPlan = nextPlan
-      }else{
-        return (currentPlan, currentCost, iteration)
-      }
-    }
-    (currentPlan, currentCost, iteration)
-  }
-
+  private val replayPlans = mutable.HashMap[Int, mutable.HashMap[ActorVirtualIdentity, Int]]()
 
   def getGlobalPlan(start:Int, end:Int, timeLimit:Long): Set[Int] ={
     val n = end - start
@@ -86,48 +45,91 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
     dp(n - 1)
   }
 
-  def getPartialPlan(globalPlan:Set[Int]): Map[String, Map[ActorVirtualIdentity, Int]] ={
+  def toPartialPlan(globalPlan:Set[Int]): Map[String, Map[ActorVirtualIdentity, Int]] ={
     if(globalPlan.isEmpty){
       return Map.empty
     }
-    val segs = globalPlan.toSeq.sorted
-    var currentIdx = 0
-    var head: Int = segs(0)
-    var next: Int = if(segs.length > 1){segs(1)}else{-1}
-    val interactions = history.getInteractionIdxes.filter(x => x >= head)
-    var currentIdx2 = 0
-    val tmp = mutable.HashMap[String, Map[ActorVirtualIdentity, Int]]()
-    println(s"global plan: $globalPlan")
-    while(head != -1){
-      val chkptId = s"replay_checkpoint-${currentIdx+1}"
-      var interactionIdx = interactions(currentIdx2)
-      val firstInteraction = interactionIdx
-      while(interactionIdx != -1 && interactionIdx >= head && (next == -1 || interactionIdx < next)){
-        assert(history.getTimeGap(head, interactionIdx) <= timeLimit)
-        checkpointMapping(interactionIdx) = chkptId
-        currentIdx2 += 1
-        if(currentIdx2 < interactions.length){
-          interactionIdx = interactions(currentIdx2)
-        }else{
-          interactionIdx = -1
-        }
-      }
-      val partialPlan = pickInRange(head, firstInteraction)
-      tmp(chkptId) = partialPlan._1
-      head = next
-      currentIdx += 1
-      next =  if(segs.length > currentIdx+1){segs(currentIdx+1)}else{-1}
-    }
-    tmp.toMap
+    var numChkpt = 0
+    globalPlan.map{
+      idx =>
+        numChkpt += 1
+        s"replay-checkpoint-$numChkpt" -> history.getSnapshot(idx).getParticipants.map(x => x -> idx).toMap
+    }.toMap
   }
 
-  def getReplayConfig(checkpointId:String): Map[ActorVirtualIdentity, ReplayCheckpointConfig] ={
-    plannedCheckpoints(checkpointId).map{
+  def generatePartialPlan(targetTime:Long): Map[String, Map[ActorVirtualIdentity, Int]] ={
+    val plannedCheckpoint = mutable.HashSet[(ActorVirtualIdentity, Int)]()
+    var numChkpt = 0
+    history.getInteractionIdxes.reverse.map{
+      x =>
+        val replayPlan = mutable.HashMap[ActorVirtualIdentity, Int]()
+        history.getSnapshot(x).getParticipants.foreach{
+          operator =>
+            if(operator != CONTROLLER && operator != CLIENT){
+              findBestPlan(operator, x, targetTime, plannedCheckpoint).foreach{
+                case (id, i) =>
+                  if(replayPlan.contains(id)){
+                    replayPlan(id) = Math.min(replayPlan(id), i)
+                  }else{
+                    replayPlan(id) = i
+                  }
+              }
+            }
+        }
+        replayPlan ++= Set((CONTROLLER, x))
+        replayPlans(x) = replayPlan
+        var additional = (replayPlan.toSeq.toSet diff plannedCheckpoint).filter(_._2 > 0)
+        plannedCheckpoint ++= additional
+        additional.toMap
+    }.map{ x =>
+      numChkpt += 1
+      s"replay-checkpoint-$numChkpt" -> x
+    }.toMap
+  }
+
+
+  def findBestPlan(target:ActorVirtualIdentity, snapshot:Int, budget:Long, result:mutable.HashSet[(ActorVirtualIdentity, Int)]): Set[(ActorVirtualIdentity, Int)] ={
+//    if(result.contains((target, snapshot))){
+//      return Set()
+//    }
+    var currentSnapshot = snapshot
+    var currentBudget = budget
+    var bestPlan:Set[(ActorVirtualIdentity, Int)] = null
+    while(currentBudget > 0 && currentSnapshot >= 0){
+      var currentPlan:Set[(ActorVirtualIdentity, Int)] = Set()
+      if(!result.contains((target, currentSnapshot))){
+        currentPlan += ((target, currentSnapshot))
+        history.getSnapshot(currentSnapshot).getUpstreams(target).foreach{
+          vid =>
+            if(vid != CONTROLLER && vid != CLIENT){
+              currentPlan ++= findBestPlan(vid, currentSnapshot,currentBudget, result)
+            }
+        }
+      }else{
+        currentPlan = Set((target, currentSnapshot))
+        currentBudget = -1
+      }
+      if(bestPlan == null || history.getPlanCost(bestPlan) >= history.getPlanCost(currentPlan)){
+        bestPlan = currentPlan
+      }
+      if(currentSnapshot == 0){
+        currentBudget = -1
+      }else{
+        currentBudget -= history.getTimeGap(currentSnapshot-1, currentSnapshot)
+      }
+      currentSnapshot -= 1
+    }
+    bestPlan
+  }
+
+
+  def getReplayConfig(checkpointId:String, checkpointPlan:Map[ActorVirtualIdentity, Int]): Map[ActorVirtualIdentity, ReplayCheckpointConfig] ={
+    checkpointPlan.map{
       case (identity, i) =>
         val snapshot = history.getSnapshot(i)
         val snapshotStats = snapshot.getStats(identity)
         val markerCollection = mutable.HashSet[ChannelEndpointID]()
-        plannedCheckpoints(checkpointId).foreach{
+        checkpointPlan.foreach{
           case (upstream, chkptPos) =>
             val snapshot2 = history.getSnapshot(chkptPos)
             if(snapshot2.getParticipants.toSet.contains(identity)){
@@ -142,36 +144,39 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
   }
 
 
-  def generateReplayPlan(targetTime:Long):WorkflowReplayConfig = {
-    val interactionIdx = history.getInteractionIdx(targetTime)
-    val prevInteractions = history.getInteractionIdxes.filter(x => x <= interactionIdx).reverse.to[mutable.Queue]
-    val toCheckpoint = mutable.ArrayBuffer[String]()
-    while (prevInteractions.nonEmpty && unscheduledCheckpoints.contains(checkpointMapping(prevInteractions.head))) {
-      if (!toCheckpoint.contains(checkpointMapping(prevInteractions.head))) {
-        toCheckpoint.append(checkpointMapping(prevInteractions.head))
-      }
-      prevInteractions.dequeue()
+  def doPrepPhase(): WorkflowReplayConfig ={
+    val interactionIdx = history.getInteractionIdxes.last
+    val checkpointPlan = generatePartialPlan(timeLimit)
+    val confs = checkpointPlan.map{
+      case (name, mapping) =>
+        getReplayConfig(name, mapping).toSeq
     }
-    val converted = mutable.HashMap[ActorVirtualIdentity, mutable.ArrayBuffer[ReplayCheckpointConfig]]()
-    toCheckpoint.foreach{
-      chkpt =>
-        unscheduledCheckpoints.remove(chkpt)
-        getReplayConfig(chkpt).foreach{
-          case (identity, config) => converted.getOrElseUpdate(identity, mutable.ArrayBuffer[ReplayCheckpointConfig]()).append(config)
-        }
-    }
-    val startingPoint = checkpointMapping(if(prevInteractions.nonEmpty){prevInteractions.head}else{-1})
-    val targetSnapshot = history.getSnapshot(targetTime)
+    val converted = confs.flatten.groupBy(_._1).mapValues(_.map(_._2))
+    val targetSnapshot = history.getSnapshot(interactionIdx)
     WorkflowReplayConfig(targetSnapshot.getParticipants.map {
       worker =>
         val workerStats = targetSnapshot.getStats(worker)
         val replayTo = workerStats.alignment
-        val checkpointOpt = CheckpointHolder.getCheckpointAlignment(worker, startingPoint)
+        val checkpointOpt = CheckpointHolder.getCheckpointAlignment(worker, "global_checkpoint-1")
         if (checkpointOpt.isDefined) {
           worker -> ReplayConfig(Some(checkpointOpt.get), Some(replayTo), converted.getOrElse(worker, mutable.ArrayBuffer[ReplayCheckpointConfig]()).toArray)
         } else {
           worker -> ReplayConfig(None, Some(replayTo), converted.getOrElse(worker, mutable.ArrayBuffer[ReplayCheckpointConfig]()).toArray)
         }
+    }.toMap - CLIENT) // client is always ready
+  }
+
+
+  def getReplayPlan(targetTime:Long):WorkflowReplayConfig = {
+    val interactionIdx = history.getInteractionIdx(targetTime)
+    val plan = replayPlans(interactionIdx)
+    val snapshot = history.getSnapshot(interactionIdx)
+    WorkflowReplayConfig(snapshot.getParticipants.map {
+      worker =>
+        val checkpointIdx = plan(worker)
+        val checkpointSnapshot =  history.getSnapshot(checkpointIdx)
+        val loadAlignment = checkpointSnapshot.getStats(worker).alignment
+          worker -> ReplayConfig(Some(loadAlignment), Some(snapshot.getStats(worker).alignment), Array[ReplayCheckpointConfig]())
     }.toMap - CLIENT) // client is always ready
   }
 

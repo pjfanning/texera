@@ -194,4 +194,10 @@ class RecoverySpec
     println(orderEnforcer.currentChannel, step)
     step+=1
   }
+
+  "Logreader" should "not read anything from empty log111" in {
+    val workerName = "WF1-Projection-operator-85d0ca0f-58da-4b71-a795-c19535f5759a-main-1"
+    val logStorage = new LocalFSLogStorage(workerName)
+    logStorage.getReader.getLogs[InMemDeterminant].foreach(println)
+  }
 }

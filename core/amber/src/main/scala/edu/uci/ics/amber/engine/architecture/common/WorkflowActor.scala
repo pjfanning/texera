@@ -112,6 +112,8 @@ abstract class WorkflowActor(
 
   def initState(): Unit
 
+  def start():Unit = {}
+
   // actor behavior
   def acceptInitializationMessage: Receive = {
     case init: CheckInitialized =>
@@ -119,6 +121,7 @@ abstract class WorkflowActor(
       init.setupCommands.foreach{
         cmd => this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, cmd)
       }
+      start()
   }
 
 
