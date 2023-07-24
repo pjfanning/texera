@@ -63,7 +63,11 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
     checkpoint.chkpt.save("fifoState", worker.inputPort.getFIFOState)
     worker.internalQueue.getAllMessages.foreach{
       case (d, messages) =>
-      messages.foreach(x => checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload]))
+      messages.foreach {
+        case x if x.payload.isInstanceOf[WorkflowFIFOMessagePayload] =>
+          checkpoint.chkpt.addInternalData(d, x.payload.asInstanceOf[WorkflowFIFOMessagePayload])
+        case other => // skip
+      }
     }
     if(worker.dataProcessor.operatorOpened){
       worker.dataProcessor.operator match {
