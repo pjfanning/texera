@@ -66,7 +66,14 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
         history.getSnapshot(x).getParticipants.foreach{
           operator =>
             if(operator != CONTROLLER && operator != CLIENT){
-              findBestPlan(operator, x, targetTime, plannedCheckpoint).foreach{
+              if (operator.name.contains("2086-main-0") && x == 4) {
+                println("hello")
+              }
+              val p = findBestPlan(operator, x, targetTime)
+              if(operator.name.contains("2086-main-0") && x==4) {
+                println(p)
+              }
+              p.foreach{
                 case (id, i) =>
                   if(replayPlan.contains(id)){
                     replayPlan(id) = Math.min(replayPlan(id), i)
@@ -88,38 +95,22 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
   }
 
 
-  def findBestPlan(target:ActorVirtualIdentity, snapshot:Int, budget:Long, result:mutable.HashSet[(ActorVirtualIdentity, Int)]): Set[(ActorVirtualIdentity, Int)] ={
-//    if(result.contains((target, snapshot))){
-//      return Set()
-//    }
-    var currentSnapshot = snapshot
-    var currentBudget = budget
-    var bestPlan:Set[(ActorVirtualIdentity, Int)] = null
-    while(currentBudget > 0 && currentSnapshot >= 0){
-      var currentPlan:Set[(ActorVirtualIdentity, Int)] = Set()
-      if(!result.contains((target, currentSnapshot))){
-        currentPlan += ((target, currentSnapshot))
-        history.getSnapshot(currentSnapshot).getUpstreams(target).foreach{
-          vid =>
-            if(vid != CONTROLLER && vid != CLIENT){
-              currentPlan ++= findBestPlan(vid, currentSnapshot,currentBudget, result)
-            }
-        }
-      }else{
-        currentPlan = Set((target, currentSnapshot))
-        currentBudget = -1
+  def findBestPlan(target:ActorVirtualIdentity, snapshot:Int, budget:Long): Set[(ActorVirtualIdentity, Int)] ={
+      val plans:mutable.ArrayBuffer[Set[(ActorVirtualIdentity, Int)]] = mutable.ArrayBuffer()
+      for(i <- 0 to snapshot){
+        val curBudget = budget - history.getTimeGap(i, snapshot)
+        var currentPlan:Set[(ActorVirtualIdentity, Int)] = Set((target, i))
+        if(curBudget >= 0){
+          history.getSnapshot(i).getUpstreams(target).foreach {
+            vid =>
+              if (vid != CONTROLLER && vid != CLIENT) {
+                currentPlan ++= findBestPlan(vid, i, curBudget)
+              }
+          }
+          plans.append(currentPlan)
       }
-      if(bestPlan == null || history.getPlanCost(bestPlan) >= history.getPlanCost(currentPlan)){
-        bestPlan = currentPlan
-      }
-      if(currentSnapshot == 0){
-        currentBudget = -1
-      }else{
-        currentBudget -= history.getTimeGap(currentSnapshot-1, currentSnapshot)
-      }
-      currentSnapshot -= 1
     }
-    bestPlan
+    plans.minBy(history.getPlanCost)
   }
 
 

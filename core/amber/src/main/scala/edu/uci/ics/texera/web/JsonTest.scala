@@ -23,21 +23,6 @@ object JsonTest {
 
   def main(args: Array[String]): Unit = {
 
-    val actorSystem = AmberUtils.startActorMaster(false)
-    val serde = SerializationExtension(actorSystem)
-    val promise = Promise[Int]()
-    promise.map{
-      x =>
-        println("123")
-    }
-    val state = SerializedState.fromObject(promise, serde)
-    val promise2:Promise[Int] = state.toObject(serde)
-    try{
-      promise2.setValue(1)
-    }catch{
-      case x: Throwable =>
-        println(x)
-    }
 
     val file = Paths.get("").resolve("latest-interation-history")
     if(!Files.exists(file)){
