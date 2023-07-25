@@ -70,13 +70,18 @@ class AsyncRPCClient(
   def fulfillPromise(ret: ReturnInvocation): Unit = {
     if (unfulfilledPromises.contains(ret.originalCommandID)) {
       val p = unfulfilledPromises(ret.originalCommandID)
-      ret.controlReturn match {
-        case error: Throwable =>
-          p.setException(error)
-        case ControlException(msg) =>
-          p.setException(new RuntimeException(msg))
-        case _ =>
-          p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
+      try{
+        ret.controlReturn match {
+          case error: Throwable =>
+            p.setException(error)
+          case ControlException(msg) =>
+            p.setException(new RuntimeException(msg))
+          case _ =>
+            p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
+        }
+      }catch{
+        case t: Throwable =>
+          t.printStackTrace()
       }
       unfulfilledPromises.remove(ret.originalCommandID)
     }
