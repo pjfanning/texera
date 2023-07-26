@@ -15,6 +15,13 @@ final case class EpochMarker(
 final case class EndOfUpstream() extends DataPayload
 
 final case class DataFrame(frame: Array[ITuple]) extends DataPayload {
+
+  override def toString: String = {
+    if(frame.length > 0)
+      s"DataFrame(size = ${frame.length} leading tuple = ${frame.head.toString})"
+    else
+      s"DataFrame(empty)"
+  }
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[DataFrame]) return false
     val other = obj.asInstanceOf[DataFrame]
