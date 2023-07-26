@@ -124,6 +124,7 @@ class DPThread(val actorId: ActorVirtualIdentity,
         }
       } else {
         val msg = internalQueue.take(dp)
+        logger.info(s"message to process = $msg at step = ${dp.cursor.getStep}")
         msg.payload match {
           case data: DataPayload =>
             // logger.info(s"taking message from channel = ${msg.channel} at step = ${dp.cursor.getStep} batchSize = ${if(dp.inputBatch==null)0 else{dp.inputBatch.length}}, batch tuple = ${if(dp.inputBatch==null || dp.inputBatch.isEmpty)"null" else{dp.inputBatch.head.toString}}")

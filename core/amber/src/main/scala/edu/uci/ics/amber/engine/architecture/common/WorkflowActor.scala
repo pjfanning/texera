@@ -117,11 +117,11 @@ abstract class WorkflowActor(
   // actor behavior
   def acceptInitializationMessage: Receive = {
     case init: CheckInitialized =>
-      sender ! Ack
       init.setupCommands.foreach{
         cmd => this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, cmd)
       }
       start()
+      sender ! Ack
   }
 
 

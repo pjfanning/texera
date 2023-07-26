@@ -49,10 +49,13 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
             estimatedCheckpointCost + worker.internalQueue.getDataQueueLength*400)
           worker.dataProcessor.outputPort.sendToClient(EstimationCompleted(actorId, id, stats))
         })
-      case LoadStateAndReplay(id, fromCheckpoint, replayTo, confs) =>
+      case SetupReplay(id, fromCheckpoint, replayTo, confs) =>
         worker.isReplaying = true
         worker.dpThread.stop() // intentionally kill DP
         restoreManager.restoreFromCheckpointAndSetupReplay(id, fromCheckpoint, replayTo, confs, pending)
+      case StartReplay(id) =>
+        worker.dpThread.start()
+        logger.info(s"$actorId starts replay")
       case _ => ???
     }
   }

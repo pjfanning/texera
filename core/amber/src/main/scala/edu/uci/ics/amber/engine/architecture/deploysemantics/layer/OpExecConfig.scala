@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.
 import edu.uci.ics.amber.engine.architecture.execution.OperatorExecution
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{LoadStateAndReplay, SetupLogging}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{SetupLogging, SetupReplay, StartReplay}
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayConfig, WorkflowWorker}
 import edu.uci.ics.amber.engine.common.ambermessage.{AmberInternalPayload, ChannelEndpointID}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
@@ -243,7 +243,7 @@ case class OpExecConfig(
       addressInfo: AddressInfo,
       actorService: WorkflowActorService,
       opExecution: OperatorExecution,
-      replayPlan: WorkflowReplayConfig
+      replayConf: WorkflowReplayConfig
   ): Unit = {
     Await.result(Future.collect((0 until numWorkers)
       .map(i => {
@@ -253,12 +253,12 @@ case class OpExecConfig(
             addressInfo,
             actorService,
             opExecution,
-           (if(replayPlan.confs.contains(workerId)){
-          val replayConfig = replayPlan.confs(workerId)
-          Array(LoadStateAndReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
-        }else{
-          Array(SetupLogging())
-        })
+            (if(replayConf.confs.contains(workerId)){
+              val replayConfig = replayConf.confs(workerId)
+              Array(SetupReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig), StartReplay("replay - restart"))
+            }else{
+              Array(SetupLogging())
+            })
           )
       })))
   }

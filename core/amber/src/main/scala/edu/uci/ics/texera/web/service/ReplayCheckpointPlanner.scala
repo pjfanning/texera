@@ -66,11 +66,11 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
         history.getSnapshot(x).getParticipants.foreach{
           operator =>
             if(operator != CONTROLLER && operator != CLIENT){
-              if (operator.name.contains("2086-main-0") && x == 4) {
+              if (operator.name.contains("ee76-main-0") && x == 19) {
                 println("hello")
               }
               val p = findBestPlan(operator, x, targetTime)
-              if(operator.name.contains("2086-main-0") && x==4) {
+              if(operator.name.contains("ee76-main-0") && x==19) {
                 println(p)
               }
               p.foreach{
@@ -162,7 +162,11 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
     val interactionIdx = history.getInteractionIdx(targetTime)
     val plan = replayPlans(interactionIdx)
     val snapshot = history.getSnapshot(interactionIdx)
-    WorkflowReplayConfig(snapshot.getParticipants.map {
+    snapshot.getParticipants.filter(x => !plan.contains(x)).foreach{
+      worker =>
+        println(s"$worker is not included in the plan $interactionIdx! isCheckpointed = ${snapshot.isCheckpointed(worker)} stats = ${snapshot.getStats(worker)} ")
+    }
+    WorkflowReplayConfig(snapshot.getParticipants.filter(plan.contains).map {
       worker =>
         val checkpointIdx = plan(worker)
         val checkpointSnapshot =  history.getSnapshot(checkpointIdx)

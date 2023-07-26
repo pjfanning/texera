@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, Props}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OrdinalMapping}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.CreditMonitorImpl
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager
+import edu.uci.ics.amber.engine.architecture.recovery.{InternalPayloadManager, RecoveryInternalQueueImpl}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.ThreadSyncChannelID
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{DPSynchronized, SyncAction, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.processing.{DPThread, DataProcessor, WorkerInternalPayloadManager}
@@ -68,8 +68,12 @@ class WorkflowWorker(
   }
 
   override def start():Unit = {
-    dpThread.start()
-    logger.info(s"Worker:$actorId = ${context.self} started")
+    if(!isReplaying){
+      dpThread.start()
+      logger.info(s"Worker:$actorId = ${context.self} started")
+    }else{
+      logger.info(s"Worker:$actorId = ${context.self} in replay mode, waiting for replay start")
+    }
   }
 
   override def getLogName: String = getWorkerLogName(actorId)

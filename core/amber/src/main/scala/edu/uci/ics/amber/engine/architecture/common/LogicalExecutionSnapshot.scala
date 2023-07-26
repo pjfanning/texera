@@ -92,6 +92,10 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
     participants.getOrElse(actorVirtualIdentity, ProcessingStats(0,0,new ChannelStatsMapping()))
   }
 
+  def isCheckpointed(id:ActorVirtualIdentity): Boolean ={
+    checkpointed.contains(id)
+  }
+
 }
 
 

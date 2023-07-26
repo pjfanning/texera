@@ -103,7 +103,6 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
     worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue, worker, replayOrderEnforcer)
     logger.info("starting new DP thread...")
     assert(worker.internalQueue.isInstanceOf[RecoveryInternalQueueImpl])
-    worker.dpThread.start() // new DP is not started yet.
   }
 
   override protected def replayCompletedCallback(replayId: String): () => Unit = {

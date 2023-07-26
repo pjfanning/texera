@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowRep
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, LoadStateAndReplay, TakeRuntimeGlobalCheckpoint}
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, SetupReplay, StartReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 
@@ -31,7 +31,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
   }
 
   def restoreWorkers(): Unit = {
-    Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
+    val workerRefs = Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
       .map { worker =>
         val conf = replayConfig.confs(worker)
         controller.controlProcessor.workflow
@@ -41,9 +41,13 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
             AddressInfo(controller.getAvailableNodes(), controller.actorService.self.path.address),
             controller.actorService,
             controller.controlProcessor.execution.getOperatorExecution(worker),
-            Array(LoadStateAndReplay("replay - restart", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
+            Array(SetupReplay("replay - load", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
           )
       }.toSeq))
+    workerRefs.foreach{
+      ref => ref ! StartReplay("replay - restart")
+    }
+
   }
 
   override def overwriteState(chkpt: SavedCheckpoint): Unit = {
