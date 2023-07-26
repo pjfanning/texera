@@ -100,8 +100,8 @@ class WorkerCheckpointRestoreManager(@transient worker:WorkflowWorker) extends C
   override def startProcessing(stateReloaded:Boolean, replayOrderEnforcer: ReplayOrderEnforcer): Unit = {
     logger.info(s"worker restored! input Seq: ${worker.inputPort.getFIFOState}")
     logger.info(s"worker restored! output Seq: ${worker.dataProcessor.outputPort.getFIFOState}")
+    logger.info("creating new DP thread...")
     worker.dpThread = new DPThread(actorId, worker.dataProcessor, worker.internalQueue, worker, replayOrderEnforcer)
-    logger.info("starting new DP thread...")
     assert(worker.internalQueue.isInstanceOf[RecoveryInternalQueueImpl])
   }
 

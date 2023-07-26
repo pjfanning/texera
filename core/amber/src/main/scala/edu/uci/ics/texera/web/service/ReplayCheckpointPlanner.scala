@@ -100,7 +100,7 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
       for(i <- 0 to snapshot){
         val curBudget = budget - history.getTimeGap(i, snapshot)
         var currentPlan:Set[(ActorVirtualIdentity, Int)] = Set((target, i))
-        if(curBudget >= 0){
+        if(curBudget >= 0 && history.getSnapshot(i).getParticipants.toSet.contains(target)){
           history.getSnapshot(i).getUpstreams(target).foreach {
             vid =>
               if (vid != CONTROLLER && vid != CLIENT) {
