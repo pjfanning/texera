@@ -255,7 +255,7 @@ case class OpExecConfig(
             opExecution,
             (if(replayConf.confs.contains(workerId)){
               val replayConfig = replayConf.confs(workerId)
-              Array(SetupReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig), StartReplay("replay - restart"))
+              Array(SetupReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
             }else{
               Array(SetupLogging())
             })

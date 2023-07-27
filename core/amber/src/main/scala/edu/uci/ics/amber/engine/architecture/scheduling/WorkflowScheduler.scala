@@ -15,6 +15,7 @@ import edu.uci.ics.amber.engine.architecture.execution.WorkflowExecution
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.StartReplay
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.OpenOperatorHandler.OpenOperator
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.SchedulerTimeSlotEventHandler.SchedulerTimeSlotEvent
 import edu.uci.ics.amber.engine.architecture.worker.processing.promisehandlers.StartHandler.StartWorker
@@ -104,7 +105,7 @@ class WorkflowScheduler(
     }
   }
 
-  private def constructRegion(region: PipelinedRegion): Unit = {
+  private def constructRegion(region: PipelinedRegion): Set[LayerIdentity] = {
     val builtOpsInRegion = new mutable.HashSet[LayerIdentity]()
     var frontier: Iterable[LayerIdentity] = getWorkflow.getSourcesOfRegion(region)
     while (frontier.nonEmpty) {
@@ -134,6 +135,7 @@ class WorkflowScheduler(
             .forall(getExecution.builtOperators.contains)
         })
     }
+    builtOpsInRegion.toSet
   }
 
   private def buildOperator(
@@ -312,7 +314,17 @@ class WorkflowScheduler(
     }
     if (!getExecution.startedRegions.contains(region.getId())) {
       getExecution.constructingRegions.add(region.getId())
-      constructRegion(region)
+      val builtOps = constructRegion(region)
+      builtOps.foreach{
+        layer =>
+          val exec = getExecution.getOperatorExecution(layer)
+          exec.identifiers.foreach{
+            worker =>
+              if(getReplayConf.confs.contains(worker)){
+                exec.getWorkerInfo(worker).ref ! StartReplay("replay - restart")
+              }
+          }
+      }
       prepareAndStartRegion(region)
     } else {
       // region has already been constructed. Just needs to resume

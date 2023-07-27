@@ -66,11 +66,11 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
         history.getSnapshot(x).getParticipants.foreach{
           operator =>
             if(operator != CONTROLLER && operator != CLIENT){
-              if (operator.name.contains("ee76-main-0") && x == 19) {
+              if (operator.name.contains("4b46-main-0") && x == 22) {
                 println("hello")
               }
               val p = findBestPlan(operator, x, targetTime)
-              if(operator.name.contains("ee76-main-0") && x==19) {
+              if(operator.name.contains("4b46-main-0") && x==22) {
                 println(p)
               }
               p.foreach{
@@ -100,6 +100,7 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
       for(i <- 0 to snapshot){
         val curBudget = budget - history.getTimeGap(i, snapshot)
         var currentPlan:Set[(ActorVirtualIdentity, Int)] = Set((target, i))
+        //TODO: fix this
         if(curBudget >= 0 && history.getSnapshot(i).getParticipants.toSet.contains(target)){
           history.getSnapshot(i).getUpstreams(target).foreach {
             vid =>
