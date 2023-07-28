@@ -37,24 +37,38 @@ object LogicalExecutionSnapshot{
   final case class ProcessingStats(checkpointCost:Long, alignment:Long, inputStatus:ChannelStatsMapping)
 }
 
-class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val timestamp:Long) extends Serializable{
+class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val timestamp:Long) extends Serializable {
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
   private val checkpointed = mutable.HashMap[ActorVirtualIdentity, Map[ChannelEndpointID, Long]]()
 
-  def getSinks:Iterable[ActorVirtualIdentity] = {
+  def getSinks: Iterable[ActorVirtualIdentity] = {
     val dagParticipants = participants.keys.toSet diff Set(CONTROLLER, CLIENT)
     val senders = dagParticipants.map(participants).flatMap(_.inputStatus.keys.map(_.endpointWorker))
     dagParticipants diff senders
   }
 
-  def getUpstreams(id:ActorVirtualIdentity): Iterable[ActorVirtualIdentity] ={
-    if(!participants.contains(id)){
+  def getUpstreams(id: ActorVirtualIdentity): Iterable[ActorVirtualIdentity] = {
+    if (!participants.contains(id)) {
       return Iterable()
     }
-    participants(id).inputStatus.keys.filter(x => x!= CLIENT && x!= CONTROLLER).map(_.endpointWorker)
+    participants(id).inputStatus.keys.filter(x => x != CLIENT && x != CONTROLLER).map(_.endpointWorker)
   }
 
+  def getUpstreamMap(id: ActorVirtualIdentity): Map[ActorVirtualIdentity, Set[ActorVirtualIdentity]] = {
+    val result = mutable.HashMap[ActorVirtualIdentity, Set[ActorVirtualIdentity]]()
+    traversal(id, result)
+    result.toMap
+  }
+
+  private def traversal(id: ActorVirtualIdentity, result: mutable.HashMap[ActorVirtualIdentity, Set[ActorVirtualIdentity]]): Unit = {
+    val upstreams = getUpstreams(id)
+    result(id) = upstreams.toSet
+    upstreams.foreach{
+      up =>
+      traversal(up, result)
+    }
+  }
   def getCheckpointedFIFOSeq(id: ActorVirtualIdentity):Map[ChannelEndpointID, Long] = {
     checkpointed(id)
   }
