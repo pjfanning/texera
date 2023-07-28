@@ -25,8 +25,8 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   @JsonProperty(
     required = true,
     defaultValue =
-      "# Choose from the following templates:\n#" +
-        "\n" +
+      "# Choose from the following templates:\n" +
+        "#\n" +
         "# import pytexera as ptx\n" +
         "# from overrides import overrides\n" +
         "# from typing import Iterator, Optional\n" +
