@@ -6,7 +6,6 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "ng": "nx",
     "start": "concurrently --kill-others \"npx y-websocket\" \"ng serve\"",
     "build": "ng build --configuration production --progress=false --source-map=false",
     "analyze": "ng build --configuration production --stats-json && webpack-bundle-analyzer dist/stats.json",
@@ -19,7 +18,7 @@
     "format:ci": "yarn prettier-eslint --list-different \"src/**/*.{ts,js,html,scss,less,json}\" && yarn eslint ./src",
     "e2e": "ng e2e",
     "preinstall": "",
-    "postinstall": "node git-version.js && ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points && node ./decorate-angular-cli.js"
+    "postinstall": "node git-version.js && ngcc --properties es2015 browser module main --first-only --create-ivy-entry-points"
   },
   "private": true,
   "dependencies": {
@@ -109,10 +108,6 @@
     "@angular/cli": "~13.3.9",
     "@angular/compiler-cli": "~13.3.9",
     "@angular/language-service": "~13.3.9",
-    "@nrwl/cli": "14.4.6",
-    "@nrwl/cypress": "14.4.6",
-    "@nrwl/nx-cloud": "16.1.1",
-    "@nrwl/workspace": "14.4.6",
     "@types/backbone": "1.4.15",
     "@types/c3": "0.7.8",
     "@types/d3": "6.7.5",
@@ -158,8 +153,7 @@
     "sass": "1.49.9",
     "ts-node": "4.1.0",
     "typescript": "4.6.4",
-    "webpack-bundle-analyzer": "4.5.0",
-    "nx": "14.4.6"
+    "webpack-bundle-analyzer": "4.5.0"
   },
   "browserslist": [
     "defaults",
