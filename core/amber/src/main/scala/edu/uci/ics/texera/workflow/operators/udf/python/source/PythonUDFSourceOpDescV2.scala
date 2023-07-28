@@ -78,7 +78,7 @@ class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     // for any pythonUDFType, it can add custom output columns (attributes).
     if (columns.nonEmpty) {
       outputSchemaBuilder.add(columns.asJava).build
-    }else{
+    } else {
       outputSchemaBuilder.build
     }
 

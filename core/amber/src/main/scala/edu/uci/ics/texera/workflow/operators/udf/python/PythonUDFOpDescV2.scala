@@ -67,7 +67,9 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
 
   @JsonProperty
   @JsonSchemaTitle("Extra output column(s)")
-  @JsonPropertyDescription("Name of the newly added output columns that the UDF will produce, if any")
+  @JsonPropertyDescription(
+    "Name of the newly added output columns that the UDF will produce, if any"
+  )
   var outputColumns: List[Attribute] = List()
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
