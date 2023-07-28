@@ -188,6 +188,10 @@ class NetworkCommunicationActor(
     * @param ref     ActorRef, the actual reference of the Actor.
     */
   def registerActorRef(actorId: ActorVirtualIdentity, ref: ActorRef): Unit = {
+    if(ref == null){
+      idToActorRefs.remove(actorId)
+      return
+    }
     idToActorRefs(actorId) = ref
     if (messageStash.contains(actorId)) {
       val stash = messageStash(actorId)

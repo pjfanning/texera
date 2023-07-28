@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowRep
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, SetupReplay, StartReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
@@ -26,6 +27,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     controller.controlProcessor.execution.getAllWorkers.foreach {
       worker =>
         val workerRef = controller.controlProcessor.execution.getOperatorExecution(worker).getWorkerInfo(worker).ref
+        controller.actorService.registerActorForNetworkCommunication(worker, null)
         workerRef ! PoisonPill
     }
   }

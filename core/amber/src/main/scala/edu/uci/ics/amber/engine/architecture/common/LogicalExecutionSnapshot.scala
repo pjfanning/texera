@@ -52,7 +52,7 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
     if (!participants.contains(id)) {
       return Iterable()
     }
-    participants(id).inputStatus.keys.filter(x => x != CLIENT && x != CONTROLLER).map(_.endpointWorker)
+    participants(id).inputStatus.keys.map(_.endpointWorker).filter(x => x != CLIENT && x != CONTROLLER)
   }
 
   def getUpstreamMap(id: ActorVirtualIdentity): Map[ActorVirtualIdentity, Set[ActorVirtualIdentity]] = {
