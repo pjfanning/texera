@@ -35,7 +35,7 @@ PB.generate / excludeFilter := "scalapb.proto"
 
 /////////////////////////////////////////////////////////////////////////////
 // Akka related
-val akkaVersion = "2.6.12"
+val akkaVersion = "2.8.3"
 val akkaDependencies = Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
   "com.typesafe.akka" %% "akka-remote" % akkaVersion,
@@ -121,9 +121,8 @@ val hadoopDependencies = Seq(
 /////////////////////////////////////////////////////////////////////////////
 // Google Service related
 val googleServiceDependencies = Seq(
-  "com.google.oauth-client" % "google-oauth-client" % "1.31.4" exclude ("com.google.guava", "guava"),
-  "com.google.oauth-client" % "google-oauth-client-jetty" % "1.31.4" exclude ("com.google.guava", "guava"),
-  "com.google.api-client" % "google-api-client" % "1.31.1" exclude ("com.google.guava", "guava"),
+  "com.google.oauth-client" % "google-oauth-client-jetty" % "1.34.1" exclude ("com.google.guava", "guava"),
+  "com.google.api-client" % "google-api-client" % "2.2.0" exclude ("com.google.guava", "guava"),
   "com.google.apis" % "google-api-services-sheets" % "v4-rev612-1.25.0" exclude ("com.google.guava", "guava"),
   "com.google.apis" % "google-api-services-drive" % "v3-rev197-1.25.0" exclude ("com.google.guava", "guava")
 )
