@@ -19,17 +19,16 @@ import scala.jdk.CollectionConverters.asJavaIterableConverter
 class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
   @JsonProperty(
     required = true,
-    defaultValue = """import pytexera as ptx
-        |from overrides import overrides
-        |from typing import Iterator, Union
-        |
-        |
-        |class GenerateOperator(ptx.UDFSourceOperator):
-        |
-        |    @overrides
-        |    def produce(self) -> Iterator[Union[ptx.TupleLike, ptx.TableLike, None]]:
-        |        yield
-        |""".stripMargin
+    defaultValue = "import pytexera as ptx\n" +
+      "from overrides import overrides\n" +
+      "from typing import Iterator, Union\n" +
+      "\n" +
+      "\n" +
+      "class GenerateOperator(ptx.UDFSourceOperator):\n" +
+      "\n" +
+      "    @overrides\n" +
+      "    def produce(self) -> Iterator[Union[ptx.TupleLike, ptx.TableLike, None]]:\n" +
+      "        yield\n"
   )
   @JsonSchemaTitle("Python script")
   @JsonPropertyDescription("Input your code here")
