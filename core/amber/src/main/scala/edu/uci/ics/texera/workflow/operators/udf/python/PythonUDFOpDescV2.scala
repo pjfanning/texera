@@ -25,31 +25,32 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   @JsonProperty(
     required = true,
     defaultValue =
-      "# Choose from the following templates:\n" +
-        "# \n" +
-        "# import pytexera as pt\n" +
-        "# from overrides import overrides\n" +
-        "# from typing import Iterator, Optional\n" +
-        "# \n" +
-        "# \n" +
-        "# class ProcessTupleOperator(pt.UDFOperatorV2):\n" +
-        "#     \n" +
-        "#     @overrides\n" +
-        "#     def process_tuple(self, tuple_: pt.Tuple, port: int) -> Iterator[Optional[pt.TupleLike]]:\n" +
-        "#         yield tuple_\n" +
-        "# \n" +
-        "# class ProcessBatchOperator(pt.UDFBatchOperator):\n" +
-        "#     BATCH_SIZE = 10 # must be a positive integer\n" +
-        "# \n" +
-        "#     @overrides\n" +
-        "#     def process_batch(self, batch: pt.Batch, port: int) -> Iterator[Optional[pt.BatchLike]]:\n" +
-        "#         yield batch\n" +
-        "# \n" +
-        "# class ProcessTableOperator(pt.UDFTableOperator):\n" +
-        "# \n" +
-        "#     @overrides\n" +
-        "#     def process_table(self, table: pt.Table, port: int) -> Iterator[Optional[pt.TableLike]]:\n" +
-        "#         yield table\n"
+      """# Choose from the following templates:
+        |#
+        |# import pytexera as ptx
+        |# from overrides import overrides
+        |# from typing import Iterator, Optional
+        |#
+        |#
+        |# class ProcessTupleOperator(ptx.UDFOperatorV2):
+        |#
+        |#     @overrides
+        |#     def process_tuple(self, tuple_: ptx.Tuple, port: int) -> Iterator[Optional[ptx.TupleLike]]:
+        |#         yield tuple_
+        |#
+        |# class ProcessBatchOperator(ptx.UDFBatchOperator):
+        |#     BATCH_SIZE = 10 # must be a positive integer
+        |#
+        |#     @overrides
+        |#     def process_batch(self, batch: ptx.Batch, port: int) -> Iterator[Optional[ptx.BatchLike]]:
+        |#         yield batch
+        |#
+        |# class ProcessTableOperator(ptx.UDFTableOperator):
+        |#
+        |#     @overrides
+        |#     def process_table(self, table: ptx.Table, port: int) -> Iterator[Optional[ptx.TableLike]]:
+        |#         yield table
+        |""".stripMargin
   )
   @JsonSchemaTitle("Python script")
   @JsonPropertyDescription("Input your code here")
@@ -63,13 +64,11 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
   @JsonProperty(required = true, defaultValue = "true")
   @JsonSchemaTitle("Retain input columns")
   @JsonPropertyDescription("Keep the original input columns?")
-  var retainInputColumns: Boolean = Boolean.box(false)
+  var retainInputColumns: Boolean = Boolean.box(true)
 
   @JsonProperty
   @JsonSchemaTitle("Extra output column(s)")
-  @JsonPropertyDescription(
-    "Name of the newly added output columns that the UDF will produce, if any"
-  )
+  @JsonPropertyDescription("Name of the newly added output columns that the UDF will produce, if any")
   var outputColumns: List[Attribute] = List()
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
