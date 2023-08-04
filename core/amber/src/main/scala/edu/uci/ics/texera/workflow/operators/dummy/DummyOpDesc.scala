@@ -1,10 +1,19 @@
 package edu.uci.ics.texera.workflow.operators.dummy
 
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
-import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, PortDescriptor, StateTransferFunc}
+import edu.uci.ics.texera.workflow.common.metadata.{
+  InputPort,
+  OperatorGroupConstants,
+  OperatorInfo,
+  OutputPort
+}
+import edu.uci.ics.texera.workflow.common.operators.{
+  OperatorDescriptor,
+  PortDescriptor,
+  StateTransferFunc
+}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
 import scala.util.{Success, Try}
@@ -19,7 +28,6 @@ class DummyOpDesc extends OperatorDescriptor with PortDescriptor {
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
     OpExecConfig.oneToOneLayer(operatorIdentifier, _ => new DummyOpExec())
   }
-
 
   override def operatorInfo: OperatorInfo = {
 

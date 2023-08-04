@@ -2,12 +2,15 @@ package edu.uci.ics.texera.workflow.common.operators
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import com.fasterxml.jackson.annotation.JsonProperty
-trait DummyProperties {
-  @JsonProperty(value = "Extra Functionalities", required = false)
-  @JsonSchemaTitle("Extra Functionalities")
-  @JsonPropertyDescription("Write values of extra functionalities here.")
-  @AutofillAttributeName var valuesOfFunctionalities: String = ""
-}
+class DummyProperties {
+  @JsonProperty
+  @JsonSchemaTitle("Dummy Attribute")
+  @JsonPropertyDescription("Dummy Attribute for incompatible attribute")
+  var dummyAttribute: String = ""
 
+  @JsonProperty
+  @JsonSchemaTitle("Dummy Value")
+  @JsonPropertyDescription("Value for the dummy attribute")
+  var dummyValue: String = ""
+}
