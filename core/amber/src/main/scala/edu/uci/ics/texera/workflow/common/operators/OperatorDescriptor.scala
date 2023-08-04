@@ -150,7 +150,7 @@ trait StateTransferFunc
     new Type(value = classOf[GanttChartOpDesc], name = "GanttChart")
   )
 )
-abstract class OperatorDescriptor extends Serializable {
+abstract class OperatorDescriptor extends Serializable with DummyProperties {
 
   @JsonIgnore
   var context: WorkflowContext = _
