@@ -63,13 +63,14 @@ class NetworkCommunicationActor(
   val idToActorRefs = new mutable.HashMap[ActorVirtualIdentity, ActorRef]()
   val idToCongestionControls = new mutable.HashMap[ActorVirtualIdentity, CongestionControl]()
   val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
+  val pendingActorRef = new mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[ActorRef]]()
   val messageStash = new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]
   val messageIDToIdentity = new mutable.LongMap[ActorVirtualIdentity]
   var sendRequestCount = 0
   // register timer for resending messages
   val resendHandle: Cancellable = context.system.scheduler.scheduleWithFixedDelay(
-    30.seconds,
-    30.seconds,
+    5.seconds,
+    5.seconds,
     self,
     ResendMessages
   )(context.dispatcher)
@@ -157,6 +158,10 @@ class NetworkCommunicationActor(
         parentRef ! GetActorRef(actorID, replyTo + self)
       } else {
         logger.error(s"unknown identifier: $actorID")
+        if(!pendingActorRef.contains(actorID)){
+          pendingActorRef(actorID) = mutable.HashSet()
+        }
+        replyTo.foreach(pendingActorRef(actorID).add)
       }
     case RegisterActorRef(actorID, ref) =>
       registerActorRef(actorID, ref)
@@ -193,6 +198,10 @@ class NetworkCommunicationActor(
       return
     }
     idToActorRefs(actorId) = ref
+    if(pendingActorRef.contains(actorId)){
+      pendingActorRef(actorId).foreach(x => x ! RegisterActorRef(actorId, ref))
+      pendingActorRef.remove(actorId)
+    }
     if (messageStash.contains(actorId)) {
       val stash = messageStash(actorId)
       while (stash.nonEmpty) {

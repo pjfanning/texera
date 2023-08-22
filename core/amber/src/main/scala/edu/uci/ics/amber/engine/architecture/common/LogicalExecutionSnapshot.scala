@@ -69,6 +69,7 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
       traversal(up, result)
     }
   }
+
   def getCheckpointedFIFOSeq(id: ActorVirtualIdentity):Map[ChannelEndpointID, Long] = {
     checkpointed(id)
   }
@@ -102,8 +103,36 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
 
   def getParticipants: Iterable[ActorVirtualIdentity] = participants.keys.toSet - CLIENT
 
+  def getToplogicalOrder: Iterable[ActorVirtualIdentity] = {
+    var toVisit = getParticipants.toSet - CONTROLLER
+    val visited = mutable.HashSet[ActorVirtualIdentity](CONTROLLER)
+    val result = mutable.ArrayBuffer[ActorVirtualIdentity]()
+    while(toVisit.nonEmpty){
+      val next = mutable.HashSet[ActorVirtualIdentity]()
+      toVisit.foreach{
+        op =>
+          if(participants(op).inputStatus.keys.map(_.endpointWorker).toSet.subsetOf(visited)){
+            result.append(op)
+            visited.add(op)
+          }else{
+            next.add(op)
+          }
+      }
+      toVisit = next.toSet
+    }
+    result
+  }
+
   def getStats(actorVirtualIdentity: ActorVirtualIdentity):ProcessingStats = {
     participants.getOrElse(actorVirtualIdentity, ProcessingStats(0,0,new ChannelStatsMapping()))
+  }
+
+  def getCheckpointCost(op:ActorVirtualIdentity):Long = {
+    participants(op).checkpointCost+ participants.values.filter(x => x.inputStatus.keys.exists(_.endpointWorker == op)).map{
+      x =>
+        val stats = x.inputStatus.get(ChannelEndpointID(op, false))
+        (stats.toReceive - stats.actualReceived)
+    }.sum
   }
 
   def isCheckpointed(id:ActorVirtualIdentity): Boolean ={

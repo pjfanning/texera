@@ -36,6 +36,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     val workerRefs = Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
       .map { worker =>
         val conf = replayConfig.confs(worker)
+        replayConfig.confs = replayConfig.confs - worker
         controller.controlProcessor.workflow
           .getOperator(worker)
           .buildWorker(

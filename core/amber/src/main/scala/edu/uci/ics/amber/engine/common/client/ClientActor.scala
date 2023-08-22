@@ -38,6 +38,7 @@ private[client] class ClientActor extends Actor {
       controller = context.actorOf(Controller.props(workflow,pipelinedPlan, controllerConfig, null))
       sender ! Ack
     case NetworkMessage(mId, WorkflowClientMessage(payload)) =>
+      println(payload)
       sender ! NetworkAck(mId)
       if(handlers.isDefinedAt(payload)){
         handlers(payload)

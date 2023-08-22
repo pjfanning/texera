@@ -34,6 +34,7 @@ object JsonTest {
     ois.close()
 
     val planner = new ReplayCheckpointPlanner(history, 5000)
+    val plan2 = planner.findBestPlan(5000)
     val plan = planner.doPrepPhase()
     println(plan)
   }

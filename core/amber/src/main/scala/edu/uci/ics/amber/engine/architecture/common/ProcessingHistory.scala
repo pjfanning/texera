@@ -68,6 +68,8 @@ class ProcessingHistory extends Serializable {
     historyArray.map(history).map(x => if(x.isAllCheckpointed){"all"}else if(x.isNoneCheckpointed){"none"}else{"partial"})
   }
 
+
+
   def getOperatorCost(op: ActorVirtualIdentity, currentIdx: Int, chkptPos:Map[ActorVirtualIdentity, Int]):Long = {
     var currentCost = 0L
     val info = getSnapshot(currentIdx).getStats(op)

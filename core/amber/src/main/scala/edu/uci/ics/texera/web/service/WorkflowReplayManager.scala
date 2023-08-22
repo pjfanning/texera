@@ -96,6 +96,10 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
     stateStore.jobMetadataStore.updateState(state => {
       state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
     })
+    println("current pending checkpoints =",pendingCheckpoint.map(_._2.size).sum)
+    if(pendingCheckpoint.map(_._2.size).sum < 10){
+      println(s"details: ${pendingCheckpoint.mkString(",")}")
+    }
     if(pendingCheckpoint.contains(actor)){
       pendingCheckpoint(actor).remove(cmd.checkpointId)
       if(pendingCheckpoint(actor).isEmpty){
