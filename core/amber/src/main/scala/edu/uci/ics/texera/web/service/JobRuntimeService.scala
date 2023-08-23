@@ -2,7 +2,10 @@ package edu.uci.ics.texera.web.service
 
 import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
+import edu.stanford.nlp.util.Timing.startTime
+import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.WorkflowRecoveryStatus
+import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{EstimateCheckpointCost, ReplayWorkflow, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.processing.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
@@ -20,11 +23,12 @@ class JobRuntimeService(
     stateStore: JobStateStore,
     wsInput: WebsocketInput,
     breakpointService: JobBreakpointService,
-    reconfigurationService: JobReconfigurationService
+    reconfigurationService: JobReconfigurationService,
+    periodicalCheckpointInterval: Int
 ) extends SubscriptionManager
     with LazyLogging {
 
-  var planner: WorkflowReplayManager = new WorkflowReplayManager(client, stateStore)
+  var planner: WorkflowReplayManager = new WorkflowReplayManager(client, stateStore, periodicalCheckpointInterval)
 
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
@@ -78,6 +82,14 @@ class JobRuntimeService(
   addSubscription(wsInput.subscribe((req: WorkflowPauseRequest, uidOpt) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSING))
     client.sendAsync(PauseWorkflow())
+    if(periodicalCheckpointInterval == 0){
+      client.executeAsync(actor => {
+        val time = System.currentTimeMillis() - planner.startTime
+        val id = planner.generateCheckpointId
+        planner.history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
+        actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+      })
+    }
   }))
 
   // Receive Resume

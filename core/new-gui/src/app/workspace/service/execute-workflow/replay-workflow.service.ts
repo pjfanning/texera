@@ -36,11 +36,11 @@ export class ReplayWorkflowService {
   public replayTimeLimit = 5;
   public triggeredPrepPhase = false;
   public prepPhaseFinished = false;
-
+  public globalcheckpoints = false;
 
   public triggerPrepPhase(){
     this.triggeredPrepPhase = true;
-    this.workflowWebsocketService.send("WorkflowReplayRequest",{replayPos: -1, plannerStrategy: this.selectedMode, replayTimeLimit: this.replayTimeLimit*1000});
+    this.workflowWebsocketService.send("WorkflowReplayRequest",{replayPos: -1, plannerStrategy: this.globalcheckpoints?"global":"partial", replayTimeLimit: this.replayTimeLimit*1000});
   }
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private notification: NotificationService) {

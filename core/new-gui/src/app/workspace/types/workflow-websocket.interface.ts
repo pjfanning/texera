@@ -32,6 +32,7 @@ export interface WorkflowExecuteRequest
   extends Readonly<{
     executionName: string;
     engineVersion: string;
+    periodicalCheckpointInterval: number;
     logicalPlan: LogicalPlan;
   }> {}
 

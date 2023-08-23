@@ -187,25 +187,26 @@ export class ExecuteWorkflowService {
     return undefined;
   }
 
-  public executeWorkflow(executionName: string): void {
+  public executeWorkflow(executionName: string, interval:number): void {
     if (environment.amberEngineEnabled) {
-      this.executeWorkflowAmberTexera(executionName);
+      this.executeWorkflowAmberTexera(executionName, interval);
     } else {
       throw new Error("old texera engine not supported");
     }
   }
 
-  public executeWorkflowAmberTexera(executionName: string): void {
+  public executeWorkflowAmberTexera(executionName: string, interval: number): void {
     // get the current workflow graph
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     console.log(logicalPlan);
-    this.sendExecutionRequest(executionName, logicalPlan);
+    this.sendExecutionRequest(executionName, interval, logicalPlan);
   }
 
-  public sendExecutionRequest(executionName: string, logicalPlan: LogicalPlan): void {
+  public sendExecutionRequest(executionName: string, interval:number, logicalPlan: LogicalPlan): void {
     const workflowExecuteRequest = {
       executionName: executionName,
       engineVersion: version.hash,
+      periodicalCheckpointInterval: interval,
       logicalPlan: logicalPlan,
     };
     // wait for the form debounce to complete, then send

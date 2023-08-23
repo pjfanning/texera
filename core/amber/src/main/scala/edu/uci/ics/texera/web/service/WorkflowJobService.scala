@@ -75,7 +75,8 @@ class WorkflowJobService(
       stateStore,
       wsInput,
       jobBreakpointService,
-      jobReconfigurationService
+      jobReconfigurationService,
+      request.periodicalCheckpointInterval
     )
   val jobPythonService =
     new JobPythonService(client, stateStore, wsInput, jobBreakpointService)

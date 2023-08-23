@@ -1,6 +1,8 @@
-<button *ngIf="!replay.prepPhaseFinished" nz-button nzType="primary" (click)="replay.triggerPrepPhase()" [nzLoading]="replay.triggeredPrepPhase">
+<button nz-button nzType="primary" (click)="replay.triggerPrepPhase()" [nzLoading]="replay.triggeredPrepPhase">
   Start Preparation Phase
 </button>
+
+<label nz-checkbox [(ngModel)]="replay.globalcheckpoints">GlobalCheckpoint</label>
 
 <nz-timeline
   *ngIf="replay.prepPhaseFinished"

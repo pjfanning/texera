@@ -329,6 +329,9 @@
           [(ngModel)]="currentExecutionName"
           placeholder="Untitled Execution" />
       </label>
+        <input
+          [(ngModel)]="currentInterval"
+          placeholder=-1 />
       <nz-button-group nzSize="large">
         <button
           (click)="undoRedoService.undoAction()"

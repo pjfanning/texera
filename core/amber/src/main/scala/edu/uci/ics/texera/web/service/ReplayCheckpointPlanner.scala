@@ -148,9 +148,13 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
   }
 
 
-  def doPrepPhase(): WorkflowReplayConfig = {
+  def doPrepPhase(plannerStrategy:String): WorkflowReplayConfig = {
     val interactionIdx = history.getInteractionIdxes.last
-    val checkpointPlan = findBestPlan(timeLimit)
+    val checkpointPlan = if(plannerStrategy!="global"){
+      findBestPlan(timeLimit)
+    }else{
+      toPartialPlan(getGlobalPlan(0,interactionIdx, timeLimit))
+    }
     val confs = checkpointPlan.map {
       case (name, mapping) =>
         getReplayConfig(name, mapping).toSeq

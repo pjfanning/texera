@@ -20,12 +20,13 @@ import io.reactivex.rxjava3.disposables.Disposable
 
 import java.io.{FileOutputStream, ObjectOutputStream}
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 
-class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) extends SubscriptionManager {
+class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, periodicalCheckpointInterval:Int) extends SubscriptionManager {
   private var replayId = 0
 
   var startTime:Long = 0
@@ -140,6 +141,17 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
               actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
             })
           }
+          if(periodicalCheckpointInterval > 1){
+            val interval = FiniteDuration(periodicalCheckpointInterval, TimeUnit.SECONDS)
+            TexeraWebApplication.scheduleRecurringCallThroughActorSystem(interval, interval) {
+              client.executeAsync(actor => {
+                val time = System.currentTimeMillis() - startTime
+                val id = generateCheckpointId
+                history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
+                actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+              })
+            }
+          }
         }else if(pauseStart != 0){
           startTime += System.currentTimeMillis() - pauseStart
           pauseStart = 0
@@ -173,7 +185,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore) exten
       planner = new ReplayCheckpointPlanner(history, req.replayTimeLimit)
     }
     val replayConf = if(req.replayPos == -1){
-      planner.doPrepPhase()
+      planner.doPrepPhase(req.plannerStrategy)
     }else{
       planner.getReplayPlan(req.replayPos)
     }

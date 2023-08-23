@@ -8,6 +8,7 @@ import scala.collection.mutable
 case class WorkflowExecuteRequest(
     executionName: String,
     engineVersion: String,
+    periodicalCheckpointInterval:Int,
     logicalPlan: LogicalPlanPojo
 ) extends TexeraWebSocketRequest
 
