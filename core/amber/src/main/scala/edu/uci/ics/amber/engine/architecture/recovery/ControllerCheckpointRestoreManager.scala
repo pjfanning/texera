@@ -10,6 +10,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStora
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.RegisterActorRef
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{CheckpointStats, SetupReplay, StartReplay, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ControlPayload}
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStatusUpdate}
 
 
@@ -47,6 +48,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
             Array(SetupReplay("replay - load", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
           )
       }.toSeq))
+    logger.info("starting replay...")
     workerRefs.foreach{
       ref => ref ! StartReplay("replay - restart")
     }
@@ -57,6 +59,7 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     killAllExistingWorkers()
     controller.inputPort.setFIFOState(chkpt.load("fifoState"))
     controller.controlProcessor = chkpt.load("controlState")
+    controller.replayQueue = chkpt.load("replayQueue")
     logger.info("cp restored")
     controller.controlProcessor.initCP(controller)
     controller.controlProcessor.replayPlan = replayConfig
@@ -74,7 +77,14 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     if (replayTo.isDefined) {
       replayOrderEnforcer.setReplayTo(controller.controlProcessor.cursor.getStep, replayTo.get)
     }
+    var queueState:Map[ChannelEndpointID, Iterable[ControlPayload]] = null
+    if(controller.replayQueue != null){
+      queueState = controller.replayQueue.getAllMessages
+    }
     controller.replayQueue = new ControllerReplayQueue(controller.controlProcessor, replayOrderEnforcer, controller.controlProcessor.processControlPayload)
+    if(queueState != null){
+      controller.replayQueue.loadState(queueState)
+    }
     replayOrderEnforcer
   }
 
@@ -82,11 +92,13 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
     val startTime = System.currentTimeMillis()
     checkpoint.chkpt.save("fifoState", controller.inputPort.getFIFOState)
     checkpoint.chkpt.save("controlState", controller.controlProcessor)
+    checkpoint.chkpt.save("replayQueue", controller.replayQueue)
     System.currentTimeMillis() - startTime
   }
 
   override def doCheckpointDuringReplay(pendingCheckpoint: PendingCheckpoint, conf: ReplayCheckpointConfig): () => Unit = {
     () => {
+      logger.info(s"checkpoint controller: input seq = ${controller.inputPort.getFIFOState}")
       controller.controlProcessor.outputPort.broadcastMarker(TakeRuntimeGlobalCheckpoint(conf.checkpointId, Map.empty))
       pendingCheckpoint.fifoOutputState = controller.controlProcessor.outputPort.getFIFOState
       fillCheckpoint(pendingCheckpoint)

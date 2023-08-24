@@ -34,7 +34,10 @@ object JsonTest {
     ois.close()
 
     val planner = new ReplayCheckpointPlanner(history, 5000)
-    val plan2 = planner.findBestPlan(5000)
+    val plan2 = planner.findBestPlan(0,history.historyArray.length,5000,true, false)
+    println(plan2.values.map(history.getPlanCost).sum)
+    val plan3 = planner.toPartialPlan(planner.getGlobalPlan(0, history.historyArray.length,5000))
+    println(plan3.values.map(history.getPlanCost).sum)
     val plan = planner.doPrepPhase("global")
     println(plan)
   }

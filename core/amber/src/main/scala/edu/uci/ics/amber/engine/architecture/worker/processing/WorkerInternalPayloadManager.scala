@@ -62,9 +62,15 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
 
   override def markerAlignmentStart(channel: ChannelEndpointID, payload: MarkerAlignmentInternalPayload, pendingCollections:mutable.HashMap[String, MarkerCollectionSupport]): Unit = {
     payload match {
-      case TakeRuntimeGlobalCheckpoint(id, alignmentMap) =>
+      case TakeRuntimeGlobalCheckpoint(id, alignmentMap, markerOnly) =>
         if(worker.isReplaying){
           logger.info("doing replay, enforce replay checkpoints, ignore normal checkpoints.")
+          return
+        }
+        if(markerOnly.contains(worker.actorId)){
+          worker.initiateSyncActionFromMain(()=>{
+            worker.dataProcessor.outputPort.broadcastMarker(payload)
+          })
           return
         }
         if(alignmentMap.contains(worker.actorId)) {

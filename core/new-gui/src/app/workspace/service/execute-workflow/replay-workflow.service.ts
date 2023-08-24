@@ -82,6 +82,7 @@ export class ReplayWorkflowService {
 
     workflowWebsocketService.subscribeToEvent("WorkflowReplayCompletedEvent").subscribe(e => {
       this.prepPhaseFinished = true;
+      this.triggeredPrepPhase = false;
       this.isReplaying = false;
       this.replayTime = e.replayTime;
       this.checkpointTime = e.checkpointTime;

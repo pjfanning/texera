@@ -198,11 +198,16 @@ class NetworkCommunicationActor(
       return
     }
     idToActorRefs(actorId) = ref
+    logger.info(s"register actorRef for $actorId: $ref")
     if(pendingActorRef.contains(actorId)){
-      pendingActorRef(actorId).foreach(x => x ! RegisterActorRef(actorId, ref))
+      pendingActorRef(actorId).foreach(x =>{
+        logger.info(s"send actorRef for $actorId: $ref to $x")
+        x ! RegisterActorRef(actorId, ref)
+      })
       pendingActorRef.remove(actorId)
     }
     if (messageStash.contains(actorId)) {
+      logger.info(s"resend stashed message to $actorId: $ref")
       val stash = messageStash(actorId)
       while (stash.nonEmpty) {
         forwardMessage(actorId, stash.dequeue())

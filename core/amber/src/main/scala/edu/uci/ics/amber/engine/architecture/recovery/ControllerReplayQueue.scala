@@ -18,6 +18,16 @@ class ControllerReplayQueue(@transient controlProcessor:ControlProcessor, @trans
     messageQueues.toMap
   }
 
+  def loadState(state:Map[ChannelEndpointID, Iterable[ControlPayload]]):Unit= {
+    state.foreach{
+      case (d, payloads) =>
+        payloads.foreach{
+          payload =>
+            messageQueues.getOrElseUpdate(d, new mutable.Queue()).enqueue(payload)
+        }
+    }
+  }
+
   def enqueuePayload(channelEndpointID: ChannelEndpointID, payload:ControlPayload): Unit = {
     messageQueues.getOrElseUpdate(channelEndpointID, new mutable.Queue()).enqueue(payload)
     triggerReplay()

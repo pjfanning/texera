@@ -285,10 +285,10 @@ case class OpExecConfig(
     }
     val ref =
       actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
-    actorService.registerActorForNetworkCommunication(workerId, ref)
     actorService.ask(ref, CheckInitialized(extraCommands)).map{
       _ =>
         println(s"Worker Built! Actor for $workerId is at $ref")
+        actorService.registerActorForNetworkCommunication(workerId, ref)
         opExecution.getWorkerInfo(workerId).ref = ref
         ref
     }

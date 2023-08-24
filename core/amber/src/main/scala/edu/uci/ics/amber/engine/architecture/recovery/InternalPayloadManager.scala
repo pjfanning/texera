@@ -50,7 +50,7 @@ object InternalPayloadManager{
   }
 
   // checkpoint related:
-  case class TakeRuntimeGlobalCheckpoint(id:String, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]]) extends MarkerAlignmentInternalPayload
+  case class TakeRuntimeGlobalCheckpoint(id:String, alignmentMap:Map[ActorVirtualIdentity, Set[ChannelEndpointID]], markerOnly:Set[ActorVirtualIdentity] = Set.empty) extends MarkerAlignmentInternalPayload
 
   // controller replay workflow:
   case class ReplayWorkflow(id:String, replayConfig: WorkflowReplayConfig) extends OneTimeInternalPayload

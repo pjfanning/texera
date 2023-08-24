@@ -58,7 +58,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   override def markerAlignmentStart(channel: ChannelEndpointID, markerAlignmentInternalPayload: MarkerAlignmentInternalPayload, pendingCollections:mutable.HashMap[String, MarkerCollectionSupport]): Unit = {
     markerAlignmentInternalPayload match {
-      case TakeRuntimeGlobalCheckpoint(id, _) =>
+      case TakeRuntimeGlobalCheckpoint(id, _, _) =>
         if(controller.isReplaying){
           logger.info("doing replay, enforce replay checkpoints, ignore normal checkpoints.")
           return
