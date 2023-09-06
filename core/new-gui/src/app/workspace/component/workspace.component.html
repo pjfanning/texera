@@ -32,4 +32,34 @@
   <div class="texera-git-commit-id">
     <span>Version 0.5.3 <br />Git hash: {{ gitCommitHash }}</span>
   </div>
+
+  <div id="chatbot">
+    <ng-container *ngIf="isChatboxVisible; else launcherContainer">
+      <div id="chatbox">
+        <input type="text" placeholder="Type your message...">
+      </div>
+      <div id="km-popup-close-button"
+           aria-label="Close"
+           role="button"
+           class="km-custom-widget-background-color"
+           (click)="toggleChatboxVisibility()">
+        <svg width="64" xmlns="http://www.w3.org/2000/svg" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="32" fill="#40a9ff"/>
+          <path fill="none" d="M24 24 L40 40 M24 40 L40 24" stroke-width="3" stroke="#fff"></path>
+        </svg>
+      </div>
+    </ng-container>
+
+    <ng-template #launcherContainer>
+      <div id="launcher-svg-container"
+           class="km-chat-icon-sidebox km-custom-widget-background-color km-chat-widget-background-color null vis"
+           (click)="toggleChatboxVisibility()">
+        <svg width="64" xmlns="http://www.w3.org/2000/svg" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="32" fill="#40a9ff"/>
+          <path fill="#FFF" transform="scale(1.2) translate(6, 6)" d="M30.12 29.17V18a7.3 7.3 0 0 0-7.3-5.3H16.44a7.3 7.3 0 1 0 0 14.6h7.2s.58.04.93.17c.34.12.71.42.71.42l4.44 3.66s.4.34.55.27c.15-.07.11-.65.11-.65zM17.63 21.67c0 .49-.42.88-.95.88-.52 0-.95-.4-.95-.88v-2.13c0-.49.43-.88.95-.88.53 0 .95.4.95.88v2.13zm4.07 1.48c0 .49-.43.88-.95.88s-.95-.39-.95-.88v-6.1c0-.48.43-.88.95-.88s.95.4.95.88v6.1zm4.06-1.48c0 .49-.42.88-.95.88-.52 0-.94-.4-.94-.88v-2.13c0-.49.42-.88.94-.88.53 0 .95.4.95.88v2.13z" stroke-width="0.1" stroke="#fff"></path>
+        </svg>
+      </div>
+    </ng-template>
+  </div>
+
 </div>

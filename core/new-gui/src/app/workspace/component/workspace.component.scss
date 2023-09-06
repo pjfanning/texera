@@ -159,3 +159,30 @@
   display: inline-block;
   margin-right: 1.25em;
 }
+
+#chatbot{
+  position: absolute;
+  z-index: 3;
+  left: 60px;
+  bottom: 3em;
+}
+
+#chatbox{
+  background: white;
+  width: 400px;
+  height: 600px;
+  border: 1px solid #ccc; /* This adds a border */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#chatbox input[type="text"] {
+  position: absolute; /* Position it at the bottom of the chatbox */
+  bottom: 15%;         /* 5% padding from the bottom */
+  left: 5%;           /* 5% padding from the left side */
+  right: 5%;          /* 5% padding from the right side */
+  width: calc(90%);   /* Subtracting 10% (5% padding from left and 5% padding from right) */
+  padding: 5px;       /* Some padding inside the textbox for better aesthetics */
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+

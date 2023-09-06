@@ -38,6 +38,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public pid?: number = undefined;
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
+  public isChatboxVisible: boolean = false;
+
   userSystemEnabled = environment.userSystemEnabled;
 
   constructor(
@@ -270,4 +272,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         this.workflowWebsocketService.reopenWebsocket(wid);
       });
   }
+  toggleChatboxVisibility(): void {
+    this.isChatboxVisible = !this.isChatboxVisible;
+  }
+
 }
