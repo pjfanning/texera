@@ -39,6 +39,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
   public isChatboxVisible: boolean = false;
+  public msgsChat: string[]=[];
+  public msgChat: string = '';
+  //public displayedMessage: string = '';
 
   userSystemEnabled = environment.userSystemEnabled;
 
@@ -274,6 +277,12 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   }
   toggleChatboxVisibility(): void {
     this.isChatboxVisible = !this.isChatboxVisible;
+  }
+  displayMessage() {
+    if (this.msgChat.trim()) { // Only add non-empty messages
+      this.msgsChat.push(this.msgChat.trim());
+      this.msgChat = '';  // Clear the input after adding the message
+    }
   }
 
 }

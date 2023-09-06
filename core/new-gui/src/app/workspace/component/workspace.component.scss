@@ -167,13 +167,6 @@
   bottom: 3em;
 }
 
-#chatbox{
-  background: white;
-  width: 400px;
-  height: 600px;
-  border: 1px solid #ccc; /* This adds a border */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
 
 #chatbox input[type="text"] {
   position: absolute; /* Position it at the bottom of the chatbox */
@@ -186,3 +179,27 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+#chatbox{
+  background: white;
+  width: 400px;
+  height: 600px;
+  border: 1px solid #ccc; /* This adds a border */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;   /* Added padding to separate message divs from the edge */
+  display: flex;
+  flex-direction: column;
+}
+
+.message-div {
+  padding: 10px;
+  margin-top: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #40a9ff;
+  color: white;
+  text-align: right;
+
+  margin-left: auto; /* Right aligns the div */
+  max-width: calc(100% - 20px); /* max-width considering padding on both sides */
+  word-wrap: break-word; /* This ensures that the text will wrap onto the next line */
+}
