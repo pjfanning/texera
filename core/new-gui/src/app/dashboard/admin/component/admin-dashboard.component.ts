@@ -78,7 +78,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-      clearInterval(this.timer);
+    clearInterval(this.timer);
   }
 
   maxStringLength(input: string, length: number): string {
