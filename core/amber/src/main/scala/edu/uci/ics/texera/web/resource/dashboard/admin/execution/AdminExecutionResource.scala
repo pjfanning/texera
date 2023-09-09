@@ -91,7 +91,7 @@ class AdminExecutionResource {
       .map(workflowRecord => {
         val startingTime = workflowRecord.get(WORKFLOW_EXECUTIONS.STARTING_TIME).getTime
 
-        var lastUpdateTime = workflowRecord.get(WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME).getTime
+        var lastUpdateTime: Long = 0
         if (workflowRecord.get(WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME) == null) {
           lastUpdateTime = 0
         } else {
