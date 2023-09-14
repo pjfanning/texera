@@ -29,6 +29,13 @@ interface ServerResponse {
   message: string;
 }
 
+interface ChatMessage {
+  type: 'user' | 'server';
+  content: string;
+}
+
+
+
 @UntilDestroy()
 @Component({
   selector: "texera-workspace",
@@ -46,6 +53,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public isChatboxVisible: boolean = false;
   public msgsChat: string[]=[];
   public msgChat: string = '';
+  public msgsFromServer: string[] = [];  // For server messages
+  public msgs: ChatMessage[] = [];
   //public displayedMessage: string = '';
 
   userSystemEnabled = environment.userSystemEnabled;
@@ -305,28 +314,81 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   //   }
   // }
 
-  displayMessage() {
-    if (this.msgChat.trim()) { // Only add non-empty messages
+  // displayMessage() {
+  //   if (this.msgChat.trim()) { // Only add non-empty messages
+  //
+  //     this.userProjectService.postExampleRaj(this.msgChat.trim())
+  //       .pipe(untilDestroyed(this))
+  //       .subscribe(
+  //         (response: ServerResponse) => {
+  //           // Add the message to the local array only after successful server response
+  //           this.msgsChat.push(this.msgChat.trim());
+  //           // Clear the input after adding the message
+  //           this.msgChat = '';
+  //           // Add the echoed message from the server to the local array
+  //           this.msgsChat.push(response.message);
+  //           console.log("test123");
+  //           console.log(response.message);
+  //         },
+  //         error => {
+  //           console.error("Error receiving server message:", error);
+  //         }
+  //       );
+  //   }
+  // }
+// Existing properties
 
-      this.userProjectService.postExampleRaj(this.msgChat.trim())
-        .pipe(untilDestroyed(this))
-        .subscribe(
-          (response: ServerResponse) => {
-            // Add the message to the local array only after successful server response
-            this.msgsChat.push(this.msgChat.trim());
-            // Clear the input after adding the message
-            this.msgChat = '';
-            // Add the echoed message from the server to the local array
-            this.msgsChat.push(response.message);
-            console.log("test123");
-            console.log(response.message);
-          },
-          error => {
-            console.error("Error receiving server message:", error);
-          }
-        );
-    }
+  // displayMessage() {
+  //   if (this.msgChat.trim()) { // Only add non-empty messages
+  //
+  //     this.msgsChat.push(this.msgChat.trim());  // Add user message immediately
+  //
+  //     this.userProjectService.postExampleRaj(this.msgChat.trim())
+  //       .pipe(untilDestroyed(this))
+  //       .subscribe(
+  //         (response: ServerResponse) => {
+  //           // Add the echoed message from the server to the server messages array
+  //           this.msgsFromServer.push(response.message);
+  //           // Clear the input after adding the message
+  //           this.msgChat = '';
+  //           console.log("test123");
+  //           console.log(response.message);
+  //         },
+  //         error => {
+  //           console.error("Error receiving server message:", error);
+  //         }
+  //       );
+  //   }
+  // }
+
+  // Message object
+
+
+displayMessage() {
+  if (this.msgChat.trim()) { // Only add non-empty messages
+
+    this.msgs.push({
+      type: 'user',
+      content: this.msgChat.trim()
+    });
+
+    this.userProjectService.postExampleRaj(this.msgChat.trim())
+      .pipe(untilDestroyed(this))
+      .subscribe(
+        (response: ServerResponse) => {
+          this.msgs.push({
+            type: 'server',
+            content: response.message
+          });
+          // Clear the input after adding the user message
+          this.msgChat = '';
+        },
+        error => {
+          console.error("Error receiving server message:", error);
+        }
+      );
   }
+}
 
 
 

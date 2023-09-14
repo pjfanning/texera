@@ -35,9 +35,32 @@
 
   <div id="chatbot">
     <ng-container *ngIf="isChatboxVisible; else launcherContainer">
+<!--      <div id="chatbox" #chatbox>-->
+<!--        <input type="text" placeholder="Type your message..." [(ngModel)]="msgChat" (keydown.enter)="displayMessage()" #messageBox>-->
+<!--        <div class="message-div" *ngFor="let msg of msgsChat">{{ msg }}</div>-->
+<!--      </div>-->
+<!--      <div id="chatbox" #chatbox>-->
+<!--        <input type="text" placeholder="Type your message..." [(ngModel)]="msgChat" (keydown.enter)="displayMessage()" #messageBox>-->
+<!--        <div class="message-div"-->
+<!--             *ngFor="let msg of msgsChat; last as isLast"-->
+<!--             [ngClass]="{'server-message': isLast}">{{ msg }}</div>-->
+<!--      </div>-->
+<!--      <div id="chatbox" #chatbox>-->
+<!--        <input type="text" placeholder="Type your message..." [(ngModel)]="msgChat" (keydown.enter)="displayMessage()" #messageBox>-->
+
+<!--        &lt;!&ndash; Display user messages &ndash;&gt;-->
+<!--        <div class="message-div user-message" *ngFor="let msg of msgsChat">{{ msg }}</div>-->
+
+<!--        &lt;!&ndash; Display server messages &ndash;&gt;-->
+<!--        <div class="message-div server-message" *ngFor="let msg of msgsFromServer">{{ msg }}</div>-->
+<!--      </div>-->
       <div id="chatbox" #chatbox>
         <input type="text" placeholder="Type your message..." [(ngModel)]="msgChat" (keydown.enter)="displayMessage()" #messageBox>
-        <div class="message-div" *ngFor="let msg of msgsChat">{{ msg }}</div>
+
+        <!-- Display messages based on their type -->
+        <div *ngFor="let message of msgs" class="message-div" [ngClass]="message.type === 'user' ? 'user-message' : 'server-message'">
+          {{ message.content }}
+        </div>
       </div>
       <div id="km-popup-close-button"
            aria-label="Close"

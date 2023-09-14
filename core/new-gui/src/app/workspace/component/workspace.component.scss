@@ -204,16 +204,83 @@
 //  word-wrap: break-word; /* This ensures that the text will wrap onto the next line */
 //}
 
+//#chatbox{
+//  background: white;
+//  width: 400px;
+//  height: 600px;
+//  border: 1px solid #ccc; /* This adds a border */
+//  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+//  padding: 10px;   /* Added padding to separate message divs from the edge */
+//  display: flex;
+//  flex-direction: column;
+//  overflow-y: auto; /* This makes it scrollable when the content exceeds its height */
+//}
+//
+//.message-div {
+//  padding: 10px;
+//  margin-top: 5px;
+//  border: 1px solid #ccc;
+//  border-radius: 5px;
+//  background-color: #40a9ff;
+//  color: white;
+//  text-align: right;
+//  margin-left: auto; /* Right aligns the div */
+//  max-width: calc(100% - 40px); /* max-width considering padding and margin on both sides */
+//  word-wrap: break-word; /* This ensures that the text will wrap onto the next line */
+//}
+//
+//.server-message {
+//  background-color: grey;
+//  color: black;
+//  text-align: left;  /* left aligns the div content */
+//  margin-right: auto; /* Left aligns the div */
+//}
+//---
+//#chatbox{
+//  background: white;
+//  width: 400px;
+//  height: 600px;
+//  border: 1px solid #ccc;
+//  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+//  padding: 10px;
+//  display: flex;
+//  flex-direction: column;
+//  overflow-y: auto;
+//}
+//
+//.message-div {
+//  padding: 10px;
+//  margin-top: 5px;
+//  border: 1px solid #ccc;
+//  border-radius: 5px;
+//  max-width: calc(100% - 40px);
+//  word-wrap: break-word;
+//}
+//
+//.user-message {
+//  background-color: #40a9ff;
+//  color: white;
+//  text-align: right;
+//  margin-left: auto;
+//}
+//
+//.server-message {
+//  background-color: grey;
+//  color: black;
+//  text-align: left;
+//  margin-right: auto;
+//}
+
 #chatbox{
   background: white;
   width: 400px;
   height: 600px;
-  border: 1px solid #ccc; /* This adds a border */
+  border: 1px solid #ccc;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;   /* Added padding to separate message divs from the edge */
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto; /* This makes it scrollable when the content exceeds its height */
+  overflow-y: auto;
 }
 
 .message-div {
@@ -221,10 +288,21 @@
   margin-top: 5px;
   border: 1px solid #ccc;
   border-radius: 5px;
+  max-width: calc(100% - 40px);
+  word-wrap: break-word;
+}
+
+.user-message {
   background-color: #40a9ff;
   color: white;
   text-align: right;
-  margin-left: auto; /* Right aligns the div */
-  max-width: calc(100% - 40px); /* max-width considering padding and margin on both sides */
-  word-wrap: break-word; /* This ensures that the text will wrap onto the next line */
+  margin-left: auto;
 }
+
+.server-message {
+  background-color: #e6e5ec;
+  color: black;
+  text-align: left;
+  margin-right: auto;
+}
+
