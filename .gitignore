@@ -93,3 +93,5 @@ scalapb/scalapb
 # Ignoring credentials
 client_secret_*
 StoredCredential*
+
+*.conf
