@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorGroupConstants, OperatorInfo, OutputPort}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.operators.visualization.{VisualizationConstants, VisualizationOperator}
@@ -12,7 +12,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.{VisualizationConstan
 @JsonSchemaInject(json = """
 {
   "attributeTypeRules": {
-    "endPointsMagnitudeColumnName": {
+    "measurementColumnName": {
       "enum": ["integer", "long", "double"]
     }
   }
@@ -43,11 +43,11 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   @AutofillAttributeName
   var endPointValue: String = ""
 
-  @JsonProperty(value = "endPointsMagnitudeColumnName", required = true)
-  @JsonSchemaTitle("Endpoints Magnitude Column Name")
-  @JsonPropertyDescription("the name of the column that indicates the measurement at endpoints")
+  @JsonProperty(value = "measurementColumnName", required = true)
+  @JsonSchemaTitle("Measurement Column Name")
+  @JsonPropertyDescription("the name of the measurement column")
   @AutofillAttributeName
-  var endPointsMagnitudeColumnName: String = ""
+  var measurementColumnName: String = ""
 
   @JsonProperty(value = "entityColumnName", required = true)
   @JsonSchemaTitle("Entity Column Name")
@@ -55,9 +55,9 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   @AutofillAttributeName
   var entityColumnName: String = ""
 
-  @JsonSchemaTitle("Entities")
-  @JsonPropertyDescription("the entities to be compared")
-  var entities: List[DumbbellPlotEntityUnit] = List()
+  @JsonProperty(value = "Entities", required = true)
+  @JsonPropertyDescription("entities to be compared")
+  @AutofillAttributeNameList var entities: List[String] = _
 
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
@@ -76,28 +76,30 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   override def numWorkers() = 1
 
   def createPlotlyFigure(): String = {
-    val entityNames = entities.map(unit => s"'${unit.entityName}'").mkString(", ")
+    val entityNames = entities.map(unit => s"'${unit}'").mkString(", ")
     val endPointValues = startPointValue + ", " + endPointValue
 
     s"""
      |        entityNames = [${entityNames}]
      |        endPointValues = [${endPointValues}]
      |        filtered_table = table[(table['${entityColumnName}'].isin(entityNames)) &
-     |                    (table['${endPointsMagnitudeColumnName}'].isin(endPointValues))]
+     |                    (table['${endPointsColumnName}'].isin(endPointValues))]
      |
      |        # Create the dumbbell plot using Plotly
      |        fig = go.Figure()
      |
      |        for entity in entityNames:
      |          entity_data = filtered_table[filtered_table['${entityColumnName}'] == entity]
-     |          fig.add_trace(go.Scatter(x=entity_data['${endPointsMagnitudeColumnName}'],
+     |          fig.add_trace(go.Scatter(x=entity_data['${measurementColumnName}'],
      |                             y=[entity]*2,
-     |                             mode='lines+markers',
+     |                             mode='lines+markers+text',
      |                             name=entity,
+     |                             text=entity_data['${endPointsColumnName}'],
+     |                             textposition='top center',
      |                             marker=dict(size=10)))
      |
      |          fig.update_layout(title="${title}",
-     |                  xaxis_title="${endPointsMagnitudeColumnName}",
+     |                  xaxis_title="${measurementColumnName}",
      |                  yaxis_title="${entityColumnName}",
      |                  yaxis=dict(categoryorder='array', categoryarray=entityNames))
      |""".stripMargin
