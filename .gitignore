@@ -94,4 +94,7 @@ scalapb/scalapb
 client_secret_*
 StoredCredential*
 
+# Ignoring local configurations
 *.conf
+logback.xml
+web-config.yml
