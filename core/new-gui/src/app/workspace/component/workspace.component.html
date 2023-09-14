@@ -35,7 +35,7 @@
 
   <div id="chatbot">
     <ng-container *ngIf="isChatboxVisible; else launcherContainer">
-      <div id="chatbox">
+      <div id="chatbox" #chatbox>
         <input type="text" placeholder="Type your message..." [(ngModel)]="msgChat" (keydown.enter)="displayMessage()" #messageBox>
         <div class="message-div" *ngFor="let msg of msgsChat">{{ msg }}</div>
       </div>

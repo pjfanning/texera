@@ -21,8 +21,13 @@ import { of } from "rxjs";
 import { isDefined } from "../../common/util/predicate";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { AutoAttributeCorrectionService } from "../service/dynamic-schema/auto-attribute-correction/auto-attribute-correction.service";
+import {UserProjectService} from "../../dashboard/user/service/user-project/user-project.service";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
+
+interface ServerResponse {
+  message: string;
+}
 
 @UntilDestroy()
 @Component({
@@ -62,7 +67,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private operatorMetadataService: OperatorMetadataService,
     private message: NzMessageService,
     private router: Router,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private userProjectService: UserProjectService
   ) {}
 
   ngOnInit() {
@@ -278,11 +284,52 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   toggleChatboxVisibility(): void {
     this.isChatboxVisible = !this.isChatboxVisible;
   }
+
+
+  // displayMessage() {
+  //   if (this.msgChat.trim()) { // Only add non-empty messages
+  //     this.msgsChat.push(this.msgChat.trim());
+  //     this.msgChat = '';  // Clear the input after adding the message
+  //
+  //     this.userProjectService.postExampleRaj()
+  //       .pipe(untilDestroyed(this))
+  //       .subscribe(
+  //         (response: ServerResponse) => {
+  //           this.msgsChat.push(response.message);
+  //           console.log(response.message);
+  //         },
+  //         error => {
+  //           console.error("Error receiving server message:", error);
+  //         }
+  //       );
+  //   }
+  // }
+
   displayMessage() {
     if (this.msgChat.trim()) { // Only add non-empty messages
-      this.msgsChat.push(this.msgChat.trim());
-      this.msgChat = '';  // Clear the input after adding the message
+
+      this.userProjectService.postExampleRaj(this.msgChat.trim())
+        .pipe(untilDestroyed(this))
+        .subscribe(
+          (response: ServerResponse) => {
+            // Add the message to the local array only after successful server response
+            this.msgsChat.push(this.msgChat.trim());
+            // Clear the input after adding the message
+            this.msgChat = '';
+            // Add the echoed message from the server to the local array
+            this.msgsChat.push(response.message);
+            console.log("test123");
+            console.log(response.message);
+          },
+          error => {
+            console.error("Error receiving server message:", error);
+          }
+        );
     }
   }
+
+
+
+
 
 }

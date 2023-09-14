@@ -14,6 +14,11 @@ export const CREATE_PROJECT_URL = `${USER_PROJECT_BASE_URL}/create`;
 export const USER_FILE_BASE_URL = `${AppSettings.getApiEndpoint()}/user/file`;
 export const USER_FILE_DELETE_URL = `${USER_FILE_BASE_URL}/delete`;
 
+interface ServerResponse {
+  message: string;
+}
+
+
 @Injectable({
   providedIn: "root",
 })
@@ -55,6 +60,22 @@ export class UserProjectService {
   public updateProjectDescription(pid: number, description: string): Observable<Response> {
     return this.http.post<Response>(`${USER_PROJECT_BASE_URL}/${pid}/update/description`, `${description}`);
   }
+
+  // public postExampleRaj(): Observable<Response> {
+  //   return this.http.post<Response>(`http://localhost:8000/`, `{"key":"Raj"}`);
+  // }
+
+  // public postExampleRaj(): Observable<ServerResponse> {
+  //   return this.http.post<ServerResponse>(`http://localhost:8000/`, `{"key":"hello world!"}`);
+  // }
+
+  public postExampleRaj(message: string): Observable<ServerResponse> {
+    const payload = {
+      key: message
+    };
+    return this.http.post<ServerResponse>(`http://localhost:8000/`, JSON.stringify(payload));
+  }
+
 
   public deleteProject(pid: number): Observable<Response> {
     return this.http.delete<Response>(`${DELETE_PROJECT_URL}/` + pid);
