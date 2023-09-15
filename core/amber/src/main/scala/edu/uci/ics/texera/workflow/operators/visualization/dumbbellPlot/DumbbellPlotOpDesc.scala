@@ -50,13 +50,11 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   @JsonProperty(value = "startPointValue", required = true)
   @JsonSchemaTitle("Start Point Value")
   @JsonPropertyDescription("the value of the start point")
-  @AutofillAttributeName
   var startPointValue: String = ""
 
   @JsonProperty(value = "endPointValue", required = true)
   @JsonSchemaTitle("End Point Value")
   @JsonPropertyDescription("the value of the end point")
-  @AutofillAttributeName
   var endPointValue: String = ""
 
   @JsonProperty(value = "measurementColumnName", required = true)
@@ -73,7 +71,7 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
 
   @JsonProperty(value = "Entities", required = true)
   @JsonPropertyDescription("entities to be compared")
-  @AutofillAttributeNameList var entities: List[String] = _
+  var entities: List[String] = _
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.newBuilder.add(new Attribute("html-content", AttributeType.STRING)).build
