@@ -152,7 +152,7 @@ trait StateTransferFunc
     new Type(value = classOf[TimeSeriesOpDesc], name = "TimeSeries"),
     new Type(value = classOf[GanttChartOpDesc], name = "GanttChart"),
     new Type(value = classOf[ImageVisualizerOpDesc], name = "ImageVisualizer"),
-    new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart")
+    new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart"),
     new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot")
   )
 )
