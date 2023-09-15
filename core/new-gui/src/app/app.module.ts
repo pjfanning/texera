@@ -55,6 +55,7 @@ import { DashboardComponent } from "./dashboard/user/component/dashboard.compone
 import { UserWorkflowComponent } from "./dashboard/user/component/user-workflow/user-workflow.component";
 import { ShareAccessComponent } from "./dashboard/user/component/share-access/share-access.component";
 import { NgbdModalWorkflowExecutionsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
+import { NgbModalUserQuotaComponent } from "./dashboard/user/component/user-quota/ngbd-modal-user-quota.component";
 import { NgbdModalFileAddComponent } from "./dashboard/user/component/user-file/ngbd-modal-file-add/ngbd-modal-file-add.component";
 import { UserFileComponent } from "./dashboard/user/component/user-file/user-file.component";
 import { UserIconComponent } from "./dashboard/user/component/user-icon/user-icon.component";
@@ -170,6 +171,7 @@ registerLocaleData(en);
     TypeCastingDisplayComponent,
     ShareAccessComponent,
     NgbdModalWorkflowExecutionsComponent,
+    NgbModalUserQuotaComponent,
     ConsoleFrameComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,

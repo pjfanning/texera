@@ -4,6 +4,9 @@ import { NzTableFilterFn, NzTableSortFn } from "ng-zorro-antd/table";
 import { AdminUserService } from "../service/admin-user.service";
 import { Role, User } from "../../../common/type/user";
 import { UserService } from "../../../common/service/user/user.service";
+import { NgbModalUserQuotaComponent } from "../../user/component/user-quota/ngbd-modal-user-quota.component";
+
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 
 @UntilDestroy()
 @Component({
@@ -23,7 +26,7 @@ export class AdminUserComponent implements OnInit {
   listOfDisplayUser = [...this.userList];
   currentUid: number | undefined = 0;
 
-  constructor(private adminUserService: AdminUserService, private userService: UserService) {
+  constructor(private adminUserService: AdminUserService, private userService: UserService, private modalService: NgbModal,) {
     this.currentUid = this.userService.getCurrentUser()?.uid;
   }
 
@@ -91,6 +94,14 @@ export class AdminUserComponent implements OnInit {
   searchByEmail(): void {
     this.emailSearchVisible = false;
     this.listOfDisplayUser = this.userList.filter(user => (user.email || "").indexOf(this.emailSearchValue) !== -1);
+  }
+
+  clickToViewQuota(userUid: number){
+    const modalRef = this.modalService.open(NgbModalUserQuotaComponent, {
+      size: "xl",
+      modalDialogClass: "modal-dialog-centered",
+    });
+    // modalRef.componentInstance.UserUid = userUid;
   }
 
   public filterByRole: NzTableFilterFn<User> = (list: string[], user: User) =>
