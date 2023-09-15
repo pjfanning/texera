@@ -75,7 +75,6 @@
           <div>Not Available</div>
         </ng-template>
       </td>
-
       <td>
         <div *ngIf="execution.endTime !== 0; else endTimeNotAvailable">
           {{ convertTimeToTimestamp(execution.executionStatus, execution.endTime) }}
