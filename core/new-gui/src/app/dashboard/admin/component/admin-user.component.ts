@@ -101,7 +101,7 @@ export class AdminUserComponent implements OnInit {
       size: "xl",
       modalDialogClass: "modal-dialog-centered",
     });
-    // modalRef.componentInstance.UserUid = userUid;
+    modalRef.componentInstance.userUid = userUid;
   }
 
   public filterByRole: NzTableFilterFn<User> = (list: string[], user: User) =>

@@ -25,6 +25,21 @@ export interface User
     color?: string;
   }> {}
 
+export interface File
+  extends Readonly <{
+    user_id: number;
+    file_id: number;
+    file_name: string;
+    file_size: number;
+  }> {}
+
+export interface Workflow
+  extends Readonly <{
+    user_id: number;
+    workflow_id: number;
+    workflow_name: string;
+  }>{}
+
 /**
  * Coeditor extends User and adds clientId to differentiate local user and collaborative editor
  */
