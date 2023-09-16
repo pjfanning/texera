@@ -6,20 +6,29 @@
     style="color: white">Quota</h2>
 </nz-card>
 
-<nz-table 
-  #basicTable>
+<nz-table #basicTable>
   <thead>
     <tr>
-      <th>workflows creation</th>
-      <th>files uploaded</th>
-      <th>total size of files</th>
+      <th>
+        files uploaded
+      </th>
+      <th>
+        workflows created
+      </th>
+      <th>
+        files can be accessed
+      </th>
+      <th>
+        workflows can be accessed
+      </th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>dummy</td>
-      <td>dummy</td>
-      <td>dummy</td>
+      <td>{{ this.createdFiles.length }}</td>
+      <td>{{ this.createdWorkflows.length }}</td>
+      <td>{{ this.accessFiles.length }}</td>
+      <td>{{ this.accessWorkflows.length }}</td>
     </tr>
   </tbody>
 </nz-table>
