@@ -66,10 +66,6 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   @AutofillAttributeName
   var entityColumnName: String = ""
 
-  @JsonProperty(value = "Entities", required = true)
-  @JsonPropertyDescription("entities to be compared")
-  var entities: List[String] = _
-
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.newBuilder.add(new Attribute("html-content", AttributeType.STRING)).build
   }
@@ -86,11 +82,11 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   override def numWorkers() = 1
 
   def createPlotlyFigure(): String = {
-    val entityNames = entities.map(unit => s"'${unit}'").mkString(", ")
     val endPointValues = startPointValue + ", " + endPointValue
 
     s"""
-     |        entityNames = [${entityNames}]
+     |
+     |        entityNames = list(table['${entityColumnName}'].unique())
      |        endPointValues = [${endPointValues}]
      |        filtered_table = table[(table['${entityColumnName}'].isin(entityNames)) &
      |                    (table['${endPointsColumnName}'].isin(endPointValues))]
