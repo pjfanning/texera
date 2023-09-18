@@ -21,7 +21,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
   VisualizationOperator
 }
 
-//type constraint: endPointsMagnitudeColumn can only be a numeric column
+//type constraint: measurementColumnName can only be a numeric column
 @JsonSchemaInject(json = """
 {
   "attributeTypeRules": {
@@ -38,21 +38,21 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   @JsonPropertyDescription("the title of this dumbbell plots")
   var title: String = "DumbbellPlot Visualization"
 
-  @JsonProperty(value = "endPointsColumnName", required = true)
-  @JsonSchemaTitle("Endpoints Column Name")
-  @JsonPropertyDescription("the name of the endpoints column")
+  @JsonProperty(value = "categoryColumnName", required = true)
+  @JsonSchemaTitle("Category Column Name")
+  @JsonPropertyDescription("the name of the category column")
   @AutofillAttributeName
-  var endPointsColumnName: String = ""
+  var categoryColumnName: String = ""
 
-  @JsonProperty(value = "startPointValue", required = true)
-  @JsonSchemaTitle("Start Point Value")
-  @JsonPropertyDescription("the value of the start point")
-  var startPointValue: String = ""
+  @JsonProperty(value = "firstCategory", required = true)
+  @JsonSchemaTitle("1st Category Value")
+  @JsonPropertyDescription("the value of the first category")
+  var firstCategory: String = ""
 
-  @JsonProperty(value = "endPointValue", required = true)
-  @JsonSchemaTitle("End Point Value")
-  @JsonPropertyDescription("the value of the end point")
-  var endPointValue: String = ""
+  @JsonProperty(value = "secondCategory", required = true)
+  @JsonSchemaTitle("2nd Category Value")
+  @JsonPropertyDescription("the value of the second category")
+  var secondCategory: String = ""
 
   @JsonProperty(value = "measurementColumnName", required = true)
   @JsonSchemaTitle("Measurement Column Name")
@@ -82,14 +82,14 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
   override def numWorkers() = 1
 
   def createPlotlyFigure(): String = {
-    val endPointValues = startPointValue + ", " + endPointValue
+    val categoryValues = firstCategory + ", " + secondCategory
 
     s"""
      |
      |        entityNames = list(table['${entityColumnName}'].unique())
-     |        endPointValues = [${endPointValues}]
+     |        categoryValues = [${categoryValues}]
      |        filtered_table = table[(table['${entityColumnName}'].isin(entityNames)) &
-     |                    (table['${endPointsColumnName}'].isin(endPointValues))]
+     |                    (table['${categoryColumnName}'].isin(categoryValues))]
      |
      |        # Create the dumbbell plot using Plotly
      |        fig = go.Figure()
@@ -100,7 +100,7 @@ class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescri
      |                             y=[entity]*2,
      |                             mode='lines+markers+text',
      |                             name=entity,
-     |                             text=entity_data['${endPointsColumnName}'],
+     |                             text=entity_data['${categoryColumnName}'],
      |                             textposition='top center',
      |                             marker=dict(size=10)))
      |
