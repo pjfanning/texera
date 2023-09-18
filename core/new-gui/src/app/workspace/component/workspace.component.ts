@@ -51,11 +51,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
   public isChatboxVisible: boolean = false;
-  public msgsChat: string[]=[];
   public msgChat: string = '';
-  public msgsFromServer: string[] = [];  // For server messages
   public msgs: ChatMessage[] = [];
-  //public displayedMessage: string = '';
 
   userSystemEnabled = environment.userSystemEnabled;
 
@@ -293,76 +290,6 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   toggleChatboxVisibility(): void {
     this.isChatboxVisible = !this.isChatboxVisible;
   }
-
-
-  // displayMessage() {
-  //   if (this.msgChat.trim()) { // Only add non-empty messages
-  //     this.msgsChat.push(this.msgChat.trim());
-  //     this.msgChat = '';  // Clear the input after adding the message
-  //
-  //     this.userProjectService.postExampleRaj()
-  //       .pipe(untilDestroyed(this))
-  //       .subscribe(
-  //         (response: ServerResponse) => {
-  //           this.msgsChat.push(response.message);
-  //           console.log(response.message);
-  //         },
-  //         error => {
-  //           console.error("Error receiving server message:", error);
-  //         }
-  //       );
-  //   }
-  // }
-
-  // displayMessage() {
-  //   if (this.msgChat.trim()) { // Only add non-empty messages
-  //
-  //     this.userProjectService.postExampleRaj(this.msgChat.trim())
-  //       .pipe(untilDestroyed(this))
-  //       .subscribe(
-  //         (response: ServerResponse) => {
-  //           // Add the message to the local array only after successful server response
-  //           this.msgsChat.push(this.msgChat.trim());
-  //           // Clear the input after adding the message
-  //           this.msgChat = '';
-  //           // Add the echoed message from the server to the local array
-  //           this.msgsChat.push(response.message);
-  //           console.log("test123");
-  //           console.log(response.message);
-  //         },
-  //         error => {
-  //           console.error("Error receiving server message:", error);
-  //         }
-  //       );
-  //   }
-  // }
-// Existing properties
-
-  // displayMessage() {
-  //   if (this.msgChat.trim()) { // Only add non-empty messages
-  //
-  //     this.msgsChat.push(this.msgChat.trim());  // Add user message immediately
-  //
-  //     this.userProjectService.postExampleRaj(this.msgChat.trim())
-  //       .pipe(untilDestroyed(this))
-  //       .subscribe(
-  //         (response: ServerResponse) => {
-  //           // Add the echoed message from the server to the server messages array
-  //           this.msgsFromServer.push(response.message);
-  //           // Clear the input after adding the message
-  //           this.msgChat = '';
-  //           console.log("test123");
-  //           console.log(response.message);
-  //         },
-  //         error => {
-  //           console.error("Error receiving server message:", error);
-  //         }
-  //       );
-  //   }
-  // }
-
-  // Message object
-
 
 displayMessage() {
   if (this.msgChat.trim()) { // Only add non-empty messages

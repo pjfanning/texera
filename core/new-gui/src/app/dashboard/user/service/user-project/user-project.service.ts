@@ -61,21 +61,12 @@ export class UserProjectService {
     return this.http.post<Response>(`${USER_PROJECT_BASE_URL}/${pid}/update/description`, `${description}`);
   }
 
-  // public postExampleRaj(): Observable<Response> {
-  //   return this.http.post<Response>(`http://localhost:8000/`, `{"key":"Raj"}`);
-  // }
-
-  // public postExampleRaj(): Observable<ServerResponse> {
-  //   return this.http.post<ServerResponse>(`http://localhost:8000/`, `{"key":"hello world!"}`);
-  // }
-
   public postExampleRaj(message: string): Observable<ServerResponse> {
     const payload = {
       key: message
     };
     return this.http.post<ServerResponse>(`http://localhost:8000/`, JSON.stringify(payload));
   }
-
 
   public deleteProject(pid: number): Observable<Response> {
     return this.http.delete<Response>(`${DELETE_PROJECT_URL}/` + pid);
