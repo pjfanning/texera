@@ -1,34 +1,40 @@
-<nz-card 
-  class="section-title" 
-  style="background-color: lightcoral">
-  <h2 
-    class="page-title" 
-    style="color: white">Quota</h2>
-</nz-card>
+<div>
+  <nz-card 
+    class="section-title" 
+    style="background-color: lightcoral">
+    <h2 
+      class="page-title" 
+      style="color: white">Quota</h2>
+  </nz-card>
 
-<nz-table #basicTable>
-  <thead>
-    <tr>
-      <th>
-        files uploaded
-      </th>
-      <th>
-        workflows created
-      </th>
-      <th>
-        files can be accessed
-      </th>
-      <th>
-        workflows can be accessed
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>{{ this.createdFiles.length }}</td>
-      <td>{{ this.createdWorkflows.length }}</td>
-      <td>{{ this.accessFiles.length }}</td>
-      <td>{{ this.accessWorkflows.length }}</td>
-    </tr>
-  </tbody>
-</nz-table>
+  <nz-table #basicTable>
+    <thead>
+      <tr>
+        <th>
+          Files uploaded
+        </th>
+        <th>
+          Workflows created
+        </th>
+        <th>
+          Files can be accessed
+        </th>
+        <th>
+          Workflows can be accessed
+        </th>
+        <th>
+          Total size of the files (mb)
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ this.createdFiles.length }}</td>
+        <td>{{ this.createdWorkflows.length }}</td>
+        <td>{{ this.accessFiles.length }}</td>
+        <td>{{ this.accessWorkflows.length }}</td>
+        <td>{{ this.totalSize }}</td>
+      </tr>
+    </tbody>
+  </nz-table>
+</div>

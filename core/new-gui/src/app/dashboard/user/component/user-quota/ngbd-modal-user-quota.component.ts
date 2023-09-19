@@ -12,7 +12,8 @@ import { File, Workflow } from "../../../../common/type/user"
 })
 
 export class NgbModalUserQuotaComponent implements OnInit{
-  userUid: number = 0
+  userUid: number = 0;
+  totalSize: string = "";
   createdFiles: ReadonlyArray<File> = [];
   createdWorkflows: ReadonlyArray<Workflow> = [];
   accessFiles: ReadonlyArray<number> = [];
@@ -27,6 +28,9 @@ export class NgbModalUserQuotaComponent implements OnInit{
       .pipe(untilDestroyed(this))
       .subscribe(fileList => {
         this.createdFiles = fileList;
+        let size = 0;
+        this.createdFiles.forEach(file => size += file.file_size / 1000000)
+        this.totalSize = size.toPrecision(2);
         console.log("number of files uploaded");
         console.log(this.createdFiles.length);
       });
