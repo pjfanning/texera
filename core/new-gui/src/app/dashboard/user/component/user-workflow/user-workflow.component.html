@@ -31,7 +31,7 @@
         </button>
       </nz-upload>
       <button
-        [disabled]="!zipDownloadButtonEnabled"
+        [disabled]="!multiWorkflowsOperationButtonEnabled"
         (click)="onClickOpenDownloadZip()"
         nz-button
         title="Download added workflow as a ZIP file"
@@ -45,6 +45,7 @@
       </button>
       
       <button
+        [disabled]="!multiWorkflowsOperationButtonEnabled"
         nz-button
         nz-tooltip="Share selected workflows to others"
         nzTooltipPlacement="bottom"
@@ -56,6 +57,7 @@
       </button>
 
       <button
+        [disabled]="!multiWorkflowsOperationButtonEnabled"
         nz-button
         nz-tooltip="Duplicate selected workflows"
         nzTooltipPlacement="bottom"
@@ -67,6 +69,7 @@
       </button>
 
       <button
+        [disabled]="!multiWorkflowsOperationButtonEnabled"
         nz-popconfirm
         nzPopconfirmTitle="Confirm to delete this workflow."
         nz-button

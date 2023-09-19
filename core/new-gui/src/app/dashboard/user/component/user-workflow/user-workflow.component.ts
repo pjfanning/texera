@@ -96,7 +96,7 @@ export class UserWorkflowComponent implements AfterViewInit {
     private searchService: SearchService
   ) {}
 
-  get zipDownloadButtonEnabled(): boolean {
+  get multiWorkflowsOperationButtonEnabled(): boolean {
     if (this._searchResultsComponent) {
       return this.searchResultsComponent?.entries.filter(i => i.checked).length > 0;
     } else {
