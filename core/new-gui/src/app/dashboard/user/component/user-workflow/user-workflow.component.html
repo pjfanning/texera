@@ -58,6 +58,7 @@
 
       <button
         [disabled]="!multiWorkflowsOperationButtonEnabled"
+        (click)="onClickDuplicateSelectedWorkflows()"
         nz-button
         nz-tooltip="Duplicate selected workflows"
         nzTooltipPlacement="bottom"
@@ -70,10 +71,12 @@
 
       <button
         [disabled]="!multiWorkflowsOperationButtonEnabled"
+        
         nz-popconfirm
         nzPopconfirmTitle="Confirm to delete this workflow."
         nz-button
         nz-tooltip="Delete the selected workflow"
+        (nzOnConfirm)="handleConfirmDeleteSelectedWorkflows()"
         nzTooltipPlacement="bottom">
         <i
           nz-icon
