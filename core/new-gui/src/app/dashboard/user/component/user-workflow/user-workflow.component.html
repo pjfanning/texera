@@ -17,19 +17,6 @@
           nzTheme="outline"
           nzType="file-add"></i>
       </button>
-      <button
-        [disabled]="!zipDownloadButtonEnabled"
-        (click)="onClickOpenDownloadZip()"
-        nz-button
-        title="Download added workflow as a ZIP file"
-        nz-tooltip="Download added workflow as a ZIP file"
-        nzTooltipPlacement="bottom"
-        type="button">
-        <i
-          nz-icon
-          nzType="cloud-download"
-          nzTheme="outline"></i>
-      </button>
       <nz-upload [nzBeforeUpload]="onClickUploadExistingWorkflowFromLocal">
         <button
           nz-button
@@ -43,7 +30,19 @@
             nzTheme="outline"></i>
         </button>
       </nz-upload>
-
+      <button
+        [disabled]="!zipDownloadButtonEnabled"
+        (click)="onClickOpenDownloadZip()"
+        nz-button
+        title="Download added workflow as a ZIP file"
+        nz-tooltip="Download added workflow as a ZIP file"
+        nzTooltipPlacement="bottom"
+        type="button">
+        <i
+          nz-icon
+          nzType="cloud-download"
+          nzTheme="outline"></i>
+      </button>
       <button
         *ngIf="pid !== undefined"
         (click)="onClickOpenAddWorkflow()"
@@ -70,6 +69,7 @@
           nzTheme="outline"
           nzType="minus-square"></i>
       </button>
+
     </nz-button-group>
     <texera-filters
       [pid]="pid"
