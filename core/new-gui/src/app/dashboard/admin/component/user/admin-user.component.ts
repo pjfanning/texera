@@ -1,12 +1,12 @@
 import { Component, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NzTableFilterFn, NzTableSortFn } from "ng-zorro-antd/table";
-import { AdminUserService } from "../service/admin-user.service";
-import { Role, User } from "../../../common/type/user";
-import { UserService } from "../../../common/service/user/user.service";
-import { NgbModalUserQuotaComponent } from "../../user/component/user-quota/ngbd-modal-user-quota.component";
+import { NgbModalUserQuotaComponent } from "../../../user/component/user-quota/ngbd-modal-user-quota.component";
 
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { AdminUserService } from "../../service/admin-user.service";
+import { Role, User } from "../../../../common/type/user";
+import { UserService } from "../../../../common/service/user/user.service";
 
 @UntilDestroy()
 @Component({
