@@ -22,6 +22,7 @@ import { isDefined } from "../../common/util/predicate";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { AutoAttributeCorrectionService } from "../service/dynamic-schema/auto-attribute-correction/auto-attribute-correction.service";
 import {UserProjectService} from "../../dashboard/user/service/user-project/user-project.service";
+import {OperatorPredicate, Point} from "../types/workflow-common.interface";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
@@ -307,6 +308,20 @@ displayMessage() {
             type: 'server',
             content: response.message
           });
+          //this.workflowActionService.addOperatorsAndLinks()
+          const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
+          const op1: OperatorPredicate={
+            inputPorts: [],
+            operatorID: "Filter-operator-c6040b3f-e72f-4aa2-a9df-88a37d474804",
+            operatorProperties: {"predicates":[{"value":"gas","attribute":"fuel_type","condition":"="}]},
+            operatorType: "Filter",
+            operatorVersion: "f82d0affafcba93dada5e3d1e9f3367e5b53d037",
+            outputPorts: [],
+            showAdvanced: false
+          };
+          const pos1: Point={"x":500,"y":230};
+          operatorsAndPositions.push({ op: op1, pos: pos1 });
+          this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions);
           // Clear the input after adding the user message
           this.msgChat = '';
         },
