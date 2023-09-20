@@ -23,6 +23,7 @@ import { NotificationService } from "src/app/common/service/notification/notific
 import { AutoAttributeCorrectionService } from "../service/dynamic-schema/auto-attribute-correction/auto-attribute-correction.service";
 import {UserProjectService} from "../../dashboard/user/service/user-project/user-project.service";
 import {OperatorPredicate, Point} from "../types/workflow-common.interface";
+import {WorkflowUtilService} from "../service/workflow-graph/util/workflow-util.service";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
 
@@ -75,7 +76,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private message: NzMessageService,
     private router: Router,
     private notificationService: NotificationService,
-    private userProjectService: UserProjectService
+    private userProjectService: UserProjectService,
+    private workflowUtilService: WorkflowUtilService
   ) {}
 
   ngOnInit() {
@@ -304,22 +306,27 @@ displayMessage() {
       .pipe(untilDestroyed(this))
       .subscribe(
         (response: ServerResponse) => {
+          //response.message = '{"operatorProperties": {"predicates":[{"value":"gas","attribute":"fuel_type","condition":"="}]}, "operatorType": "Filter"}';
+          const parsedMessage = JSON.parse(response.message);
           this.msgs.push({
             type: 'server',
-            content: response.message
+            content: parsedMessage.server_message
           });
-          //this.workflowActionService.addOperatorsAndLinks()
+          console.log(response.message);
           const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
+
+          const opID=parsedMessage.operatorType + "-" + this.workflowUtilService.getOperatorRandomUUID();
+          //const operatorSchema = this.workflowUtilService.operatorSchemaList.find(schema => schema.operatorType === parsedMessage.operatorType);
           const op1: OperatorPredicate={
-            inputPorts: [],
-            operatorID: "Filter-operator-c6040b3f-e72f-4aa2-a9df-88a37d474804",
-            operatorProperties: {"predicates":[{"value":"gas","attribute":"fuel_type","condition":"="}]},
-            operatorType: "Filter",
+            inputPorts: [{"portID":"input-0","displayName":"","allowMultiInputs":false,"isDynamicPort":false}],
+            operatorID: opID,
+            operatorProperties: parsedMessage.operatorProperties,
+            operatorType: parsedMessage.operatorType,
             operatorVersion: "f82d0affafcba93dada5e3d1e9f3367e5b53d037",
-            outputPorts: [],
+            outputPorts: [{"portID":"output-0","displayName":"","allowMultiInputs":false,"isDynamicPort":false}],
             showAdvanced: false
           };
-          const pos1: Point={"x":500,"y":230};
+          const pos1: Point={"x":500,"y":300};
           operatorsAndPositions.push({ op: op1, pos: pos1 });
           this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions);
           // Clear the input after adding the user message
