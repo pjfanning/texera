@@ -1,9 +1,9 @@
 <div>
-  <nz-card 
-    class="section-title" 
+  <nz-card
+    class="section-title"
     style="background-color: lightcoral">
-    <h2 
-      class="page-title" 
+    <h2
+      class="page-title"
       style="color: white">Quota</h2>
   </nz-card>
 
@@ -25,6 +25,9 @@
         <th>
           Total size of the files (mb)
         </th>
+        <th>
+          Top Five File Sizes (mb)
+        </th>
       </tr>
     </thead>
     <tbody>
@@ -34,6 +37,7 @@
         <td>{{ this.accessFiles.length }}</td>
         <td>{{ this.accessWorkflows.length }}</td>
         <td>{{ this.totalSize }}</td>
+        <td>{{ this.topfiveFilesizes }}</td>
       </tr>
     </tbody>
   </nz-table>
