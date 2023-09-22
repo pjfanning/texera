@@ -4,6 +4,13 @@
     <nz-button-group
       class="utility-button-group"
       ngbDropdown>
+      <label nz-checkbox 
+        [(ngModel)]="areAllChecked" 
+        (ngModelChange)="onAllCheckedBoxChange()"
+        [nz-tooltip]="allCheckedBoxLabel"
+        nzTooltipPlacement="bottom"
+        >
+      </label>
       <texera-sort-button (sortMethodChange)="sortMethod = $event; search()"></texera-sort-button>
       <button
         (click)="onClickCreateNewWorkflowFromDashboard()"
@@ -42,18 +49,6 @@
           nz-icon
           nzType="cloud-download"
           nzTheme="outline"></i>
-      </button>
-
-      <button
-        [disabled]="!multiWorkflowsOperationButtonEnabled"
-        nz-button
-        nz-tooltip="Share selected workflows to others"
-        nzTooltipPlacement="bottom"
-        type="button">
-        <i
-          nz-icon
-          nzTheme="outline"
-          nzType="share-alt"></i>
       </button>
 
       <button

@@ -81,6 +81,10 @@ export class UserWorkflowComponent implements AfterViewInit {
     this._filters = value;
   }
   private masterFilterList: ReadonlyArray<string> | null = null;
+  
+  // allCheckedBox
+  public areAllChecked: boolean = false;
+  public allCheckedBoxLabel = 'Select all workflows'
   // receive input from parent components (UserProjectSection), if any
   @Input() public pid?: number = undefined;
   public sortMethod = SortMethod.EditTimeDesc;
@@ -449,6 +453,16 @@ export class UserWorkflowComponent implements AfterViewInit {
             });
         }
       }
+    }
+  }
+
+  /***
+   * Check or uncheck all workflow entries
+   */
+  public onAllCheckedBoxChange(): void {
+    this.allCheckedBoxLabel = this.areAllChecked ? 'Unselect all workflows' : 'Select all workflows';
+    for (const entry of this.searchResultsComponent.entries) {
+      entry.checked = this.areAllChecked;
     }
   }
 
