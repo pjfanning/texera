@@ -4,8 +4,11 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao, WorkflowUserAccessDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
+import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource
+import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource.{context, workflowOfProjectDao, workflowOfProjectExists}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
 import org.jooq.{Condition, TableField}
@@ -39,6 +42,7 @@ object WorkflowResource {
   final private lazy val workflowUserAccessDao = new WorkflowUserAccessDao(
     context.configuration()
   )
+  final private lazy val workflowOfProjectDao = new WorkflowOfProjectDao(context.configuration)
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -60,6 +64,14 @@ object WorkflowResource {
     )
   }
 
+  private def workflowOfProjectExists(wid: UInteger, pid: UInteger): Boolean = {
+    workflowOfProjectDao.existsById(
+      context
+        .newRecord(WORKFLOW_OF_PROJECT.WID, WORKFLOW_OF_PROJECT.PID)
+        .values(wid, pid)
+    )
+  }
+
   case class DashboardWorkflow(
       isOwner: Boolean,
       accessLevel: String,
@@ -78,7 +90,7 @@ object WorkflowResource {
       readonly: Boolean
   )
 
-  case class WorkflowIDs(wids: List[UInteger])
+  case class WorkflowIDs(wids: List[UInteger], pid: Option[UInteger])
 
   def createWorkflowFilterCondition(
       creationStartDate: String,
@@ -475,6 +487,7 @@ class WorkflowResource {
     }
 
     val resultWorkflows: ListBuffer[DashboardWorkflow] = ListBuffer()
+    val addToProject = workflowIDs.pid.nonEmpty;
     // then start a transaction and do the duplication
     try {
       context.transaction { _ =>
@@ -493,11 +506,23 @@ class WorkflowResource {
             ),
             sessionUser
           )
+          // if workflows also need to be added to the project
+          if (addToProject) {
+            if (!hasReadAccess(wid, user.getUid)) {
+              throw new ForbiddenException("No sufficient access privilege to workflow.")
+            }
+            val pid = workflowIDs.pid.get
+            if (!workflowOfProjectExists(wid, pid)) {
+              workflowOfProjectDao.insert(new WorkflowOfProject(wid, pid))
+            } else {
+              throw new BadRequestException("Workflow already exists in the project")
+            }
+          }
         }
       }
-    } catch {
+    } catch { // TODO: alter this error handling
         case NonFatal(exception) =>
-          resultWorkflows.clear
+          throw new WebApplicationException(exception)
     }
     resultWorkflows.toList
   }
@@ -535,14 +560,18 @@ class WorkflowResource {
     *
     * @return Response, deleted - 200, not exists - 400
     */
-  @DELETE
-  @Path("/{wid}")
-  def deleteWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): Unit = {
+  @POST
+  @Path("/delete")
+  def deleteWorkflow(workflowIDs: WorkflowIDs, @Auth sessionUser: SessionUser): Unit = {
     val user = sessionUser.getUser
-    if (workflowOfUserExists(wid, user.getUid)) {
-      workflowDao.deleteById(wid)
-    } else {
-      throw new BadRequestException("The workflow does not exist.")
+    context.transaction { _ =>
+      for (wid <- workflowIDs.wids) {
+        if (workflowOfUserExists(wid, user.getUid)) {
+          workflowDao.deleteById(wid)
+        } else {
+          throw new BadRequestException("The workflow does not exist.")
+        }
+      }
     }
   }
 

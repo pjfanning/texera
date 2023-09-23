@@ -226,27 +226,18 @@ export class UserWorkflowComponent implements AfterViewInit {
       } else {
         // is nested within project section, also add duplicate workflow to project
         let localPid = this.pid;
-        // TODO: fix project
-        // this.workflowPersistService
-        //   .duplicateWorkflow([entry.workflow.workflow.wid])
-        //   .pipe(
-        //     concatMap(duplicatedWorkflowInfo => {
-        //       this.searchResultsComponent.entries = [
-        //         new DashboardEntry(duplicatedWorkflowInfo),
-        //         ...this.searchResultsComponent.entries,
-        //       ];
-        //       return this.userProjectService.addWorkflowToProject(localPid, duplicatedWorkflowInfo.workflow.wid!);
-        //     }),
-        //     catchError((err: unknown) => {
-        //       throw err;
-        //     }),
-        //     untilDestroyed(this)
-        //   )
-        //   .subscribe({
-        //     next: () => {},
-        //     // @ts-ignore // TODO: fix this with notification component
-        //     error: (err: unknown) => alert(err.error),
-        //   });
+        this.workflowPersistService
+          .duplicateWorkflow([entry.workflow.workflow.wid], localPid)
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: duplicatedWorkflowsInfo => {
+              this.searchResultsComponent.entries = [
+                ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
+                ...this.searchResultsComponent.entries,
+              ];
+            }, // TODO: fix this with notification component
+            error: (err: unknown) => alert(err),
+          });
       }
     }
   }
@@ -263,7 +254,7 @@ export class UserWorkflowComponent implements AfterViewInit {
       return;
     }
     this.workflowPersistService
-      .deleteWorkflow(entry.workflow.workflow.wid)
+      .deleteWorkflow([entry.workflow.workflow.wid])
       .pipe(untilDestroyed(this))
       .subscribe(_ => {
         this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
@@ -413,7 +404,18 @@ export class UserWorkflowComponent implements AfterViewInit {
               });
       } else {
         const localPid = this.pid;
-        // TODO: make add to project and duplication a same transaction
+        this.workflowPersistService
+              .duplicateWorkflow(targetWids, localPid)
+              .pipe(untilDestroyed(this))
+              .subscribe({
+                next: duplicatedWorkflowsInfo => {
+                  this.searchResultsComponent.entries = [
+                    ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
+                    ...this.searchResultsComponent.entries,
+                  ];
+                }, // TODO: fix this with notification component
+                error: (err: unknown) => alert(err),
+              });
       }
     }
     
@@ -421,20 +423,29 @@ export class UserWorkflowComponent implements AfterViewInit {
 
   public handleConfirmDeleteSelectedWorkflows(): void {
     const checkedEntries = this.searchResultsComponent.entries.filter(i => i.checked);
-    if (checkedEntries.length > 0) {
-      for (const entry of checkedEntries) {
-        const wid = entry.workflow.workflow.wid;
-        if (wid) {
-          this.workflowPersistService
-            .deleteWorkflow(wid)
-            .pipe(untilDestroyed(this))
-            .subscribe(_ => {
-              this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-                workflowEntry => workflowEntry.workflow.workflow.wid !== wid
-              );
-            });
-        }
+    let targetWids: number[] = [];
+
+    for (const entry of checkedEntries) {
+      const wid = entry.workflow.workflow.wid;
+      if (wid) {
+        targetWids.push(wid);
+      } else {
+        return;
       }
+    }
+
+    if (targetWids.length > 0) {
+      this.workflowPersistService
+            .deleteWorkflow(targetWids)
+            .pipe(untilDestroyed(this))
+            .subscribe({
+              next: _ => {
+              this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+                workflowEntry => workflowEntry.workflow.workflow.wid !in targetWids
+              );
+            }, 
+          // TODO: fix this with notification component
+          error: (err: unknown) => alert(err)});
     }
   }
 
