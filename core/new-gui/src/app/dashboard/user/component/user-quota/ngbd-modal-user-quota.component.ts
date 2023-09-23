@@ -18,6 +18,7 @@ export class NgbModalUserQuotaComponent implements OnInit{
   createdWorkflows: ReadonlyArray<Workflow> = [];
   accessFiles: ReadonlyArray<number> = [];
   accessWorkflows: ReadonlyArray<number> = [];
+  topfiveFilesizes: ReadonlyArray<string> = [];
 
   constructor(private adminUserService: AdminUserService) {
   }
@@ -31,8 +32,14 @@ export class NgbModalUserQuotaComponent implements OnInit{
         let size = 0;
         this.createdFiles.forEach(file => size += file.file_size / 1000000)
         this.totalSize = size.toPrecision(2);
-        // console.log("number of files uploaded");
-        // console.log(this.createdFiles.length);
+        console.log("number of files uploaded");
+        console.log(this.createdFiles.length);
+
+        const copiedFiles = [...this.createdFiles];
+        copiedFiles.sort((a, b) => b.file_size - a.file_size);
+        const topFiveFiles = copiedFiles.slice(0, 5);
+        const fileSizes = topFiveFiles.map(file => (file.file_size / 1000000).toPrecision(2));
+        this.topfiveFilesizes = fileSizes;
       });
     
     this.adminUserService
@@ -70,5 +77,5 @@ export class NgbModalUserQuotaComponent implements OnInit{
         console.log(size);
         console.log("=======");
       });
-  }
+    }
 }
