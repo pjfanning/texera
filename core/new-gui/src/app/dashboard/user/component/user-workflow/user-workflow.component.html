@@ -38,7 +38,7 @@
         </button>
       </nz-upload>
       <button
-        [disabled]="!multiWorkflowsOperationButtonEnabled"
+        *ngIf="multiWorkflowsOperationButtonEnabled()"
         (click)="onClickOpenDownloadZip()"
         nz-button
         title="Download added workflow as a ZIP file"
@@ -52,7 +52,7 @@
       </button>
 
       <button
-        [disabled]="!multiWorkflowsOperationButtonEnabled"
+        *ngIf="multiWorkflowsOperationButtonEnabled()"
         (click)="onClickDuplicateSelectedWorkflows()"
         nz-button
         nz-tooltip="Duplicate selected workflows"
@@ -65,7 +65,7 @@
       </button>
 
       <button
-        [disabled]="!multiWorkflowsOperationButtonEnabled"
+        *ngIf="multiWorkflowsOperationButtonEnabled()"
         nz-popconfirm
         nzPopconfirmTitle="Confirm to delete selected workflows."
         nz-button

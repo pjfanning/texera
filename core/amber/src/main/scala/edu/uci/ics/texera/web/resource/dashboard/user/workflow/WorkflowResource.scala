@@ -4,11 +4,7 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  WorkflowDao,
-  WorkflowOfUserDao,
-  WorkflowUserAccessDao
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -25,6 +21,8 @@ import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.util.control.NonFatal
 
 /**
   * This file handles various request related to saved-workflows.
@@ -79,6 +77,8 @@ object WorkflowResource {
       lastModifiedTime: Timestamp,
       readonly: Boolean
   )
+
+  case class WorkflowIDs(wids: List[UInteger])
 
   def createWorkflowFilterCondition(
       creationStartDate: String,
@@ -462,31 +462,44 @@ class WorkflowResource {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Path("/duplicate")
   def duplicateWorkflow(
-      workflow: Workflow,
+      workflowIDs: WorkflowIDs,
       @Auth sessionUser: SessionUser
-  ): DashboardWorkflow = {
-    val wid = workflow.getWid
-    val user = sessionUser.getUser
-    if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else {
-      val workflow: Workflow = workflowDao.fetchOneByWid(wid)
-      workflow.getContent
-      workflow.getName
-      createWorkflow(
-        new Workflow(
-          workflow.getName + "_copy",
-          workflow.getDescription,
-          null,
-          workflow.getContent,
-          null,
-          null
-        ),
-        sessionUser
-      )
+  ): List[DashboardWorkflow] = {
 
+    val user = sessionUser.getUser
+    // do the permission check first
+    for (wid <- workflowIDs.wids) {
+      if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
+        throw new ForbiddenException("No sufficient access privilege.")
+      }
     }
 
+    val resultWorkflows: ListBuffer[DashboardWorkflow] = ListBuffer()
+    // then start a transaction and do the duplication
+    try {
+      context.transaction { _ =>
+        for (wid <- workflowIDs.wids) {
+          val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+          workflow.getContent
+          workflow.getName
+          resultWorkflows += createWorkflow(
+            new Workflow(
+              workflow.getName + "_copy",
+              workflow.getDescription,
+              null,
+              workflow.getContent,
+              null,
+              null
+            ),
+            sessionUser
+          )
+        }
+      }
+    } catch {
+        case NonFatal(exception) =>
+          resultWorkflows.clear
+    }
+    resultWorkflows.toList
   }
 
   /**
