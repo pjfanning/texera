@@ -14,6 +14,7 @@ import javax.ws.rs.core.MediaType
 
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import edu.uci.ics.texera.web.storage.MongoDatabaseManager
 
 object AdminUserResource {
   final private lazy val context = SqlServer.createDSLContext()
@@ -152,6 +153,13 @@ class AdminUserResource {
       .from(USER_FILE_ACCESS)
       .where(USER_FILE_ACCESS.UID.eq(user_id))
       .fetchInto(classOf[UInteger])
+  }
+
+  @GET
+  @Path("/mongodb_size")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def mongoDBSize(): Integer = {
+    MongoDatabaseManager.databaseSize()
   }
 }
 

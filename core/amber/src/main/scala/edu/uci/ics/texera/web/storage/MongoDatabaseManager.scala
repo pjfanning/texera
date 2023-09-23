@@ -26,4 +26,12 @@ object MongoDatabaseManager {
     database.listCollectionNames().into(new util.ArrayList[String]()).contains(collectionName)
   }
 
+  def databaseSize(): Integer = {
+    val stats: Document = database.runCommand(new Document("dbStats", 1))
+    print("==================")
+    print(stats.getInteger("dataSize"))
+    print("==================")
+    stats.getInteger("totalSize")
+  }
+
 }

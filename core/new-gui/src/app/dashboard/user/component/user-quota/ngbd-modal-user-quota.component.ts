@@ -31,8 +31,8 @@ export class NgbModalUserQuotaComponent implements OnInit{
         let size = 0;
         this.createdFiles.forEach(file => size += file.file_size / 1000000)
         this.totalSize = size.toPrecision(2);
-        console.log("number of files uploaded");
-        console.log(this.createdFiles.length);
+        // console.log("number of files uploaded");
+        // console.log(this.createdFiles.length);
       });
     
     this.adminUserService
@@ -40,8 +40,8 @@ export class NgbModalUserQuotaComponent implements OnInit{
       .pipe(untilDestroyed(this))
       .subscribe(workflowList => {
         this.createdWorkflows = workflowList;
-        console.log("number of workflows created");
-        console.log(this.createdWorkflows.length);
+        // console.log("number of workflows created");
+        // console.log(this.createdWorkflows.length);
       });
     
     this.adminUserService
@@ -49,8 +49,8 @@ export class NgbModalUserQuotaComponent implements OnInit{
       .pipe(untilDestroyed(this))
       .subscribe(accessFiles => {
         this.accessFiles = accessFiles;
-        console.log("number of files that can be accessed");
-        console.log(this.accessFiles.length);
+        // console.log("number of files that can be accessed");
+        // console.log(this.accessFiles.length);
       });
 
     this.adminUserService
@@ -58,8 +58,17 @@ export class NgbModalUserQuotaComponent implements OnInit{
       .pipe(untilDestroyed(this))
       .subscribe(accessWorkflows => {
         this.accessWorkflows = accessWorkflows;
-        console.log("number of workflows that can be accessed");
-        console.log(this.accessWorkflows.length);
+        // console.log("number of workflows that can be accessed");
+        // console.log(this.accessWorkflows.length);
+      });
+    
+    this.adminUserService
+      .getMongoDBSize()
+      .pipe(untilDestroyed(this))
+      .subscribe(size => {
+        console.log("the size of mongodb: ");
+        console.log(size);
+        console.log("=======");
       });
   }
 }

@@ -12,6 +12,7 @@ export const USER_CREATED_FILES = `${USER_BASE_URL}/uploaded_files`
 export const USER_CREATED_WORKFLOWS = `${USER_BASE_URL}/created_workflows`
 export const USER_ACCESS_WORKFLOWS = `${USER_BASE_URL}/access_workflows`
 export const USER_ACCESS_FILES = `${USER_BASE_URL}/access_files`
+export const USER_MONGODB_SIZE = `${USER_BASE_URL}/mongodb_size`
 
 @Injectable({
   providedIn: "root",
@@ -54,5 +55,9 @@ export class AdminUserService {
   public getAccessWorkflows(uid: number): Observable<ReadonlyArray<number>> {
     let params = new HttpParams().set('user_id', uid.toString());
     return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_WORKFLOWS}`, {params: params});
+  }
+
+  public getMongoDBSize(): Observable<number> {
+    return this.http.get<number>(`${USER_MONGODB_SIZE}`);
   }
 }
