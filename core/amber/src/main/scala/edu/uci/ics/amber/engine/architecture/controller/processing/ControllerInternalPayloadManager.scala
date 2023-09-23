@@ -25,8 +25,8 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
 
   override def handlePayload(channel: ChannelEndpointID, idempotentInternalPayload: IdempotentInternalPayload): Unit ={
     idempotentInternalPayload match {
-      case SetupLogging() =>
-        InternalPayloadManager.setupLoggingForWorkflowActor(controller, true)
+      case SetupLogging(enabled) =>
+        InternalPayloadManager.setupLoggingForWorkflowActor(controller, enabled)
       case NoOp() =>
         // no op
       case _ => ???

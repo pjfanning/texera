@@ -29,7 +29,7 @@ object InternalPayloadManager{
   case class StartReplay(id:String) extends OneTimeInternalPayload
 
   // runtime fault-tolerance:
-  case class SetupLogging() extends IdempotentInternalPayload
+  case class SetupLogging(enabled:Boolean) extends IdempotentInternalPayload
 
   def setupLoggingForWorkflowActor(actor:WorkflowActor, loggingEnabled:Boolean): Unit ={
     if(loggingEnabled){

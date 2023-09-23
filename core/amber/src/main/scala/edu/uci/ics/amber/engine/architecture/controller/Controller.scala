@@ -77,7 +77,7 @@ class Controller(
     controlProcessor.initCP(this)
     actorService.registerActorForNetworkCommunication(CONTROLLER, self)
     actorService.registerActorForNetworkCommunication(CLIENT, context.parent)
-    handlePayloadAndMarker(OutsideWorldChannelEndpointID, SetupLogging())
+    handlePayloadAndMarker(OutsideWorldChannelEndpointID, SetupLogging(Constants.loggingEnabled))
   }
 
   def getAvailableNodes():Array[Address] = {

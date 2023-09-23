@@ -1,13 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
-import akka.serialization.Serialization
-import edu.uci.ics.amber.engine.architecture.checkpoint.{SavedCheckpoint, SerializedState}
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
-import edu.uci.ics.amber.engine.common.{CheckpointSupport, InputExhausted}
+import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.Tuple.BuilderV2
@@ -17,19 +13,20 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class HashJoinOpExec[K](
-    val buildAttributeName: String,
-    val probeAttributeName: String,
-    val joinType: JoinType,
-    val operatorSchemaInfo: OperatorSchemaInfo
-) extends OperatorExecutor
-    with CheckpointSupport {
+                         val buildAttributeName: String,
+                         val probeAttributeName: String,
+                         val joinType: JoinType,
+                         val operatorSchemaInfo: OperatorSchemaInfo
+                       ) extends OperatorExecutor {
 
   val buildSchema: Schema = operatorSchemaInfo.inputSchemas(0)
   val probeSchema: Schema = operatorSchemaInfo.inputSchemas(1)
   var isBuildTableFinished: Boolean = false
   var buildTableHashMap: mutable.HashMap[K, (ArrayBuffer[Tuple], Boolean)] = _
   var outputSchema: Schema = operatorSchemaInfo.outputSchemas(0)
-  var buildTableHits: mutable.HashMap[K, Int] = mutable.HashMap[K, Int]()
+
+  var currentEntry: Iterator[Tuple] = _
+  var currentTuple: Tuple = _
 
   val buildTableTransferBatchSize = 4000
 
@@ -50,10 +47,10 @@ class HashJoinOpExec[K](
   }
 
   /**
-    * This function does not handle duplicates. It merges whatever it is given. It will treat
-    * duplicate tuples of the key as new tuples and will append it. The responsibility to not send
-    * duplicates is with the senders.
-    */
+   * This function does not handle duplicates. It merges whatever it is given. It will treat
+   * duplicate tuples of the key as new tuples and will append it. The responsibility to not send
+   * duplicates is with the senders.
+   */
   def mergeIntoHashTable(additionalTable: mutable.HashMap[_, ArrayBuffer[Tuple]]): Boolean = {
     try {
       for ((key, tuples) <- additionalTable) {
@@ -63,17 +60,17 @@ class HashJoinOpExec[K](
       }
       true
     } catch {
-      case exception: Exception =>
+      case _: Exception =>
         false
     }
   }
 
   override def processTexeraTuple(
-      tuple: Either[Tuple, InputExhausted],
-      input: Int,
-      pauseManager: PauseManager,
-      asyncRPCClient: AsyncRPCClient
-  ): Iterator[Tuple] = {
+                                   tuple: Either[Tuple, InputExhausted],
+                                   input: Int,
+                                   pauseManager: PauseManager,
+                                   asyncRPCClient: AsyncRPCClient
+                                 ): Iterator[Tuple] = {
     tuple match {
       case Left(tuple) =>
         // The operatorInfo() in HashJoinOpDesc has a inputPorts list. In that the
@@ -92,11 +89,7 @@ class HashJoinOpExec[K](
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             buildTableHashMap.getOrElse(key, (new ArrayBuffer[Tuple](), false))
-          if (buildTableHits.contains(key)) {
-            buildTableHits(key) += 1
-          } else {
-            buildTableHits(key) = 1
-          }
+
           if (matchedTuples.isEmpty) {
             // do not have a match with the probe tuple
             if (joinType != JoinType.RIGHT_OUTER && joinType != JoinType.FULL_OUTER) {
@@ -184,30 +177,30 @@ class HashJoinOpExec[K](
   }
 
   def fillNonJoinFields(
-      builder: BuilderV2,
-      schema: Schema,
-      fields: Array[Object],
-      resolveDuplicateName: Boolean = false
-  ): Unit = {
+                         builder: BuilderV2,
+                         schema: Schema,
+                         fields: Array[Object],
+                         resolveDuplicateName: Boolean = false
+                       ): Unit = {
     schema.getAttributesScala.filter(attribute => attribute.getName != probeAttributeName) map {
       (attribute: Attribute) =>
-        {
-          val field = fields.apply(schema.getIndex(attribute.getName))
-          if (resolveDuplicateName) {
-            val attributeName = attribute.getName
-            builder.add(
-              new Attribute(
-                if (buildSchema.getAttributeNames.contains(attributeName))
-                  attributeName + "#@1"
-                else attributeName,
-                attribute.getType
-              ),
-              field
-            )
-          } else {
-            builder.add(attribute, field)
-          }
+      {
+        val field = fields.apply(schema.getIndex(attribute.getName))
+        if (resolveDuplicateName) {
+          val attributeName = attribute.getName
+          builder.add(
+            new Attribute(
+              if (buildSchema.getAttributeNames.contains(attributeName))
+                attributeName + "#@1"
+              else attributeName,
+              attribute.getType
+            ),
+            field
+          )
+        } else {
+          builder.add(attribute, field)
         }
+      }
     }
   }
 
@@ -232,7 +225,7 @@ class HashJoinOpExec[K](
 
     // fill the join attribute (align with probe)
     builder.add(
-      probeSchema.getAttribute(probeAttributeName),
+      buildSchema.getAttribute(buildAttributeName),
       tuple.getField(probeAttributeName)
     )
 
@@ -255,46 +248,4 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
-  override def getStateInformation: String = {
-    s"Join: Top-5 matched keys = ${buildTableHits.toSeq.sortBy(_._2).reverse.map(_._1).take(5)}"
-  }
-
-  override def serializeState(
-      currentIteratorState: Iterator[(ITuple, Option[Int])],
-      checkpoint: SavedCheckpoint
-  ): Iterator[(ITuple, Option[Int])] = {
-    val iteratorToArr = currentIteratorState.toArray
-    checkpoint.save(
-      "currentIterator",
-      iteratorToArr
-    )
-    checkpoint.save(
-      "buildTableHits",
-      buildTableHits
-    )
-    checkpoint.save("hashMap", buildTableHashMap)
-    checkpoint.save(
-      "isBuildTableFinished",
-      isBuildTableFinished
-    )
-    iteratorToArr.toIterator
-  }
-
-  override def deserializeState(
-      checkpoint: SavedCheckpoint
-  ): Iterator[(ITuple, Option[Int])] = {
-    buildTableHits = checkpoint.load("buildTableHits")
-    buildTableHashMap = checkpoint.load("hashMap")
-    isBuildTableFinished = checkpoint.load("isBuildTableFinished")
-    val arr: Array[(ITuple, Option[Int])] = checkpoint.load("currentIterator")
-    arr.toIterator
-  }
-
-  override def getEstimatedCheckpointTime: Int = {
-    if(buildTableHashMap == null){
-      0
-    }else{
-      buildTableHashMap.map(_._2._1.size).sum
-    }
-  }
 }

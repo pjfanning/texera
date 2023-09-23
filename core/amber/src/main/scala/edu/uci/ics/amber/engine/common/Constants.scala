@@ -18,6 +18,8 @@ object Constants {
   var masterNodeAddr: Address = Address("akka", "Amber", "localhost", 2552)
   var defaultTau: FiniteDuration = 10.milliseconds
 
+  var loggingEnabled: Boolean =
+    AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging")
   // monitoring and reshape related
   var monitoringEnabled: Boolean =
     AmberUtils.amberConfig.getBoolean("monitoring.monitoring-enabled")

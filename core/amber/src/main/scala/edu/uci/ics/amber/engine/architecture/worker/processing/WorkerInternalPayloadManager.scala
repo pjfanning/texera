@@ -20,8 +20,8 @@ class WorkerInternalPayloadManager(worker:WorkflowWorker) extends InternalPayloa
 
   override def handlePayload(channel:ChannelEndpointID, payload: IdempotentInternalPayload): Unit = {
     payload match {
-      case SetupLogging() =>
-        InternalPayloadManager.setupLoggingForWorkflowActor(worker, true)
+      case SetupLogging(enabled) =>
+        InternalPayloadManager.setupLoggingForWorkflowActor(worker, enabled)
       case NoOp() =>
         // no op
       case _ => ???

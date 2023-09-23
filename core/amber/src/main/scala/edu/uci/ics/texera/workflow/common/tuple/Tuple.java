@@ -652,7 +652,7 @@ public class Tuple implements ITuple, Serializable {
          * then use {@link Tuple.BuilderV2#add(Tuple, boolean)} with second parameter as false
          */
         public BuilderV2 add(Tuple tuple) {
-            return add(tuple, true);
+            return add(tuple, false);
         }
 
         public BuilderV2 add(Tuple tuple, boolean isStrictSchemaMatch) {

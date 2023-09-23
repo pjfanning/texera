@@ -237,7 +237,6 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
     }
   }
 
-
   def doPrepPhase(plannerStrategy:String): WorkflowReplayConfig = {
     val interactionIdx = history.getInteractionIdxes.last
     val checkpointPlan = findBestPlan(0,history.historyArray.length,timeLimit,plannerStrategy=="global", false)

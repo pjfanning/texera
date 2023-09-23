@@ -50,7 +50,7 @@ trait WorkerExecutionCompletedHandler {
             disableStatusUpdate()
             disableMonitoring()
             disableSkewHandling()
-            println("workflow completed!!!!!!!!!!!!!!")
+            println(s"workflow completed!!!!!!!!!!!!!! time elapsed: ${System.currentTimeMillis() - this.workflowStartTimeStamp} ms")
             Future.Unit
           } else {
             cp.scheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
