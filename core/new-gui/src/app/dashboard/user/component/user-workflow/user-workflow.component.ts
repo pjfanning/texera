@@ -101,7 +101,7 @@ export class UserWorkflowComponent implements AfterViewInit {
     private searchService: SearchService
   ) {}
 
-  get multiWorkflowsOperationButtonEnabled(): boolean {
+  public multiWorkflowsOperationButtonEnabled(): boolean {
     if (this._searchResultsComponent) {
       return this.searchResultsComponent?.entries.filter(i => i.checked).length > 0;
     } else {
@@ -212,12 +212,12 @@ export class UserWorkflowComponent implements AfterViewInit {
       if (!isDefined(this.pid)) {
         // not nested within user project section
         this.workflowPersistService
-          .duplicateWorkflow(entry.workflow.workflow.wid)
+          .duplicateWorkflow([entry.workflow.workflow.wid])
           .pipe(untilDestroyed(this))
           .subscribe({
-            next: duplicatedWorkflowInfo => {
+            next: duplicatedWorkflowsInfo => {
               this.searchResultsComponent.entries = [
-                new DashboardEntry(duplicatedWorkflowInfo),
+                ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
                 ...this.searchResultsComponent.entries,
               ];
             }, // TODO: fix this with notification component
@@ -226,26 +226,27 @@ export class UserWorkflowComponent implements AfterViewInit {
       } else {
         // is nested within project section, also add duplicate workflow to project
         let localPid = this.pid;
-        this.workflowPersistService
-          .duplicateWorkflow(entry.workflow.workflow.wid)
-          .pipe(
-            concatMap(duplicatedWorkflowInfo => {
-              this.searchResultsComponent.entries = [
-                new DashboardEntry(duplicatedWorkflowInfo),
-                ...this.searchResultsComponent.entries,
-              ];
-              return this.userProjectService.addWorkflowToProject(localPid, duplicatedWorkflowInfo.workflow.wid!);
-            }),
-            catchError((err: unknown) => {
-              throw err;
-            }),
-            untilDestroyed(this)
-          )
-          .subscribe({
-            next: () => {},
-            // @ts-ignore // TODO: fix this with notification component
-            error: (err: unknown) => alert(err.error),
-          });
+        // TODO: fix project
+        // this.workflowPersistService
+        //   .duplicateWorkflow([entry.workflow.workflow.wid])
+        //   .pipe(
+        //     concatMap(duplicatedWorkflowInfo => {
+        //       this.searchResultsComponent.entries = [
+        //         new DashboardEntry(duplicatedWorkflowInfo),
+        //         ...this.searchResultsComponent.entries,
+        //       ];
+        //       return this.userProjectService.addWorkflowToProject(localPid, duplicatedWorkflowInfo.workflow.wid!);
+        //     }),
+        //     catchError((err: unknown) => {
+        //       throw err;
+        //     }),
+        //     untilDestroyed(this)
+        //   )
+        //   .subscribe({
+        //     next: () => {},
+        //     // @ts-ignore // TODO: fix this with notification component
+        //     error: (err: unknown) => alert(err.error),
+        //   });
       }
     }
   }
@@ -385,56 +386,37 @@ export class UserWorkflowComponent implements AfterViewInit {
 
   public onClickDuplicateSelectedWorkflows(): void {
     const checkedEntries = this.searchResultsComponent.entries.filter(i => i.checked);
-    if (checkedEntries.length > 0) {
+    let targetWids: number[] = [];
+
+    for (const entry of checkedEntries) {
+      const wid = entry.workflow.workflow.wid;
+      if (wid) {
+        targetWids.push(wid);
+      } else {
+        return;
+      }
+    }
+
+    if (targetWids.length > 0) {
       if (!isDefined(this.pid)) {
-        // not nested within user project section
-        for (const entry of checkedEntries) {
-          const wid = entry.workflow.workflow.wid;
-          if (wid) {
-            this.workflowPersistService
-              .duplicateWorkflow(wid)
+        this.workflowPersistService
+              .duplicateWorkflow(targetWids)
               .pipe(untilDestroyed(this))
               .subscribe({
-                next: duplicatedWorkflowInfo => {
+                next: duplicatedWorkflowsInfo => {
                   this.searchResultsComponent.entries = [
-                    new DashboardEntry(duplicatedWorkflowInfo),
+                    ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
                     ...this.searchResultsComponent.entries,
                   ];
                 }, // TODO: fix this with notification component
                 error: (err: unknown) => alert(err),
               });
-          }
-        }
       } else {
-        // is nested within project section, also add duplicate workflows to project
         const localPid = this.pid;
-        for (const entry of checkedEntries) {
-          const wid = entry.workflow.workflow.wid;
-          if (wid) {
-            this.workflowPersistService
-              .duplicateWorkflow(wid)
-              .pipe(
-                concatMap(duplicatedWorkflowInfo => {
-                  this.searchResultsComponent.entries = [
-                    new DashboardEntry(duplicatedWorkflowInfo),
-                    ...this.searchResultsComponent.entries,
-                  ];
-                  return this.userProjectService.addWorkflowToProject(localPid, duplicatedWorkflowInfo.workflow.wid!);
-                }),
-                catchError((err: unknown) => {
-                  throw err;
-                }),
-                untilDestroyed(this)
-              )
-              .subscribe({
-                next: () => {},
-                // @ts-ignore // TODO: fix this with notification component
-                error: (err: unknown) => alert(err.error),
-              });
-          }
-        }
+        // TODO: make add to project and duplication a same transaction
       }
     }
+    
   }
 
   public handleConfirmDeleteSelectedWorkflows(): void {

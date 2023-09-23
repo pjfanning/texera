@@ -70,10 +70,10 @@ export class WorkflowPersistService {
    * creates a workflow and insert it to backend database and return its information
    * @param targetWid
    */
-  public duplicateWorkflow(targetWid: number): Observable<DashboardWorkflow> {
+  public duplicateWorkflow(targetWids: number[]): Observable<DashboardWorkflow[]> {
     return this.http
-      .post<DashboardWorkflow>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DUPLICATE_URL}`, { wid: targetWid })
-      .pipe(filter((createdWorkflow: DashboardWorkflow) => createdWorkflow != null));
+      .post<DashboardWorkflow[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DUPLICATE_URL}`, { wids: targetWids })
+      .pipe(filter((createdWorkflows: DashboardWorkflow[]) => createdWorkflows != null && createdWorkflows.length > 0));
   }
 
   /**
