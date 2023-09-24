@@ -3,9 +3,10 @@ package edu.uci.ics.texera.workflow.common.workflow
 import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
+import edu.uci.ics.texera.Utils.objectMapper
+import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-
 import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
@@ -40,6 +41,10 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       storage: OpResultStorage
   ): Unit = {
     // assign storage to texera-managed sinks before generating exec config
+
+    val resultsJSON = objectMapper.createObjectNode()
+    val sinksPointers = objectMapper.createArrayNode()
+
     logicalPlan.operators.foreach {
       case o @ (sink: ProgressiveSinkOpDesc) =>
         val storageKey = sink.getUpstreamId.getOrElse(o.operatorID)
@@ -58,8 +63,16 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
             storageType
           )
         )
+        // add the sink collection name to the JSON array of sinks
+        sinksPointers.add(context.executionID + "_" + storageKey)
       case _ =>
     }
+
+    // update execution entry in MySQL to have pointers to the mongo collections
+    resultsJSON.put("results", sinksPointers)
+    ExecutionsMetadataPersistService.updateExistingExecutionVolumnPointers(
+      context.executionID,
+      resultsJSON.toString)
   }
 
   def amberWorkflow(

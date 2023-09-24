@@ -40,6 +40,13 @@ export interface Workflow
     workflow_name: string;
   }>{}
 
+export interface mongoStorage
+  extends Readonly<{
+    workflowName: string;
+    size: number;
+    pointer: string;
+  }>{}
+
 /**
  * Coeditor extends User and adds clientId to differentiate local user and collaborative editor
  */

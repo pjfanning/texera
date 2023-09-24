@@ -6,39 +6,56 @@
       class="page-title"
       style="color: white">Quota</h2>
   </nz-card>
-
-  <nz-table #basicTable>
-    <thead>
-      <tr>
-        <th>
-          Files uploaded
-        </th>
-        <th>
-          Workflows created
-        </th>
-        <th>
-          Files can be accessed
-        </th>
-        <th>
-          Workflows can be accessed
-        </th>
-        <th>
-          Total size of the files (mb)
-        </th>
-        <th>
-          Top Five File Sizes (mb)
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>{{ this.createdFiles.length }}</td>
-        <td>{{ this.createdWorkflows.length }}</td>
-        <td>{{ this.accessFiles.length }}</td>
-        <td>{{ this.accessWorkflows.length }}</td>
-        <td>{{ this.totalSize }}</td>
-        <td>{{ this.topfiveFilesizes }}</td>
-      </tr>
-    </tbody>
-  </nz-table>
+  <div>
+    <nz-tabset nzCentered>
+      <nz-tab
+        nzTitle = "quota table">
+        <nz-table #basicTable>
+          <thead>
+            <tr>
+              <th>
+                Files uploaded
+              </th>
+              <th>
+                Workflows created
+              </th>
+              <th>
+                Files can be accessed
+              </th>
+              <th>
+                Workflows can be accessed
+              </th>
+              <th>
+                Total size of the files (mb)
+              </th>
+              <th>
+                Top Five File Sizes (mb)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ this.createdFiles.length }}</td>
+              <td>{{ this.createdWorkflows.length }}</td>
+              <td>{{ this.accessFiles.length }}</td>
+              <td>{{ this.accessWorkflows.length }}</td>
+              <td>{{ this.totalSize }}</td>
+              <td>{{ this.topfiveFilesizes }}</td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </nz-tab>
+      <nz-tab
+        nzForceRender
+        nzTitle = "mongoDB">
+        <div
+          nz-row
+          nzJustify="center">
+          <div nz-col>
+            <div id="mongodb-storage-pie-chart"></div>
+          </div>
+        </div>
+      </nz-tab>
+    </nz-tabset>
+  </div>
 </div>

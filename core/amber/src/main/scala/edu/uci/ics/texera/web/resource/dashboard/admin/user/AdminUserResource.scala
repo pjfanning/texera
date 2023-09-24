@@ -3,7 +3,9 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.enums.UserRole
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.UserDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.{file, userDao, context, workflow}
+import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.{
+  file, userDao, context, workflow, getCollectionName, mongoStorage
+}
 import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jooq.types.UInteger
 
@@ -32,6 +34,27 @@ object AdminUserResource {
       workflow_id: UInteger,
       workflow_name: String
                      )
+
+  case class mongoStorage(
+      workflowName: String,
+      size: Double,
+      pointer: String
+                         )
+
+  def getCollectionName(result: String): String = {
+    var quoteCount = 0
+    var name = ""
+
+    for (chr <- result) {
+      if (chr == '\"') {
+        quoteCount += 1
+      } else if (quoteCount == 3) {
+        name += chr
+      }
+    }
+
+    name
+  }
 }
 
 @Path("/admin/user")
@@ -136,9 +159,15 @@ class AdminUserResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   def getAccessedWorkflow(@QueryParam("user_id") user_id: UInteger): util.List[UInteger] = {
     val availableWorkflowIds = context
-      .select(WORKFLOW_USER_ACCESS.WID)
-      .from(WORKFLOW_USER_ACCESS)
-      .where(WORKFLOW_USER_ACCESS.UID.eq(user_id))
+      .select(
+        WORKFLOW_USER_ACCESS.WID
+      )
+      .from(
+        WORKFLOW_USER_ACCESS
+      )
+      .where(
+        WORKFLOW_USER_ACCESS.UID.eq(user_id)
+      )
       .fetchInto(classOf[UInteger])
 
     return availableWorkflowIds
@@ -149,17 +178,54 @@ class AdminUserResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   def getAccessedFiles(@QueryParam("user_id") user_id: UInteger): util.List[UInteger] = {
     context
-      .select(USER_FILE_ACCESS.FID)
-      .from(USER_FILE_ACCESS)
-      .where(USER_FILE_ACCESS.UID.eq(user_id))
+      .select(
+        USER_FILE_ACCESS.FID
+      )
+      .from(
+        USER_FILE_ACCESS
+      )
+      .where(
+        USER_FILE_ACCESS.UID.eq(user_id)
+      )
       .fetchInto(classOf[UInteger])
   }
 
   @GET
   @Path("/mongodb_size")
   @Produces(Array(MediaType.APPLICATION_JSON))
-  def mongoDBSize(): Integer = {
-    MongoDatabaseManager.databaseSize()
+  def mongoDBSize(@QueryParam("user_id") user_id: UInteger): Array[mongoStorage] = {
+    val collectionNames = context
+      .select(
+        WORKFLOW_EXECUTIONS.RESULT,
+        WORKFLOW.NAME
+      )
+      .from(
+        WORKFLOW_EXECUTIONS
+      )
+      .leftJoin(
+        WORKFLOW_VERSION
+      )
+      .on(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID))
+      .leftJoin(
+        WORKFLOW
+      )
+      .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
+      .where(
+        WORKFLOW_EXECUTIONS.UID.eq(user_id)
+        .and(WORKFLOW_EXECUTIONS.RESULT.notEqual(""))
+        .and(WORKFLOW_EXECUTIONS.RESULT.isNotNull)
+      )
+      .fetch()
+
+    val collections = collectionNames.map(result => {
+      mongoStorage(
+        result.get(WORKFLOW.NAME),
+        0.0,
+        getCollectionName(result.get(WORKFLOW_EXECUTIONS.RESULT)),
+      )
+    }).toList.toArray
+
+    MongoDatabaseManager.getDatabaseSize(collections)
   }
 }
 

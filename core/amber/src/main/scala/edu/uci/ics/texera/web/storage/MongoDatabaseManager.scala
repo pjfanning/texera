@@ -2,7 +2,9 @@ package edu.uci.ics.texera.web.storage
 
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
+import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.mongoStorage
 import org.bson.Document
+import org.jooq.types.UInteger
 
 import java.util
 
@@ -26,12 +28,20 @@ object MongoDatabaseManager {
     database.listCollectionNames().into(new util.ArrayList[String]()).contains(collectionName)
   }
 
-  def databaseSize(): Integer = {
-    val stats: Document = database.runCommand(new Document("dbStats", 1))
-    print("==================")
-    print(stats.getInteger("dataSize"))
-    print("==================")
-    stats.getInteger("totalSize")
+  def getDatabaseSize(collectionNames: Array[mongoStorage]): Array[mongoStorage] = {
+    var count = 0
+
+    for (collection <- collectionNames) {
+      val stats: Document = database.runCommand(new Document("collStats", collection.pointer))
+      collectionNames(count) = mongoStorage(
+        collection.workflowName,
+        stats.getInteger("totalSize") / 1000,
+        collection.pointer
+      )
+      count += 1
+    }
+
+    collectionNames
   }
 
 }
