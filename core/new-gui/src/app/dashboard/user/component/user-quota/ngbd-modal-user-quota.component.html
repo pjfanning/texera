@@ -2,6 +2,13 @@
   <nz-card
     class="section-title"
     style="background-color: lightcoral">
+    <button
+      (click)="activeModel.dismiss('Cross click')"
+      aria-label="Close"
+      class="close"
+      type="button">
+      <span aria-hidden="true"> × </span>
+    </button>
     <h2
       class="page-title"
       style="color: white">Quota</h2>

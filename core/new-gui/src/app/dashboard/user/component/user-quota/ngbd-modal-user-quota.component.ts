@@ -20,7 +20,7 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
 
   public static readonly WIDTH = 300;
   public static readonly HEIGHT = 300;
-  public static readonly BARCHARTSIZE = 300;
+  public static readonly BARCHARTSIZE = 600;
 
   userUid: number = 0;
   totalSize: string = "";
@@ -31,7 +31,7 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
   topFiveFiles: ReadonlyArray<File> = [];
   mongodbStorages: ReadonlyArray<mongoStorage> = [];
 
-  constructor(private adminUserService: AdminUserService) {
+  constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal) {
   }
 
   ngOnInit(): void {
