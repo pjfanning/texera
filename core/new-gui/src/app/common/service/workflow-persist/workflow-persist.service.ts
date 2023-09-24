@@ -127,7 +127,7 @@ public duplicateWorkflow(targetWids: number[], pid?: number): Observable<Dashboa
    */
   public deleteWorkflow(wids: number[]): Observable<Response> {
     return this.http
-      .post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${WORKFLOW_DELETE_URL}`, {
+      .post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DELETE_URL}`, {
         wids: wids
       });
   }

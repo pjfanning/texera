@@ -495,7 +495,7 @@ class WorkflowResource {
           val workflow: Workflow = workflowDao.fetchOneByWid(wid)
           workflow.getContent
           workflow.getName
-          resultWorkflows += createWorkflow(
+          val newWorkflow = createWorkflow(
             new Workflow(
               workflow.getName + "_copy",
               workflow.getDescription,
@@ -508,19 +508,23 @@ class WorkflowResource {
           )
           // if workflows also need to be added to the project
           if (addToProject) {
-            if (!hasReadAccess(wid, user.getUid)) {
+            val newWid = newWorkflow.workflow.getWid
+            if (!hasReadAccess(newWid, user.getUid)) {
               throw new ForbiddenException("No sufficient access privilege to workflow.")
             }
             val pid = workflowIDs.pid.get
-            if (!workflowOfProjectExists(wid, pid)) {
-              workflowOfProjectDao.insert(new WorkflowOfProject(wid, pid))
+            if (!workflowOfProjectExists(newWid, pid)) {
+              workflowOfProjectDao.insert(new WorkflowOfProject(newWid, pid))
             } else {
               throw new BadRequestException("Workflow already exists in the project")
             }
           }
+
+          resultWorkflows += newWorkflow
         }
       }
-    } catch { // TODO: alter this error handling
+    } catch {
+        case _: BadRequestException | _: ForbiddenException =>
         case NonFatal(exception) =>
           throw new WebApplicationException(exception)
     }
@@ -564,14 +568,20 @@ class WorkflowResource {
   @Path("/delete")
   def deleteWorkflow(workflowIDs: WorkflowIDs, @Auth sessionUser: SessionUser): Unit = {
     val user = sessionUser.getUser
-    context.transaction { _ =>
-      for (wid <- workflowIDs.wids) {
-        if (workflowOfUserExists(wid, user.getUid)) {
-          workflowDao.deleteById(wid)
-        } else {
-          throw new BadRequestException("The workflow does not exist.")
+    try {
+      context.transaction { _ =>
+        for (wid <- workflowIDs.wids) {
+          if (workflowOfUserExists(wid, user.getUid)) {
+            workflowDao.deleteById(wid)
+          } else {
+            throw new BadRequestException("The workflow does not exist.")
+          }
         }
       }
+    } catch {
+      case _: BadRequestException =>
+      case NonFatal(exception) =>
+        throw new WebApplicationException(exception)
     }
   }
 
