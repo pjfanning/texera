@@ -28,9 +28,6 @@
               <th>
                 Total size of the files (mb)
               </th>
-              <th>
-                Top Five File Sizes (mb)
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -40,7 +37,6 @@
               <td>{{ this.accessFiles.length }}</td>
               <td>{{ this.accessWorkflows.length }}</td>
               <td>{{ this.totalSize }}</td>
-              <td>{{ this.topfiveFilesizes }}</td>
             </tr>
           </tbody>
         </nz-table>
@@ -53,6 +49,17 @@
           nzJustify="center">
           <div nz-col>
             <div id="mongodb-storage-pie-chart"></div>
+          </div>
+        </div>
+      </nz-tab>
+      <nz-tab
+        nzForceRender
+        nzTitle = "Top 5 Files">
+        <div
+          nz-row
+          nzJustify="center">
+          <div nz-col>
+            <div id="uploaded-file-bar-chart"></div>
           </div>
         </div>
       </nz-tab>

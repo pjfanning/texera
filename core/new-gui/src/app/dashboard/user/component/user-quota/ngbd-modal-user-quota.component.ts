@@ -16,9 +16,11 @@ import { ChartType } from "src/app/workspace/types/visualization.interface";
 
 export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
   public static readonly MONGODB_PIE_CHART = "#mongodb-storage-pie-chart";
+  public static readonly MONGODB_BAR_CHART = "#uploaded-file-bar-chart";
 
   public static readonly WIDTH = 300;
   public static readonly HEIGHT = 300;
+  public static readonly BARCHARTSIZE = 300;
 
   userUid: number = 0;
   totalSize: string = "";
@@ -26,7 +28,7 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
   createdWorkflows: ReadonlyArray<Workflow> = [];
   accessFiles: ReadonlyArray<number> = [];
   accessWorkflows: ReadonlyArray<number> = [];
-  topfiveFilesizes: ReadonlyArray<string> = [];
+  topFiveFiles: ReadonlyArray<File> = [];
   mongodbStorages: ReadonlyArray<mongoStorage> = [];
 
   constructor(private adminUserService: AdminUserService) {
@@ -41,14 +43,6 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
         let size = 0;
         this.createdFiles.forEach(file => size += file.file_size / 1000000)
         this.totalSize = size.toPrecision(2);
-        // console.log("number of files uploaded");
-        // console.log(this.createdFiles.length);
-
-        const copiedFiles = [...this.createdFiles];
-        copiedFiles.sort((a, b) => b.file_size - a.file_size);
-        const topFiveFiles = copiedFiles.slice(0, 5);
-        const fileSizes = topFiveFiles.map(file => (file.file_size / 1000000).toPrecision(2));
-        this.topfiveFilesizes = fileSizes;
       });
     
     this.adminUserService
@@ -56,8 +50,6 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .pipe(untilDestroyed(this))
       .subscribe(workflowList => {
         this.createdWorkflows = workflowList;
-        // console.log("number of workflows created");
-        // console.log(this.createdWorkflows.length);
       });
     
     this.adminUserService
@@ -65,8 +57,6 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .pipe(untilDestroyed(this))
       .subscribe(accessFiles => {
         this.accessFiles = accessFiles;
-        // console.log("number of files that can be accessed");
-        // console.log(this.accessFiles.length);
       });
 
     this.adminUserService
@@ -74,23 +64,8 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .pipe(untilDestroyed(this))
       .subscribe(accessWorkflows => {
         this.accessWorkflows = accessWorkflows;
-        // console.log("number of workflows that can be accessed");
-        // console.log(this.accessWorkflows.length);
       });
-    
-      this.adminUserService
-      .getMongoDBs(this.userUid)
-      .pipe(untilDestroyed(this))
-      .subscribe(result => {
-        console.log("mongo")
-        console.log(result.length)
-        this.mongodbStorages = result;
-        result.forEach(mongo => {
-          console.log(mongo.workflowName)
-          console.log(mongo.pointer)
-          console.log(mongo.size)
-        })
-      });
+  
     }
 
     ngAfterViewInit(): void {
@@ -100,6 +75,7 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .subscribe(result => {
         this.mongodbStorages = result;
         let mongoWorkflowData: { [key: string]: [string, number] } = {};
+        let totalSize: number = 0;
 
         this.mongodbStorages.forEach(mongo => {
           if (mongoWorkflowData[mongo.workflowName] === undefined) {
@@ -107,13 +83,42 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
           } else {
             mongoWorkflowData[mongo.workflowName][1] += mongo.size
           }
+
+          totalSize += mongo.size;
         })
         
         this.generatePieChart(
           Object.values(mongoWorkflowData),
           ["workflow"], 
-          "MongoDB Storage Usage",
+          "MongoDB Total Storage Usage: " + totalSize + " (kb)",
           NgbModalUserQuotaComponent.MONGODB_PIE_CHART
+        );
+      });
+
+      this.adminUserService
+      .getUploadedFiles(this.userUid)
+      .pipe(untilDestroyed(this))
+      .subscribe(fileList => {
+        const copiedFiles = [...fileList];
+        copiedFiles.sort((a, b) => b.file_size - a.file_size);
+        this.topFiveFiles = copiedFiles.slice(0, 5);
+
+        let fileSizes: Array<[string, ...c3.PrimitiveArray]> = [["file sizes"]];
+        let fileNames: string[] = [];
+        this.topFiveFiles.forEach(file => {
+          fileSizes[0].push(file.file_size / 1000000);
+          fileNames.push(file.file_name)
+        })
+        console.log(fileSizes);
+        console.log(fileNames);
+
+        this.generateBarChart(
+          fileSizes,
+          fileNames,
+          "File Names",
+          "File Sizes (mb)",
+          "Top 5 File Sizes",
+          NgbModalUserQuotaComponent.MONGODB_BAR_CHART
         );
       });
     }
@@ -137,6 +142,46 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
           x: {
             type: "category",
             categories: category,
+          },
+        },
+        title: {
+          text: title,
+        },
+        bindto: chart,
+      });
+    }
+
+    generateBarChart(
+      dataToDisplay: Array<[string, ...c3.PrimitiveArray]>,
+      category: string[],
+      x_label: string,
+      y_label: string,
+      title: string,
+      chart: string
+    ) {
+      c3.generate({
+        size: {
+          height: NgbModalUserQuotaComponent.BARCHARTSIZE,
+          width: NgbModalUserQuotaComponent.BARCHARTSIZE,
+        },
+        data: {
+          columns: dataToDisplay,
+          type: ChartType.BAR,
+        },
+        axis: {
+          x: {
+            label: {
+              text: x_label,
+              position: "outer-right",
+            },
+            type: "category",
+            categories: category,
+          },
+          y: {
+            label: {
+              text: y_label,
+              position: "outer-top",
+            },
           },
         },
         title: {
