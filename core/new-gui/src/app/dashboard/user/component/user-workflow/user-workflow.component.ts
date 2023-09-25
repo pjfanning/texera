@@ -81,10 +81,10 @@ export class UserWorkflowComponent implements AfterViewInit {
     this._filters = value;
   }
   private masterFilterList: ReadonlyArray<string> | null = null;
-  
+
   // allCheckedBox
   public areAllChecked: boolean = false;
-  public allCheckedBoxLabel = 'Select all workflows'
+  public allCheckedBoxLabel = "Select all workflows";
   // receive input from parent components (UserProjectSection), if any
   @Input() public pid?: number = undefined;
   public sortMethod = SortMethod.EditTimeDesc;
@@ -391,34 +391,33 @@ export class UserWorkflowComponent implements AfterViewInit {
     if (targetWids.length > 0) {
       if (!isDefined(this.pid)) {
         this.workflowPersistService
-              .duplicateWorkflow(targetWids)
-              .pipe(untilDestroyed(this))
-              .subscribe({
-                next: duplicatedWorkflowsInfo => {
-                  this.searchResultsComponent.entries = [
-                    ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
-                    ...this.searchResultsComponent.entries,
-                  ];
-                }, // TODO: fix this with notification component
-                error: (err: unknown) => alert(err),
-              });
+          .duplicateWorkflow(targetWids)
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: duplicatedWorkflowsInfo => {
+              this.searchResultsComponent.entries = [
+                ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
+                ...this.searchResultsComponent.entries,
+              ];
+            }, // TODO: fix this with notification component
+            error: (err: unknown) => alert(err),
+          });
       } else {
         const localPid = this.pid;
         this.workflowPersistService
-              .duplicateWorkflow(targetWids, localPid)
-              .pipe(untilDestroyed(this))
-              .subscribe({
-                next: duplicatedWorkflowsInfo => {
-                  this.searchResultsComponent.entries = [
-                    ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
-                    ...this.searchResultsComponent.entries,
-                  ];
-                }, // TODO: fix this with notification component
-                error: (err: unknown) => alert(err),
-              });
+          .duplicateWorkflow(targetWids, localPid)
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: duplicatedWorkflowsInfo => {
+              this.searchResultsComponent.entries = [
+                ...duplicatedWorkflowsInfo.map(duplicatedWorkflowInfo => new DashboardEntry(duplicatedWorkflowInfo)),
+                ...this.searchResultsComponent.entries,
+              ];
+            }, // TODO: fix this with notification component
+            error: (err: unknown) => alert(err),
+          });
       }
     }
-    
   }
 
   public handleConfirmDeleteSelectedWorkflows(): void {
@@ -436,16 +435,19 @@ export class UserWorkflowComponent implements AfterViewInit {
 
     if (targetWids.length > 0) {
       this.workflowPersistService
-            .deleteWorkflow(targetWids)
-            .pipe(untilDestroyed(this))
-            .subscribe({
-              next: _ => {
-              this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-                workflowEntry => workflowEntry.workflow.workflow.wid !in targetWids
-              );
-            }, 
+        .deleteWorkflow(targetWids)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: _ => {
+            this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(workflowEntry => {
+              let entryWid = workflowEntry.workflow.workflow.wid;
+              // Check if wid is defined and if it's not included in targetWids
+              return entryWid === undefined || !targetWids.includes(entryWid);
+            });
+          },
           // TODO: fix this with notification component
-          error: (err: unknown) => alert(err)});
+          error: (err: unknown) => alert(err),
+        });
     }
   }
 
@@ -453,7 +455,7 @@ export class UserWorkflowComponent implements AfterViewInit {
    * Check or uncheck all workflow entries
    */
   public onAllCheckedBoxChange(): void {
-    this.allCheckedBoxLabel = this.areAllChecked ? 'Unselect all workflows' : 'Select all workflows';
+    this.allCheckedBoxLabel = this.areAllChecked ? "Unselect all workflows" : "Select all workflows";
     for (const entry of this.searchResultsComponent.entries) {
       entry.checked = this.areAllChecked;
     }

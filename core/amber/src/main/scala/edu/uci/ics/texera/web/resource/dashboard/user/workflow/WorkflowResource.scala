@@ -4,10 +4,19 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  WorkflowDao,
+  WorkflowOfProjectDao,
+  WorkflowOfUserDao,
+  WorkflowUserAccessDao
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource
-import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource.{context, workflowOfProjectDao, workflowOfProjectExists}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.ProjectResource.{
+  context,
+  workflowOfProjectDao,
+  workflowOfProjectExists
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -524,9 +533,9 @@ class WorkflowResource {
         }
       }
     } catch {
-        case _: BadRequestException | _: ForbiddenException =>
-        case NonFatal(exception) =>
-          throw new WebApplicationException(exception)
+      case _: BadRequestException | _: ForbiddenException =>
+      case NonFatal(exception) =>
+        throw new WebApplicationException(exception)
     }
     resultWorkflows.toList
   }

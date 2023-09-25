@@ -68,19 +68,18 @@ export class WorkflowPersistService {
   }
 
   /**
- * creates a workflow and insert it to backend database and return its information
- * @param targetWids
- * @param pid
- */
-public duplicateWorkflow(targetWids: number[], pid?: number): Observable<DashboardWorkflow[]> {
-
-  return this.http
-    .post<DashboardWorkflow[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DUPLICATE_URL}`, {
-      wids: targetWids,
-      ...(pid !== undefined && { pid })
-    })
-    .pipe(filter((createdWorkflows: DashboardWorkflow[]) => createdWorkflows != null && createdWorkflows.length > 0));
-}
+   * creates a workflow and insert it to backend database and return its information
+   * @param targetWids
+   * @param pid
+   */
+  public duplicateWorkflow(targetWids: number[], pid?: number): Observable<DashboardWorkflow[]> {
+    return this.http
+      .post<DashboardWorkflow[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DUPLICATE_URL}`, {
+        wids: targetWids,
+        ...(pid !== undefined && { pid }),
+      })
+      .pipe(filter((createdWorkflows: DashboardWorkflow[]) => createdWorkflows != null && createdWorkflows.length > 0));
+  }
 
   /**
    * retrieves a workflow from backend database given its id. The user in the session must have access to the workflow.
@@ -126,10 +125,9 @@ public duplicateWorkflow(targetWids: number[], pid?: number): Observable<Dashboa
    * deletes the given workflow, the user in the session must own the workflow.
    */
   public deleteWorkflow(wids: number[]): Observable<Response> {
-    return this.http
-      .post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DELETE_URL}`, {
-        wids: wids
-      });
+    return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_DELETE_URL}`, {
+      wids: wids,
+    });
   }
 
   /**
