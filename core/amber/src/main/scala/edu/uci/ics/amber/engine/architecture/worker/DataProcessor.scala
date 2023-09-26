@@ -192,7 +192,7 @@ class DataProcessor( // dependencies:
     } catch safely {
       case e =>
         // forward input tuple to the user and pause DP thread
-          handleOperatorException(e)
+        handleOperatorException(e)
     }
     outputIterator
   }
@@ -292,7 +292,6 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def handleOperatorException(e: Throwable): Unit = {
-    e.printStackTrace()
     if (currentInputTuple.isLeft) {
       asyncRPCClient.send(
         LocalOperatorException(currentInputTuple.left.get, e),

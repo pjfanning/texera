@@ -323,7 +323,7 @@
           title="reuse result if possible">
           <i
             nz-icon
-            nzType="eye"
+            nzType="database"
             nzTheme="outline"></i>
         </button>
         <button
@@ -334,31 +334,9 @@
           title="remove reusing previous result">
           <i
             nz-icon
-            nzType="eye-invisible"
+            nzType="database"
             nzTheme="twotone"></i>
         </button>
-        <button
-        *ngIf="(operatorMenu.isMarkForReuse || ! operatorMenu.isReuseResultClickable)"
-        [disabled]="! operatorMenu.isReuseResultClickable"
-        (click)="operatorMenu.reuseResultHighlightedOperator()"
-        nz-button
-        title="reuse result if possible">
-        <i
-          nz-icon
-          nzType="database"
-          nzTheme="outline"></i>
-      </button>
-      <button
-      *ngIf="(! operatorMenu.isMarkForReuse && operatorMenu.isReuseResultClickable)"
-      [disabled]="! operatorMenu.isReuseResultClickable"
-        (click)="operatorMenu.reuseResultHighlightedOperator()"
-        nz-button
-        title="remove reusing previous result">
-        <i
-          nz-icon
-          nzType="database"
-          nzTheme="twotone"></i>
-      </button>
       </nz-button-group>
     </div>
     <div

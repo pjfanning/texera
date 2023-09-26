@@ -56,7 +56,7 @@ class ProjectionOpDesc extends MapOpDesc {
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = false,
-      supportRetractableInput = true,
+      supportRetractableInput = true
     )
   }
 

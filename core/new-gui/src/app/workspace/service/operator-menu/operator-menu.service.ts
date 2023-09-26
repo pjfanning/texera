@@ -55,9 +55,6 @@ export class OperatorMenuService {
   public isReuseResultClickable: boolean = false;
   public isMarkForReuse: boolean = true;
 
-  public isReuseResultClickable: boolean = false;
-  public isMarkForReuse: boolean = true;
-
   public readonly COPY_OFFSET = 20;
 
   constructor(
@@ -146,20 +143,6 @@ export class OperatorMenuService {
     }
   }
 
-  public reuseResultHighlightedOperator(): void {
-    const effectiveHighlightedOperatorsExcludeSink = this.effectivelyHighlightedOperators.value.filter(
-      op => !isSink(this.workflowActionService.getTexeraGraph().getOperator(op))
-    );
-    
-    console.log("calling mark reuse")
-    console.log(effectiveHighlightedOperatorsExcludeSink)
-    if (this.isMarkForReuse) {
-      this.workflowActionService.markReuseResults(effectiveHighlightedOperatorsExcludeSink);
-    } else {
-      this.workflowActionService.removeMarkReuseResults(effectiveHighlightedOperatorsExcludeSink);
-    }
-  }
-
   /**
    * Updates the status of the disable operator icon:
    * If all selected operators are disabled, then click it will re-enable the operators
@@ -198,27 +181,6 @@ export class OperatorMenuService {
 
       this.isToViewResult = !allViewing;
       this.isToViewResultClickable =
-        effectiveHighlightedOperatorsExcludeSink.length !== 0 &&
-        this.workflowActionService.checkWorkflowModificationEnabled();
-    });
-  }
-
-  handleReuseOperatorResultStatusChange() {
-    merge(
-      this.effectivelyHighlightedOperators,
-      this.workflowActionService.getTexeraGraph().getReuseCacheOperatorsChangedStream(),
-      this.workflowActionService.getWorkflowModificationEnabledStream()
-    ).subscribe(event => {
-      const effectiveHighlightedOperatorsExcludeSink = this.effectivelyHighlightedOperators.value.filter(
-        op => !isSink(this.workflowActionService.getTexeraGraph().getOperator(op))
-      );
-
-      const allMarkedForReuse = effectiveHighlightedOperatorsExcludeSink.every(op =>
-        this.workflowActionService.getTexeraGraph().isMarkedForReuseResult(op)
-      );
-
-      this.isMarkForReuse = !allMarkedForReuse;
-      this.isReuseResultClickable =
         effectiveHighlightedOperatorsExcludeSink.length !== 0 &&
         this.workflowActionService.checkWorkflowModificationEnabled();
     });

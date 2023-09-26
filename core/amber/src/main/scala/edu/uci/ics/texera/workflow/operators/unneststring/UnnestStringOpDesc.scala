@@ -35,7 +35,7 @@ class UnnestStringOpDesc extends FlatMapOpDesc {
       operatorGroupName = OperatorGroupConstants.UTILITY_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
-      supportRetractableInput = true,
+      supportRetractableInput = true
     )
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {

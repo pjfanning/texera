@@ -537,60 +537,6 @@ export class WorkflowGraph {
   }
 
   /**
-   * Changes <code>markedForReuse</code> status which is an atomic boolean value as opposed to y-type data.
-   * @param operatorID
-   */
-  public markReuseResult(operatorID: string): void {
-    const operator = this.getOperator(operatorID);
-    if (!operator) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
-    }
-    if (isSink(operator)) {
-      return;
-    }
-    if (this.isMarkedForReuseResult(operatorID)) {
-      return;
-    }
-    console.log("seeting marked for reuse in shared model")
-    this.sharedModel.operatorIDMap.get(operatorID)?.set("markedForReuse", true);
-  }
-  
-  /**
-   * Changes <code>markedForReuse</code> status which is an atomic boolean value as opposed to y-type data.
-   * @param operatorID
-   */
-  public removeMarkReuseResult(operatorID: string): void {
-    const operator = this.getOperator(operatorID);
-    if (!operator) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
-    }
-    if (!this.isMarkedForReuseResult(operatorID)) {
-      return;
-    }
-    this.sharedModel.operatorIDMap.get(operatorID)?.set("markedForReuse", false);
-  }
-  
-  /**
-   * This method gets this status from readonly object version of the operator data as opposed to y-type data.
-   * @param operatorID
-   */
-  public isMarkedForReuseResult(operatorID: string): boolean {
-    const operator = this.getOperator(operatorID);
-    if (!operator) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
-    }
-    return operator.markedForReuse ?? false;
-  }
-
-  public getOperatorsMarkedForReuseResult(): ReadonlySet<string> {
-    return new Set(
-      Array.from(this.sharedModel.operatorIDMap.keys() as IterableIterator<string>).filter(op =>
-        this.isMarkedForReuseResult(op)
-      )
-    );
-  }
-
-  /**
    * Returns whether the operator exists in the graph.
    * @param operatorID operator ID
    */

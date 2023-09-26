@@ -14,7 +14,12 @@ class ConsolidateOpExec(operatorSchemaInfo: OperatorSchemaInfo) extends Operator
 
   private val results = new ArrayBuffer[Tuple]()
 
-  override def processTexeraTuple(tuple: Either[Tuple, InputExhausted], input: Int, pauseManager: PauseManager, asyncRPCClient: AsyncRPCClient): Iterator[Tuple] = {
+  override def processTexeraTuple(
+      tuple: Either[Tuple, InputExhausted],
+      input: Int,
+      pauseManager: PauseManager,
+      asyncRPCClient: AsyncRPCClient
+  ): Iterator[Tuple] = {
 
     tuple match {
       case Left(t) =>

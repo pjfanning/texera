@@ -291,8 +291,4 @@ case class LogicalPlan(
     physicalPlan
   }
 
-//  def normalize(): LogicalPlan = {
-//    SinkInjectionTransformer.transform(this)
-//  }
-
 }

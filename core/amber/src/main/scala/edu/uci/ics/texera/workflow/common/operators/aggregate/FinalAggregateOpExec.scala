@@ -11,9 +11,6 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchem
 
 import scala.collection.mutable
 
-//import scala.collection.mutable
-//import scala.collection.mutable.ArrayBuffer
-
 class FinalAggregateOpExec(
     val aggFuncs: List[DistributedAggregation[Object]],
     val groupByKeys: List[String],
@@ -59,15 +56,6 @@ class FinalAggregateOpExec(
 
       case Right(_) =>
         outputDiff()
-//        partialObjectsPerKey.iterator.map(pair => {
-//          val finalAggValues = aggFuncs.indices.map(i => aggFuncs(i).finalAgg(pair._2(i)))
-//
-//          val tupleBuilder = Tuple.newBuilder(operatorSchemaInfo.outputSchemas(0))
-//          // add group by keys and final agg values
-//          tupleBuilder.addSequentially((pair._1 ++ finalAggValues).toArray)
-//
-//          tupleBuilder.build()
-//        })
     }
   }
 
@@ -87,7 +75,7 @@ class FinalAggregateOpExec(
     val insertions = new mutable.ArrayBuffer[Tuple]()
 
     partialObjectsPerKey.keySet.foreach(k => {
-      if (! previousAggResults.contains(k)) {
+      if (!previousAggResults.contains(k)) {
         val newFields = finalAggregate(k, partialObjectsPerKey(k))
         insertions.append(addInsertionFlag(newFields, outputSchema))
       } else if (previousAggResults(k) != partialObjectsPerKey(k)) {
@@ -99,9 +87,6 @@ class FinalAggregateOpExec(
     })
 
     val results = retractions ++ insertions
-    results.foreach(r => {
-      System.err.println("aggResult: " + r.getFields)
-    })
 
     results.iterator
   }

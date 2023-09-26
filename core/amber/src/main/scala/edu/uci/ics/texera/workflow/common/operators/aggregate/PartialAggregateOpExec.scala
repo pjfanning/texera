@@ -6,7 +6,12 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.operators.aggregate.PartialAggregateOpExec.internalAggObjKey
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{
+  Attribute,
+  AttributeType,
+  OperatorSchemaInfo,
+  Schema
+}
 
 import java.util.Collections
 import scala.collection.{JavaConverters, mutable}
@@ -74,8 +79,7 @@ class PartialAggregateOpExec(
           val resultIterator = getPartialOutputs()
           this.partialObjectsPerKey = new mutable.HashMap[List[Object], List[Object]]()
           resultIterator
-        }
-        else Iterator()
+        } else Iterator()
       case Right(_) =>
         val resultIterator = getPartialOutputs()
         this.partialObjectsPerKey = new mutable.HashMap[List[Object], List[Object]]()

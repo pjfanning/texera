@@ -37,9 +37,11 @@ class IncrementalJoinOpExec[K](
           val key = tuple.getField(buildAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             rightTuples.getOrElse(key, (new ArrayBuffer[Tuple](), false))
-          val returnIter = matchedTuples.map(right => {
-            join(tuple, right)
-          }).iterator
+          val returnIter = matchedTuples
+            .map(right => {
+              join(tuple, right)
+            })
+            .iterator
           building(tuple, input)
           returnIter
         } else {
@@ -47,9 +49,11 @@ class IncrementalJoinOpExec[K](
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             leftTuples.getOrElse(key, (new ArrayBuffer[Tuple](), false))
-          val returnIter = matchedTuples.map(left => {
-            join(left, tuple)
-          }).iterator
+          val returnIter = matchedTuples
+            .map(left => {
+              join(left, tuple)
+            })
+            .iterator
           building(tuple, input)
           returnIter
         }
@@ -74,30 +78,30 @@ class IncrementalJoinOpExec[K](
   }
 
   def fillNonJoinFields(
-    builder: BuilderV2,
-    schema: Schema,
-    fields: Array[Object],
-    resolveDuplicateName: Boolean = false
+      builder: BuilderV2,
+      schema: Schema,
+      fields: Array[Object],
+      resolveDuplicateName: Boolean = false
   ): Unit = {
     schema.getAttributesScala.filter(attribute => attribute.getName != probeAttributeName) map {
       (attribute: Attribute) =>
-      {
-        val field = fields.apply(schema.getIndex(attribute.getName))
-        if (resolveDuplicateName) {
-          val attributeName = attribute.getName
-          builder.add(
-            new Attribute(
-              if (leftSchema.getAttributeNames.contains(attributeName))
-                attributeName + "#@1"
-              else attributeName,
-              attribute.getType
-            ),
-            field
-          )
-        } else {
-          builder.add(attribute, field)
+        {
+          val field = fields.apply(schema.getIndex(attribute.getName))
+          if (resolveDuplicateName) {
+            val attributeName = attribute.getName
+            builder.add(
+              new Attribute(
+                if (leftSchema.getAttributeNames.contains(attributeName))
+                  attributeName + "#@1"
+                else attributeName,
+                attribute.getType
+              ),
+              field
+            )
+          } else {
+            builder.add(attribute, field)
+          }
         }
-      }
     }
   }
 
@@ -114,10 +118,8 @@ class IncrementalJoinOpExec[K](
     }
   }
 
-  override def open(): Unit = {
-  }
+  override def open(): Unit = {}
 
-  override def close(): Unit = {
-  }
+  override def close(): Unit = {}
 
 }

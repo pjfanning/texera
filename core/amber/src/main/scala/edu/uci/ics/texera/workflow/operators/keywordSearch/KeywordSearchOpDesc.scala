@@ -38,6 +38,6 @@ class KeywordSearchOpDesc extends FilterOpDesc {
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true,
-      supportRetractableInput = true,
+      supportRetractableInput = true
     )
 }

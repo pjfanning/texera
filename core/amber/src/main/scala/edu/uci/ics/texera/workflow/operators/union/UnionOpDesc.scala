@@ -24,7 +24,7 @@ class UnionOpDesc extends OperatorDescriptor {
       OperatorGroupConstants.UTILITY_GROUP,
       inputPorts = List(InputPort(allowMultiInputs = true)),
       outputPorts = List(OutputPort()),
-      supportRetractableInput = true,
+      supportRetractableInput = true
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
