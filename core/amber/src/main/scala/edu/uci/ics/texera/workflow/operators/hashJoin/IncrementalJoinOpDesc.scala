@@ -16,7 +16,6 @@ import edu.uci.ics.texera.workflow.common.metadata.{
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
-
 @JsonSchemaInject(json = """
 {
   "attributeTypeRules": {
