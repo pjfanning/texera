@@ -1,10 +1,22 @@
 <div class="texera-navigation-body">
   <div class="texera-navigation-padded">
-    <img
-      [ngClass]="{ 'user-system-enabled': userSystemEnabled }"
-      alt="Texera"
-      class="texera-navigation-title"
-      src="assets/logos/full_logo_small.png?v=1" />
+    <div class="texera-navigation-title">
+      <a
+        *ngIf="userSystemEnabled; else noLink"
+        [routerLink]="'/dashboard/workflow'">
+        <img
+          [ngClass]="{ 'user-system-enabled': userSystemEnabled }"
+          alt="Texera"
+          src="assets/logos/full_logo_small.png?v=1"
+          title="dashboard" />
+      </a>
+      <ng-template #noLink>
+        <img
+          [ngClass]="{ 'user-system-enabled': userSystemEnabled }"
+          alt="Texera"
+          src="assets/logos/full_logo_small.png?v=1" />
+      </ng-template>
+    </div>
 
     <!-- workflow metadata display -->
     <div
@@ -25,7 +37,7 @@
       <label>
         <nz-avatar
           *ngIf="workflowId"
-          [nzText]="workflowId?.toString() || ''"></nz-avatar>
+          [nzText]="workflowId.toString() || ''"></nz-avatar>
         <input
           *ngIf="!displayParticularWorkflowVersion"
           (change)="onWorkflowNameChange()"
@@ -282,9 +294,9 @@
             nzType="stop"></i>
         </button>
         <button
-          *ngIf="(operatorMenu.isCacheOperator || ! operatorMenu.isCacheOperatorClickable)"
-          [disabled]="! operatorMenu.isCacheOperatorClickable"
-          (click)="operatorMenu.cacheHighlightedOperators()"
+          *ngIf="(operatorMenu.isToViewResult || ! operatorMenu.isToViewResultClickable)"
+          [disabled]="! operatorMenu.isToViewResultClickable"
+          (click)="operatorMenu.viewResultHighlightedOperators()"
           nz-button
           title="view result">
           <i
@@ -293,11 +305,33 @@
             nzTheme="outline"></i>
         </button>
         <button
-          *ngIf="(! operatorMenu.isCacheOperator && operatorMenu.isCacheOperatorClickable)"
-          [disabled]="! operatorMenu.isCacheOperatorClickable"
-          (click)="operatorMenu.cacheHighlightedOperators()"
+          *ngIf="(! operatorMenu.isToViewResult && operatorMenu.isToViewResultClickable)"
+          [disabled]="! operatorMenu.isToViewResultClickable"
+          (click)="operatorMenu.viewResultHighlightedOperators()"
           nz-button
           title="click to remove view result">
+          <i
+            nz-icon
+            nzType="eye-invisible"
+            nzTheme="twotone"></i>
+        </button>
+        <button
+          *ngIf="(operatorMenu.isMarkForReuse || ! operatorMenu.isReuseResultClickable)"
+          [disabled]="! operatorMenu.isReuseResultClickable"
+          (click)="operatorMenu.reuseResultHighlightedOperator()"
+          nz-button
+          title="reuse result if possible">
+          <i
+            nz-icon
+            nzType="eye"
+            nzTheme="outline"></i>
+        </button>
+        <button
+          *ngIf="(! operatorMenu.isMarkForReuse && operatorMenu.isReuseResultClickable)"
+          [disabled]="! operatorMenu.isReuseResultClickable"
+          (click)="operatorMenu.reuseResultHighlightedOperator()"
+          nz-button
+          title="remove reusing previous result">
           <i
             nz-icon
             nzType="eye-invisible"
@@ -333,14 +367,9 @@
 				'reveal-stop-button':
 					executionState !== ExecutionState.Uninitialized &&
 					executionState !== ExecutionState.Completed &&
-					executionState !== ExecutionState.Aborted
+					executionState !== ExecutionState.Failed
 			}">
       <nz-button-group nzSize="large">
-        <label class="execution-name">
-          <input
-            [(ngModel)]="currentExecutionName"
-            placeholder="Untitled Execution" />
-        </label>
         <button
           [disabled]="true"
           class="execution-duration"
@@ -376,7 +405,8 @@
           [disabled]="
 						executionState === ExecutionState.Uninitialized ||
 						executionState === ExecutionState.Completed ||
-						executionState === ExecutionState.Aborted
+						executionState === ExecutionState.Killed ||
+            executionState === ExecutionState.Failed
 					"
           class="texera-navigation-stop-button"
           nz-button
@@ -390,6 +420,11 @@
         </button>
         <button
           (click)="onClickRunHandler()"
+          nz-popover
+          nzPopoverTitle="Enter Execution Name"
+          [nzPopoverTrigger]="userSystemEnabled?'hover':null"
+          [nzPopoverContent]="execution_name"
+          nzPopoverPlacement="bottom"
           [disabled]="runDisable || !workflowWebsocketService.isConnected || displayParticularWorkflowVersion"
           class="texera-navigation-run-button animate-to-reveal-stop-button"
           nz-button
@@ -401,17 +436,25 @@
             nzType="{{ runIcon }}"></i>
           <span> {{ runButtonText }} </span>
         </button>
+        <ng-template #execution_name>
+          <input
+            [(ngModel)]="currentExecutionName"
+            placeholder="Untitled Execution"
+            [disabled]="!isWorkflowModifiable" />
+        </ng-template>
         <div [ngStyle]="{ 'margin-left': '5px' }">
           <nz-badge
-            *ngIf="workflowWebsocketService.isConnected"
-            nz-tooltip="connected"
-            nzStatus="success"
-            nzTooltipPlacement="bottom"></nz-badge>
-          <nz-badge
-            *ngIf="!workflowWebsocketService.isConnected"
-            nz-tooltip="disconnected"
-            nzStatus="error"
-            nzTooltipPlacement="bottom"></nz-badge>
+            nz-tooltip=""
+            nzTooltipPlacement="bottom"
+            [nzTooltipTitle]="clusterInfo"
+            [nzColor]="workflowWebsocketService.isConnected?'green':'red'">
+          </nz-badge>
+          <ng-template #clusterInfo>
+            <b>{{workflowWebsocketService.isConnected?"Connected":"Disconnected"}} to Web Server</b>
+            <div *ngIf="workflowWebsocketService.isConnected">
+              Number of Machines: {{workflowWebsocketService.numWorkers}}
+            </div>
+          </ng-template>
         </div>
       </nz-button-group>
     </div>

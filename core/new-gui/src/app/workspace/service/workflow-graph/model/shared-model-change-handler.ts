@@ -6,7 +6,6 @@ import {
   CommentBox,
   OperatorLink,
   OperatorPredicate,
-  PartitionInfo,
   Point,
   PortDescription,
 } from "../../../types/workflow-common.interface";
@@ -14,7 +13,6 @@ import { JointUIService } from "../../joint-ui/joint-ui.service";
 import * as joint from "jointjs";
 import { environment } from "../../../../../environments/environment";
 import { YType } from "../../../types/shared-editing.interface";
-import { insert } from "@nrwl/workspace";
 import { isDefined } from "../../../../common/util/predicate";
 
 /**
@@ -263,10 +261,10 @@ export class SharedModelChangeHandler {
             for (const entry of event.changes.keys.entries()) {
               const contentKey = entry[0];
               if (contentKey === "viewResult") {
-                const newCachedStatus = this.texeraGraph.sharedModel.operatorIDMap
+                const newViewOpResultStatus = this.texeraGraph.sharedModel.operatorIDMap
                   .get(operatorID)
                   ?.get("viewResult") as boolean;
-                if (newCachedStatus) {
+                if (newViewOpResultStatus) {
                   this.texeraGraph.viewResultOperatorChangedSubject.next({
                     newViewResultOps: [operatorID],
                     newUnviewResultOps: [],

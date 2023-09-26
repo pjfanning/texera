@@ -1,8 +1,6 @@
 import { Injectable } from "@angular/core";
 import { OperatorMetadataService } from "../operator-metadata/operator-metadata.service";
 import { OperatorSchema } from "../../types/operator-schema.interface";
-
-import { OperatorResultCacheStatus } from "../../types/workflow-websocket.interface";
 import { abbreviateNumber } from "js-abbreviation-number";
 import { Point, OperatorPredicate, OperatorLink, CommentBox } from "../../types/workflow-common.interface";
 import { Group, GroupBoundingBox } from "../workflow-graph/model/operator-group";
@@ -10,6 +8,7 @@ import { OperatorState, OperatorStatistics } from "../../types/execute-workflow.
 import * as joint from "jointjs";
 import { fromEventPattern, Observable } from "rxjs";
 import { Coeditor, User } from "../../../common/type/user";
+import { OperatorResultCacheStatus } from "../../types/workflow-websocket.interface";
 
 /**
  * Defines the SVG element for the breakpoint button
@@ -162,6 +161,9 @@ class TexeraCustomJointElement extends joint.shapes.devs.Model {
       <text class="${operatorCoeditorChangedPropertyClass}"></text>
       <image class="${operatorViewResultIconClass}"></image>
       <image class="${operatorReuseCacheIconClass}"></image>
+      <text class="${operatorCoeditorEditingClass}"></text>
+      <text class="${operatorCoeditorChangedPropertyClass}"></text>
+      <image class="${operatorViewResultIconClass}"></image>
       <rect class="boundary"></rect>
       <path class="left-boundary"></path>
       <path class="right-boundary"></path>
@@ -512,8 +514,7 @@ export class JointUIService {
     viewResult?: boolean
   ): void {
     const icon = JointUIService.getOperatorViewResultIcon(operator);
-    jointPaper.getModelById(operator.operatorID).attr(
-      `.${operatorViewResultIconClass}/xlink:href`, icon);
+    jointPaper.getModelById(operator.operatorID).attr(`.${operatorViewResultIconClass}/xlink:href`, icon);
   }
 
   public changeOperatorReuseCacheStatus(
@@ -524,10 +525,10 @@ export class JointUIService {
     const cacheText = JointUIService.getOperatorCacheDisplayText(operator, cacheStatus);
     const cacheIcon = JointUIService.getOperatorCacheIcon(operator, cacheStatus);
 
-    // const cacheIndicatorText = cacheText === "" ? "" : "cache";
-    // jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheTextClass}/text`, cacheIndicatorText);
+    // jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheTextClass}/text`, cacheStatus);
     jointPaper.getModelById(operator.operatorID).attr(`.${operatorReuseCacheIconClass}/xlink:href`, cacheIcon);
-    // jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheIconClass}/title`, cacheText);
+    const icon = JointUIService.getOperatorViewResultIcon(operator);
+    jointPaper.getModelById(operator.operatorID).attr(`.${operatorViewResultIconClass}/xlink:href`, icon);
   }
 
   public changeOperatorJointDisplayName(
@@ -931,7 +932,6 @@ export class JointUIService {
       },
       ".texera-operator-result-reuse-icon": {
         "xlink:href": JointUIService.getOperatorCacheIcon(operator),
-        // title: JointUIService.getOperatorCacheDisplayText(operator),
         width: 40,
         height: 40,
         "ref-x": 75,
@@ -946,6 +946,16 @@ export class JointUIService {
         height: 20,
         "ref-x": 75,
         "ref-y": 50,
+        ref: "rect.body",
+        "x-alignment": "middle",
+        "y-alignment": "middle",
+      },
+      ".texera-operator-view-result-icon": {
+        "xlink:href": JointUIService.getOperatorViewResultIcon(operator),
+        width: 20,
+        height: 20,
+        "ref-x": 75,
+        "ref-y": 20,
         ref: "rect.body",
         "x-alignment": "middle",
         "y-alignment": "middle",
@@ -970,29 +980,21 @@ export class JointUIService {
   }
 
   public static getOperatorCacheIcon(operator: OperatorPredicate, cacheStatus?: OperatorResultCacheStatus): string {
-    console.log('getting operator cache icon for ' + operator.operatorID)
-    console.log('cache status: ' + cacheStatus)
+    console.log("getting operator cache icon for " + operator.operatorID);
+    console.log("cache status: " + cacheStatus);
     if (!operator.markedForReuse) {
       return "";
     }
     if (cacheStatus === "cache valid") {
-      return "assets/svg/operator-reuse-cache-valid.svg"
+      return "assets/svg/operator-reuse-cache-valid.svg";
     } else {
-      return "assets/svg/operator-reuse-cache-invalid.svg"
+      return "assets/svg/operator-reuse-cache-invalid.svg";
     }
-    // if (cacheStatus === "cache valid") {
-    //   return "assets/svg/operator-result-cache-successful.svg";
-    // } else if (cacheStatus === "cache invalid") {
-    //   return "assets/svg/operator-result-cache-invalid.svg";
-    // } else {
-    //   const _exhaustiveCheck: never = cacheStatus;
-    //   return "";
-    // }
   }
 
   public static getOperatorViewResultIcon(operator: OperatorPredicate): string {
     if (operator.viewResult) {
-      return "assets/svg/operator-view-result.svg"
+      return "assets/svg/operator-view-result.svg";
     } else {
       return "";
     }

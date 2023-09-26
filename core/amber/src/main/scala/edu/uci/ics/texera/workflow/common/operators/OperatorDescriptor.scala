@@ -44,7 +44,12 @@ import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.python.{
+  DualInputPortsPythonUDFOpDescV2,
+  PythonLambdaFunctionOpDesc,
+  PythonTableReducerOpDesc,
+  PythonUDFOpDescV2
+}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
@@ -52,7 +57,19 @@ import edu.uci.ics.texera.workflow.operators.visualization.htmlviz.HtmlVizOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.pieChart.PieChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatterplot.ScatterplotOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.timeseries.TimeSeriesOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.ganttChart.GanttChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.urlviz.UrlVizOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.DotPlot.DotPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.{
+  WordCloudOpDesc,
+  WordCloudV2OpDesc
+}
+import edu.uci.ics.texera.workflow.operators.visualization.filledAreaPlot.FilledAreaPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.bubbleChart.BubbleChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.ImageViz.ImageVisualizerOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.hierarchychart.HierarchyChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.DumbbellPlotOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 
 import java.util.UUID
@@ -97,7 +114,9 @@ trait StateTransferFunc
     new Type(value = classOf[BarChartOpDesc], name = "BarChart"),
     new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
     new Type(value = classOf[WordCloudOpDesc], name = "WordCloud"),
+    new Type(value = classOf[WordCloudV2OpDesc], name = "WordCloudV2"),
     new Type(value = classOf[HtmlVizOpDesc], name = "HTMLVisualizer"),
+    new Type(value = classOf[UrlVizOpDesc], name = "URLVisualizer"),
     new Type(value = classOf[ScatterplotOpDesc], name = "Scatterplot"),
     new Type(value = classOf[PythonUDFOpDescV2], name = "PythonUDFV2"),
     new Type(value = classOf[PythonUDFSourceOpDescV2], name = "PythonUDFSourceV2"),
@@ -122,9 +141,18 @@ trait StateTransferFunc
     new Type(value = classOf[CSVOldScanSourceOpDesc], name = "CSVOldFileScan"),
     new Type(value = classOf[RedditSearchSourceOpDesc], name = "RedditSearch"),
     new Type(value = classOf[PythonLambdaFunctionOpDesc], name = "PythonLambdaFunction"),
+    new Type(value = classOf[PythonTableReducerOpDesc], name = "PythonTableReducer"),
     new Type(value = classOf[BulkDownloaderOpDesc], name = "BulkDownloader"),
     new Type(value = classOf[URLFetcherOpDesc], name = "URLFetcher"),
-    new Type(value = classOf[CartesianProductOpDesc], name = "CartesianProduct")
+    new Type(value = classOf[CartesianProductOpDesc], name = "CartesianProduct"),
+    new Type(value = classOf[FilledAreaPlotOpDesc], name = "FilledAreaPlot"),
+    new Type(value = classOf[DotPlotOpDesc], name = "DotPlot"),
+    new Type(value = classOf[BubbleChartOpDesc], name = "BubbleChart"),
+    new Type(value = classOf[TimeSeriesOpDesc], name = "TimeSeries"),
+    new Type(value = classOf[GanttChartOpDesc], name = "GanttChart"),
+    new Type(value = classOf[ImageVisualizerOpDesc], name = "ImageVisualizer"),
+    new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart"),
+    new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot")
   )
 )
 abstract class OperatorDescriptor extends Serializable {

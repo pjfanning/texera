@@ -74,7 +74,6 @@ class WorkflowService(
     new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
     new ResultExportService(opResultStorage, UInteger.valueOf(wId))
-
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
     s"wid=$wId",
     cleanUpTimeout,
@@ -86,14 +85,14 @@ class WorkflowService(
     }
   )
 
-  var lastCompletedLogicalPlan: LogicalPlan = null
+  var lastCompletedLogicalPlan: Option[LogicalPlan] = Option.empty
 
   jobService.subscribe { job: WorkflowJobService =>
     {
       job.stateStore.jobMetadataStore.registerDiffHandler { (oldState, newState) =>
         {
           if (oldState.state != COMPLETED && newState.state == COMPLETED) {
-            lastCompletedLogicalPlan = job.workflowCompiler.logicalPlan
+            lastCompletedLogicalPlan = Option.apply(job.workflowCompiler.logicalPlan)
           }
           Iterable.empty
         }
@@ -149,6 +148,18 @@ class WorkflowService(
       //unsubscribe all
       jobService.getValue.unsubscribeAll()
     }
+    val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
+
+    if (WorkflowService.userSystemEnabled) {
+      workflowContext.executionID = -1 // for every new execution,
+      // reset it so that the value doesn't carry over across executions
+      workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
+        workflowContext.wId,
+        workflowContext.userId,
+        req.executionName,
+        convertToJson(req.engineVersion)
+      )
+    }
 
     val job = new WorkflowJobService(
       createWorkflowContext(uidOpt),
@@ -156,9 +167,9 @@ class WorkflowService(
       resultService,
       req,
       errorHandler,
-      convertToJson(req.engineVersion),
       lastCompletedLogicalPlan
     )
+
     lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
     jobService.onNext(job)
     job.startWorkflow()

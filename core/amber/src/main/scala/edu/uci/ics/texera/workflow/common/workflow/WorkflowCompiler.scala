@@ -6,12 +6,10 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.service.WorkflowCacheChecker
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.{ConstraintViolation, ProgressiveUtils, WorkflowContext}
+
+import edu.uci.ics.texera.workflow.common.{ConstraintViolation, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object WorkflowCompiler {
 
@@ -58,6 +56,7 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
         } else {
           sink.setStorage(
             storage.create(
+              context.executionID + "_",
               storageKey,
               logicalPlan.outputSchemaMap(o.operatorIdentifier).head,
               storageType
@@ -71,25 +70,22 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
   def amberWorkflow(
       workflowId: WorkflowIdentity,
       opResultStorage: OpResultStorage,
-      lastCompletedJob: LogicalPlan = null
+      lastCompletedJob: Option[LogicalPlan] = Option.empty
   ): Workflow = {
-
-    // do rewriting to use previous cache results
     val cacheReuses = new WorkflowCacheChecker(lastCompletedJob, logicalPlan).getValidCacheReuse()
     val opsToReuseCache = cacheReuses.intersect(logicalPlan.opsToReuseCache.toSet)
-    val logicalPlan1 =
+    val rewrittenLogicalPlan =
       WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
-    logicalPlan1.operatorMap.values.foreach(initOperator)
+    rewrittenLogicalPlan.operatorMap.values.foreach(initOperator)
 
+    // assign sink storage to the logical plan after cache rewrite
+    // as it will be converted to the actual physical plan
+    assignSinkStorage(rewrittenLogicalPlan, opResultStorage, opsToReuseCache)
+    // also assign sink storage to the original logical plan, as the original logical plan
+    // will be used to be compared to the subsequent runs
     assignSinkStorage(logicalPlan, opResultStorage, opsToReuseCache)
-    assignSinkStorage(logicalPlan1, opResultStorage, opsToReuseCache)
 
-    // add necessary consolidate operator if an operator can't handle retractable inputs
-    val logicalPlan2 = ProgressiveRetractionEnforcer.enforceDelta(logicalPlan1, context)
-
-
-    // convert to physical plan
-    val physicalPlan0 = logicalPlan2.toPhysicalPlan(this.context, opResultStorage)
+    val physicalPlan0 = rewrittenLogicalPlan.toPhysicalPlan
 
     // create pipelined regions.
     val physicalPlan1 = new WorkflowPipelinedRegionsBuilder(
