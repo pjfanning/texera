@@ -25,10 +25,11 @@ class FinalAggregateOpExec(
   private var partialObjectsPerKey = Map[List[Object], List[Object]]()
 
   // for incremental computation
+  // the time interval that aggregate operator emits incremental update to downstream
   val UPDATE_INTERVAL_MS = 1000
+  // the timestamp of the last incremental update
   private var lastUpdatedTime: Long = 0
-  private var counterSinceLastUpdate: Long = 0
-
+  // the aggregation state at the last output, used to compute diff with the next output
   private var previousAggResults = Map[List[Object], List[Object]]()
 
   override def open(): Unit = {}
@@ -45,40 +46,41 @@ class FinalAggregateOpExec(
     }
     tuple match {
       case Left(t) =>
-        counterSinceLastUpdate += 1
-        insertPartialInput(t)
-
-        val condition: Boolean = System.currentTimeMillis - lastUpdatedTime > UPDATE_INTERVAL_MS
-        if (condition)
-          outputDiff()
-        else
-          Iterator()
-
+        insertToFinalAggState(t)
+        if (shouldEmitOutput()) emitDiffAndUpdateState() else Iterator()
       case Right(_) =>
-        outputDiff()
+        emitDiffAndUpdateState()
     }
   }
 
-  private def outputDiff(): Iterator[Tuple] = {
-    val resultIterator = calculateDiff()
+  private def shouldEmitOutput(): Boolean = {
+    System.currentTimeMillis - lastUpdatedTime > UPDATE_INTERVAL_MS
+  }
 
-    counterSinceLastUpdate = 0
+  private def emitDiffAndUpdateState(): Iterator[Tuple] = {
+    val resultIterator = calculateDiff()
+    // reset last updated time and previous output results
     lastUpdatedTime = System.currentTimeMillis
+    // saves the current aggregation state,
+    // note that partialObjectsPerKey is an immutable map variable
+    // subsequent updates will change the map pointed by var, but not change the old map
     previousAggResults = partialObjectsPerKey
     resultIterator
   }
 
   private def calculateDiff(): Iterator[Tuple] = {
-    // find differences
-
+    // find differences between the previous and the current aggregation state
     val retractions = new mutable.ArrayBuffer[Tuple]()
     val insertions = new mutable.ArrayBuffer[Tuple]()
 
     partialObjectsPerKey.keySet.foreach(k => {
       if (!previousAggResults.contains(k)) {
+        // this key doesn't exist in the previous state, emit as an insertion tuple
         val newFields = finalAggregate(k, partialObjectsPerKey(k))
         insertions.append(addInsertionFlag(newFields, outputSchema))
       } else if (previousAggResults(k) != partialObjectsPerKey(k)) {
+        // this key already exists in the state and its value has changed
+        // first retract the previously emitted value, then emit an insertion of the new value
         val prevFields = finalAggregate(k, previousAggResults(k))
         retractions.append(addRetractionFlag(prevFields, outputSchema))
         val newFields = finalAggregate(k, partialObjectsPerKey(k))
@@ -91,7 +93,8 @@ class FinalAggregateOpExec(
     results.iterator
   }
 
-  private def insertPartialInput(t: Tuple): Unit = {
+  // apply partial aggregation's incremental update to the final aggregation state
+  private def insertToFinalAggState(t: Tuple): Unit = {
     val key =
       if (groupByKeys == null || groupByKeys.isEmpty) List()
       else groupByKeys.map(k => t.getField[Object](k))
