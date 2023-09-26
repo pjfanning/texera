@@ -10,7 +10,6 @@ import edu.uci.ics.texera.workflow.common.metadata.{
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
-import edu.uci.ics.texera.workflow.operators.difference.DifferenceOpExec
 
 import scala.collection.JavaConverters.asScalaBuffer
 import scala.collection.immutable.List

@@ -13,8 +13,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{
   Schema
 }
 
-import java.util.Collections
-import scala.collection.{JavaConverters, mutable}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.asJavaIterableConverter
 
 object PartialAggregateOpExec {

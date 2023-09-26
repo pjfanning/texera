@@ -19,8 +19,7 @@ import edu.uci.ics.texera.workflow.operators.download.BulkDownloaderOpDesc
 import edu.uci.ics.texera.workflow.operators.filter.SpecializedFilterOpDesc
 import edu.uci.ics.texera.workflow.operators.hashJoin.{
   HashJoinOpDesc,
-  IncrementalJoinOpDesc,
-  IncrementalJoinOpExec
+  IncrementalJoinOpDesc
 }
 import edu.uci.ics.texera.workflow.operators.intersect.IntersectOpDesc
 import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
