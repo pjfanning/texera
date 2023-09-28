@@ -150,19 +150,15 @@ class WorkflowService(
     }
     val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
 
-    if (WorkflowService.userSystemEnabled) {
-      workflowContext.executionID = -1 // for every new execution,
-      // reset it so that the value doesn't carry over across executions
-      workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
-        workflowContext.wId,
-        workflowContext.userId,
-        req.executionName,
-        convertToJson(req.engineVersion)
-      )
-    }
+    workflowContext.executionID = ExecutionsMetadataPersistService.insertNewExecution(
+      workflowContext.wId,
+      workflowContext.userId,
+      req.executionName,
+      convertToJson(req.engineVersion)
+    )
 
     val job = new WorkflowJobService(
-      createWorkflowContext(uidOpt),
+      workflowContext,
       wsInput,
       resultService,
       req,

@@ -72,7 +72,8 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       case _ =>
     }
     // update execution entry in MySQL to have pointers to the mongo collections
-    resultsJSON.set("results", sinksPointers)
+//    resultsJSON.set("results", sinksPointers)
+    resultsJSON.put("results", sinksPointers)
     ExecutionsMetadataPersistService.updateExistingExecutionVolumnPointers(
       context.executionID,
       resultsJSON.toString
