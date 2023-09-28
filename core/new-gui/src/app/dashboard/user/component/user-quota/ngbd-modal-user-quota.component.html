@@ -113,7 +113,7 @@
           <thead>
             <tr>
               <th nzWidth="25%">File Name</th>
-              <th nzWidth="25%">Size</th>
+              <th nzWidth="25%">Size (mb)</th>
               <th nzWidth="25%">Uploaded Time</th>
               <th nzWidth="25%">File Description</th>
             </tr>
@@ -121,7 +121,7 @@
           <tbody>
             <tr *ngFor="let data of top5.data">
               <td>{{data.fileName}}</td>
-              <td>{{data.fileSize}}</td>
+              <td>{{data.fileSize / 1000000}}</td>
               <td>{{convertTimeToTimestamp(data.uploadedTime)}}</td>
               <td>
                 <div *ngIf="data.description !== ''; else descriptionNotAvailable">
