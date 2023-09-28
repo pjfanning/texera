@@ -14,7 +14,7 @@ import { ChartType } from "src/app/workspace/types/visualization.interface";
   styleUrls: ['./ngbd-modal-user-quota.component.scss']
 })
 
-export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
+export class NgbModalUserQuotaComponent implements OnInit {
   public static readonly MONGODB_PIE_CHART = "#mongodb-storage-pie-chart";
   public static readonly MONGODB_BAR_CHART = "#uploaded-file-bar-chart";
 
@@ -41,8 +41,12 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .subscribe(fileList => {
         this.createdFiles = fileList;
         let size = 0;
-        this.createdFiles.forEach(file => size += file.file_size / 1000000)
+        this.createdFiles.forEach(file => size += file.fileSize / 1000000)
         this.totalSize = size.toPrecision(2);
+
+        const copiedFiles = [...fileList];
+        copiedFiles.sort((a, b) => b.fileSize - a.fileSize);
+        this.topFiveFiles = copiedFiles.slice(0, 5);
       });
     
     this.adminUserService
@@ -65,129 +69,26 @@ export class NgbModalUserQuotaComponent implements OnInit, AfterViewInit{
       .subscribe(accessWorkflows => {
         this.accessWorkflows = accessWorkflows;
       });
-  
-    }
 
-    ngAfterViewInit(): void {
-      this.adminUserService
+    this.adminUserService
       .getMongoDBs(this.userUid)
       .pipe(untilDestroyed(this))
-      .subscribe(result => {
-        this.mongodbStorages = result;
-        let mongoWorkflowData: { [key: string]: [string, number] } = {};
-        let totalSize: number = 0;
-
-        this.mongodbStorages.forEach(mongo => {
-          if (mongoWorkflowData[mongo.workflowName] === undefined) {
-            mongoWorkflowData[mongo.workflowName] = [mongo.workflowName, mongo.size];
-          } else {
-            mongoWorkflowData[mongo.workflowName][1] += mongo.size
-          }
-
-          totalSize += mongo.size;
-        })
-        
-        this.generatePieChart(
-          Object.values(mongoWorkflowData),
-          ["workflow"], 
-          "MongoDB Total Storage Usage: " + totalSize + " (kb)",
-          NgbModalUserQuotaComponent.MONGODB_PIE_CHART
-        );
+      .subscribe(mongoList => {
+        this.mongodbStorages = mongoList;
       });
 
-      this.adminUserService
-      .getUploadedFiles(this.userUid)
-      .pipe(untilDestroyed(this))
-      .subscribe(fileList => {
-        const copiedFiles = [...fileList];
-        copiedFiles.sort((a, b) => b.file_size - a.file_size);
-        this.topFiveFiles = copiedFiles.slice(0, 5);
+  }
 
-        let fileSizes: Array<[string, ...c3.PrimitiveArray]> = [["file sizes"]];
-        let fileNames: string[] = [];
-        this.topFiveFiles.forEach(file => {
-          fileSizes[0].push(file.file_size / 1000000);
-          fileNames.push(file.file_name)
-        })
-        console.log(fileSizes);
-        console.log(fileNames);
+  deleteMongoCollection(collectionName: string) {
+    this.adminUserService.deleteMongoDBCollection(collectionName);
+  }
 
-        this.generateBarChart(
-          fileSizes,
-          fileNames,
-          "File Names",
-          "File Sizes (mb)",
-          "Top 5 File Sizes",
-          NgbModalUserQuotaComponent.MONGODB_BAR_CHART
-        );
-      });
-    }
+  /**
+   * Convert a numeric timestamp to a human-readable time string.
+   */
+  convertTimeToTimestamp(timeValue: number): string {
+    const date = new Date(timeValue);
+    return date.toLocaleString("en-US", { timeZoneName: "short" });
+  }
 
-    generatePieChart(
-      dataToDisplay: Array<[string, ...c3.PrimitiveArray]>,
-      category: string[],
-      title: string,
-      chart: string
-    ) {
-      c3.generate({
-        size: {
-          height: NgbModalUserQuotaComponent.HEIGHT,
-          width: NgbModalUserQuotaComponent.WIDTH,
-        },
-        data: {
-          columns: dataToDisplay,
-          type: ChartType.PIE,
-        },
-        axis: {
-          x: {
-            type: "category",
-            categories: category,
-          },
-        },
-        title: {
-          text: title,
-        },
-        bindto: chart,
-      });
-    }
-
-    generateBarChart(
-      dataToDisplay: Array<[string, ...c3.PrimitiveArray]>,
-      category: string[],
-      x_label: string,
-      y_label: string,
-      title: string,
-      chart: string
-    ) {
-      c3.generate({
-        size: {
-          height: NgbModalUserQuotaComponent.BARCHARTSIZE,
-          width: NgbModalUserQuotaComponent.BARCHARTSIZE,
-        },
-        data: {
-          columns: dataToDisplay,
-          type: ChartType.BAR,
-        },
-        axis: {
-          x: {
-            label: {
-              text: x_label,
-              position: "outer-right",
-            },
-            type: "category",
-            categories: category,
-          },
-          y: {
-            label: {
-              text: y_label,
-              position: "outer-top",
-            },
-          },
-        },
-        title: {
-          text: title,
-        },
-        bindto: chart,
-      });
-    }
 }

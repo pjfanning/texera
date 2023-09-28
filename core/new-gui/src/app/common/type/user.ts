@@ -27,17 +27,19 @@ export interface User
 
 export interface File
   extends Readonly <{
-    user_id: number;
-    file_id: number;
-    file_name: string;
-    file_size: number;
+    userId: number;
+    fileId: number;
+    fileName: string;
+    fileSize: number;
+    uploadedTime: number;
+    description: string;
   }> {}
 
 export interface Workflow
   extends Readonly <{
-    user_id: number;
-    workflow_id: number;
-    workflow_name: string;
+    userId: number;
+    workflowId: number;
+    workflowName: string;
   }>{}
 
 export interface mongoStorage

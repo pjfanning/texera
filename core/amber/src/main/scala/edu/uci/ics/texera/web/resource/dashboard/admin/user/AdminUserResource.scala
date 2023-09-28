@@ -1,11 +1,10 @@
 package edu.uci.ics.texera.web.resource.dashboard.admin.user
+import edu.uci.ics.amber.engine.architecture.logging.TimeStamp
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.enums.UserRole
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.UserDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.{
-  file, userDao, context, workflow, getCollectionName, mongoStorage
-}
+import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.{context, file, getCollectionName, mongoStorage, userDao, workflow}
 import org.jasypt.util.password.StrongPasswordEncryptor
 import org.jooq.types.UInteger
 
@@ -13,8 +12,8 @@ import java.util
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
+
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
 
@@ -23,16 +22,18 @@ object AdminUserResource {
   final private lazy val userDao = new UserDao(context.configuration)
 
   case class file(
-      user_id: UInteger,
-      file_id: UInteger,
-      file_name: String,
-      file_size: UInteger
-                 )
+       userId: UInteger,
+       fileId: UInteger,
+       fileName: String,
+       fileSize: UInteger,
+       uploadedTime: Long,
+       description: String
+                      )
 
   case class workflow(
-      user_id: UInteger,
-      workflow_id: UInteger,
-      workflow_name: String
+      userId: UInteger,
+      workflowId: UInteger,
+      workflowName: String
                      )
 
   case class mongoStorage(
@@ -103,7 +104,9 @@ class AdminUserResource {
         FILE.OWNER_UID,
         FILE.FID,
         FILE.NAME,
-        FILE.SIZE
+        FILE.SIZE,
+        FILE.UPLOAD_TIME,
+        FILE.DESCRIPTION
       )
       .from(FILE)
       .where(FILE.OWNER_UID.eq(user_id))
@@ -115,7 +118,9 @@ class AdminUserResource {
           fileRecord.get(FILE.OWNER_UID),
           fileRecord.get(FILE.FID),
           fileRecord.get(FILE.NAME),
-          fileRecord.get(FILE.SIZE)
+          fileRecord.get(FILE.SIZE),
+          fileRecord.get(FILE.UPLOAD_TIME).getTime,
+          fileRecord.get(FILE.DESCRIPTION)
         )
       }).toList
   }
@@ -226,6 +231,14 @@ class AdminUserResource {
     }).toList.toArray
 
     MongoDatabaseManager.getDatabaseSize(collections)
+  }
+
+  @DELETE
+  @Path("/deleteCollection/{collectionName}")
+  def deleteCollection(
+    @PathParam("collectionName") collectionName: String
+  ): Unit = {
+    MongoDatabaseManager.dropCollection(collectionName)
   }
 }
 

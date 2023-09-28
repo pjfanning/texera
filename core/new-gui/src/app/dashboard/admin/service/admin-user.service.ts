@@ -13,6 +13,7 @@ export const USER_CREATED_WORKFLOWS = `${USER_BASE_URL}/created_workflows`
 export const USER_ACCESS_WORKFLOWS = `${USER_BASE_URL}/access_workflows`
 export const USER_ACCESS_FILES = `${USER_BASE_URL}/access_files`
 export const USER_MONGODB_SIZE = `${USER_BASE_URL}/mongodb_size`
+export const USER_MONGODB_COLLECTION_NAME = `${USER_BASE_URL}/delete`
 
 @Injectable({
   providedIn: "root",
@@ -39,26 +40,30 @@ export class AdminUserService {
 
   public getUploadedFiles(uid: number): Observable<ReadonlyArray<File>> {
     let params = new HttpParams().set('user_id', uid.toString());
-    return this.http.get<ReadonlyArray<File>>(`${USER_CREATED_FILES}`, {params: params});
+    return this.http.get<ReadonlyArray<File>>(`${USER_CREATED_FILES}`, { params: params });
   }
 
   public getCreatedWorkflows(uid: number): Observable<ReadonlyArray<Workflow>> {
     let params = new HttpParams().set('user_id', uid.toString());
-    return this.http.get<ReadonlyArray<Workflow>>(`${USER_CREATED_WORKFLOWS}`, {params: params});
+    return this.http.get<ReadonlyArray<Workflow>>(`${USER_CREATED_WORKFLOWS}`, { params: params });
   }
 
   public getAccessFiles(uid: number): Observable<ReadonlyArray<number>> {
     let params = new HttpParams().set('user_id', uid.toString());
-    return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_FILES}`, {params: params});
+    return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_FILES}`, { params: params });
   }
 
   public getAccessWorkflows(uid: number): Observable<ReadonlyArray<number>> {
     let params = new HttpParams().set('user_id', uid.toString());
-    return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_WORKFLOWS}`, {params: params});
+    return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_WORKFLOWS}`, { params: params });
   }
 
   public getMongoDBs(uid: number): Observable<ReadonlyArray<mongoStorage>> {
     let params = new HttpParams().set('user_id', uid.toString());
-    return this.http.get<ReadonlyArray<mongoStorage>>(`${USER_MONGODB_SIZE}`, {params: params});
+    return this.http.get<ReadonlyArray<mongoStorage>>(`${USER_MONGODB_SIZE}`, { params: params });
+  }
+
+  public deleteMongoDBCollection(collectionName: string): Observable<Response> {
+    return this.http.post<Response>(`${USER_MONGODB_COLLECTION_NAME}`, { collectionName });
   }
 }
