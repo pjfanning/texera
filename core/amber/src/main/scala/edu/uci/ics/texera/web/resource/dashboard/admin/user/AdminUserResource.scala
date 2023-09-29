@@ -235,10 +235,14 @@ class AdminUserResource {
 
   @DELETE
   @Path("/deleteCollection/{collectionName}")
-  def deleteCollection(
-    @PathParam("collectionName") collectionName: String
-  ): Unit = {
+  def deleteCollection(@PathParam("collectionName") collectionName: String): Unit = {
     MongoDatabaseManager.dropCollection(collectionName)
+    val resultName = "{\"results\":[\"" + collectionName + "\"]}"
+    context
+      .update(WORKFLOW_EXECUTIONS)
+      .set(WORKFLOW_EXECUTIONS.RESULT, null.asInstanceOf[String])
+      .where(WORKFLOW_EXECUTIONS.RESULT.eq(resultName))
+      .execute()
   }
 }
 

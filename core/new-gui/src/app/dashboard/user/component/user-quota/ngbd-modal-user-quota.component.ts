@@ -80,7 +80,12 @@ export class NgbModalUserQuotaComponent implements OnInit {
   }
 
   deleteMongoCollection(collectionName: string) {
-    this.adminUserService.deleteMongoDBCollection(collectionName);
+    this.adminUserService
+      .deleteMongoDBCollection(collectionName)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.ngOnInit();
+      });
   }
 
   /**
