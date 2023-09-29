@@ -43,7 +43,7 @@ class SchemaPropagationResource {
       // remove internal incremental computation columns
       val responseContentCleaned = responseContent.map(kv => {
         val schemaWithoutInternalAttrs = kv._2.map(portSchema => {
-          portSchema.map(attrs => attrs.filter(attr => ! attr.getName.startsWith("__internal")))
+          portSchema.map(attrs => attrs.filter(attr => !attr.getName.startsWith("__internal")))
         })
         (kv._1, schemaWithoutInternalAttrs)
       })
