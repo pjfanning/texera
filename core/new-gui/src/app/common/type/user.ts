@@ -42,11 +42,17 @@ export interface Workflow
     workflowName: string;
   }>{}
 
-export interface mongoStorage
+export interface mongoWorkflow{
+    workflowName: string;
+    executions: mongoExecution[];
+}
+
+export interface mongoExecution
   extends Readonly<{
     workflowName: string;
     size: number;
     pointer: string;
+    eid: number;
   }>{}
 
 /**

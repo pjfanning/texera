@@ -2,7 +2,7 @@ import { AfterViewInit, Component, Input, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AdminUserService } from "../../../admin/service/admin-user.service";
-import { File, Workflow, mongoStorage } from "../../../../common/type/user"
+import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../common/type/user"
 
 import * as c3 from "c3";
 import { ChartType } from "src/app/workspace/types/visualization.interface";
@@ -29,7 +29,8 @@ export class NgbModalUserQuotaComponent implements OnInit {
   accessFiles: ReadonlyArray<number> = [];
   accessWorkflows: ReadonlyArray<number> = [];
   topFiveFiles: ReadonlyArray<File> = [];
-  mongodbStorages: ReadonlyArray<mongoStorage> = [];
+  mongodbExecutions: ReadonlyArray<mongoExecution> = [];
+  mongodbWorkflows: Array<mongoWorkflow> = [];
 
   constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal) {
   }
@@ -74,17 +75,45 @@ export class NgbModalUserQuotaComponent implements OnInit {
       .getMongoDBs(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(mongoList => {
-        this.mongodbStorages = mongoList;
+        this.mongodbExecutions = mongoList;
+        this.mongodbWorkflows = [];
+
+        this.mongodbExecutions.forEach(execution => {
+          let insert = false;
+
+          this.mongodbWorkflows.some((workflow, index, array) => {
+            if (workflow.workflowName === execution.workflowName) {
+                array[index].executions.push(execution);
+                insert = true;
+                return
+            }
+          });
+
+          if (!insert) {
+            let workflow: mongoWorkflow = {
+              workflowName: execution.workflowName,
+              executions: [] as mongoExecution[]
+            };
+            workflow.executions.push(execution);
+            this.mongodbWorkflows.push(workflow);
+          }
+
+        })
       });
 
   }
 
-  deleteMongoCollection(collectionName: string) {
+  deleteMongoCollection(collectionName: string, execution: mongoExecution, workflowName: string) {
     this.adminUserService
       .deleteMongoDBCollection(collectionName)
       .pipe(untilDestroyed(this))
       .subscribe(() => {
-        this.ngOnInit();
+        // this.ngOnInit();
+        this.mongodbWorkflows.some((workflow, index, array) => {
+          if (workflow.workflowName === workflowName) {
+              array[index].executions = array[index].executions.filter(e => e !== execution);
+          }
+        });
       });
   }
 

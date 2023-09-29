@@ -71,37 +71,41 @@
       </nz-tab>
       <nz-tab
         nzTitle = "mongoDB">
-        <nz-table 
-          #mongodb 
-          [nzData]="mongodbStorages" 
-          [nzPageSize]="6" 
-          nzFrontPagination="true">
-          <thead>
-            <tr>
-              <th nzWidth="33%">Workflow</th>
-              <th nzWidth="33%">Size</th>
-              <th nzWidth="33%">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let data of mongodb.data">
-              <td>{{data.workflowName}}</td>
-              <td>{{data.size}}</td>
-              <td>
-                <button
-                  (click)="deleteMongoCollection(data.pointer)"
-                  nz-button
-                  nz-tooltip="delete collection: {{data.pointer}}"
-                  type="button">
-                  <i
-                    nz-icon
-                    nzTheme="outline"
-                    nzType="delete"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <nz-collapse>
+          <nz-collapse-panel *ngFor="let workflow of mongodbWorkflows" [nzHeader]="workflow.workflowName">
+            <nz-table 
+              #executionTable 
+              [nzData]="workflow.executions"
+              [nzPageSize]="3" 
+              nzFrontPagination="true">
+              <thead>
+                <tr>
+                  <th>Execution ID</th>
+                  <th>Size in MongoDB (kb)</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let execution of executionTable.data">
+                  <td>{{ execution.eid }}</td>
+                  <td>{{ execution.size }}</td>
+                  <td>
+                    <button
+                      (click)="deleteMongoCollection(execution.pointer, execution, execution.workflowName)"
+                      nz-button
+                      nz-tooltip="delete collection"
+                      type="button">
+                      <i
+                        nz-icon
+                        nzTheme="outline"
+                        nzType="delete"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </nz-table>
+          </nz-collapse-panel>
+        </nz-collapse>
       </nz-tab>
       <nz-tab
         nzTitle = "Top 5 Files">

@@ -39,7 +39,8 @@ object AdminUserResource {
   case class mongoStorage(
       workflowName: String,
       size: Double,
-      pointer: String
+      pointer: String,
+      eid: UInteger
                          )
 
   def getCollectionName(result: String): String = {
@@ -202,7 +203,8 @@ class AdminUserResource {
     val collectionNames = context
       .select(
         WORKFLOW_EXECUTIONS.RESULT,
-        WORKFLOW.NAME
+        WORKFLOW.NAME,
+        WORKFLOW_EXECUTIONS.EID
       )
       .from(
         WORKFLOW_EXECUTIONS
@@ -227,6 +229,7 @@ class AdminUserResource {
         result.get(WORKFLOW.NAME),
         0.0,
         getCollectionName(result.get(WORKFLOW_EXECUTIONS.RESULT)),
+        result.get(WORKFLOW_EXECUTIONS.EID)
       )
     }).toList.toArray
 

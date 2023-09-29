@@ -36,7 +36,8 @@ object MongoDatabaseManager {
       collectionNames(count) = mongoStorage(
         collection.workflowName,
         stats.getInteger("totalSize") / 1000,
-        collection.pointer
+        collection.pointer,
+        collection.eid
       )
       count += 1
     }
