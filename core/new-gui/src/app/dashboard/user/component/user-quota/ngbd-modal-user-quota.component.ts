@@ -42,7 +42,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
       .subscribe(fileList => {
         this.createdFiles = fileList;
         let size = 0;
-        this.createdFiles.forEach(file => size += file.fileSize / 1000000)
+        this.createdFiles.forEach(file => {size += file.fileSize / 1000000})
         this.totalSize = size.toPrecision(2);
 
         const copiedFiles = [...fileList];
@@ -123,6 +123,10 @@ export class NgbModalUserQuotaComponent implements OnInit {
   convertTimeToTimestamp(timeValue: number): string {
     const date = new Date(timeValue);
     return date.toLocaleString("en-US", { timeZoneName: "short" });
+  }
+
+  convertByteToMegaByte(byte: number): string {
+    return (byte / 1000000).toPrecision(2);
   }
 
 }

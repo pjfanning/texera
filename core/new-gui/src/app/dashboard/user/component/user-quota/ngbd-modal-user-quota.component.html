@@ -125,7 +125,7 @@
           <tbody>
             <tr *ngFor="let data of top5.data">
               <td>{{data.fileName}}</td>
-              <td>{{data.fileSize / 1000000}}</td>
+              <td>{{convertByteToMegaByte(data.fileSize)}}</td>
               <td>{{convertTimeToTimestamp(data.uploadedTime)}}</td>
               <td>
                 <div *ngIf="data.description !== ''; else descriptionNotAvailable">
