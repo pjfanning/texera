@@ -21,7 +21,7 @@
           flex-wrap: wrap;
           justify-content: center;
         }
-      
+
         .info-box {
           background-color: #f4f4f4;
           padding: 40px;
@@ -33,18 +33,18 @@
           font-family: Arial, sans-serif;
           text-align: center;
         }
-      
+
         .info-heading {
           font-weight: bold;
-          font-size: 18px; 
+          font-size: 18px;
         }
-      
+
         .info-content {
-          font-size: 24px; 
-          margin-top: 10px; 
+          font-size: 24px;
+          margin-top: 10px;
         }
       </style>
-      
+
       <nz-tab nzTitle="quota table">
         <div class="info-container">
           <div class="info-box">
@@ -56,16 +56,16 @@
             <p class="info-content">{{ this.createdWorkflows.length }}</p>
           </div>
           <div class="info-box">
-            <h2 class="info-heading">Files can be accessed</h2>
+            <h2 class="info-heading">Files with access</h2>
             <p class="info-content">{{ this.accessFiles.length }}</p>
           </div>
           <div class="info-box">
-            <h2 class="info-heading">Workflows can be accessed</h2>
+            <h2 class="info-heading">Workflows with access</h2>
             <p class="info-content">{{ this.accessWorkflows.length }}</p>
           </div>
           <div class="info-box">
-            <h2 class="info-heading">Total size of the files (mb)</h2>
-            <p class="info-content">{{ this.totalSize }}</p>
+            <h2 class="info-heading">Total size of the files</h2>
+            <p class="info-content">{{ convertFileSize(this.totalSize) }}</p>
           </div>
         </div>
       </nz-tab>
@@ -73,22 +73,22 @@
         nzTitle = "mongoDB">
         <nz-collapse>
           <nz-collapse-panel *ngFor="let workflow of mongodbWorkflows" [nzHeader]="workflow.workflowName">
-            <nz-table 
-              #executionTable 
+            <nz-table
+              #executionTable
               [nzData]="workflow.executions"
-              [nzPageSize]="3" 
+              [nzPageSize]="3"
               nzFrontPagination="true">
               <thead>
                 <tr>
                   <th>Execution ID</th>
-                  <th>Size in MongoDB (kb)</th>
+                  <th>Size in MongoDB</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let execution of executionTable.data">
                   <td>{{ execution.eid }}</td>
-                  <td>{{ execution.size }}</td>
+                  <td>{{ convertFileSize(execution.size) }}</td>
                   <td>
                     <button
                       (click)="deleteMongoCollection(execution.pointer, execution, execution.workflowName)"
@@ -109,15 +109,15 @@
       </nz-tab>
       <nz-tab
         nzTitle = "Top 5 Files">
-        <nz-table 
-          #top5 
-          [nzData]="topFiveFiles" 
-          [nzPageSize]="6" 
+        <nz-table
+          #top5
+          [nzData]="topFiveFiles"
+          [nzPageSize]="6"
           nzFrontPagination="true">
           <thead>
             <tr>
               <th nzWidth="25%">File Name</th>
-              <th nzWidth="25%">Size (mb)</th>
+              <th nzWidth="25%">Size</th>
               <th nzWidth="25%">Uploaded Time</th>
               <th nzWidth="25%">File Description</th>
             </tr>
@@ -125,7 +125,7 @@
           <tbody>
             <tr *ngFor="let data of top5.data">
               <td>{{data.fileName}}</td>
-              <td>{{convertByteToMegaByte(data.fileSize)}}</td>
+              <td>{{convertFileSize(data.fileSize)}}</td>
               <td>{{convertTimeToTimestamp(data.uploadedTime)}}</td>
               <td>
                 <div *ngIf="data.description !== ''; else descriptionNotAvailable">

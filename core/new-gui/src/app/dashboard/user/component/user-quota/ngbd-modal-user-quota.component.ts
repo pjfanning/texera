@@ -23,7 +23,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
   public static readonly BARCHARTSIZE = 600;
 
   userUid: number = 0;
-  totalSize: string = "";
+  totalSize: number = 0;
   createdFiles: ReadonlyArray<File> = [];
   createdWorkflows: ReadonlyArray<Workflow> = [];
   accessFiles: ReadonlyArray<number> = [];
@@ -42,8 +42,8 @@ export class NgbModalUserQuotaComponent implements OnInit {
       .subscribe(fileList => {
         this.createdFiles = fileList;
         let size = 0;
-        this.createdFiles.forEach(file => {size += file.fileSize / 1000000})
-        this.totalSize = size.toPrecision(2);
+        this.createdFiles.forEach(file => {size += file.fileSize})
+        this.totalSize = size;
 
         const copiedFiles = [...fileList];
         copiedFiles.sort((a, b) => b.fileSize - a.fileSize);
@@ -125,8 +125,22 @@ export class NgbModalUserQuotaComponent implements OnInit {
     return date.toLocaleString("en-US", { timeZoneName: "short" });
   }
 
-  convertByteToMegaByte(byte: number): string {
-    return (byte / 1000000).toPrecision(2);
+  // convertByteToMegaByte(byte: number): string {
+  //   return (byte / 1000000).toPrecision(2);
+  // }
+
+  convertFileSize(sizeInBytes: number): string {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  
+    let size = sizeInBytes;
+    let unitIndex = 0;
+  
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex++;
+    }
+  
+    return `${size.toFixed(2)} ${units[unitIndex]}`;
   }
 
 }
