@@ -19,7 +19,7 @@ class WorkflowActorService(actor:WorkflowActor) {
   var networkCommunicationActor: ActorRef = actor.networkCommunicationActor
 
   implicit def ec:ExecutionContext = actorContext.dispatcher
-  implicit val timeout: Timeout = 5.seconds
+  implicit val timeout: Timeout = 500.seconds
 
   def self:ActorRef = actorContext.self
 
