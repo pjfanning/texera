@@ -43,7 +43,7 @@ class CSVScanSourceOpDesc extends ScanSourceOpDesc {
 
     filePath match {
       case Some(_) =>
-        OpExecConfig.oneToOneLayer(operatorIdentifier, _ => new CSVScanSourceOpExec(this))
+        OpExecConfig.localLayer(operatorIdentifier, _ => new CSVScanSourceOpExec(this)).withNumWorkers(1)
       case None =>
         throw new RuntimeException("File path is not provided.")
     }
