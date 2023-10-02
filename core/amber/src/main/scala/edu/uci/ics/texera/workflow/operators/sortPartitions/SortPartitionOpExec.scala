@@ -19,6 +19,7 @@ class SortPartitionOpExec(
 ) extends OperatorExecutor {
 
   var unorderedTuples: ArrayBuffer[Tuple] = _
+  var calls = 0
 
   def sortTuples(): Iterator[Tuple] = unorderedTuples.sortWith(compareTuples).iterator
 
@@ -38,6 +39,10 @@ class SortPartitionOpExec(
   }
 
   def compareTuples(t1: Tuple, t2: Tuple): Boolean = {
+    if(calls %400 == 0){
+      calls+=1
+      Thread.sleep(1)
+    }
     val attributeType = t1.getSchema().getAttribute(sortAttributeName).getType()
     val attributeIndex = t1.getSchema().getIndex(sortAttributeName)
     attributeType match {
