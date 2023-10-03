@@ -1,11 +1,9 @@
-import { AfterViewInit, Component, Input, OnInit } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AdminUserService } from "../../../admin/service/admin-user.service";
 import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../common/type/user"
-
-import * as c3 from "c3";
-import { ChartType } from "src/app/workspace/types/visualization.interface";
+import { UserFileService } from "../../service/user-file/user-file.service";
 
 
 @UntilDestroy()
@@ -15,15 +13,9 @@ import { ChartType } from "src/app/workspace/types/visualization.interface";
 })
 
 export class NgbModalUserQuotaComponent implements OnInit {
-  public static readonly MONGODB_PIE_CHART = "#mongodb-storage-pie-chart";
-  public static readonly MONGODB_BAR_CHART = "#uploaded-file-bar-chart";
-
-  public static readonly WIDTH = 300;
-  public static readonly HEIGHT = 300;
-  public static readonly BARCHARTSIZE = 600;
-
   userUid: number = 0;
-  totalSize: number = 0;
+  totalFileSize: number = 0;
+  totalMongoSize: number = 0;
   createdFiles: ReadonlyArray<File> = [];
   createdWorkflows: ReadonlyArray<Workflow> = [];
   accessFiles: ReadonlyArray<number> = [];
@@ -32,7 +24,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
   mongodbExecutions: ReadonlyArray<mongoExecution> = [];
   mongodbWorkflows: Array<mongoWorkflow> = [];
 
-  constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal) {
+  constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal, private userFileService: UserFileService) {
   }
 
   ngOnInit(): void {
@@ -43,7 +35,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
         this.createdFiles = fileList;
         let size = 0;
         this.createdFiles.forEach(file => {size += file.fileSize})
-        this.totalSize = size;
+        this.totalFileSize = size;
 
         const copiedFiles = [...fileList];
         copiedFiles.sort((a, b) => b.fileSize - a.fileSize);
@@ -75,11 +67,13 @@ export class NgbModalUserQuotaComponent implements OnInit {
       .getMongoDBs(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(mongoList => {
+        this.totalMongoSize = 0;
         this.mongodbExecutions = mongoList;
         this.mongodbWorkflows = [];
 
         this.mongodbExecutions.forEach(execution => {
           let insert = false;
+          this.totalMongoSize += execution.size;
 
           this.mongodbWorkflows.some((workflow, index, array) => {
             if (workflow.workflowName === execution.workflowName) {
@@ -108,10 +102,10 @@ export class NgbModalUserQuotaComponent implements OnInit {
       .deleteMongoDBCollection(collectionName)
       .pipe(untilDestroyed(this))
       .subscribe(() => {
-        // this.ngOnInit();
         this.mongodbWorkflows.some((workflow, index, array) => {
           if (workflow.workflowName === workflowName) {
               array[index].executions = array[index].executions.filter(e => e !== execution);
+              this.totalMongoSize -= execution.size;
           }
         });
       });
@@ -125,9 +119,29 @@ export class NgbModalUserQuotaComponent implements OnInit {
     return date.toLocaleString("en-US", { timeZoneName: "short" });
   }
 
-  // convertByteToMegaByte(byte: number): string {
-  //   return (byte / 1000000).toPrecision(2);
-  // }
+  deleteFile(fid: number) {
+    if (fid === undefined) {
+      return;
+    }
+    this.userFileService
+      .deleteFile(fid)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => 
+        this.refreshFiles()
+      );
+  }
+
+  downloadFile(fid: number, fileName: string) {
+    this.userFileService
+      .downloadFile(fid)
+      .pipe(untilDestroyed(this))
+      .subscribe((response: Blob) => {
+        const link = document.createElement("a");
+        link.download = fileName;
+        link.href = URL.createObjectURL(new Blob([response]));
+        link.click();
+      });
+  }
 
   convertFileSize(sizeInBytes: number): string {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -141,6 +155,29 @@ export class NgbModalUserQuotaComponent implements OnInit {
     }
   
     return `${size.toFixed(2)} ${units[unitIndex]}`;
+  }
+
+  refreshFiles() {
+    this.adminUserService
+      .getUploadedFiles(this.userUid)
+      .pipe(untilDestroyed(this))
+      .subscribe(fileList => {
+        this.createdFiles = fileList;
+        let size = 0;
+        this.createdFiles.forEach(file => {size += file.fileSize})
+        this.totalFileSize = size;
+
+        const copiedFiles = [...fileList];
+        copiedFiles.sort((a, b) => b.fileSize - a.fileSize);
+        this.topFiveFiles = copiedFiles.slice(0, 5);
+      });
+  }
+
+  maxStringLength(input: string, length: number): string {
+    if (input.length > length) {
+      return input.substring(0, length) + " . . . ";
+    }
+    return input;
   }
 
 }
