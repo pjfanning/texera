@@ -80,6 +80,7 @@
               nzFrontPagination="true">
               <thead>
                 <tr>
+                  <th>Collection Name</th>
                   <th>Execution ID</th>
                   <th>Size in MongoDB</th>
                   <th>Action</th>
@@ -87,6 +88,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let execution of executionTable.data">
+                  <td>{{ execution.pointer }}</td>
                   <td>{{ execution.eid }}</td>
                   <td>{{ convertFileSize(execution.size) }}</td>
                   <td>
