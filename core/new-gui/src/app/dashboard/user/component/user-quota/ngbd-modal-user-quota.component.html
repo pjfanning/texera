@@ -86,7 +86,10 @@
                 <tr>
                   <th>Collection Name</th>
                   <th>Execution ID</th>
-                  <th>Size in MongoDB</th>
+                  <th
+                    [nzSortFn]="sortByMongoDBSize">
+                    Size in MongoDB
+                  </th>
                   <th>Action</th>
                 </tr>
               </thead>

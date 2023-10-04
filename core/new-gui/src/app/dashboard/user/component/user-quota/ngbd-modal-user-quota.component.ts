@@ -4,6 +4,7 @@ import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { AdminUserService } from "../../../admin/service/admin-user.service";
 import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../common/type/user"
 import { UserFileService } from "../../service/user-file/user-file.service";
+import { NzTableSortFn } from "ng-zorro-antd/table";
 
 
 @UntilDestroy()
@@ -179,5 +180,8 @@ export class NgbModalUserQuotaComponent implements OnInit {
     }
     return input;
   }
+
+  public sortByMongoDBSize: NzTableSortFn<mongoExecution> = (a: mongoExecution, b: mongoExecution) =>
+    b.size - a.size;
 
 }
