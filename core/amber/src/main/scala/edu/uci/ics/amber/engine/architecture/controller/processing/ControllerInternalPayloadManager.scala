@@ -50,6 +50,7 @@ class ControllerInternalPayloadManager(controller:Controller) extends InternalPa
         controller.isReplaying = true
         restoreManager.replayConfig = replayConfig
         val controllerReplayConf = replayConfig.confs(actorId)
+        controller.controlProcessor = new ControlProcessor(controller)
         controller.controlProcessor.replayPlan = replayConfig
         restoreManager.restoreFromCheckpointAndSetupReplay(id, controllerReplayConf.fromCheckpoint, controllerReplayConf.replayTo, controllerReplayConf.checkpointConfig, pending)
       case _ => ???

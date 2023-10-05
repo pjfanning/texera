@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStateUpdate}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowReplayRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
@@ -192,6 +192,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
     replayId += 1
     client.executeAsync(actor => {
       replayConf.confs.keys.foreach(pendingReplay.add)
+      pendingReplay.remove(CONTROLLER)
       replayConf.confs.foreach{
         case (k,v) =>{
           if(v.checkpointConfig.nonEmpty){

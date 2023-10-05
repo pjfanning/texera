@@ -262,15 +262,19 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
 
   def getReplayPlan(targetTime: Long): WorkflowReplayConfig = {
     val interactionIdx = history.getInteractionIdx(targetTime)
-    val plan = replayPlans(interactionIdx)
+    val plan = if(replayPlans.contains(interactionIdx)){
+      replayPlans(interactionIdx)
+    }else{
+      Map[ActorVirtualIdentity, Int]()
+    }
     val snapshot = history.getSnapshot(interactionIdx)
     snapshot.getParticipants.filter(x => !plan.contains(x)).foreach {
       worker =>
         println(s"$worker is not included in the plan $interactionIdx! isCheckpointed = ${snapshot.isCheckpointed(worker)} stats = ${snapshot.getStats(worker)} ")
     }
-    WorkflowReplayConfig(snapshot.getParticipants.filter(plan.contains).map {
+    WorkflowReplayConfig(snapshot.getParticipants.map {
       worker =>
-        val checkpointIdx = plan(worker)
+        val checkpointIdx = if(plan.contains(worker)){plan(worker)}else{-1}
         if (checkpointIdx == -1) {
           worker -> ReplayConfig(None, Some(snapshot.getStats(worker).alignment), Array[ReplayCheckpointConfig]())
         } else {
