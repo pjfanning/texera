@@ -4,6 +4,9 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
@@ -36,6 +39,9 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index DATASET_PRIMARY = Indexes0.DATASET_PRIMARY;
+    public static final Index DATASET_OF_USER_PRIMARY = Indexes0.DATASET_OF_USER_PRIMARY;
+    public static final Index DATASET_OF_WORKFLOW_PRIMARY = Indexes0.DATASET_OF_WORKFLOW_PRIMARY;
     public static final Index FILE_IDX_FILE_NAME_DESCRIPTION = Indexes0.FILE_IDX_FILE_NAME_DESCRIPTION;
     public static final Index FILE_OWNER_UID = Indexes0.FILE_OWNER_UID;
     public static final Index FILE_PRIMARY = Indexes0.FILE_PRIMARY;
@@ -77,6 +83,9 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index DATASET_PRIMARY = Internal.createIndex("PRIMARY", Dataset.DATASET, new OrderField[] { Dataset.DATASET.DID }, true);
+        public static Index DATASET_OF_USER_PRIMARY = Internal.createIndex("PRIMARY", DatasetOfUser.DATASET_OF_USER, new OrderField[] { DatasetOfUser.DATASET_OF_USER.DID, DatasetOfUser.DATASET_OF_USER.UID }, true);
+        public static Index DATASET_OF_WORKFLOW_PRIMARY = Internal.createIndex("PRIMARY", DatasetOfWorkflow.DATASET_OF_WORKFLOW, new OrderField[] { DatasetOfWorkflow.DATASET_OF_WORKFLOW.DID, DatasetOfWorkflow.DATASET_OF_WORKFLOW.WID }, true);
         public static Index FILE_IDX_FILE_NAME_DESCRIPTION = Internal.createIndex("idx_file_name_description", File.FILE, new OrderField[] { File.FILE.NAME, File.FILE.DESCRIPTION }, false);
         public static Index FILE_OWNER_UID = Internal.createIndex("owner_uid", File.FILE, new OrderField[] { File.FILE.OWNER_UID, File.FILE.NAME }, true);
         public static Index FILE_PRIMARY = Internal.createIndex("PRIMARY", File.FILE, new OrderField[] { File.FILE.FID }, true);

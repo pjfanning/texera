@@ -4,6 +4,9 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
@@ -42,6 +45,21 @@ public class TexeraDb extends SchemaImpl {
      * The reference instance of <code>texera_db</code>
      */
     public static final TexeraDb TEXERA_DB = new TexeraDb();
+
+    /**
+     * The table <code>texera_db.dataset</code>.
+     */
+    public final Dataset DATASET = edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET;
+
+    /**
+     * The table <code>texera_db.dataset_of_user</code>.
+     */
+    public final DatasetOfUser DATASET_OF_USER = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER;
+
+    /**
+     * The table <code>texera_db.dataset_of_workflow</code>.
+     */
+    public final DatasetOfWorkflow DATASET_OF_WORKFLOW = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow.DATASET_OF_WORKFLOW;
 
     /**
      * The table <code>texera_db.file</code>.
@@ -145,6 +163,9 @@ public class TexeraDb extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            Dataset.DATASET,
+            DatasetOfUser.DATASET_OF_USER,
+            DatasetOfWorkflow.DATASET_OF_WORKFLOW,
             File.FILE,
             FileOfProject.FILE_OF_PROJECT,
             FileOfWorkflow.FILE_OF_WORKFLOW,

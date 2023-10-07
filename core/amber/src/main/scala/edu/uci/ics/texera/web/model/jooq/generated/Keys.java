@@ -4,6 +4,9 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
@@ -20,6 +23,9 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.records.DatasetOfUserRecord;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.records.DatasetOfWorkflowRecord;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.records.DatasetRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileOfProjectRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileOfWorkflowRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileRecord;
@@ -66,6 +72,9 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<DatasetRecord> KEY_DATASET_PRIMARY = UniqueKeys0.KEY_DATASET_PRIMARY;
+    public static final UniqueKey<DatasetOfUserRecord> KEY_DATASET_OF_USER_PRIMARY = UniqueKeys0.KEY_DATASET_OF_USER_PRIMARY;
+    public static final UniqueKey<DatasetOfWorkflowRecord> KEY_DATASET_OF_WORKFLOW_PRIMARY = UniqueKeys0.KEY_DATASET_OF_WORKFLOW_PRIMARY;
     public static final UniqueKey<FileRecord> KEY_FILE_OWNER_UID = UniqueKeys0.KEY_FILE_OWNER_UID;
     public static final UniqueKey<FileRecord> KEY_FILE_PRIMARY = UniqueKeys0.KEY_FILE_PRIMARY;
     public static final UniqueKey<FileOfProjectRecord> KEY_FILE_OF_PROJECT_PRIMARY = UniqueKeys0.KEY_FILE_OF_PROJECT_PRIMARY;
@@ -129,6 +138,9 @@ public class Keys {
     }
 
     private static class UniqueKeys0 {
+        public static final UniqueKey<DatasetRecord> KEY_DATASET_PRIMARY = Internal.createUniqueKey(Dataset.DATASET, "KEY_dataset_PRIMARY", Dataset.DATASET.DID);
+        public static final UniqueKey<DatasetOfUserRecord> KEY_DATASET_OF_USER_PRIMARY = Internal.createUniqueKey(DatasetOfUser.DATASET_OF_USER, "KEY_dataset_of_user_PRIMARY", DatasetOfUser.DATASET_OF_USER.DID, DatasetOfUser.DATASET_OF_USER.UID);
+        public static final UniqueKey<DatasetOfWorkflowRecord> KEY_DATASET_OF_WORKFLOW_PRIMARY = Internal.createUniqueKey(DatasetOfWorkflow.DATASET_OF_WORKFLOW, "KEY_dataset_of_workflow_PRIMARY", DatasetOfWorkflow.DATASET_OF_WORKFLOW.DID, DatasetOfWorkflow.DATASET_OF_WORKFLOW.WID);
         public static final UniqueKey<FileRecord> KEY_FILE_OWNER_UID = Internal.createUniqueKey(File.FILE, "KEY_file_owner_uid", File.FILE.OWNER_UID, File.FILE.NAME);
         public static final UniqueKey<FileRecord> KEY_FILE_PRIMARY = Internal.createUniqueKey(File.FILE, "KEY_file_PRIMARY", File.FILE.FID);
         public static final UniqueKey<FileOfProjectRecord> KEY_FILE_OF_PROJECT_PRIMARY = Internal.createUniqueKey(FileOfProject.FILE_OF_PROJECT, "KEY_file_of_project_PRIMARY", FileOfProject.FILE_OF_PROJECT.FID, FileOfProject.FILE_OF_PROJECT.PID);
