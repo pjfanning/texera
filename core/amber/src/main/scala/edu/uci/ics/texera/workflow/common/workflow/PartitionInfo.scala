@@ -39,9 +39,9 @@ case class HashPartition(hashColumnIndices: Seq[Int]) extends PartitionInfo
 
 object RangePartition {
 
-  def apply(rangeColumnIndices: Seq[Int], rangeMin: Long, rangeMax: Long): PartitionInfo = {
+  def apply(rangeColumnIndices: Seq[Int]): PartitionInfo = {
     if (rangeColumnIndices.nonEmpty)
-      new RangePartition(rangeColumnIndices, rangeMin, rangeMax)
+      new RangePartition(rangeColumnIndices)
     else
       UnknownPartition()
   }
@@ -53,7 +53,7 @@ object RangePartition {
   *  and each node contains data fit in a specific range.
   * The data within each node is also sorted.
   */
-case class RangePartition(rangeColumnIndices: Seq[Int], rangeMin: Long, rangeMax: Long)
+case class RangePartition(rangeColumnIndices: Seq[Int])
     extends PartitionInfo {
 
   // if two streams of input with the same range partition are merged (without another sort),

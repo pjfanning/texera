@@ -695,9 +695,7 @@ object HashBasedShufflePartitioning extends scalapb.GeneratedMessageCompanion[ed
 final case class RangeBasedShufflePartitioning(
     batchSize: _root_.scala.Int,
     receivers: _root_.scala.Seq[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity],
-    rangeColumnIndices: _root_.scala.Seq[_root_.scala.Int],
-    rangeMin: _root_.scala.Long,
-    rangeMax: _root_.scala.Long
+    rangeColumnIndices: _root_.scala.Seq[_root_.scala.Int]
     ) extends scalapb.GeneratedMessage with edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning.NonEmpty with scalapb.lenses.Updatable[RangeBasedShufflePartitioning] {
     private[this] def rangeColumnIndicesSerializedSize = {
       if (__rangeColumnIndicesSerializedSizeField == 0) __rangeColumnIndicesSerializedSizeField = {
@@ -727,20 +725,6 @@ final case class RangeBasedShufflePartitioning(
         val __localsize = rangeColumnIndicesSerializedSize
         __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(__localsize) + __localsize
       }
-      
-      {
-        val __value = rangeMin
-        if (__value != 0L) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeInt64Size(4, __value)
-        }
-      };
-      
-      {
-        val __value = rangeMax
-        if (__value != 0L) {
-          __size += _root_.com.google.protobuf.CodedOutputStream.computeInt64Size(5, __value)
-        }
-      };
       __size
     }
     override def serializedSize: _root_.scala.Int = {
@@ -769,18 +753,6 @@ final case class RangeBasedShufflePartitioning(
         _output__.writeUInt32NoTag(rangeColumnIndicesSerializedSize)
         rangeColumnIndices.foreach(_output__.writeInt32NoTag)
       };
-      {
-        val __v = rangeMin
-        if (__v != 0L) {
-          _output__.writeInt64(4, __v)
-        }
-      };
-      {
-        val __v = rangeMax
-        if (__v != 0L) {
-          _output__.writeInt64(5, __v)
-        }
-      };
     }
     def withBatchSize(__v: _root_.scala.Int): RangeBasedShufflePartitioning = copy(batchSize = __v)
     def clearReceivers = copy(receivers = _root_.scala.Seq.empty)
@@ -791,8 +763,6 @@ final case class RangeBasedShufflePartitioning(
     def addRangeColumnIndices(__vs: _root_.scala.Int*): RangeBasedShufflePartitioning = addAllRangeColumnIndices(__vs)
     def addAllRangeColumnIndices(__vs: Iterable[_root_.scala.Int]): RangeBasedShufflePartitioning = copy(rangeColumnIndices = rangeColumnIndices ++ __vs)
     def withRangeColumnIndices(__v: _root_.scala.Seq[_root_.scala.Int]): RangeBasedShufflePartitioning = copy(rangeColumnIndices = __v)
-    def withRangeMin(__v: _root_.scala.Long): RangeBasedShufflePartitioning = copy(rangeMin = __v)
-    def withRangeMax(__v: _root_.scala.Long): RangeBasedShufflePartitioning = copy(rangeMax = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -801,14 +771,6 @@ final case class RangeBasedShufflePartitioning(
         }
         case 2 => receivers
         case 3 => rangeColumnIndices
-        case 4 => {
-          val __t = rangeMin
-          if (__t != 0L) __t else null
-        }
-        case 5 => {
-          val __t = rangeMax
-          if (__t != 0L) __t else null
-        }
       }
     }
     def getField(__field: _root_.scalapb.descriptors.FieldDescriptor): _root_.scalapb.descriptors.PValue = {
@@ -817,8 +779,6 @@ final case class RangeBasedShufflePartitioning(
         case 1 => _root_.scalapb.descriptors.PInt(batchSize)
         case 2 => _root_.scalapb.descriptors.PRepeated(receivers.iterator.map(_.toPMessage).toVector)
         case 3 => _root_.scalapb.descriptors.PRepeated(rangeColumnIndices.iterator.map(_root_.scalapb.descriptors.PInt(_)).toVector)
-        case 4 => _root_.scalapb.descriptors.PLong(rangeMin)
-        case 5 => _root_.scalapb.descriptors.PLong(rangeMax)
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
@@ -832,8 +792,6 @@ object RangeBasedShufflePartitioning extends scalapb.GeneratedMessageCompanion[e
     var __batchSize: _root_.scala.Int = 0
     val __receivers: _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity] = new _root_.scala.collection.immutable.VectorBuilder[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity]
     val __rangeColumnIndices: _root_.scala.collection.immutable.VectorBuilder[_root_.scala.Int] = new _root_.scala.collection.immutable.VectorBuilder[_root_.scala.Int]
-    var __rangeMin: _root_.scala.Long = 0L
-    var __rangeMax: _root_.scala.Long = 0L
     var _done__ = false
     while (!_done__) {
       val _tag__ = _input__.readTag()
@@ -853,19 +811,13 @@ object RangeBasedShufflePartitioning extends scalapb.GeneratedMessageCompanion[e
           }
           _input__.popLimit(oldLimit)
         }
-        case 32 =>
-          __rangeMin = _input__.readInt64()
-        case 40 =>
-          __rangeMax = _input__.readInt64()
         case tag => _input__.skipField(tag)
       }
     }
     edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning(
         batchSize = __batchSize,
         receivers = __receivers.result(),
-        rangeColumnIndices = __rangeColumnIndices.result(),
-        rangeMin = __rangeMin,
-        rangeMax = __rangeMax
+        rangeColumnIndices = __rangeColumnIndices.result()
     )
   }
   implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning] = _root_.scalapb.descriptors.Reads{
@@ -874,9 +826,7 @@ object RangeBasedShufflePartitioning extends scalapb.GeneratedMessageCompanion[e
       edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning(
         batchSize = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Int]).getOrElse(0),
         receivers = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Seq[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity]]).getOrElse(_root_.scala.Seq.empty),
-        rangeColumnIndices = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scala.Seq[_root_.scala.Int]]).getOrElse(_root_.scala.Seq.empty),
-        rangeMin = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Long]).getOrElse(0L),
-        rangeMax = __fieldsMap.get(scalaDescriptor.findFieldByNumber(5).get).map(_.as[_root_.scala.Long]).getOrElse(0L)
+        rangeColumnIndices = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scala.Seq[_root_.scala.Int]]).getOrElse(_root_.scala.Seq.empty)
       )
     case _ => throw new RuntimeException("Expected PMessage")
   }
@@ -894,34 +844,24 @@ object RangeBasedShufflePartitioning extends scalapb.GeneratedMessageCompanion[e
   lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning(
     batchSize = 0,
     receivers = _root_.scala.Seq.empty,
-    rangeColumnIndices = _root_.scala.Seq.empty,
-    rangeMin = 0L,
-    rangeMax = 0L
+    rangeColumnIndices = _root_.scala.Seq.empty
   )
   implicit class RangeBasedShufflePartitioningLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning](_l) {
     def batchSize: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.batchSize)((c_, f_) => c_.copy(batchSize = f_))
     def receivers: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity]] = field(_.receivers)((c_, f_) => c_.copy(receivers = f_))
     def rangeColumnIndices: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Seq[_root_.scala.Int]] = field(_.rangeColumnIndices)((c_, f_) => c_.copy(rangeColumnIndices = f_))
-    def rangeMin: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Long] = field(_.rangeMin)((c_, f_) => c_.copy(rangeMin = f_))
-    def rangeMax: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Long] = field(_.rangeMax)((c_, f_) => c_.copy(rangeMax = f_))
   }
   final val BATCHSIZE_FIELD_NUMBER = 1
   final val RECEIVERS_FIELD_NUMBER = 2
   final val RANGECOLUMNINDICES_FIELD_NUMBER = 3
-  final val RANGEMIN_FIELD_NUMBER = 4
-  final val RANGEMAX_FIELD_NUMBER = 5
   def of(
     batchSize: _root_.scala.Int,
     receivers: _root_.scala.Seq[edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity],
-    rangeColumnIndices: _root_.scala.Seq[_root_.scala.Int],
-    rangeMin: _root_.scala.Long,
-    rangeMax: _root_.scala.Long
+    rangeColumnIndices: _root_.scala.Seq[_root_.scala.Int]
   ): _root_.edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning = _root_.edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.RangeBasedShufflePartitioning(
     batchSize,
     receivers,
-    rangeColumnIndices,
-    rangeMin,
-    rangeMax
+    rangeColumnIndices
   )
   // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.sendsemantics.RangeBasedShufflePartitioning])
 }

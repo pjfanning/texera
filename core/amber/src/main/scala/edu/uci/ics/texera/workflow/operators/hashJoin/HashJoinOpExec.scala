@@ -1,9 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.{AmberUtils, CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.Tuple.BuilderV2
@@ -17,7 +19,7 @@ class HashJoinOpExec[K](
                          val probeAttributeName: String,
                          val joinType: JoinType,
                          val operatorSchemaInfo: OperatorSchemaInfo
-                       ) extends OperatorExecutor {
+                       ) extends OperatorExecutor with CheckpointSupport {
 
   val buildSchema: Schema = operatorSchemaInfo.inputSchemas(0)
   val probeSchema: Schema = operatorSchemaInfo.inputSchemas(1)
@@ -248,4 +250,11 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = currentIteratorState
+
+  override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = Iterator.empty
+
+  override def getEstimatedCheckpointTime: Int = {
+    AmberUtils.serde.serialize(buildTableHashMap).get.length
+  }
 }

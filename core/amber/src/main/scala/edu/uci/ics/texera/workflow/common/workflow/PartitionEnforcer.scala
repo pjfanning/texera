@@ -39,14 +39,12 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
       val linkStrategy = part match {
         case HashPartition(hashColumnIndices) =>
           new HashBasedShuffle(inputLayer, layer, defaultBatchSize, hashColumnIndices)
-        case RangePartition(rangeColumnIndices, rangeMin, rangeMax) =>
+        case RangePartition(rangeColumnIndices) =>
           new RangeBasedShuffle(
             inputLayer,
             layer,
             defaultBatchSize,
-            rangeColumnIndices,
-            rangeMin,
-            rangeMax
+            rangeColumnIndices
           )
         case SinglePartition() =>
           new AllToOne(inputLayer, layer, defaultBatchSize)

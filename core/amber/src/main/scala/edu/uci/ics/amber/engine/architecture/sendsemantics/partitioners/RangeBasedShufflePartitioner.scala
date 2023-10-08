@@ -6,11 +6,10 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 
+import java.sql.Timestamp
+
 case class RangeBasedShufflePartitioner(partitioning: RangeBasedShufflePartitioning)
     extends Partitioner {
-
-  val keysPerReceiver =
-    ((partitioning.rangeMax - partitioning.rangeMin) / partitioning.receivers.length).toLong + 1
 
   override def getBucketIndex(tuple: ITuple): Int = {
     // Do range partitioning only on the first attribute in `rangeColumnIndices`.
@@ -28,17 +27,13 @@ case class RangeBasedShufflePartitioner(partitioning: RangeBasedShufflePartition
         fieldVal = tuple.getInt(partitioning.rangeColumnIndices(0)).toLong
       case AttributeType.DOUBLE =>
         fieldVal = tuple.getDouble(partitioning.rangeColumnIndices(0)).toLong
+      case AttributeType.TIMESTAMP =>
+        fieldVal = tuple.get(partitioning.rangeColumnIndices(0)).asInstanceOf[Timestamp].getTime
       case _ =>
         throw new RuntimeException("unsupported attribute type: " + fieldType.toString())
     }
-
-    if (fieldVal < partitioning.rangeMin) {
-      return 0
-    }
-    if (fieldVal > partitioning.rangeMax) {
-      return partitioning.receivers.length - 1
-    }
-    ((fieldVal - partitioning.rangeMin) / keysPerReceiver).toInt
+    val keysPerReceiver = (Long.MaxValue / partitioning.receivers.length)
+    ((fieldVal) / keysPerReceiver).toInt
   }
 
   override def allReceivers: Seq[ActorVirtualIdentity] = partitioning.receivers

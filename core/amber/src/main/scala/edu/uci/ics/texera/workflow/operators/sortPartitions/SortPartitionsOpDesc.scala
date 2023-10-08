@@ -23,38 +23,21 @@ class SortPartitionsOpDesc extends OperatorDescriptor {
   @AutofillAttributeName
   var sortAttributeName: String = _
 
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Attribute Domain Min")
-  @JsonPropertyDescription("Minimum value of the domain of the attribute.")
-  var domainMin: Long = _
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Attribute Domain Max")
-  @JsonPropertyDescription("Maximum value of the domain of the attribute.")
-  var domainMax: Long = _
-
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
     val partitionRequirement = List(
       Option(
         RangePartition(
-          List(operatorSchemaInfo.inputSchemas(0).getIndex(sortAttributeName)),
-          domainMin,
-          domainMax
+          List(operatorSchemaInfo.inputSchemas(0).getIndex(sortAttributeName))
         )
       )
     )
 
     OpExecConfig
-      .oneToOneLayer(
+      .manyToOneLayer(
         operatorIdentifier,
         p =>
           new SortPartitionOpExec(
-            sortAttributeName,
-            operatorSchemaInfo,
-            p._1,
-            domainMin,
-            domainMax,
-            p._2.numWorkers
+            sortAttributeName
           )
       )
       .copy(

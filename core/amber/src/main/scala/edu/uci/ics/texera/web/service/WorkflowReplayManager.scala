@@ -1,10 +1,10 @@
 package edu.uci.ics.texera.web.service
 
-import akka.actor.Cancellable
+import akka.actor.{Cancellable, PoisonPill}
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
 import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.ProcessingStats
 import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory}
-import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
+import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{EstimateCheckpointCost, ReplayWorkflow, TakeRuntimeGlobalCheckpoint}
 import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, ReplayConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
@@ -38,7 +38,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
   var replayStart = 0L
   var checkpointCost = 0L
 
-  private val estimationInterval = 100000.seconds
+  private val estimationInterval = 500000.seconds
   private var estimationHandler = Cancellable.alreadyCancelled
 
   private var uniqueId = 0L
@@ -133,14 +133,14 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
       case WorkflowAggregatedState.RUNNING =>
         if(startTime == 0){
           startTime = System.currentTimeMillis()
-          TexeraWebApplication.scheduleCallThroughActorSystem(1.seconds) {
-            client.executeAsync(actor => {
-              val time = System.currentTimeMillis() - startTime
-              val id = generateCheckpointId
-              history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
-              actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
-            })
-          }
+//          TexeraWebApplication.scheduleCallThroughActorSystem(1.seconds) {
+//            client.executeAsync(actor => {
+//              val time = System.currentTimeMillis() - startTime
+//              val id = generateCheckpointId
+//              history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
+//              actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+//            })
+//          }
           if(periodicalCheckpointInterval > 1){
             val interval = FiniteDuration(periodicalCheckpointInterval, TimeUnit.SECONDS)
             TexeraWebApplication.scheduleRecurringCallThroughActorSystem(interval, interval) {
@@ -201,6 +201,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
           }
         }
       }
+      //actor.controller ! PoisonPill
       actor.controller ! ReplayWorkflow(s"replay - $replayId", replayConf)
     })
   }

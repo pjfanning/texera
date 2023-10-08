@@ -37,9 +37,9 @@ class ProjectionOpDesc extends MapOpDesc {
       case HashPartition(hashColumnIndices) =>
         val newIndices = hashColumnIndices.flatMap(i => columnIndicesMapping.get(i))
         if (newIndices.nonEmpty) HashPartition(newIndices) else UnknownPartition()
-      case RangePartition(rangeColumnIndices, min, max) =>
+      case RangePartition(rangeColumnIndices) =>
         val newIndices = rangeColumnIndices.flatMap(i => columnIndicesMapping.get(i))
-        if (newIndices.nonEmpty) RangePartition(newIndices, min, max) else UnknownPartition()
+        if (newIndices.nonEmpty) RangePartition(newIndices) else UnknownPartition()
       case SinglePartition()  => inputPartitionInfo
       case UnknownPartition() => inputPartitionInfo
     }

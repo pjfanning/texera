@@ -32,7 +32,23 @@ object JsonTest {
     val ois = new ObjectInputStream(new FileInputStream(file.toFile))
     val history = ois.readObject.asInstanceOf[ProcessingHistory]
     ois.close()
-
+    history.historyArray.foreach{
+      i =>
+        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF3-SortPartitions-operator-4e18bee2-0a12-4478-9482-9bf1a7d32efb-main-0"))
+        println(cost)
+    }
+    println("-----------------------------------------------")
+    history.historyArray.foreach {
+      i =>
+        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF3-MonthlyTweetCount-operator-8fc57d16-a5c7-4839-bea3-9fcc775bb528-main-0"))
+        println(cost)
+    }
+//    println("-----------------------------------------------")
+//    history.historyArray.foreach {
+//      i =>
+//        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF6-SortPartitions-operator-ed6e3d3c-699a-4f61-95f3-0f245479bd9b-main-0"))
+//        println(cost)
+//    }
     val planner = new ReplayCheckpointPlanner(history, 5000)
     val plan2 = planner.findBestPlan(0,history.historyArray.length,5000,true, false)
     println(plan2.values.map(history.getPlanCost).sum)

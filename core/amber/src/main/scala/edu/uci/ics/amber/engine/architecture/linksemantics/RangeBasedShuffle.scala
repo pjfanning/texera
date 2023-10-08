@@ -11,9 +11,7 @@ class RangeBasedShuffle(
     _from: OpExecConfig,
     _to: OpExecConfig,
     batchSize: Int,
-    rangeColumnIndices: Seq[Int],
-    rangeMin: Long,
-    rangeMax: Long
+    rangeColumnIndices: Seq[Int]
 ) extends LinkStrategy(_from, _to, batchSize) {
   override def getPartitioning: Iterable[
     (ActorVirtualIdentity, LinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
@@ -25,9 +23,7 @@ class RangeBasedShuffle(
         RangeBasedShufflePartitioning(
           batchSize,
           to.identifiers,
-          rangeColumnIndices,
-          rangeMin,
-          rangeMax
+          rangeColumnIndices
         ),
         to.identifiers.toSeq
       )

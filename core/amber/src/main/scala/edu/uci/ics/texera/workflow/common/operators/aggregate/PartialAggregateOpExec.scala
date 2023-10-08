@@ -1,7 +1,8 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.processing.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.{AmberUtils, CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
@@ -19,7 +20,7 @@ object PartialAggregateOpExec {
 
 class PartialAggregateOpExec[Partial <: AnyRef](
     val aggFunc: DistributedAggregation[Partial]
-) extends OperatorExecutor {
+) extends OperatorExecutor with CheckpointSupport {
 
   var groupByKeyAttributes: Array[Attribute] = _
   var schema: Schema = _
@@ -71,4 +72,18 @@ class PartialAggregateOpExec[Partial <: AnyRef](
     }
   }
 
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+    val arr = currentIteratorState.toArray
+    checkpoint.save("iter",arr)
+    arr.iterator
+  }
+
+  override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+
+    checkpoint.load("iter")
+  }
+
+  override def getEstimatedCheckpointTime: Int = {
+    AmberUtils.serde.serialize(partialObjectPerKey).get.length
+  }
 }

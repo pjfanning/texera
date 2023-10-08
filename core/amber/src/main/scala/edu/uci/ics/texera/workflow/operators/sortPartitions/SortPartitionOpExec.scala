@@ -1,27 +1,37 @@
 package edu.uci.ics.texera.workflow.operators.sortPartitions
 
+import edu.uci.ics.amber.engine.architecture.checkpoint.SavedCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.processing.{PauseManager, PauseType}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.{Constants, InputExhausted}
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.{AmberUtils, CheckpointSupport, Constants, InputExhausted}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorSchemaInfo}
 
+import java.sql.Timestamp
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class SortPartitionOpExec(
-    sortAttributeName: String,
-    operatorSchemaInfo: OperatorSchemaInfo,
-    localIdx: Int,
-    domainMin: Long,
-    domainMax: Long,
-    numberOfWorkers: Int
-) extends OperatorExecutor {
+    sortAttributeName: String
+) extends OperatorExecutor with CheckpointSupport {
 
-  var unorderedTuples: ArrayBuffer[Tuple] = _
+  var unorderedTuples: ArrayBuffer[Tuple] = new ArrayBuffer[Tuple]()
   var calls = 0
+  var emitted = 0
+  var queue:mutable.Queue[Tuple] = _
 
-  def sortTuples(): Iterator[Tuple] = unorderedTuples.sortWith(compareTuples).iterator
+  def sortTuples(): Iterator[Tuple] = {
+    new Iterator[Tuple] {
+      override def hasNext: Boolean = queue.nonEmpty
+
+      override def next(): Tuple = {
+        Thread.sleep(1)
+        queue.dequeue()
+      }
+    }
+  }
 
   override def processTexeraTuple(
       tuple: Either[Tuple, InputExhausted],
@@ -34,15 +44,13 @@ class SortPartitionOpExec(
         unorderedTuples.append(t)
         Iterator()
       case Right(_) =>
+        queue = mutable.Queue(unorderedTuples.sortWith(compareTuples):_*)
+        unorderedTuples.clear()
         sortTuples()
     }
   }
 
   def compareTuples(t1: Tuple, t2: Tuple): Boolean = {
-    if(calls %400 == 0){
-      calls+=1
-      Thread.sleep(1)
-    }
     val attributeType = t1.getSchema().getAttribute(sortAttributeName).getType()
     val attributeIndex = t1.getSchema().getIndex(sortAttributeName)
     attributeType match {
@@ -52,6 +60,8 @@ class SortPartitionOpExec(
         t1.getInt(attributeIndex) < t2.getInt(attributeIndex)
       case AttributeType.DOUBLE =>
         t1.getDouble(attributeIndex) < t2.getDouble(attributeIndex)
+      case AttributeType.TIMESTAMP =>
+        t1.get(attributeIndex).asInstanceOf[Timestamp].getTime < t2.get(attributeIndex).asInstanceOf[Timestamp].getTime
       case _ =>
         true // unsupported type
     }
@@ -65,4 +75,19 @@ class SortPartitionOpExec(
     unorderedTuples.clear()
   }
 
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+    currentIteratorState
+  }
+
+  override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+    Iterator.empty
+  }
+
+  override def getEstimatedCheckpointTime: Int = {
+    if(queue == null){
+      AmberUtils.serde.serialize(unorderedTuples).get.length
+    }else{
+      AmberUtils.serde.serialize(queue).get.length
+    }
+  }
 }
