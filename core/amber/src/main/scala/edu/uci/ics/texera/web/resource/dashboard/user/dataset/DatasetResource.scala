@@ -6,6 +6,8 @@ import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
+
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DatasetHierarchy, DatasetIDs, DatasetVersions, OWN, context, getDatasetByID, getDatasetVersionDescByIDAndName, withExceptionHandling, withTransaction}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{DatasetFileHierarchy, LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{GitSharedRepoVersionControl, VersionDescriptor}
@@ -118,11 +120,26 @@ class DatasetResource {
 
   @POST
   @Path("/delete")
-  def deleteDataset(datasetIDs: DatasetIDs): Response = {
+  def deleteDataset(
+                     datasetIDs: DatasetIDs,
+                     @Auth user: SessionUser): Response = {
+    val uid = user.getUid
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
         for (did <- datasetIDs.dids) {
+          val ownerRecord = ctx.selectFrom(DATASET_OF_USER)
+            .where(DATASET_OF_USER.DID.eq(did))
+            .and(DATASET_OF_USER.UID.eq(uid))
+            .and(DATASET_OF_USER.ACCESS_LEVEL.eq(OWN))
+            .fetchOne()
+
+          if (ownerRecord == null) {
+            // throw the exception that user has no access to certain dataset
+            return Response.status(Response.Status.FORBIDDEN)
+              .entity(s"You do not have permission to delete dataset #{$did}.")
+              .build()
+          }
           val dataset = getDatasetByID(did)
           val datasetStorage = new LocalFileStorage(dataset.getStoragePath)
           datasetStorage.remove()
