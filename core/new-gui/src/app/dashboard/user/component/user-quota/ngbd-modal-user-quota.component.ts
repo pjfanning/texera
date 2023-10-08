@@ -5,6 +5,9 @@ import { AdminUserService } from "../../../admin/service/admin-user.service";
 import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../common/type/user"
 import { UserFileService } from "../../service/user-file/user-file.service";
 import { NzTableSortFn } from "ng-zorro-antd/table";
+import { ConfirmationDialogComponent } from './confirmation-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
+
 
 
 @UntilDestroy()
@@ -25,7 +28,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
   mongodbExecutions: ReadonlyArray<mongoExecution> = [];
   mongodbWorkflows: Array<mongoWorkflow> = [];
 
-  constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal, private userFileService: UserFileService) {
+  constructor(private adminUserService: AdminUserService, public activeModel: NgbActiveModal, private userFileService: UserFileService, private dialog: MatDialog) {
   }
 
   ngOnInit(): void {
@@ -42,14 +45,14 @@ export class NgbModalUserQuotaComponent implements OnInit {
         copiedFiles.sort((a, b) => b.fileSize - a.fileSize);
         this.topFiveFiles = copiedFiles.slice(0, 5);
       });
-    
+
     this.adminUserService
       .getCreatedWorkflows(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(workflowList => {
         this.createdWorkflows = workflowList;
       });
-    
+
     this.adminUserService
       .getAccessFiles(this.userUid)
       .pipe(untilDestroyed(this))
@@ -127,7 +130,7 @@ export class NgbModalUserQuotaComponent implements OnInit {
     this.userFileService
       .deleteFile(fid)
       .pipe(untilDestroyed(this))
-      .subscribe(() => 
+      .subscribe(() =>
         this.refreshFiles()
       );
   }
@@ -144,17 +147,42 @@ export class NgbModalUserQuotaComponent implements OnInit {
       });
   }
 
+  openConfirmationDialog(action: string, fileId: number, fileName: string): void {
+
+    this.activeModel.dismiss();
+
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '300px',
+      data: {
+        title: 'Confirm Action',
+        message: `Are you sure you want to ${action} "${fileName}"?`,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // User clicked 'Yes', perform the action (download or delete)
+        if (action === 'delete') {
+          this.deleteFile(fileId);
+        } else if (action === 'download') {
+          this.downloadFile(fileId, fileName);
+        }
+      }
+    });
+  }
+
+
   convertFileSize(sizeInBytes: number): string {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  
+
     let size = sizeInBytes;
     let unitIndex = 0;
-  
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024;
       unitIndex++;
     }
-  
+
     return `${size.toFixed(2)} ${units[unitIndex]}`;
   }
 

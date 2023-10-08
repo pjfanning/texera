@@ -147,7 +147,7 @@
               </td>
               <td>
                 <button
-                  (click)="deleteFile(data.fileId)"
+                  (click)="openConfirmationDialog('delete', data.fileId, data.fileName)"
                   nz-button
                   nz-tooltip="delete file"
                   type="button">
@@ -157,7 +157,7 @@
                     nzType="delete"></i>
                 </button>
                 <button
-                  (click)="downloadFile(data.fileId, data.fileName)"
+                  (click)="openConfirmationDialog('download', data.fileId, data.fileName)"
                   nz-button
                   nz-tooltip="download file"
                   type="button">
