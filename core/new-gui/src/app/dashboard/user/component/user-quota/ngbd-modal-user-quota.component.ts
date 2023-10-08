@@ -115,6 +115,27 @@ export class NgbModalUserQuotaComponent implements OnInit {
       });
   }
 
+  deleteMongoCollectionWithConfirmation(collectionName: string, execution: mongoExecution, workflowName: string): void {
+
+    this.activeModel.dismiss();
+
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      width: '300px',
+      data: {
+        title: 'Confirm Deletion',
+        message: `Are you sure you want to delete the MongoDB collection "${collectionName}"?`,
+      },
+    });
+  
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // User clicked 'Yes', proceed with deletion
+        this.deleteMongoCollection(collectionName, execution, workflowName);
+      }
+      // If 'No' or closed, do nothing (cancellation)
+    });
+  }
+
   /**
    * Convert a numeric timestamp to a human-readable time string.
    */

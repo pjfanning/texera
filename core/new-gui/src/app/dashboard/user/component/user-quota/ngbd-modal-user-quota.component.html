@@ -100,7 +100,7 @@
                   <td>{{ convertFileSize(execution.size) }}</td>
                   <td>
                     <button
-                      (click)="deleteMongoCollection(execution.pointer, execution, execution.workflowName)"
+                      (click)="deleteMongoCollectionWithConfirmation(execution.pointer, execution, execution.workflowName)"
                       nz-button
                       nz-tooltip="delete collection"
                       type="button">
