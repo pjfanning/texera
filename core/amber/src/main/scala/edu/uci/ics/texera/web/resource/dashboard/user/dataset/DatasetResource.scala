@@ -1,15 +1,37 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 
-
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DatasetHierarchy, DatasetIDs, DatasetVersions, OWN, PUBLIC, READ, context, getDatasetByID, getDatasetVersionDescByIDAndName, getUserAccessLevelOfDataset, withExceptionHandling, withTransaction}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{DatasetFileHierarchy, LocalFileStorage, PathUtils}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{GitSharedRepoVersionControl, VersionDescriptor}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DashboardDataset,
+  DatasetHierarchy,
+  DatasetIDs,
+  DatasetVersions,
+  OWN,
+  PUBLIC,
+  READ,
+  context,
+  getDatasetByID,
+  getDatasetVersionDescByIDAndName,
+  getUserAccessLevelOfDataset,
+  userAllowedToReadDataset,
+  withExceptionHandling,
+  withTransaction
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.UserHasNoAccessToDatasetException
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{
+  DatasetFileHierarchy,
+  LocalFileStorage,
+  PathUtils
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{
+  GitSharedRepoVersionControl,
+  VersionDescriptor
+}
 import io.dropwizard.auth.Auth
 import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
 import org.jooq.DSLContext
@@ -19,7 +41,16 @@ import org.jooq.types.UInteger
 import java.io.{InputStream, OutputStream}
 import java.util.Optional
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  Consumes,
+  GET,
+  InternalServerErrorException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
@@ -39,15 +70,23 @@ object DatasetResource {
     datasetDao.fetchOneByDid(did)
   }
 
-  private def getDatasetVersionDescByIDAndName(did: UInteger, version: String): VersionDescriptor = {
+  private def getDatasetVersionDescByIDAndName(
+      did: UInteger,
+      version: String
+  ): VersionDescriptor = {
     val targetDataset = getDatasetByID(did)
     val targetDatasetStoragePath = targetDataset.getStoragePath
     val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
     datasetVersionControl.checkoutToVersion(version)
   }
 
-  private def getUserAccessLevelOfDataset(ctx: DSLContext, did: UInteger, uid: UInteger): Option[Byte] = {
-    val ownerRecord = ctx.selectFrom(DATASET_OF_USER)
+  private def getUserAccessLevelOfDataset(
+      ctx: DSLContext,
+      did: UInteger,
+      uid: UInteger
+  ): Option[Byte] = {
+    val ownerRecord = ctx
+      .selectFrom(DATASET_OF_USER)
       .where(DATASET_OF_USER.DID.eq(did))
       .and(DATASET_OF_USER.UID.eq(uid))
       .fetchOne()
@@ -56,6 +95,26 @@ object DatasetResource {
       None
     else
       Some(ownerRecord.getAccessLevel)
+  }
+
+  private def userAllowedToReadDataset(ctx: DSLContext, did: UInteger, uid: UInteger): Boolean = {
+    val userAccessible = ctx
+      .select()
+      .from(DATASET)
+      .leftJoin(DATASET_OF_USER)
+      .on(DATASET.DID.eq(DATASET_OF_USER.DID))
+      .where(
+        DATASET.DID
+          .eq(did)
+          .and(
+            DATASET.IS_PUBLIC
+              .eq(PUBLIC)
+              .or(DATASET_OF_USER.UID.eq(uid))
+          )
+      )
+      .fetchInto(classOf[Dataset])
+
+    userAccessible.nonEmpty
   }
 
   private def withExceptionHandling[T](block: () => T): T = {
@@ -69,7 +128,6 @@ object DatasetResource {
         )
     }
   }
-
 
   private def withTransaction[T](dsl: DSLContext)(block: DSLContext => T): T = {
     var result: Option[T] = None
@@ -98,9 +156,7 @@ class DatasetResource {
 
   @POST
   @Path("/persist")
-  def createDataset(
-      @Auth user: SessionUser,
-      dataset: Dataset): Response = {
+  def createDataset(@Auth user: SessionUser, dataset: Dataset): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val uid = user.getUid
@@ -135,9 +191,7 @@ class DatasetResource {
 
   @POST
   @Path("/delete")
-  def deleteDataset(
-                     datasetIDs: DatasetIDs,
-                     @Auth user: SessionUser): Response = {
+  def deleteDataset(datasetIDs: DatasetIDs, @Auth user: SessionUser): Response = {
     val uid = user.getUid
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
@@ -147,7 +201,8 @@ class DatasetResource {
 
           if (accessLevel.isEmpty || accessLevel.get != OWN) {
             // throw the exception that user has no access to certain dataset
-            return Response.status(Response.Status.FORBIDDEN)
+            return Response
+              .status(Response.Status.FORBIDDEN)
               .entity(s"You do not have permission to delete dataset #{$did}.")
               .build()
           }
@@ -166,18 +221,19 @@ class DatasetResource {
   @Path("/{did}/version/persist")
   @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
   def createDatasetVersion(
-                            @PathParam("did") did: UInteger,
-                            @FormDataParam("baseVersion") baseVersion: Optional[String],
-                            @FormDataParam("version") newVersion: String,
-                            @FormDataParam("remove") remove: Optional[String], // relative paths of files to be deleted
-                            @Auth user: SessionUser,
-                            multiPart: FormDataMultiPart
-                          ): Response = {
+      @PathParam("did") did: UInteger,
+      @FormDataParam("baseVersion") baseVersion: Optional[String],
+      @FormDataParam("version") newVersion: String,
+      @FormDataParam("remove") remove: Optional[String], // relative paths of files to be deleted
+      @Auth user: SessionUser,
+      multiPart: FormDataMultiPart
+  ): Response = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       val accessLevel = getUserAccessLevelOfDataset(context, did, uid)
       if (accessLevel.isEmpty || accessLevel.get == READ) {
-        return Response.status(Response.Status.FORBIDDEN)
+        return Response
+          .status(Response.Status.FORBIDDEN)
           .entity(s"You do not have permission to create new version for dataset #{$did}.")
           .build()
       }
@@ -202,7 +258,7 @@ class DatasetResource {
 
       // then process the newly uploaded file
       val fields = multiPart.getFields().keySet().iterator()
-      while(fields.hasNext) {
+      while (fields.hasNext) {
         val fieldName = fields.next()
         val bodyPart = multiPart.getField(fieldName)
 
@@ -223,77 +279,102 @@ class DatasetResource {
   @GET
   @Path("/list")
   def getDatasetList(
-                      @Auth user: SessionUser,
-                    ): List[DashboardDataset] = {
+      @Auth user: SessionUser
+  ): List[DashboardDataset] = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
         // Fetch datasets either public or accessible to the user
-        val datasets = ctx.select()
+        val datasets = ctx
+          .select()
           .from(DATASET)
-          .leftJoin(DATASET_OF_USER).on(DATASET.DID.eq(DATASET_OF_USER.DID))
-          .where(DATASET.IS_PUBLIC.eq(PUBLIC) // Assuming PUBLIC is a constant representing '1' or true
-            .or(DATASET_OF_USER.UID.eq(uid)))
-          .fetchInto(classOf[Dataset]) // Assuming Dataset is the jOOQ generated class for your table
+          .leftJoin(DATASET_OF_USER)
+          .on(DATASET.DID.eq(DATASET_OF_USER.DID))
+          .where(
+            DATASET.IS_PUBLIC
+              .eq(PUBLIC) // Assuming PUBLIC is a constant representing '1' or true
+              .or(DATASET_OF_USER.UID.eq(uid))
+          )
+          .fetchInto(
+            classOf[Dataset]
+          ) // Assuming Dataset is the jOOQ generated class for your table
 
         // Transform datasets into DashboardDataset objects
         val datasetList = datasets.map(d => DashboardDataset(d)).toList
-
-        print(datasetList) // Debugging purposes
-
         datasetList
       })
     })
   }
 
-
   @GET
   @Path("/{did}/version/list")
   def getDatasetVersionList(
-                             @PathParam("did") did: UInteger): DatasetVersions = {
+      @PathParam("did") did: UInteger,
+      @Auth user: SessionUser
+  ): DatasetVersions = {
+    val uid = user.getUid
     withExceptionHandling({ () =>
-      // first, query the db to get the storage path of the target dataset
-      val targetDataset = getDatasetByID(did)
-      val targetDatasetStoragePath = targetDataset.getStoragePath
+      withTransaction(context)((ctx) => {
 
-      val datasetVersions = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-      val versionsIte = datasetVersions.listVersions().iterator()
-      val resultListBuffer: ListBuffer[String] = ListBuffer()
+        if (!userAllowedToReadDataset(ctx, did, uid)) {
+          throw new UserHasNoAccessToDatasetException(did.intValue())
+        }
+        // first, query the db to get the storage path of the target dataset
+        val targetDataset = getDatasetByID(did)
+        val targetDatasetStoragePath = targetDataset.getStoragePath
 
-      while (versionsIte.hasNext) {
-        resultListBuffer += versionsIte.next()
-      }
+        val datasetVersions = new GitSharedRepoVersionControl(targetDatasetStoragePath)
+        val versionsIte = datasetVersions.listVersions().iterator()
+        val resultListBuffer: ListBuffer[String] = ListBuffer()
 
-      DatasetVersions(resultListBuffer.toList)
+        while (versionsIte.hasNext) {
+          resultListBuffer += versionsIte.next()
+        }
+
+        DatasetVersions(resultListBuffer.toList)
+      })
     })
   }
 
   @GET
   @Path("/{did}/version/{version}/hierarchy")
   def inspectDatasetFileHierarchy(
-                                   @PathParam("did") did: UInteger,
-                                   @PathParam("version") version: String
-                                 ): DatasetHierarchy = {
-    withExceptionHandling({ () => {
-      val targetDataset = getDatasetByID(did)
-      val targetDatasetStoragePath = targetDataset.getStoragePath
-      val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-      val versionDesc = datasetVersionControl.checkoutToVersion(version)
+      @PathParam("did") did: UInteger,
+      @PathParam("version") version: String,
+      @Auth user: SessionUser
+  ): DatasetHierarchy = {
+    val uid = user.getUid
+    withExceptionHandling({ () =>
+      {
+        withTransaction(context)(ctx => {
+          if (!userAllowedToReadDataset(ctx, did, uid)) {
+            throw new UserHasNoAccessToDatasetException(did.intValue())
+          }
+          val targetDataset = getDatasetByID(did)
+          val targetDatasetStoragePath = targetDataset.getStoragePath
+          val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
+          val versionDesc = datasetVersionControl.checkoutToVersion(version)
 
-      DatasetHierarchy(new DatasetFileHierarchy(versionDesc.getVersionRepoPath))
-    }
+          DatasetHierarchy(new DatasetFileHierarchy(versionDesc.getVersionRepoPath))
+        })
+      }
     })
   }
 
   @GET
   @Path("/{did}/version/{version}/file")
   def inspectDatasetSingleFile(
-                                @PathParam("did") did: UInteger,
-                                @PathParam("version") version: String,
-                                @QueryParam("path") path: String
-                              ): Response = {
-    withExceptionHandling({
-      () =>
+      @PathParam("did") did: UInteger,
+      @PathParam("version") version: String,
+      @QueryParam("path") path: String,
+      @Auth user: SessionUser
+  ): Response = {
+    val uid = user.getUid
+    withExceptionHandling({ () =>
+      withTransaction(context)(ctx => {
+        if (!userAllowedToReadDataset(ctx, did, uid)) {
+          throw new UserHasNoAccessToDatasetException(did.intValue())
+        }
         val versionDesc = getDatasetVersionDescByIDAndName(did, version)
         val versionFileStorage = new LocalFileStorage(versionDesc.getVersionRepoPath)
 
@@ -305,15 +386,13 @@ class DatasetResource {
 
         val contentType = path.split("\\.").lastOption match {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
-          case Some("png") => "image/png"
-          case Some("csv") => "text/csv"
-          case _ => "application/octet-stream"
+          case Some("png")                => "image/png"
+          case Some("csv")                => "text/csv"
+          case _                          => "application/octet-stream"
         }
 
         Response.ok(streamingOutput).`type`(contentType).build()
+      })
     })
   }
-
-
 }
-
