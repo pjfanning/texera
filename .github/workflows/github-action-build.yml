@@ -121,3 +121,18 @@ jobs:
       - name: Test with pytest
         run: |
           cd core/amber/src/main/python && pytest -sv
+
+
+  all:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Final Results
+    needs: [gui, amber, python_udf]
+    steps:
+      - run: exit 1
+        # see https://stackoverflow.com/a/67532120/4907315
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+          }}
