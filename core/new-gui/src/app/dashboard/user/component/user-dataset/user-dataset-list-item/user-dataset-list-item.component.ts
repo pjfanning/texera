@@ -54,9 +54,30 @@ export class UserDatasetListItemComponent {
   editingDescription = false;
   /** Whether tracking metadata information about versions is enabled. */
   datasetVersionsTrackingEnabled: boolean = true;
+  datasetVersionTrackingEnabled: boolean = true;
 
   constructor(
     private modalService: NgbModal,
     private datasetService: DatasetService,
   ) {}
+
+  public confirmUpdateDatasetCustomName(val: any) {
+
+  }
+
+  public confirmUpdateDatasetCustomDescription(val: any) {
+
+  }
+
+  public onClickDownloadDataset() {
+
+  }
+
+  public onClickGetDatasetVersions() {
+
+  }
+
+  public onClickOpenShareAccess() {
+
+  }
 }

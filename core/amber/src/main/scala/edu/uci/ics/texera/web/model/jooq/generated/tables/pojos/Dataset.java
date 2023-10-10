@@ -15,12 +15,13 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset implements IDataset {
 
-    private static final long serialVersionUID = -329685164;
+    private static final long serialVersionUID = -2001076184;
 
     private UInteger did;
     private String   name;
     private Byte     isPublic;
     private String   storagePath;
+    private String   description;
 
     public Dataset() {}
 
@@ -29,18 +30,21 @@ public class Dataset implements IDataset {
         this.name = value.getName();
         this.isPublic = value.getIsPublic();
         this.storagePath = value.getStoragePath();
+        this.description = value.getDescription();
     }
 
     public Dataset(
         UInteger did,
         String   name,
         Byte     isPublic,
-        String   storagePath
+        String   storagePath,
+        String   description
     ) {
         this.did = did;
         this.name = name;
         this.isPublic = isPublic;
         this.storagePath = storagePath;
+        this.description = description;
     }
 
     @Override
@@ -84,6 +88,16 @@ public class Dataset implements IDataset {
     }
 
     @Override
+    public String getDescription() {
+        return this.description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Dataset (");
 
@@ -91,6 +105,7 @@ public class Dataset implements IDataset {
         sb.append(", ").append(name);
         sb.append(", ").append(isPublic);
         sb.append(", ").append(storagePath);
+        sb.append(", ").append(description);
 
         sb.append(")");
         return sb.toString();
@@ -106,6 +121,7 @@ public class Dataset implements IDataset {
         setName(from.getName());
         setIsPublic(from.getIsPublic());
         setStoragePath(from.getStoragePath());
+        setDescription(from.getDescription());
     }
 
     @Override

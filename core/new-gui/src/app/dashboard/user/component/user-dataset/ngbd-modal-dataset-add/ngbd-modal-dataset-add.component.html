@@ -1,0 +1,23 @@
+<div class="modal-header">
+  <h4 class="modal-title">Create a Dataset</h4>
+  <button type="button" class="close" aria-label="Close" (click)="close()">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+<div class="modal-body">
+  <form (submit)="submit()">
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" class="form-control" id="name" [(ngModel)]="dataset.name" name="name" required>
+    </div>
+    <div class="form-group">
+      <label for="description">Description:</label>
+      <input type="text" class="form-control" id="description" [(ngModel)]="dataset.description" name="description">
+    </div>
+    <div class="form-group">
+      <label>Public:</label>
+      <input type="checkbox" [(ngModel)]="dataset.isPublic" name="isPublic"> On/Off
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+</div>
