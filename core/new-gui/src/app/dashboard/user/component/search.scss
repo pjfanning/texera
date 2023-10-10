@@ -18,12 +18,16 @@
   margin-left: 10px;
 }
 
+.dataset-search-bar {
+  margin-left: 10px;
+}
+
 /**
   * Create a 3*1 grid area
-  * The first row contains add and sort button. 
+  * The first row contains add and sort button.
   * The second row contains the search bar.
   * The third row contains the saved workflow/files list.
-  * 
+  *
   * This layout is shared between workflows and files section.
   *
   *              ******************

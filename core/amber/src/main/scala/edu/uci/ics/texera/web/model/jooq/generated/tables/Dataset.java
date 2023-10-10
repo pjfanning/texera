@@ -17,7 +17,7 @@ import org.jooq.ForeignKey;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -33,7 +33,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset extends TableImpl<DatasetRecord> {
 
-    private static final long serialVersionUID = 1322221438;
+    private static final long serialVersionUID = -1476990983;
 
     /**
      * The reference instance of <code>texera_db.dataset</code>
@@ -67,6 +67,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
      * The column <code>texera_db.dataset.storage_path</code>.
      */
     public final TableField<DatasetRecord, String> STORAGE_PATH = createField(DSL.name("storage_path"), org.jooq.impl.SQLDataType.VARCHAR(512), this, "");
+
+    /**
+     * The column <code>texera_db.dataset.description</code>.
+     */
+    public final TableField<DatasetRecord, String> DESCRIPTION = createField(DSL.name("description"), org.jooq.impl.SQLDataType.VARCHAR(512), this, "");
 
     /**
      * Create a <code>texera_db.dataset</code> table reference
@@ -148,11 +153,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<UInteger, String, Byte, String> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row5<UInteger, String, Byte, String, String> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

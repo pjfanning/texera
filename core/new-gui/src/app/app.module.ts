@@ -132,6 +132,7 @@ import { PortPropertyEditFrameComponent } from "./workspace/component/property-e
 import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
+import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 
 registerLocaleData(en);
 
@@ -157,6 +158,7 @@ registerLocaleData(en);
     UserDatasetComponent,
     UserFileComponent,
     NgbdModalFileAddComponent,
+    NgbdModalDatasetAddComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,

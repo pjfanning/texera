@@ -3,4 +3,5 @@ export interface Dataset {
   name: string;
   is_public: number;
   storage_path: string;
+  description: string;
 }
