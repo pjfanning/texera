@@ -31,6 +31,8 @@ class HashJoinOpExec[K](
   var currentTuple: Tuple = _
 
   val buildTableTransferBatchSize = 4000
+  var currentSize = 0
+
 
   def getBuildHashTableBatches(): ArrayBuffer[mutable.HashMap[K, ArrayBuffer[Tuple]]] = {
     val sendingMap = new ArrayBuffer[mutable.HashMap[K, ArrayBuffer[Tuple]]]
@@ -88,6 +90,7 @@ class HashJoinOpExec[K](
           throw new WorkflowRuntimeException("Probe table came before build table ended")
         } else {
           // probing phase
+          currentSize = AmberUtils.serde.serialize(buildTableHashMap).get.length
           val key = tuple.getField(probeAttributeName).asInstanceOf[K]
           val (matchedTuples, _) =
             buildTableHashMap.getOrElse(key, (new ArrayBuffer[Tuple](), false))
@@ -255,6 +258,10 @@ class HashJoinOpExec[K](
   override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = Iterator.empty
 
   override def getEstimatedCheckpointTime: Int = {
-    AmberUtils.serde.serialize(buildTableHashMap).get.length
+    if(currentSize == 0){
+      AmberUtils.serde.serialize(buildTableHashMap).get.length
+    }else{
+      currentSize
+    }
   }
 }
