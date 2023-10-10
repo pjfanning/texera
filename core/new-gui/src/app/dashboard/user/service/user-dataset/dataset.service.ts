@@ -3,7 +3,6 @@ import {HttpClient} from "@angular/common/http";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {Dataset} from "../../../../common/type/dataset";
 import {AppSettings} from "../../../../common/app-setting";
-import {WORKFLOW_PERSIST_URL} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
