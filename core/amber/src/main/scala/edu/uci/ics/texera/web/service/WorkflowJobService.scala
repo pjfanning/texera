@@ -81,7 +81,7 @@ class WorkflowJobService(
         Duration.fromSeconds(10)
       )
     }
-    resultService.attachToJob(stateStore, workflowCompiler.logicalPlan, client, workflowContext.wId)
+    resultService.attachToJob(stateStore, workflowCompiler.logicalPlan, client)
     stateStore.jobMetadataStore.updateState(jobInfo =>
       updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionID)).withError(null)
     )

@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.{WebResultUpdate, context}
+import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.storage.{JobStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
@@ -30,7 +30,6 @@ import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
 object JobResultService {
-  final private lazy val context = SqlServer.createDSLContext()
   val defaultPageSize: Int = 5
 
   // convert Tuple from engine's format to JSON format
@@ -163,8 +162,7 @@ class JobResultService(
   def attachToJob(
       stateStore: JobStateStore,
       logicalPlan: LogicalPlan,
-      client: AmberClient,
-      wid: UInteger
+      client: AmberClient
   ): Unit = {
 
     if (resultUpdateCancellable != null && !resultUpdateCancellable.isCancelled) {
@@ -227,11 +225,6 @@ class JobResultService(
     )
 
     // first clear all the results
-    print("====================================\n")
-    print(wid)
-    print("\n")
-    print("====================================\n")
-    resetPrevExecutionPointer(wid)
     sinkOperators.clear()
     workflowStateStore.resultStore.updateState { _ =>
       WorkflowResultStore() // empty result store
@@ -271,48 +264,15 @@ class JobResultService(
         case (id, sink) =>
           val count = sink.getStorage.getCount.toInt
           val mode = sink.getOutputMode
-          val changeDetector =
+          val changeDetector = {
             if (mode == IncrementalOutputMode.SET_SNAPSHOT) {
               UUID.randomUUID.toString
             } else ""
+          }
           (id, OperatorResultMetadata(count, changeDetector))
       }.toMap
       WorkflowResultStore(newInfo)
     }
-  }
-
-  private def resetPrevExecutionPointer(wid: UInteger): Unit = {
-    val allEid = context
-      .select(WORKFLOW_EXECUTIONS.EID)
-      .from(WORKFLOW_EXECUTIONS)
-      .leftJoin(WORKFLOW_VERSION)
-      .on(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID))
-      .where(WORKFLOW_VERSION.WID.eq(wid))
-      .fetchInto(classOf[Integer])
-
-    var maxEid = 0;
-    allEid.forEach(eid => {
-      if (eid > maxEid) {
-        maxEid = eid
-      }
-    })
-
-    context
-      .update(WORKFLOW_EXECUTIONS)
-      .set(WORKFLOW_EXECUTIONS.RESULT, null.asInstanceOf[String])
-      .whereExists(
-        context.select()
-          .from(WORKFLOW_VERSION)
-          .where(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID)
-            .and(WORKFLOW_EXECUTIONS.EID.lessThan(toUInteger(maxEid)))
-            .and(WORKFLOW_VERSION.WID.eq(wid))
-          )
-      )
-      .execute()
-  }
-
-  def toUInteger(value: Int): UInteger = {
-    UInteger.valueOf(value & 0xFFFFFFFFL)
   }
 
 }
