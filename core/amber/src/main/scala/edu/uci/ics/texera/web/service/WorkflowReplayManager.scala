@@ -16,6 +16,7 @@ import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowReplayRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import io.reactivex.rxjava3.disposables.Disposable
 
 import java.io.{FileOutputStream, ObjectOutputStream}
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.Random
 
 
 class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, periodicalCheckpointInterval:Int) extends SubscriptionManager {
@@ -55,8 +57,11 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
 
 
   def setupEstimation(): Cancellable ={
-    TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds, estimationInterval){
-      doEstimation(false)
+    TexeraWebApplication.scheduleCallThroughActorSystem(2.seconds){
+      while(stateStore.jobMetadataStore.getState.state != COMPLETED){
+        Thread.sleep(Random.nextInt(10000) + 1000)
+        doEstimation(true)
+      }
     }
   }
 
