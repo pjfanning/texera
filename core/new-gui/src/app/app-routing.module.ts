@@ -13,6 +13,7 @@ import { AdminUserComponent } from "./dashboard/admin/component/user/admin-user.
 import { AdminExecutionComponent } from "./dashboard/admin/component/execution/admin-execution.component";
 import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service";
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
+import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path
@@ -54,6 +55,10 @@ if (environment.userSystemEnabled) {
       {
         path: "workflow",
         component: UserWorkflowComponent,
+      },
+      {
+        path: "dataset",
+        component: UserDatasetComponent,
       },
       {
         path: "user-file",

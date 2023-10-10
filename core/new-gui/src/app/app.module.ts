@@ -130,6 +130,7 @@ import { SearchComponent } from "./dashboard/user/component/search/search.compon
 import { SearchResultsComponent } from "./dashboard/user/component/search-results/search-results.component";
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
 import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
+import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 
 registerLocaleData(en);
 
@@ -152,6 +153,7 @@ registerLocaleData(en);
     UserAvatarComponent,
     LocalLoginComponent,
     UserWorkflowComponent,
+    UserDatasetComponent,
     UserFileComponent,
     NgbdModalFileAddComponent,
     RowModalComponent,
