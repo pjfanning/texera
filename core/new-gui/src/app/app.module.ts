@@ -136,6 +136,7 @@ import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
+import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
 
 registerLocaleData(en);
 
@@ -203,6 +204,7 @@ registerLocaleData(en);
     CollabWrapperComponent,
     HomeComponent,
     UserWorkflowListItemComponent,
+    UserDatasetListItemComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
