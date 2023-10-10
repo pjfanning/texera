@@ -9,34 +9,28 @@ import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
-import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
-import edu.uci.ics.texera.web.storage.{
-  JobStateStore,
-  OperatorResultMetadata,
-  WorkflowResultStore,
-  WorkflowStateStore
-}
+import edu.uci.ics.texera.web.service.JobResultService.{WebResultUpdate, context}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables._
+import edu.uci.ics.texera.web.storage.{JobStateStore, OperatorResultMetadata, WorkflowResultStore, WorkflowStateStore}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
-import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
+import edu.uci.ics.texera.web.{SqlServer, SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
+import org.apache.commons.math3.analysis.function.Max
+import org.jooq.types.UInteger
 
 import java.util.UUID
 import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
 object JobResultService {
-
+  final private lazy val context = SqlServer.createDSLContext()
   val defaultPageSize: Int = 5
 
   // convert Tuple from engine's format to JSON format
@@ -169,7 +163,8 @@ class JobResultService(
   def attachToJob(
       stateStore: JobStateStore,
       logicalPlan: LogicalPlan,
-      client: AmberClient
+      client: AmberClient,
+      wid: UInteger
   ): Unit = {
 
     if (resultUpdateCancellable != null && !resultUpdateCancellable.isCancelled) {
@@ -232,6 +227,11 @@ class JobResultService(
     )
 
     // first clear all the results
+    print("====================================\n")
+    print(wid)
+    print("\n")
+    print("====================================\n")
+    resetPrevExecutionPointer(wid)
     sinkOperators.clear()
     workflowStateStore.resultStore.updateState { _ =>
       WorkflowResultStore() // empty result store
@@ -279,6 +279,40 @@ class JobResultService(
       }.toMap
       WorkflowResultStore(newInfo)
     }
+  }
+
+  private def resetPrevExecutionPointer(wid: UInteger): Unit = {
+    val allEid = context
+      .select(WORKFLOW_EXECUTIONS.EID)
+      .from(WORKFLOW_EXECUTIONS)
+      .leftJoin(WORKFLOW_VERSION)
+      .on(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID))
+      .where(WORKFLOW_VERSION.WID.eq(wid))
+      .fetchInto(classOf[Integer])
+
+    var maxEid = 0;
+    allEid.forEach(eid => {
+      if (eid > maxEid) {
+        maxEid = eid
+      }
+    })
+
+    context
+      .update(WORKFLOW_EXECUTIONS)
+      .set(WORKFLOW_EXECUTIONS.RESULT, null.asInstanceOf[String])
+      .whereExists(
+        context.select()
+          .from(WORKFLOW_VERSION)
+          .where(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID)
+            .and(WORKFLOW_EXECUTIONS.EID.lessThan(toUInteger(maxEid)))
+            .and(WORKFLOW_VERSION.WID.eq(wid))
+          )
+      )
+      .execute()
+  }
+
+  def toUInteger(value: Int): UInteger = {
+    UInteger.valueOf(value & 0xFFFFFFFFL)
   }
 
 }

@@ -235,22 +235,7 @@ class AdminUserResource {
 
     val collectionSizes = MongoDatabaseManager.getDatabaseSize(collections)
 
-    var finalCollections = new Array[mongoStorage](0)
-
-    for (collection <- collectionSizes) {
-      if (collection.size == 0.0) {
-        val resultName = "{\"results\":[\"" + collection.pointer + "\"]}"
-        context
-          .update(WORKFLOW_EXECUTIONS)
-          .set(WORKFLOW_EXECUTIONS.RESULT, null.asInstanceOf[String])
-          .where(WORKFLOW_EXECUTIONS.RESULT.eq(resultName))
-          .execute()
-      } else if (collection.size > 0.0) {
-        finalCollections = finalCollections :+ collection
-      }
-    }
-
-    finalCollections
+    collectionSizes
   }
 
   @DELETE
