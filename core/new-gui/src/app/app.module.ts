@@ -137,6 +137,7 @@ import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
+import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 
 registerLocaleData(en);
 
@@ -164,6 +165,7 @@ registerLocaleData(en);
     UserFileComponent,
     UserQuotaComponent,
     NgbdModalFileAddComponent,
+    NgbdModalDatasetAddComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,

@@ -55,6 +55,16 @@ public interface IDataset extends Serializable {
      */
     public String getStoragePath();
 
+    /**
+     * Setter for <code>texera_db.dataset.description</code>.
+     */
+    public void setDescription(String value);
+
+    /**
+     * Getter for <code>texera_db.dataset.description</code>.
+     */
+    public String getDescription();
+
     // -------------------------------------------------------------------------
     // FROM and INTO
     // -------------------------------------------------------------------------

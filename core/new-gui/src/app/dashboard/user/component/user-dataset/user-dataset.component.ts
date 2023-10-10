@@ -11,6 +11,7 @@ import {DatasetService} from "../../service/user-dataset/dataset.service";
 import {firstValueFrom} from "rxjs";
 import {DashboardEntry} from "../../type/dashboard-entry";
 import {SortMethod} from "../../type/sort-method";
+import {NgbdModalDatasetAddComponent} from "./ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 
 export const ROUTER_DATASET_VIEW_URL = "/"
 @UntilDestroy()
@@ -19,8 +20,6 @@ export const ROUTER_DATASET_VIEW_URL = "/"
   styleUrls: ["user-dataset.component.scss"]
 })
 export class UserDatasetComponent implements AfterViewInit {
-  ngAfterViewInit(): void {
-  }
 
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
@@ -78,7 +77,7 @@ export class UserDatasetComponent implements AfterViewInit {
    */
   public onClickOpenAddWorkflow() {
     // TODO: substitute withDatasetAdd Model
-    const modalRef = this.modalService.open();
+    const modalRef = this.modalService.open(NgbdModalDatasetAddComponent);
 
     // retrieve updated values from modal via promise
     modalRef.result.then(result => {
@@ -118,7 +117,7 @@ export class UserDatasetComponent implements AfterViewInit {
       );
       return {
         entries: results.results.map(i => {
-          if (i.workflow) {
+          if (i.dataset) {
             return new DashboardEntry(i.dataset);
           } else {
             throw new Error("Unexpected type in SearchResult.");
@@ -134,7 +133,14 @@ export class UserDatasetComponent implements AfterViewInit {
    * open a new dataset. will redirect to a pre-emptied dataset view space
    */
   public onClickOpenDatasetFromDashboard(): void {
-    this.router.navigate([`${ROUTER_DATASET_VIEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
+    // this.router.navigate([`${ROUTER_DATASET_VIEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
   }
 
+  public createDataset() {
+
+  }
+
+  public deleteDataset(event: DashboardEntry) {
+
+  }
 }
