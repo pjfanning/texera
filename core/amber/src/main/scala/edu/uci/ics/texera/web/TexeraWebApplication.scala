@@ -32,6 +32,9 @@ import edu.uci.ics.texera.web.resource.dashboard.user.project.{
   PublicProjectResource
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource.ExecutionResultEntry
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowAccessResource,
@@ -206,6 +209,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     environment.jersey.register(classOf[UserConfigResource])
     environment.jersey.register(classOf[UserFileAccessResource])
     environment.jersey.register(classOf[UserFileResource])
+    environment.jersey.register(classOf[DatasetResource])
     environment.jersey.register(classOf[AdminUserResource])
     environment.jersey.register(classOf[PublicProjectResource])
     environment.jersey.register(classOf[WorkflowAccessResource])
