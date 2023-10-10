@@ -131,6 +131,7 @@ import { SearchResultsComponent } from "./dashboard/user/component/search-result
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
 import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
+import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
 
 registerLocaleData(en);
 
@@ -195,6 +196,7 @@ registerLocaleData(en);
     CollabWrapperComponent,
     HomeComponent,
     UserWorkflowListItemComponent,
+    UserDatasetListItemComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
