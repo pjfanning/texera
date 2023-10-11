@@ -3,12 +3,11 @@ package edu.uci.ics.texera.web.resource.dashboard
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.{
-  UserFileAccessPrivilege,
-  WorkflowUserAccessPrivilege
-}
+import edu.uci.ics.texera.web.model.jooq.generated.enums.{UserFileAccessPrivilege, WorkflowUserAccessPrivilege}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFile
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -31,7 +30,8 @@ object DashboardResource {
       resourceType: String,
       workflow: DashboardWorkflow,
       project: Project,
-      file: DashboardFile
+      file: DashboardFile,
+      dataset: DashboardDataset
   )
 
   case class DashboardSearchResult(
@@ -267,7 +267,7 @@ class DashboardResource {
       .on(USER.UID.eq(DATASET_OF_USER.UID))
       .where(
           USER.UID.eq(user.getUid)
-            .and(DATASET.IS_PUBLIC.eq(1.toByte))
+            .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
       )
       .and(datasetMatchQuery)
 
@@ -547,6 +547,16 @@ class DashboardResource {
             .limit(count + 1)
             .offset(offset)
             .fetch()
+        case "dataset" =>
+          val orderedQuery = orderBy match {
+            case "NameAsc"        => datasetQuery.orderBy(DATASET.NAME.asc())
+            case "NameDesc"       => datasetQuery.orderBy(DATASET.NAME.desc())
+            case _ =>
+              throw new BadRequestException(
+                "Unknown orderBy. Only 'NameAsc', 'NameDesc' are allowed"
+              )
+          }
+          orderedQuery.limit(count + 1).offset(offset).fetch()
         case "project" =>
           val orderedQuery = orderBy match {
             case "NameAsc"        => projectQuery.orderBy(PROJECT.NAME.asc())
@@ -678,13 +688,26 @@ class DashboardResource {
               )
             } else {
               null
+            },
+            if (resourceType == "dataset") {
+              val datasetOfUserUid = record.into(DATASET_OF_USER).getUid
+              var accessLevel = record.into(DATASET_OF_USER).getAccessLevel
+              if (datasetOfUserUid != user.getUid) {
+                accessLevel = DatasetResource.READ
+              }
+              DashboardDataset(
+                record.into(DATASET).into(classOf[Dataset]),
+                DatasetResource.getAccessLevel(accessLevel),
+                accessLevel == DatasetResource.OWN
+              )
+            } else {
+              null
             }
           )
         })
         .toList,
       more = moreRecords
     )
-
   }
 
 }
