@@ -94,6 +94,8 @@ class DashboardResource {
     var workflowMatchQuery: Condition = noCondition()
     var projectMatchQuery: Condition = noCondition()
     var fileMatchQuery: Condition = noCondition()
+    var datasetMatchQuery: Condition = noCondition()
+
     for (key: String <- splitKeywords) {
       if (key != "") {
         val words = key.split("\\s+")
@@ -120,6 +122,12 @@ class DashboardResource {
         )
         fileMatchQuery = fileMatchQuery.and(
           getSearchQuery(subStringSearchEnabled, "texera_db.file.name, texera_db.file.description"),
+          key
+        )
+        datasetMatchQuery = datasetMatchQuery.and(
+          getSearchQuery(
+            subStringSearchEnabled,
+            "texera_db.dataset.name, texera_db.dataset.description"),
           key
         )
       }
@@ -241,6 +249,28 @@ class DashboardResource {
         .and(workflowMatchQuery)
         .and(workflowOptionalFilters)
         .groupBy(WORKFLOW.WID)
+
+    val datasetQuery = context
+      .select(
+        DSL.inline("dataset").as("resourceType"),
+        DATASET.NAME,
+        DATASET.DESCRIPTION,
+        DATASET.DID,
+        DATASET_OF_USER.ACCESS_LEVEL,
+        DATASET_OF_USER.UID,
+        USER.NAME
+      )
+      .from(DATASET)
+      .leftJoin(DATASET_OF_USER)
+      .on(DATASET_OF_USER.DID.eq(DATASET.DID))
+      .leftJoin(USER)
+      .on(USER.UID.eq(DATASET_OF_USER.UID))
+      .where(
+          USER.UID.eq(user.getUid)
+            .and(DATASET.IS_PUBLIC.eq(1.toByte))
+      )
+      .and(datasetMatchQuery)
+
 
     // Retrieve project resource
     val projectQuery = context
