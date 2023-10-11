@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
-  selector: 'app-create-dataset-modal',
-  templateUrl: './create-dataset-modal.component.html',
-  styleUrls: ['./create-dataset-modal.component.scss']
+  selector: 'ngbd-modal-dataset-add.component',
+  templateUrl: './ngbd-modal-dataset-add.component.html',
+  styleUrls: ['./ngbd-modal-dataset-add.component.scss']
 })
 export class NgbdModalDatasetAddComponent implements OnInit {
   dataset = {
