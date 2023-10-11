@@ -56,12 +56,22 @@ import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
 
 object DatasetResource {
-  private val PUBLIC: Byte = 1;
-  private val PRIVATE: Byte = 0;
+  val PUBLIC: Byte = 1;
+  val PRIVATE: Byte = 0;
 
-  private val OWN: Byte = 1;
-  private val WRITE: Byte = 2;
-  private val READ: Byte = 3;
+  val OWN: Byte = 1;
+  val WRITE: Byte = 2;
+  val READ: Byte = 3;
+
+  def getAccessLevel(level: Byte): String = {
+    if (level == OWN) {
+      "Own"
+    } else if (level == WRITE) {
+      "Write"
+    } else {
+      "Read"
+    }
+  }
 
   private val context = SqlServer.createDSLContext()
 
@@ -140,7 +150,11 @@ object DatasetResource {
     result.getOrElse(throw new RuntimeException("Transaction failed without result!"))
   }
 
-  case class DashboardDataset(dataset: Dataset)
+  case class DashboardDataset(
+                               dataset: Dataset,
+                               accessLevel: String,
+                               isOwner: Boolean,
+                             )
 
   case class DatasetHierarchy(datasetFileHierarchy: DatasetFileHierarchy)
 
