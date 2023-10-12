@@ -100,9 +100,11 @@
                   <td>{{ convertFileSize(execution.size) }}</td>
                   <td>
                     <button
-                      (click)="deleteMongoCollectionWithConfirmation(execution.pointer, execution, execution.workflowName)"
+                      nz-popconfirm
+                      nzPopconfirmTitle="Confirm to delete selected workflows."
                       nz-button
                       nz-tooltip="delete collection"
+                      (nzOnConfirm)="deleteMongoCollection(execution.pointer, execution, execution.workflowName)"
                       type="button">
                       <i
                         nz-icon
@@ -147,9 +149,11 @@
               </td>
               <td>
                 <button
-                  (click)="openConfirmationDialog('delete', data.fileId, data.fileName)"
+                  nz-popconfirm
+                  nzPopconfirmTitle="Confirm to delete selected file."
                   nz-button
                   nz-tooltip="delete file"
+                  (nzOnConfirm)="deleteFile(data.fileId)"
                   type="button">
                   <i
                     nz-icon
@@ -157,9 +161,11 @@
                     nzType="delete"></i>
                 </button>
                 <button
-                  (click)="openConfirmationDialog('download', data.fileId, data.fileName)"
+                  nz-popconfirm
+                  nzPopconfirmTitle="Confirm to download selected file."
                   nz-button
                   nz-tooltip="download file"
+                  (nzOnConfirm)="downloadFile(data.fileId, data.fileName)"
                   type="button">
                   <i
                     nz-icon

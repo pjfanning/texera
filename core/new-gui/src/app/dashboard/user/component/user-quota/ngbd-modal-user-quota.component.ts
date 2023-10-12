@@ -115,27 +115,6 @@ export class NgbModalUserQuotaComponent implements OnInit {
       });
   }
 
-  deleteMongoCollectionWithConfirmation(collectionName: string, execution: mongoExecution, workflowName: string): void {
-
-    this.activeModel.dismiss();
-
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '300px',
-      data: {
-        title: 'Confirm Deletion',
-        message: `Are you sure you want to delete the MongoDB collection "${collectionName}"?`,
-      },
-    });
-  
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // User clicked 'Yes', proceed with deletion
-        this.deleteMongoCollection(collectionName, execution, workflowName);
-      }
-      // If 'No' or closed, do nothing (cancellation)
-    });
-  }
-
   /**
    * Convert a numeric timestamp to a human-readable time string.
    */
@@ -167,31 +146,6 @@ export class NgbModalUserQuotaComponent implements OnInit {
         link.click();
       });
   }
-
-  openConfirmationDialog(action: string, fileId: number, fileName: string): void {
-
-    this.activeModel.dismiss();
-
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      width: '300px',
-      data: {
-        title: 'Confirm Action',
-        message: `Are you sure you want to ${action} "${fileName}"?`,
-      },
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        // User clicked 'Yes', perform the action (download or delete)
-        if (action === 'delete') {
-          this.deleteFile(fileId);
-        } else if (action === 'download') {
-          this.downloadFile(fileId, fileName);
-        }
-      }
-    });
-  }
-
 
   convertFileSize(sizeInBytes: number): string {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
