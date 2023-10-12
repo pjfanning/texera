@@ -6,6 +6,8 @@ package edu.uci.ics.texera.web.model.jooq.generated.tables.pojos;
 
 import edu.uci.ics.texera.web.model.jooq.generated.tables.interfaces.IDataset;
 
+import java.sql.Timestamp;
+
 import org.jooq.types.UInteger;
 
 
@@ -15,13 +17,14 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset implements IDataset {
 
-    private static final long serialVersionUID = -2001076184;
+    private static final long serialVersionUID = -667286698;
 
-    private UInteger did;
-    private String   name;
-    private Byte     isPublic;
-    private String   storagePath;
-    private String   description;
+    private UInteger  did;
+    private String    name;
+    private Byte      isPublic;
+    private String    storagePath;
+    private String    description;
+    private Timestamp creationTime;
 
     public Dataset() {}
 
@@ -31,20 +34,23 @@ public class Dataset implements IDataset {
         this.isPublic = value.getIsPublic();
         this.storagePath = value.getStoragePath();
         this.description = value.getDescription();
+        this.creationTime = value.getCreationTime();
     }
 
     public Dataset(
-        UInteger did,
-        String   name,
-        Byte     isPublic,
-        String   storagePath,
-        String   description
+        UInteger  did,
+        String    name,
+        Byte      isPublic,
+        String    storagePath,
+        String    description,
+        Timestamp creationTime
     ) {
         this.did = did;
         this.name = name;
         this.isPublic = isPublic;
         this.storagePath = storagePath;
         this.description = description;
+        this.creationTime = creationTime;
     }
 
     @Override
@@ -98,6 +104,16 @@ public class Dataset implements IDataset {
     }
 
     @Override
+    public Timestamp getCreationTime() {
+        return this.creationTime;
+    }
+
+    @Override
+    public void setCreationTime(Timestamp creationTime) {
+        this.creationTime = creationTime;
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Dataset (");
 
@@ -106,6 +122,7 @@ public class Dataset implements IDataset {
         sb.append(", ").append(isPublic);
         sb.append(", ").append(storagePath);
         sb.append(", ").append(description);
+        sb.append(", ").append(creationTime);
 
         sb.append(")");
         return sb.toString();
@@ -122,6 +139,7 @@ public class Dataset implements IDataset {
         setIsPublic(from.getIsPublic());
         setStoragePath(from.getStoragePath());
         setDescription(from.getDescription());
+        setCreationTime(from.getCreationTime());
     }
 
     @Override

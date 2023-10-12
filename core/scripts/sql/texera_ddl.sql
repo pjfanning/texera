@@ -205,10 +205,12 @@ CREATE TABLE IF NOT EXISTS workflow_runtime_statistics
 
 CREATE TABLE IF NOT EXISTS dataset
 (
-    `did`             INT UNSIGNED NOT NULL,
-    `name`            VARCHAR(128) NOT NULL DEFAULT 'Untitled Dataset',
+    `did`             INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `name`            VARCHAR(128) NOT NULL,
     `is_public`       TINYINT NOT NULL DEFAULT 1,
-    `storage_path`    VARCHAR(512),
+    `storage_path`    VARCHAR(512) NOT NULL,
+    `description`     VARCHAR(512) NOT NULL,
+    `creation_time`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(`did`)
     ) ENGINE = INNODB;
 

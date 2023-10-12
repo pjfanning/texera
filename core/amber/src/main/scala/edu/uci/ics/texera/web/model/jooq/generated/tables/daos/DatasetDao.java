@@ -7,6 +7,7 @@ package edu.uci.ics.texera.web.model.jooq.generated.tables.daos;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.DatasetRecord;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 import org.jooq.Configuration;
@@ -114,5 +115,19 @@ public class DatasetDao extends DAOImpl<DatasetRecord, edu.uci.ics.texera.web.mo
      */
     public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchByDescription(String... values) {
         return fetch(Dataset.DATASET.DESCRIPTION, values);
+    }
+
+    /**
+     * Fetch records that have <code>creation_time BETWEEN lowerInclusive AND upperInclusive</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchRangeOfCreationTime(Timestamp lowerInclusive, Timestamp upperInclusive) {
+        return fetchRange(Dataset.DATASET.CREATION_TIME, lowerInclusive, upperInclusive);
+    }
+
+    /**
+     * Fetch records that have <code>creation_time IN (values)</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchByCreationTime(Timestamp... values) {
+        return fetch(Dataset.DATASET.CREATION_TIME, values);
     }
 }

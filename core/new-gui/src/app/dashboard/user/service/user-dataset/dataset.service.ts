@@ -20,11 +20,12 @@ export const DATASET_DELETE_URL = DATASET_BASE_URL + "/delete";
 export class DatasetService {
   constructor(private http: HttpClient, private notificationService: NotificationService) {}
 
-  public createDataset(dataset: Dataset): Observable<Dataset> {
+  public createDataset(dataset: Dataset): Observable<DashboardDataset> {
     return this.http
-      .post<Dataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, {
+      .post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, {
         name: dataset.name,
-        did: dataset.did
+        is_public: dataset.is_public,
+        description: dataset.description,
     }).pipe()
   }
 

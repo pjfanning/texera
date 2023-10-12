@@ -9,15 +9,17 @@ import edu.uci.ics.texera.web.model.jooq.generated.Keys;
 import edu.uci.ics.texera.web.model.jooq.generated.TexeraDb;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.DatasetRecord;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -33,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset extends TableImpl<DatasetRecord> {
 
-    private static final long serialVersionUID = -1476990983;
+    private static final long serialVersionUID = -62562949;
 
     /**
      * The reference instance of <code>texera_db.dataset</code>
@@ -51,12 +53,12 @@ public class Dataset extends TableImpl<DatasetRecord> {
     /**
      * The column <code>texera_db.dataset.did</code>.
      */
-    public final TableField<DatasetRecord, UInteger> DID = createField(DSL.name("did"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
+    public final TableField<DatasetRecord, UInteger> DID = createField(DSL.name("did"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false).identity(true), this, "");
 
     /**
      * The column <code>texera_db.dataset.name</code>.
      */
-    public final TableField<DatasetRecord, String> NAME = createField(DSL.name("name"), org.jooq.impl.SQLDataType.VARCHAR(128).nullable(false).defaultValue(org.jooq.impl.DSL.inline("Untitled Dataset", org.jooq.impl.SQLDataType.VARCHAR)), this, "");
+    public final TableField<DatasetRecord, String> NAME = createField(DSL.name("name"), org.jooq.impl.SQLDataType.VARCHAR(128).nullable(false), this, "");
 
     /**
      * The column <code>texera_db.dataset.is_public</code>.
@@ -66,12 +68,17 @@ public class Dataset extends TableImpl<DatasetRecord> {
     /**
      * The column <code>texera_db.dataset.storage_path</code>.
      */
-    public final TableField<DatasetRecord, String> STORAGE_PATH = createField(DSL.name("storage_path"), org.jooq.impl.SQLDataType.VARCHAR(512), this, "");
+    public final TableField<DatasetRecord, String> STORAGE_PATH = createField(DSL.name("storage_path"), org.jooq.impl.SQLDataType.VARCHAR(512).nullable(false), this, "");
 
     /**
      * The column <code>texera_db.dataset.description</code>.
      */
-    public final TableField<DatasetRecord, String> DESCRIPTION = createField(DSL.name("description"), org.jooq.impl.SQLDataType.VARCHAR(512), this, "");
+    public final TableField<DatasetRecord, String> DESCRIPTION = createField(DSL.name("description"), org.jooq.impl.SQLDataType.VARCHAR(512).nullable(false), this, "");
+
+    /**
+     * The column <code>texera_db.dataset.creation_time</code>.
+     */
+    public final TableField<DatasetRecord, Timestamp> CREATION_TIME = createField(DSL.name("creation_time"), org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.field("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
 
     /**
      * Create a <code>texera_db.dataset</code> table reference
@@ -117,6 +124,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
     }
 
     @Override
+    public Identity<DatasetRecord, UInteger> getIdentity() {
+        return Keys.IDENTITY_DATASET;
+    }
+
+    @Override
     public UniqueKey<DatasetRecord> getPrimaryKey() {
         return Keys.KEY_DATASET_PRIMARY;
     }
@@ -153,11 +165,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<UInteger, String, Byte, String, String> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<UInteger, String, Byte, String, String, Timestamp> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }
