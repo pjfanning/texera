@@ -552,9 +552,11 @@ class DashboardResource {
             case "NameAsc"        => datasetQuery.orderBy(DATASET.NAME.asc())
             case "NameDesc"       => datasetQuery.orderBy(DATASET.NAME.desc())
             case _ =>
-              throw new BadRequestException(
-                "Unknown orderBy. Only 'NameAsc', 'NameDesc' are allowed"
-              )
+              datasetQuery.orderBy(DATASET.NAME.asc())
+              // TODO: figure out why order by is not set
+//              throw new BadRequestException(
+//                "Unknown orderBy. Only 'NameAsc', 'NameDesc' are allowed"
+//              )
           }
           orderedQuery.limit(count + 1).offset(offset).fetch()
         case "project" =>

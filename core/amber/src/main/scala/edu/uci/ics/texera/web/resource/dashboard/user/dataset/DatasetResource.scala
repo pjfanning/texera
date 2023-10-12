@@ -6,32 +6,10 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, Data
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DashboardDataset,
-  DatasetHierarchy,
-  DatasetIDs,
-  DatasetVersions,
-  OWN,
-  PUBLIC,
-  READ,
-  context,
-  getDatasetByID,
-  getDatasetVersionDescByIDAndName,
-  getUserAccessLevelOfDataset,
-  userAllowedToReadDataset,
-  withExceptionHandling,
-  withTransaction
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DatasetHierarchy, DatasetIDs, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionDescByIDAndName, getUserAccessLevelOfDataset, userAllowedToReadDataset, withExceptionHandling, withTransaction}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.UserHasNoAccessToDatasetException
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{
-  DatasetFileHierarchy,
-  LocalFileStorage,
-  PathUtils
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{
-  GitSharedRepoVersionControl,
-  VersionDescriptor
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{DatasetFileHierarchy, LocalFileStorage, PathUtils}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{GitSharedRepoVersionControl, VersionDescriptor}
 import io.dropwizard.auth.Auth
 import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
 import org.jooq.DSLContext
@@ -41,16 +19,7 @@ import org.jooq.types.UInteger
 import java.io.{InputStream, OutputStream}
 import java.util.Optional
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  Consumes,
-  GET,
-  InternalServerErrorException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
@@ -169,8 +138,8 @@ object DatasetResource {
 class DatasetResource {
 
   @POST
-  @Path("/persist")
-  def createDataset(@Auth user: SessionUser, dataset: Dataset): Response = {
+  @Path("/create")
+  def createDataset(@Auth user: SessionUser, dataset: Dataset): DashboardDataset = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val uid = user.getUid
@@ -184,21 +153,26 @@ class DatasetResource {
         dataset.setStoragePath(datasetPath)
         datasetDao.insert(dataset)
 
-        val did = ctx
+        val createdDataset = ctx
           .insertInto(DATASET) // Assuming DATASET is the table reference
           .set(ctx.newRecord(DATASET, dataset))
           .returning(DATASET.DID) // Assuming ID is the primary key column
           .fetchOne()
-          .getDid
+
+        println("insert a dataset record")
 
         val datasetOfUser = new DatasetOfUser()
-        datasetOfUser.setDid(did)
+        datasetOfUser.setDid(createdDataset.getDid)
         datasetOfUser.setUid(uid)
         datasetOfUser.setAccessLevel(OWN)
 
         datasetOfUserDao.insert(datasetOfUser)
+        println("insert a access record")
 
-        Response.ok().build()
+        DashboardDataset(
+          new Dataset(createdDataset.getDid, createdDataset.getName, createdDataset.getIsPublic, createdDataset.getStoragePath, createdDataset.getDescription, createdDataset.getCreationTime),
+          getAccessLevel(OWN),
+          isOwner = true)
       }
     }
   }
@@ -290,35 +264,35 @@ class DatasetResource {
     })
   }
 
-  @GET
-  @Path("/list")
-  def getDatasetList(
-      @Auth user: SessionUser
-  ): List[DashboardDataset] = {
-    val uid = user.getUid
-    withExceptionHandling({ () =>
-      withTransaction(context)(ctx => {
-        // Fetch datasets either public or accessible to the user
-        val datasets = ctx
-          .select()
-          .from(DATASET)
-          .leftJoin(DATASET_OF_USER)
-          .on(DATASET.DID.eq(DATASET_OF_USER.DID))
-          .where(
-            DATASET.IS_PUBLIC
-              .eq(PUBLIC) // Assuming PUBLIC is a constant representing '1' or true
-              .or(DATASET_OF_USER.UID.eq(uid))
-          )
-          .fetchInto(
-            classOf[Dataset]
-          ) // Assuming Dataset is the jOOQ generated class for your table
-
-        // Transform datasets into DashboardDataset objects
-        val datasetList = datasets.map(d => DashboardDataset(d)).toList
-        datasetList
-      })
-    })
-  }
+//  @GET
+//  @Path("/list")
+//  def getDatasetList(
+//      @Auth user: SessionUser
+//  ): List[DashboardDataset] = {
+//    val uid = user.getUid
+//    withExceptionHandling({ () =>
+//      withTransaction(context)(ctx => {
+//        // Fetch datasets either public or accessible to the user
+//        val datasets = ctx
+//          .select()
+//          .from(DATASET)
+//          .leftJoin(DATASET_OF_USER)
+//          .on(DATASET.DID.eq(DATASET_OF_USER.DID))
+//          .where(
+//            DATASET.IS_PUBLIC
+//              .eq(PUBLIC) // Assuming PUBLIC is a constant representing '1' or true
+//              .or(DATASET_OF_USER.UID.eq(uid))
+//          )
+//          .fetchInto(
+//            classOf[Dataset]
+//          ) // Assuming Dataset is the jOOQ generated class for your table
+//
+//        // Transform datasets into DashboardDataset objects
+//        val datasetList = datasets.map(d => DashboardDataset(d)).toList
+//        datasetList
+//      })
+//    })
+//  }
 
   @GET
   @Path("/{did}/version/list")

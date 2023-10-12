@@ -59,6 +59,7 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<DatasetRecord, UInteger> IDENTITY_DATASET = Identities0.IDENTITY_DATASET;
     public static final Identity<FileRecord, UInteger> IDENTITY_FILE = Identities0.IDENTITY_FILE;
     public static final Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Identities0.IDENTITY_PROJECT;
     public static final Identity<UserRecord, UInteger> IDENTITY_USER = Identities0.IDENTITY_USER;
@@ -124,6 +125,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     private static class Identities0 {
+        public static Identity<DatasetRecord, UInteger> IDENTITY_DATASET = Internal.createIdentity(Dataset.DATASET, Dataset.DATASET.DID);
         public static Identity<FileRecord, UInteger> IDENTITY_FILE = Internal.createIdentity(File.FILE, File.FILE.FID);
         public static Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Internal.createIdentity(Project.PROJECT, Project.PROJECT.PID);
         public static Identity<UserRecord, UInteger> IDENTITY_USER = Internal.createIdentity(User.USER, User.USER.UID);

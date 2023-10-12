@@ -5,7 +5,7 @@
   </button>
 </div>
 <div class="modal-body">
-  <form (submit)="submit()">
+  <form (submit)="onSubmitAddDataset()">
     <div class="form-group">
       <label for="name">Name:</label>
       <input type="text" class="form-control" id="name" [(ngModel)]="dataset.name" name="name" required>

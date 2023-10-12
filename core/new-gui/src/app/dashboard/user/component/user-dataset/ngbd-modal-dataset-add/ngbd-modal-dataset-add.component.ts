@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import {DatasetService} from "../../../service/user-dataset/dataset.service";
+import {Dataset} from "../../../../../common/type/dataset";
+import {untilDestroyed} from "@ngneat/until-destroy";
 
 @Component({
   selector: 'ngbd-modal-dataset-add.component',
@@ -8,12 +11,15 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 })
 export class NgbdModalDatasetAddComponent implements OnInit {
   dataset = {
-    name: '',
+    name: 'Untitled Dataset',
     description: '',
     isPublic: false
   };
 
-  constructor(public activeModal: NgbActiveModal) { }
+  constructor(
+    private activeModal: NgbActiveModal,
+    private datasetService: DatasetService
+  ) {}
 
   ngOnInit(): void {}
 
@@ -21,9 +27,22 @@ export class NgbdModalDatasetAddComponent implements OnInit {
     this.activeModal.close();
   }
 
-  submit(): void {
+  onSubmitAddDataset(): void {
     // Handle your form submission here
-    console.log(this.dataset);
+    const dataset: Dataset = {
+      name: this.dataset.name,
+      description: this.dataset.description,
+      is_public: Number(this.dataset.isPublic),
+      did: undefined,
+      storage_path: undefined,
+      creation_time: undefined
+    }
+    this.datasetService.createDataset(dataset)
+      .pipe()
+      .subscribe({
+        next: value => console.log("Dataset Creation succeed"),
+        error: (err) => alert(err.error),
+      })
     this.activeModal.close(this.dataset);
   }
 }
