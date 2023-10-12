@@ -23,6 +23,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
+import edu.uci.ics.texera.workflow.operators.partsofspeech.PartsOfSpeechOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -157,7 +158,8 @@ trait StateTransferFunc
     new Type(value = classOf[GanttChartOpDesc], name = "GanttChart"),
     new Type(value = classOf[ImageVisualizerOpDesc], name = "ImageVisualizer"),
     new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart"),
-    new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot")
+    new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot"),
+    new Type(value = classOf[PartsOfSpeechOpDesc], name = "PartsOfSpeech")
   )
 )
 abstract class OperatorDescriptor extends Serializable {
