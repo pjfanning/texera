@@ -68,13 +68,13 @@
             <p class="info-content">{{ convertFileSize(this.totalFileSize) }}</p>
           </div>
           <div class="info-box">
-            <h2 class="info-heading">Total Size of MongoDB Usage</h2>
+            <h2 class="info-heading">Total Operator Cache Size</h2>
             <p class="info-content">{{ convertFileSize(this.totalMongoSize) }}</p>
           </div>
         </div>
       </nz-tab>
       <nz-tab
-        nzTitle = "mongoDB">
+        nzTitle = "Operator Cache">
         <nz-collapse>
           <nz-collapse-panel *ngFor="let workflow of mongodbWorkflows" [nzHeader]="workflow.workflowName">
             <nz-table
@@ -88,7 +88,7 @@
                   <th>Execution ID</th>
                   <th
                     [nzSortFn]="sortByMongoDBSize">
-                    Size in MongoDB
+                    Cache Size
                   </th>
                   <th>Action</th>
                 </tr>
