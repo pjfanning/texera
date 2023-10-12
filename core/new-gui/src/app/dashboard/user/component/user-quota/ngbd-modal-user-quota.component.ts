@@ -5,7 +5,6 @@ import { AdminUserService } from "../../../admin/service/admin-user.service";
 import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../common/type/user"
 import { UserFileService } from "../../service/user-file/user-file.service";
 import { NzTableSortFn } from "ng-zorro-antd/table";
-import { ConfirmationDialogComponent } from './confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 
 
