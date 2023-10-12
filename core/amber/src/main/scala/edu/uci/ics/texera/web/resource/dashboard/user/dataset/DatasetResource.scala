@@ -151,12 +151,11 @@ class DatasetResource {
         val datasetFileStorage = new LocalFileStorage(datasetPath)
         datasetFileStorage.initDir()
         dataset.setStoragePath(datasetPath)
-        datasetDao.insert(dataset)
 
         val createdDataset = ctx
           .insertInto(DATASET) // Assuming DATASET is the table reference
           .set(ctx.newRecord(DATASET, dataset))
-          .returning(DATASET.DID) // Assuming ID is the primary key column
+          .returning() // Assuming ID is the primary key column
           .fetchOne()
 
         println("insert a dataset record")
