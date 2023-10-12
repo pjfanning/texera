@@ -16,6 +16,7 @@ import {NgbdModalDatasetAddComponent} from "./ngbd-modal-dataset-add/ngbd-modal-
 export const ROUTER_DATASET_VIEW_URL = "/"
 @UntilDestroy()
 @Component({
+  selector: "texera-dataset-section",
   templateUrl: "user-dataset.component.html",
   styleUrls: ["user-dataset.component.scss"]
 })
@@ -45,7 +46,7 @@ export class UserDatasetComponent implements AfterViewInit {
   }
   private masterFilterList: ReadonlyArray<string> | null = null;
 
-  public sortMethod = SortMethod.EditTimeDesc;
+  public sortMethod = SortMethod.NameAsc;
   lastSortMethod: SortMethod | null = null;
 
   constructor(
@@ -66,26 +67,7 @@ export class UserDatasetComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {
-    this.userService
-      .userChanged()
-      .pipe(untilDestroyed(this))
-      .subscribe(() => this.search());
-  }
-
-  /**
-   * open the Modal to add workflow(s) to project
-   */
-  public onClickOpenAddWorkflow() {
-    // TODO: substitute withDatasetAdd Model
-    const modalRef = this.modalService.open(NgbdModalDatasetAddComponent);
-
-    // retrieve updated values from modal via promise
-    modalRef.result.then(result => {
-      if (result) {
-        // force the search to update the workflow list.
-        this.search(true);
-      }
-    });
+    this.reloadDashboardDatasetEntries()
   }
 
   /**
@@ -136,8 +118,19 @@ export class UserDatasetComponent implements AfterViewInit {
     // this.router.navigate([`${ROUTER_DATASET_VIEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
   }
 
-  public createDataset() {
+  public onClickOpenDatasetAddComponent(): void {
+    const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
 
+    modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
+      this.reloadDashboardDatasetEntries(true)
+    });
+  }
+
+  private reloadDashboardDatasetEntries(forced: boolean = false): void {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => this.search(forced));
   }
 
   public deleteDataset(event: DashboardEntry) {
