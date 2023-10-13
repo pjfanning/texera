@@ -1,25 +1,33 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import {DatasetService} from "../../../service/user-dataset/dataset.service";
-import {Dataset} from "../../../../../common/type/dataset";
-import {untilDestroyed} from "@ngneat/until-destroy";
 
+import { DatasetService } from "../../../service/user-dataset/dataset.service";
+import { Dataset } from "../../../../../common/type/dataset";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import { UserService } from "../../../../../common/service/user/user.service";
+
+@UntilDestroy()
 @Component({
   selector: 'ngbd-modal-dataset-add.component',
   templateUrl: './ngbd-modal-dataset-add.component.html',
   styleUrls: ['./ngbd-modal-dataset-add.component.scss']
 })
 export class NgbdModalDatasetAddComponent implements OnInit {
-  dataset = {
-    name: 'Untitled Dataset',
-    description: '',
-    isPublic: false
-  };
+  validateForm: FormGroup;
 
   constructor(
     private activeModal: NgbActiveModal,
-    private datasetService: DatasetService
-  ) {}
+    private datasetService: DatasetService,
+    private formBuilder: FormBuilder,
+    private userService: UserService
+  ) {
+    this.validateForm = this.formBuilder.group({
+      name: ["Untitled Dataset"],
+      description: [""],
+      isPublic: [0],
+    });
+  }
 
   ngOnInit(): void {}
 
@@ -28,21 +36,21 @@ export class NgbdModalDatasetAddComponent implements OnInit {
   }
 
   onSubmitAddDataset(): void {
-    // Handle your form submission here
-    const dataset: Dataset = {
-      name: this.dataset.name,
-      description: this.dataset.description,
-      is_public: Number(this.dataset.isPublic),
+    const ds: Dataset = {
+      name: this.validateForm.get('name')?.value,
+      description: this.validateForm.get('description')?.value,
+      isPublic: this.validateForm.get('isPublic')?.value,
       did: undefined,
-      storage_path: undefined,
-      creation_time: undefined
+      storagePath: undefined,
+      creationTime: undefined
     }
-    this.datasetService.createDataset(dataset)
-      .pipe()
+
+    this.datasetService.createDataset(ds)
+      .pipe(untilDestroyed(this))
       .subscribe({
-        next: value => console.log("Dataset Creation succeed"),
+        next: value => console.log("Dataset Creation succeeded"),
         error: (err) => alert(err.error),
-      })
-    this.activeModal.close(this.dataset);
+        complete: () => this.activeModal.close()
+      });
   }
 }
