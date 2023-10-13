@@ -11,6 +11,8 @@ export class DashboardEntry {
     } else if ("name" in this.value) {
       return "project";
     } else if ("ownerEmail" in this.value) {
+      return "file";
+    } else if ("dataset" in this.value) {
       return "dataset";
     }
     throw new Error("Unexpected type in DashboardEntry.");
@@ -32,8 +34,7 @@ export class DashboardEntry {
     if ("workflow" in this.value) {
       return this.value.workflow.creationTime;
     } else if ("dataset" in this.value) {
-      // TODO: fix this
-      return 0;
+      return this.value.dataset.creationTime;
     } else if ("name" in this.value) {
       return this.value.creationTime;
     } else if ("ownerEmail" in this.value) {
@@ -46,8 +47,7 @@ export class DashboardEntry {
     if ("workflow" in this.value) {
       return this.value.workflow.lastModifiedTime;
     } else if ("dataset" in this.value) {
-      // TODO: fix this
-      return 0;
+      return this.value.dataset.creationTime;
     } else if ("name" in this.value) {
       return this.value.creationTime;
     } else if ("ownerEmail" in this.value) {
