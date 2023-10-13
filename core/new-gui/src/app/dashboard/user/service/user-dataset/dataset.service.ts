@@ -24,7 +24,7 @@ export class DatasetService {
     return this.http
       .post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, {
         name: dataset.name,
-        is_public: dataset.is_public,
+        isPublic: dataset.isPublic,
         description: dataset.description,
     }).pipe()
   }
