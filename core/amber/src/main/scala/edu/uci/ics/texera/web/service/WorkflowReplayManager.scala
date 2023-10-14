@@ -167,9 +167,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
           startTime += System.currentTimeMillis() - pauseStart
           pauseStart = 0
         }
-        if(estimationHandler.isCancelled && replayStart == 0L){
-          estimationHandler = setupEstimation()
-        }
+//        if(estimationHandler.isCancelled && replayStart == 0L){
+//          estimationHandler = setupEstimation()
+//        }
       case WorkflowAggregatedState.PAUSED =>
         pauseStart = System.currentTimeMillis()
         estimationHandler.cancel()
