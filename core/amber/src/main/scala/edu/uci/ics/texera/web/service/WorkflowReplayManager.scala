@@ -60,7 +60,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
     currentGapIdx = 0
     TexeraWebApplication.scheduleCallThroughActorSystem(1.millis){
       while(stateStore.jobMetadataStore.getState.state != COMPLETED){
-        Thread.sleep(Random.nextInt(4000) + 1000)
+        Thread.sleep(30000)
         client.executeAsync(actor => {
         val time = System.currentTimeMillis() - startTime
         val id = generateCheckpointId
