@@ -47,7 +47,7 @@ class PartsOfSpeechOpDesc extends MapOpDesc {
 
   override def operatorInfo =
     new OperatorInfo(
-      "Parts Of Speech",
+      "Parts of Speech",
       "analysis the Parts of Speech of a text using machine learning",
       OperatorGroupConstants.ANALYTICS_GROUP,
       List(InputPort("")),
