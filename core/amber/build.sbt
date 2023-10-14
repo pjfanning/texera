@@ -234,7 +234,7 @@ libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "3.9.2" classif
 libraryDependencies += "com.twitter" %% "chill-akka" % "0.10.0"
 
 // https://mvnrepository.com/artifact/com.twitter/util-core
-libraryDependencies += "com.twitter" %% "util-core" % "20.9.0"
+libraryDependencies += "com.twitter" %% "util-core" % "22.12.0"
 
 // https://mvnrepository.com/artifact/com.typesafe.play/play-json
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.7.3"

@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import akka.actor.PoisonPill
 import com.twitter.util.{Await, Future}
 import edu.uci.ics.amber.engine.architecture.checkpoint.{CheckpointHolder, SavedCheckpoint}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.CheckInitialized
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.logging.StepsOnChannel
@@ -34,25 +35,31 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
   }
 
   def restoreWorkers(): Unit = {
-    val workerRefs = Await.result(Future.collect(controller.controlProcessor.execution.getAllWorkers
+    val workerRefs = controller.controlProcessor.execution.getAllWorkers
       .map { worker =>
-        val conf = replayConfig.confs(worker)
         replayConfig.confs = replayConfig.confs - worker
-        controller.controlProcessor.workflow
+        (worker, controller.controlProcessor.workflow
           .getOperator(worker)
           .buildWorker(
             worker,
             AddressInfo(controller.getAvailableNodes(), controller.actorService.self.path.address),
-            controller.actorService,
-            controller.controlProcessor.execution.getOperatorExecution(worker),
-            Array(SetupReplay("replay - load", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
-          )
-      }.toSeq))
+            controller.actorService))
+      }
+    Thread.sleep(1000)
     logger.info("starting replay...")
-    workerRefs.foreach{
-      ref => ref ! StartReplay("replay - restart")
-    }
-
+    Await.result(Future.collect(workerRefs.map{
+      case (worker, ref) =>
+        val conf = replayConfig.confs(worker)
+        val cmds = Array(SetupReplay("replay - load", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
+        val opExecution = controller.controlProcessor.execution.getOperatorExecution(worker)
+        controller.actorService.ask(ref, CheckInitialized(cmds)).map {
+          _ =>
+            println(s"Worker Built! Actor for $worker is at $ref")
+            controller.actorService.registerActorForNetworkCommunication(worker, ref)
+            opExecution.getWorkerInfo(worker).ref = ref
+            ref ! StartReplay("replay - restart")
+        }
+    }.toSeq))
   }
 
   override def overwriteState(chkpt: SavedCheckpoint): Unit = {

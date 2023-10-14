@@ -245,31 +245,38 @@ case class OpExecConfig(
       opExecution: OperatorExecution,
       replayConf: WorkflowReplayConfig
   ): Unit = {
-    Await.result(Future.collect((0 until numWorkers)
+    val workers = (0 until numWorkers)
       .map(i => {
         val workerId: ActorVirtualIdentity = identifier(i)
-          buildWorker(
+        (workerId, buildWorker(
             workerId,
             addressInfo,
-            actorService,
-            opExecution,
-            (if(replayConf.confs.contains(workerId)){
-              val replayConfig = replayConf.confs(workerId)
-              Array(SetupReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
-            }else{
-              Array(SetupLogging(Constants.loggingEnabled))
-            })
-          )
-      })))
+            actorService
+          ))
+      })
+    Thread.sleep(1000)
+    Await.result(Future.collect(workers.map{
+      case (workerId, ref) =>
+        val cmds = (if (replayConf.confs.contains(workerId)) {
+          val replayConfig = replayConf.confs(workerId)
+          Array(SetupReplay("replay - respawn", replayConfig.fromCheckpoint, replayConfig.replayTo, replayConfig.checkpointConfig))
+        } else {
+          Array(SetupLogging(Constants.loggingEnabled))
+        })
+        actorService.ask(ref, CheckInitialized(cmds)).map {
+          _ =>
+            println(s"Worker Built! Actor for $workerId is at $ref")
+            actorService.registerActorForNetworkCommunication(workerId, ref)
+            opExecution.getWorkerInfo(workerId).ref = ref
+        }
+    }))
   }
 
   def buildWorker(
       workerId: ActorVirtualIdentity,
       addressInfo: AddressInfo,
-      actorService: WorkflowActorService,
-      opExecution: OperatorExecution,
-      extraCommands: Array[AmberInternalPayload]
-  ): Future[ActorRef] = {
+      actorService: WorkflowActorService
+  ): ActorRef = {
     val i = VirtualIdentityUtils.getWorkerIndex(workerId)
     val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
     val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
@@ -283,14 +290,6 @@ case class OpExecConfig(
         actorService.networkCommunicationActor
       )
     }
-    val ref =
-      actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
-    actorService.ask(ref, CheckInitialized(extraCommands)).map{
-      _ =>
-        println(s"Worker Built! Actor for $workerId is at $ref")
-        actorService.registerActorForNetworkCommunication(workerId, ref)
-        opExecution.getWorkerInfo(workerId).ref = ref
-        ref
-    }
+    actorService.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
   }
 }
