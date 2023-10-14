@@ -47,19 +47,17 @@ class ControllerCheckpointRestoreManager(@transient controller:Controller) exten
       }
     Thread.sleep(1000)
     logger.info("starting replay...")
-    Await.result(Future.collect(workerRefs.map{
+    workerRefs.foreach{
       case (worker, ref) =>
         val conf = replayConfig.confs(worker)
         val cmds = Array(SetupReplay("replay - load", conf.fromCheckpoint, conf.replayTo, conf.checkpointConfig))
         val opExecution = controller.controlProcessor.execution.getOperatorExecution(worker)
-        controller.actorService.ask(ref, CheckInitialized(cmds)).map {
-          _ =>
-            println(s"Worker Built! Actor for $worker is at $ref")
-            controller.actorService.registerActorForNetworkCommunication(worker, ref)
-            opExecution.getWorkerInfo(worker).ref = ref
-            ref ! StartReplay("replay - restart")
-        }
-    }.toSeq))
+        ref! CheckInitialized(cmds)
+        println(s"Worker Built! Actor for $worker is at $ref")
+        controller.actorService.registerActorForNetworkCommunication(worker, ref)
+        opExecution.getWorkerInfo(worker).ref = ref
+        ref ! StartReplay("replay - restart")
+    }
   }
 
   override def overwriteState(chkpt: SavedCheckpoint): Unit = {

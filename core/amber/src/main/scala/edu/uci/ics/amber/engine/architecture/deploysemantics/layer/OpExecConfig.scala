@@ -255,7 +255,7 @@ case class OpExecConfig(
           ))
       })
     Thread.sleep(1000)
-    Await.result(Future.collect(workers.map{
+    workers.foreach{
       case (workerId, ref) =>
         val cmds = (if (replayConf.confs.contains(workerId)) {
           val replayConfig = replayConf.confs(workerId)
@@ -263,13 +263,11 @@ case class OpExecConfig(
         } else {
           Array(SetupLogging(Constants.loggingEnabled))
         })
-        actorService.ask(ref, CheckInitialized(cmds)).map {
-          _ =>
-            println(s"Worker Built! Actor for $workerId is at $ref")
-            actorService.registerActorForNetworkCommunication(workerId, ref)
-            opExecution.getWorkerInfo(workerId).ref = ref
-        }
-    }))
+        ref ! CheckInitialized(cmds)
+        println(s"Worker Built! Actor for $workerId is at $ref")
+        actorService.registerActorForNetworkCommunication(workerId, ref)
+        opExecution.getWorkerInfo(workerId).ref = ref
+    }
   }
 
   def buildWorker(

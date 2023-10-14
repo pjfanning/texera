@@ -122,7 +122,7 @@ abstract class WorkflowActor(
         cmd => this.handlePayloadAndMarker(OutsideWorldChannelEndpointID, cmd)
       }
       start()
-      sender ! Ack
+      //sender ! Ack
   }
 
 

@@ -12,7 +12,7 @@ object JsonTest {
   def main(args: Array[String]): Unit = {
 
 
-    val file = Paths.get("").resolve("latest-interation-history-w1")
+    val file = Paths.get("").resolve("latest-interation-history-w4")
     if(!Files.exists(file)){
       println("no interaction history found!")
       return
