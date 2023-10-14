@@ -24,16 +24,16 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorS
 """)
 class PartsOfSpeechOpDesc extends MapOpDesc {
   @JsonProperty(value = "attribute", required = true)
-  @JsonPropertyDescription("column to perform partsofspeech analysis on")
+  @JsonPropertyDescription("column to perform Parts of Speech analysis on")
   @AutofillAttributeName
   var attribute: String = _
 
   @JsonProperty(
     value = "result attribute",
     required = true,
-    defaultValue = "PartsOfSpeech"
+    defaultValue = "Parts of Speech"
   )
-  @JsonPropertyDescription("column name of the parts of speech result")
+  @JsonPropertyDescription("column name of the Parts of Speech result")
   var resultAttribute: String = _
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
@@ -48,7 +48,7 @@ class PartsOfSpeechOpDesc extends MapOpDesc {
   override def operatorInfo =
     new OperatorInfo(
       "Parts Of Speech",
-      "analysis the partsofSpeech of a text using machine learning",
+      "analysis the Parts of Speech of a text using machine learning",
       OperatorGroupConstants.ANALYTICS_GROUP,
       List(InputPort("")),
       List(OutputPort("")),
