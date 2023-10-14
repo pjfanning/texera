@@ -9,60 +9,48 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-import java.sql.Timestamp
-import java.util.Calendar
 import scala.collection.mutable
 
-class MonthlyCountOpExec(outSchema:Schema) extends OperatorExecutor with Serializable with CheckpointSupport {
+class Sentiment2OpExec(outSchema:Schema) extends OperatorExecutor with Serializable with CheckpointSupport {
 
-  var dedup = mutable.HashSet[Tuple]()
-  var currentMonth:Int = 0
-  var currentDate: Int = 0
+  var context = new mutable.Queue[(String,String)]
+  val knn = new TextKNN()
+  knn.addDocument("I love this product", "good")
+  knn.addDocument("This is the worst product I've ever seen", "bad")
+  val contextSize = 1000
   override def processTexeraTuple(tuple: Either[Tuple, InputExhausted], input: Int, pauseManager: PauseManager, asyncRPCClient: AsyncRPCClient): Iterator[Tuple] = {
     if(tuple.isLeft){
-      val time = tuple.left.get.getField("create_at").asInstanceOf[Timestamp]
-      var count = -1L
-      if(currentMonth != time.getMonth){
-        currentMonth = time.getMonth
-        count = dedup.size
-        dedup.clear()
+      val review = tuple.left.get.getField("reviewText").asInstanceOf[String]
+      var result = "unknown"
+      if(review != null){
+        result = knn.predictSentiment(review)
+        context.enqueue((review, result))
+        if (context.size > contextSize) {
+          val old = context.dequeue()
+          knn.removeDocument(old._1)
+        }
       }
-      dedup.add(tuple.left.get)
-      if(count >= 0){
-        val builder = Tuple.newBuilder(outSchema).add("count", AttributeType.LONG, count)
-        Iterator(builder.build())
-      }else{
-        Iterator.empty
-      }
+      val builder = Tuple.newBuilder(outSchema).add("sentiment", AttributeType.STRING, result)
+      Iterator(builder.build())
     }else{
-      val count:Long = dedup.size
-      if (count > 0) {
-        val builder = Tuple.newBuilder(outSchema).add("count", AttributeType.LONG, count)
-        Iterator(builder.build())
-      } else {
-        Iterator.empty
-      }
+      Iterator.empty
     }
   }
 
   override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
-    checkpoint.save("buffer", dedup)
-    checkpoint.save("currentMonth", currentMonth)
-    checkpoint.save("currentYear", currentDate)
+    checkpoint.save("context", context)
     val iterArr = currentIteratorState.toArray
     checkpoint.save("currentIter", iterArr)
     iterArr.toIterator
   }
 
   override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
-    dedup = checkpoint.load("buffer")
-    currentMonth = checkpoint.load("currentMonth")
-    currentDate = checkpoint.load("currentYear")
+    context = checkpoint.load("context")
     checkpoint.load("currentIter").asInstanceOf[Array[(ITuple, Option[Int])]].toIterator
   }
 
   override def getEstimatedCheckpointTime: Int = {
-    AmberUtils.serde.serialize(dedup).get.length
+    AmberUtils.serde.serialize(context).get.length
   }
 
   override def open(): Unit = {}

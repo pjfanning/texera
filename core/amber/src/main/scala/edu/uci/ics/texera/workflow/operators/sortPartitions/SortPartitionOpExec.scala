@@ -76,6 +76,12 @@ class SortPartitionOpExec(
   }
 
   override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+    if (queue == null) {
+      checkpoint.save("unorderedTuples",unorderedTuples)
+    } else {
+      checkpoint.save("queue",queue)
+    }
+
     currentIteratorState
   }
 

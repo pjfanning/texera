@@ -35,7 +35,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       actorId,
       checkpoint.stepCursorAtCheckpoint,
       checkpoint.checkpointId,
-      checkpoint.chkpt
+      checkpoint.chkpt, checkpoint.chkpt.size()
     )
     logger.info(
       s"local checkpoint completed! checkpoint id = ${checkpoint.logicalSnapshotId} initial time spent = ${checkpoint.initialCheckpointTime / 1000f}s alignment time = ${(System.currentTimeMillis() - checkpoint.startTime) / 1000f}s"
@@ -46,7 +46,7 @@ abstract class CheckpointRestoreManager(@transient actor:WorkflowActor) extends 
       checkpoint.fifoInputState,
       checkpoint.fifoOutputState,
       alignmentCost,
-      checkpoint.initialCheckpointTime)
+      checkpoint.chkpt.size())
   }
 
   def restoreFromCheckpointAndSetupReplay(replayId:String, fromCheckpoint:Option[Long], replayTo:Option[Long], confs:Array[ReplayCheckpointConfig], pendingCheckpoints:mutable.HashMap[String, MarkerCollectionSupport]): Unit ={

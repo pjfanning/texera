@@ -18,13 +18,14 @@ import java.nio.file.{Files, Paths}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
+import scala.util.Random
 
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
 
 
-    val file = Paths.get("").resolve("latest-interation-history")
+    val file = Paths.get("").resolve("latest-interation-history-w4")
     if(!Files.exists(file)){
       println("no interaction history found!")
       return
@@ -32,30 +33,61 @@ object JsonTest {
     val ois = new ObjectInputStream(new FileInputStream(file.toFile))
     val history = ois.readObject.asInstanceOf[ProcessingHistory]
     ois.close()
+
+//    (0 until 50).foreach{
+//      i =>
+//      println(Random.nextInt(4000) + 1000)
+//    }
     history.historyArray.foreach{
       i =>
-        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF3-SortPartitions-operator-4e18bee2-0a12-4478-9482-9bf1a7d32efb-main-0"))
-        println(cost)
-    }
-    println("-----------------------------------------------")
-    history.historyArray.foreach {
-      i =>
-        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF3-MonthlyTweetCount-operator-8fc57d16-a5c7-4839-bea3-9fcc775bb528-main-0"))
-        println(cost)
+        var cost = 0L
+        try{
+          cost = history.getSnapshot(i).checkpointCost
+        }catch{
+          case x: Throwable =>
+        }
+        println(i)
     }
 //    println("-----------------------------------------------")
 //    history.historyArray.foreach {
 //      i =>
-//        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF6-SortPartitions-operator-ed6e3d3c-699a-4f61-95f3-0f245479bd9b-main-0"))
+//        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF1-SortPartitions-operator-4e18bee2-0a12-4478-9482-9bf1a7d32efb-main-0"))
 //        println(cost)
 //    }
+//    println("-----------------------------------------------")
+//    history.historyArray.foreach {
+//      i =>
+//        val cost = history.getSnapshot(i).getCheckpointCost(ActorVirtualIdentity("Worker:WF1-Aggregate-operator-e8482e2e-0024-4fe6-8030-3e4db45abe02-localAgg-0"))
+//        println(cost+" "+(cost < costThreshold))
+//    }
     val planner = new ReplayCheckpointPlanner(history, 5000)
-    val plan2 = planner.findBestPlan(0,history.historyArray.length,5000,true, false)
-    println(plan2.values.map(history.getPlanCost).sum)
-    val plan3 = planner.toPartialPlan(planner.getGlobalPlan(0, history.historyArray.length,5000))
-    println(plan3.values.map(history.getPlanCost).sum)
-    val plan = planner.doPrepPhase("global")
-    println(plan)
+    val timelimits = Array(5000, 10000, 20000, 30000, 60000)
+    timelimits.foreach{
+      timelimit =>
+        println("tau = "+timelimit+"---------------")
+        var last = 0L
+        var idx = 0
+        val chkptset = mutable.ArrayBuffer[Int]()
+        history.historyArray.foreach {
+          i =>
+            val to_chkpt = i - last > timelimit
+            if (to_chkpt) {
+              last = i
+              chkptset.append(idx)
+            }
+            idx += 1
+        }
+        val plan3 = planner.getGlobalPlan(0, history.historyArray.length, timelimit)
+        println(plan3.map(i => {
+          history.getPlanCost(i)
+        }).sum)
+        println(chkptset.map(i => {
+          history.getPlanCost(i)
+        }).sum)
+        println((0 until idx).map(i => {
+          history.getPlanCost(i)
+        }).sum)
+    }
   }
 }
 

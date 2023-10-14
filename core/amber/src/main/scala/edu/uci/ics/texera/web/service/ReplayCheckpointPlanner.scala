@@ -214,7 +214,6 @@ class ReplayCheckpointPlanner(history:ProcessingHistory, timeLimit:Long) {
     }
   }
 
-
   def getReplayConfig(checkpointId: String, checkpointPlan: Map[ActorVirtualIdentity, Int]): Map[ActorVirtualIdentity, ReplayCheckpointConfig] = {
     checkpointPlan.map {
       case (identity, i) =>

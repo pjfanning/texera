@@ -18,6 +18,8 @@ object CheckpointHolder {
 
   private val completedCheckpoint = mutable.HashMap[ActorVirtualIdentity, mutable.HashSet[String]]()
 
+  private val checkpointSizes = mutable.HashMap[String, Long]()
+
   def hasCheckpoint(id:ActorVirtualIdentity, checkpointId:String): Boolean = {
     completedCheckpoint.contains(id) && completedCheckpoint(id).contains(checkpointId)
   }
@@ -41,32 +43,19 @@ object CheckpointHolder {
     checkpointsId.get(id).flatMap(_.get(name))
   }
 
-//  def findLastCheckpointOf(id: ActorVirtualIdentity, alignment: Long): Option[(Long, String, String)] = {
-//    if (checkpoints.contains(id)) {
-//      val res = Try(
-//        checkpoints(id).map(x => (alignment - x._1, x._1)).filter(_._1 >= 0).minBy(_._1)._2
-//      ).toOption
-//      if(res.isDefined){
-//        val ids = checkpointIdMap((id, res.get))
-//        Some((res.get, ids._1, ids._2))
-//      }else{
-//        None
-//      }
-//    } else {
-//      None
-//    }
-//  }
-
   def addCheckpoint(
                      id: ActorVirtualIdentity,
                      alignment: Long,
                      checkpointId:String,
-                     checkpoint: SavedCheckpoint
+                     checkpoint: SavedCheckpoint,
+                     size:Long
   ): Unit = {
+    val oldSize = checkpointSizes.getOrElseUpdate(checkpointId, 0L)
+    checkpointSizes(checkpointId) = oldSize + size
     completedCheckpoint.getOrElseUpdate(id, new mutable.HashSet[String]()).add(checkpointId)
     checkpointsId.getOrElseUpdate(id, new mutable.HashMap[String, Long]())(checkpointId) = alignment
-    checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
-      checkpoint
+//    checkpoints.getOrElseUpdate(id, new mutable.HashMap[Long, SavedCheckpoint]())(alignment) =
+//      checkpoint
     if(checkpoint != null){
       println(
         s"checkpoint $checkpointId stored for $id at alignment = ${alignment} size = ${checkpoint.size()} bytes"

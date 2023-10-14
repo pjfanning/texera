@@ -41,7 +41,7 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
   private val checkpointed = mutable.HashMap[ActorVirtualIdentity, Map[ChannelEndpointID, Long]]()
-
+  var checkpointCost = 0L
   def getSinks: Iterable[ActorVirtualIdentity] = {
     val dagParticipants = participants.keys.toSet diff Set(CONTROLLER, CLIENT)
     val senders = dagParticipants.map(participants).flatMap(_.inputStatus.keys.map(_.endpointWorker))
@@ -87,6 +87,7 @@ class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val tim
     participants(id) = cur.copy(checkpointCost = info.saveStateCost+info.alignmentCost, alignment = info.step)
     if(isCheckpointed){
       checkpointed(id) = info.outputWatermarks
+      checkpointCost += info.saveStateCost
     }else{
       info.inputWatermarks.foreach{
         case (channel, received) =>

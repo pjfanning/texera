@@ -22,7 +22,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.nn.{DNNOpDesc, MonthlyCountOpDesc}
+import edu.uci.ics.texera.workflow.operators.nn.{DNNOpDesc, MonthlyCountOpDesc, Sentiment2OpDesc}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -73,6 +73,7 @@ trait StateTransferFunc
     // disabled the ParallelCSVScanSourceOpDesc so that it does not confuse user. it can be re-enabled when doing experiments.
     new Type(value = classOf[ParallelCSVScanSourceOpDesc], name = "ParallelCSVFileScan"),
     new Type(value = classOf[MonthlyCountOpDesc], name = "MonthlyTweetCount"),
+    new Type(value = classOf[Sentiment2OpDesc], name = "Sentiment2"),
     new Type(value = classOf[JSONLScanSourceOpDesc], name = "JSONLFileScan"),
     new Type(
       value = classOf[TwitterFullArchiveSearchSourceOpDesc],

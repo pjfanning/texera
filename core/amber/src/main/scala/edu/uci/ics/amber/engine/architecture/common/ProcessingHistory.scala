@@ -106,8 +106,7 @@ class ProcessingHistory extends Serializable {
   }
 
   def getPlanCost(idx: Int): Long ={
-    val chkptPos = history(historyArray(idx)).getParticipants.map(x => x -> idx).toMap
-    getPlanCost(chkptPos)
+    history(historyArray(idx)).checkpointCost
   }
 
   override def toString: String = {

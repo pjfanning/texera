@@ -1,13 +1,9 @@
 package edu.uci.ics.texera.web.service
 
-import akka.actor.{Cancellable, PoisonPill}
+import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.architecture.checkpoint.CheckpointHolder
-import edu.uci.ics.amber.engine.architecture.common.LogicalExecutionSnapshot.ProcessingStats
 import edu.uci.ics.amber.engine.architecture.common.{LogicalExecutionSnapshot, ProcessingHistory}
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, WorkflowReplayConfig}
 import edu.uci.ics.amber.engine.architecture.recovery.InternalPayloadManager.{EstimateCheckpointCost, ReplayWorkflow, TakeRuntimeGlobalCheckpoint}
-import edu.uci.ics.amber.engine.architecture.worker.{ReplayCheckpointConfig, ReplayConfig}
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelEndpointID
 import edu.uci.ics.amber.engine.common.ambermessage.ClientEvent.{EstimationCompleted, ReplayCompleted, RuntimeCheckpointCompleted, WorkflowStateUpdate}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -44,7 +40,8 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
   private var estimationHandler = Cancellable.alreadyCancelled
 
   private var uniqueId = 0L
-
+  private var currentGapIdx = 0
+  //private val interactionGaps = Array(3340,3676,2214,1547,3013,2179,3456,1057,1628,4722,2868,4569,1642,2907,1267,1738,3364,3048,3224,1033,4223,2072,2712,4636,2351,4342,3511,2909,2763,1207,1526,3911,3757,1008,2634,2848,1077,3026,1897,2754,4717,3491,1822,4999,1991,4922,4380,3121,4547,4503)
   def generateCheckpointId: String = {
     uniqueId += 1
     s"global_checkpoint-$uniqueId"
@@ -57,10 +54,19 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
 
 
   def setupEstimation(): Cancellable ={
-    TexeraWebApplication.scheduleCallThroughActorSystem(2.seconds){
+//    TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds, estimationInterval) {
+//      doEstimation(false)
+//    }
+    currentGapIdx = 0
+    TexeraWebApplication.scheduleCallThroughActorSystem(1.millis){
       while(stateStore.jobMetadataStore.getState.state != COMPLETED){
-        Thread.sleep(Random.nextInt(10000) + 1000)
-        doEstimation(true)
+        Thread.sleep(Random.nextInt(4000) + 1000)
+        client.executeAsync(actor => {
+        val time = System.currentTimeMillis() - startTime
+        val id = generateCheckpointId
+        history.addSnapshot(time, new LogicalExecutionSnapshot(id, true, time), id)
+        actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+      })
       }
     }
   }
@@ -94,9 +100,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
     val actor = cmd.actorId
     val checkpointStats = cmd.checkpointStats
     if(!CheckpointHolder.hasCheckpoint(actor, checkpointStats.step)){
-      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.checkpointId, null)
+      CheckpointHolder.addCheckpoint(actor, checkpointStats.step, cmd.checkpointId, null, checkpointStats.saveStateCost)
     }
-    checkpointCost += cmd.checkpointStats.alignmentCost + cmd.checkpointStats.saveStateCost
+    checkpointCost += cmd.checkpointStats.saveStateCost
     val snapshot = history.getSnapshot(cmd.logicalSnapshotId)
     snapshot.addParticipant(actor, checkpointStats, true)
     stateStore.jobMetadataStore.updateState(state => {
@@ -161,9 +167,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
           startTime += System.currentTimeMillis() - pauseStart
           pauseStart = 0
         }
-        if(estimationHandler.isCancelled && replayStart == 0L){
-          estimationHandler = setupEstimation()
-        }
+//        if(estimationHandler.isCancelled && replayStart == 0L){
+//          estimationHandler = setupEstimation()
+//        }
       case WorkflowAggregatedState.PAUSED =>
         pauseStart = System.currentTimeMillis()
         estimationHandler.cancel()
@@ -175,7 +181,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
         stateStore.jobMetadataStore.updateState(state => {
           state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
         })
-        val file = Paths.get("").resolve("latest-interation-history")
+        val file = Paths.get("").resolve("latest-interation-history-w5")
         val oos = new ObjectOutputStream(new FileOutputStream(file.toFile))
         oos.writeObject(history)
         oos.close()

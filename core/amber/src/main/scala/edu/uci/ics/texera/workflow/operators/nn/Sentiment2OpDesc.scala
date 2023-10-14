@@ -8,19 +8,19 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, OperatorSchemaInfo, Schema}
 
-class MonthlyCountOpDesc extends OperatorDescriptor {
+class Sentiment2OpDesc extends OperatorDescriptor {
 
-  private val outSchema = new Schema(new Attribute("count",AttributeType.LONG))
+  private val outSchema = new Schema(new Attribute("sentiment",AttributeType.STRING))
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) =
     OpExecConfig.manyToOneLayer(
       operatorIdentifier,
-      _ => new MonthlyCountOpExec(outSchema)
+      _ => new Sentiment2OpExec(outSchema)
     )
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Monthly Tweet Count",
+      "Sentiment2 For Experiments",
       "bluh bluh bluh",
       OperatorGroupConstants.UTILITY_GROUP,
       inputPorts = List(InputPort()),
