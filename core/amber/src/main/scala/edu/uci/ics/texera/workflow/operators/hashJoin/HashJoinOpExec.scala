@@ -255,7 +255,10 @@ class HashJoinOpExec[K](
     buildTableHashMap.clear()
   }
 
-  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = currentIteratorState
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[Int])], checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = {
+    checkpoint.save("hashtable", buildTableHashMap)
+    currentIteratorState
+  }
 
   override def deserializeState(checkpoint: SavedCheckpoint): Iterator[(ITuple, Option[Int])] = Iterator.empty
 
