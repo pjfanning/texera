@@ -46,6 +46,7 @@ abstract class WorkflowActor(
       )
 
     case RegisterActorRef =>
+      logger.error("workflow actor should never receive register actor ref message")
       throw new WorkflowRuntimeException(
         "workflow actor should never receive register actor ref message"
       )

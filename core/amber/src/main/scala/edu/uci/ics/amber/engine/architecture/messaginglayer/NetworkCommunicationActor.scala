@@ -165,7 +165,7 @@ class NetworkCommunicationActor(
       }
     case RegisterActorRef(actorID, ref) =>
       registerActorRef(actorID, ref)
-      sender ! Ack
+      // sender ! Ack
   }
 
   /** This method forward a message by using tell pattern

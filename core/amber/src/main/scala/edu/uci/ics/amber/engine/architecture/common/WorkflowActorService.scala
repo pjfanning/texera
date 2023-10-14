@@ -28,7 +28,7 @@ class WorkflowActorService(actor:WorkflowActor) {
   }
 
   def registerActorForNetworkCommunication(workerId:ActorVirtualIdentity, ref:ActorRef): Unit ={
-    Await.result(ask(networkCommunicationActor,RegisterActorRef(workerId, ref)))
+    networkCommunicationActor ! RegisterActorRef(workerId, ref)
   }
 
   def scheduleOnce(delay:FiniteDuration, callable:() => Unit):Cancellable ={
