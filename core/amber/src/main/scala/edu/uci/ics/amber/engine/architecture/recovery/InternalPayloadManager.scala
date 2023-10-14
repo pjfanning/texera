@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.recovery
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.WorkflowReplayConfig
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLoggerImpl, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManagerImpl}
-import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, LocalFSLogStorage}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage, InMemoryLogStorage, LocalFSLogStorage}
 import edu.uci.ics.amber.engine.architecture.worker.ReplayCheckpointConfig
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -35,7 +35,7 @@ object InternalPayloadManager{
     if(loggingEnabled){
       actor.determinantLogger = new DeterminantLoggerImpl()
       actor.logManager = new LogManagerImpl(actor.networkCommunicationActor, actor.determinantLogger)
-      actor.logStorage = new LocalFSLogStorage(actor.getLogName)
+      actor.logStorage = new InMemoryLogStorage(actor.getLogName)
       actor.logStorage.cleanPartiallyWrittenLogFile()
       actor.logManager.setupWriter(actor.logStorage.getWriter)
     }else{

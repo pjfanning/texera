@@ -36,6 +36,9 @@ public class SentimentAnalysisOpExec extends MapOpExec {
     }
 
     public Tuple processTuple(Tuple t) {
+        if(t.getField(opDesc.attribute()) == null){
+            return Tuple.newBuilder(operatorSchemaInfo.outputSchemas()[0]).add(t).add(opDesc.resultAttribute(), AttributeType.INTEGER, -1).build();
+        }
         String text = t.getField(opDesc.attribute()).toString();
         Annotation documentAnnotation = new Annotation(text);
         coreNlp.get().annotate(documentAnnotation);

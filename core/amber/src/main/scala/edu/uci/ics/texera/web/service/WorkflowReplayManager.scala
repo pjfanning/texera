@@ -181,7 +181,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
         stateStore.jobMetadataStore.updateState(state => {
           state.withNeedRefreshReplayState(state.needRefreshReplayState+1)
         })
-        val file = Paths.get("").resolve("latest-interation-history-w5")
+        val file = Paths.get("").resolve("latest-interation-history")
         val oos = new ObjectOutputStream(new FileOutputStream(file.toFile))
         oos.writeObject(history)
         oos.close()
