@@ -37,7 +37,7 @@ object LogicalExecutionSnapshot{
   final case class ProcessingStats(checkpointCost:Long, alignment:Long, inputStatus:ChannelStatsMapping)
 }
 
-class LogicalExecutionSnapshot(val id:String, val isInteraction:Boolean, val timestamp:Long) extends Serializable {
+class LogicalExecutionSnapshot(val id:String, var isInteraction:Boolean, val timestamp:Long) extends Serializable {
 
   private val participants = mutable.HashMap[ActorVirtualIdentity, ProcessingStats]()
   private val checkpointed = mutable.HashMap[ActorVirtualIdentity, Map[ChannelEndpointID, Long]]()

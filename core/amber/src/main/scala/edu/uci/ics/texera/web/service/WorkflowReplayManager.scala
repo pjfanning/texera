@@ -36,7 +36,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
   var replayStart = 0L
   var checkpointCost = 0L
 
-  private val estimationInterval = 500000.seconds
+  private val estimationInterval = 2.seconds
   private var estimationHandler = Cancellable.alreadyCancelled
 
   private var uniqueId = 0L
@@ -58,13 +58,13 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
 //      doEstimation(false)
 //    }
     currentGapIdx = 0
-    TexeraWebApplication.scheduleCallThroughActorSystem(1.millis){
-      while(stateStore.jobMetadataStore.getState.state != COMPLETED){
-        Thread.sleep(5000)
+    TexeraWebApplication.scheduleRecurringCallThroughActorSystem(2.seconds,estimationInterval){
+      if(stateStore.jobMetadataStore.getState.state != COMPLETED){
         client.executeAsync(actor => {
         val time = System.currentTimeMillis() - startTime
         val id = generateCheckpointId
-        history.addSnapshot(time, new LogicalExecutionSnapshot(id, true, time), id)
+          val interaction = Random.nextInt(100) < 20
+        history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
         actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
       })
       }
@@ -173,9 +173,9 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
       case WorkflowAggregatedState.PAUSED =>
         pauseStart = System.currentTimeMillis()
         estimationHandler.cancel()
-        if(replayStart == 0L){
-          doEstimation(true)
-        }
+//        if(replayStart == 0L){
+//          doEstimation(true)
+//        }
       case WorkflowAggregatedState.COMPLETED =>
         estimationHandler.cancel()
         stateStore.jobMetadataStore.updateState(state => {

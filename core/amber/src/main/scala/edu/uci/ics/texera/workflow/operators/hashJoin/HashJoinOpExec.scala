@@ -264,7 +264,11 @@ class HashJoinOpExec[K](
 
   override def getEstimatedCheckpointTime: Int = {
     if(currentSize == 0){
-      AmberUtils.serde.serialize(buildTableHashMap).get.length
+      if(buildTableHashMap.nonEmpty){
+        AmberUtils.serde.serialize(buildTableHashMap.toIterator.next()).get.length*(buildTableHashMap.size)
+      }else{
+        0
+      }
     }else{
       currentSize
     }

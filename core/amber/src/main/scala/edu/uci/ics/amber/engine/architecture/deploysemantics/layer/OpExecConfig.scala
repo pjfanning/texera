@@ -254,7 +254,6 @@ case class OpExecConfig(
             actorService
           ))
       })
-    Thread.sleep(1000)
     workers.foreach{
       case (workerId, ref) =>
         val cmds = (if (replayConf.confs.contains(workerId)) {

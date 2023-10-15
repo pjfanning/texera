@@ -82,14 +82,12 @@ class JobRuntimeService(
   addSubscription(wsInput.subscribe((req: WorkflowPauseRequest, uidOpt) => {
     stateStore.jobMetadataStore.updateState(jobInfo => jobInfo.withState(PAUSING))
     client.sendAsync(PauseWorkflow())
-    if(periodicalCheckpointInterval == 0){
-      client.executeAsync(actor => {
-        val time = System.currentTimeMillis() - planner.startTime
-        val id = planner.generateCheckpointId
-        planner.history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
-        actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
-      })
-    }
+    client.executeAsync(actor => {
+      val time = System.currentTimeMillis() - planner.startTime
+      val id = planner.generateCheckpointId
+      planner.history.addSnapshot(time, new LogicalExecutionSnapshot(id, true, time), id)
+      actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+    })
   }))
 
   // Receive Resume
