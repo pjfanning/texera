@@ -158,16 +158,12 @@ class DatasetResource {
           .returning() // Assuming ID is the primary key column
           .fetchOne()
 
-        println("insert a dataset record")
-
         val datasetOfUser = new DatasetOfUser()
         datasetOfUser.setDid(createdDataset.getDid)
         datasetOfUser.setUid(uid)
         datasetOfUser.setAccessLevel(OWN)
 
         datasetOfUserDao.insert(datasetOfUser)
-        println("insert a access record")
-
         DashboardDataset(
           new Dataset(createdDataset.getDid, createdDataset.getName, createdDataset.getIsPublic, createdDataset.getStoragePath, createdDataset.getDescription, createdDataset.getCreationTime),
           getAccessLevel(OWN),
