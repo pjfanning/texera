@@ -36,7 +36,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
   var replayStart = 0L
   var checkpointCost = 0L
 
-  private val estimationInterval = 2.seconds
+  private val estimationInterval = 1.seconds
   private var estimationHandler = Cancellable.alreadyCancelled
 
   private var uniqueId = 0L
@@ -63,9 +63,8 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
         client.executeAsync(actor => {
         val time = System.currentTimeMillis() - startTime
         val id = generateCheckpointId
-          val interaction = Random.nextInt(100) < 20
-        history.addSnapshot(time, new LogicalExecutionSnapshot(id, interaction, time), id)
-        actor.controller ! TakeRuntimeGlobalCheckpoint(id, Map.empty)
+        history.addSnapshot(time, new LogicalExecutionSnapshot(id, false, time), id)
+        actor.controller ! EstimateCheckpointCost(id)
       })
       }
     }
