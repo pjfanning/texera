@@ -91,9 +91,17 @@ class SortPartitionOpExec(
 
   override def getEstimatedCheckpointTime: Int = {
     if(queue == null){
-      AmberUtils.serde.serialize(unorderedTuples).get.length
+      if(unorderedTuples.nonEmpty){
+        AmberUtils.serde.serialize(unorderedTuples.toIterator.next()).get.length*unorderedTuples.size
+      }else{
+        0
+      }
     }else{
-      AmberUtils.serde.serialize(queue).get.length
+      if (queue.nonEmpty) {
+        AmberUtils.serde.serialize(queue.toIterator.next()).get.length * queue.size
+      } else {
+        0
+      }
     }
   }
 }
