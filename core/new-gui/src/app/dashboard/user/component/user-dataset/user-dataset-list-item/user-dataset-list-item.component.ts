@@ -13,6 +13,7 @@ import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbdModalWorkflowExecutionsComponent} from "../../user-workflow/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
 import {firstValueFrom} from "rxjs";
 import {ShareAccessComponent} from "../../share-access/share-access.component";
+import {DashboardDataset} from "../../../type/dashboard-dataset.interface";
 
 @UntilDestroy()
 @Component({
