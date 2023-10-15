@@ -50,7 +50,11 @@ class Sentiment2OpExec(outSchema:Schema) extends OperatorExecutor with Serializa
   }
 
   override def getEstimatedCheckpointTime: Int = {
-    AmberUtils.serde.serialize(context).get.length
+    if(context.nonEmpty){
+      AmberUtils.serde.serialize(context.toIterator.next()).get.length
+    }else{
+      0
+    }
   }
 
   override def open(): Unit = {}
