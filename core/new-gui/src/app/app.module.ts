@@ -58,6 +58,7 @@ import { NgbdModalWorkflowExecutionsComponent } from "./dashboard/user/component
 import { NgbModalUserQuotaComponent } from "./dashboard/user/component/user-quota/ngbd-modal-user-quota.component";
 import { NgbdModalFileAddComponent } from "./dashboard/user/component/user-file/ngbd-modal-file-add/ngbd-modal-file-add.component";
 import { UserFileComponent } from "./dashboard/user/component/user-file/user-file.component";
+import { UserQuotaComponent } from "./dashboard/user/component/user-quota/user-quota.component";
 import { UserIconComponent } from "./dashboard/user/component/user-icon/user-icon.component";
 import { UserAvatarComponent } from "./dashboard/user/component/user-avatar/user-avatar.component";
 import { CodeEditorDialogComponent } from "./workspace/component/code-editor-dialog/code-editor-dialog.component";
@@ -157,6 +158,7 @@ registerLocaleData(en);
     LocalLoginComponent,
     UserWorkflowComponent,
     UserFileComponent,
+    UserQuotaComponent,
     NgbdModalFileAddComponent,
     RowModalComponent,
     OperatorLabelComponent,
