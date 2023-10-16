@@ -36,7 +36,7 @@ class WorkflowReplayManager(client:AmberClient, stateStore: JobStateStore, perio
   var replayStart = 0L
   var checkpointCost = 0L
 
-  private val estimationInterval = 100.millis
+  private val estimationInterval = 1.second
   private var estimationHandler = Cancellable.alreadyCancelled
 
   private var uniqueId = 0L
