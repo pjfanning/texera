@@ -35,7 +35,7 @@ object InternalPayloadManager{
     if(loggingEnabled){
       actor.determinantLogger = new DeterminantLoggerImpl()
       actor.logManager = new LogManagerImpl(actor.networkCommunicationActor, actor.determinantLogger)
-      actor.logStorage = new InMemoryLogStorage(actor.getLogName)
+      actor.logStorage = new LocalFSLogStorage(actor.getLogName)
       actor.logStorage.cleanPartiallyWrittenLogFile()
       actor.logManager.setupWriter(actor.logStorage.getWriter)
     }else{
