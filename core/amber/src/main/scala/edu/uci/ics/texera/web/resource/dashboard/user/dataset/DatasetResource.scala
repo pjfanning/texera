@@ -201,7 +201,7 @@ class DatasetResource {
   }
 
   @POST
-  @Path("/{did}/version/persist")
+  @Path("/{did}/version/create")
   @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
   def createDatasetVersion(
       @PathParam("did") did: UInteger,
