@@ -15,9 +15,11 @@ import { DebuggerFrameComponent } from "./debugger-frame/debugger-frame.componen
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
+import {ErrorFrameComponent} from "./error-frame/error-frame.component";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
+  | ErrorFrameComponent
   | VisualizationFrameComponent
   | ConsoleFrameComponent
   | DebuggerFrameComponent;
@@ -161,6 +163,7 @@ export class ResultPanelComponent implements OnInit {
     }
     // current result panel is closed or there is no operator highlighted, do nothing
     this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
+    this.displayConsole("");
     if (!this.showResultPanel || !this.currentOperatorId) {
       return;
     }
@@ -168,12 +171,8 @@ export class ResultPanelComponent implements OnInit {
     if (this.currentOperatorId) {
       this.displayResult(this.currentOperatorId);
       const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
-      if (isPythonUdf(operator)) {
-        this.displayConsole(this.currentOperatorId);
-
-        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
-          this.displayDebugger(this.currentOperatorId);
-        }
+      if (isPythonUdf(operator) && environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+        this.displayDebugger(this.currentOperatorId);
       }
     }
   }

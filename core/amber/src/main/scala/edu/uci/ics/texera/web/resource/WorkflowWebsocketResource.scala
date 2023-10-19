@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.{WorkflowErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{ServerError, ServerErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
@@ -81,11 +81,11 @@ class WorkflowWebsocketResource extends LazyLogging {
       }
     } catch {
       case x: ConstraintViolationException =>
-        sessionState.send(WorkflowErrorEvent(operatorErrors = x.violations))
+        sessionState.send(ServerErrorEvent(x.violations.map(x => ServerError(s"Constraint Violation(${x._1})", x._2.mkString("\n"))).toArray))
       case err: Exception =>
         sessionState.send(
-          WorkflowErrorEvent(generalErrors =
-            Map("exception" -> (err.getMessage + "\n" + err.getStackTrace.mkString("\n")))
+          ServerErrorEvent(
+            Array(ServerError(err.getMessage, err.getStackTrace.mkString("\n")))
           )
         )
         throw err

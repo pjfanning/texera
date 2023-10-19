@@ -1,0 +1,5 @@
+<div *ngIf="errorMessages">
+  <div *ngFor="let item of errorMessages | keyvalue">
+    <div class="error-message">{{ item.key }}:{{ item.value }}</div>
+  </div>
+</div>

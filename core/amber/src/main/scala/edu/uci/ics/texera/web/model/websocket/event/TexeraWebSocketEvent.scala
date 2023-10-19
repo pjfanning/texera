@@ -15,7 +15,7 @@ import edu.uci.ics.texera.web.model.websocket.response.{
   Array(
     new Type(value = classOf[RegisterWIdResponse]),
     new Type(value = classOf[HeartBeatResponse]),
-    new Type(value = classOf[WorkflowErrorEvent]),
+    new Type(value = classOf[ServerErrorEvent]),
     new Type(value = classOf[WorkflowStateEvent]),
     new Type(value = classOf[OperatorStatisticsUpdateEvent]),
     new Type(value = classOf[WebResultUpdateEvent]),
