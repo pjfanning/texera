@@ -24,11 +24,13 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatist
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SchedulerTimeSlotEventHandler.SchedulerTimeSlotEvent
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaBufferConverter
 
@@ -61,7 +63,9 @@ object ControlCommandConvertUtils {
           isSource,
           inputMapping,
           outputMapping,
-          schema.getAttributes.asScala.map(attr => attr.getName -> attr.getType.toString).toMap
+          schema.getAttributes.asScala.foldLeft(ListMap[String, String]())((list, attr) =>
+            list + (attr.getName -> attr.getType.toString)
+          )
         )
       case ReplayCurrentTuple() =>
         ReplayCurrentTupleV2()
@@ -73,6 +77,8 @@ object ControlCommandConvertUtils {
         WorkerDebugCommandV2(cmd)
       case QuerySelfWorkloadMetrics() =>
         QuerySelfWorkloadMetricsV2()
+      case Backpressure(enableBackpressure) =>
+        BackpressureV2(enableBackpressure)
       case _ =>
         throw new UnsupportedOperationException(
           s"V1 controlCommand $controlCommand cannot be converted to V2"

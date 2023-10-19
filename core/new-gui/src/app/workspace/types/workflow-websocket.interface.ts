@@ -35,7 +35,10 @@ export interface WorkflowExecuteRequest
     logicalPlan: LogicalPlan;
   }> {}
 
-export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
+export interface RegisterWIdEvent
+  extends Readonly<{
+    message: string;
+  }> {}
 
 export interface TexeraConstraintViolation
   extends Readonly<{
@@ -95,8 +98,6 @@ export type ResultExportRequest = Readonly<{
   operatorName: string;
 }>;
 
-export type CacheStatusUpdateRequest = LogicalPlan;
-
 export type ResultExportResponse = Readonly<{
   status: "success" | "error";
   message: string;
@@ -112,7 +113,7 @@ export type WorkflowAvailableResultEvent = Readonly<{
   availableOperators: ReadonlyArray<OperatorAvailableResult>;
 }>;
 
-export type OperatorResultCacheStatus = "cache invalid" | "cache valid" | "cache not enabled";
+export type OperatorResultCacheStatus = "cache invalid" | "cache valid";
 
 export interface CacheStatusUpdateEvent
   extends Readonly<{
@@ -150,6 +151,10 @@ export type ExecutionDurationUpdateEvent = Readonly<{
   isRunning: boolean;
 }>;
 
+export type ClusterStatusUpdateEvent = Readonly<{
+  numWorkers: number;
+}>;
+
 export type ModifyLogicResponse = Readonly<{
   opId: string;
   isValid: boolean;
@@ -173,7 +178,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   AddBreakpointRequest: BreakpointInfo;
-  CacheStatusUpdateRequest: CacheStatusUpdateRequest;
+  CacheStatusUpdateRequest: LogicalPlan;
   HeartBeatRequest: {};
   ModifyLogicRequest: ModifyOperatorLogic;
   ResultExportRequest: ResultExportRequest;
@@ -209,6 +214,7 @@ export type TexeraWebsocketEventTypeMap = {
   ModifyLogicResponse: ModifyLogicResponse;
   ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
   ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
+  ClusterStatusUpdateEvent: ClusterStatusUpdateEvent;
 };
 
 // helper type definitions to generate the request and event types

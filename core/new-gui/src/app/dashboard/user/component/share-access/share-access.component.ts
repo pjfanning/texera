@@ -5,12 +5,11 @@ import { ShareAccessService } from "../../service/share-access/share-access.serv
 import { ShareAccess } from "../../type/share-access.interface";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { UserService } from "../../../../common/service/user/user.service";
+import { GmailService } from "../../../admin/service/gmail.service";
 
 @UntilDestroy()
 @Component({
   templateUrl: "share-access.component.html",
-  styleUrls: ["share-access.component.scss"],
-  providers: [{ provide: "type", useValue: "workflow" }],
 })
 export class ShareAccessComponent implements OnInit {
   @Input() writeAccess!: boolean;
@@ -32,7 +31,8 @@ export class ShareAccessComponent implements OnInit {
     public activeModal: NgbActiveModal,
     private accessService: ShareAccessService,
     private formBuilder: FormBuilder,
-    private userService: UserService
+    private userService: UserService,
+    private gmailService: GmailService
   ) {
     this.currentEmail = this.userService.getCurrentUser()?.email;
   }
@@ -68,7 +68,20 @@ export class ShareAccessComponent implements OnInit {
           this.validateForm.get("accessLevel")?.value
         )
         .pipe(untilDestroyed(this))
-        .subscribe(() => this.ngOnInit());
+        .subscribe(() => {
+          this.ngOnInit();
+          this.gmailService.sendEmail(
+            "Texera: " + this.owner + " shared a " + this.type + " with you",
+            this.owner +
+              " shared a " +
+              this.type +
+              " with you, access the workflow at " +
+              location.origin +
+              "/workflow/" +
+              this.id,
+            this.validateForm.get("email")?.value
+          );
+        });
     }
   }
 
@@ -76,6 +89,11 @@ export class ShareAccessComponent implements OnInit {
     this.accessService
       .revokeAccess(this.type, this.id, userToRemove)
       .pipe(untilDestroyed(this))
-      .subscribe(() => this.ngOnInit());
+      .subscribe(() => {
+        if (this.currentEmail === userToRemove) {
+          this.activeModal.close();
+        }
+        this.ngOnInit();
+      });
   }
 }
