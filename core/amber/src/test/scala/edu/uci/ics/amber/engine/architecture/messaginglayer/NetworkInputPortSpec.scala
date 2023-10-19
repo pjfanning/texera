@@ -40,7 +40,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
     List(2, 1, 0, 3).foreach(id => {
       inputPort.handleMessage(
         testActor.ref,
-        Constants.unprocessedBatchesCreditLimitPerSender,
+        Constants.unprocessedBatchesSizeLimitPerSender,
         id,
         messages(id).channel,
         messages(id).sequenceNumber,
@@ -64,7 +64,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
     (0 until 10).foreach(i => {
       inputPort.handleMessage(
         testActor.ref,
-        Constants.unprocessedBatchesCreditLimitPerSender,
+        Constants.unprocessedBatchesSizeLimitPerSender,
         i,
         message.channel,
         message.sequenceNumber,
@@ -83,14 +83,14 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
 
     inputPort.handleMessage(
       testActor.ref,
-      Constants.unprocessedBatchesCreditLimitPerSender,
+      Constants.unprocessedBatchesSizeLimitPerSender,
       messageID,
       message.channel,
       message.sequenceNumber,
       message.payload
     )
     testActor.expectMsg(
-      NetworkAck(messageID, Some(Constants.unprocessedBatchesCreditLimitPerSender))
+      NetworkAck(messageID, Some(Constants.unprocessedBatchesSizeLimitPerSender))
     )
   }
 

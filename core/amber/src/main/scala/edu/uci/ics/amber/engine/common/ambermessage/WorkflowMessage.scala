@@ -33,10 +33,22 @@ class ChannelEndpointID(val endpointWorker: ActorVirtualIdentity, val isControlC
   }
 }
 
-// always log.
 case object OutsideWorldChannelEndpointID extends ChannelEndpointID(CLIENT, true)
 
 sealed trait WorkflowMessage extends Serializable
+
+case object WorkflowMessage {
+  def getInMemSize(msg: WorkflowMessage): Long = {
+    msg match {
+      case dataMsg: WorkflowDataMessage =>
+        dataMsg.payload match {
+          case df: DataFrame => df.inMemSize
+          case _             => 200L
+        }
+      case _ => 200L
+    }
+  }
+}
 
 case class WorkflowControlMessage(
     channel: ChannelEndpointID,

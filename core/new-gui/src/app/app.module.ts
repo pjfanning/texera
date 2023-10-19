@@ -102,7 +102,8 @@ import { NgbdModalRemoveProjectFileComponent } from "./dashboard/user/component/
 import { PresetWrapperComponent } from "./common/formly/preset-wrapper/preset-wrapper.component";
 import { NzModalCommentBoxComponent } from "./workspace/component/workflow-editor/comment-box-modal/nz-modal-comment-box.component";
 import { NzCommentModule } from "ng-zorro-antd/comment";
-import { AdminUserComponent } from "./dashboard/admin/component/admin-user.component";
+import { AdminUserComponent } from "./dashboard/admin/component/user/admin-user.component";
+import { AdminExecutionComponent } from "./dashboard/admin/component/execution/admin-execution.component";
 import { NzPopconfirmModule } from "ng-zorro-antd/popconfirm";
 import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service";
 import { ContextMenuComponent } from "./workspace/component/workflow-editor/context-menu/context-menu/context-menu.component";
@@ -128,11 +129,16 @@ import { UserFileListItemComponent } from "./dashboard/user/component/user-file/
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import { SearchResultsComponent } from "./dashboard/user/component/search-results/search-results.component";
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
+import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
+import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
+import { NzAlertModule } from "ng-zorro-antd/alert";
 
 registerLocaleData(en);
 
 @NgModule({
   declarations: [
+    GmailComponent,
+    PublicProjectComponent,
     AppComponent,
     WorkspaceComponent,
     NavigationComponent,
@@ -144,6 +150,7 @@ registerLocaleData(en);
     OperatorLabelComponent,
     DashboardComponent,
     AdminUserComponent,
+    AdminExecutionComponent,
     UserIconComponent,
     UserAvatarComponent,
     LocalLoginComponent,
@@ -264,6 +271,7 @@ registerLocaleData(en);
     NzLayoutModule,
     MarkdownModule.forRoot(),
     DragDropModule,
+    NzAlertModule,
   ],
   providers: [
     AuthGuardService,
