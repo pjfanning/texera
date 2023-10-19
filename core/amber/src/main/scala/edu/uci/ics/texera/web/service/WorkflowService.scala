@@ -5,13 +5,14 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberUtils
 
 import scala.collection.JavaConverters._
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{ServerErrorEvent, TexeraWebSocketEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.model.websocket.request.{WorkflowExecuteRequest, WorkflowKillRequest}
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
+import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
@@ -55,19 +56,17 @@ class WorkflowService(
   // state across execution:
   var opResultStorage: OpResultStorage = new OpResultStorage()
   private val errorSubject = BehaviorSubject.create[TexeraWebSocketEvent]().toSerialized
-  val errorHandler: Throwable => Unit = { t =>
-    {
-      t.printStackTrace()
-      errorSubject.onNext(
-        WorkflowErrorEvent(generalErrors =
-          Map("error" -> (t.getMessage + "\n" + t.getStackTrace.mkString("\n")))
-        )
-      )
-    }
-  }
-  val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new WorkflowStateStore()
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
+  val errorHandler: Throwable => Unit = { t =>
+  {
+    t.printStackTrace()
+    jobService.getValue.stateStore.jobMetadataStore.updateState { jobInfo =>
+      updateWorkflowState(FAILED, jobInfo).withError(e.getLocalizedMessage)
+    }
+  }
+  }
+  val wsInput = new WebsocketInput(errorHandler)
 
   val resultService: JobResultService =
     new JobResultService(opResultStorage, stateStore)
