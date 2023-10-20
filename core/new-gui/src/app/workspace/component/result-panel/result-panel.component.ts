@@ -161,9 +161,15 @@ export class ResultPanelComponent implements OnInit {
       this.clearResultPanel();
       this.currentOperatorId = currentHighlightedOperator;
     }
+
+    if(this.executeWorkflowService.getExecutionState().state === ExecutionState.Failed){
+      this.displayError(this.currentOperatorId);
+    }else{
+      this.frameComponentConfigs.delete("Error")
+    }
+
     // current result panel is closed or there is no operator highlighted, do nothing
     this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
-    this.displayError(this.currentOperatorId);
     if (!this.showResultPanel || !this.currentOperatorId) {
       return;
     }
