@@ -4,12 +4,13 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.{ServerError, ServerErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
+import edu.uci.ics.texera.web.workflowruntimestate.JobError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
+import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan.OperatorCompilingErrors
 
 import java.util.concurrent.atomic.AtomicInteger
 import javax.websocket._
@@ -73,19 +74,31 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
         case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
           WorkflowCacheChecker.handleCacheStatusUpdateRequest(session, cacheStatusUpdateRequest)
-        case other =>
+        case workflowExecuteRequest: WorkflowExecuteRequest =>
           workflowStateOpt match {
-            case Some(workflow) => workflow.wsInput.onNext(other, uidOpt)
+            case Some(workflow) => workflow.initJobService(workflowExecuteRequest, uidOpt)
             case None           => throw new IllegalStateException("workflow is not initialized")
+          }
+        case other =>
+          workflowStateOpt.map(_.jobService.getValue) match {
+            case Some(value) => value.wsInput.onNext(other, uidOpt)
+            case None => throw new IllegalStateException("workflow job is not initialized")
           }
       }
     } catch {
-      case x: ConstraintViolationException =>
-        sessionState.send(ServerErrorEvent(x.violations.map(x => ServerError(s"Constraint Violation(${x._1})", x._2.mkString("\n"))).toArray))
-      case err: Exception =>
+      case errs: OperatorCompilingErrors =>
+        sessionState.send(WorkflowStateEvent("Failed"))
         sessionState.send(
-          ServerErrorEvent(
-            Array(ServerError(err.getMessage, err.getStackTrace.mkString("\n")))
+          TexeraErrorEvent(
+            errs.errorList.map{
+              case (opID, err) =>
+                JobError(err.getMessage, err.getStackTrace.mkString("\n"), opID)})
+        )
+      case err: Exception =>
+        sessionState.send(WorkflowStateEvent("Failed"))
+        sessionState.send(
+          TexeraErrorEvent(
+            Seq(JobError(err.toString, err.getStackTrace.mkString("\n")))
           )
         )
         throw err

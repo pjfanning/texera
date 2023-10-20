@@ -40,21 +40,15 @@ export interface RegisterWIdEvent
     message: string;
   }> {}
 
-export interface TexeraConstraintViolation
-  extends Readonly<{
-    message: string;
-    propertyPath: string;
-  }> {}
+export interface JobError extends Readonly<{
+  message:string;
+  details:string;
+  operatorId:string;
+}> {}
 
-export interface WorkflowError
+export interface TexeraErrorEvent
   extends Readonly<{
-    operatorErrors: Record<string, TexeraConstraintViolation>;
-    generalErrors: Record<string, string>;
-  }> {}
-
-export interface WorkflowExecutionError
-  extends Readonly<{
-    message: string;
+    errors: JobError[];
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
@@ -197,15 +191,14 @@ export type TexeraWebsocketEventTypeMap = {
   RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowStateEvent: WorkflowStateInfo;
-  WorkflowErrorEvent: WorkflowError;
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
+  TexeraErrorEvent: TexeraErrorEvent;
   BreakpointTriggeredEvent: BreakpointTriggerInfo;
   ConsoleUpdateEvent: ConsoleUpdateEvent;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
-  WorkflowExecutionErrorEvent: WorkflowExecutionError;
   ResultExportResponse: ResultExportResponse;
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
