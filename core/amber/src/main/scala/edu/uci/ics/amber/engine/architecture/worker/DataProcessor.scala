@@ -101,7 +101,7 @@ class DataProcessor( // dependencies:
             case err: Exception =>
               logger.error("DP Thread exists unexpectedly", err)
               asyncRPCClient.send(
-                FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err)),
+                FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err), Some(actorId)),
                 CONTROLLER
               )
           }
