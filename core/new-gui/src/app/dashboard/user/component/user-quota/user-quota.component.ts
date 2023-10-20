@@ -105,6 +105,20 @@ export class UserQuotaComponent implements OnInit {
       });
   }
 
+  deleteMongoCollection(collectionName: string, execution: mongoExecution, workflowName: string) {
+    this.UserService
+      .deleteMongoDBCollection(collectionName)
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.mongodbWorkflows.some((workflow, index, array) => {
+          if (workflow.workflowName === workflowName) {
+              array[index].executions = array[index].executions.filter(e => e !== execution);
+              this.totalMongoSize -= execution.size;
+          }
+        });
+      });
+  }
+
   /**
    * Convert a numeric timestamp to a human-readable time string.
    */
