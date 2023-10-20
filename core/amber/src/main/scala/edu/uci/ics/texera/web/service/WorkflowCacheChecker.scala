@@ -3,6 +3,7 @@ package edu.uci.ics.texera.web.service
 import edu.uci.ics.texera.web.SessionState
 import edu.uci.ics.texera.web.model.websocket.event.CacheStatusUpdateEvent
 import edu.uci.ics.texera.web.model.websocket.request.CacheStatusUpdateRequest
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
 import javax.websocket.Session
@@ -23,7 +24,7 @@ object WorkflowCacheChecker {
     if (oldPlan == null) {
       return
     }
-    val newPlan = LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo())
+    val newPlan = LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo(), new WorkflowContext())
     val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
     val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult
       .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))

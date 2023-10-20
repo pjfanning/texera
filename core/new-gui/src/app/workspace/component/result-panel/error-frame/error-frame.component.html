@@ -1,5 +1,15 @@
-<div *ngIf="errorMessages">
-  <div *ngFor="let item of errorMessages | keyvalue">
-    <div class="error-message">{{ item.key }}:{{ item.value }}</div>
-  </div>
-</div>
+
+<nz-collapse>
+  <nz-collapse-panel
+    *ngFor="let error of errorMessages"
+    [nzHeader]="error.message"
+    [nzActive]="false"
+    [nzDisabled]="false"
+    [nzExtra]="extraTpl"
+  >
+    <ng-template #extraTpl>
+      <span *ngIf="error.operatorId" nz-icon nzType="right-square" (click)="$event.stopPropagation(); onClickGotoButton(error.operatorId)"></span>
+    </ng-template>
+    <p class="error-message">{{ error.details }} content</p>
+  </nz-collapse-panel>
+</nz-collapse>

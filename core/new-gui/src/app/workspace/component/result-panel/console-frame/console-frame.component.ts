@@ -8,6 +8,7 @@ import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { presetPalettes } from "@ant-design/colors";
 import { isDefined } from "../../../../common/util/predicate";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
+import {JobError} from "../../../types/workflow-websocket.interface";
 
 @UntilDestroy()
 @Component({
@@ -21,7 +22,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   @ViewChild("consoleList", { read: ElementRef }) listElement?: ElementRef;
 
   // display error message:
-  errorMessages?: Readonly<Record<string, string>>;
+  breakpointMessages: ReadonlyArray<JobError> = [];
 
   // display print
   consoleMessages: ReadonlyArray<ConsoleMessage> = [];
@@ -90,7 +91,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   clearConsole(): void {
     this.consoleMessages = [];
-    this.errorMessages = undefined;
+    this.breakpointMessages = [];
   }
 
   renderConsole(): void {
@@ -104,9 +105,6 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       if (this.operatorId === breakpointTriggerInfo?.operatorID) {
         // if we hit a breakpoint
         this.displayBreakpoint(breakpointTriggerInfo);
-      } else {
-        // otherwise we assume it's a fault
-        this.displayFault();
       }
 
       // always display console messages
@@ -115,20 +113,16 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   displayBreakpoint(breakpointTriggerInfo: BreakpointTriggerInfo): void {
-    const errorsMessages: Record<string, string> = {};
+    const errorsMessages: JobError[] = [];
     breakpointTriggerInfo.report.forEach(r => {
       const splitPath = r.actorPath.split("/");
       const workerName = splitPath[splitPath.length - 1];
-      const workerText = "Worker " + workerName + ":                ";
+      const workerText = "Bp:Worker " + workerName;
       if (r.messages.toString().toLowerCase().includes("exception")) {
-        errorsMessages[workerText] = r.messages.toString();
+        errorsMessages.push({message: workerText, details: r.messages.toString(), operatorId:""});
       }
     });
-    this.errorMessages = errorsMessages;
-  }
-
-  displayFault(): void {
-    this.errorMessages = this.executeWorkflowService.getErrorMessages();
+    this.breakpointMessages = errorsMessages;
   }
 
   displayConsoleMessages(operatorId: string): void {

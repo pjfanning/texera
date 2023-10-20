@@ -7,17 +7,8 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHa
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowExecutionErrorEvent,
-  WorkflowStateEvent
-}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  SkipTupleRequest,
-  WorkflowKillRequest,
-  WorkflowPauseRequest,
-  WorkflowResumeRequest
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraErrorEvent, TexeraWebSocketEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.request.{SkipTupleRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
@@ -46,8 +37,8 @@ class JobRuntimeService(
         }
       }
       // Check if new error occurred
-      if (newState.error != oldState.error && newState.error != null) {
-        outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
+      if (newState.errors != oldState.errors) {
+        outputEvts.append(TexeraErrorEvent(newState.errors))
       }
       outputEvts
     })

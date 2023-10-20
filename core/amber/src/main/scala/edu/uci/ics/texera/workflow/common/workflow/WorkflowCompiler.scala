@@ -24,12 +24,7 @@ object WorkflowCompiler {
 
 }
 
-class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContext) {
-  logicalPlan.operatorMap.values.foreach(initOperator)
-
-  def initOperator(operator: OperatorDescriptor): Unit = {
-    operator.setContext(context)
-  }
+class WorkflowCompiler(val logicalPlan: LogicalPlan) {
 
   def validate: Map[String, Set[ConstraintViolation]] =
     this.logicalPlan.operatorMap
@@ -60,21 +55,21 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
         } else {
           sink.setStorage(
             storage.create(
-              context.executionID + "_",
+              o.context.executionID + "_",
               storageKey,
               logicalPlan.outputSchemaMap(o.operatorIdentifier).head,
               storageType
             )
           )
           // add the sink collection name to the JSON array of sinks
-          sinksPointers.add(context.executionID + "_" + storageKey)
+          sinksPointers.add(o.context.executionID + "_" + storageKey)
         }
       case _ =>
     }
     // update execution entry in MySQL to have pointers to the mongo collections
     resultsJSON.set("results", sinksPointers)
     ExecutionsMetadataPersistService.updateExistingExecutionVolumnPointers(
-      context.executionID,
+      logicalPlan.context.executionID,
       resultsJSON.toString
     )
   }
@@ -88,7 +83,6 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
     val opsToReuseCache = cacheReuses.intersect(logicalPlan.opsToReuseCache.toSet)
     val rewrittenLogicalPlan =
       WorkflowCacheRewriter.transform(logicalPlan, opResultStorage, opsToReuseCache)
-    rewrittenLogicalPlan.operatorMap.values.foreach(initOperator)
 
     // assign sink storage to the logical plan after cache rewrite
     // as it will be converted to the actual physical plan
@@ -104,7 +98,7 @@ class WorkflowCompiler(val logicalPlan: LogicalPlan, val context: WorkflowContex
       workflowId,
       logicalPlan,
       physicalPlan0,
-      new MaterializationRewriter(context, opResultStorage)
+      new MaterializationRewriter(logicalPlan.context, opResultStorage)
     ).buildPipelinedRegions()
 
     // assign link strategies

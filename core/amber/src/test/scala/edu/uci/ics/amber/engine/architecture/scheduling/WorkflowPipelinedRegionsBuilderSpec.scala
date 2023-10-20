@@ -33,8 +33,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     context.jobId = "workflow-test"
 
     val texeraWorkflowCompiler = new WorkflowCompiler(
-      LogicalPlan(operators, links, List[BreakpointInfo]()),
-      context
+      LogicalPlan(context, operators, links, List[BreakpointInfo]())
     )
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
   }

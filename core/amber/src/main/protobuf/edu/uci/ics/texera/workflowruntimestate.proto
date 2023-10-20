@@ -85,9 +85,16 @@ message JobStatsStore {
   repeated OperatorWorkerMapping operator_worker_mapping = 4;
 }
 
+
+message JobError {
+  string message = 1;
+  string details = 2;
+  string operatorId = 3;
+}
+
 message JobMetadataStore{
   WorkflowAggregatedState state = 1;
-  string error = 2;
+  repeated JobError errors = 2;
   int64 eid = 3;
   bool is_recovering = 4;
 }

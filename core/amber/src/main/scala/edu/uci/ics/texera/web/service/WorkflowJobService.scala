@@ -9,29 +9,36 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{READY, RUNNING}
+import edu.uci.ics.texera.web.workflowruntimestate.JobError
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
 
 class WorkflowJobService(
     workflowContext: WorkflowContext,
-    wsInput: WebsocketInput,
     resultService: JobResultService,
     request: WorkflowExecuteRequest,
-    errorHandler: Throwable => Unit,
     lastCompletedLogicalPlan: Option[LogicalPlan]
 ) extends SubscriptionManager
     with LazyLogging {
 
+  val errorHandler: Throwable => Unit = { t => {
+    t.printStackTrace()
+    stateStore.statsStore.updateState(stats =>
+      stats.withEndTimeStamp(System.currentTimeMillis())
+    )
+    stateStore.jobMetadataStore.updateState { jobInfo =>
+      updateWorkflowState(FAILED, jobInfo).addErrors(JobError(t.getMessage, t.getStackTrace.mkString("\n")))
+    }
+  }
+  }
+  val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new JobStateStore()
-  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(LogicalPlan(request.logicalPlan))
+  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(LogicalPlan(request.logicalPlan, workflowContext))
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
     resultService.opResultStorage,
@@ -83,7 +90,7 @@ class WorkflowJobService(
     }
     resultService.attachToJob(stateStore, workflowCompiler.logicalPlan, client)
     stateStore.jobMetadataStore.updateState(jobInfo =>
-      updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionID)).withError(null)
+      updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionID)).withErrors(Seq.empty)
     )
     stateStore.statsStore.updateState(stats => stats.withStartTimeStamp(System.currentTimeMillis()))
     client.sendAsyncWithCallback[Unit](
@@ -95,7 +102,7 @@ class WorkflowJobService(
   private[this] def createWorkflowCompiler(
       logicalPlan: LogicalPlan
   ): WorkflowCompiler = {
-    val compiler = new WorkflowCompiler(logicalPlan, workflowContext)
+    val compiler = new WorkflowCompiler(logicalPlan)
     val violations = compiler.validate
     if (violations.nonEmpty) {
       throw new ConstraintViolationException(violations)

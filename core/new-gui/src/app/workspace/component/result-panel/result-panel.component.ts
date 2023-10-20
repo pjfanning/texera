@@ -163,7 +163,7 @@ export class ResultPanelComponent implements OnInit {
     }
     // current result panel is closed or there is no operator highlighted, do nothing
     this.showResultPanel = this.resultPanelToggleService.isResultPanelOpen();
-    this.displayConsole("");
+    this.displayError(this.currentOperatorId);
     if (!this.showResultPanel || !this.currentOperatorId) {
       return;
     }
@@ -171,8 +171,11 @@ export class ResultPanelComponent implements OnInit {
     if (this.currentOperatorId) {
       this.displayResult(this.currentOperatorId);
       const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
-      if (isPythonUdf(operator) && environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
-        this.displayDebugger(this.currentOperatorId);
+      if (isPythonUdf(operator)) {
+        this.displayConsole(this.currentOperatorId);
+        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+          this.displayDebugger(this.currentOperatorId);
+        }
       }
     }
   }
@@ -189,6 +192,13 @@ export class ResultPanelComponent implements OnInit {
   displayConsole(operatorId: string) {
     this.frameComponentConfigs.set("Console", {
       component: ConsoleFrameComponent,
+      componentInputs: { operatorId },
+    });
+  }
+
+  displayError(operatorId: string | undefined) {
+    this.frameComponentConfigs.set("Error", {
+      component: ErrorFrameComponent,
       componentInputs: { operatorId },
     });
   }

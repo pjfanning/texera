@@ -1,6 +1,6 @@
-<div *ngIf="errorMessages">
-  <div *ngFor="let item of errorMessages | keyvalue">
-    <div class="error-message">{{ item.key }}:{{ item.value }}</div>
+<div *ngIf="breakpointMessages">
+  <div *ngFor="let item of breakpointMessages">
+    <div class="error-message">{{ item.message }}:{{ item.details }}</div>
   </div>
 </div>
 <a
