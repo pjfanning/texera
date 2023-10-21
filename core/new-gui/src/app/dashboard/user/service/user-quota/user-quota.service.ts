@@ -18,23 +18,23 @@ export const USER_DELETE_MONGODB_COLLECTION_NAME = `${USER_BASE_URL}/deleteColle
 export class UserQuotaService {
   constructor(private http: HttpClient) {}
 
-  public getUploadedFiles(): Observable<ReadonlyArray<File>> {
+  public getUploadedFiles(uid: number): Observable<ReadonlyArray<File>> {
     return this.http.get<ReadonlyArray<File>>(`${USER_CREATED_FILES}`);
   }
 
-  public getCreatedWorkflows(): Observable<ReadonlyArray<Workflow>> {
+  public getCreatedWorkflows(uid: number): Observable<ReadonlyArray<Workflow>> {
     return this.http.get<ReadonlyArray<Workflow>>(`${USER_CREATED_WORKFLOWS}`);
   }
 
-  public getAccessFiles(): Observable<ReadonlyArray<number>> {
+  public getAccessFiles(uid: number): Observable<ReadonlyArray<number>> {
     return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_FILES}`);
   }
 
-  public getAccessWorkflows(): Observable<ReadonlyArray<number>> {
+  public getAccessWorkflows(uid: number): Observable<ReadonlyArray<number>> {
     return this.http.get<ReadonlyArray<number>>(`${USER_ACCESS_WORKFLOWS}`);
   }
 
-  public getMongoDBs(): Observable<ReadonlyArray<mongoExecution>> {
+  public getMongoDBs(uid: number): Observable<ReadonlyArray<mongoExecution>> {
     return this.http.get<ReadonlyArray<mongoExecution>>(`${USER_MONGODB_SIZE}`);
   }
 

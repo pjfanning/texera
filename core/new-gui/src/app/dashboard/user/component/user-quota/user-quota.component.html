@@ -1,10 +1,10 @@
-<div>
+<div style="height: 700px; overflow-y: auto;">
   <nz-card
     class="section-title"
-    style="background-color: lightcoral">
+    [style.backgroundColor]="backgroundColor">
     <h2
       class="page-title"
-      style="color: white">Quota</h2>
+      [style.color] = "textColor">Quota</h2>
   </nz-card>
   <div>
     <nz-tabset nzCentered>

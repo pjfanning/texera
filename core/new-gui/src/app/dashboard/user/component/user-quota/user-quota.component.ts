@@ -4,8 +4,9 @@ import { File, Workflow, mongoExecution, mongoWorkflow } from "../../../../commo
 import { UserFileService } from "../../service/user-file/user-file.service";
 import { NzTableSortFn } from "ng-zorro-antd/table";
 import { UserQuotaService } from "../../service/user-quota/user-quota.service";
+import { AdminUserService } from "../../../admin/service/admin-user.service";
 
-
+type UserServiceType = AdminUserService | UserQuotaService;
 
 @UntilDestroy()
 @Component({
@@ -14,7 +15,10 @@ import { UserQuotaService } from "../../service/user-quota/user-quota.service";
 })
 
 export class UserQuotaComponent implements OnInit {
-  userUid: number = 0;
+  userUid: number = -1;
+  backgroundColor: String = "white";
+  textColor: String = "Black"
+
   totalFileSize: number = 0;
   totalMongoSize: number = 0;
   createdFiles: ReadonlyArray<File> = [];
@@ -24,21 +28,32 @@ export class UserQuotaComponent implements OnInit {
   topFiveFiles: ReadonlyArray<File> = [];
   mongodbExecutions: ReadonlyArray<mongoExecution> = [];
   mongodbWorkflows: Array<mongoWorkflow> = [];
+  UserService: UserServiceType;
 
   timer = setInterval(() => {
   }, 1000); // 1 second interval
 
-  constructor(private userFileService: UserFileService, private UserService: UserQuotaService) 
+  constructor(private adminUserService: AdminUserService, private userFileService: UserFileService, private regularUserService: UserQuotaService) 
   {
+    this.UserService = adminUserService;
   }
 
   ngOnInit(): void {
+
+    if (this.userUid == -1) {
+      this.UserService = this.regularUserService;
+    } else {
+      this.UserService = this.adminUserService;
+      this.backgroundColor = "lightcoral";
+      this.textColor = "white";
+    }
+
     this.refreshData();
   }
 
   refreshData() {
     this.UserService
-      .getUploadedFiles()
+      .getUploadedFiles(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(fileList => {
         this.createdFiles = fileList;
@@ -52,28 +67,28 @@ export class UserQuotaComponent implements OnInit {
       });
 
     this.UserService
-      .getCreatedWorkflows()
+      .getCreatedWorkflows(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(workflowList => {
         this.createdWorkflows = workflowList;
       });
 
     this.UserService
-      .getAccessFiles()
+      .getAccessFiles(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(accessFiles => {
         this.accessFiles = accessFiles;
       });
 
     this.UserService
-      .getAccessWorkflows()
+      .getAccessWorkflows(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(accessWorkflows => {
         this.accessWorkflows = accessWorkflows;
       });
 
     this.UserService
-      .getMongoDBs()
+      .getMongoDBs(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(mongoList => {
         this.totalMongoSize = 0;
@@ -167,7 +182,7 @@ export class UserQuotaComponent implements OnInit {
 
   refreshFiles() {
     this.UserService
-      .getUploadedFiles()
+      .getUploadedFiles(this.userUid)
       .pipe(untilDestroyed(this))
       .subscribe(fileList => {
         this.createdFiles = fileList;
