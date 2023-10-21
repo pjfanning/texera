@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.storage
 
 import com.mongodb.client.{MongoClient, MongoClients, MongoCollection, MongoDatabase}
 import edu.uci.ics.amber.engine.common.AmberUtils
-import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.mongoStorage
+import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource.mongoStorage
 import org.bson.Document
 import org.jooq.types.UInteger
 

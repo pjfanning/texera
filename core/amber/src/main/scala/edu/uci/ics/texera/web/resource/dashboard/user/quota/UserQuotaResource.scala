@@ -1,14 +1,23 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.quota
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource.{context, file, getCollectionName, workflow}
+import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource.{
+  file,
+  workflow,
+  getUserCreatedFile,
+  getUserCreatedWorkflow,
+  getUserAccessedWorkflow,
+  getUserAccessedFiles,
+  getUserMongoDBSize,
+  deleteMongoCollection,
+  mongoStorage
+}
 import org.jooq.types.UInteger
 
 import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource.mongoStorage
 
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
@@ -18,18 +27,25 @@ object UserQuotaResource {
   final private lazy val context = SqlServer.createDSLContext()
 
   case class file(
-                   userId: UInteger,
-                   fileId: UInteger,
-                   fileName: String,
-                   fileSize: UInteger,
-                   uploadedTime: Long,
-                   description: String
+     userId: UInteger,
+     fileId: UInteger,
+     fileName: String,
+     fileSize: UInteger,
+     uploadedTime: Long,
+     description: String
                  )
 
   case class workflow(
-                       userId: UInteger,
-                       workflowId: UInteger,
-                       workflowName: String
+     userId: UInteger,
+     workflowId: UInteger,
+     workflowName: String
+                     )
+
+  case class mongoStorage(
+     workflowName: String,
+     size: Double,
+     pointer: String,
+     eid: UInteger
                      )
 
   def getCollectionName(result: String): String = {
@@ -46,15 +62,8 @@ object UserQuotaResource {
 
     name
   }
-}
 
-@Path("/quota")
-class UserQuotaResource {
-
-  @GET
-  @Path("/uploaded_files")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getCreatedFile(@Auth current_user: SessionUser): List[file] = {
+  def getUserCreatedFile(uid: UInteger): List[file] = {
     val userFileEntries = context
       .select(
         FILE.OWNER_UID,
@@ -65,7 +74,7 @@ class UserQuotaResource {
         FILE.DESCRIPTION
       )
       .from(FILE)
-      .where(FILE.OWNER_UID.eq(current_user.getUid))
+      .where(FILE.OWNER_UID.eq(uid))
       .fetch()
 
     userFileEntries
@@ -81,10 +90,7 @@ class UserQuotaResource {
       }).toList
   }
 
-  @GET
-  @Path("/created_workflows")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getCreatedWorkflow(@Auth current_user: SessionUser): List[workflow] = {
+  def getUserCreatedWorkflow(uid: UInteger): List[workflow] = {
     val userWorkflowEntries = context
       .select(
         WORKFLOW_OF_USER.UID,
@@ -101,7 +107,7 @@ class UserQuotaResource {
         WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID)
       )
       .where(
-        WORKFLOW_OF_USER.UID.eq(current_user.getUid)
+        WORKFLOW_OF_USER.UID.eq(uid)
       )
       .fetch()
 
@@ -115,10 +121,7 @@ class UserQuotaResource {
       }).toList
   }
 
-  @GET
-  @Path("/access_workflows")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getAccessedWorkflow(@Auth current_user: SessionUser): util.List[UInteger] = {
+  def getUserAccessedWorkflow(uid: UInteger): util.List[UInteger] = {
     val availableWorkflowIds = context
       .select(
         WORKFLOW_USER_ACCESS.WID
@@ -127,17 +130,14 @@ class UserQuotaResource {
         WORKFLOW_USER_ACCESS
       )
       .where(
-        WORKFLOW_USER_ACCESS.UID.eq(current_user.getUid)
+        WORKFLOW_USER_ACCESS.UID.eq(uid)
       )
       .fetchInto(classOf[UInteger])
 
     return availableWorkflowIds
   }
 
-  @GET
-  @Path("/access_files")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def getAccessedFiles(@Auth current_user: SessionUser): util.List[UInteger] = {
+  def getUserAccessedFiles(uid: UInteger): util.List[UInteger] = {
     context
       .select(
         USER_FILE_ACCESS.FID
@@ -146,15 +146,12 @@ class UserQuotaResource {
         USER_FILE_ACCESS
       )
       .where(
-        USER_FILE_ACCESS.UID.eq(current_user.getUid)
+        USER_FILE_ACCESS.UID.eq(uid)
       )
       .fetchInto(classOf[UInteger])
   }
 
-  @GET
-  @Path("/mongodb_size")
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  def mongoDBSize(@Auth current_user: SessionUser): Array[mongoStorage] = {
+  def getUserMongoDBSize(uid: UInteger): Array[mongoStorage] = {
     val collectionNames = context
       .select(
         WORKFLOW_EXECUTIONS.RESULT,
@@ -173,7 +170,7 @@ class UserQuotaResource {
       )
       .on(WORKFLOW_VERSION.WID.eq(WORKFLOW.WID))
       .where(
-        WORKFLOW_EXECUTIONS.UID.eq(current_user.getUid)
+        WORKFLOW_EXECUTIONS.UID.eq(uid)
           .and(WORKFLOW_EXECUTIONS.RESULT.notEqual(""))
           .and(WORKFLOW_EXECUTIONS.RESULT.isNotNull)
       )
@@ -193,9 +190,7 @@ class UserQuotaResource {
     collectionSizes
   }
 
-  @DELETE
-  @Path("/deleteCollection/{collectionName}")
-  def deleteCollection(@PathParam("collectionName") collectionName: String): Unit = {
+  def deleteMongoCollection(collectionName: String): Unit = {
     MongoDatabaseManager.dropCollection(collectionName)
     val resultName = "{\"results\":[\"" + collectionName + "\"]}"
     context
@@ -203,6 +198,51 @@ class UserQuotaResource {
       .set(WORKFLOW_EXECUTIONS.RESULT, null.asInstanceOf[String])
       .where(WORKFLOW_EXECUTIONS.RESULT.eq(resultName))
       .execute()
+  }
+}
+
+@Path("/quota")
+class UserQuotaResource {
+
+  @GET
+  @Path("/uploaded_files")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getCreatedFile(@Auth current_user: SessionUser): List[file] = {
+    getUserCreatedFile(current_user.getUid)
+  }
+
+  @GET
+  @Path("/created_workflows")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getCreatedWorkflow(@Auth current_user: SessionUser): List[workflow] = {
+    getUserCreatedWorkflow(current_user.getUid)
+  }
+
+  @GET
+  @Path("/access_workflows")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getAccessedWorkflow(@Auth current_user: SessionUser): util.List[UInteger] = {
+    getUserAccessedWorkflow(current_user.getUid)
+  }
+
+  @GET
+  @Path("/access_files")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getAccessedFiles(@Auth current_user: SessionUser): util.List[UInteger] = {
+    getUserAccessedFiles(current_user.getUid)
+  }
+
+  @GET
+  @Path("/mongodb_size")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def mongoDBSize(@Auth current_user: SessionUser): Array[mongoStorage] = {
+    getUserMongoDBSize(current_user.getUid)
+  }
+
+  @DELETE
+  @Path("/deleteCollection/{collectionName}")
+  def deleteCollection(@PathParam("collectionName") collectionName: String): Unit = {
+    deleteMongoCollection(collectionName)
   }
 }
 
