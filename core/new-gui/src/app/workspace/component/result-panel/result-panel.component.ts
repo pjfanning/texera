@@ -246,6 +246,12 @@ export class ResultPanelComponent implements OnInit {
     if (event.current.state === ExecutionState.BreakpointTriggered) {
       return true;
     }
+
+    // force refresh after fixing all errors
+    if (event.previous.state === ExecutionState.Failed) {
+      return true;
+    }
+
     // transition from uninitialized / completed to anything else indicates a new execution of the workflow
     return event.previous.state === ExecutionState.Uninitialized || event.previous.state === ExecutionState.Completed;
   }
