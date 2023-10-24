@@ -74,6 +74,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
         case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
           WorkflowCacheChecker.handleCacheStatusUpdateRequest(session, cacheStatusUpdateRequest)
+          sessionState.send(WorkflowStateEvent("Uninitialized"))
         case workflowExecuteRequest: WorkflowExecuteRequest =>
           workflowStateOpt match {
             case Some(workflow) => workflow.initJobService(workflowExecuteRequest, uidOpt)
