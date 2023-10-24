@@ -24,7 +24,8 @@ object WorkflowCacheChecker {
     if (oldPlan == null) {
       return
     }
-    val newPlan = LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo(), new WorkflowContext())
+    val newPlan =
+      LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo(), new WorkflowContext())
     val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
     val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult
       .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))

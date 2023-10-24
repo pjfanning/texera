@@ -5,7 +5,7 @@ object ConstraintViolation {}
 case class ConstraintViolation(
     message: String,
     propertyPath: String
-){
+) {
   override def toString: String = {
     s"$propertyPath : $message"
   }

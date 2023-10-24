@@ -3,7 +3,6 @@ package edu.uci.ics.texera.workflow.common.workflow
 import com.google.common.base.Verify
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
-import edu.uci.ics.texera.web.workflowruntimestate.JobError
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
@@ -19,7 +18,7 @@ case class BreakpointInfo(operatorID: String, breakpoint: Breakpoint)
 
 object LogicalPlan {
 
-  class OperatorCompilingErrors(val errorList:List[(String, Throwable)]) extends Exception
+  class OperatorCompilingErrors(val errorList: List[(String, Throwable)]) extends Exception
 
   private def toJgraphtDAG(
       operatorList: List[OperatorDescriptor],
@@ -38,14 +37,15 @@ object LogicalPlan {
     workflowDag
   }
 
-  def apply(pojo: LogicalPlanPojo, ctx:WorkflowContext): LogicalPlan = {
-    val logicalPlan = LogicalPlan(ctx, pojo.operators, pojo.links, pojo.breakpoints, pojo.opsToReuseResult)
+  def apply(pojo: LogicalPlanPojo, ctx: WorkflowContext): LogicalPlan = {
+    val logicalPlan =
+      LogicalPlan(ctx, pojo.operators, pojo.links, pojo.breakpoints, pojo.opsToReuseResult)
     SinkInjectionTransformer.transform(logicalPlan)
   }
 }
 
 case class LogicalPlan(
-    val context:WorkflowContext,
+    val context: WorkflowContext,
     operators: List[OperatorDescriptor],
     links: List[OperatorLink],
     breakpoints: List[BreakpointInfo],
@@ -70,7 +70,7 @@ case class LogicalPlan(
 
   val inputSchemaMap: Map[OperatorIdentity, List[Option[Schema]]] = {
     val (schemaMap, errorList) = propagateWorkflowSchema()
-    if(errorList.nonEmpty){
+    if (errorList.nonEmpty) {
       throw new OperatorCompilingErrors(errorList)
     }
     schemaMap
@@ -181,7 +181,8 @@ case class LogicalPlan(
     OperatorSchemaInfo(inputSchemas, outputSchemas)
   }
 
-  def propagateWorkflowSchema(): (Map[OperatorIdentity, List[Option[Schema]]], List[(String, Throwable)]) = {
+  def propagateWorkflowSchema()
+      : (Map[OperatorIdentity, List[Option[Schema]]], List[(String, Throwable)]) = {
     // a map from an operator to the list of its input schema
     val inputSchemaMap =
       new mutable.HashMap[OperatorIdentity, mutable.MutableList[Option[Schema]]]()

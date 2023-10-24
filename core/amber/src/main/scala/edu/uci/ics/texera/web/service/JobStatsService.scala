@@ -1,12 +1,22 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowCompleted, WorkflowRecoveryStatus, WorkflowStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkerAssignmentUpdate,
+  WorkflowCompleted,
+  WorkflowRecoveryStatus,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.SubscriptionManager
-import edu.uci.ics.texera.web.model.websocket.event.{ExecutionDurationUpdateEvent, OperatorStatistics, OperatorStatisticsUpdateEvent, WorkerAssignmentUpdateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  ExecutionDurationUpdateEvent,
+  OperatorStatistics,
+  OperatorStatisticsUpdateEvent,
+  WorkerAssignmentUpdateEvent
+}
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.{JobError, OperatorWorkerMapping}
@@ -148,14 +158,16 @@ class JobStatsService(
         .registerCallback[FatalError]((evt: FatalError) => {
           client.shutdown()
           var opeartorId = ""
-          if(evt.fromActor.isDefined){
+          if (evt.fromActor.isDefined) {
             opeartorId = VirtualIdentityUtils.getOperator(evt.fromActor.get).operator
           }
           stateStore.statsStore.updateState(stats =>
             stats.withEndTimeStamp(System.currentTimeMillis())
           )
           stateStore.jobMetadataStore.updateState { jobInfo =>
-            updateWorkflowState(FAILED, jobInfo).addErrors(JobError(evt.e.getMessage, evt.e.getStackTrace.mkString("\n"), opeartorId))
+            updateWorkflowState(FAILED, jobInfo).addErrors(
+              JobError(evt.e.getMessage, evt.e.getStackTrace.mkString("\n"), opeartorId)
+            )
           }
         })
     )

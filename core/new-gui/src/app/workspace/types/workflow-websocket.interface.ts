@@ -40,11 +40,12 @@ export interface RegisterWIdEvent
     message: string;
   }> {}
 
-export interface JobError extends Readonly<{
-  message:string;
-  details:string;
-  operatorId:string;
-}> {}
+export interface JobError
+  extends Readonly<{
+    message: string;
+    details: string;
+    operatorId: string;
+  }> {}
 
 export interface TexeraErrorEvent
   extends Readonly<{

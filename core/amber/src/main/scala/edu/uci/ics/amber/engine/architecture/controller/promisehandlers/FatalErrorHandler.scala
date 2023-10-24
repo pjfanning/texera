@@ -6,7 +6,8 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object FatalErrorHandler {
-  final case class FatalError(e: Throwable, fromActor:Option[ActorVirtualIdentity] = None) extends ControlCommand[Unit]
+  final case class FatalError(e: Throwable, fromActor: Option[ActorVirtualIdentity] = None)
+      extends ControlCommand[Unit]
 }
 
 /** Indicate a fatal error has occurred in the workflow

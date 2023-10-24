@@ -8,7 +8,7 @@ import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { presetPalettes } from "@ant-design/colors";
 import { isDefined } from "../../../../common/util/predicate";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import {JobError} from "../../../types/workflow-websocket.interface";
+import { JobError } from "../../../types/workflow-websocket.interface";
 
 @UntilDestroy()
 @Component({
@@ -119,7 +119,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       const workerName = splitPath[splitPath.length - 1];
       const workerText = "Bp:Worker " + workerName;
       if (r.messages.toString().toLowerCase().includes("exception")) {
-        errorsMessages.push({message: workerText, details: r.messages.toString(), operatorId:""});
+        errorsMessages.push({ message: workerText, details: r.messages.toString(), operatorId: "" });
       }
     });
     this.breakpointMessages = errorsMessages;
