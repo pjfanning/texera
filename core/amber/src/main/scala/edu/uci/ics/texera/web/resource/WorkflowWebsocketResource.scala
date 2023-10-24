@@ -83,17 +83,17 @@ class WorkflowWebsocketResource extends LazyLogging {
         case other =>
           workflowStateOpt.map(_.jobService.getValue) match {
             case Some(value) => value.wsInput.onNext(other, uidOpt)
-            case None => throw new IllegalStateException("workflow job is not initialized")
+            case None        => throw new IllegalStateException("workflow job is not initialized")
           }
       }
     } catch {
       case errs: OperatorCompilingErrors =>
         sessionState.send(WorkflowStateEvent("Failed"))
         sessionState.send(
-          TexeraErrorEvent(
-            errs.errorList.map{
-              case (opID, err) =>
-                JobError(err.getMessage, err.getStackTrace.mkString("\n"), opID)})
+          TexeraErrorEvent(errs.errorList.map {
+            case (opID, err) =>
+              JobError(err.getMessage, err.getStackTrace.mkString("\n"), opID)
+          })
         )
       case err: Exception =>
         sessionState.send(WorkflowStateEvent("Failed"))

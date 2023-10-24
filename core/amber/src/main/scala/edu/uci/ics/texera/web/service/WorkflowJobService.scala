@@ -16,7 +16,10 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.python.{
+  DualInputPortsPythonUDFOpDescV2,
+  PythonUDFOpDescV2
+}
 
 class WorkflowJobService(
     workflowContext: WorkflowContext,
@@ -26,19 +29,22 @@ class WorkflowJobService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  val errorHandler: Throwable => Unit = { t => {
-    t.printStackTrace()
-    stateStore.statsStore.updateState(stats =>
-      stats.withEndTimeStamp(System.currentTimeMillis())
-    )
-    stateStore.jobMetadataStore.updateState { jobInfo =>
-      updateWorkflowState(FAILED, jobInfo).addErrors(JobError(t.getMessage, t.getStackTrace.mkString("\n")))
+  val errorHandler: Throwable => Unit = { t =>
+    {
+      t.printStackTrace()
+      stateStore.statsStore.updateState(stats => stats.withEndTimeStamp(System.currentTimeMillis()))
+      stateStore.jobMetadataStore.updateState { jobInfo =>
+        updateWorkflowState(FAILED, jobInfo).addErrors(
+          JobError(t.getMessage, t.getStackTrace.mkString("\n"))
+        )
+      }
     }
-  }
   }
   val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new JobStateStore()
-  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(LogicalPlan(request.logicalPlan, workflowContext))
+  val workflowCompiler: WorkflowCompiler = createWorkflowCompiler(
+    LogicalPlan(request.logicalPlan, workflowContext)
+  )
   val workflow: Workflow = workflowCompiler.amberWorkflow(
     WorkflowIdentity(workflowContext.jobId),
     resultService.opResultStorage,
