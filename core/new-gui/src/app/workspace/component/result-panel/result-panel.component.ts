@@ -15,7 +15,7 @@ import { DebuggerFrameComponent } from "./debugger-frame/debugger-frame.componen
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
-import {ErrorFrameComponent} from "./error-frame/error-frame.component";
+import { ErrorFrameComponent } from "./error-frame/error-frame.component";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
@@ -162,10 +162,10 @@ export class ResultPanelComponent implements OnInit {
       this.currentOperatorId = currentHighlightedOperator;
     }
 
-    if(this.executeWorkflowService.getExecutionState().state === ExecutionState.Failed){
+    if (this.executeWorkflowService.getExecutionState().state === ExecutionState.Failed) {
       this.displayError(this.currentOperatorId);
-    }else{
-      this.frameComponentConfigs.delete("Error")
+    } else {
+      this.frameComponentConfigs.delete("Error");
     }
 
     // current result panel is closed or there is no operator highlighted, do nothing

@@ -59,7 +59,9 @@ class ClusterListener extends Actor with AmberLogging {
       stats.withEndTimeStamp(System.currentTimeMillis())
     )
     jobService.stateStore.jobMetadataStore.updateState { jobInfo =>
-      updateWorkflowState(FAILED, jobInfo).addErrors(JobError(cause.getLocalizedMessage, cause.getStackTrace.mkString("\n")))
+      updateWorkflowState(FAILED, jobInfo).addErrors(
+        JobError(cause.getLocalizedMessage, cause.getStackTrace.mkString("\n"))
+      )
     }
   }
 

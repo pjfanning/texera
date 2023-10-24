@@ -3,9 +3,9 @@ import { ExecuteWorkflowService } from "../../../service/execute-workflow/execut
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import {JobError} from "../../../types/workflow-websocket.interface";
-import {render} from "sass";
-import {WorkflowActionService} from "../../../service/workflow-graph/model/workflow-action.service";
+import { JobError } from "../../../types/workflow-websocket.interface";
+import { render } from "sass";
+import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 
 @UntilDestroy()
 @Component({
@@ -20,7 +20,7 @@ export class ErrorFrameComponent implements OnInit, OnChanges {
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
-    private workflowActionService: WorkflowActionService,
+    private workflowActionService: WorkflowActionService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -32,15 +32,14 @@ export class ErrorFrameComponent implements OnInit, OnChanges {
     this.renderError();
   }
 
-  onClickGotoButton(target:string){
+  onClickGotoButton(target: string) {
     this.workflowActionService.highlightOperators(false, target);
   }
 
   renderError(): void {
     this.errorMessages = this.executeWorkflowService.getErrorMessages();
-    if(this.operatorId){
+    if (this.operatorId) {
       this.errorMessages = this.errorMessages.filter(err => err.operatorId === this.operatorId);
     }
   }
-
 }

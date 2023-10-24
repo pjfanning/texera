@@ -1,14 +1,17 @@
-
 <nz-collapse>
   <nz-collapse-panel
     *ngFor="let error of errorMessages"
     [nzHeader]="error.message"
     [nzActive]="false"
     [nzDisabled]="false"
-    [nzExtra]="extraTpl"
-  >
+    [nzExtra]="extraTpl">
     <ng-template #extraTpl>
-      <span class="goto-operator-icon" *ngIf="error.operatorId" nz-icon nzType="right-square" (click)="$event.stopPropagation(); onClickGotoButton(error.operatorId)"></span>
+      <span
+        class="goto-operator-icon"
+        *ngIf="error.operatorId"
+        nz-icon
+        nzType="right-square"
+        (click)="$event.stopPropagation(); onClickGotoButton(error.operatorId)"></span>
     </ng-template>
     <p class="error-message">{{ error.details }} content</p>
   </nz-collapse-panel>

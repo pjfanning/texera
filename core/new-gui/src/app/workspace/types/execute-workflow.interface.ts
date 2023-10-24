@@ -6,7 +6,7 @@
 
 import { ChartType } from "./visualization.interface";
 import { BreakpointRequest, BreakpointTriggerInfo } from "./workflow-common.interface";
-import {JobError, OperatorCurrentTuples} from "./workflow-websocket.interface";
+import { JobError, OperatorCurrentTuples } from "./workflow-websocket.interface";
 
 export interface LogicalLink
   extends Readonly<{
