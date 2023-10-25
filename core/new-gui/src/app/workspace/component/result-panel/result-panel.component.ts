@@ -247,7 +247,7 @@ export class ResultPanelComponent implements OnInit {
       return true;
     }
 
-    // force refresh after fixing all errors
+    // force refresh after fixing all editing-time errors
     if (event.previous.state === ExecutionState.Failed) {
       return true;
     }
