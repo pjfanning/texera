@@ -117,7 +117,7 @@ class WorkflowWorker(
   }
 
   def receiveAndProcessMessages: Receive =
-    acceptDirectInvocations orElse forwardResendRequest orElse disallowActorRefRelatedMessages orElse {
+    acceptDirectInvocations orElse disallowActorRefRelatedMessages orElse {
       case NetworkMessage(id, WorkflowDataMessage(from, seqNum, payload)) =>
         dataInputPort.handleMessage(
           this.sender(),

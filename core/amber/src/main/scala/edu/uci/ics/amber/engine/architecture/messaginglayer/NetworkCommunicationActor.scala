@@ -10,7 +10,6 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelEndpointID,
   CreditRequest,
-  ResendOutputTo,
   WorkflowControlMessage,
   WorkflowMessage
 }
@@ -27,15 +26,13 @@ object NetworkCommunicationActor {
 
   def props(
       parentSender: ActorRef,
-      actorId: ActorVirtualIdentity,
-      supportFaultTolerance: Boolean
+      actorId: ActorVirtualIdentity
   ): Props =
-    Props(new NetworkCommunicationActor(parentSender, actorId, supportFaultTolerance))
+    Props(new NetworkCommunicationActor(parentSender, actorId))
 
   /** to distinguish between main actor self ref and
     * network sender actor
     * TODO: remove this after using Akka Typed APIs
-    *
     * @param ref
     */
   case class NetworkSenderActorRef(ref: ActorRef = null) {
@@ -79,8 +76,6 @@ object NetworkCommunicationActor {
   final case class MessageBecomesDeadLetter(message: NetworkMessage)
 
   final case class PollForCredit(to: ActorVirtualIdentity)
-
-  final case class ResendFeasibility(isOk: Boolean)
 }
 
 /** This actor handles the transformation from identifier to actorRef
@@ -89,8 +84,7 @@ object NetworkCommunicationActor {
   */
 class NetworkCommunicationActor(
     parentRef: ActorRef,
-    val actorId: ActorVirtualIdentity,
-    supportFaultTolerance: Boolean
+    val actorId: ActorVirtualIdentity
 ) extends Actor
     with AmberLogging {
 
@@ -99,14 +93,6 @@ class NetworkCommunicationActor(
   val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
   val messageStash = new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]
   val messageIDToIdentity = new mutable.LongMap[ActorVirtualIdentity]
-  var sentMessages: mutable.Map[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]] =
-    if (supportFaultTolerance) {
-      new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]
-    } else {
-      null
-    }
-  val resendForRecoveryQueueLimit: Long =
-    AmberUtils.amberConfig.getLong("fault-tolerance.max-supported-resend-queue-length")
   // register timer for resending messages
   val resendHandle: Cancellable = context.system.scheduler.scheduleWithFixedDelay(
     30.seconds,
@@ -282,17 +268,6 @@ class NetworkCommunicationActor(
         }
         if (idToCongestionControls.contains(receiverId)) {
           val congestionControl = idToCongestionControls(receiverId)
-          val msgSent = congestionControl.ack(id)
-          if (msgSent.isDefined) {
-            if (sentMessages != null) {
-              sentMessages
-                .getOrElseUpdate(receiverId, new mutable.Queue[WorkflowMessage]())
-                .enqueue(msgSent.get.internalMessage)
-              if (sentMessages(receiverId).size == resendForRecoveryQueueLimit) {
-                sentMessages = null //invalidate recovery
-              }
-            }
-          }
           congestionControl.getBufferedMessagesToSend
             .foreach { msg =>
               congestionControl.markMessageInTransit(msg)
@@ -311,31 +286,6 @@ class NetworkCommunicationActor(
           msgsNeedResend.foreach { msg =>
             sendOrGetActorRef(actorID, msg)
           }
-      }
-    case ResendOutputTo(dest, ref) =>
-      logger.info("received resend request to " + dest)
-      sender ! ResendFeasibility(sentMessages != null)
-      // if the output can be resent
-      if (sentMessages != null) {
-        // reset actor mapping
-        queriedActorVirtualIdentities.remove(dest)
-        idToActorRefs(dest) = ref
-        // temporally block main actor
-        sendBackpressureMessageToParent(true)
-        // resend previous output, make sure every message is received
-        if (sentMessages.contains(dest)) {
-          sentMessages(dest).foreach { message =>
-            ref ! NetworkMessage(-1, message)
-          }
-        }
-        // resend message in congestion control
-        if (idToCongestionControls.contains(dest)) {
-          idToCongestionControls(dest).getInTransitMessages.foreach { message =>
-            ref ! message
-          }
-        }
-        // unblock main actor
-        sendBackpressureMessageToParent(false)
       }
     case MessageBecomesDeadLetter(msg) =>
       // only remove the mapping from id to actorRef

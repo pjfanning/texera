@@ -132,7 +132,7 @@ class Controller(
   }
 
   def running: Receive = {
-    forwardResendRequest orElse acceptRecoveryMessages orElse acceptDirectInvocations orElse {
+    acceptRecoveryMessages orElse acceptDirectInvocations orElse {
       case NetworkMessage(id, WorkflowControlMessage(from, seqNum, payload)) =>
         controlInputPort.handleMessage(
           this.sender(),
@@ -158,8 +158,6 @@ class Controller(
         case UpdateRecoveryStatus(isRecovering) =>
           logger.info("recovery status for " + recoveryMsg.from + " is " + isRecovering)
           globalRecoveryManager.markRecoveryStatus(recoveryMsg.from, isRecovering)
-        case ResendOutputTo(vid, ref) =>
-          logger.warn(s"controller should not resend output to " + vid)
         case NotifyFailedNode(addr) =>
           if (!controllerConfig.supportFaultTolerance) {
             // do not support recovery
@@ -187,17 +185,6 @@ class Controller(
             val ref = workflow.getOperator(info.id).recover(info.id, deployNodes.head, context)
             logger.info("Global Recovery: respawn " + info.id)
             val vidSet = infoIter.map(_.id).toSet
-            // wait for some secs to re-send output
-            logger.info("Global Recovery: triggering upstream resend for " + info.id)
-            workflow
-              .getDirectUpstreamWorkers(info.id)
-              .filter(x => !vidSet.contains(x))
-              .foreach { vid =>
-                logger.info("Global Recovery: trigger resend from " + vid + " to " + info.id)
-                workflow.getWorkerInfo(vid).ref ! ResendOutputTo(info.id, ref)
-              }
-            // let controller resend control messages immediately
-            networkCommunicationActor ! ResendOutputTo(info.id, ref)
             Thread.sleep(recoveryDelay)
             globalRecoveryManager.markRecoveryStatus(CONTROLLER, false)
           }
@@ -265,7 +252,7 @@ class Controller(
       val fifoState = recoveryManager.getFIFOState(logStorage.getReader.mkLogRecordIterator())
       controlInputPort.overwriteFIFOState(fifoState)
       self ! controlMessagesToRecover.next()
-      forwardResendRequest orElse acceptRecoveryMessages orElse recovering
+      acceptRecoveryMessages orElse recovering
     } else {
       running
     }

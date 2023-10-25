@@ -11,7 +11,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunication
   GetActorRef,
   NetworkSenderActorRef,
   RegisterActorRef,
-  ResendFeasibility,
   SendRequest
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
@@ -24,7 +23,6 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelEndpointID,
   ControlPayload,
-  ResendOutputTo,
   WorkflowControlMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.{
@@ -50,8 +48,7 @@ abstract class WorkflowActor(
     context.actorOf(
       NetworkCommunicationActor.props(
         parentNetworkCommunicationActorRef.ref,
-        actorId,
-        supportFaultTolerance
+        actorId
       )
     )
   )
@@ -82,16 +79,6 @@ abstract class WorkflowActor(
     val msg =
       WorkflowControlMessage(ChannelEndpointID(self, isControlChannel = true), seqNum, payload)
     logManager.sendCommitted(SendRequest(to, msg))
-  }
-
-  def forwardResendRequest: Receive = {
-    case resend: ResendOutputTo =>
-      networkCommunicationActor ! resend
-    case ResendFeasibility(status) =>
-      if (!status) {
-        // this exception will be caught by the catch in receiveAndProcessMessages
-        throw new WorkflowRuntimeException(s"network sender cannot resend message!")
-      }
   }
 
   def disallowActorRefRelatedMessages: Receive = {
