@@ -1,0 +1,7 @@
+<button nz-button (click)="showTab = !showTab">
+  Show Tab
+</button>
+<div class="side-pop-tab" *ngIf="showTab">
+  <!-- Content of the tab goes here -->
+  <p>This is the environment editor tab.</p>
+</div>

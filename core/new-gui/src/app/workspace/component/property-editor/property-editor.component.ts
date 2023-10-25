@@ -7,11 +7,14 @@ import { DynamicComponentConfig } from "../../../common/type/dynamic-component-c
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { filter } from "rxjs/operators";
 import { PortPropertyEditFrameComponent } from "./port-property-edit-frame/port-property-edit-frame.component";
+import {EnvironmentPropertyEditFrameComponent} from "./environment-property-edit-frame/environment-property-edit-frame.component";
+import {DISPLAY_ENVIRONMENT_EDITOR_EVENT, EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
 
 export type PropertyEditFrameComponent =
   | OperatorPropertyEditFrameComponent
   | BreakpointPropertyEditFrameComponent
-  | PortPropertyEditFrameComponent;
+  | PortPropertyEditFrameComponent
+  | EnvironmentPropertyEditFrameComponent;
 
 export type PropertyEditFrameConfig = DynamicComponentConfig<PropertyEditFrameComponent>;
 
@@ -30,7 +33,11 @@ export type PropertyEditFrameConfig = DynamicComponentConfig<PropertyEditFrameCo
 export class PropertyEditorComponent implements OnInit {
   frameComponentConfig?: PropertyEditFrameConfig;
 
-  constructor(public workflowActionService: WorkflowActionService, private changeDetectorRef: ChangeDetectorRef) {}
+  constructor(
+    public workflowActionService: WorkflowActionService,
+    private changeDetectorRef: ChangeDetectorRef,
+    public environmentEditorService: EnvironmentEditorService
+  ) {}
 
   ngOnInit(): void {
     this.registerHighlightEventsHandler();
@@ -65,13 +72,15 @@ export class PropertyEditorComponent implements OnInit {
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxHighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxUnhighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointPortHighlightStream(),
-      this.workflowActionService.getJointGraphWrapper().getJointPortUnhighlightStream()
+      this.workflowActionService.getJointGraphWrapper().getJointPortUnhighlightStream(),
+      this.environmentEditorService.environmentEditorDisplayObservable(),
     )
       .pipe(
         filter(() => this.workflowActionService.getTexeraGraph().getSyncTexeraGraph()),
         untilDestroyed(this)
       )
-      .subscribe(_ => {
+      .subscribe(event => {
+        const isDisplayEnvironmentEditor = event.length === 1 && event[0] === DISPLAY_ENVIRONMENT_EDITOR_EVENT;
         const highlightedOperators = this.workflowActionService
           .getJointGraphWrapper()
           .getCurrentHighlightedOperatorIDs();
@@ -79,8 +88,11 @@ export class PropertyEditorComponent implements OnInit {
         const highlightLinks = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
         this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedCommentBoxIDs();
         const highlightedPorts = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedPortIDs();
-
-        if (
+        if (isDisplayEnvironmentEditor) {
+          this.switchFrameComponent({
+            component: EnvironmentPropertyEditFrameComponent,
+          });
+        } else if (
           highlightedOperators.length === 1 &&
           highlightedGroups.length === 0 &&
           highlightLinks.length === 0 &&

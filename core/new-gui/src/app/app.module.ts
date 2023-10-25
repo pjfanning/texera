@@ -135,6 +135,8 @@ import { NzAlertModule } from "ng-zorro-antd/alert";
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
+import {EnvironmentEditorComponent} from "./workspace/component/environment-editor/environment-editor.component";
+import {EnvironmentPropertyEditFrameComponent} from "./workspace/component/property-editor/environment-property-edit-frame/environment-property-edit-frame.component";
 
 registerLocaleData(en);
 
@@ -148,6 +150,7 @@ registerLocaleData(en);
     OperatorMenuComponent,
     PropertyEditorComponent,
     VersionsListComponent,
+    EnvironmentPropertyEditFrameComponent,
     WorkflowEditorComponent,
     ResultPanelComponent,
     OperatorLabelComponent,
@@ -173,6 +176,7 @@ registerLocaleData(en);
     VisualizationFrameComponent,
     VisualizationFrameContentComponent,
     CodeareaCustomTemplateComponent,
+    EnvironmentEditorComponent,
     CodeEditorDialogComponent,
     TypeCastingDisplayComponent,
     ShareAccessComponent,

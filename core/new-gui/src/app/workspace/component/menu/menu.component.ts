@@ -28,6 +28,7 @@ import { CoeditorPresenceService } from "../../service/workflow-graph/model/coed
 import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
+import {EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -88,6 +89,7 @@ export class MenuComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public workflowVersionService: WorkflowVersionService,
+    public environmentEditorService: EnvironmentEditorService,
     public userService: UserService,
     private datePipe: DatePipe,
     public workflowResultExportService: WorkflowResultExportService,
@@ -459,6 +461,10 @@ export class MenuComponent implements OnInit {
     this.workflowVersionService.displayWorkflowVersions();
   }
 
+  onClickOpenEnvironmentEditor() {
+    this.environmentEditorService.clickDisplayEnvironmentEditor();
+  }
+
   private handleWorkflowVersionDisplay(): void {
     this.workflowVersionService
       .getDisplayParticularVersionStream()
@@ -470,7 +476,7 @@ export class MenuComponent implements OnInit {
             : "" +
               this.datePipe.transform(
                 this.workflowActionService.getWorkflowMetadata().creationTime,
-                "MM/dd/yyyy HH:mm:ss",
+                "MM/dd/yyyy HH:mm:ss zzz",
                 Intl.DateTimeFormat().resolvedOptions().timeZone,
                 "en"
               );
