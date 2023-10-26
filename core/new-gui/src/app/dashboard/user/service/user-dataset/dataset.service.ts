@@ -1,11 +1,13 @@
 import {Injectable} from "@angular/core";
 import {HttpClient} from "@angular/common/http";
+import { map } from 'rxjs/operators';
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {Dataset} from "../../../../common/type/dataset";
 import {AppSettings} from "../../../../common/app-setting";
 import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
+import {DatasetVersionHierarchy, DatasetVersionHierarchyNode, parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
 
 
 export const DATASET_BASE_URL = "dataset";
@@ -13,6 +15,11 @@ export const DATASET_CREATE_URL = DATASET_BASE_URL + "/create";
 export const DATASET_LIST_URL = DATASET_BASE_URL + "/list";
 export const DATASET_SEARCH_URL = DATASET_BASE_URL + "/search";
 export const DATASET_DELETE_URL = DATASET_BASE_URL + "/delete";
+
+export const DATASET_VERSION_BASE_URL = "version";
+export const DATASET_VERSION_LIST_URL = DATASET_VERSION_BASE_URL + "/list";
+
+
 
 @Injectable({
   providedIn: "root",
@@ -29,10 +36,32 @@ export class DatasetService {
     }).pipe()
   }
 
-  public retrieveDatasetFileHierarchy(did: number, version: string = ""): Observable<Dataset> {
+  /**
+   * retrieve a list of version name of a dataset. The list is sorted so that the latest versions are at front.
+   * @param did
+   */
+  public retrieveDatasetVersionList(did: number): Observable<string[]> {
     return this.http
-      .get<Dataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
+      .get<{ versions: string[]}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_LIST_URL}`)
+      .pipe(
+        map(response => response.versions)
+      )
   }
+
+  /**
+   * retrieve a list of nodes that represent the files in the version
+   * @param did
+   * @param version
+   */
+  public retrieveDatasetVersionFileHierarchy(did: number, version: string = ""): Observable<DatasetVersionHierarchyNode[]> {
+    return this.http
+      .get<{ hierarchy: DatasetVersionHierarchy }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${version}/hierarchy`)
+      .pipe(
+        map(response => response.hierarchy),
+        map(parseHierarchyToNodes)  // Convert the DatasetVersionHierarchy to DatasetVersionHierarchyNode[]
+      );
+  }
+
 
   public retrieveDatasetsBySessionUser(): Observable<DashboardDataset[]> {
     return this.http
