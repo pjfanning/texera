@@ -17,7 +17,8 @@ import org.jooq.impl.DSL
 import org.jooq.types.UInteger
 
 import java.io.{InputStream, OutputStream}
-import java.util.Optional
+import java.util
+import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.{Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
@@ -125,7 +126,7 @@ object DatasetResource {
                                isOwner: Boolean,
                              )
 
-  case class DatasetHierarchy(datasetFileHierarchy: DatasetFileHierarchy)
+  case class DatasetHierarchy(hierarchy: util.Map[String, AnyRef])
 
   case class DatasetVersions(versions: List[String])
 
@@ -338,7 +339,7 @@ class DatasetResource {
           val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
           val versionDesc = datasetVersionControl.checkoutToVersion(version)
 
-          DatasetHierarchy(new DatasetFileHierarchy(versionDesc.getVersionRepoPath))
+          DatasetHierarchy(new DatasetFileHierarchy(versionDesc.getVersionRepoPath).getHierarchy)
         })
       }
     })
