@@ -29,7 +29,7 @@ export class DatasetService {
     }).pipe()
   }
 
-  public retrieveDataset(did: number): Observable<Dataset> {
+  public retrieveDatasetFileHierarchy(did: number, version: string = ""): Observable<Dataset> {
     return this.http
       .get<Dataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
   }
