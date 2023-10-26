@@ -1,8 +1,12 @@
 import {Observable, Subject} from "rxjs";
 import {WorkflowActionService} from "../../../../workspace/service/workflow-graph/model/workflow-action.service";
+import {Injectable} from "@angular/core";
 
 export const DISPLAY_ENVIRONMENT_EDITOR_EVENT = "display_environment_editor_event";
 
+@Injectable({
+  providedIn: "root",
+})
 export class EnvironmentEditorService {
   private environmentEditorObservable = new Subject<readonly string[]>();
 
