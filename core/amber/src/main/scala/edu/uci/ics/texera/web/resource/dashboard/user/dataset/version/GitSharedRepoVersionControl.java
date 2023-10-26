@@ -3,10 +3,13 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset.version;
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,11 +46,26 @@ public class GitSharedRepoVersionControl {
 
   public List<String> listVersions() throws IOException, GitAPIException {
     Path path = Paths.get(baseRepoPath);
+
+    // Create a comparator to sort paths based on creation time
+    Comparator<Path> creationTimeComparator = (p1, p2) -> {
+      try {
+        BasicFileAttributes attrs1 = Files.readAttributes(p1, BasicFileAttributes.class);
+        BasicFileAttributes attrs2 = Files.readAttributes(p2, BasicFileAttributes.class);
+        // Compare in reverse order to get the list from latest to earliest
+        return attrs2.creationTime().compareTo(attrs1.creationTime());
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    };
+
     return Files.list(path)
         .filter(Files::isDirectory)
+        .sorted(creationTimeComparator) // Sort directories based on creation time
         .map(p -> p.getFileName().toString())  // Get only the last segment of the path
         .collect(Collectors.toList());
   }
+
 
   public String getDatasetVersionPath(String versionName) {
     return baseRepoPath + "/" + versionName;

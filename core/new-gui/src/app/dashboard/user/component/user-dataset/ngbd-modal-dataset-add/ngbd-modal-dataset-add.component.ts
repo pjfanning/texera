@@ -42,7 +42,8 @@ export class NgbdModalDatasetAddComponent implements OnInit {
       isPublic: this.validateForm.get('isPublic')?.value,
       did: undefined,
       storagePath: undefined,
-      creationTime: undefined
+      creationTime: undefined,
+      versionHierarchy: undefined,
     }
 
     this.datasetService.createDataset(ds)
