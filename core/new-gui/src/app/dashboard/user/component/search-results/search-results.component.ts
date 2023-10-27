@@ -12,7 +12,7 @@ export class SearchResultsComponent {
   loadMoreFunction: LoadMoreFunction | null = null;
   loading = false;
   more = false;
-  entries: ReadonlyArray<DashboardEntry> = [];
+  entries: Array<DashboardEntry> = [];
   private resetCounter = 0;
   @Input() showResourceTypes = false;
   @Input() public pid: number = 0;
@@ -42,5 +42,10 @@ export class SearchResultsComponent {
     } finally {
       this.loading = false;
     }
+  }
+
+  // for dummy vars
+  public setEntries(entries: DashboardEntry[]) {
+    this.entries = entries;
   }
 }

@@ -10,6 +10,7 @@ import {SearchService} from "../../service/search.service";
 import {firstValueFrom} from "rxjs";
 import {DashboardEntry} from "../../type/dashboard-entry";
 import {SortMethod} from "../../type/sort-method";
+import {NgbdModalEnvironmentAddComponent} from "./ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 
 export const ROUTER_ENVIRONMENT_VIEW_URL = "/"
 @UntilDestroy()
@@ -47,6 +48,9 @@ export class UserEnvironmentComponent implements AfterViewInit {
   public sortMethod = SortMethod.NameAsc;
   lastSortMethod: SortMethod | null = null;
 
+  // dummy vars
+  public environments: DashboardEntry[] = [];
+
   constructor(
     private userService: UserService,
     private notificationService: NotificationService,
@@ -54,14 +58,6 @@ export class UserEnvironmentComponent implements AfterViewInit {
     private router: Router,
     private searchService: SearchService
   ) {}
-
-  public multiWorkflowsOperationButtonEnabled(): boolean {
-    if (this._searchResultsComponent) {
-      return this.searchResultsComponent?.entries.filter(i => i.checked).length > 0;
-    } else {
-      return false;
-    }
-  }
 
   ngAfterViewInit() {
     this.reloadDashboardEnvironmentEntries()
@@ -108,6 +104,8 @@ export class UserEnvironmentComponent implements AfterViewInit {
     await this.searchResultsComponent.loadMore();
   }
 
+
+
   /**
    * open a new environment. will redirect to a pre-emptied environment view space
    */
@@ -123,10 +121,10 @@ export class UserEnvironmentComponent implements AfterViewInit {
   }
 
   private reloadDashboardEnvironmentEntries(forced: boolean = false): void {
-    this.userService
-      .userChanged()
-      .pipe(untilDestroyed(this))
-      .subscribe(() => this.search(forced));
+    // this.userService
+    //   .userChanged()
+    //   .pipe(untilDestroyed(this))
+    //   .subscribe(() => this.search(forced));
   }
 
   public deleteEnvironment(event: DashboardEntry) {

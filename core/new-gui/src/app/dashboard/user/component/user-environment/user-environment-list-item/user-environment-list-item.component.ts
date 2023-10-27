@@ -11,6 +11,7 @@ import {UserProjectService} from "../../../service/user-project/user-project.ser
 import {NgbdModalWorkflowExecutionsComponent} from "../../user-workflow/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
 import {firstValueFrom} from "rxjs";
 import {ShareAccessComponent} from "../../share-access/share-access.component";
+import {Environment} from "../../../type/environment";
 
 @UntilDestroy()
 @Component({
@@ -38,10 +39,10 @@ export class UserEnvironmentListItemComponent {
   get environment(): Environment {
     if (!this.entry.environment) {
       throw new Error(
-        "Incorrect type of DashboardEntry provided to UserWorkflowListItemComponent. Entry must be workflow."
+        "Incorrect type of DashboardEntry provided to UserEnvironmentListItemComponent. Entry must be environment."
       );
     }
-    return this.entry.environment;
+    return this.entry.environment.environment;
   }
 
   @Input() editable = false;
