@@ -13,7 +13,6 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.AddressInfo
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkSenderActorRef
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal
@@ -38,7 +37,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class WorkflowScheduler(
     availableNodes: Array[Address],
-    networkCommunicationActor: NetworkSenderActorRef,
     ctx: ActorContext,
     asyncRPCClient: AsyncRPCClient,
     logger: Logger,
@@ -144,7 +142,6 @@ class WorkflowScheduler(
     val workerLayer = workflow.getOperator(operatorIdentity)
     workerLayer.build(
       AddressInfo(availableNodes, ctx.self.path.address),
-      networkCommunicationActor,
       ctx,
       workflow.workerToOpExecConfig,
       controllerConf

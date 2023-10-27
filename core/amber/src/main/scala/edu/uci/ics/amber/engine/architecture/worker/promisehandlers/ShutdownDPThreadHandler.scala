@@ -20,7 +20,6 @@ trait ShutdownDPThreadHandler {
     {
       dataProcessor.logManager.terminate()
       msg.completed.complete(())
-      dataProcessor.shutdown()
       throw new InterruptedException() // actively interrupt itself
       ()
     }

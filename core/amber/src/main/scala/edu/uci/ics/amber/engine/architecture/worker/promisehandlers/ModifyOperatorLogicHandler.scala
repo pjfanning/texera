@@ -37,7 +37,7 @@ trait ModifyOperatorLogicHandler {
 
   registerHandler { (msg: WorkerModifyLogicMultiple, _) =>
     val modifyLogic =
-      msg.modifyLogicList.find(o => o.opExecConfig.id == dataProcessor.opExecConfig.id)
+      msg.modifyLogicList.find(o => o.opExecConfig.id == dataProcessor.getOperatorId)
     if (modifyLogic.nonEmpty) {
       performModifyLogic(modifyLogic.get)
       sendToClient(WorkerModifyLogicComplete(this.actorId))
@@ -47,7 +47,7 @@ trait ModifyOperatorLogicHandler {
   private def performModifyLogic(modifyLogic: WorkerModifyLogic): Unit = {
     val newOpExecConfig = modifyLogic.opExecConfig
     val newOperator =
-      newOpExecConfig.initIOperatorExecutor((dataProcessor.workerIndex, newOpExecConfig))
+      newOpExecConfig.initIOperatorExecutor((dataProcessor.workerIdx, newOpExecConfig))
     if (modifyLogic.stateTransferFunc.nonEmpty) {
       modifyLogic.stateTransferFunc.get.apply(dataProcessor.operator, newOperator)
     }

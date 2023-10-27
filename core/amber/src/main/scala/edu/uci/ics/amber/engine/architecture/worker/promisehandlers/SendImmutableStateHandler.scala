@@ -29,7 +29,7 @@ trait SendImmutableStateHandler {
   this: WorkerAsyncRPCHandlerInitializer =>
 
   registerHandler { (cmd: SendImmutableState, sender) =>
-    dataProcessor.getOperatorExecutor() match {
+    dataProcessor.operator match {
       case joinOpExec: HashJoinOpExec[_] =>
         // Returns true if the build table was replicated successfully in case of HashJoin.
         try {

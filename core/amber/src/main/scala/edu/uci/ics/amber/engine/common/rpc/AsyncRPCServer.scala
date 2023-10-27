@@ -4,7 +4,6 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
   ControlInvocation,
   ReturnInvocation,
@@ -38,7 +37,7 @@ object AsyncRPCServer {
 }
 
 class AsyncRPCServer(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    controlOutputEndpoint: NetworkOutputPort,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
