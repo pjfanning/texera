@@ -29,8 +29,7 @@ trait AcceptImmutableStateHandler {
 
   registerHandler { (cmd: AcceptImmutableState, sender) =>
     try {
-      dataProcessor
-        .getOperatorExecutor()
+      dataProcessor.operator
         .asInstanceOf[HashJoinOpExec[_]]
         .mergeIntoHashTable(cmd.buildHashMap)
     } catch {

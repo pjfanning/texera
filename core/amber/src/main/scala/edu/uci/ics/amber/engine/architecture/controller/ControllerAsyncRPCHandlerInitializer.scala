@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDete
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers._
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
@@ -22,7 +21,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 class ControllerAsyncRPCHandlerInitializer(
     val actorContext: ActorContext,
     val actorId: ActorVirtualIdentity,
-    val controlOutputPort: NetworkOutputPort[ControlPayload],
+    val controlOutputPort: NetworkOutputPort,
     val workflow: Workflow,
     val controllerConfig: ControllerConfig,
     val scheduler: WorkflowScheduler,

@@ -16,7 +16,7 @@ trait WorkerEpochMarkerHandler {
 
   registerHandler { (msg: WorkerPropagateEpochMarker, sender) =>
     {
-      epochManager.triggerEpochMarkerOnCompletion(msg.epochMarker)
+      epochManager.triggerEpochMarkerOnCompletion(msg.epochMarker, dataProcessor)
     }
   }
 

@@ -1,14 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import akka.actor.Cancellable
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.common.ambermessage.{WorkflowDataMessage, WorkflowMessage}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks.{break, breakable}
 
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
@@ -37,122 +34,55 @@ import scala.util.control.Breaks.{break, breakable}
   * 4. In our current design, the term "Credit" refers to the message in memory size in bytes.
   */
 class FlowControl {
-  val receiverCreditsMapping = new mutable.HashMap[ActorVirtualIdentity, Int]()
-  var backpressureRequestSentToMainActor = false
-  var receiverToCreditPollingHandle = new mutable.HashMap[ActorVirtualIdentity, Cancellable]()
-  private val receiverStashedDataMessageMapping =
-    new mutable.HashMap[ActorVirtualIdentity, mutable.Queue[WorkflowMessage]]()
 
-  def getOverloadedReceivers(): ArrayBuffer[ActorVirtualIdentity] = {
-    val overloadedReceivers = new ArrayBuffer[ActorVirtualIdentity]()
-    receiverStashedDataMessageMapping.keys.foreach(receiverId => {
-      if (
-        receiverStashedDataMessageMapping(
-          receiverId
-        ).size > Constants.localSendingBufferLimitPerReceiver + receiverCreditsMapping(receiverId)
-      ) {
-        overloadedReceivers.append(receiverId)
-      }
-    })
-    overloadedReceivers
-  }
+  private var credit = Constants.unprocessedBatchesSizeLimitPerSender
+  private val dataMessagesAwaitingCredits = new mutable.Queue[WorkflowFIFOMessage]()
+
+  def isOverloaded: Boolean =
+    dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
 
   /**
     * Determines if an incoming message can be forwarded to the receiver based on the credits available.
     */
-  def getMessageToForward(
-      receiverId: ActorVirtualIdentity,
-      msg: WorkflowMessage
-  ): Option[WorkflowMessage] = {
-    if (!Constants.flowControlEnabled) {
-      return Some(msg)
-    }
-
-    initializeCreditIfNotExist(receiverId)
-
-    val isDataMessage = msg.isInstanceOf[WorkflowDataMessage]
-
-    if (!isDataMessage) {
-      // control message
-      return Some(msg)
-    }
-
-    if (receiverCreditsMapping(receiverId) > 0) {
-      val credit = getInMemSize(msg).intValue()
-      decreaseCredit(receiverId, credit)
-      if (!hasStashedDataMessage(receiverId)) {
+  def inputMessage(msg: WorkflowFIFOMessage): Option[WorkflowFIFOMessage] = {
+    if (credit > 0) {
+      if (dataMessagesAwaitingCredits.isEmpty) {
+        credit -= getInMemSize(msg).intValue()
         Some(msg)
       } else {
-        // has stashed data messages
-        receiverStashedDataMessageMapping(receiverId).enqueue(msg)
-        Some(receiverStashedDataMessageMapping(receiverId).dequeue())
+        dataMessagesAwaitingCredits.enqueue(msg)
+        credit -= getInMemSize(msg).intValue()
+        Some(dataMessagesAwaitingCredits.dequeue())
       }
     } else {
-      // credit <= 0
-      receiverStashedDataMessageMapping(receiverId).enqueue(msg)
+      dataMessagesAwaitingCredits.enqueue(msg)
       None
     }
-
   }
 
-  def getMessagesToForward(receiverId: ActorVirtualIdentity): Array[WorkflowMessage] = {
-    val messagesToSend = new ArrayBuffer[WorkflowMessage]()
-
-    initializeCreditIfNotExist(receiverId)
-    breakable {
-      while (hasStashedDataMessage(receiverId)) {
-        val msg = receiverStashedDataMessageMapping(receiverId).head
-        val credit = getInMemSize(msg).intValue()
-        if (credit <= receiverCreditsMapping(receiverId)) {
-          messagesToSend.append(msg)
-          decreaseCredit(receiverId, credit)
-          receiverStashedDataMessageMapping(receiverId).dequeue()
-        } else {
-          break
-        }
-      }
+  def getMessagesToForward: Array[WorkflowFIFOMessage] = {
+    val messageBuffer = new ArrayBuffer[WorkflowFIFOMessage]()
+    while (dataMessagesAwaitingCredits.nonEmpty && credit > 0) {
+      val msg = dataMessagesAwaitingCredits.dequeue()
+      messageBuffer.append(msg)
+      credit -= getInMemSize(msg).intValue()
     }
-
-    messagesToSend.toArray
-
+    messageBuffer.toArray
   }
 
   /**
     * Decides whether parent should be backpressured based on the current data message put into
-    * `receiverStashedDataMessageMapping` queue.
+    * `dataMessagesAwaitingCredits` queue.
     */
-  def shouldBackpressureParent(receiverId: ActorVirtualIdentity): Boolean = {
-    Constants.flowControlEnabled &&
-    receiverStashedDataMessageMapping
-      .getOrElseUpdate(receiverId, new mutable.Queue[WorkflowMessage]())
-      .size > Constants.localSendingBufferLimitPerReceiver + receiverCreditsMapping.getOrElseUpdate(
-      receiverId,
-      Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-    )
+  def shouldBackpressureParent(): Boolean = {
+    dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
   }
 
-  def updateCredits(receiverId: ActorVirtualIdentity, credits: Int): Unit = {
-    if (credits <= 0) {
-      receiverCreditsMapping(receiverId) = 0
+  def updateCredit(newCredit: Int): Unit = {
+    if (newCredit <= 0) {
+      credit = 0
     } else {
-      receiverCreditsMapping(receiverId) = credits
+      credit = newCredit
     }
-  }
-
-  def decreaseCredit(receiverId: ActorVirtualIdentity, credit: Int): Unit = {
-    receiverCreditsMapping(receiverId) = receiverCreditsMapping(receiverId) - credit
-  }
-
-  def hasStashedDataMessage(receiverId: ActorVirtualIdentity): Boolean = {
-    receiverStashedDataMessageMapping
-      .getOrElseUpdate(receiverId, new mutable.Queue[WorkflowMessage]())
-      .nonEmpty
-  }
-
-  def initializeCreditIfNotExist(receiverId: ActorVirtualIdentity): Unit = {
-    receiverCreditsMapping.getOrElseUpdate(
-      receiverId,
-      Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-    )
   }
 }

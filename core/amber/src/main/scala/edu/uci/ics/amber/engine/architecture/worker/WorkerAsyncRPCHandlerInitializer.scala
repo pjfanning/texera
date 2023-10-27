@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   OutputManager
 }
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers._
-import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload}
 import edu.uci.ics.amber.engine.common.rpc.{
   AsyncRPCClient,
   AsyncRPCHandlerInitializer,
@@ -19,10 +18,10 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, IOperatorExecutor}
 
 class WorkerAsyncRPCHandlerInitializer(
     val actorId: ActorVirtualIdentity,
-    val controlInputPort: NetworkInputPort[ControlPayload],
-    val dataInputPort: NetworkInputPort[DataPayload],
-    val controlOutputPort: NetworkOutputPort[ControlPayload],
-    val dataOutputPort: NetworkOutputPort[DataPayload],
+    val controlInputPort: NetworkInputPort,
+    val dataInputPort: NetworkInputPort,
+    val controlOutputPort: NetworkOutputPort,
+    val dataOutputPort: NetworkOutputPort,
     val outputManager: OutputManager,
     val upstreamLinkStatus: UpstreamLinkStatus,
     val pauseManager: PauseManager,

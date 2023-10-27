@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkMessage
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -39,9 +39,9 @@ class CongestionControl {
     toBeSent.enqueue(data)
   }
 
-  def ack(id: Long): Option[NetworkMessage] = {
-    if (!inTransit.contains(id)) return None
-    val message = inTransit.remove(id)
+  def ack(id: Long): Unit = {
+    if (!inTransit.contains(id)) return
+    inTransit.remove(id)
     if (System.currentTimeMillis() - sentTime(id) < ackTimeLimit) {
       if (windowSize < ssThreshold) {
         windowSize = Math.min(windowSize * 2, ssThreshold)
@@ -56,7 +56,6 @@ class CongestionControl {
       windowSize = ssThreshold
     }
     sentTime.remove(id)
-    message
   }
 
   def getBufferedMessagesToSend: Array[NetworkMessage] = {

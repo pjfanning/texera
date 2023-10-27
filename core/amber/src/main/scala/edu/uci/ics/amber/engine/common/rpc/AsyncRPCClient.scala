@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlExcept
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.ControlPayload
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -54,7 +54,7 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputPort[ControlPayload],
+    controlOutputEndpoint: NetworkOutputPort,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
@@ -98,7 +98,7 @@ class AsyncRPCClient(
     }
   }
 
-  def logControlReply(ret: ReturnInvocation, sender: ActorVirtualIdentity): Unit = {
+  def logControlReply(ret: ReturnInvocation, channel: ChannelID): Unit = {
     if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
       return
     }
@@ -107,11 +107,11 @@ class AsyncRPCClient(
         return
       }
       logger.info(
-        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $sender (controlID: ${ret.originalCommandID})"
+        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $channel (controlID: ${ret.originalCommandID})"
       )
     } else {
       logger.info(
-        s"receive reply: null from $sender (controlID: ${ret.originalCommandID})"
+        s"receive reply: null from $channel (controlID: ${ret.originalCommandID})"
       )
     }
   }

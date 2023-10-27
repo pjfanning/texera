@@ -10,10 +10,6 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.
   PreferController,
   RoundRobinPreference
 }
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-  NetworkSenderActorRef,
-  RegisterActorRef
-}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
@@ -317,7 +313,6 @@ case class OpExecConfig(
 
   def build(
       addressInfo: AddressInfo,
-      parentNetworkCommunicationActorRef: NetworkSenderActorRef,
       context: ActorContext,
       workerToLayer: mutable.HashMap[ActorVirtualIdentity, OpExecConfig],
       controllerConf: ControllerConfig
@@ -330,21 +325,18 @@ case class OpExecConfig(
         val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
 
         val workflowWorker = if (this.isPythonOperator) {
-          PythonWorkflowWorker.props(workerId, i, this, parentNetworkCommunicationActorRef)
+          PythonWorkflowWorker.props(workerId)
         } else {
           WorkflowWorker.props(
             workerId,
             i,
-            this,
-            parentNetworkCommunicationActorRef,
-            controllerConf.supportFaultTolerance
+            this
           )
         }
         workerToActorProps(workerId) = workflowWorker
         val ref =
           context.actorOf(workflowWorker.withDeploy(Deploy(scope = RemoteScope(preferredAddress))))
 
-        parentNetworkCommunicationActorRef ! RegisterActorRef(workerId, ref)
         workerToLayer(workerId) = this
         (
           workerId,
