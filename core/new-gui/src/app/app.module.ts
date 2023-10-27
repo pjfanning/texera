@@ -135,8 +135,11 @@ import { NzAlertModule } from "ng-zorro-antd/alert";
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
-import {EnvironmentEditorComponent} from "./workspace/component/environment-editor/environment-editor.component";
 import {EnvironmentPropertyEditFrameComponent} from "./workspace/component/property-editor/environment-property-edit-frame/environment-property-edit-frame.component";
+import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
+import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
+import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
+import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 
 registerLocaleData(en);
 
@@ -163,7 +166,10 @@ registerLocaleData(en);
     UserWorkflowComponent,
     UserFileComponent,
     UserQuotaComponent,
+    UserEnvironmentComponent,
     NgbdModalFileAddComponent,
+    NgbdModalEnvironmentDatasetAddComponent,
+    NgbdModalEnvironmentAddComponent,
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,
@@ -176,7 +182,6 @@ registerLocaleData(en);
     VisualizationFrameComponent,
     VisualizationFrameContentComponent,
     CodeareaCustomTemplateComponent,
-    EnvironmentEditorComponent,
     CodeEditorDialogComponent,
     TypeCastingDisplayComponent,
     ShareAccessComponent,
@@ -210,6 +215,7 @@ registerLocaleData(en);
     FiltersComponent,
     FiltersInstructionsComponent,
     UserFileListItemComponent,
+    UserEnvironmentListItemComponent,
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
