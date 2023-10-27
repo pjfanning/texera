@@ -20,7 +20,7 @@ import {Environment} from "../../../type/environment";
   styleUrls: ["./user-environment-list-item.component.scss"],
 })
 export class UserEnvironmentListItemComponent {
-  ROUTER_DATASET_BASE_URL = "/environment";
+  ROUTER_ENVIRONMENT_BASE_URL = "/user-environment";
 
   private _entry?: DashboardEntry;
 
@@ -59,11 +59,13 @@ export class UserEnvironmentListItemComponent {
     private modalService: NgbModal,
   ) {}
 
+
+
   public confirmUpdateDatasetCustomName(val: any) {
 
   }
 
-  public confirmUpdateDatasetCustomDescription(val: any) {
+  public confirmUpdateEnvironmentCustomDescription(val: any) {
 
   }
 

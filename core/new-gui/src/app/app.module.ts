@@ -140,6 +140,7 @@ import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
 import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
+import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 
 registerLocaleData(en);
 
@@ -167,6 +168,7 @@ registerLocaleData(en);
     UserFileComponent,
     UserQuotaComponent,
     UserEnvironmentComponent,
+    UserEnvironmentEditorComponent,
     NgbdModalFileAddComponent,
     NgbdModalEnvironmentDatasetAddComponent,
     NgbdModalEnvironmentAddComponent,

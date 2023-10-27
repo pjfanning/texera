@@ -4,6 +4,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import { UserService } from "../../../../../common/service/user/user.service";
+import {DashboardEntry} from "../../../type/dashboard-entry";
+import {DashboardEnvironment} from "../../../type/environment";
 
 @UntilDestroy()
 @Component({
@@ -22,7 +24,6 @@ export class NgbdModalEnvironmentAddComponent implements OnInit {
     this.validateForm = this.formBuilder.group({
       name: ["Untitled Environment"],
       description: [""],
-      isPublic: [0],
     });
   }
 
@@ -33,5 +34,18 @@ export class NgbdModalEnvironmentAddComponent implements OnInit {
   }
 
   onSubmitAddEnvironment(): void {
+    let new_entry: DashboardEnvironment = {
+      ownerName: "dummy",
+      environment: {
+        eid : 0,
+        name: this.validateForm.get('name')?.value,
+        description: this.validateForm.get('description')?.value,
+        creationTime: Date.now(),
+        inputs: [],
+        outputs: []
+      }
+    };
+
+    this.activeModal.close(new_entry);
   }
 }

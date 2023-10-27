@@ -11,6 +11,8 @@ import {firstValueFrom} from "rxjs";
 import {DashboardEntry} from "../../type/dashboard-entry";
 import {SortMethod} from "../../type/sort-method";
 import {NgbdModalEnvironmentAddComponent} from "./ngbd-modal-environment-add/ngbd-modal-environment-add.component";
+import {DashboardEnvironment} from "../../type/environment";
+import {EnvironmentService} from "../../service/user-environment/environment.service";
 
 export const ROUTER_ENVIRONMENT_VIEW_URL = "/"
 @UntilDestroy()
@@ -49,14 +51,13 @@ export class UserEnvironmentComponent implements AfterViewInit {
   lastSortMethod: SortMethod | null = null;
 
   // dummy vars
-  public environments: DashboardEntry[] = [];
-
   constructor(
     private userService: UserService,
     private notificationService: NotificationService,
     private modalService: NgbModal,
     private router: Router,
-    private searchService: SearchService
+    private searchService: SearchService,
+    private environmentService: EnvironmentService
   ) {}
 
   ngAfterViewInit() {
@@ -115,12 +116,30 @@ export class UserEnvironmentComponent implements AfterViewInit {
   public onClickOpenEnvironmentAddComponent(): void {
     const modalRef = this.modalService.open(NgbdModalEnvironmentAddComponent)
 
+    // When the modal is closed, retrieve the result
+    modalRef.result.then(
+      (new_entry: DashboardEnvironment) => {
+        // Do something with the new_entry here
+        // this.environments.unshift(entry);
+        // console.log(this.environments);
+        // this.searchResultsComponent.setEntries(this.environments);
+        this.environmentService.addEnvironment(new_entry);
+        this.reloadDashboardEnvironmentEntries();
+      },
+      (dismissReason) => {
+        // Handle the dismiss reason if necessary (e.g., backdrop click, ESC key)
+      }
+    );
+
     modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
       this.reloadDashboardEnvironmentEntries(true)
     });
   }
 
   private reloadDashboardEnvironmentEntries(forced: boolean = false): void {
+    this.searchResultsComponent.setEntries(
+      this.environmentService.getAllEnvironments().map(entry => new DashboardEntry(entry))
+    )
     // this.userService
     //   .userChanged()
     //   .pipe(untilDestroyed(this))

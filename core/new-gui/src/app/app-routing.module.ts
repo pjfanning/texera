@@ -16,6 +16,7 @@ import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
+import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path
@@ -69,6 +70,10 @@ if (environment.userSystemEnabled) {
       {
         path: "user-environment",
         component: UserEnvironmentComponent,
+      },
+      {
+        path: "user-environment/:eid",
+        component: UserEnvironmentEditorComponent,
       },
       {
         path: "search",
