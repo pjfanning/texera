@@ -22,7 +22,7 @@ import {DashboardDataset} from "../../../type/dashboard-dataset.interface";
   styleUrls: ["./user-dataset-list-item.component.scss"],
 })
 export class UserDatasetListItemComponent {
-  ROUTER_DATASET_BASE_URL = "/dataset";
+  ROUTER_DATASET_BASE_URL = "/dashboard/dataset";
 
   private _entry?: DashboardEntry;
 
@@ -41,7 +41,7 @@ export class UserDatasetListItemComponent {
   get dataset(): Dataset {
     if (!this.entry.dataset) {
       throw new Error(
-        "Incorrect type of DashboardEntry provided to UserWorkflowListItemComponent. Entry must be workflow."
+        "Incorrect type of DashboardEntry provided to UserDatasetListItemComponent. Entry must be dataset."
       );
     }
     return this.entry.dataset.dataset;
