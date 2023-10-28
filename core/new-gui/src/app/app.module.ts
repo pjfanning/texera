@@ -141,6 +141,7 @@ import {UserEnvironmentComponent} from "./dashboard/user/component/user-environm
 import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
+import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 
 registerLocaleData(en);
 
@@ -171,6 +172,7 @@ registerLocaleData(en);
     UserEnvironmentEditorComponent,
     NgbdModalFileAddComponent,
     NgbdModalEnvironmentDatasetAddComponent,
+    NgbdModalWorkflowEnvironmentSelectComponent,
     NgbdModalEnvironmentAddComponent,
     RowModalComponent,
     OperatorLabelComponent,

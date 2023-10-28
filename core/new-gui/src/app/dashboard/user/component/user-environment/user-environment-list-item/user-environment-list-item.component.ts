@@ -20,7 +20,7 @@ import {Environment} from "../../../type/environment";
   styleUrls: ["./user-environment-list-item.component.scss"],
 })
 export class UserEnvironmentListItemComponent {
-  ROUTER_ENVIRONMENT_BASE_URL = "/user-environment";
+  ROUTER_ENVIRONMENT_BASE_URL = "/dashboard/user-environment";
 
   private _entry?: DashboardEntry;
 

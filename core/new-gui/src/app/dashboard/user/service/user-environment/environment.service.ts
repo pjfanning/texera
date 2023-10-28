@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import {DashboardEnvironment} from "../../type/environment";
 
 @Injectable({
-  providedIn: 'root'  // This ensures the service is a singleton for the entire app.
+  providedIn: 'root'
 })
 export class EnvironmentService {
   private environments: DashboardEnvironment[] = [];
+  private environmentOfWorkflow: Map<number, number> = new Map();
 
   constructor() {}
 
@@ -48,4 +49,38 @@ export class EnvironmentService {
       throw new Error('Environment index out of bounds');
     }
   }
+
+  addEnvironmentOfWorkflow(wid: number, eid: number): void {
+    if (this.environmentOfWorkflow.has(wid)) {
+      throw new Error('Workflow ID already exists in the map.');
+    }
+
+    if (eid < 0 || eid >= this.environments.length) {
+      throw new Error('Environment ID out of bounds.');
+    }
+
+    this.environmentOfWorkflow.set(wid, eid);
+  }
+
+  switchEnvironmentOfWorkflow(wid: number, eid: number): void {
+    if (!this.environmentOfWorkflow.has(wid)) {
+      throw new Error('Workflow ID does not exist in the map.');
+    }
+
+    if (eid < 0 || eid >= this.environments.length) {
+      throw new Error('Environment ID out of bounds.');
+    }
+
+    this.environmentOfWorkflow.set(wid, eid);
+  }
+
+  // You might also want to add methods to get the environment of a workflow or to delete a mapping, etc.
+  getEnvironmentOfWorkflow(wid: number): number | undefined {
+    return this.environmentOfWorkflow.get(wid);
+  }
+
+  deleteEnvironmentOfWorkflow(wid: number): void {
+    this.environmentOfWorkflow.delete(wid);
+  }
+
 }
