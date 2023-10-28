@@ -11,9 +11,11 @@ export class EnvironmentService {
   constructor() {}
 
   // Create: Add a new environment
-  addEnvironment(environment: DashboardEnvironment): void {
-    environment.environment.eid = this.environments.length; // Set the eid as the index
+  addEnvironment(environment: DashboardEnvironment): number {
+    const eid = this.environments.length;
+    environment.environment.eid = eid; // Set the eid as the index
     this.environments.push(environment);
+    return eid;
   }
 
   getAllEnvironments(): DashboardEnvironment[] {

@@ -1,19 +1,14 @@
 <div class="modal-header">
-  <h4 class="modal-title">Select Environment</h4>
+  <h4 class="modal-title">Select Environment for the workflow</h4>
 </div>
 <div class="modal-body">
-<!--  <form [formGroup]="validateForm" (ngSubmit)="onSubmitAddDatasetToEnvironment()">-->
-<!--    <div class="form-group">-->
-<!--      &lt;!&ndash; Name Field &ndash;&gt;-->
-<!--      &lt;!&ndash;      <nz-card nzTitle="Name">&ndash;&gt;-->
-<!--      <nz-form-item>-->
-<!--        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="name">Dataset Name</nz-form-label>-->
-<!--        <nz-form-control [nzSm]="14" [nzXs]="24">-->
-<!--          <input nz-input id="name" type="text" formControlName="name">-->
-<!--        </nz-form-control>-->
-<!--      </nz-form-item>-->
-<!--      &lt;!&ndash;      </nz-card>&ndash;&gt;-->
-<!--    </div>-->
-<!--    <button nz-button nzType="primary" type="submit">Submit</button>-->
-<!--  </form>-->
+  <div class="form-group">
+    <!-- Dropdown for selecting from existing environments -->
+    <label>From existing environments:</label>
+    <select class="form-control" [(ngModel)]="selectedEnvironment">
+      <option [ngValue]="null" [ngStyle]="{'font-style': 'italic'}">Create a new environment</option>
+      <option *ngFor="let env of existingEnvironments" [value]="env">{{env}}</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" (click)="goToWorkflow()">Go to the workflow editor</button>
 </div>

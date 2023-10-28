@@ -14,6 +14,8 @@ import { DashboardProject } from "../../../type/dashboard-project.interface";
 import { UserProjectService } from "../../../service/user-project/user-project.service";
 import { DashboardEntry } from "../../../type/dashboard-entry";
 import { firstValueFrom } from "rxjs";
+import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
+import {EnvironmentService} from "../../../service/user-environment/environment.service";
 
 @UntilDestroy()
 @Component({
@@ -62,7 +64,8 @@ export class UserWorkflowListItemComponent {
     private modalService: NgbModal,
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
-    private userProjectService: UserProjectService
+    private userProjectService: UserProjectService,
+    private environmentService: EnvironmentService,
   ) {
     this.userProjectService
       .getProjectList()
@@ -94,6 +97,45 @@ export class UserWorkflowListItemComponent {
       .add(() => {
         this.editingName = false;
       });
+  }
+
+  public onClickOpenEnvironmentSelectModal(): void {
+      const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
+        backdrop: 'static',  // ensures the background is not clickable
+        keyboard: false      // ensures the modal cannot be closed with the keyboard
+      });
+
+      modalRef.result.then(
+        (selectedEnvironmentName: string | null) => {
+          if (selectedEnvironmentName == null) {
+            // If an environment was not selected, create a new one and relate it
+            console.log('Selected environment:', selectedEnvironmentName);
+            // Here, you can perform further actions with the selected environment
+            const eid = this.environmentService.addEnvironment(
+              {
+                environment: {
+                  eid: 0,
+                  name: "Untitled Environment",
+                  description: "Some description",
+                  creationTime: Date.now(),
+                  inputs: [],
+                  outputs: [],
+                },
+                ownerName: "Hola"
+              }
+            )
+            const wid = this.workflow.wid;
+            if (wid)
+              this.environmentService.addEnvironmentOfWorkflow(wid, eid);
+          } else {
+            console.log('User chose to create a new environment');
+            // Here, you can perform actions for creating a new environment.
+          }
+        },
+        (reason) => {
+          console.log('Modal was dismissed.', reason);
+        }
+      );
   }
 
   public confirmUpdateWorkflowCustomDescription(description: string): void {
