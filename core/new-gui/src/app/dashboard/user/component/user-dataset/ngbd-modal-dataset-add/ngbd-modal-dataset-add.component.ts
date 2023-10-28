@@ -50,7 +50,7 @@ export class NgbdModalDatasetAddComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe({
         next: value => console.log("Dataset Creation succeeded"),
-        error: (err) => alert(err.error),
+        error: (err) => alert(JSON.stringify(err.error)),
         complete: () => this.activeModal.close()
       });
   }
