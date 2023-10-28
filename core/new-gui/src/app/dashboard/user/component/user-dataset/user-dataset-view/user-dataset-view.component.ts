@@ -7,7 +7,7 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 @Component({
   templateUrl: "./user-dataset-view.component.html",
 })
-export class userDatasetComponent implements OnInit {
+export class userDatasetViewComponent implements OnInit {
     did: number = 0;
     dataset_name: String = "";
 
