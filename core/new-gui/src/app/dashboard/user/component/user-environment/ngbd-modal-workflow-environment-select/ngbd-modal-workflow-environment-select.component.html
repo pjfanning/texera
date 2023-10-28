@@ -5,9 +5,9 @@
   <div class="form-group">
     <!-- Dropdown for selecting from existing environments -->
     <label>From existing environments:</label>
-    <select class="form-control" [(ngModel)]="selectedEnvironment">
-      <option [ngValue]="null" [ngStyle]="{'font-style': 'italic'}">Create a new environment</option>
-      <option *ngFor="let env of existingEnvironments" [value]="env">{{env}}</option>
+    <select class="form-control" [(ngModel)]="selectedEnvironmentId">
+      <option value="null" selected>Create a new environment</option>
+      <option *ngFor="let env of environments" [value]="env.id">{{env.id}}: {{env.name}}</option>
     </select>
   </div>
   <button class="btn btn-primary" (click)="goToWorkflow()">Go to the workflow editor</button>

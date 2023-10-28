@@ -106,10 +106,9 @@ export class UserWorkflowListItemComponent {
       });
 
       modalRef.result.then(
-        (selectedEnvironmentName: string | null) => {
-          if (selectedEnvironmentName == null) {
+        (selectedEnvironmentID: number | null) => {
+          if (selectedEnvironmentID == null) {
             // If an environment was not selected, create a new one and relate it
-            console.log('Selected environment:', selectedEnvironmentName);
             // Here, you can perform further actions with the selected environment
             const eid = this.environmentService.addEnvironment(
               {
@@ -128,8 +127,10 @@ export class UserWorkflowListItemComponent {
             if (wid)
               this.environmentService.addEnvironmentOfWorkflow(wid, eid);
           } else {
-            console.log('User chose to create a new environment');
-            // Here, you can perform actions for creating a new environment.
+            // user choose a existing environment
+            const wid = this.workflow.wid;
+            if (wid)
+              this.environmentService.addEnvironmentOfWorkflow(wid, selectedEnvironmentID);
           }
         },
         (reason) => {

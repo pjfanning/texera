@@ -1,6 +1,7 @@
-import {UntilDestroy} from "@ngneat/until-destroy";
-import {Component, OnInit} from "@angular/core";
-import {NgbActiveModal} from "@ng-bootstrap/ng-bootstrap";
+import { UntilDestroy } from "@ngneat/until-destroy";
+import { Component, OnInit } from "@angular/core";
+import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
+import { EnvironmentService } from "../../../service/user-environment/environment.service";
 
 @UntilDestroy()
 @Component({
@@ -9,24 +10,23 @@ import {NgbActiveModal} from "@ng-bootstrap/ng-bootstrap";
   styleUrls: ['./ngbd-modal-workflow-environment-select.component.scss']
 })
 export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
-  selectedEnvironment: string | null = null;
-  existingEnvironments: string[] = [
-    // Example environments, replace with your actual data.
-    'Environment 1',
-    'Environment 2',
-    'Environment 3'
-  ];
+  selectedEnvironmentId: number | null = null;
+  environments: {id: number, name: string}[] = [];
 
-  constructor(public activeModal: NgbActiveModal) {}
+  constructor(
+    private activeModal: NgbActiveModal,
+    private environmentService: EnvironmentService) {}
 
   ngOnInit(): void {
+    const environmentIdentifiers = this.environmentService.getEnvironmentIdentifiers();
+    this.environments = Array.from(environmentIdentifiers.entries()).map(([id, name]) => ({ id, name }));
   }
 
   goToWorkflow(): void {
-    if (this.selectedEnvironment !== null) {
-      // Your logic to navigate or do anything else with the selected environment
-      console.log('Navigating to workflow with environment:', this.selectedEnvironment);
-      this.activeModal.close(this.selectedEnvironment);  // Close the modal and return the selected environment
+    if (this.selectedEnvironmentId !== null) {
+      const selectedEnvName = this.environments.find(env => env.id === this.selectedEnvironmentId)?.name;
+      console.log('Navigating to workflow with environment:', selectedEnvName);
+      this.activeModal.close(this.selectedEnvironmentId);  // Close the modal and return the selected environment ID
     } else {
       console.log('Creating a new environment.');
       this.activeModal.close(null);  // Close the modal and return null

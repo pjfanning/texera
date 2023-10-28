@@ -89,8 +89,12 @@ export class PropertyEditorComponent implements OnInit {
         this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedCommentBoxIDs();
         const highlightedPorts = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedPortIDs();
         if (isDisplayEnvironmentEditor) {
+          const eid = parseInt(<string>event[1]);
           this.switchFrameComponent({
             component: EnvironmentPropertyEditFrameComponent,
+            componentInputs: {
+              eid : eid
+            }
           });
         } else if (
           highlightedOperators.length === 1 &&

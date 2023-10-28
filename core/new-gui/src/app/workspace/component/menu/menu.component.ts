@@ -462,7 +462,10 @@ export class MenuComponent implements OnInit {
   }
 
   onClickOpenEnvironmentEditor() {
-    this.environmentEditorService.clickDisplayEnvironmentEditor();
+    if (this.workflowId)
+      this.environmentEditorService.clickDisplayEnvironmentEditor(this.workflowId);
+    else
+      this.environmentEditorService.clickDisplayEnvironmentEditor(0);
   }
 
   private handleWorkflowVersionDisplay(): void {

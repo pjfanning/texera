@@ -18,6 +18,16 @@ export class EnvironmentService {
     return eid;
   }
 
+  getEnvironmentIdentifiers(): Map<number, string> {
+    const res: Map<number, string> = new Map();
+    for (let i = 0; i < this.environments.length; i++) {
+      const env = this.environments[i];
+      res.set(env.environment.eid, env.environment.name);
+    }
+
+    return res;
+  }
+
   getAllEnvironments(): DashboardEnvironment[] {
     return this.environments;
   }
