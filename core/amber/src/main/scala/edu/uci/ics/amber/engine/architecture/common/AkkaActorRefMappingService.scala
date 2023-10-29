@@ -17,6 +17,8 @@ class AkkaActorRefMappingService(actorService: AkkaActorService) extends AmberLo
 
   override def actorId: ActorVirtualIdentity = actorService.id
 
+  implicit val self: ActorRef = actorService.self
+
   private val actorRefMapping: mutable.HashMap[ActorVirtualIdentity, ActorRef] = mutable.HashMap()
   private val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
   private val messageStash =
@@ -54,6 +56,7 @@ class AkkaActorRefMappingService(actorService: AkkaActorService) extends AmberLo
 
   def registerActorRef(id: ActorVirtualIdentity, ref: ActorRef): Unit = {
     if (!actorRefMapping.contains(id)) {
+      println(s"register $id -> $ref")
       actorRefMapping(id) = ref
       if (messageStash.contains(id)) {
         val stash = messageStash(id)

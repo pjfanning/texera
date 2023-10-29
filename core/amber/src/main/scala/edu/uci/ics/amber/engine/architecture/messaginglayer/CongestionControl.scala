@@ -3,7 +3,6 @@ package edu.uci.ics.amber.engine.architecture.messaginglayer
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 class CongestionControl {
 
@@ -28,7 +27,6 @@ class CongestionControl {
   private var windowSize = 1
 
   private val toBeSent = new mutable.Queue[NetworkMessage]
-  private val messageBuffer = new ArrayBuffer[NetworkMessage]()
   private val inTransit = new mutable.LongMap[NetworkMessage]()
   private val sentTime = new mutable.LongMap[Long]()
 
@@ -58,14 +56,17 @@ class CongestionControl {
     sentTime.remove(id)
   }
 
-  def getBufferedMessagesToSend: Array[NetworkMessage] = {
-    messageBuffer.clear()
-    while (inTransit.size < windowSize && toBeSent.nonEmpty) {
-      val msg = toBeSent.dequeue()
-      inTransit(msg.messageId) = msg
-      messageBuffer.append(msg)
+  private def dequeueN[T](queue: mutable.Queue[T], n: Int): Seq[T] = {
+    var count = 0
+    queue.dequeueAll { _ =>
+      count += 1
+      count <= n
     }
-    messageBuffer.toArray
+  }
+
+  def getBufferedMessagesToSend: Iterable[NetworkMessage] = {
+    val count = windowSize - inTransit.size
+    dequeueN(toBeSent, count)
   }
 
   def markMessageInTransit(data: NetworkMessage): Unit = {
