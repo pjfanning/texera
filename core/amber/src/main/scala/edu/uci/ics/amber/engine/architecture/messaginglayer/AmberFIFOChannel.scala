@@ -27,16 +27,16 @@ class AmberFIFOChannel() {
     }
   }
 
-  def isDuplicated(sequenceNumber: Long): Boolean =
+  private def isDuplicated(sequenceNumber: Long): Boolean =
     sequenceNumber < current || ofoMap.contains(sequenceNumber)
 
-  def isAhead(sequenceNumber: Long): Boolean = sequenceNumber > current
+  private def isAhead(sequenceNumber: Long): Boolean = sequenceNumber > current
 
   private def stash(sequenceNumber: Long, data: WorkflowFIFOMessage): Unit = {
     ofoMap(sequenceNumber) = data
   }
 
-  def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
+  private def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
     fifoQueue.enqueue(data)
     current += 1
     while (ofoMap.contains(current)) {
@@ -54,7 +54,7 @@ class AmberFIFOChannel() {
     this.enabled = isEnabled
   }
 
-  def isEnabled: Boolean = isEnabled
+  def isEnabled: Boolean = enabled
 
   def getCredit: Int = credit.toInt
 

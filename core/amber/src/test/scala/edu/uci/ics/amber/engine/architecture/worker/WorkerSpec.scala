@@ -1,215 +1,264 @@
-//package edu.uci.ics.amber.engine.architecture.worker
-//
-//import akka.actor.{ActorRef, ActorSystem, Props}
-//import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
-//import edu.uci.ics.amber.clustering.SingleNodeListener
-//import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-//import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.{
-//  GetActorRef,
-//  NetworkAck,
-//  NetworkMessage,
-//  NetworkSenderActorRef,
-//  RegisterActorRef
-//}
-//import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkOutputPort, OutputManager}
-//import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
-//import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
-//import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
-//import edu.uci.ics.amber.engine.architecture.worker.workloadmetrics.SelfWorkloadMetrics
-//import edu.uci.ics.amber.engine.common.ambermessage.{
-//  ChannelID,
-//  ControlPayload,
-//  WorkflowControlMessage
-//}
-//import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-//import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-//import edu.uci.ics.amber.engine.common.tuple.ITuple
-//import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-//import edu.uci.ics.amber.engine.common.virtualidentity.{
-//  ActorVirtualIdentity,
-//  LinkIdentity,
-//  OperatorIdentity
-//}
-//import edu.uci.ics.amber.engine.common.{Constants, IOperatorExecutor, InputExhausted}
-//import org.scalamock.scalatest.MockFactory
-//import org.scalatest.BeforeAndAfterAll
-//import org.scalatest.flatspec.AnyFlatSpecLike
-//
-//import scala.concurrent.duration._
-//import scala.collection.mutable
-//import scala.collection.mutable.ArrayBuffer
-//
-//class WorkerSpec
-//    extends TestKit(ActorSystem("WorkerSpec"))
-//    with ImplicitSender
-//    with AnyFlatSpecLike
-//    with BeforeAndAfterAll
-//    with MockFactory {
-//
-//  override def beforeAll: Unit = {
-//    system.actorOf(Props[SingleNodeListener], "cluster-info")
-//  }
-//  override def afterAll: Unit = {
-//    TestKit.shutdownActorSystem(system)
-//  }
-//
-//  "Worker" should "process AddDateSendingPolicy message correctly" in {
-//    val mockHandler =
-//      mock[(ActorVirtualIdentity, ActorVirtualIdentity, Long, ControlPayload) => Unit]
-//    val identifier = ActorVirtualIdentity("worker mock")
-//    val mockControlOutputPort: NetworkOutputPort[ControlPayload] =
-//      new NetworkOutputPort[ControlPayload](identifier, mockHandler)
-//    val mockOutputManager = mock[OutputManager]
-//    val identifier1 = ActorVirtualIdentity("worker-1")
-//    val identifier2 = ActorVirtualIdentity("worker-2")
-//    val mockOpExecutor = new IOperatorExecutor {
-//      override def open(): Unit = println("opened!")
-//
-//      override def close(): Unit = println("closed!")
-//
-//      override def processTuple(
-//          tuple: Either[ITuple, InputExhausted],
-//          input: Int,
-//          pauseManager: PauseManager,
-//          asyncRPCClient: AsyncRPCClient
-//      ): Iterator[(ITuple, Option[Int])] = ???
-//    }
-//
-//    val mockTag = LinkIdentity(null, null)
-//
-//    val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
-//    val workerIndex = 0
-//    val opExecConfig = OpExecConfig
-//      .oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
-//      .copy(inputToOrdinalMapping = Map(mockTag -> 0))
-//
-//    val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
-//
-//    val worker =
-//      TestActorRef(
-//        new WorkflowWorker(
-//          identifier1,
-//          workerIndex,
-//          opExecConfig,
-//          NetworkSenderActorRef(null),
-//          false
-//        ) {
-//          override lazy val outputManager: OutputManager = mockOutputManager
-//          override lazy val controlOutputPort: NetworkOutputPort[ControlPayload] =
-//            mockControlOutputPort
-//        }
-//      )
-//    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockTag, mockPolicy).once()
-//    (mockHandler.apply _).expects(*, *, *, *).once()
-//    val invocation = ControlInvocation(0, AddPartitioning(mockTag, mockPolicy))
-//    worker ! NetworkMessage(
-//      0,
-//      WorkflowControlMessage(ChannelEndpointID(CONTROLLER, true), 0, invocation)
-//    )
-//
-//    //wait test to finish
-//    Thread.sleep(3000)
-//  }
-//
-//  "Worker" should "process monitoring message correctly" in {
-//    val probe = TestProbe()
-//    val idMap = mutable.HashMap[ActorVirtualIdentity, ActorRef]()
-//    val identifier1 = ActorVirtualIdentity("worker-1")
-//    val mockOpExecutor = new IOperatorExecutor {
-//      override def open(): Unit = println("opened!")
-//
-//      override def close(): Unit = println("closed!")
-//
-//      override def processTuple(
-//          tuple: Either[ITuple, InputExhausted],
-//          input: Int,
-//          pauseManager: PauseManager,
-//          asyncRPCClient: AsyncRPCClient
-//      ): Iterator[(ITuple, Option[Int])] = { return Iterator() }
-//    }
-//
-//    val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
-//    val workerIndex = 0
-//    val opExecConfig = OpExecConfig.oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
-//
-//    val worker = TestActorRef(
-//      new WorkflowWorker(
-//        identifier1,
-//        workerIndex,
-//        opExecConfig,
-//        NetworkSenderActorRef(probe.ref),
-//        false
-//      )
-//    )
-//
-//    idMap(identifier1) = worker
-//    idMap(CONTROLLER) = probe.ref
-//
-//    probe.send(
-//      worker,
-//      NetworkMessage(
-//        0,
-//        WorkflowControlMessage(
-//          ChannelEndpointID(CONTROLLER, true),
-//          0,
-//          ControlInvocation(0, QuerySelfWorkloadMetrics())
-//        )
-//      )
-//    )
-//
-//    probe.receiveWhile(1.minutes, 5.seconds) {
-//      case GetActorRef(id, replyTo) =>
-//        replyTo.foreach { actor =>
-//          actor ! RegisterActorRef(id, idMap(id))
-//        }
-//      case NetworkMessage(
-//            msgID,
-//            WorkflowControlMessage(_, _, ReturnInvocation(id, returnValue))
-//          ) =>
-//        probe.sender() ! NetworkAck(msgID, Some(Constants.unprocessedBatchesSizeLimitPerSender))
-//        returnValue match {
-//          case e: Throwable => throw e
-//          case _ =>
-//            assert(
-//              returnValue
-//                .asInstanceOf[Tuple2[
-//                  SelfWorkloadMetrics,
-//                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-//                ]]
-//                ._1
-//                .unprocessedDataInputQueueSize == 0
-//            )
-//            assert(
-//              returnValue
-//                .asInstanceOf[Tuple2[
-//                  SelfWorkloadMetrics,
-//                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-//                ]]
-//                ._1
-//                .unprocessedControlInputQueueSize == 0
-//            )
-//            assert(
-//              returnValue
-//                .asInstanceOf[Tuple2[
-//                  SelfWorkloadMetrics,
-//                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-//                ]]
-//                ._1
-//                .stashedDataInputQueueSize == 0
-//            )
-//            assert(
-//              returnValue
-//                .asInstanceOf[Tuple2[
-//                  SelfWorkloadMetrics,
-//                  mutable.HashMap[ActorVirtualIdentity, ArrayBuffer[Long]]
-//                ]]
-//                ._1
-//                .stashedControlInputQueueSize == 0
-//            )
-//        }
-//      case other =>
-//      //skip
-//    }
-//  }
-//
-//}
+package edu.uci.ics.amber.engine.architecture.worker
+
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
+import edu.uci.ics.amber.clustering.SingleNodeListener
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
+import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.flatspec.AnyFlatSpecLike
+
+import scala.util.Random
+
+class WorkerSpec
+    extends TestKit(ActorSystem("WorkerSpec"))
+    with ImplicitSender
+    with AnyFlatSpecLike
+    with BeforeAndAfterAll
+    with MockFactory {
+
+  override def beforeAll: Unit = {
+    system.actorOf(Props[SingleNodeListener], "cluster-info")
+  }
+  override def afterAll: Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
+  private val identifier1 = ActorVirtualIdentity("worker-1")
+  private val identifier2 = ActorVirtualIdentity("worker-2")
+
+  private val mockOpExecutor = new IOperatorExecutor {
+    override def open(): Unit = println("opened!")
+
+    override def close(): Unit = println("closed!")
+
+    override def processTuple(
+        tuple: Either[ITuple, InputExhausted],
+        input: Int,
+        pauseManager: PauseManager,
+        asyncRPCClient: AsyncRPCClient
+    ): Iterator[(ITuple, Option[Int])] = {
+      if (tuple.isLeft) {
+        Iterator((tuple.left.get, None))
+      } else {
+        Iterator.empty
+      }
+    }
+  }
+  private val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
+  private val layerId1 =
+    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
+  private val layerId2 =
+    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
+  private val mockLink = LinkIdentity(layerId1, layerId2)
+  private val opExecConfig = OpExecConfig
+    .oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
+    .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
+  private val workerIndex = 0
+  private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
+
+  private val mockHandler = mock[WorkflowFIFOMessage => Unit]
+  private val mockOutputManager = mock[OutputManager]
+
+  def sendControlToWorker(
+      worker: ActorRef,
+      controls: Array[ControlInvocation],
+      beginSeqNum: Long = 0
+  ): Unit = {
+    var seq = beginSeqNum
+    controls.foreach { ctrl =>
+      worker ! NetworkMessage(
+        seq,
+        WorkflowFIFOMessage(ChannelID(CONTROLLER, identifier1, true), seq, ctrl)
+      )
+      seq += 1
+    }
+  }
+
+  "Worker" should "process AddPartitioning message correctly" in {
+    val worker =
+      TestActorRef(
+        new WorkflowWorker(
+          identifier1,
+          workerIndex,
+          opExecConfig
+        ) {
+          this.dp =
+            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
+              override val outputManager: OutputManager = mockOutputManager
+            }
+        }
+      )
+    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
+    (mockHandler.apply _).expects(*).once()
+    val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
+    sendControlToWorker(worker, Array(invocation))
+
+    //wait test to finish
+    Thread.sleep(3000)
+  }
+
+  "Worker" should "process data messages correctly" in {
+    val worker =
+      TestActorRef(
+        new WorkflowWorker(
+          identifier1,
+          workerIndex,
+          opExecConfig
+        ) {
+          this.dp =
+            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
+              override val outputManager: OutputManager = mockOutputManager
+            }
+        }
+      )
+    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
+    (mockOutputManager.passTupleToDownstream _).expects(ITuple(1), mockLink).once()
+    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
+    val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))
+    sendControlToWorker(worker, Array(invocation, updateInputLinking))
+    worker ! NetworkMessage(
+      3,
+      WorkflowFIFOMessage(
+        ChannelID(identifier2, identifier1, false),
+        0,
+        DataFrame(Array(ITuple(1)))
+      )
+    )
+    //wait test to finish
+    Thread.sleep(3000)
+  }
+
+  "Worker" should "process batches correctly" in {
+    ignoreMsg {
+      case a => println(a); true
+    }
+    val worker =
+      TestActorRef(
+        new WorkflowWorker(
+          identifier1,
+          workerIndex,
+          opExecConfig
+        ) {
+          this.dp =
+            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
+              override val outputManager: OutputManager = mockOutputManager
+            }
+        }
+      )
+    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
+    def mkBatch(start: Int, end: Int): Array[ITuple] = {
+      (start until end).map { x =>
+        (mockOutputManager.passTupleToDownstream _).expects(ITuple(x, x, x, x), mockLink).once()
+        ITuple(x, x, x, x)
+      }.toArray
+    }
+    val batch1 = mkBatch(0, 400)
+    val batch2 = mkBatch(400, 800)
+    val batch3 = mkBatch(400, 500)
+    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
+    val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))
+    sendControlToWorker(worker, Array(invocation, updateInputLinking))
+    worker ! NetworkMessage(
+      3,
+      WorkflowFIFOMessage(ChannelID(identifier2, identifier1, false), 0, DataFrame(batch1))
+    )
+    worker ! NetworkMessage(
+      2,
+      WorkflowFIFOMessage(ChannelID(identifier2, identifier1, false), 1, DataFrame(batch2))
+    )
+    Thread.sleep(1000)
+    worker ! NetworkMessage(
+      4,
+      WorkflowFIFOMessage(ChannelID(identifier2, identifier1, false), 2, DataFrame(batch3))
+    )
+    //wait test to finish
+    Thread.sleep(3000)
+  }
+
+  "Worker" should "accept messages in fifo order" in {
+    ignoreMsg {
+      case a => println(a); true
+    }
+    val worker =
+      TestActorRef(
+        new WorkflowWorker(
+          identifier1,
+          workerIndex,
+          opExecConfig
+        ) {
+          this.dp =
+            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
+              override val outputManager: OutputManager = mockOutputManager
+            }
+        }
+      )
+    (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
+    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
+    val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))
+    worker ! NetworkMessage(
+      1,
+      WorkflowFIFOMessage(ChannelID(CONTROLLER, identifier1, true), 1, updateInputLinking)
+    )
+    worker ! NetworkMessage(
+      0,
+      WorkflowFIFOMessage(ChannelID(CONTROLLER, identifier1, true), 0, invocation)
+    )
+    Random
+      .shuffle((0 until 50).map { i =>
+        (mockOutputManager.passTupleToDownstream _).expects(ITuple(i), mockLink).once()
+        NetworkMessage(
+          i + 2,
+          WorkflowFIFOMessage(
+            ChannelID(identifier2, identifier1, false),
+            i,
+            DataFrame(Array(ITuple(i)))
+          )
+        )
+      })
+      .foreach { x =>
+        worker ! x
+      }
+    Thread.sleep(1000)
+    Random
+      .shuffle((50 until 100).map { i =>
+        (mockOutputManager.passTupleToDownstream _).expects(ITuple(i), mockLink).once()
+        NetworkMessage(
+          i + 2,
+          WorkflowFIFOMessage(
+            ChannelID(identifier2, identifier1, false),
+            i,
+            DataFrame(Array(ITuple(i)))
+          )
+        )
+      })
+      .foreach { x =>
+        worker ! x
+      }
+    //wait test to finish
+    Thread.sleep(3000)
+  }
+
+}

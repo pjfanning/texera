@@ -60,7 +60,11 @@ object DataProcessor {
     @transient var outputIter: Iterator[(ITuple, Option[Int])] = Iterator.empty
 
     def setTupleOutput(outputIter: Iterator[(ITuple, Option[Int])]): Unit = {
-      this.outputIter = outputIter
+      if (outputIter != null) {
+        this.outputIter = outputIter
+      } else {
+        this.outputIter = Iterator.empty
+      }
     }
 
     override def hasNext: Boolean = outputIter.hasNext || queue.nonEmpty
@@ -80,11 +84,16 @@ object DataProcessor {
 
 }
 
-class DataProcessor(actorId: ActorVirtualIdentity, outputHandler: WorkflowFIFOMessage => Unit)
-    extends AmberProcessor(actorId, outputHandler)
+class DataProcessor(
+    actorId: ActorVirtualIdentity,
+    @transient var workerIdx: Int,
+    @transient var operator: IOperatorExecutor,
+    @transient var opConf: OpExecConfig,
+    outputHandler: WorkflowFIFOMessage => Unit
+) extends AmberProcessor(actorId, outputHandler)
     with Serializable {
 
-  def initOperator(
+  def overwriteOperator(
       workerIdx: Int,
       opConf: OpExecConfig,
       op: IOperatorExecutor,
@@ -97,9 +106,6 @@ class DataProcessor(actorId: ActorVirtualIdentity, outputHandler: WorkflowFIFOMe
   }
 
   var outputIterator: DPOutputIterator = new DPOutputIterator()
-  @transient var workerIdx = 0
-  @transient var operator: IOperatorExecutor = _
-  @transient var opConf: OpExecConfig = _
 
   var operatorOpened: Boolean = false
   var inputBatch: Array[ITuple] = _
@@ -115,7 +121,7 @@ class DataProcessor(actorId: ActorVirtualIdentity, outputHandler: WorkflowFIFOMe
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
   // inner dependencies
-//  private val initializer = new DataProcessorRPCHandlerInitializer(this)
+  private val initializer = new DataProcessorRPCHandlerInitializer(this)
   // 4. pause manager
   val pauseManager: PauseManager = wire[PauseManager]
   // 5. breakpoint manager
@@ -183,7 +189,7 @@ class DataProcessor(actorId: ActorVirtualIdentity, outputHandler: WorkflowFIFOMe
       outputIterator.setTupleOutput(
         operator.processTuple(
           tuple,
-          getInputPort(cursor.getChannel.from),
+          getInputPort(currentBatchChannel.from),
           pauseManager,
           asyncRPCClient
         )

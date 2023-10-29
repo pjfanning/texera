@@ -36,11 +36,9 @@ class ChannelID(
     MurmurHash3.finalizeHash(h, 2)
   }
   override def toString: String = {
-    s"Channel(${from.name},${to.name} ${if (isControlChannel) "control" else "data"})"
+    s"Channel(${from.name},${to.name},${if (isControlChannel) "control" else "data"})"
   }
 }
-
-sealed trait WorkflowMessage extends Serializable
 
 case object WorkflowMessage {
   def getInMemSize(msg: WorkflowMessage): Long = {
@@ -54,6 +52,8 @@ case object WorkflowMessage {
     }
   }
 }
+
+sealed trait WorkflowMessage extends Serializable
 
 case class WorkflowFIFOMessage(
     channel: ChannelID,

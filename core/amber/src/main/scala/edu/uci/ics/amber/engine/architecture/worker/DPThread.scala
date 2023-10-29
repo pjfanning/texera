@@ -1,26 +1,33 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.common.DPQueue
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MessageWithCallback
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
   ControlPayload,
   DataPayload,
-  WorkflowFIFOMessage,
   WorkflowMessage
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future}
+import java.util.concurrent.{
+  CompletableFuture,
+  ExecutorService,
+  Executors,
+  Future,
+  LinkedBlockingQueue
+}
 
-class DPThread(dp: DataProcessor, internalQueue: DPQueue[WorkflowFIFOMessage])
-    extends AmberLogging {
-
-  override def actorId: ActorVirtualIdentity = dp.actorId
+class DPThread(
+    val actorId: ActorVirtualIdentity,
+    dp: DataProcessor,
+    internalQueue: LinkedBlockingQueue[MessageWithCallback]
+) extends AmberLogging {
 
   // initialize dp thread upon construction
   @transient
@@ -98,11 +105,19 @@ class DPThread(dp: DataProcessor, internalQueue: DPQueue[WorkflowFIFOMessage])
     var inputPortExhausted = false
     while (!stopped) {
       if (internalQueue.size > 0 || dp.pauseManager.isPaused || inputPortExhausted) {
-        val msg = internalQueue.take
-        val channel = dp.inputPort.getChannel(msg.channel)
-        channel.acceptMessage(msg)
-        channel.updateCreditDelta(-WorkflowMessage.getInMemSize(msg))
-        inputPortExhausted = false
+        val msgWithCallback = internalQueue.take
+        msgWithCallback.msg match {
+          case Left(msg) =>
+            val channel = dp.inputPort.getChannel(msg.channel)
+            channel.acceptMessage(msg)
+            channel.updateCreditDelta(-WorkflowMessage.getInMemSize(msg))
+            inputPortExhausted = false
+          case Right(ctrl) =>
+            dp.processControlPayload(ChannelID(SELF, SELF, true), ctrl)
+        }
+        if (msgWithCallback.callback != null) {
+          msgWithCallback.callback()
+        }
       }
       if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
         dp.inputPort.tryPickControlChannel match {
@@ -119,6 +134,7 @@ class DPThread(dp: DataProcessor, internalQueue: DPQueue[WorkflowFIFOMessage])
         dp.inputPort.tryPickChannel match {
           case Some(channel) =>
             val msg = channel.take
+            logger.info(s"take $msg")
             channel.updateCreditDelta(WorkflowMessage.getInMemSize(msg))
             msg.payload match {
               case payload: ControlPayload =>

@@ -68,13 +68,12 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   def receiveMessageAndAck: Receive = {
     case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, _, _)) =>
       actorRefMappingService.registerActorRef(channel.from, sender)
-      handleInputMessage(workflowMsg)
-      sender ! NetworkAck(id, getSenderCredits(channel))
+      handleInputMessage(id, workflowMsg)
     case NetworkAck(id, credits) =>
       transferService.receiveAck(id, credits)
   }
 
-  def handleInputMessage(workflowMsg: WorkflowFIFOMessage): Unit
+  def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit
 
   /** flow-control */
   def getSenderCredits(channelEndpointID: ChannelID): Int

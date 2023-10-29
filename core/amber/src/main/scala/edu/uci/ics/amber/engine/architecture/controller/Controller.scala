@@ -46,7 +46,8 @@ class Controller(
 ) extends WorkflowActor(
       CONTROLLER
     ) {
-  override def handleInputMessage(workflowMsg: WorkflowFIFOMessage): Unit = ???
+
+  override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = ???
 
   /** flow-control */
   override def getSenderCredits(channelEndpointID: ChannelID): Int = ???

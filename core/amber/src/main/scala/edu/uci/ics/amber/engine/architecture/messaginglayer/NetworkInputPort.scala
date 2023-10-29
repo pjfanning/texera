@@ -30,7 +30,8 @@ class NetworkInputPort(val actorId: ActorVirtualIdentity) extends AmberLogging w
   def getAllDataChannels: Iterable[AmberFIFOChannel] =
     inputChannels.filter(!_._1.isControlChannel).values
 
-  def getChannel(channelId: ChannelID): AmberFIFOChannel =
+  def getChannel(channelId: ChannelID): AmberFIFOChannel = {
     inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+  }
 
 }

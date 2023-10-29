@@ -91,7 +91,10 @@ class AkkaMessageTransferService(
     val channelId = messageIDToIdentity.remove(msgId).get
     val congestionControl = channelToCC.getOrElseUpdate(channelId, new CongestionControl())
     congestionControl.ack(msgId)
-    congestionControl.getBufferedMessagesToSend.foreach(refService.forwardToActor)
+    congestionControl.getBufferedMessagesToSend.foreach { msg =>
+      congestionControl.markMessageInTransit(msg)
+      refService.forwardToActor(msg)
+    }
     if (Constants.flowControlEnabled) {
       updateCredit(channelId, credit)
     }

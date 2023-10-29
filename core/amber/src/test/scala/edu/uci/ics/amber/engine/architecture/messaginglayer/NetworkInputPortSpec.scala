@@ -1,97 +1,62 @@
-//package edu.uci.ics.amber.engine.architecture.messaginglayer
-//
-//import akka.actor.ActorSystem
-//import akka.testkit.TestProbe
-//import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkCommunicationActor.NetworkAck
-//import edu.uci.ics.amber.engine.common.Constants
-//import edu.uci.ics.amber.engine.common.ambermessage.{
-//  ChannelID,
-//  DataFrame,
-//  DataPayload,
-//  WorkflowDataMessage
-//}
-//import edu.uci.ics.amber.engine.common.tuple.ITuple
-//import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-//import org.scalamock.scalatest.MockFactory
-//import org.scalatest.flatspec.AnyFlatSpec
-//
-//class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
-//
-//  private val mockHandler = mock[(ActorVirtualIdentity, DataPayload) => Unit]
-//  private val fakeID = ActorVirtualIdentity("testReceiver")
-//
-//  "network input port" should "output payload in FIFO order" in {
-//    val testActor = TestProbe.apply("test")(ActorSystem())
-//    val inputPort = new NetworkInputPort[DataPayload](fakeID, mockHandler)
-//    val channelId = ChannelEndpointID(fakeID, false)
-//    val payloads = (0 until 4).map { i =>
-//      DataFrame(Array(ITuple(i)))
-//    }.toArray
-//    val messages = (0 until 4).map { i =>
-//      WorkflowDataMessage(channelId, i, payloads(i))
-//    }.toArray
-//
-//    inSequence {
-//      (0 until 4).foreach(i => {
-//        (mockHandler.apply _).expects(fakeID, payloads(i))
-//      })
-//    }
-//
-//    List(2, 1, 0, 3).foreach(id => {
-//      inputPort.handleMessage(
-//        testActor.ref,
-//        Constants.unprocessedBatchesSizeLimitPerSender,
-//        id,
-//        messages(id).channel,
-//        messages(id).sequenceNumber,
-//        messages(id).payload
-//      )
-//    })
-//  }
-//
-//  "network input port" should "de-duplicate payload" in {
-//    val testActor = TestProbe.apply("test")(ActorSystem())
-//    val inputPort = new NetworkInputPort[DataPayload](fakeID, mockHandler)
-//    val channelId = ChannelEndpointID(fakeID, false)
-//    val payload = DataFrame(Array(ITuple(0)))
-//    val message = WorkflowDataMessage(channelId, 0, payload)
-//
-//    inSequence {
-//      (mockHandler.apply _).expects(fakeID, payload)
-//      (mockHandler.apply _).expects(*, *).never
-//    }
-//
-//    (0 until 10).foreach(i => {
-//      inputPort.handleMessage(
-//        testActor.ref,
-//        Constants.unprocessedBatchesSizeLimitPerSender,
-//        i,
-//        message.channel,
-//        message.sequenceNumber,
-//        message.payload
-//      )
-//    })
-//  }
-//
-//  "network input port" should "send ack to the sender actor ref" in {
-//    val testActor = TestProbe.apply("test")(ActorSystem())
-//    val inputPort = new NetworkInputPort[DataPayload](fakeID, (_, _) => {})
-//    val channelId = ChannelEndpointID(fakeID, false)
-//    val payload = DataFrame(Array(ITuple(0)))
-//    val message = WorkflowDataMessage(channelId, 0, payload)
-//    val messageID = 0
-//
-//    inputPort.handleMessage(
-//      testActor.ref,
-//      Constants.unprocessedBatchesSizeLimitPerSender,
-//      messageID,
-//      message.channel,
-//      message.sequenceNumber,
-//      message.payload
-//    )
-//    testActor.expectMsg(
-//      NetworkAck(messageID, Some(Constants.unprocessedBatchesSizeLimitPerSender))
-//    )
-//  }
-//
-//}
+package edu.uci.ics.amber.engine.architecture.messaginglayer
+
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.flatspec.AnyFlatSpec
+
+class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
+
+  private val fakeReceiverID = ActorVirtualIdentity("testReceiver")
+  private val fakeSenderID = ActorVirtualIdentity("testSender")
+  private val inputPort = new NetworkInputPort(fakeReceiverID)
+  private val channelId = ChannelID(fakeSenderID, fakeReceiverID, false)
+  private val payloads = (0 until 4).map { i =>
+    DataFrame(Array(ITuple(i)))
+  }.toArray
+  private val messages = (0 until 4).map { i =>
+    WorkflowFIFOMessage(channelId, i, payloads(i))
+  }.toArray
+
+  "network input port" should "output payload in FIFO order" in {
+    Array(2, 0, 1, 3).foreach { i =>
+      inputPort.getChannel(channelId).acceptMessage(messages(i))
+    }
+
+    (0 until 4).foreach { i =>
+      val msg = inputPort.getChannel(channelId).take
+      assert(msg.sequenceNumber == i)
+    }
+
+  }
+
+  "network input port" should "de-duplicate payload" in {
+    Array(2, 2, 2, 2, 2, 2, 0, 1, 1, 3, 3).foreach { i =>
+      inputPort.getChannel(channelId).acceptMessage(messages(i))
+    }
+    (0 until 4).foreach { i =>
+      val msg = inputPort.getChannel(channelId).take
+      assert(msg.sequenceNumber == i)
+    }
+
+    assert(!inputPort.getChannel(channelId).hasMessage)
+
+  }
+
+  "network input port" should "keep unordered messages" in {
+    Array(3, 2, 1).foreach { i =>
+      inputPort.getChannel(channelId).acceptMessage(messages(i))
+    }
+    assert(!inputPort.getChannel(channelId).hasMessage)
+    inputPort.getChannel(channelId).acceptMessage(messages(0))
+    assert(inputPort.getChannel(channelId).hasMessage)
+    (0 until 4).foreach { i =>
+      val msg = inputPort.getChannel(channelId).take
+      assert(msg.sequenceNumber == i)
+    }
+    assert(!inputPort.getChannel(channelId).hasMessage)
+
+  }
+
+}

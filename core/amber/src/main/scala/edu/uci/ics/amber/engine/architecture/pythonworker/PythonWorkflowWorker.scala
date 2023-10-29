@@ -49,7 +49,7 @@ class PythonWorkflowWorker(
 
   private val networkOutputPort = new NetworkOutputPort(actorId, transferService.send)
 
-  def handleInputMessage(workflowMsg: WorkflowFIFOMessage): Unit = {
+  override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     workflowMsg.payload match {
       case payload: ControlPayload =>
         pythonProxyClient.enqueueCommand(payload, workflowMsg.channel)
@@ -60,7 +60,7 @@ class PythonWorkflowWorker(
   }
 
   /** flow-control */
-  def getSenderCredits(channelEndpointID: ChannelID): Int = {
+  override def getSenderCredits(channelEndpointID: ChannelID): Int = {
     pythonProxyClient.getSenderCredits(channelEndpointID)
   }
 

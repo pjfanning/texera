@@ -14,6 +14,7 @@ class DeadLetterMonitorActor extends Actor {
         case other =>
         // skip for now
       }
-    case _ =>
+    case x =>
+      println(x)
   }
 }
