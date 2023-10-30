@@ -34,8 +34,7 @@ trait LocalOperatorExceptionHandler {
     {
 
       // get the operator where the worker caught the local operator exception
-      val operator = workflow.getOperator(sender)
-      operator.caughtLocalExceptions.put(sender, msg.e)
+      cp.executionState.getOperatorExecution(sender).caughtLocalExceptions.put(sender, msg.e)
 
       // then pause the workflow
       execute(PauseWorkflow(), CONTROLLER)
@@ -48,7 +47,7 @@ trait LocalOperatorExceptionHandler {
               msg.e.toString
             )
           ),
-          workflow.getOperator(sender).id.operator
+          cp.workflow.getOperator(sender).id.operator
         )
       )
     }
