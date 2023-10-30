@@ -25,7 +25,7 @@ trait PythonConsoleMessageHandler {
       // report the print message to the frontend
       sendToClient(
         ConsoleMessageTriggered(
-          workflow.getOperator(sender).id.operator,
+          cp.workflow.getOperator(sender).id.operator,
           ConsoleMessage(sender.name, msg.timestamp, msg.msgType, msg.source, msg.message)
         )
       )

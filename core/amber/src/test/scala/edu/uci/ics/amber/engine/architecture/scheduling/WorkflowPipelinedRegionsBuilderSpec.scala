@@ -21,8 +21,6 @@ import edu.uci.ics.texera.workflow.operators.udf.python.{
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
-import scala.jdk.CollectionConverters.asScalaSetConverter
-
 class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
 
   def buildWorkflow(
@@ -54,8 +52,8 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       )
     )
 
-    val pipelinedRegions = workflow.physicalPlan.pipelinedRegionsDAG
-    assert(pipelinedRegions.vertexSet().size == 1)
+    val pipelinedRegions = workflow.physicalPlan.regionsToSchedule
+    assert(pipelinedRegions.size == 1)
   }
 
   "Pipelined Regions" should "correctly find regions in csv->(csv->)->join->sink workflow" in {
@@ -86,22 +84,19 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       )
     )
 
-    val pipelinedRegions = workflow.physicalPlan.pipelinedRegionsDAG
-    assert(pipelinedRegions.vertexSet().size == 2)
+    val pipelinedRegions = workflow.physicalPlan.regionsToSchedule
+    val ancestorMapping = workflow.physicalPlan.regionAncestorMapping
+    assert(pipelinedRegions.size == 2)
 
     val buildRegion = pipelinedRegions
-      .vertexSet()
-      .asScala
       .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc1.operatorID))
       .get
     val probeRegion = pipelinedRegions
-      .vertexSet()
-      .asScala
       .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc2.operatorID))
       .get
 
-    assert(pipelinedRegions.getAncestors(probeRegion).size() == 1)
-    assert(pipelinedRegions.getAncestors(probeRegion).contains(buildRegion))
+    assert(ancestorMapping(probeRegion).size == 1)
+    assert(ancestorMapping(probeRegion).contains(buildRegion))
     assert(buildRegion.blockingDownstreamOperatorsInOtherRegions.length == 1)
     assert(
       buildRegion.blockingDownstreamOperatorsInOtherRegions.exists(pair =>
@@ -141,8 +136,8 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         )
       )
     )
-    val pipelinedRegions = workflow.physicalPlan.pipelinedRegionsDAG
-    assert(pipelinedRegions.vertexSet().size == 2)
+    val pipelinedRegions = workflow.physicalPlan.regionsToSchedule
+    assert(pipelinedRegions.size == 2)
   }
 
   "Pipelined Regions" should "correctly find regions in buildcsv->probecsv->hashjoin->hashjoin->sink workflow" in {
@@ -182,8 +177,8 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         )
       )
     )
-    val pipelinedRegions = workflow.physicalPlan.pipelinedRegionsDAG
-    assert(pipelinedRegions.vertexSet().size == 2)
+    val pipelinedRegions = workflow.physicalPlan.regionsToSchedule
+    assert(pipelinedRegions.size == 2)
   }
 
   "Pipelined Regions" should "correctly find regions in csv->split->training-infer workflow" in {
@@ -223,8 +218,8 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         )
       )
     )
-    val pipelinedRegions = workflow.physicalPlan.pipelinedRegionsDAG
-    assert(pipelinedRegions.vertexSet().size == 2)
+    val pipelinedRegions = workflow.physicalPlan.regionsToSchedule
+    assert(pipelinedRegions.size == 2)
   }
 
 }

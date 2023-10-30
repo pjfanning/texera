@@ -1,13 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import com.typesafe.scalalogging.Logger
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerInfo
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  UNINITIALIZED
-}
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   LinkIdentity,
@@ -28,8 +23,6 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.ListMap
-
 class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
 
   def buildWorkflow(
@@ -43,6 +36,18 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       LogicalPlan(context, operators, links, List())
     )
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
+  }
+
+  def setOperatorCompleted(
+      workflow: Workflow,
+      executionState: ExecutionState,
+      opID: String
+  ): Unit = {
+    val opIdentity = new OperatorIdentity(workflow.workflowId.id, opID)
+    val layers = workflow.physicalPlan.layersOfLogicalOperator(opIdentity)
+    layers.foreach { layer =>
+      executionState.getOperatorExecution(layer.id).setAllWorkerState(COMPLETED)
+    }
   }
 
   "Scheduler" should "correctly schedule regions in headerlessCsv->keyword->sink workflow" in {
@@ -59,67 +64,22 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
-
-    val logger = Logger(
-      LoggerFactory.getLogger(s"WorkflowSchedulerTest")
-    )
+    val executionState = new ExecutionState(workflow)
     val scheduler =
-      new WorkflowScheduler(Array(), null, null, logger, workflow, ControllerConfig.default)
-    workflow.physicalPlan
-      .layersOfLogicalOperator(
-        new OperatorIdentity(workflow.workflowId.id, headerlessCsvOpDesc.operatorID)
-      )
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Scan worker $i")) = l
-          ActorVirtualIdentity(s"Scan worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Scan worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(
-        new OperatorIdentity(workflow.workflowId.id, keywordOpDesc.operatorID)
-      )
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Keyword worker $i")) = l
-          ActorVirtualIdentity(s"Keyword worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Keyword worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, sink.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Sink worker $i")) = l
-          ActorVirtualIdentity(s"Sink worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Sink worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    Set(headerlessCsvOpDesc.operatorID, keywordOpDesc.operatorID, sink.operatorID).foreach(opID => {
-      workflow.physicalPlan
-        .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, opID))
-        .foreach(l => {
-          l.workers.keys.foreach(wid => {
-            l.workers(wid).state = COMPLETED
-          })
-        })
-    })
-    scheduler.schedulingPolicy.addToRunningRegions(scheduler.schedulingPolicy.startWorkflow())
+      new WorkflowScheduler(workflow, ControllerConfig.default, executionState, null)
+    Set(headerlessCsvOpDesc.operatorID, keywordOpDesc.operatorID, sink.operatorID).foreach(opID =>
+      setOperatorCompleted(workflow, executionState, opID)
+    )
+    scheduler.schedulingPolicy.addToRunningRegions(
+      scheduler.schedulingPolicy.startWorkflow(workflow),
+      null
+    )
     val nextRegions =
-      scheduler.schedulingPolicy.onWorkerCompletion(ActorVirtualIdentity("Scan worker 0"))
+      scheduler.schedulingPolicy.onWorkerCompletion(
+        workflow,
+        executionState,
+        ActorVirtualIdentity("Scan worker 0")
+      )
     assert(nextRegions.isEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions().size == 1)
   }
@@ -164,91 +124,26 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     val logger = Logger(
       LoggerFactory.getLogger(s"WorkflowSchedulerTest")
     )
+    val executionState = new ExecutionState(workflow)
     val scheduler =
-      new WorkflowScheduler(Array(), null, null, logger, workflow, ControllerConfig.default)
-
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, buildCsv.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Build Scan worker $i")) = l
-          ActorVirtualIdentity(s"Build Scan worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Build Scan worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, probeCsv.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Probe Scan worker $i")) = l
-          ActorVirtualIdentity(s"Probe Scan worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Probe Scan worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, hashJoin1.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"HashJoin1 worker $i")) = l
-          ActorVirtualIdentity(s"HashJoin1 worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"HashJoin1 worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, hashJoin2.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"HashJoin2 worker $i")) = l
-          ActorVirtualIdentity(s"HashJoin2 worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"HashJoin2 worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-    workflow.physicalPlan
-      .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, sink.operatorID))
-      .foreach(l => {
-        l.workers = ListMap((0 until 1).map { i =>
-          workflow.workerToOpExecConfig(ActorVirtualIdentity(s"Sink worker $i")) = l
-          ActorVirtualIdentity(s"Sink worker $i") -> WorkerInfo(
-            ActorVirtualIdentity(s"Sink worker $i"),
-            UNINITIALIZED,
-            WorkerStatistics(UNINITIALIZED, 0, 0),
-            null
-          )
-        }: _*)
-      })
-
-    scheduler.schedulingPolicy.addToRunningRegions(scheduler.schedulingPolicy.startWorkflow())
-    Set(buildCsv.operatorID).foreach(opID => {
-      workflow.physicalPlan
-        .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, opID))
-        .foreach(l => {
-          l.workers.keys.foreach(wid => {
-            l.workers(wid).state = COMPLETED
-          })
-        })
-    })
+      new WorkflowScheduler(workflow, ControllerConfig.default, executionState, null)
+    scheduler.schedulingPolicy.addToRunningRegions(
+      scheduler.schedulingPolicy.startWorkflow(workflow),
+      null
+    )
+    Set(buildCsv.operatorID).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
 
     var nextRegions =
-      scheduler.schedulingPolicy.onWorkerCompletion(ActorVirtualIdentity("Build Scan worker 0"))
+      scheduler.schedulingPolicy.onWorkerCompletion(
+        workflow,
+        executionState,
+        ActorVirtualIdentity("Build Scan worker 0")
+      )
     assert(nextRegions.isEmpty)
 
     nextRegions = scheduler.schedulingPolicy.onLinkCompletion(
+      workflow,
+      executionState,
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
@@ -266,6 +161,8 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     )
     assert(nextRegions.isEmpty)
     nextRegions = scheduler.schedulingPolicy.onLinkCompletion(
+      workflow,
+      executionState,
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
@@ -283,20 +180,15 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     )
     assert(nextRegions.nonEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions().size == 1)
-    scheduler.schedulingPolicy.addToRunningRegions(nextRegions)
+    scheduler.schedulingPolicy.addToRunningRegions(nextRegions, null)
     Set(probeCsv.operatorID, hashJoin1.operatorID, hashJoin2.operatorID, sink.operatorID).foreach(
-      opID => {
-        workflow.physicalPlan
-          .layersOfLogicalOperator(new OperatorIdentity(workflow.workflowId.id, opID))
-          .foreach(l => {
-            l.workers.keys.foreach(wid => {
-              l.workers(wid).state = COMPLETED
-            })
-          })
-      }
+      opID => setOperatorCompleted(workflow, executionState, opID)
     )
-    nextRegions =
-      scheduler.schedulingPolicy.onWorkerCompletion(ActorVirtualIdentity("Probe Scan worker 0"))
+    nextRegions = scheduler.schedulingPolicy.onWorkerCompletion(
+      workflow,
+      executionState,
+      ActorVirtualIdentity("Probe Scan worker 0")
+    )
     assert(nextRegions.isEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions().size == 2)
   }

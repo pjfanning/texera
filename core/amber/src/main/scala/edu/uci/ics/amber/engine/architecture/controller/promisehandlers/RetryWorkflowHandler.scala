@@ -25,11 +25,13 @@ trait RetryWorkflowHandler {
       // retry message has no effect on completed workers
       Future
         .collect(
-          workflow.getAllOperators
+          cp.workflow.getAllOperators
             // find workers who received local operator exception
-            .flatMap(operator => operator.caughtLocalExceptions.keys)
+            .flatMap(operator =>
+              cp.executionState.getOperatorExecution(operator.id).caughtLocalExceptions.keys
+            )
             // currently only support retry for PythonWorker, thus filter them
-            .filter(worker => workflow.getPythonWorkers.toSeq.contains(worker))
+            .filter(worker => cp.executionState.getBuiltPythonWorkers.toSeq.contains(worker))
             .map(worker => send(ReplayCurrentTuple(), worker))
             .toSeq
         )

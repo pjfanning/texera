@@ -47,6 +47,12 @@ class Controller(
       CONTROLLER
     ) {
 
+  val controllerTimerService = new ControllerTimerService(controllerConfig, actorService)
+
+  val cp = new ControllerProcessor(workflow, controllerConfig, actorId, x => {})
+  cp.setupActorService(actorService)
+  cp.setupTimerService(controllerTimerService)
+
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = ???
 
   /** flow-control */

@@ -1,22 +1,34 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import akka.actor.{ActorContext, ActorRef, Cancellable, Props}
+import akka.actor.{ActorContext, ActorRef, Address, Cancellable, Props}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import akka.util.Timeout
+import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.common.FutureBijection._
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
 
 class AkkaActorService(val id: ActorVirtualIdentity, actorContext: ActorContext) {
 
   implicit def ec: ExecutionContext = actorContext.dispatcher
-  implicit val timeout: Timeout = 500.seconds
+  implicit val timeout: Timeout = 5.seconds
 
   def self: ActorRef = actorContext.self
 
   def parent: ActorRef = actorContext.parent
+
+  def getClusterNodeAddresses: Array[Address] = {
+    Await
+      .result(
+        actorContext.actorSelection("/user/cluster-info").resolveOne().map { ref =>
+          akka.pattern.ask(ref, GetAvailableNodeAddresses())
+        },
+        5.seconds
+      )
+      .asInstanceOf[Array[Address]]
+  }
 
   def actorOf(props: Props): ActorRef = {
     actorContext.actorOf(props)
