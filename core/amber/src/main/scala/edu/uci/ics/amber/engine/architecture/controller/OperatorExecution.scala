@@ -4,8 +4,9 @@ import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalB
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{WorkerInfo, WorkerWorkloadInfo}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState._
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
+import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
@@ -13,7 +14,7 @@ import java.util
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.collectionAsScalaIterableConverter
 
-class OperatorExecution(numWorkers: Int) extends Serializable {
+class OperatorExecution(layerIdentity: LayerIdentity, numWorkers: Int) extends Serializable {
   /*
    * Variables related to runtime information
    */
@@ -68,7 +69,9 @@ class OperatorExecution(numWorkers: Int) extends Serializable {
   }
 
   def setAllWorkerState(state: WorkerState): Unit = {
-    (0 until numWorkers).foreach(states.update(_, state))
+    (0 until numWorkers).foreach { i =>
+      getWorkerInfo(VirtualIdentityUtils.createWorkerIdentity(layerIdentity, i)).state = state
+    }
   }
 
   def getState: WorkflowAggregatedState = {
