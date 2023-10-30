@@ -12,6 +12,12 @@
       nzType="primary">
       Add Data
     </button>
+    <button
+      *ngIf="isEnvSwitchable"
+      (click)="onClickSwitchEnvironment()"
+      nz-button nzType="default">
+      Switch Environment
+    </button>
   </section>
 
   <section class="input-section">

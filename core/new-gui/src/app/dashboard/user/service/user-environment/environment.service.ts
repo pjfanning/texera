@@ -10,6 +10,10 @@ export class EnvironmentService {
 
   constructor() {}
 
+  doesWorkflowHaveEnvironment(wid: number): boolean {
+    return this.environmentOfWorkflow.has(wid);
+  }
+
   // Create: Add a new environment
   addEnvironment(environment: DashboardEnvironment): number {
     const eid = this.environments.length;

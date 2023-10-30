@@ -100,43 +100,49 @@ export class UserWorkflowListItemComponent {
   }
 
   public onClickOpenEnvironmentSelectModal(): void {
-      const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
-        backdrop: 'static',  // ensures the background is not clickable
-        keyboard: false      // ensures the modal cannot be closed with the keyboard
-      });
+      const wid = this.workflow.wid;
+      if (wid != undefined) {
+        if (!this.environmentService.doesWorkflowHaveEnvironment(wid)) {
+          const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
+            backdrop: 'static',  // ensures the background is not clickable
+            keyboard: false      // ensures the modal cannot be closed with the keyboard
+          });
 
-      modalRef.result.then(
-        (selectedEnvironmentID: number | null) => {
-          if (selectedEnvironmentID == null) {
-            // If an environment was not selected, create a new one and relate it
-            // Here, you can perform further actions with the selected environment
-            const eid = this.environmentService.addEnvironment(
-              {
-                environment: {
-                  eid: 0,
-                  name: "Untitled Environment",
-                  description: "Some description",
-                  creationTime: Date.now(),
-                  inputs: [],
-                  outputs: [],
-                },
-                ownerName: "Hola"
+          modalRef.result.then(
+            (selectedEnvironmentID: number | null) => {
+              if (selectedEnvironmentID == null) {
+                // If an environment was not selected, create a new one and relate it
+                // Here, you can perform further actions with the selected environment
+                const eid = this.environmentService.addEnvironment(
+                  {
+                    environment: {
+                      eid: 0,
+                      name: "Untitled Environment",
+                      description: "Some description",
+                      creationTime: Date.now(),
+                      inputs: [],
+                      outputs: [],
+                    },
+                    ownerName: "Hola"
+                  }
+                )
+                const wid = this.workflow.wid;
+                if (wid)
+                  this.environmentService.addEnvironmentOfWorkflow(wid, eid);
+              } else {
+                // user choose a existing environment
+                const wid = this.workflow.wid;
+                if (wid)
+                  this.environmentService.addEnvironmentOfWorkflow(wid, selectedEnvironmentID);
               }
-            )
-            const wid = this.workflow.wid;
-            if (wid)
-              this.environmentService.addEnvironmentOfWorkflow(wid, eid);
-          } else {
-            // user choose a existing environment
-            const wid = this.workflow.wid;
-            if (wid)
-              this.environmentService.addEnvironmentOfWorkflow(wid, selectedEnvironmentID);
-          }
-        },
-        (reason) => {
-          console.log('Modal was dismissed.', reason);
+            },
+            (reason) => {
+              console.log('Modal was dismissed.', reason);
+            }
+          );
         }
-      );
+      }
+
   }
 
   public confirmUpdateWorkflowCustomDescription(description: string): void {

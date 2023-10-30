@@ -25,7 +25,7 @@ export class EnvironmentEditorService {
     if (eid == undefined) {
       eid = 0;
     }
-    this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString()]);
+    this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()]);
   }
 
   public environmentEditorDisplayObservable(): Observable<readonly string[]> {

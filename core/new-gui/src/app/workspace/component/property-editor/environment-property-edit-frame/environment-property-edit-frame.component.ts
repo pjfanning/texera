@@ -3,6 +3,7 @@ import {DashboardEnvironment} from "../../../../dashboard/user/type/environment"
 import {EnvironmentService} from "../../../../dashboard/user/service/user-environment/environment.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {NgbdModalEnvironmentDatasetAddComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
+import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 
 @Component({
   selector: 'texera-environment-property-edit-frame',
@@ -13,12 +14,61 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   @Input()
   eid: number = 0;
 
+  @Input()
+  wid : number = 0;
+
+  @Input()
+  isEnvSwitchable = true;
+
   environment: DashboardEnvironment | undefined;
 
   constructor(
     private environmentService: EnvironmentService,
     private modalService: NgbModal,
   ) {}
+
+  onClickSwitchEnvironment(): void {
+    const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
+      backdrop: 'static',  // ensures the background is not clickable
+      keyboard: false      // ensures the modal cannot be closed with the keyboard
+    });
+
+    modalRef.result.then(
+      (selectedEnvironmentID: number | null) => {
+        if (selectedEnvironmentID == null) {
+          // If an environment was not selected, create a new one and relate it
+          // Here, you can perform further actions with the selected environment
+          const eid = this.environmentService.addEnvironment(
+            {
+              environment: {
+                eid: 0,
+                name: "Untitled Environment",
+                description: "Some description",
+                creationTime: Date.now(),
+                inputs: [],
+                outputs: [],
+              },
+              ownerName: "Hola"
+            }
+          )
+          const wid = this.wid;
+          if (wid)
+            this.environmentService.switchEnvironmentOfWorkflow(wid, eid);
+            this.eid = eid;
+        } else {
+          // user choose a existing environment
+          const wid = this.wid;
+          if (wid)
+            this.environmentService.switchEnvironmentOfWorkflow(wid, selectedEnvironmentID);
+            this.eid = selectedEnvironmentID;
+        }
+        this.initEditor();
+      },
+      (reason) => {
+        console.log('Modal was dismissed.', reason);
+      }
+    );
+  }
 
   onClickOpenAddDatasetWindow(): void {
     const modalRef = this.modalService.open(NgbdModalEnvironmentDatasetAddComponent)
@@ -41,6 +91,10 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   ngOnInit(): void {
     console.log(this.eid)
     console.log(this.environmentService.getAllEnvironments())
+    this.initEditor();
+  }
+
+  initEditor(): void {
     const env = this.environmentService.getEnvironmentByIndex(this.eid);
     if (env == null) {
       throw new Error("Environment not exists!!!");
