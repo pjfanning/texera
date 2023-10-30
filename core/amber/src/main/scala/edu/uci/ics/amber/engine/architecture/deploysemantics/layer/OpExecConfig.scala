@@ -244,8 +244,7 @@ case class OpExecConfig(
     )
     (0 until numWorkers)
       .foreach(i => {
-        val workerId: ActorVirtualIdentity =
-          ActorVirtualIdentity(s"Worker:WF${id.workflow}-${id.operator}-${id.layerID}-$i")
+        val workerId: ActorVirtualIdentity = VirtualIdentityUtils.createWorkerIdentity(id, i)
         val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
         val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
 
