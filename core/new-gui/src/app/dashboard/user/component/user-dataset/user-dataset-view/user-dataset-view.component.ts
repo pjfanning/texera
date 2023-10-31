@@ -11,6 +11,13 @@ export class userDatasetViewComponent implements OnInit {
     did: number = 0;
     dataset_name: String = "";
 
+    //dummy
+    files = [
+        { name: 'file1', size: 'small' },
+        { name: 'file2', size: 'medium' },
+        { name: 'file4', size: 'large' },
+      ];
+
     constructor(private route: ActivatedRoute, private datasetService: DatasetService) {}
 
     ngOnInit(): void {
@@ -18,4 +25,8 @@ export class userDatasetViewComponent implements OnInit {
             this.did = params['dataset_id'];
         });
     }
+
+    loadContent(file: string) {
+        console.log(`Clicked on ${file}`);
+      }
 }

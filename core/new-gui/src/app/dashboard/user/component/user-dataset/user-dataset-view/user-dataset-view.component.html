@@ -1,5 +1,21 @@
-<div>
-    This will be an interface for dataset: {{did}}. 
-
-    Still in progress...
-</div>
+<nav class="navbar navbar-expand bg-white">
+  <h1 class="navbar-brand">Dummy Title</h1>
+</nav>
+<nz-layout class="layout">
+  <nz-layout>
+    <nz-content>
+      <div class="content" id="content">Please select a file</div>
+    </nz-content>
+  </nz-layout>
+  <nz-sider nzCollapsible nzTheme="light" style="float: right;">
+      <div class="file-list-title">
+        <h2>Data Explorer</h2>
+      </div>
+      <ul nz-menu nzMode="inline">
+        <li *ngFor="let file of files" nz-menu-item nz-tooltip="Select {{ file.name }}" nzTooltipPlacement="left" (click)="loadContent(file.name)">
+          <span nz-icon nzType="file"></span>
+          <span>{{ file.name }}</span>
+        </li>
+      </ul>
+    </nz-sider>
+</nz-layout>
