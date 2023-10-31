@@ -435,6 +435,8 @@ export class MenuComponent implements OnInit {
   onClickCreateNewWorkflow() {
     this.workflowActionService.resetAsNewWorkflow();
     this.location.go("/");
+
+
   }
 
   registerWorkflowMetadataDisplayRefresh() {

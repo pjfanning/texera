@@ -28,7 +28,7 @@
         <!-- Content for Input here -->
         <ul>
           <li *ngFor="
-          let input of environment.environment.inputs">
+          let input of environments">
             {{input}}
           </li>
         </ul>
@@ -39,7 +39,7 @@
   <section class="output-section">
     <nz-collapse>
       <nz-collapse-panel
-        *ngIf="environment != undefined"
+        *ngIf="environment != undefined && isDisplayOutput"
         [nzHeader]="'Output'"
         [nzActive]="true">
         <!-- Content for Output here -->
