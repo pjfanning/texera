@@ -134,7 +134,19 @@ export class UserDatasetComponent implements AfterViewInit {
       .subscribe(() => this.search(forced));
   }
 
-  public deleteDataset(event: DashboardEntry) {
-
+  public deleteDataset(entry: DashboardEntry) {
+    console.log("fdsa");
+    if (entry.dataset.dataset.did == undefined) {
+      console.log(1111);
+      return;
+    }
+    this.datasetService
+      .deleteDatasets([entry.dataset.dataset.did])
+      .pipe(untilDestroyed(this))
+      .subscribe(_ => {
+        this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+        );
+      });
   }
 }
