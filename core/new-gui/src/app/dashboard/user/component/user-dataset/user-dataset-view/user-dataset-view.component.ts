@@ -9,7 +9,8 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 })
 export class userDatasetViewComponent implements OnInit {
     did: number = 0;
-    dataset_name: String = "";
+    dName: string = "";
+    versionNames: ReadonlyArray<string> = [];
 
     //dummy
     files = [
@@ -22,11 +23,18 @@ export class userDatasetViewComponent implements OnInit {
 
     ngOnInit(): void {
         this.route.params.subscribe(params => {
-            this.did = params['dataset_id'];
+            this.did = params['did'];
+            this.dName = params['dname'];
         });
+
+        this.datasetService
+        .retrieveDatasetVersionList(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe( versionNames => {this.versionNames = versionNames; 
+          console.log(versionNames)} )
     }
 
     loadContent(file: string) {
         console.log(`Clicked on ${file}`);
-      }
+    }
 }

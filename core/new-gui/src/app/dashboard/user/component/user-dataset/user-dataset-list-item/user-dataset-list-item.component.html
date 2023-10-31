@@ -20,7 +20,7 @@
       <div class="dataset-item-meta-title">
         <a
           *ngIf="!editingName; else customDatasetTitle "
-          [routerLink]="ROUTER_DATASET_BASE_URL + '/' + dataset.did"
+          [routerLink]="ROUTER_DATASET_BASE_URL + '/' + dataset.did + '/' + dataset.name"
           class="dataset-name"
         >{{ dataset.name }}</a
         >
