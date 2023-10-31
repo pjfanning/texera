@@ -109,6 +109,11 @@ class AsyncRPCClient(
       logger.info(
         s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $channel (controlID: ${ret.originalCommandID})"
       )
+      ret.controlReturn match {
+        case throwable: Throwable =>
+          throwable.printStackTrace()
+        case _ =>
+      }
     } else {
       logger.info(
         s"receive reply: null from $channel (controlID: ${ret.originalCommandID})"

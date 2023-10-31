@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import com.twitter.util.Future
-import edu.uci.ics.amber.engine.architecture.common.AkkaActorService
+import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkerAssignmentUpdate,
   WorkflowStatusUpdate
@@ -60,31 +60,37 @@ class WorkflowScheduler(
   private val constructingRegions = new mutable.HashSet[PipelinedRegionIdentity]()
   private val startedRegions = new mutable.HashSet[PipelinedRegionIdentity]()
 
-  def startWorkflow(akkaActorService: AkkaActorService): Future[Seq[Unit]] = {
+  def startWorkflow(
+      akkaActorRefMappingService: AkkaActorRefMappingService,
+      akkaActorService: AkkaActorService
+  ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.startWorkflow(workflow)
-    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorRefMappingService, akkaActorService)
   }
 
   def onWorkerCompletion(
+      akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
       workerId: ActorVirtualIdentity
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule =
       schedulingPolicy.onWorkerCompletion(workflow, executionState, workerId)
-    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorRefMappingService, akkaActorService)
   }
 
   def onLinkCompletion(
+      akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
       linkId: LinkIdentity
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, linkId)
-    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorRefMappingService, akkaActorService)
   }
 
   def onTimeSlotExpired(
       workflowExecution: ExecutionState,
       timeExpiredRegions: Set[PipelinedRegion],
+      akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService
   ): Future[Seq[Unit]] = {
     val nextRegions = schedulingPolicy.onTimeSlotExpired(workflow)
@@ -93,7 +99,7 @@ class WorkflowScheduler(
       regionsToPause = timeExpiredRegions
     }
 
-    doSchedulingWork(nextRegions, akkaActorService)
+    doSchedulingWork(nextRegions, akkaActorRefMappingService, akkaActorService)
       .flatMap(_ => {
         val pauseFutures = new ArrayBuffer[Future[Unit]]()
         regionsToPause.foreach(stoppingRegion => {
@@ -116,16 +122,23 @@ class WorkflowScheduler(
 
   private def doSchedulingWork(
       regions: Set[PipelinedRegion],
+      akkaActorRefMappingService: AkkaActorRefMappingService,
       actorService: AkkaActorService
   ): Future[Seq[Unit]] = {
     if (regions.nonEmpty) {
-      Future.collect(regions.toArray.map(r => scheduleRegion(r, actorService)))
+      Future.collect(
+        regions.toArray.map(r => scheduleRegion(r, akkaActorRefMappingService, actorService))
+      )
     } else {
       Future(Seq())
     }
   }
 
-  private def constructRegion(region: PipelinedRegion, akkaActorService: AkkaActorService): Unit = {
+  private def constructRegion(
+      region: PipelinedRegion,
+      akkaActorRefMappingService: AkkaActorRefMappingService,
+      akkaActorService: AkkaActorService
+  ): Unit = {
     val builtOpsInRegion = new mutable.HashSet[LayerIdentity]()
     var frontier: Iterable[LayerIdentity] = workflow.getSourcesOfRegion(region)
     while (frontier.nonEmpty) {
@@ -139,7 +152,12 @@ class WorkflowScheduler(
             .map(upStreamOp => (upStreamOp, workflow.getOperator(upStreamOp)))
             .toArray // Last layer of upstream operators in the same region.
         if (!builtOperators.contains(op)) {
-          buildOperator(op, executionState.getOperatorExecution(op), akkaActorService)
+          buildOperator(
+            op,
+            executionState.getOperatorExecution(op),
+            akkaActorRefMappingService,
+            akkaActorService
+          )
           builtOperators.add(op)
         }
         builtOpsInRegion.add(op)
@@ -159,11 +177,13 @@ class WorkflowScheduler(
   private def buildOperator(
       operatorIdentity: LayerIdentity,
       opExecution: OperatorExecution,
+      actorRefService: AkkaActorRefMappingService,
       controllerActorService: AkkaActorService
   ): Unit = {
     val workerLayer = workflow.getOperator(operatorIdentity)
     workerLayer.build(
       controllerActorService,
+      actorRefService,
       opExecution,
       controllerConfig
     )
@@ -339,6 +359,7 @@ class WorkflowScheduler(
 
   private def scheduleRegion(
       region: PipelinedRegion,
+      akkaActorRefMappingService: AkkaActorRefMappingService,
       actorService: AkkaActorService
   ): Future[Unit] = {
     if (constructingRegions.contains(region.getId())) {
@@ -346,7 +367,7 @@ class WorkflowScheduler(
     }
     if (!startedRegions.contains(region.getId())) {
       constructingRegions.add(region.getId())
-      constructRegion(region, actorService)
+      constructRegion(region, akkaActorRefMappingService, actorService)
       prepareAndStartRegion(region, actorService)
     } else {
       // region has already been constructed. Just needs to resume

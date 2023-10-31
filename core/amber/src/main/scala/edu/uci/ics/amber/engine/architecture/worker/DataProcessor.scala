@@ -122,18 +122,18 @@ class DataProcessor(
 
   // inner dependencies
   private val initializer = new DataProcessorRPCHandlerInitializer(this)
-  // 4. pause manager
+  // 1. pause manager
   val pauseManager: PauseManager = wire[PauseManager]
-  // 5. breakpoint manager
+  // 2. breakpoint manager
   val breakpointManager: BreakpointManager = new BreakpointManager(asyncRPCClient)
-  // 6. upstream links
+  // 3. upstream links
   val upstreamLinkStatus: UpstreamLinkStatus = wire[UpstreamLinkStatus]
-  // 7. state manager
+  // 4. state manager
   val stateManager: WorkerStateManager = new WorkerStateManager()
-  // 8. batch producer
+  // 5. batch producer
   val outputManager: OutputManager =
     new OutputManager(actorId, outputPort)
-  // 9. epoch manager
+  // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
 
   private var currentBatchChannel: ChannelID = _

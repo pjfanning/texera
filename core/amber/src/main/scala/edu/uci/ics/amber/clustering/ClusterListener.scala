@@ -43,6 +43,8 @@ class ClusterListener extends Actor with AmberLogging {
       updateClusterStatus(evt)
     case ClusterListener.GetAvailableNodeAddresses() =>
       sender ! getAllAddressExcludingMaster.toArray
+    case other =>
+      println(other)
   }
 
   private def getAllAddressExcludingMaster: Iterable[Address] = {
