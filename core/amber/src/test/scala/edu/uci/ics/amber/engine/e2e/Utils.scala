@@ -17,8 +17,8 @@ object Utils {
   def getWorkflow(
       operators: List[OperatorDescriptor],
       links: List[OperatorLink],
-      jobId: String = "workflow-test",
-      workflowTag: String = "workflow-test"
+      jobId: String = "workflow_test",
+      workflowTag: String = "workflow_test"
   ): Workflow = {
     val context = new WorkflowContext
     context.jobId = jobId

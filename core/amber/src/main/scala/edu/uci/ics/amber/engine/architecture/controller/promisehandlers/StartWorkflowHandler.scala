@@ -19,7 +19,7 @@ trait StartWorkflowHandler {
   registerHandler { (msg: StartWorkflow, sender) =>
     {
       cp.workflowScheduler
-        .startWorkflow(cp.actorService)
+        .startWorkflow(cp.actorRefService, cp.actorService)
         .map(_ => {
           cp.controllerTimerService.enableStatusUpdate()
           cp.controllerTimerService.enableMonitoring()

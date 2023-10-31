@@ -79,7 +79,6 @@ class WorkflowWorker(
     case TriggerSend() =>
       if (!outputQueue.isBlocked) {
         val msg = outputQueue.take
-        logger.info(s"send $msg")
         transferService.send(msg)
       }
   }
@@ -94,7 +93,6 @@ class WorkflowWorker(
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    logger.info(s"received $workflowMsg")
     val senderRef = sender()
     inputQueue.put(
       MessageWithCallback(

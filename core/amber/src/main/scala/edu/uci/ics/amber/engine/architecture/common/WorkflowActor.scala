@@ -1,6 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import akka.actor.{Actor, ActorRef, Stash}
+import akka.actor.{Actor, ActorRef, Address, Stash}
+import akka.pattern.ask
+import akka.util.Timeout
+import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   GetActorRef,
   MessageBecomesDeadLetter,
@@ -16,6 +19,9 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 object WorkflowActor {
 
@@ -51,9 +57,19 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
 
   /** Akka related */
   val actorService: AkkaActorService = new AkkaActorService(actorId, this.context)
+  actorService.getAvailableNodeAddressesFunc = () => {
+    implicit val timeout: Timeout = 5.seconds
+    Await
+      .result(
+        context.actorSelection("/user/cluster-info") ? GetAvailableNodeAddresses(),
+        5.seconds
+      )
+      .asInstanceOf[Array[Address]]
+  }
   val actorRefMappingService: AkkaActorRefMappingService = new AkkaActorRefMappingService(
     actorService
   )
+  actorRefMappingService.registerActorRef(actorId, self)
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, x => {})
 
@@ -68,7 +84,13 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   def receiveMessageAndAck: Receive = {
     case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, _, _)) =>
       actorRefMappingService.registerActorRef(channel.from, sender)
-      handleInputMessage(id, workflowMsg)
+      try {
+        handleInputMessage(id, workflowMsg)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          throw e
+      }
     case NetworkAck(id, credits) =>
       transferService.receiveAck(id, credits)
   }
@@ -81,7 +103,6 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   // Actor behavior
   def handleFlowControl: Receive = {
     case CreditRequest(channel) =>
-      logger.info(s"current credit for channel = $channel is ${getSenderCredits(channel)}")
       sender ! CreditResponse(channel, getSenderCredits(channel))
     case CreditResponse(channel, credit) =>
       transferService.updateCredit(channel, credit)
