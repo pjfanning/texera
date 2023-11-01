@@ -10,7 +10,9 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 export class userDatasetViewComponent implements OnInit {
     did: number = 0;
     dName: string = "";
+    isSiderCollapsed = false;
     versionNames: ReadonlyArray<string> = [];
+    currentFile: string = "";
 
     //dummy
     files = [
@@ -35,6 +37,13 @@ export class userDatasetViewComponent implements OnInit {
     }
 
     loadContent(file: string) {
-        console.log(`Clicked on ${file}`);
+      this.currentFile = file;
+    }
+
+    clickToHideTree() {
+      this.isSiderCollapsed = true;
+    }
+    clickToShowTree() {
+      this.isSiderCollapsed = false;
     }
 }
