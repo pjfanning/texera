@@ -55,11 +55,23 @@
           </div>
         </div>
       </nz-card>
-      <div style="background-color: lightgray; padding-top: 15px; padding-bottom: 5px;">
-        <h6 style="margin-left: 30px; margin-bottom: 20px;">About this file</h6>
-        <p style="margin-left: 30px;">
-          File Description
-        </p>
+      <div style="background-color: lightgray; padding-top: 15px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h6 style="margin-left: 30px; margin-bottom: 20px;">About this file</h6>
+            <p style="margin-left: 30px;">
+                File Description
+            </p>
+        </div>
+        <button
+            nz-button
+            nz-tooltip="Edit File Description"
+            style="margin-right: 10px;">
+            <i
+                nz-icon
+                nzTheme="outline"
+                nzType="edit">
+            </i>
+        </button>
       </div>
       <div style="padding-top: 15px;">
         <p style="margin-left: 30px;">
