@@ -56,13 +56,27 @@
         </div>
       </nz-card>
       <div style="overflow-y: auto;">
-        <div>
-          <h6 style="margin-left: 20px; margin-top: 20px; margin-bottom: 30px;">About this file</h6>
-          <p style="margin-left: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h6 style="margin-left: 20px; margin-top: 20px; margin-bottom: 30px;">About this file</h6>
+            </div>
+            <div>
+                <button
+                  nz-button
+                  nz-tooltip="Edit File Description"
+                  style="margin-right: 10px;">
+                  <i
+                    nz-icon
+                    nzTheme="outline"
+                    nzType="edit">
+                  </i>
+                </button>
+            </div>
+        </div>
+        <p style="margin-left: 20px;">
             File Description
         </p>
-        </div>
-      </div>
+    </div>
     </nz-content>
   <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;">
       <div class="file-list-title">
