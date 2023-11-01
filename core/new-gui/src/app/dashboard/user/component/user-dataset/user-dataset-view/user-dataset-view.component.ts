@@ -6,6 +6,7 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 @UntilDestroy()
 @Component({
   templateUrl: "./user-dataset-view.component.html",
+  styleUrls: ['./user-dataset-view.component.scss']
 })
 export class userDatasetViewComponent implements OnInit {
     did: number = 0;
@@ -18,7 +19,9 @@ export class userDatasetViewComponent implements OnInit {
     files = [
         { name: 'file1', size: 'small' },
         { name: 'file2', size: 'medium' },
+        { name: 'file3', size: 'large' },
         { name: 'file4', size: 'large' },
+        { name: 'file5', size: 'large' },
       ];
 
     constructor(private route: ActivatedRoute, private datasetService: DatasetService) {}

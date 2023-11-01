@@ -5,7 +5,7 @@
   </nz-card>
 </div>
 <nz-layout>
-    <nz-content>
+    <nz-content style="background-color: white;">
       <nz-card>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
@@ -55,13 +55,16 @@
           </div>
         </div>
       </nz-card>
-      <div style="overflow-y: auto;">
-        <div>
-          <h6 style="margin-left: 20px; margin-top: 20px; margin-bottom: 30px;">About this file</h6>
-          <p style="margin-left: 20px;">
-            File Description
+      <div style="background-color: lightgray; padding-top: 15px; padding-bottom: 5px;">
+        <h6 style="margin-left: 30px; margin-bottom: 20px;">About this file</h6>
+        <p style="margin-left: 30px;">
+          File Description
         </p>
-        </div>
+      </div>
+      <div style="padding-top: 15px;">
+        <p style="margin-left: 30px;">
+          File Details
+        </p>
       </div>
     </nz-content>
   <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;">
@@ -77,5 +80,8 @@
           <span>{{ file.name }}</span>
         </li>
       </ul>
+        <button class="rounded-button">
+          + Version
+        </button>
     </nz-sider>
 </nz-layout>

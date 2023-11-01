@@ -1,0 +1,24 @@
+.rounded-button {
+    background-color: black;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 50px;
+}
+
+.rounded-button:hover {
+    background-color: gray;
+}
+
+nz-layout {
+    height: calc(100vh - 200px); // Adjust 200px based on the actual height of the upper div.
+    overflow: auto;
+}
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
