@@ -41,18 +41,22 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val opExecConfig =
     OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
-  private val dp: DataProcessor =
-    new DataProcessor(identifier, 0, operator, opExecConfig, outputHandler) {
+  private val adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
+  private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
+
+  def mkDataProcessor:DataProcessor = {
+    val dp: DataProcessor = new DataProcessor(identifier, 0, operator, opExecConfig, outputHandler) {
       override val outputManager: OutputManager = mock[OutputManager]
       override val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
     }
-  private val adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
-  dp.initAdaptiveBatching(adaptiveBatchingMonitor)
-  private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
+    dp.initAdaptiveBatching(adaptiveBatchingMonitor)
+    dp
+  }
 
   case class DummyControl() extends ControlCommand[Unit]
 
   "data processor" should "process data messages" in {
+    val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).once()
     (operator.open _).expects().once()
@@ -86,6 +90,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   }
 
   "data processor" should "process control messages during data processing" in {
+    val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).anyNumberOfTimes()
     (operator.open _).expects().once()

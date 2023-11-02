@@ -10,7 +10,6 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
 
   private val fakeReceiverID = ActorVirtualIdentity("testReceiver")
   private val fakeSenderID = ActorVirtualIdentity("testSender")
-  private val inputPort = new NetworkInputPort(fakeReceiverID)
   private val channelId = ChannelID(fakeSenderID, fakeReceiverID, false)
   private val payloads = (0 until 4).map { i =>
     DataFrame(Array(ITuple(i)))
@@ -20,6 +19,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   }.toArray
 
   "network input port" should "output payload in FIFO order" in {
+    val inputPort = new NetworkInputPort(fakeReceiverID)
     Array(2, 0, 1, 3).foreach { i =>
       inputPort.getChannel(channelId).acceptMessage(messages(i))
     }
@@ -32,6 +32,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   }
 
   "network input port" should "de-duplicate payload" in {
+    val inputPort = new NetworkInputPort(fakeReceiverID)
     Array(2, 2, 2, 2, 2, 2, 0, 1, 1, 3, 3).foreach { i =>
       inputPort.getChannel(channelId).acceptMessage(messages(i))
     }
@@ -45,6 +46,7 @@ class NetworkInputPortSpec extends AnyFlatSpec with MockFactory {
   }
 
   "network input port" should "keep unordered messages" in {
+    val inputPort = new NetworkInputPort(fakeReceiverID)
     Array(3, 2, 1).foreach { i =>
       inputPort.getChannel(channelId).acceptMessage(messages(i))
     }
