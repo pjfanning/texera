@@ -1,0 +1,18 @@
+<div>
+    <nz-card>
+        <div class="header-container">
+            <h5>Upload Data</h5>
+            <button
+                (click)="activeModal.dismiss('Cross click')"
+                aria-label="Close"
+                class="close"
+                type="button">
+                <span aria-hidden="true"> × </span>
+            </button>
+        </div>
+    </nz-card>
+    <div style="border: 1px solid #ccc; padding: 10px;">
+        <h6 style="font-weight: bold; font-size: 0.8em; color: gray;">VERSION NOTES</h6>
+        <input nz-input placeholder="Update 2023-11-01" [(ngModel)]="versionNotes" />
+    </div>
+</div>

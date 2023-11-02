@@ -2,6 +2,8 @@ import { Component, OnInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
 
 @UntilDestroy()
 @Component({
@@ -24,7 +26,7 @@ export class userDatasetViewComponent implements OnInit {
         { name: 'file5', size: 'large' },
       ];
 
-    constructor(private route: ActivatedRoute, private datasetService: DatasetService) {}
+    constructor(private route: ActivatedRoute, private datasetService: DatasetService, private modalService: NgbModal) {}
 
     ngOnInit(): void {
         this.route.params.subscribe(params => {
@@ -46,7 +48,16 @@ export class userDatasetViewComponent implements OnInit {
     clickToHideTree() {
       this.isSiderCollapsed = true;
     }
+    
     clickToShowTree() {
       this.isSiderCollapsed = false;
+    }
+
+    public openFileAddComponent() {
+      const modalRef = this.modalService.open(NgbdModelDatasetFileAddComponent);
+  
+      modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
+
+      });
     }
 }

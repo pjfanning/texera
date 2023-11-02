@@ -1,0 +1,12 @@
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close {
+    background-color: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
