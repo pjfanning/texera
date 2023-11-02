@@ -91,7 +91,7 @@ class WorkerSpec
     }
   }
 
-  def mkWorker: ActorRef ={
+  def mkWorker: ActorRef = {
     TestActorRef(
       new WorkflowWorker(
         identifier1,
