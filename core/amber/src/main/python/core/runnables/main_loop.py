@@ -26,11 +26,12 @@ from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
     ControlCommandV2,
-    LocalOperatorExceptionV2,
+    ConsoleMessageType,
     WorkerExecutionCompletedV2,
     WorkerState,
     LinkCompletedV2,
     PythonConsoleMessageV2,
+    ConsoleMessage,
 )
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -173,9 +174,23 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         Report the traceback of current stack when an exception occurs.
         """
-        message: str = "\n".join(traceback.format_exception(*exc_info))
+        tb = traceback.extract_tb(exc_info[2])
+        filename, line_number, func_name, text = tb[-1]
+        formatted_exception = traceback.format_exception(*exc_info)
+        title: str = formatted_exception[-1].strip()
+        message: str = "\n".join(formatted_exception)
         control_command = set_one_of(
-            ControlCommandV2, LocalOperatorExceptionV2(message=message)
+            ControlCommandV2,
+            PythonConsoleMessageV2(
+                ConsoleMessage(
+                    worker_id=self.context.worker_id,
+                    timestamp=datetime.datetime.now(),
+                    msg_type=ConsoleMessageType.ERROR,
+                    source="{}:{}:{}".format(filename, line_number, func_name),
+                    title=title,
+                    message=message,
+                )
+            ),
         )
         self._async_rpc_client.send(
             ActorVirtualIdentity(name="CONTROLLER"), control_command
@@ -343,10 +358,14 @@ class MainLoop(StoppableQueueBlockingRunnable):
             debug_event = self.context.debug_manager.get_debug_event()
             self._send_console_message(
                 PythonConsoleMessageV2(
-                    timestamp=datetime.datetime.now(),
-                    msg_type="DEBUGGER",
-                    source="(Pdb)",
-                    message=debug_event,
+                    ConsoleMessage(
+                        worker_id=self.context.worker_id,
+                        timestamp=datetime.datetime.now(),
+                        msg_type=ConsoleMessageType.DEBUGGER,
+                        source="(Pdb)",
+                        title=debug_event,
+                        message="",
+                    )
                 )
             )
             self._pause_dp()

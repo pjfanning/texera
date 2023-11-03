@@ -3,6 +3,7 @@ package edu.uci.ics.amber.clustering
 import akka.actor.{Actor, Address}
 import akka.cluster.ClusterEvent._
 import akka.cluster.Cluster
+import com.google.protobuf.timestamp.Timestamp
 import com.twitter.util.{Await, Future}
 import edu.uci.ics.amber.clustering.ClusterListener.numWorkerNodesInCluster
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -12,8 +13,10 @@ import edu.uci.ics.texera.web.model.websocket.response.ClusterStatusUpdateEvent
 import edu.uci.ics.texera.web.service.{WorkflowJobService, WorkflowService}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
+import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.JobError
 
+import java.time.Instant
 import scala.collection.mutable.ArrayBuffer
 
 object ClusterListener {
@@ -60,7 +63,12 @@ class ClusterListener extends Actor with AmberLogging {
     )
     jobService.stateStore.jobMetadataStore.updateState { jobInfo =>
       updateWorkflowState(FAILED, jobInfo).addErrors(
-        JobError(cause.getLocalizedMessage, cause.getStackTrace.mkString("\n"))
+        JobError(
+          FAILURE,
+          Timestamp(Instant.now),
+          cause.getLocalizedMessage,
+          cause.getStackTrace.mkString("\n")
+        )
       )
     }
   }

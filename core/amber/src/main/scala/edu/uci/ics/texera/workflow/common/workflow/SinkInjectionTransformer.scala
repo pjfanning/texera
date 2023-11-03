@@ -6,7 +6,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 object SinkInjectionTransformer {
 
-  def transform(oldPlan: LogicalPlan): LogicalPlan = {
+  def transform(opsToViewResult: List[String], oldPlan: LogicalPlan): LogicalPlan = {
     var logicalPlan = oldPlan
 
     // for any terminal operator without a sink, add a sink
@@ -14,7 +14,7 @@ object SinkInjectionTransformer {
       !logicalPlan.getOperator(opId).isInstanceOf[SinkOpDesc]
     )
     // for any operators marked as view result without a sink, add a sink
-    val viewResultOps = oldPlan.opsToReuseCache.filter(opId =>
+    val viewResultOps = opsToViewResult.filter(opId =>
       !logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc])
     )
 

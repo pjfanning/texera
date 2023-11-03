@@ -153,7 +153,9 @@ class WorkflowService(
 
     lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
     jobService.onNext(job)
-    job.startWorkflow()
+    if (job.stateStore.jobMetadataStore.getState.errors.isEmpty) {
+      job.startWorkflow()
+    }
   }
 
   def convertToJson(frontendVersion: String): String = {

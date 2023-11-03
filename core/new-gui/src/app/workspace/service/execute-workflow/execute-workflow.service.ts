@@ -144,7 +144,7 @@ export class ExecuteWorkflowService {
         };
       case "BreakpointTriggeredEvent":
         return { state: ExecutionState.BreakpointTriggered, breakpoint: event };
-      case "TexeraErrorEvent":
+      case "WorkflowErrorEvent":
         return { state: ExecutionState.Failed, errorMessages: event.errors };
       default:
         return undefined;

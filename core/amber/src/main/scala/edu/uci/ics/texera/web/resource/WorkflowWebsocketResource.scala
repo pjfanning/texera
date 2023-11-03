@@ -1,17 +1,19 @@
 package edu.uci.ics.texera.web.resource
 
+import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{WorkflowErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
+import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.JobError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
-import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan.OperatorCompilingErrors
 
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import javax.websocket._
 import javax.websocket.server.ServerEndpoint
@@ -74,7 +76,6 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
         case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
           WorkflowCacheChecker.handleCacheStatusUpdateRequest(session, cacheStatusUpdateRequest)
-          sessionState.send(WorkflowStateEvent("Uninitialized"))
         case workflowExecuteRequest: WorkflowExecuteRequest =>
           workflowStateOpt match {
             case Some(workflow) => workflow.initJobService(workflowExecuteRequest, uidOpt)
@@ -87,19 +88,18 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
       }
     } catch {
-      case errs: OperatorCompilingErrors =>
-        sessionState.send(WorkflowStateEvent("Failed"))
-        sessionState.send(
-          TexeraErrorEvent(errs.errorList.map {
-            case (opID, err) =>
-              JobError(err.getMessage, err.getStackTrace.mkString("\n"), opID)
-          })
-        )
       case err: Exception =>
         sessionState.send(WorkflowStateEvent("Failed"))
         sessionState.send(
-          TexeraErrorEvent(
-            Seq(JobError(err.toString, err.getStackTrace.mkString("\n")))
+          WorkflowErrorEvent(
+            Seq(
+              JobError(
+                FAILURE,
+                Timestamp(Instant.now),
+                err.toString,
+                err.getStackTrace.mkString("\n")
+              )
+            )
           )
         )
         throw err

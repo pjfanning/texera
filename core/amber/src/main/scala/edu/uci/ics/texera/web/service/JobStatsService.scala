@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.service
 
+import com.google.protobuf.timestamp.Timestamp
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkerAssignmentUpdate,
   WorkflowCompleted,
@@ -19,8 +20,11 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 }
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
+import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.{JobError, OperatorWorkerMapping}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
+
+import java.time.Instant
 
 class JobStatsService(
     client: AmberClient,
@@ -158,15 +162,24 @@ class JobStatsService(
         .registerCallback[FatalError]((evt: FatalError) => {
           client.shutdown()
           var opeartorId = ""
+          var workerId = ""
           if (evt.fromActor.isDefined) {
             opeartorId = VirtualIdentityUtils.getOperator(evt.fromActor.get).operator
+            workerId = evt.fromActor.get.name
           }
           stateStore.statsStore.updateState(stats =>
             stats.withEndTimeStamp(System.currentTimeMillis())
           )
           stateStore.jobMetadataStore.updateState { jobInfo =>
             updateWorkflowState(FAILED, jobInfo).addErrors(
-              JobError(evt.e.getMessage, evt.e.getStackTrace.mkString("\n"), opeartorId)
+              JobError(
+                FAILURE,
+                Timestamp(Instant.now),
+                evt.e.getMessage,
+                evt.e.getStackTrace.mkString("\n"),
+                opeartorId,
+                workerId
+              )
             )
           }
         })

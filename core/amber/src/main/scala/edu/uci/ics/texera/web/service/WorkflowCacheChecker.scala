@@ -1,8 +1,14 @@
 package edu.uci.ics.texera.web.service
 
 import edu.uci.ics.texera.web.SessionState
-import edu.uci.ics.texera.web.model.websocket.event.CacheStatusUpdateEvent
+import edu.uci.ics.texera.web.model.websocket.event.{
+  CacheStatusUpdateEvent,
+  WorkflowErrorEvent,
+  WorkflowStateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.CacheStatusUpdateRequest
+import edu.uci.ics.texera.web.storage.JobStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
@@ -24,13 +30,22 @@ object WorkflowCacheChecker {
     if (oldPlan == null) {
       return
     }
-    val newPlan =
+    val newPlan = {
       LogicalPlan.apply(cacheStatusUpdateRequest.toLogicalPlanPojo(), new WorkflowContext())
-    val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
-    val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult
-      .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))
-      .toMap
-    sessionState.send(CacheStatusUpdateEvent(cacheUpdateResult))
+    }
+    val stateStore = new JobStateStore()
+    newPlan.initializeLogicalPlan(stateStore)
+    if (stateStore.jobMetadataStore.getState.state == FAILED) {
+      sessionState.send(WorkflowStateEvent("Failed"))
+      sessionState.send(WorkflowErrorEvent(stateStore.jobMetadataStore.getState.errors))
+    } else {
+      val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
+      val cacheUpdateResult = cacheStatusUpdateRequest.opsToReuseResult
+        .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))
+        .toMap
+      sessionState.send(WorkflowStateEvent("Uninitialized"))
+      sessionState.send(CacheStatusUpdateEvent(cacheUpdateResult))
+    }
   }
 
 }

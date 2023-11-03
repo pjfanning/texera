@@ -45,11 +45,16 @@ export interface JobError
     message: string;
     details: string;
     operatorId: string;
+    workerId: string;
+    timestamp: {
+      nanos: number;
+      seconds: number;
+    };
   }> {}
 
-export interface TexeraErrorEvent
+export interface WorkflowErrorEvent
   extends Readonly<{
-    errors: JobError[];
+    errors: ReadonlyArray<JobError>;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
@@ -195,7 +200,7 @@ export type TexeraWebsocketEventTypeMap = {
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
-  TexeraErrorEvent: TexeraErrorEvent;
+  WorkflowErrorEvent: WorkflowErrorEvent;
   BreakpointTriggeredEvent: BreakpointTriggerInfo;
   ConsoleUpdateEvent: ConsoleUpdateEvent;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;

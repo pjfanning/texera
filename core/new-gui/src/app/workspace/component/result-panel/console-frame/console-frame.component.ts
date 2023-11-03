@@ -101,28 +101,9 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     if (this.operatorId) {
       this.workerIds = this.executeWorkflowService.getWorkerIds(this.operatorId);
 
-      // first display error messages if applicable
-      if (this.operatorId === breakpointTriggerInfo?.operatorID) {
-        // if we hit a breakpoint
-        this.displayBreakpoint(breakpointTriggerInfo);
-      }
-
       // always display console messages
       this.displayConsoleMessages(this.operatorId);
     }
-  }
-
-  displayBreakpoint(breakpointTriggerInfo: BreakpointTriggerInfo): void {
-    const errorsMessages: JobError[] = [];
-    breakpointTriggerInfo.report.forEach(r => {
-      const splitPath = r.actorPath.split("/");
-      const workerName = splitPath[splitPath.length - 1];
-      const workerText = "Bp:Worker " + workerName;
-      if (r.messages.toString().toLowerCase().includes("exception")) {
-        errorsMessages.push({ message: workerText, details: r.messages.toString(), operatorId: "" });
-      }
-    });
-    this.breakpointMessages = errorsMessages;
   }
 
   displayConsoleMessages(operatorId: string): void {
