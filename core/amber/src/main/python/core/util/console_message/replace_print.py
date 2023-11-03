@@ -52,20 +52,17 @@ class replace_print(ContextManager):
             with StringIO() as tmp_buf, redirect_stdout(tmp_buf):
                 self.builtins_print(*args, **kwargs)
                 complete_str = tmp_buf.getvalue()
-                self.buf.put(
-                    PythonConsoleMessageV2(
-                        ConsoleMessage(
-                            worker_id=self.worker_id,
-                            timestamp=datetime.datetime.now(),
-                            msg_type=ConsoleMessageType.PRINT,
-                            source=f"{inspect.currentframe().f_back.f_globals['__name__']}"
-                            f":{inspect.currentframe().f_back.f_code.co_name}"
-                            f":{inspect.currentframe().f_back.f_lineno}",
-                            title=complete_str,
-                            message="",
-                        )
-                    )
+                console_message = ConsoleMessage(
+                    worker_id=self.worker_id,
+                    timestamp=datetime.datetime.now(),
+                    msg_type=ConsoleMessageType.PRINT,
+                    source=f"{inspect.currentframe().f_back.f_globals['__name__']}"
+                    f":{inspect.currentframe().f_back.f_code.co_name}"
+                    f":{inspect.currentframe().f_back.f_lineno}",
+                    title=complete_str,
+                    message="",
                 )
+                self.buf.put(PythonConsoleMessageV2())
 
         builtins.print = wrapped_print
 
