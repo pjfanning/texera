@@ -21,9 +21,6 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
   @ViewChild("consoleList", { read: ElementRef }) listElement?: ElementRef;
 
-  // display error message:
-  breakpointMessages: ReadonlyArray<JobError> = [];
-
   // display print
   consoleMessages: ReadonlyArray<ConsoleMessage> = [];
 
@@ -42,6 +39,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     ["PRINT", "default"],
     ["COMMAND", "processing"],
     ["DEBUGGER", "warning"],
+    ["ERROR", "error"]
   ]);
 
   constructor(
@@ -91,13 +89,9 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   clearConsole(): void {
     this.consoleMessages = [];
-    this.breakpointMessages = [];
   }
 
   renderConsole(): void {
-    // try to fetch if we have breakpoint info
-    const breakpointTriggerInfo = this.executeWorkflowService.getBreakpointTriggerInfo();
-
     if (this.operatorId) {
       this.workerIds = this.executeWorkflowService.getWorkerIds(this.operatorId);
 

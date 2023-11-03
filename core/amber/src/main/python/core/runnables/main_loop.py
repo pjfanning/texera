@@ -2,6 +2,7 @@ import datetime
 import threading
 import traceback
 import typing
+import os
 from typing import Iterator, Optional, Union
 
 from loguru import logger
@@ -176,6 +177,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         tb = traceback.extract_tb(exc_info[2])
         filename, line_number, func_name, text = tb[-1]
+        base_name = os.path.basename(filename)
+        module_name, _ = os.path.splitext(base_name)
         formatted_exception = traceback.format_exception(*exc_info)
         title: str = formatted_exception[-1].strip()
         message: str = "\n".join(formatted_exception)
@@ -186,7 +189,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     worker_id=self.context.worker_id,
                     timestamp=datetime.datetime.now(),
                     msg_type=ConsoleMessageType.ERROR,
-                    source="{}:{}:{}".format(filename, line_number, func_name),
+                    source="{}:{}:{}".format(module_name, func_name, line_number),
                     title=title,
                     message=message,
                 )

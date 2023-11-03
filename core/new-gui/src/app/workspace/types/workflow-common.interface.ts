@@ -125,8 +125,11 @@ export type ConsoleMessage = Readonly<{
     nanos: number;
     seconds: number;
   };
-  msgType: string;
+  msgType: {
+    name: string;
+  };
   source: string;
+  title: string;
   message: string;
 }>;
 

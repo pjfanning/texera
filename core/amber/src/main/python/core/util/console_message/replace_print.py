@@ -62,7 +62,7 @@ class replace_print(ContextManager):
                     title=complete_str,
                     message="",
                 )
-                self.buf.put(PythonConsoleMessageV2())
+                self.buf.put(PythonConsoleMessageV2(console_message))
 
         builtins.print = wrapped_print
 
