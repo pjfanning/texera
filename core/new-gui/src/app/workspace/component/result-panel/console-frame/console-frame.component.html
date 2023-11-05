@@ -75,7 +75,7 @@
             [nzDisabled]="false"
           >
             <ng-template #customHeader>
-              <div class="console-message">
+              <div class="collapse-message-header">
                 {{ entry.title }}
               </div>
             </ng-template>
@@ -126,7 +126,7 @@
   </nz-list-item>
 </nz-list>
 
-<nz-input-group
+<nz-input-group *ngIf = "consoleInputEnabled"
   nzCompact
   [nzAddOnBefore]="addOnBeforeTemplate">
   <input

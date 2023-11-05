@@ -24,7 +24,7 @@ class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) {
 
   def assertState(state: T): Unit = {
     if (currentState != state) {
-      throw InvalidStateException(s"except state = $state but current state = $currentState")
+      throw InvalidStateException(s"expect state = $state but current state = $currentState")
     }
   }
 

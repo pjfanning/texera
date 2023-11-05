@@ -1,4 +1,12 @@
-<nz-collapse>
+<div *ngIf="operatorId === undefined" class="all-errors-notification">
+  Showing errors for all operators:
+</div>
+<div *ngIf="errorMessages.length === 0">
+  <div style="text-align: center">
+    <h4>No error to display.</h4>
+  </div>
+</div>
+<nz-collapse *ngIf="errorMessages.length > 0">
   <nz-collapse-panel
     *ngFor="let error of errorMessages"
     [nzHeader]="error.message"

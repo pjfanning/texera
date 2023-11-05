@@ -26,8 +26,8 @@ object ErrorUtils {
 
   def mkConsoleMessage(actorId: ActorVirtualIdentity, err: Throwable): ConsoleMessage = {
     val source =
-      "(" + err.getStackTrace.last.getFileName + ":" + err.getStackTrace.last.getLineNumber + ")"
-    val title = err.getMessage
+      "(" + err.getStackTrace.head.getFileName + ":" + err.getStackTrace.head.getLineNumber + ")"
+    val title = err.toString
     val message = err.getStackTrace.mkString("\n")
     ConsoleMessage(actorId.name, Timestamp(Instant.now), ERROR, source, title, message)
   }

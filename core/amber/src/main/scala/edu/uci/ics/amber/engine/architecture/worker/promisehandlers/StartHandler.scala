@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkerAsyncRPCHandlerInitial
 import edu.uci.ics.amber.engine.architecture.worker.WorkerInternalQueue.EndMarker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, RUNNING}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -19,8 +19,7 @@ trait StartHandler {
 
   registerHandler { (msg: StartWorker, sender) =>
     if (operator.isInstanceOf[ISourceOperatorExecutor]) {
-      stateManager.assertState(READY)
-      stateManager.transitTo(RUNNING)
+      stateManager.assertState(READY, PAUSED)
       internalQueue.appendElement(EndMarker(SOURCE_STARTER_ACTOR))
       stateManager.getCurrentState
     } else {

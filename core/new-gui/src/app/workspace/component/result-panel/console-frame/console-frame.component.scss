@@ -26,8 +26,17 @@
       //border: solid darkblue;
     }
 
-    .ant-collapse-header {
-      padding: 0 !important;
+    .collapse-message-header{
+      width: 100%;
+      font-family: monaco, serif;
+      font-size: 11px;
+      font-style: normal;
+      font-variant: normal;
+      font-weight: bold;
+      line-height: 14px;
+      white-space: pre-line;
+      color: red;
+      //border: solid black;
     }
 
     .console-message {

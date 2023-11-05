@@ -65,7 +65,7 @@ case class LogicalPlan(
           JobError(
             COMPILATION_ERROR,
             Timestamp(Instant.now),
-            err.getMessage,
+            err.toString,
             err.getStackTrace.mkString("\n"),
             opId
           )

@@ -16,6 +16,7 @@ import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
 import { ErrorFrameComponent } from "./error-frame/error-frame.component";
+import {WorkflowConsoleService} from "../../service/workflow-console/workflow-console.service";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
@@ -51,7 +52,8 @@ export class ResultPanelComponent implements OnInit {
     private workflowActionService: WorkflowActionService,
     private workflowResultService: WorkflowResultService,
     private workflowVersionService: WorkflowVersionService,
-    private changeDetectorRef: ChangeDetectorRef
+    private changeDetectorRef: ChangeDetectorRef,
+    private workflowConsoleService: WorkflowConsoleService,
   ) {}
 
   ngOnInit(): void {
@@ -177,28 +179,28 @@ export class ResultPanelComponent implements OnInit {
     if (this.currentOperatorId) {
       this.displayResult(this.currentOperatorId);
       const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
-      if (isPythonUdf(operator)) {
-        this.displayConsole(this.currentOperatorId);
-        if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
-          this.displayDebugger(this.currentOperatorId);
-        }
+      if(this.workflowConsoleService.hasConsoleMessages(this.currentOperatorId) || isPythonUdf(operator)){
+        this.displayConsole(this.currentOperatorId, isPythonUdf(operator));
+      }
+      if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {
+        this.displayDebugger(this.currentOperatorId);
       }
     }
   }
 
   hasErrorOrBreakpoint(): boolean {
     const executionState = this.executeWorkflowService.getExecutionState();
-    return [ExecutionState.Failed, ExecutionState.BreakpointTriggered].includes(executionState.state);
+    return [ExecutionState.Paused, ExecutionState.BreakpointTriggered].includes(executionState.state);
   }
 
   clearResultPanel(): void {
     this.frameComponentConfigs.clear();
   }
 
-  displayConsole(operatorId: string) {
+  displayConsole(operatorId: string, consoleInputEnabled: boolean) {
     this.frameComponentConfigs.set("Console", {
       component: ConsoleFrameComponent,
-      componentInputs: { operatorId },
+      componentInputs: { operatorId, consoleInputEnabled },
     });
   }
 

@@ -18,6 +18,7 @@ import { JobError } from "../../../types/workflow-websocket.interface";
 })
 export class ConsoleFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
+  @Input() consoleInputEnabled?: boolean;
   @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
   @ViewChild("consoleList", { read: ElementRef }) listElement?: ElementRef;
 
