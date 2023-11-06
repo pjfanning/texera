@@ -136,7 +136,6 @@ case class OpExecConfig(
   val workerToActorProps = new mutable.HashMap[ActorVirtualIdentity, Props]()
 
   var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
-  var caughtLocalExceptions = new mutable.HashMap[ActorVirtualIdentity, Throwable]()
   var workerToWorkloadInfo = new mutable.HashMap[ActorVirtualIdentity, WorkerWorkloadInfo]()
 
   /*

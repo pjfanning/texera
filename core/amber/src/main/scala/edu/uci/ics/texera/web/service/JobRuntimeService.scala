@@ -8,8 +8,8 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.event.{
+  WorkflowErrorEvent,
   TexeraWebSocketEvent,
-  WorkflowExecutionErrorEvent,
   WorkflowStateEvent
 }
 import edu.uci.ics.texera.web.model.websocket.request.{
@@ -46,8 +46,8 @@ class JobRuntimeService(
         }
       }
       // Check if new error occurred
-      if (newState.error != oldState.error && newState.error != null) {
-        outputEvts.append(WorkflowExecutionErrorEvent(newState.error))
+      if (newState.errors != oldState.errors) {
+        outputEvts.append(WorkflowErrorEvent(newState.errors))
       }
       outputEvts
     })

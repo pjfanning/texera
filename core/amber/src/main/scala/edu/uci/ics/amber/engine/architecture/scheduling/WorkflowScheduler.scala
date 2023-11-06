@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkerAssignmentUpdate,
   WorkflowStatusUpdate
 }
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
@@ -170,16 +171,20 @@ class WorkflowScheduler(
             val outputMappingList = pythonUDFOpExecConfig.outputToOrdinalMapping
               .map(kv => LinkOrdinal(kv._1, kv._2))
               .toList
-            asyncRPCClient.send(
-              InitializeOperatorLogic(
-                pythonUDFOpExec.getCode,
-                pythonUDFOpExec.isInstanceOf[ISourceOperatorExecutor],
-                inputMappingList,
-                outputMappingList,
-                pythonUDFOpExec.getOutputSchema
-              ),
-              workerID
-            )
+            asyncRPCClient
+              .send(
+                InitializeOperatorLogic(
+                  pythonUDFOpExec.getCode,
+                  pythonUDFOpExec.isInstanceOf[ISourceOperatorExecutor],
+                  inputMappingList,
+                  outputMappingList,
+                  pythonUDFOpExec.getOutputSchema
+                ),
+                workerID
+              )
+              .onFailure { error =>
+                asyncRPCClient.sendToClient(FatalError(error, Some(workerID)))
+              }
           })
           .toSeq
       )

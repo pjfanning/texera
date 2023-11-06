@@ -1,9 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import com.softwaremill.macwire.wire
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ConsoleMessageHandler.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LocalOperatorExceptionHandler.LocalOperatorException
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
@@ -37,7 +37,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity
 }
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
-import edu.uci.ics.amber.error.ErrorUtils.safely
+import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
 
 import scala.collection.mutable
 
@@ -328,7 +328,7 @@ class DataProcessor(
 
   private[this] def handleOperatorException(e: Throwable): Unit = {
     asyncRPCClient.send(
-      LocalOperatorException(getCurrentInputTuple, e),
+      ConsoleMessageTriggered(mkConsoleMessage(actorId, e)),
       CONTROLLER
     )
     logger.warn(e.getLocalizedMessage + "\n" + e.getStackTrace.mkString("\n"))
