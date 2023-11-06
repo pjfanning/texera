@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import com.typesafe.scalalogging.Logger
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerInfo
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
   COMPLETED,
@@ -11,19 +11,11 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   LinkIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
+  OperatorIdentity
 }
 import edu.uci.ics.amber.engine.e2e.TestOperators
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{
-  LogicalPlan,
-  OperatorLink,
-  OperatorPort,
-  WorkflowCompiler
-}
+import edu.uci.ics.amber.engine.e2e.Utils.getWorkflow
+import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.slf4j.LoggerFactory
@@ -32,24 +24,11 @@ import scala.collection.immutable.ListMap
 
 class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
 
-  def buildWorkflow(
-      operators: List[OperatorDescriptor],
-      links: List[OperatorLink]
-  ): Workflow = {
-    val context = new WorkflowContext
-    context.jobId = "workflow-test"
-
-    val texeraWorkflowCompiler = new WorkflowCompiler(
-      LogicalPlan(context, operators, links, List())
-    )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), new OpResultStorage())
-  }
-
   "Scheduler" should "correctly schedule regions in headerlessCsv->keyword->sink workflow" in {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val workflow = getWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         OperatorLink(
@@ -130,7 +109,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     val hashJoin1 = TestOperators.joinOpDesc("column-1", "Region")
     val hashJoin2 = TestOperators.joinOpDesc("column-2", "Country")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val workflow = getWorkflow(
       List(
         buildCsv,
         probeCsv,
