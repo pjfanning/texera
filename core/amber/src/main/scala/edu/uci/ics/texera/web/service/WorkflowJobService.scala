@@ -15,7 +15,6 @@ import edu.uci.ics.texera.web.workflowruntimestate.JobError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
 import edu.uci.ics.texera.workflow.operators.udf.python.{
@@ -141,12 +140,7 @@ class WorkflowJobService(
   private[this] def createWorkflowCompiler(
       logicalPlan: LogicalPlan
   ): WorkflowCompiler = {
-    val compiler = new WorkflowCompiler(logicalPlan)
-    val violations = compiler.validate
-    if (violations.nonEmpty) {
-      throw new ConstraintViolationException(violations)
-    }
-    compiler
+    new WorkflowCompiler(logicalPlan)
   }
 
   override def unsubscribeAll(): Unit = {

@@ -6,7 +6,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.service.{ExecutionsMetadataPersistService, WorkflowCacheChecker}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.ConstraintViolation
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
 
@@ -18,17 +17,9 @@ object WorkflowCompiler {
     outLinks.isEmpty
   }
 
-  class ConstraintViolationException(val violations: Map[String, Set[ConstraintViolation]])
-      extends RuntimeException
-
 }
 
 class WorkflowCompiler(val logicalPlan: LogicalPlan) {
-
-  def validate: Map[String, Set[ConstraintViolation]] =
-    this.logicalPlan.operatorMap
-      .map(o => (o._1, o._2.validate().toSet))
-      .filter(o => o._2.nonEmpty)
 
   private def assignSinkStorage(
       logicalPlan: LogicalPlan,
