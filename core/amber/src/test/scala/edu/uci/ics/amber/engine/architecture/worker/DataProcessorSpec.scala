@@ -5,15 +5,16 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushN
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{AdaptiveBatchingMonitor, OutputManager}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
+import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   DataFrame,
   EndOfUpstream,
   WorkflowFIFOMessage
 }
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
@@ -22,7 +23,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
@@ -36,10 +36,12 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val linkID: LinkIdentity =
     LinkIdentity(
       LayerIdentity("testWorkflow", "testUpstream", "main"),
-      LayerIdentity("testWorkflow", "testOperator", "main")
+      0,
+      LayerIdentity("testWorkflow", "testOperator", "main"),
+      0
     )
   private val opExecConfig =
-    OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0)
+    OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
   private val adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
   private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray

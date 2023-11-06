@@ -5,36 +5,15 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPL
 import edu.uci.ics.amber.engine.common.{Constants, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
+  OperatorIdentity
 }
 import edu.uci.ics.amber.engine.e2e.TestOperators
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
-import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{
-  LogicalPlan,
-  OperatorLink,
-  OperatorPort,
-  WorkflowCompiler
-}
+import edu.uci.ics.amber.engine.e2e.Utils.getWorkflow
+import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
 class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
-
-  def buildWorkflow(
-      operators: List[OperatorDescriptor],
-      links: List[OperatorLink]
-  ): Workflow = {
-    val context = new WorkflowContext
-    context.jobId = "workflow_test"
-    Constants.currentWorkerNum = 1
-    val texeraWorkflowCompiler = new WorkflowCompiler(
-      LogicalPlan(context, operators, links, List())
-    )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow_test"), new OpResultStorage())
-  }
 
   def setOperatorCompleted(
       workflow: Workflow,
@@ -52,7 +31,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val workflow = getWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         OperatorLink(
@@ -90,7 +69,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     val hashJoin1 = TestOperators.joinOpDesc("column-1", "Region")
     val hashJoin2 = TestOperators.joinOpDesc("column-2", "Country")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = buildWorkflow(
+    val workflow = getWorkflow(
       List(
         buildCsv,
         probeCsv,
@@ -149,12 +128,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
           )
           .last
           .id,
+        0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
             new OperatorIdentity(workflow.workflowId.id, hashJoin1.operatorID)
           )
           .head
-          .id
+          .id,
+        0
       )
     )
     assert(nextRegions.isEmpty)
@@ -168,12 +149,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
           )
           .last
           .id,
+        0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
             new OperatorIdentity(workflow.workflowId.id, hashJoin2.operatorID)
           )
           .head
-          .id
+          .id,
+        0
       )
     )
     assert(nextRegions.nonEmpty)

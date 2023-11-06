@@ -14,14 +14,13 @@ class ControllerAsyncRPCHandlerInitializer(
     with WorkerExecutionCompletedHandler
     with WorkerExecutionStartedHandler
     with LocalBreakpointTriggeredHandler
-    with LocalOperatorExceptionHandler
     with PauseHandler
     with QueryWorkerStatisticsHandler
     with ResumeHandler
     with StartWorkflowHandler
     with LinkCompletedHandler
     with FatalErrorHandler
-    with PythonConsoleMessageHandler
+    with ConsoleMessageHandler
     with RetryWorkflowHandler
     with ModifyLogicHandler
     with EvaluatePythonExpressionHandler

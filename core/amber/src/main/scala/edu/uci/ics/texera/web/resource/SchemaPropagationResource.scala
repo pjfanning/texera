@@ -32,7 +32,7 @@ class SchemaPropagationResource {
       context.userId = Option(sessionUser.getUser.getUid)
       context.wId = wid
 
-      val texeraWorkflowCompiler = new WorkflowCompiler(LogicalPlan(workflow), context)
+      val texeraWorkflowCompiler = new WorkflowCompiler(LogicalPlan(workflow, context))
 
       // ignore errors during propagation.
       val (schemaPropagationResult, _) =

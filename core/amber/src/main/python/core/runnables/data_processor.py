@@ -51,7 +51,10 @@ class DataProcessor(Runnable, Stoppable):
                     if isinstance(tuple_, Tuple)
                     else operator.on_finish(port)
                 )
-                with replace_print(self._context.console_message_manager.print_buf):
+                with replace_print(
+                    self._context.worker_id,
+                    self._context.console_message_manager.print_buf,
+                ):
                     for output in output_iterator:
                         # output could be a None, a TupleLike, or a TableLike.
                         for output_tuple in all_output_to_tuple(output):

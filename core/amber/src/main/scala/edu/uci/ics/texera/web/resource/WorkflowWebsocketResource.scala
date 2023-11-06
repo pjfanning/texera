@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.resource
 
+import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.clustering.ClusterListener
 import edu.uci.ics.texera.Utils.objectMapper
@@ -8,9 +9,11 @@ import edu.uci.ics.texera.web.model.websocket.event.{WorkflowErrorEvent, Workflo
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
+import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler.ConstraintViolationException
 
+import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
 import javax.websocket._
 import javax.websocket.server.ServerEndpoint
@@ -73,19 +76,30 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
         case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
           WorkflowCacheChecker.handleCacheStatusUpdateRequest(session, cacheStatusUpdateRequest)
-        case other =>
+        case workflowExecuteRequest: WorkflowExecuteRequest =>
           workflowStateOpt match {
-            case Some(workflow) => workflow.wsInput.onNext(other, uidOpt)
+            case Some(workflow) => workflow.initJobService(workflowExecuteRequest, uidOpt)
             case None           => throw new IllegalStateException("workflow is not initialized")
+          }
+        case other =>
+          workflowStateOpt.map(_.jobService.getValue) match {
+            case Some(value) => value.wsInput.onNext(other, uidOpt)
+            case None        => throw new IllegalStateException("workflow job is not initialized")
           }
       }
     } catch {
-      case x: ConstraintViolationException =>
-        sessionState.send(WorkflowErrorEvent(operatorErrors = x.violations))
       case err: Exception =>
+        sessionState.send(WorkflowStateEvent("Failed"))
         sessionState.send(
-          WorkflowErrorEvent(generalErrors =
-            Map("exception" -> (err.getMessage + "\n" + err.getStackTrace.mkString("\n")))
+          WorkflowErrorEvent(
+            Seq(
+              WorkflowFatalError(
+                FAILURE,
+                Timestamp(Instant.now),
+                err.toString,
+                err.getStackTrace.mkString("\n")
+              )
+            )
           )
         )
         throw err
