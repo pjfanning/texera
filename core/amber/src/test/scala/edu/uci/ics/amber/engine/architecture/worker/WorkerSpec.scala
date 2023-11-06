@@ -102,6 +102,7 @@ class WorkerSpec
           new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
             override val outputManager: OutputManager = mockOutputManager
           }
+        this.dp.initAdaptiveBatching(adaptiveBatchingMonitor)
         override val dpThread: DPThread = new DPThread(actorId, dp, inputQueue)
       }
     )
