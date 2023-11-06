@@ -217,8 +217,8 @@ libraryDependencies += "com.univocity" % "univocity-parsers" % "2.9.1"
 // https://mvnrepository.com/artifact/com.konghq/unirest-java
 libraryDependencies += "com.konghq" % "unirest-java" % "3.11.11"
 
-// For serializable-lbmq native tests
-libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % Test
+// https://mvnrepository.com/artifact/com.github.marianobarrios/lbmq
+libraryDependencies += "com.github.marianobarrios" % "lbmq" % "0.6.0"
 
 // https://mvnrepository.com/artifact/io.github.redouane59.twitter/twittered
 libraryDependencies += "io.github.redouane59.twitter" % "twittered" % "2.16"
