@@ -56,8 +56,10 @@ case class LogicalPlan(
     opsToReuseCache: List[String] = List()
 ) {
 
+  // initialize the logical plan with the current context.
+  operators.foreach(_.setContext(context))
+
   def initializeLogicalPlan(jobStateStore: JobStateStore): Unit = {
-    operators.foreach(_.setContext(context))
     val (schemaMap, errorList) = propagateWorkflowSchema()
     if (errorList.nonEmpty) {
       val jobErrors = errorList.map {

@@ -58,7 +58,6 @@ class DataProcessingSpec
     val texeraWorkflowCompiler = new WorkflowCompiler(
       LogicalPlan(context, operators, links, List())
     )
-    texeraWorkflowCompiler.logicalPlan.initializeLogicalPlan(new JobStateStore())
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 
