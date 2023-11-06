@@ -3,7 +3,7 @@ import { ExecuteWorkflowService } from "../../../service/execute-workflow/execut
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import { JobError } from "../../../types/workflow-websocket.interface";
+import { WorkflowFatalError } from "../../../types/workflow-websocket.interface";
 import { render } from "sass";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 
@@ -16,7 +16,7 @@ import { WorkflowActionService } from "../../../service/workflow-graph/model/wor
 export class ErrorFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   // display error message:
-  errorMessages: ReadonlyArray<JobError> = [];
+  errorMessages: ReadonlyArray<WorkflowFatalError> = [];
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,

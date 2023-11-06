@@ -40,7 +40,7 @@ export interface RegisterWIdEvent
     message: string;
   }> {}
 
-export interface JobError
+export interface WorkflowFatalError
   extends Readonly<{
     message: string;
     details: string;
@@ -57,7 +57,7 @@ export interface JobError
 
 export interface WorkflowErrorEvent
   extends Readonly<{
-    errors: ReadonlyArray<JobError>;
+    errors: ReadonlyArray<WorkflowFatalError>;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{

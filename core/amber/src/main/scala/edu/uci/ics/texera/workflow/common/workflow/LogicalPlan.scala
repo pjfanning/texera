@@ -7,7 +7,7 @@ import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR
-import edu.uci.ics.texera.web.workflowruntimestate.JobError
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
@@ -62,7 +62,7 @@ case class LogicalPlan(
     if (errorList.nonEmpty) {
       val jobErrors = errorList.map {
         case (opId, err) =>
-          JobError(
+          WorkflowFatalError(
             COMPILATION_ERROR,
             Timestamp(Instant.now),
             err.toString,
@@ -207,7 +207,8 @@ case class LogicalPlan(
           mutable.MutableList
             .fill(operatorMap(op.operator).operatorInfo.inputPorts.size)(Option.empty)
         )
-    val errorsDuringPropagation = new ArrayBuffer[(String, Throwable)]()
+    val errorsDuringPropagation =
+      new ArrayBuffer[(String, Throwable)]() // operatorID to a throwable.
     // propagate output schema following topological order
     val topologicalOrderIterator = jgraphtDag.iterator()
     topologicalOrderIterator.forEachRemaining(opID => {

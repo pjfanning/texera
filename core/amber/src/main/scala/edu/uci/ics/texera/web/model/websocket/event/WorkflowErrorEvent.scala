@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.web.model.websocket.event
 
-import edu.uci.ics.texera.web.workflowruntimestate.JobError
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 
 case class WorkflowErrorEvent(
-    errors: Seq[JobError]
+    errors: Seq[WorkflowFatalError]
 ) extends TexeraWebSocketEvent

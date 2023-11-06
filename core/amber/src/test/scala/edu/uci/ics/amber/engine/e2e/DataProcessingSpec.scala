@@ -17,11 +17,12 @@ import edu.uci.ics.texera.workflow.common.workflow._
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregationFunction
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import java.sql.PreparedStatement
 
+import java.sql.PreparedStatement
 import com.twitter.util.{Await, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
 import scala.concurrent.duration._
@@ -57,6 +58,7 @@ class DataProcessingSpec
     val texeraWorkflowCompiler = new WorkflowCompiler(
       LogicalPlan(context, operators, links, List())
     )
+    texeraWorkflowCompiler.logicalPlan.initializeLogicalPlan(new JobStateStore())
     texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
   }
 

@@ -13,7 +13,11 @@ import {
 import { environment } from "../../../../environments/environment";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
 import { Breakpoint, BreakpointRequest, BreakpointTriggerInfo } from "../../types/workflow-common.interface";
-import { JobError, OperatorCurrentTuples, TexeraWebsocketEvent } from "../../types/workflow-websocket.interface";
+import {
+  WorkflowFatalError,
+  OperatorCurrentTuples,
+  TexeraWebsocketEvent,
+} from "../../types/workflow-websocket.interface";
 import { isEqual } from "lodash-es";
 import { PAGINATION_INFO_STORAGE_KEY, ResultPaginationInfo } from "../../types/result-table.interface";
 import { sessionGetObject, sessionSetObject } from "../../../common/util/storage";
@@ -156,7 +160,7 @@ export class ExecuteWorkflowService {
     return this.currentState;
   }
 
-  public getErrorMessages(): Readonly<JobError[]> {
+  public getErrorMessages(): ReadonlyArray<WorkflowFatalError> {
     if (this.currentState?.state === ExecutionState.Failed) {
       return this.currentState.errorMessages;
     }
@@ -273,7 +277,7 @@ export class ExecuteWorkflowService {
     this.currentState.breakpoint.report.forEach(fault => {
       this.workflowWebsocketService.send("SkipTupleRequest", {
         faultedTuple: fault.faultedTuple,
-        actorPath: fault.actorPath,
+        actorPath: fault.workerName,
       });
     });
   }
@@ -285,7 +289,9 @@ export class ExecuteWorkflowService {
     if (this.currentState.state !== ExecutionState.BreakpointTriggered) {
       throw new Error("cannot retry the current tuple, the current execution state is " + this.currentState.state);
     }
-    this.workflowWebsocketService.send("RetryRequest", {});
+    this.workflowWebsocketService.send("RetryRequest", {
+      workers: this.currentState.breakpoint.report.map(fault => fault.workerName),
+    });
   }
 
   public modifyOperatorLogic(operatorID: string): void {

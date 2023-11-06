@@ -21,7 +21,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
-import edu.uci.ics.texera.web.workflowruntimestate.{JobError, OperatorWorkerMapping}
+import edu.uci.ics.texera.web.workflowruntimestate.{WorkflowFatalError, OperatorWorkerMapping}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
 
 import java.time.Instant
@@ -172,7 +172,7 @@ class JobStatsService(
           )
           stateStore.jobMetadataStore.updateState { jobInfo =>
             updateWorkflowState(FAILED, jobInfo).addErrors(
-              JobError(
+              WorkflowFatalError(
                 FAILURE,
                 Timestamp(Instant.now),
                 evt.e.getMessage,

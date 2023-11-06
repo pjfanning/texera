@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
 import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
-import edu.uci.ics.texera.web.workflowruntimestate.JobError
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
 
 import java.time.Instant
@@ -93,7 +93,7 @@ class WorkflowWebsocketResource extends LazyLogging {
         sessionState.send(
           WorkflowErrorEvent(
             Seq(
-              JobError(
+              WorkflowFatalError(
                 FAILURE,
                 Timestamp(Instant.now),
                 err.toString,

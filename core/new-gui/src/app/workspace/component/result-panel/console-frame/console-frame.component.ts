@@ -8,7 +8,6 @@ import { CdkVirtualScrollViewport } from "@angular/cdk/scrolling";
 import { presetPalettes } from "@ant-design/colors";
 import { isDefined } from "../../../../common/util/predicate";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
-import { JobError } from "../../../types/workflow-websocket.interface";
 
 @UntilDestroy()
 @Component({

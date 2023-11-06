@@ -63,7 +63,7 @@ class JobBreakpointService(
           }
           stateStore.breakpointStore.updateState { jobInfo =>
             val breakpointEvts = evt.faultedTupleMap.map { elem =>
-              val actorPath = elem._1.toString
+              val workerName = elem._1.name
               val faultedTuple = elem._2
               val tupleList =
                 if (faultedTuple.tuple != null) {
@@ -72,7 +72,7 @@ class JobBreakpointService(
                   List.empty
                 }
               BreakpointFault(
-                actorPath,
+                workerName,
                 Some(BreakpointTuple(faultedTuple.id, faultedTuple.isInput, tupleList))
               )
             }.toArray

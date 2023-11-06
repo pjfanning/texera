@@ -107,7 +107,7 @@ export type BreakpointFaultedTuple = Readonly<{
 }>;
 
 export type BreakpointFault = Readonly<{
-  actorPath: string;
+  workerName: string;
   faultedTuple: BreakpointFaultedTuple;
 }>;
 

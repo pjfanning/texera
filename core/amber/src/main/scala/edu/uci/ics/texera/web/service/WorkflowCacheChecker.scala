@@ -26,6 +26,10 @@ object WorkflowCacheChecker {
     if (workflowStateOpt.isEmpty) {
       return
     }
+    if (workflowStateOpt.get.jobService.getValue != null) {
+      // disable check if the workflow is running.
+      return
+    }
     val oldPlan = workflowStateOpt.get.lastCompletedLogicalPlan
     if (oldPlan == null) {
       return

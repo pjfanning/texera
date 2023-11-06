@@ -65,6 +65,7 @@ class JobReconfigurationService(
   // they are not actually performed until the workflow is resumed
   def modifyOperatorLogic(modifyLogicRequest: ModifyLogicRequest): TexeraWebSocketEvent = {
     val newOp = modifyLogicRequest.operator
+    newOp.setContext(workflowCompiler.logicalPlan.context)
     val opId = newOp.operatorID
     val currentOp = workflowCompiler.logicalPlan.operatorMap(opId)
     val reconfiguredPhysicalOp =

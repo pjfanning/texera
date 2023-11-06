@@ -11,7 +11,7 @@ import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.{COMPILATION_ERROR, FAILURE}
-import edu.uci.ics.texera.web.workflowruntimestate.JobError
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -38,7 +38,12 @@ class WorkflowJobService(
       stateStore.statsStore.updateState(stats => stats.withEndTimeStamp(System.currentTimeMillis()))
       stateStore.jobMetadataStore.updateState { jobInfo =>
         updateWorkflowState(FAILED, jobInfo).addErrors(
-          JobError(FAILURE, Timestamp(Instant.now), t.getMessage, t.getStackTrace.mkString("\n"))
+          WorkflowFatalError(
+            FAILURE,
+            Timestamp(Instant.now),
+            t.getMessage,
+            t.getStackTrace.mkString("\n")
+          )
         )
       }
     }
@@ -67,7 +72,7 @@ class WorkflowJobService(
         stateStore.jobMetadataStore.updateState { metadataStore =>
           updateWorkflowState(FAILED, metadataStore)
             .addErrors(
-              JobError(
+              WorkflowFatalError(
                 COMPILATION_ERROR,
                 Timestamp(Instant.now),
                 e.getMessage,
