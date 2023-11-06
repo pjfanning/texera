@@ -35,7 +35,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 class FlowControl {
 
-  private var credit = Constants.unprocessedBatchesSizeLimitPerSender
+  private var credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   private val dataMessagesAwaitingCredits = new mutable.Queue[WorkflowFIFOMessage]()
 
   def isOverloaded: Boolean =

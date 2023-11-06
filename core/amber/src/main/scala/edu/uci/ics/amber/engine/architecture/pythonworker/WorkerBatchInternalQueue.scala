@@ -2,14 +2,8 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  ControlPayload,
-  ControlPayloadV2,
-  DataFrame,
-  DataPayload
-}
-import edu.uci.ics.amber.engine.common.lbmq.LinkedBlockingMultiQueue
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, ControlPayloadV2, DataFrame, DataPayload}
+import lbmq.LinkedBlockingMultiQueue
 
 import scala.collection.mutable
 object WorkerBatchInternalQueue {
@@ -107,7 +101,7 @@ trait WorkerBatchInternalQueue {
   def getSenderCredits(sender: ChannelID): Int = {
     val inBytes = inQueueSizeMapping.getOrElseUpdate(sender, 0L)
     val outBytes = outQueueSizeMapping.getOrElseUpdate(sender, 0L)
-    (Constants.unprocessedBatchesSizeLimitPerSender - (inBytes - outBytes)).toInt
+    (Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - (inBytes - outBytes)).toInt
   }
 
 }

@@ -25,7 +25,7 @@ object WorkflowActor {
     */
   final case class NetworkAck(
       messageId: Long,
-      credits: Int = Constants.unprocessedBatchesSizeLimitPerSender
+      credits: Int = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   )
 
   final case class MessageBecomesDeadLetter(message: WorkflowFIFOMessage)
