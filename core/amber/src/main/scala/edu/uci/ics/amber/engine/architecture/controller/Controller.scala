@@ -90,5 +90,5 @@ class Controller(
 
   /** flow-control */
   override def getSenderCredits(channelEndpointID: ChannelID): Int =
-    Constants.unprocessedBatchesSizeLimitPerSender
+    Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
 }

@@ -12,7 +12,7 @@ class AmberFIFOChannel() {
   private var current = 0L
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
-  private var credit: Long = Constants.unprocessedBatchesSizeLimitPerSender
+  private var credit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber

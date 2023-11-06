@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
-import akka.actor.Address
+import akka.actor.{ActorRef, Address}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 sealed trait RecoveryPayload extends Serializable {}
 
