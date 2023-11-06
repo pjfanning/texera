@@ -236,7 +236,7 @@ class WorkflowScheduler(
 
   private def activateAllLinks(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions
+      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
     Future.collect(
       // activate all links
       workflow.physicalPlan.linkStrategies.values
