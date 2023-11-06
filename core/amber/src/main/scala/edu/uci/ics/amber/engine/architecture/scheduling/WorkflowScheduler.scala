@@ -164,7 +164,7 @@ class WorkflowScheduler(
       }
 
       frontier = (region
-        .getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions)
+        .getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1))
         .filter(opId => {
           !builtOpsInRegion.contains(opId) && workflow.physicalPlan
             .getUpstream(opId)
@@ -190,7 +190,7 @@ class WorkflowScheduler(
   }
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions
+      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
     val uninitializedPythonOperators = executionState.getPythonOperators(
       allOperatorsInRegion.filter(opId => !initializedPythonOperators.contains(opId))
     )
@@ -256,7 +256,7 @@ class WorkflowScheduler(
 
   private def openAllOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions
+      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
     val allNotOpenedOperators =
       allOperatorsInRegion.filter(opId => !openedOperators.contains(opId))
     Future
@@ -273,7 +273,7 @@ class WorkflowScheduler(
 
   private def startRegion(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions
+      region.getOperators() ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
 
     allOperatorsInRegion
       .filter(opId =>
