@@ -5,15 +5,16 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushN
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{AdaptiveBatchingMonitor, OutputManager}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
+import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   DataFrame,
   EndOfUpstream,
   WorkflowFIFOMessage
 }
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
@@ -22,7 +23,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterEach
@@ -43,18 +43,23 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val opExecConfig =
     OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
-  private val dp: DataProcessor =
-    new DataProcessor(identifier, 0, operator, opExecConfig, outputHandler) {
-      override val outputManager: OutputManager = mock[OutputManager]
-      override val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
-    }
   private val adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
-  dp.initAdaptiveBatching(adaptiveBatchingMonitor)
   private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
+
+  def mkDataProcessor: DataProcessor = {
+    val dp: DataProcessor =
+      new DataProcessor(identifier, 0, operator, opExecConfig, outputHandler) {
+        override val outputManager: OutputManager = mock[OutputManager]
+        override val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
+      }
+    dp.initAdaptiveBatching(adaptiveBatchingMonitor)
+    dp
+  }
 
   case class DummyControl() extends ControlCommand[Unit]
 
   "data processor" should "process data messages" in {
+    val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).once()
     (operator.open _).expects().once()
@@ -88,6 +93,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   }
 
   "data processor" should "process control messages during data processing" in {
+    val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).anyNumberOfTimes()
     (operator.open _).expects().once()

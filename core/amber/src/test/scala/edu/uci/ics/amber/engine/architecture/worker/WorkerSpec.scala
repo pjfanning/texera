@@ -65,7 +65,7 @@ class WorkerSpec
   private val layerId1 =
     LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
   private val layerId2 =
-    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
+    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "2nd-layer")
   private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
   private val opExecConfig = OpExecConfig
     .oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
@@ -91,20 +91,24 @@ class WorkerSpec
     }
   }
 
+  def mkWorker: ActorRef = {
+    TestActorRef(
+      new WorkflowWorker(
+        identifier1,
+        workerIndex,
+        opExecConfig
+      ) {
+        this.dp =
+          new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
+            override val outputManager: OutputManager = mockOutputManager
+          }
+        override val dpThread: DPThread = new DPThread(actorId, dp, inputQueue)
+      }
+    )
+  }
+
   "Worker" should "process AddPartitioning message correctly" in {
-    val worker =
-      TestActorRef(
-        new WorkflowWorker(
-          identifier1,
-          workerIndex,
-          opExecConfig
-        ) {
-          this.dp =
-            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
-              override val outputManager: OutputManager = mockOutputManager
-            }
-        }
-      )
+    val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
     (mockHandler.apply _).expects(*).once()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
@@ -115,19 +119,7 @@ class WorkerSpec
   }
 
   "Worker" should "process data messages correctly" in {
-    val worker =
-      TestActorRef(
-        new WorkflowWorker(
-          identifier1,
-          workerIndex,
-          opExecConfig
-        ) {
-          this.dp =
-            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
-              override val outputManager: OutputManager = mockOutputManager
-            }
-        }
-      )
+    val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
     (mockOutputManager.passTupleToDownstream _).expects(ITuple(1), mockLink).once()
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
@@ -151,19 +143,7 @@ class WorkerSpec
     ignoreMsg {
       case a => println(a); true
     }
-    val worker =
-      TestActorRef(
-        new WorkflowWorker(
-          identifier1,
-          workerIndex,
-          opExecConfig
-        ) {
-          this.dp =
-            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
-              override val outputManager: OutputManager = mockOutputManager
-            }
-        }
-      )
+    val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
     def mkBatch(start: Int, end: Int): Array[ITuple] = {
       (start until end).map { x =>
@@ -200,19 +180,7 @@ class WorkerSpec
     ignoreMsg {
       case a => println(a); true
     }
-    val worker =
-      TestActorRef(
-        new WorkflowWorker(
-          identifier1,
-          workerIndex,
-          opExecConfig
-        ) {
-          this.dp =
-            new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
-              override val outputManager: OutputManager = mockOutputManager
-            }
-        }
-      )
+    val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
     (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
