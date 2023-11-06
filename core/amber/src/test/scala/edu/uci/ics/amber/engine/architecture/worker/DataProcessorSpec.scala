@@ -36,10 +36,12 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val linkID: LinkIdentity =
     LinkIdentity(
       LayerIdentity("testWorkflow", "testUpstream", "main"),
-      LayerIdentity("testWorkflow", "testOperator", "main")
+      0,
+      LayerIdentity("testWorkflow", "testOperator", "main"),
+      0
     )
   private val opExecConfig =
-    OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0)
+    OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
   private val dp: DataProcessor =
     new DataProcessor(identifier, 0, operator, opExecConfig, outputHandler) {

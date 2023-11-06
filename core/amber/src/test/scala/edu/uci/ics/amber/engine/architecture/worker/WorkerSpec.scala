@@ -66,7 +66,7 @@ class WorkerSpec
     LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
   private val layerId2 =
     LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
-  private val mockLink = LinkIdentity(layerId1, layerId2)
+  private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
   private val opExecConfig = OpExecConfig
     .oneToOneLayer(operatorIdentity, _ => mockOpExecutor)
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))

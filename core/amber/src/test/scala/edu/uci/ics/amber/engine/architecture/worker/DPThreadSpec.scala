@@ -8,7 +8,12 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandle
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -27,7 +32,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
   private val layerId2 =
     LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
-  private val mockLink = LinkIdentity(layerId1, layerId2)
+  private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
   private val opExecConfig = OpExecConfig
     .oneToOneLayer(operatorIdentity, _ => operator)
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
