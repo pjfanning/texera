@@ -67,22 +67,25 @@
       <div
         nz-col
         nzSpan="15">
-        <nz-collapse *ngIf = "entry.message.length !== 0" nzGhost>
+        <nz-collapse
+          *ngIf="entry.message.length !== 0"
+          nzGhost>
           <nz-collapse-panel
             [nzShowArrow]="false"
-            [nzHeader]=customHeader
+            [nzHeader]="customHeader"
             [nzActive]="false"
-            [nzDisabled]="false"
-          >
+            [nzDisabled]="false">
             <ng-template #customHeader>
-              <div class="collapse-message-header">
-                {{ entry.title }}
-              </div>
+              <div class="collapse-message-header">{{ entry.title }}</div>
             </ng-template>
             <div class="console-message">{{entry.message}}</div>
           </nz-collapse-panel>
         </nz-collapse>
-        <div *ngIf = "entry.message.length === 0" class="console-message">{{ entry.title }}</div>
+        <div
+          *ngIf="entry.message.length === 0"
+          class="console-message">
+          {{ entry.title }}
+        </div>
       </div>
       <div
         nz-col
@@ -126,7 +129,8 @@
   </nz-list-item>
 </nz-list>
 
-<nz-input-group *ngIf = "consoleInputEnabled"
+<nz-input-group
+  *ngIf="consoleInputEnabled"
   nzCompact
   [nzAddOnBefore]="addOnBeforeTemplate">
   <input

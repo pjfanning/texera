@@ -40,7 +40,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     ["PRINT", "default"],
     ["COMMAND", "processing"],
     ["DEBUGGER", "warning"],
-    ["ERROR", "error"]
+    ["ERROR", "error"],
   ]);
 
   constructor(

@@ -8,7 +8,6 @@ package edu.uci.ics.texera.web.workflowruntimestate
 sealed abstract class ErrorType(val value: _root_.scala.Int) extends _root_.scalapb.GeneratedEnum {
   type EnumType = ErrorType
   def isCompilationError: _root_.scala.Boolean = false
-  def isRuntimeError: _root_.scala.Boolean = false
   def isFailure: _root_.scala.Boolean = false
   def companion: _root_.scalapb.GeneratedEnumCompanion[ErrorType] = edu.uci.ics.texera.web.workflowruntimestate.ErrorType
   final def asRecognized: _root_.scala.Option[edu.uci.ics.texera.web.workflowruntimestate.ErrorType.Recognized] = if (isUnrecognized) _root_.scala.None else _root_.scala.Some(this.asInstanceOf[edu.uci.ics.texera.web.workflowruntimestate.ErrorType.Recognized])
@@ -25,15 +24,8 @@ object ErrorType extends _root_.scalapb.GeneratedEnumCompanion[ErrorType] {
   }
   
   @SerialVersionUID(0L)
-  case object RUNTIME_ERROR extends ErrorType(1) with ErrorType.Recognized {
+  case object FAILURE extends ErrorType(1) with ErrorType.Recognized {
     val index = 1
-    val name = "RUNTIME_ERROR"
-    override def isRuntimeError: _root_.scala.Boolean = true
-  }
-  
-  @SerialVersionUID(0L)
-  case object FAILURE extends ErrorType(2) with ErrorType.Recognized {
-    val index = 2
     val name = "FAILURE"
     override def isFailure: _root_.scala.Boolean = true
   }
@@ -41,11 +33,10 @@ object ErrorType extends _root_.scalapb.GeneratedEnumCompanion[ErrorType] {
   @SerialVersionUID(0L)
   final case class Unrecognized(unrecognizedValue: _root_.scala.Int) extends ErrorType(unrecognizedValue) with _root_.scalapb.UnrecognizedEnum
   
-  lazy val values = scala.collection.immutable.Seq(COMPILATION_ERROR, RUNTIME_ERROR, FAILURE)
+  lazy val values = scala.collection.immutable.Seq(COMPILATION_ERROR, FAILURE)
   def fromValue(__value: _root_.scala.Int): ErrorType = __value match {
     case 0 => COMPILATION_ERROR
-    case 1 => RUNTIME_ERROR
-    case 2 => FAILURE
+    case 1 => FAILURE
     case __other => Unrecognized(__other)
   }
   def javaDescriptor: _root_.com.google.protobuf.Descriptors.EnumDescriptor = WorkflowruntimestateProto.javaDescriptor.getEnumTypes().get(0)

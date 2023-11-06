@@ -16,7 +16,7 @@ import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow
 import { environment } from "../../../../environments/environment";
 import { WorkflowVersionService } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
 import { ErrorFrameComponent } from "./error-frame/error-frame.component";
-import {WorkflowConsoleService} from "../../service/workflow-console/workflow-console.service";
+import { WorkflowConsoleService } from "../../service/workflow-console/workflow-console.service";
 
 export type ResultFrameComponent =
   | ResultTableFrameComponent
@@ -53,7 +53,7 @@ export class ResultPanelComponent implements OnInit {
     private workflowResultService: WorkflowResultService,
     private workflowVersionService: WorkflowVersionService,
     private changeDetectorRef: ChangeDetectorRef,
-    private workflowConsoleService: WorkflowConsoleService,
+    private workflowConsoleService: WorkflowConsoleService
   ) {}
 
   ngOnInit(): void {
@@ -179,7 +179,7 @@ export class ResultPanelComponent implements OnInit {
     if (this.currentOperatorId) {
       this.displayResult(this.currentOperatorId);
       const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
-      if(this.workflowConsoleService.hasConsoleMessages(this.currentOperatorId) || isPythonUdf(operator)){
+      if (this.workflowConsoleService.hasConsoleMessages(this.currentOperatorId) || isPythonUdf(operator)) {
         this.displayConsole(this.currentOperatorId, isPythonUdf(operator));
       }
       if (environment.debuggerEnabled && this.hasErrorOrBreakpoint()) {

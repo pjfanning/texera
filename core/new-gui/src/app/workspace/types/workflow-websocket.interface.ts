@@ -46,9 +46,9 @@ export interface JobError
     details: string;
     operatorId: string;
     workerId: string;
-    type:{
-      name:string;
-    }
+    type: {
+      name: string;
+    };
     timestamp: {
       nanos: number;
       seconds: number;

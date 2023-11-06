@@ -44,7 +44,7 @@ export class WorkflowConsoleService {
     return this.consoleMessages.get(operatorId)?.toArray();
   }
 
-  hasConsoleMessages(operatorId: string): boolean{
+  hasConsoleMessages(operatorId: string): boolean {
     return this.consoleMessages.has(operatorId);
   }
 

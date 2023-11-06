@@ -284,7 +284,8 @@ case class LogicalPlan(
       ops.operators.foreach(op => physicalPlan = physicalPlan.addOperator(op))
       // connect intra-operator links
       ops.links.foreach((l: LinkIdentity) =>
-        physicalPlan = physicalPlan.addEdge(l.from, l.fromPort, l.to, l.toPort))
+        physicalPlan = physicalPlan.addEdge(l.from, l.fromPort, l.to, l.toPort)
+      )
     })
 
     // connect inter-operator links

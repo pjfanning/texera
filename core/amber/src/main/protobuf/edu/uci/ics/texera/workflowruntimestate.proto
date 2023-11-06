@@ -15,8 +15,7 @@ option (scalapb.options) = {
 
 enum ErrorType{
   COMPILATION_ERROR = 0;
-  RUNTIME_ERROR = 1;
-  FAILURE = 2;
+  FAILURE = 1;
 }
 
 enum WorkflowAggregatedState {
