@@ -5,12 +5,12 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partiti
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 abstract class LinkStrategy(
-                             val from: OpExecConfig,
-                             val fromPort: Int,
-                             val to: OpExecConfig,
-                             val toPort: Int,
-                             val batchSize: Int
-                           ) extends Serializable {
+    val from: OpExecConfig,
+    val fromPort: Int,
+    val to: OpExecConfig,
+    val toPort: Int,
+    val batchSize: Int
+) extends Serializable {
 
   val id: LinkIdentity = LinkIdentity(from.id, fromPort, to.id, toPort)
   private var currentCompletedCount = 0
@@ -23,5 +23,5 @@ abstract class LinkStrategy(
 
   // returns Iterable of (sender, link id, sender's partitioning, set of receivers)
   def getPartitioning
-  : Iterable[(ActorVirtualIdentity, LinkIdentity, Partitioning, Seq[ActorVirtualIdentity])]
+      : Iterable[(ActorVirtualIdentity, LinkIdentity, Partitioning, Seq[ActorVirtualIdentity])]
 }
