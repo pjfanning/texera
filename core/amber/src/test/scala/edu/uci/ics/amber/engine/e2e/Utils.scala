@@ -24,7 +24,6 @@ object Utils {
   ): Workflow = {
     val context = new WorkflowContext
     context.jobId = jobId
-
     val texeraWorkflowCompiler = new WorkflowCompiler(
       LogicalPlan(context, operators, links, List[BreakpointInfo]())
     )
