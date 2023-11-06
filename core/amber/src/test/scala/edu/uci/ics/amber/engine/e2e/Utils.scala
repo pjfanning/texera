@@ -18,6 +18,7 @@ object Utils {
   def getWorkflow(
       operators: List[OperatorDescriptor],
       links: List[OperatorLink],
+      resultStorage: OpResultStorage = new OpResultStorage(),
       jobId: String = "workflow-test",
       workflowTag: String = "workflow-test"
   ): Workflow = {
@@ -28,7 +29,7 @@ object Utils {
       LogicalPlan(context, operators, links, List[BreakpointInfo]())
     )
     texeraWorkflowCompiler.logicalPlan.initializeLogicalPlan(new JobStateStore())
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), new OpResultStorage())
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), resultStorage)
   }
 
 }

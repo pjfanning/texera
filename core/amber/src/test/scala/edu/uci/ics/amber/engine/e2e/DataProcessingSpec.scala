@@ -106,7 +106,8 @@ class DataProcessingSpec
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -123,7 +124,8 @@ class DataProcessingSpec
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -140,7 +142,8 @@ class DataProcessingSpec
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -168,7 +171,8 @@ class DataProcessingSpec
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -198,7 +202,8 @@ class DataProcessingSpec
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -217,7 +222,8 @@ class DataProcessingSpec
           OperatorPort(wordCountOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     val result = executeWorkflow(workflow).values
     // Assert that only one tuple came out successfully
@@ -232,7 +238,8 @@ class DataProcessingSpec
       List(csvOpDesc, sink),
       List(
         OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -249,7 +256,8 @@ class DataProcessingSpec
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -272,7 +280,8 @@ class DataProcessingSpec
           OperatorPort(countOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -302,7 +311,8 @@ class DataProcessingSpec
           OperatorPort(averageAndGroupByOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -332,7 +342,8 @@ class DataProcessingSpec
           OperatorPort(joinOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -370,7 +381,8 @@ class DataProcessingSpec
           OperatorPort(inMemoryMsSQLSourceOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
 
