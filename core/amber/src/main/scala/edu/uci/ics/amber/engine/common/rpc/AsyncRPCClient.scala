@@ -111,7 +111,7 @@ class AsyncRPCClient(
       )
       ret.controlReturn match {
         case throwable: Throwable =>
-          throwable.printStackTrace()
+          logger.error(s"received error from $channel", throwable)
         case _ =>
       }
     } else {
