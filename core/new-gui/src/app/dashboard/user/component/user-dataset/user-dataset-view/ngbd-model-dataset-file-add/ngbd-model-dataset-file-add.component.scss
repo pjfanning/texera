@@ -1,12 +1,153 @@
-.header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.close {
-    background-color: transparent;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-}
+.upload-card {
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      h5 {
+        margin: 0;
+        font-size: 1.25em;
+        font-weight: bold;
+      }
+      .close {
+        background-color: transparent;
+        border: none;
+        font-size: 1.5em;
+        cursor: pointer;
+        &:hover {
+          color: #d9534f; // Or your theme's color for 'danger'
+        }
+      }
+    }
+  }
+  
+  .version-notes-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-top: 10px;
+    .notes-title {
+      font-weight: bold;
+      font-size: 0.9em;
+      color: gray;
+      margin-bottom: 5px;
+    }
+    .version-input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+  }
+  
+  .previous-uploads-container {
+    padding: 10px;
+    margin-top: 20px;
+    h6 {
+      color: gray;
+      margin-bottom: 10px;
+      font-size: 1em;
+    }
+  }
+  
+  .modal-section {
+    .modal-title {
+      font-size: 1.25em;
+      margin-bottom: 10px;
+    }
+    .modal-body {
+      .drag-file-area {
+        text-align: center;
+        height: 200px;
+        border-radius: 50px;
+        border: 2px dashed lightblue;
+        cursor: pointer;
+        padding: 20px;
+        margin: 10px 0;
+        .upload-icon {
+          font-size: 4em;
+          color: #2d6c7a;
+        }
+        span {
+          display: block;
+          margin-top: 10px;
+          font-size: 1em;
+        }
+        label {
+          display: block;
+          cursor: pointer;
+          background-color: #007bff;
+          color: #fff;
+          padding: 10px 20px;
+          margin-top: 10px;
+          border-radius: 20px;
+          transition: background-color 0.3s;
+          &:hover {
+            background-color: darken(#007bff, 10%);
+          }
+        }
+        #file-upload {
+          display: none;
+        }
+      }
+      .have-file-over {
+        background: #f7f7f7;
+        border-style: solid;
+      }
+    }
+    .file-list {
+      list-style: none;
+      padding: 0;
+      .file-queue-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ddd;
+        padding: 10px 0;
+        span {
+          flex-grow: 1;
+          padding-right: 10px;
+        }
+        .queue-delete-button {
+          background-color: #d9534f;
+          color: #fff;
+          border: none;
+          border-radius: 4px;
+          padding: 5px 10px;
+          cursor: pointer;
+          &:hover {
+            background-color: darken(#d9534f, 10%);
+          }
+        }
+      }
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 10px;
+      .upload-btn {
+        background-color: #28a745;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 20px;
+        cursor: pointer;
+        &:hover {
+          background-color: darken(#28a745, 10%);
+        }
+      }
+      .close-btn {
+        background-color: transparent;
+        color: #6c757d;
+        padding: 10px 20px;
+        border: 1px solid #6c757d;
+        border-radius: 20px;
+        cursor: pointer;
+        &:hover {
+          color: #fff;
+          background-color: #6c757d;
+        }
+      }
+    }
+  }
+  
