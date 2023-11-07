@@ -124,12 +124,15 @@ val googleServiceDependencies = Seq(
   "com.google.oauth-client" % "google-oauth-client-jetty" % "1.34.1" exclude ("com.google.guava", "guava"),
   "com.google.api-client" % "google-api-client" % "2.2.0" exclude ("com.google.guava", "guava"),
   "com.google.apis" % "google-api-services-sheets" % "v4-rev612-1.25.0" exclude ("com.google.guava", "guava"),
-  "com.google.apis" % "google-api-services-drive" % "v3-rev197-1.25.0" exclude ("com.google.guava", "guava")
+  "com.google.apis" % "google-api-services-drive" % "v3-rev197-1.25.0" exclude ("com.google.guava", "guava"),
+  "com.google.apis" % "google-api-services-gmail" % "v1-rev20230925-2.0.0",
+  "com.google.auth" % "google-auth-library-oauth2-http" % "1.19.0",
+  "com.sun.mail" % "javax.mail" % "1.6.2"
 )
 
 /////////////////////////////////////////////////////////////////////////////
 // Arrow related
-val arrowVersion = "12.0.1"
+val arrowVersion = "13.0.0"
 val arrowDependencies = Seq(
   // https://mvnrepository.com/artifact/org.apache.arrow/flight-grpc
   "org.apache.arrow" % "flight-grpc" % arrowVersion,
