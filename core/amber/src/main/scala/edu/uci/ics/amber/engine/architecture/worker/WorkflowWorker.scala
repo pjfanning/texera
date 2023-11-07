@@ -2,14 +2,17 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.common.{AkkaMessageTransferService, WorkflowActor}
+import edu.uci.ics.amber.engine.architecture.common.{
+  AkkaMessageTransferService,
+  DPOutputQueue,
+  WorkflowActor
+}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   MessageWithCallback,
   TriggerSend
 }
-import edu.uci.ics.amber.engine.common.DPOutputQueue
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -76,7 +79,6 @@ class WorkflowWorker(
     case TriggerSend() =>
       if (!outputQueue.isBlocked) {
         val msg = outputQueue.take
-        logger.info(s"send $msg")
         transferService.send(msg)
       }
   }
@@ -91,7 +93,6 @@ class WorkflowWorker(
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    logger.info(s"received $workflowMsg")
     val senderRef = sender()
     inputQueue.put(
       MessageWithCallback(

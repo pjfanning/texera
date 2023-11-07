@@ -68,7 +68,13 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   def receiveMessageAndAck: Receive = {
     case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, _, _)) =>
       actorRefMappingService.registerActorRef(channel.from, sender)
-      handleInputMessage(id, workflowMsg)
+      try {
+        handleInputMessage(id, workflowMsg)
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          throw e
+      }
     case NetworkAck(id, credits) =>
       transferService.receiveAck(id, credits)
   }
@@ -81,7 +87,6 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   // Actor behavior
   def handleFlowControl: Receive = {
     case CreditRequest(channel) =>
-      logger.info(s"current credit for channel = $channel is ${getSenderCredits(channel)}")
       sender ! CreditResponse(channel, getSenderCredits(channel))
     case CreditResponse(channel, credit) =>
       transferService.updateCredit(channel, credit)

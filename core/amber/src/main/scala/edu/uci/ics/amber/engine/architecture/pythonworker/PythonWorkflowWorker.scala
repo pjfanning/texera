@@ -4,7 +4,8 @@ import akka.actor.Props
 import com.twitter.util.Promise
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -47,16 +48,23 @@ class PythonWorkflowWorker(
   // Python process
   private var pythonServerProcess: Process = _
 
+  private val networkInputPort = new NetworkInputPort(actorId)
   private val networkOutputPort = new NetworkOutputPort(actorId, transferService.send)
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    workflowMsg.payload match {
-      case payload: ControlPayload =>
-        pythonProxyClient.enqueueCommand(payload, workflowMsg.channel)
-      case payload: DataPayload =>
-        pythonProxyClient.enqueueData(DataElement(payload, workflowMsg.channel))
-      case p => logger.error(s"unhandled control payload: $p")
+    val channel = networkInputPort.getChannel(workflowMsg.channel)
+    channel.acceptMessage(workflowMsg)
+    while (channel.isEnabled && channel.hasMessage) {
+      val msg = channel.take
+      msg.payload match {
+        case payload: ControlPayload =>
+          pythonProxyClient.enqueueCommand(payload, workflowMsg.channel)
+        case payload: DataPayload =>
+          pythonProxyClient.enqueueData(DataElement(payload, workflowMsg.channel))
+        case p => logger.error(s"unhandled control payload: $p")
+      }
     }
+    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
   }
 
   /** flow-control */

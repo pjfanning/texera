@@ -1,4 +1,4 @@
-package edu.uci.ics.amber.engine.common
+package edu.uci.ics.amber.engine.architecture.common
 
 import java.util.concurrent.{LinkedBlockingQueue, Semaphore}
 
