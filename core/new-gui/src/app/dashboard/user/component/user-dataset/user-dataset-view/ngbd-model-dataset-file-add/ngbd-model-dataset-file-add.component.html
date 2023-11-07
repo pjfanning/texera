@@ -9,37 +9,39 @@
     </nz-card>
 
     <div class="version-notes-container">
-        <h6 class="notes-title">VERSION NOTES</h6>
-        <input nz-input placeholder="Update 2023-11-01" [(ngModel)]="versionNotes" class="version-input" />
-    </div>
-
-    <div class="previous-uploads-container">
-        <h6>Previous Uploads</h6>
+        <h6 class="notes-title">Version Name</h6>
+        <input nz-input placeholder="" [(ngModel)]="versionName" class="version-input" />
     </div>
 
     <div class="modal-section">
-        <h4 class="modal-title">New Uploads</h4>
         <div class="modal-body">
-            <div class="drag-file-area" (click)="clickUpload.click()" 
-                (fileOver)="haveFileOver($event)" (onFileDrop)="getFileDropped($event)"
-                [ngClass]="{ 'have-file-over': haveDropZoneOver }" [uploader]="uploader" ng2FileDrop>
+            <div class="drag-file-area"
+                (fileOver)="haveFileOver($event)" 
+                (onFileDrop)="getFileDropped($event)"
+                [ngClass]="{ 'have-file-over': haveDropZoneOver }" 
+                [uploader]="uploader" 
+                ng2FileDrop>
                 <i class="fa fa-cloud-upload-alt upload-icon"></i>
-                <span>Drop Files Here or Click to Upload</span>
-                <input #clickUpload (change)="handleClickUploadFile($event)" multiple type="file" id="file-upload" />
+                <span>
+                    Drop Files Here or Click to Upload
+                </span>
+                <input 
+                    #clickUpload 
+                    (change)="handleClickUploadFile($event)" 
+                    multiple type="file" id="file-upload" />
                 <label for="file-upload">Choose file</label>
             </div>
             <ul class="file-list" *ngIf="getFileArrayLength()">
-                <li *ngFor="let fileUploadItem of getFileArray()" class="file-queue-item">
-                    <span>{{ fileUploadItem.name }}</span>
-                    <button (click)="deleteFile(fileUploadItem)" [disabled]="fileUploadItem.isUploadingFlag" class="queue-delete-button">
+                <li *ngFor="let file of getFileArray()" class="file-queue-item">
+                    <span>{{ file.name }}</span>
+                    <button (click)="deleteFile(file)" [disabled]="file.isUploadingFlag" class="queue-delete-button">
                         <i class="fa fa-trash"></i>
                     </button>
                 </li>
             </ul>
         </div>
-        <div class="modal-footer">
-            <button (click)="uploadAllFiles()" [disabled]="isUploadAllButtonDisabled()" class="upload-btn">Upload All</button>
-            <button (click)="activeModal.dismiss('close')" class="close-btn">Close</button>
+        <div class="modal-footer align-right">
+            <button (click)="createVersion()" [disabled]="isCreateButtonDisabled()" class="upload-btn">Create</button>
         </div>      
     </div>      
 </div>

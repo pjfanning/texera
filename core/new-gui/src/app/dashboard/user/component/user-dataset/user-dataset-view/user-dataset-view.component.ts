@@ -59,5 +59,7 @@ export class userDatasetViewComponent implements OnInit {
       modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
 
       });
+      
+      modalRef.componentInstance.did = this.did;
     }
 }

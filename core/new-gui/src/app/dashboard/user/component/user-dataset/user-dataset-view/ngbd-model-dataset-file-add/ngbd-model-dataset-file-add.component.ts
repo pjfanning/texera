@@ -6,6 +6,7 @@ import { UserFileUploadService } from "../../../../service/user-file/user-file-u
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../../service/user-dataset/dataset.service";
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { Dataset } from "src/app/common/type/dataset";
 
 
 
@@ -15,37 +16,38 @@ import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
   styleUrls: ["./ngbd-model-dataset-file-add.component.scss"]
 })
 export class NgbdModelDatasetFileAddComponent implements OnInit {
-  versionNotes: string = '';
+  public versionName: string = '';
   public haveDropZoneOver: boolean = false;
-
   public uploader: FileUploader = new FileUploader({ url: "" });
+  
+  private filesToBeUploaded: FileUploadItem[] = [];
+  private did: number = 0;
 
   constructor(
-    public activeModal: NgbActiveModal, private userFileUploadService: UserFileUploadService
+    public activeModal: NgbActiveModal, private userFileUploadService: UserFileUploadService, private datasetService: DatasetService
   ) {}
 
   ngOnInit(): void {}
 
   // will be replaced by new service function
   
-  public getFileArray(): ReadonlyArray<Readonly<FileUploadItem>> {
-    return this.userFileUploadService.getFilesToBeUploaded();
+  public getFileArray(): FileUploadItem[] {
+    return this.filesToBeUploaded;
   }
 
   public getFileArrayLength(): number {
-    return this.userFileUploadService.getFilesToBeUploaded().length;
+    return this.filesToBeUploaded.length;
   }
 
-  public deleteFile(fileUploadItem: FileUploadItem): void {
-    this.userFileUploadService.removeFileFromUploadArray(fileUploadItem);
+  public deleteFile(removedFile: FileUploadItem): void {
+    console.log(this.filesToBeUploaded.length);
+    this.filesToBeUploaded = this.filesToBeUploaded.filter(file => file !== removedFile);
+    console.log(this.filesToBeUploaded.length);
   }
 
-  public uploadAllFiles(): void {
-    this.userFileUploadService.uploadAllFiles();
-  }
-
-  public isUploadAllButtonDisabled(): boolean {
-    return this.userFileUploadService.getFilesToBeUploaded().every(fileUploadItem => fileUploadItem.isUploadingFlag);
+  public isCreateButtonDisabled(): boolean {
+    return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
+    return false;
   }
 
   public haveFileOver(fileOverEvent: boolean): void {
@@ -56,7 +58,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
     for (let i = 0; i < fileDropEvent.length; i++) {
       const file: File | null = fileDropEvent[i];
       if (file !== null) {
-        this.userFileUploadService.addFileToUploadArray(file);
+        this.filesToBeUploaded.push(UserFileUploadService.createFileUploadItem(file));
       }
     }
 
@@ -70,8 +72,26 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
     }
 
     for (let i = 0; i < fileList.length; i++) {
-      this.userFileUploadService.addFileToUploadArray(fileList[i]);
+      this.filesToBeUploaded.push(UserFileUploadService.createFileUploadItem(fileList[i]));
     }
+  }
+
+  public createVersion(): void {
+    let files = new Array(this.filesToBeUploaded.length);
+
+    for (let i = 0; i < this.filesToBeUploaded.length; i++) {
+      this.filesToBeUploaded[i].isUploadingFlag = true;
+      files[i] = this.filesToBeUploaded[i].file
+    }
+
+    this.datasetService
+    .createDatasetVersion(this.did, null, this.versionName, null, files)
+    .pipe(untilDestroyed(this))
+    .subscribe(() => {
+      this.filesToBeUploaded = [];
+      this.activeModal.dismiss('Cross click');
+    })
+
   }
 
 }

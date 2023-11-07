@@ -36,6 +36,31 @@ export class DatasetService {
     }).pipe()
   }
 
+  public createDatasetVersion(
+    did: number,
+    baseVersion: string | null,
+    newVersion: string,
+    remove: string | null,
+    files: File[]
+  ): Observable<any> {
+    const formData = new FormData();
+
+    if (baseVersion !== null) {
+      formData.append('baseVersion', baseVersion);
+    }
+    formData.append('version', newVersion);
+
+    if (remove !== null) {
+      formData.append('remove', remove);
+    }
+
+    files.forEach(file => {
+      formData.append(file.name, file);
+    });
+
+    return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
+  }
+
   /**
    * retrieve a list of version name of a dataset. The list is sorted so that the latest versions are at front.
    * @param did
