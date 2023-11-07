@@ -4,6 +4,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
+import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
 
 @UntilDestroy()
 @Component({
@@ -11,11 +12,13 @@ import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/
   styleUrls: ['./user-dataset-view.component.scss']
 })
 export class userDatasetViewComponent implements OnInit {
-    did: number = 0;
-    dName: string = "";
-    isSiderCollapsed = false;
-    versionNames: ReadonlyArray<string> = [];
-    currentFile: string = "";
+    public did: number = 0;
+    public dName: string = "";
+    public isSiderCollapsed = false;
+    public versionNames: ReadonlyArray<string> = [];
+    public currentFile: string = "";
+    public selectedVersion: string = "";
+    public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
 
     //dummy
     files = [
@@ -37,8 +40,7 @@ export class userDatasetViewComponent implements OnInit {
         this.datasetService
         .retrieveDatasetVersionList(this.did)
         .pipe(untilDestroyed(this))
-        .subscribe( versionNames => {this.versionNames = versionNames; 
-          console.log(versionNames)} )
+        .subscribe( versionNames => { this.versionNames = versionNames; } )
     }
 
     loadContent(file: string) {
@@ -51,6 +53,17 @@ export class userDatasetViewComponent implements OnInit {
     
     clickToShowTree() {
       this.isSiderCollapsed = false;
+    }
+
+    onVersionSelected(versionName: string): void {
+      this.selectedVersion = versionName;
+      
+      this.datasetService
+      .retrieveDatasetVersionFileHierarchy(this.did, this.selectedVersion)
+      .pipe(untilDestroyed(this))
+      .subscribe(dataNodeList => {
+        this.dataNodeList = dataNodeList;
+      })
     }
 
     public openFileAddComponent() {

@@ -9,7 +9,7 @@
       <nz-card>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h5 class="file-title"><b>{{currentFile}} (Total Size)</b></h5>
+            <h5 class="file-title"><b>{{currentFile}}</b></h5>
           </div>
           <div style="display: flex;">
             <button
@@ -69,17 +69,20 @@
         </p>
       </div>
     </nz-content>
-  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;">
+  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="250">
       <div class="file-list-title">
         <h5>Data Explorer</h5>
       </div>
       <div class="version-storage">
-        <h6 style="font-weight: lighter; font-size: 0.9em;">Version Number (Total Size)</h6>
+        <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
+        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" nzBorderless ngModel="{{selectedVersion}}">
+          <nz-option *ngFor="let name of versionNames" [nzValue]="name" [nzLabel]="name"></nz-option>
+        </nz-select>
       </div>
-      <ul nz-menu nzMode="inline">
-        <li *ngFor="let file of files" nz-menu-item nz-tooltip="Select {{ file.name }}" nzTooltipPlacement="left" (click)="loadContent(file.name)">
+      <ul nz-menu nzMode="inline" style=" padding-top: 50px">
+        <li *ngFor="let data of dataNodeList" nz-menu-item nz-tooltip="Select {{ data.name }}" nzTooltipPlacement="left" (click)="loadContent(data.name)">
           <span nz-icon nzType="file"></span>
-          <span>{{ file.name }}</span>
+          <span>{{ data.name }}</span>
         </li>
       </ul>
         <button 
