@@ -28,7 +28,7 @@ object WorkflowActor {
       credits: Int = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   )
 
-  final case class MessageBecomesDeadLetter(message: WorkflowFIFOMessage)
+  final case class MessageBecomesDeadLetter(message: NetworkMessage)
 
   /** Identifier <-> ActorRef related messages
     */
@@ -96,7 +96,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
 
   def handleDeadLetters: Receive = {
     case MessageBecomesDeadLetter(msg) =>
-      actorRefMappingService.removeActorRef(msg.channel.from)
+      actorRefMappingService.removeActorRef(msg.internalMessage.channel.from)
   }
 
   /** Worker lifecycle: Initialization */

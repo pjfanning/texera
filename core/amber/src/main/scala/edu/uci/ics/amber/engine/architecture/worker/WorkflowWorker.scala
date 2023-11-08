@@ -2,16 +2,11 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.common.{
-  DPOutputQueue,
-  WorkflowActor
-}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  MessageWithCallback,
-  TriggerSend
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{MessageWithCallback, TriggerSend}
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -34,7 +29,7 @@ object WorkflowWorker {
 
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
-  final case class TriggerSend()
+  final case class TriggerSend(msg:WorkflowFIFOMessage)
 
   final case class MessageWithCallback(
       msg: Either[WorkflowFIFOMessage, ControlInvocation],
@@ -49,26 +44,21 @@ class WorkflowWorker(
 ) extends WorkflowActor(actorId) {
   val inputQueue: LinkedBlockingQueue[MessageWithCallback] =
     new LinkedBlockingQueue()
-  val outputQueue: DPOutputQueue[WorkflowFIFOMessage] = new DPOutputQueue[WorkflowFIFOMessage]()
   var dp = new DataProcessor(
     actorId,
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
     x => {
-      outputQueue.offer(x)
-      self ! TriggerSend()
+      self ! TriggerSend(x)
     }
   )
   val adaptiveBatchingMonitor = new AdaptiveBatchingMonitor(actorService)
   val dpThread = new DPThread(actorId, dp, inputQueue)
 
   def handleSendFromDP: Receive = {
-    case TriggerSend() =>
-      if (!outputQueue.isBlocked) {
-        val msg = outputQueue.take
-        transferService.send(msg)
-      }
+    case TriggerSend(msg) =>
+      transferService.send(msg)
   }
 
   def handleDirectInvocation: Receive = {
@@ -109,10 +99,7 @@ class WorkflowWorker(
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
-    if (isBackpressured) {
-      outputQueue.block()
-    } else {
-      outputQueue.unblock()
-    }
+    val backpressureMessage = ControlInvocation(0, Backpressure(isBackpressured))
+    inputQueue.put(MessageWithCallback(Right(backpressureMessage), null))
   }
 }

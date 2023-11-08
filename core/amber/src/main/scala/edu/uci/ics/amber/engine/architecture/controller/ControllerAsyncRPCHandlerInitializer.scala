@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.Monitori
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler.ControllerInitiateSkewDetection
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers._
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.{
@@ -19,14 +19,14 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 class ControllerAsyncRPCHandlerInitializer(
-    val actorContext: ActorContext,
-    val actorId: ActorVirtualIdentity,
-    val controlOutputPort: NetworkOutputPort,
-    val workflow: Workflow,
-    val controllerConfig: ControllerConfig,
-    val scheduler: WorkflowScheduler,
-    source: AsyncRPCClient,
-    receiver: AsyncRPCServer
+                                            val actorContext: ActorContext,
+                                            val actorId: ActorVirtualIdentity,
+                                            val controlOutputPort: NetworkOutputGateway,
+                                            val workflow: Workflow,
+                                            val controllerConfig: ControllerConfig,
+                                            val scheduler: WorkflowScheduler,
+                                            source: AsyncRPCClient,
+                                            receiver: AsyncRPCServer
 ) extends AsyncRPCHandlerInitializer(source, receiver)
     with AmberLogging
     with LinkWorkersHandler

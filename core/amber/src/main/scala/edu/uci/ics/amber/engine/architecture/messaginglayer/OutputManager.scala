@@ -65,7 +65,7 @@ object OutputManager {
   */
 class OutputManager(
     selfID: ActorVirtualIdentity,
-    dataOutputPort: NetworkOutputPort
+    dataOutputPort: NetworkOutputGateway
 ) {
 
   val partitioners = mutable.HashMap[LinkIdentity, Partitioner]()

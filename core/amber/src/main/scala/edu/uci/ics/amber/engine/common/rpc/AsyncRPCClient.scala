@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
@@ -54,8 +54,8 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputPort,
-    val actorId: ActorVirtualIdentity
+                      controlOutputEndpoint: NetworkOutputGateway,
+                      val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
   private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()

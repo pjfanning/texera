@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{
   DeterminantLogStorage,
   EmptyLogStorage
 }
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputGateway, NetworkOutputGateway}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -24,7 +24,7 @@ class AmberProcessor(
     with Serializable {
 
   /** FIFO & exactly once */
-  lazy val inputPort: NetworkInputPort = new NetworkInputPort(this.actorId)
+  lazy val inputPort: NetworkInputGateway = new NetworkInputGateway(this.actorId)
 
   /** Fault-tolerance layer */
   var logStorage: DeterminantLogStorage = new EmptyLogStorage()
@@ -33,8 +33,8 @@ class AmberProcessor(
   var isReplaying = false
 
   // 1. Unified Output
-  val outputPort: NetworkOutputPort =
-    new NetworkOutputPort(
+  val outputPort: NetworkOutputGateway =
+    new NetworkOutputGateway(
       this.actorId,
       msg => {
         // done by the same thread

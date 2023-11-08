@@ -5,10 +5,14 @@ import com.twitter.util.Promise
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputPort, NetworkOutputPort}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputGateway, NetworkOutputGateway}
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MessageWithCallback
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import edu.uci.ics.texera.Utils
 
 import java.nio.file.Path
@@ -48,8 +52,8 @@ class PythonWorkflowWorker(
   // Python process
   private var pythonServerProcess: Process = _
 
-  private val networkInputPort = new NetworkInputPort(actorId)
-  private val networkOutputPort = new NetworkOutputPort(actorId, transferService.send)
+  private val networkInputPort = new NetworkInputGateway(actorId)
+  private val networkOutputPort = new NetworkOutputGateway(actorId, transferService.send)
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = networkInputPort.getChannel(workflowMsg.channel)
@@ -73,7 +77,8 @@ class PythonWorkflowWorker(
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
-    //TODO: block the flight queue.
+    val backpressureMessage = ControlInvocation(0, Backpressure(isBackpressured))
+    pythonProxyClient.enqueueCommand(backpressureMessage, ChannelID(SELF, SELF, true))
   }
 
   override def postStop(): Unit = {
