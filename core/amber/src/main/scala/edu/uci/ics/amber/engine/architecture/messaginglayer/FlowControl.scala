@@ -36,11 +36,10 @@ import scala.util.control.Breaks.{break, breakable}
   */
 class FlowControl {
 
-  private var credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+  private var credit:Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   private val dataMessagesAwaitingCredits = new mutable.Queue[WorkflowFIFOMessage]()
 
-  def isOverloaded: Boolean =
-    dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
+  def isOverloaded: Boolean = credit <= 0
 
   /**
     * Determines if an incoming message can be forwarded to the receiver based on the credits available.
@@ -78,11 +77,10 @@ class FlowControl {
     messagesToSend.toArray
   }
 
-  def updateCredit(newCredit: Int): Unit = {
-    if (newCredit <= 0) {
-      credit = 0
-    } else {
-      credit = newCredit
+  def addCredit(newCredit: Int): Unit = {
+    credit += newCredit
+    if(credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair){
+      credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
     }
   }
 }

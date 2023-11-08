@@ -25,7 +25,7 @@ object WorkflowActor {
     */
   final case class NetworkAck(
       messageId: Long,
-      credits: Int = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+      credits: Int = 0
   )
 
   final case class MessageBecomesDeadLetter(message: NetworkMessage)
@@ -91,7 +91,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
     case CreditRequest(channel) =>
       sender ! CreditResponse(channel, getSenderCredits(channel))
     case CreditResponse(channel, credit) =>
-      transferService.updateCredit(channel, credit)
+      transferService.addCreditToChannel(channel, credit)
   }
 
   def handleDeadLetters: Receive = {
