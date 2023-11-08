@@ -17,9 +17,12 @@ export class userDatasetViewComponent implements OnInit {
     public dDescription: string = "";
     public createdTime: string = "";
 
+    public currentFile: string = "";
+    public currentFileObject: File | undefined = undefined;
+    public fileContent: string = "";
+
     public isSiderCollapsed = false;
     public versionNames: ReadonlyArray<string> = [];
-    public currentFile: string = "";
     public selectedVersion: string = "";
     public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
 
@@ -49,6 +52,13 @@ export class userDatasetViewComponent implements OnInit {
 
     loadContent(file: string) {
       this.currentFile = file;
+
+      this.datasetService
+      .inspectDatasetSingleFile(this.did, this.selectedVersion, this.currentFile)
+      .pipe(untilDestroyed(this))
+      .subscribe(blob => {
+        this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
+      })
     }
 
     clickToHideTree() {

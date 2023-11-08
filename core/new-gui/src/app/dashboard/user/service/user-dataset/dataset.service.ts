@@ -43,6 +43,10 @@ export class DatasetService {
     );
   }
 
+  public inspectDatasetSingleFile(did: number, version: string, path: string): Observable<Blob> {
+    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${version}/file?path=${path}`, {responseType: 'blob'});
+  }
+
   public createDatasetVersion(
     did: number,
     baseVersion: string | null,
