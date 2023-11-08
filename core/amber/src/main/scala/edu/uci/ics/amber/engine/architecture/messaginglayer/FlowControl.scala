@@ -4,9 +4,6 @@ import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks.{break, breakable}
 
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R

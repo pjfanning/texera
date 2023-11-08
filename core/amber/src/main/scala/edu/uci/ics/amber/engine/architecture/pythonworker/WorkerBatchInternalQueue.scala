@@ -2,11 +2,15 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue._
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, ControlPayloadV2, DataFrame, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  ControlPayloadV2,
+  DataFrame,
+  DataPayload
+}
 import lbmq.LinkedBlockingMultiQueue
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.locks.ReentrantLock
 import scala.collection.mutable
 object WorkerBatchInternalQueue {
   final val DATA_QUEUE = 1
@@ -86,9 +90,9 @@ trait WorkerBatchInternalQueue {
   def isControlQueueEmpty: Boolean = controlQueue.isEmpty
 
   def getSenderCredits(sender: ChannelID): Int = {
-    if(sender.isControlChannel){
+    if (sender.isControlChannel) {
       Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-    }else{
+    } else {
       synchronized {
         val consumed = consumedCredit.getOrElseUpdate(sender, 0L)
         consumedCredit(sender) = 0L //clear
