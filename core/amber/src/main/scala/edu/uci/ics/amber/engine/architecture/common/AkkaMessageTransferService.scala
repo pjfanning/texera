@@ -98,13 +98,13 @@ class AkkaMessageTransferService(
       refService.forwardToActor(msg)
     }
     if (Constants.flowControlEnabled) {
-      updateCredit(channelId, Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - credit)
+      addCreditToChannel(channelId, credit)
     }
   }
 
-  def updateCredit(channel: ChannelID, credit: Int): Unit = {
+  def addCreditToChannel(channel: ChannelID, credit: Int): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(channel, new FlowControl())
-    flowControl.updateCredit(credit)
+    flowControl.addCredit(credit)
     flowControl.getMessagesToForward.foreach(out =>
       forwardToCongestionControl(out, refService.forwardToActor)
     )
