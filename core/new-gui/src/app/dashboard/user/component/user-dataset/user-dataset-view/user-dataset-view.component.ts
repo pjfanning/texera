@@ -23,15 +23,6 @@ export class userDatasetViewComponent implements OnInit {
     public selectedVersion: string = "";
     public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
 
-    //dummy
-    files = [
-        { name: 'file1', size: 'small' },
-        { name: 'file2', size: 'medium' },
-        { name: 'file3', size: 'large' },
-        { name: 'file4', size: 'large' },
-        { name: 'file5', size: 'large' },
-      ];
-
     constructor(private route: ActivatedRoute, private datasetService: DatasetService, private modalService: NgbModal) {}
 
     ngOnInit(): void {
