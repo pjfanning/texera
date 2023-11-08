@@ -15,9 +15,9 @@ trait Partitioner extends Serializable {
 }
 
 class NetworkOutputBuffer(
-                           val to: ActorVirtualIdentity,
-                           val dataOutputPort: NetworkOutputGateway,
-                           val batchSize: Int = Constants.defaultBatchSize
+    val to: ActorVirtualIdentity,
+    val dataOutputPort: NetworkOutputGateway,
+    val batchSize: Int = Constants.defaultBatchSize
 ) {
 
   var buffer = new ArrayBuffer[ITuple]()

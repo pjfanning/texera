@@ -5,7 +5,10 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{MessageWithCallback, TriggerSend}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  MessageWithCallback,
+  TriggerSend
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -29,7 +32,7 @@ object WorkflowWorker {
 
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
-  final case class TriggerSend(msg:WorkflowFIFOMessage)
+  final case class TriggerSend(msg: WorkflowFIFOMessage)
 
   final case class MessageWithCallback(
       msg: Either[WorkflowFIFOMessage, ControlInvocation],
@@ -85,7 +88,6 @@ class WorkflowWorker(
   /** flow-control */
   override def getSenderCredits(channelEndpointID: ChannelID): Int =
     dp.getSenderCredits(channelEndpointID)
-
 
   override def initState(): Unit = {
     dp.initAdaptiveBatching(adaptiveBatchingMonitor)

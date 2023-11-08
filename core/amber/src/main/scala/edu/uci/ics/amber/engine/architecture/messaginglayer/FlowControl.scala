@@ -43,8 +43,8 @@ class FlowControl {
     dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
 
   /**
-   * Determines if an incoming message can be forwarded to the receiver based on the credits available.
-   */
+    * Determines if an incoming message can be forwarded to the receiver based on the credits available.
+    */
   def inputMessage(msg: WorkflowFIFOMessage): Option[WorkflowFIFOMessage] = {
     if (credit > 0) {
       credit -= getInMemSize(msg).intValue()

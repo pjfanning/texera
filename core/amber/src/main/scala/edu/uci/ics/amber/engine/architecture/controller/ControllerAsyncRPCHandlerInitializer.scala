@@ -19,14 +19,14 @@ import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
 class ControllerAsyncRPCHandlerInitializer(
-                                            val actorContext: ActorContext,
-                                            val actorId: ActorVirtualIdentity,
-                                            val controlOutputPort: NetworkOutputGateway,
-                                            val workflow: Workflow,
-                                            val controllerConfig: ControllerConfig,
-                                            val scheduler: WorkflowScheduler,
-                                            source: AsyncRPCClient,
-                                            receiver: AsyncRPCServer
+    val actorContext: ActorContext,
+    val actorId: ActorVirtualIdentity,
+    val controlOutputPort: NetworkOutputGateway,
+    val workflow: Workflow,
+    val controllerConfig: ControllerConfig,
+    val scheduler: WorkflowScheduler,
+    source: AsyncRPCClient,
+    receiver: AsyncRPCServer
 ) extends AsyncRPCHandlerInitializer(source, receiver)
     with AmberLogging
     with LinkWorkersHandler

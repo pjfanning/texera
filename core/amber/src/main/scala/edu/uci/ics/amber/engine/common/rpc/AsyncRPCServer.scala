@@ -37,8 +37,8 @@ object AsyncRPCServer {
 }
 
 class AsyncRPCServer(
-                      controlOutputEndpoint: NetworkOutputGateway,
-                      val actorId: ActorVirtualIdentity
+    controlOutputEndpoint: NetworkOutputGateway,
+    val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
   // all handlers

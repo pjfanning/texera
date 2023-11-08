@@ -122,7 +122,7 @@ class AkkaMessageTransferService(
 
   private def checkForBackPressure(): Unit = {
     val currentStatus = channelToFC.values.exists(_.isOverloaded)
-    if(backpressured == currentStatus){
+    if (backpressured == currentStatus) {
       return
     }
     backpressured = currentStatus

@@ -54,8 +54,8 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-                      controlOutputEndpoint: NetworkOutputGateway,
-                      val actorId: ActorVirtualIdentity
+    controlOutputEndpoint: NetworkOutputGateway,
+    val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
   private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()

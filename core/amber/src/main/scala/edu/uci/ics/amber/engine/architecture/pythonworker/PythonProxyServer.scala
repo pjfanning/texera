@@ -22,8 +22,8 @@ import com.twitter.util.Promise
 import java.nio.charset.Charset
 
 private class AmberProducer(
-                             outputPort: NetworkOutputGateway,
-                             promise: Promise[Int]
+    outputPort: NetworkOutputGateway,
+    promise: Promise[Int]
 ) extends NoOpFlightProducer {
   var _portNumber: AtomicInteger = new AtomicInteger(0)
 
@@ -101,9 +101,9 @@ private class AmberProducer(
 }
 
 class PythonProxyServer(
-                         outputPort: NetworkOutputGateway,
-                         val actorId: ActorVirtualIdentity,
-                         promise: Promise[Int]
+    outputPort: NetworkOutputGateway,
+    val actorId: ActorVirtualIdentity,
+    promise: Promise[Int]
 ) extends Runnable
     with AutoCloseable
     with AmberLogging {

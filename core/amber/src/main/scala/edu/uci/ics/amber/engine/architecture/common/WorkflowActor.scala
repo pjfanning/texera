@@ -84,7 +84,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   /** flow-control */
   def getSenderCredits(channelEndpointID: ChannelID): Int
 
-  def handleBackpressure(isBackpressured:Boolean):Unit
+  def handleBackpressure(isBackpressured: Boolean): Unit
 
   // Actor behavior
   def handleFlowControl: Receive = {
