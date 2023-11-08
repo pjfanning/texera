@@ -41,7 +41,7 @@ class WorkflowJobService(
           WorkflowFatalError(
             FAILURE,
             Timestamp(Instant.now),
-            t.getMessage,
+            t.toString,
             t.getStackTrace.mkString("\n")
           )
         )
@@ -75,7 +75,7 @@ class WorkflowJobService(
               WorkflowFatalError(
                 COMPILATION_ERROR,
                 Timestamp(Instant.now),
-                e.getMessage,
+                e.toString,
                 e.getStackTrace.mkString("\n")
               )
             )

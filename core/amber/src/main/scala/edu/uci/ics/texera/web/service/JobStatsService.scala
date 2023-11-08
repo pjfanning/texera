@@ -175,7 +175,7 @@ class JobStatsService(
               WorkflowFatalError(
                 FAILURE,
                 Timestamp(Instant.now),
-                evt.e.getMessage,
+                evt.e.toString,
                 evt.e.getStackTrace.mkString("\n"),
                 opeartorId,
                 workerId

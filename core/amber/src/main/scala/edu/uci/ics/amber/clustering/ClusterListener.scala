@@ -66,7 +66,7 @@ class ClusterListener extends Actor with AmberLogging {
         WorkflowFatalError(
           FAILURE,
           Timestamp(Instant.now),
-          cause.getLocalizedMessage,
+          cause.toString,
           cause.getStackTrace.mkString("\n")
         )
       )
