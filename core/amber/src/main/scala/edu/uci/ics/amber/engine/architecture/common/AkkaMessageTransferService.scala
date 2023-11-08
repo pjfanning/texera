@@ -26,6 +26,8 @@ class AkkaMessageTransferService(
   val channelToFC = new mutable.HashMap[ChannelID, FlowControl]()
   val messageIDToIdentity = new mutable.LongMap[ChannelID]
 
+  private var backpressured = false
+
   /** keeps track of every outgoing message.
     * Each message is identified by this monotonic increasing ID.
     * It's different from the sequence number and it will only
@@ -96,7 +98,7 @@ class AkkaMessageTransferService(
       refService.forwardToActor(msg)
     }
     if (Constants.flowControlEnabled) {
-      updateCredit(channelId, credit)
+      updateCredit(channelId, Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - credit)
     }
   }
 
@@ -119,7 +121,12 @@ class AkkaMessageTransferService(
   }
 
   private def checkForBackPressure(): Unit = {
-    handleBackpressure(channelToFC.values.exists(_.isOverloaded))
+    val currentStatus = channelToFC.values.exists(_.isOverloaded)
+    if(backpressured == currentStatus){
+      return
+    }
+    backpressured = currentStatus
+    handleBackpressure(backpressured)
   }
 
   private def triggerResend(): Unit = {

@@ -72,6 +72,10 @@ class PythonWorkflowWorker(
     pythonProxyClient.getSenderCredits(channelEndpointID)
   }
 
+  override def handleBackpressure(isBackpressured: Boolean): Unit = {
+    //TODO: block the flight queue.
+  }
+
   override def postStop(): Unit = {
     super.postStop()
     try {
@@ -132,5 +136,4 @@ class PythonWorkflowWorker(
       )
     ).run(BasicIO.standard(false))
   }
-
 }

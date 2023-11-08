@@ -3,7 +3,6 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.{
-  AkkaMessageTransferService,
   DPOutputQueue,
   WorkflowActor
 }
@@ -63,17 +62,6 @@ class WorkflowWorker(
   )
   val adaptiveBatchingMonitor = new AdaptiveBatchingMonitor(actorService)
   val dpThread = new DPThread(actorId, dp, inputQueue)
-  override val transferService: AkkaMessageTransferService = new AkkaMessageTransferService(
-    actorService,
-    actorRefMappingService,
-    backPressure => {
-      if (backPressure) {
-        outputQueue.block()
-      } else {
-        outputQueue.unblock()
-      }
-    }
-  )
 
   def handleSendFromDP: Receive = {
     case TriggerSend() =>
@@ -108,6 +96,7 @@ class WorkflowWorker(
   override def getSenderCredits(channelEndpointID: ChannelID): Int =
     dp.getSenderCredits(channelEndpointID)
 
+
   override def initState(): Unit = {
     dp.initAdaptiveBatching(adaptiveBatchingMonitor)
     dpThread.start()
@@ -117,5 +106,13 @@ class WorkflowWorker(
     super.postStop()
     adaptiveBatchingMonitor.stopAdaptiveBatching()
     dpThread.stop()
+  }
+
+  override def handleBackpressure(isBackpressured: Boolean): Unit = {
+    if (isBackpressured) {
+      outputQueue.block()
+    } else {
+      outputQueue.unblock()
+    }
   }
 }

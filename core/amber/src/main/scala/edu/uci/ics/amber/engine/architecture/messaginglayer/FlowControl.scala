@@ -6,6 +6,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks.{break, breakable}
 
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
@@ -42,16 +43,15 @@ class FlowControl {
     dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
 
   /**
-    * Determines if an incoming message can be forwarded to the receiver based on the credits available.
-    */
+   * Determines if an incoming message can be forwarded to the receiver based on the credits available.
+   */
   def inputMessage(msg: WorkflowFIFOMessage): Option[WorkflowFIFOMessage] = {
     if (credit > 0) {
+      credit -= getInMemSize(msg).intValue()
       if (dataMessagesAwaitingCredits.isEmpty) {
-        credit -= getInMemSize(msg).intValue()
         Some(msg)
       } else {
         dataMessagesAwaitingCredits.enqueue(msg)
-        credit -= getInMemSize(msg).intValue()
         Some(dataMessagesAwaitingCredits.dequeue())
       }
     } else {
@@ -61,21 +61,21 @@ class FlowControl {
   }
 
   def getMessagesToForward: Array[WorkflowFIFOMessage] = {
-    val messageBuffer = new ArrayBuffer[WorkflowFIFOMessage]()
-    while (dataMessagesAwaitingCredits.nonEmpty && credit > 0) {
-      val msg = dataMessagesAwaitingCredits.dequeue()
-      messageBuffer.append(msg)
-      credit -= getInMemSize(msg).intValue()
+    val messagesToSend = new ArrayBuffer[WorkflowFIFOMessage]()
+    breakable {
+      while (dataMessagesAwaitingCredits.nonEmpty) {
+        val msg = dataMessagesAwaitingCredits.head
+        val messageSize = getInMemSize(msg).intValue()
+        if (credit <= messageSize) {
+          messagesToSend.append(msg)
+          credit -= messageSize
+          dataMessagesAwaitingCredits.dequeue()
+        } else {
+          break
+        }
+      }
     }
-    messageBuffer.toArray
-  }
-
-  /**
-    * Decides whether parent should be backpressured based on the current data message put into
-    * `dataMessagesAwaitingCredits` queue.
-    */
-  def shouldBackpressureParent(): Boolean = {
-    dataMessagesAwaitingCredits.size > Constants.localSendingBufferLimitPerReceiver + credit
+    messagesToSend.toArray
   }
 
   def updateCredit(newCredit: Int): Unit = {

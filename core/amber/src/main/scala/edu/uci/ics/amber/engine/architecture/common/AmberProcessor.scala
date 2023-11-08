@@ -48,29 +48,20 @@ class AmberProcessor(
     new AsyncRPCServer(outputPort, actorId)
   var cursor = new ProcessingStepCursor()
 
-//  protected def outputMessage(workflowFIFOMessage: WorkflowFIFOMessage): Unit = {
-//    logManager.sendCommitted(SendRequest(to, msg), cursor.getStep)
-//  }
-
   def processControlPayload(
       channel: ChannelID,
       payload: ControlPayload
   ): Unit = {
-    // logger.info(s"process control $payload at step $totalValidStep")
-//    doFaultTolerantProcessing(channel, payload){
     payload match {
       case invocation: ControlInvocation =>
-        //if (!invocation.command.isInstanceOf[SkipConsoleLog]) {
         logger.info(
           s"receive command: ${invocation.command} from $channel (controlID: ${invocation.commandID}, current step = ${cursor.getStep})"
         )
-        //}
         asyncRPCServer.receive(invocation, channel.from)
       case ret: ReturnInvocation =>
         asyncRPCClient.logControlReply(ret, channel)
         asyncRPCClient.fulfillPromise(ret)
     }
-//    }
   }
 
 }

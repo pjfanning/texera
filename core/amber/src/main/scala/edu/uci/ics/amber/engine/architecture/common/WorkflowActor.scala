@@ -55,7 +55,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
     actorService
   )
   val transferService: AkkaMessageTransferService =
-    new AkkaMessageTransferService(actorService, actorRefMappingService, x => {})
+    new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
   def allowActorRefRelatedMessages: Receive = {
     case GetActorRef(actorId, replyTo) =>
@@ -83,6 +83,8 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
 
   /** flow-control */
   def getSenderCredits(channelEndpointID: ChannelID): Int
+
+  def handleBackpressure(isBackpressured:Boolean):Unit
 
   // Actor behavior
   def handleFlowControl: Receive = {

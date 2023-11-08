@@ -8,8 +8,7 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
-  DataPayload,
-  WorkflowMessage
+  DataPayload
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
@@ -38,8 +37,6 @@ class DPThread(
   def getThreadName: String = "DP-thread"
 
   private val endFuture = new CompletableFuture[Unit]()
-
-  var blockingFuture = new CompletableFuture[Unit]()
 
   def stop(): Unit = {
     if (dpThread != null) {
@@ -110,7 +107,6 @@ class DPThread(
           case Left(msg) =>
             val channel = dp.inputPort.getChannel(msg.channel)
             channel.acceptMessage(msg)
-            channel.updateCreditDelta(-WorkflowMessage.getInMemSize(msg))
             inputPortExhausted = false
           case Right(ctrl) =>
             dp.processControlPayload(ChannelID(SELF, SELF, true), ctrl)
@@ -123,7 +119,6 @@ class DPThread(
         dp.inputPort.tryPickControlChannel match {
           case Some(channel) =>
             val msg = channel.take
-            channel.updateCreditDelta(WorkflowMessage.getInMemSize(msg))
             dp.processControlPayload(msg.channel, msg.payload.asInstanceOf[ControlPayload])
           case None =>
             // continue processing
@@ -135,7 +130,6 @@ class DPThread(
           case Some(channel) =>
             val msg = channel.take
             logger.info(s"take $msg")
-            channel.updateCreditDelta(WorkflowMessage.getInMemSize(msg))
             msg.payload match {
               case payload: ControlPayload =>
                 dp.processControlPayload(msg.channel, payload)
