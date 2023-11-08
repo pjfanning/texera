@@ -3,16 +3,15 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  MessageWithCallback,
-  TriggerSend
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{MessageWithCallback, TriggerSend}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -67,6 +66,16 @@ class WorkflowWorker(
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
       inputQueue.put(MessageWithCallback(Right(c), null))
+  }
+
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
+    super.preRestart(reason, message)
+    logger.error(s"Encountered fatal error, worker is shutting done.", reason)
+    postStop()
+    dp.asyncRPCClient.send(
+      FatalError(reason),
+      CONTROLLER
+    )
   }
 
   override def receive: Receive = {
