@@ -36,4 +36,6 @@ class TrivialControlTester(
   override def getSenderCredits(channelEndpointID: ChannelID): Int = ???
 
   override def initState(): Unit = {}
+
+  override def handleBackpressure(isBackpressured: Boolean): Unit = {}
 }

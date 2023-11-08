@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream, EpochMarker}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
@@ -16,7 +16,7 @@ trait Partitioner extends Serializable {
 
 class NetworkOutputBuffer(
     val to: ActorVirtualIdentity,
-    val dataOutputPort: NetworkOutputPort,
+    val dataOutputPort: NetworkOutputGateway,
     val batchSize: Int = Constants.defaultBatchSize
 ) {
 

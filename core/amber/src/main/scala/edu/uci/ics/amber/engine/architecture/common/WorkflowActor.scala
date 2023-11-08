@@ -34,7 +34,7 @@ object WorkflowActor {
       credits: Int = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   )
 
-  final case class MessageBecomesDeadLetter(message: WorkflowFIFOMessage)
+  final case class MessageBecomesDeadLetter(message: NetworkMessage)
 
   /** Identifier <-> ActorRef related messages
     */
@@ -71,7 +71,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   )
   actorRefMappingService.registerActorRef(actorId, self)
   val transferService: AkkaMessageTransferService =
-    new AkkaMessageTransferService(actorService, actorRefMappingService, x => {})
+    new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
   def allowActorRefRelatedMessages: Receive = {
     case GetActorRef(actorId, replyTo) =>
@@ -100,6 +100,8 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   /** flow-control */
   def getSenderCredits(channelEndpointID: ChannelID): Int
 
+  def handleBackpressure(isBackpressured: Boolean): Unit
+
   // Actor behavior
   def handleFlowControl: Receive = {
     case CreditRequest(channel) =>
@@ -110,7 +112,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
 
   def handleDeadLetters: Receive = {
     case MessageBecomesDeadLetter(msg) =>
-      actorRefMappingService.removeActorRef(msg.channel.from)
+      actorRefMappingService.removeActorRef(msg.internalMessage.channel.from)
   }
 
   /** Worker lifecycle: Initialization */

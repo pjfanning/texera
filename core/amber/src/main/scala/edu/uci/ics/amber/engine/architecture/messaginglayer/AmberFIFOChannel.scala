@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 
 import scala.collection.mutable
 
@@ -12,7 +12,6 @@ class AmberFIFOChannel() {
   private var current = 0L
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
-  private var credit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber
@@ -56,9 +55,7 @@ class AmberFIFOChannel() {
 
   def isEnabled: Boolean = enabled
 
-  def getCredit: Int = credit.toInt
+  def getTotalMessageSize: Long = fifoQueue.map(getInMemSize(_)).sum
 
-  def updateCreditDelta(delta: Long): Unit = {
-    credit += delta
-  }
+  def getTotalStashedSize: Long = ofoMap.values.map(getInMemSize(_)).sum
 }

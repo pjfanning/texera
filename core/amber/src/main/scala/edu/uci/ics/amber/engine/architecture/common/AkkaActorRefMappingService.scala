@@ -57,7 +57,7 @@ class AkkaActorRefMappingService(actorService: AkkaActorService) extends AmberLo
 
   def registerActorRef(id: ActorVirtualIdentity, ref: ActorRef): Unit = {
     if (!actorRefMapping.contains(id)) {
-      println(s"register $id -> $ref")
+      logger.info(s"register $id -> $ref")
       actorRefMapping(id) = ref
       if (messageStash.contains(id)) {
         val stash = messageStash(id)

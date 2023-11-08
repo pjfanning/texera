@@ -23,7 +23,7 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
     mock[WorkflowFIFOMessage => Unit]
   private val identifier = ActorVirtualIdentity("batch producer mock")
   private val mockDataOutputPort = // scalafix:ok; need it for wiring purpose
-    new NetworkOutputPort(identifier, mockHandler)
+    new NetworkOutputGateway(identifier, mockHandler)
   var counter: Int = 0
 
   def layerID(): LayerIdentity = {

@@ -91,4 +91,6 @@ class Controller(
   /** flow-control */
   override def getSenderCredits(channelEndpointID: ChannelID): Int =
     Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+
+  override def handleBackpressure(isBackpressured: Boolean): Unit = {}
 }

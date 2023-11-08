@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
   controlInvocationToV1,
@@ -22,7 +22,7 @@ import com.twitter.util.Promise
 import java.nio.charset.Charset
 
 private class AmberProducer(
-    outputPort: NetworkOutputPort,
+    outputPort: NetworkOutputGateway,
     promise: Promise[Int]
 ) extends NoOpFlightProducer {
   var _portNumber: AtomicInteger = new AtomicInteger(0)
@@ -101,7 +101,7 @@ private class AmberProducer(
 }
 
 class PythonProxyServer(
-    outputPort: NetworkOutputPort,
+    outputPort: NetworkOutputGateway,
     val actorId: ActorVirtualIdentity,
     promise: Promise[Int]
 ) extends Runnable

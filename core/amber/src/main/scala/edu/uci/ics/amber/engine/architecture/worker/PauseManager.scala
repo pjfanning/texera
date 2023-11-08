@@ -1,13 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputPort
+import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class PauseManager(val actorId: ActorVirtualIdentity, inputPort: NetworkInputPort)
+class PauseManager(val actorId: ActorVirtualIdentity, inputPort: NetworkInputGateway)
     extends AmberLogging {
 
   private val globalPauses = new mutable.HashSet[PauseType]()
