@@ -14,6 +14,9 @@ import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion"
 export class userDatasetViewComponent implements OnInit {
     public did: number = 0;
     public dName: string = "";
+    public dDescription: string = "";
+    public createdTime: string = "";
+
     public isSiderCollapsed = false;
     public versionNames: ReadonlyArray<string> = [];
     public currentFile: string = "";
@@ -34,8 +37,18 @@ export class userDatasetViewComponent implements OnInit {
     ngOnInit(): void {
         this.route.params.subscribe(params => {
             this.did = params['did'];
-            this.dName = params['dname'];
         });
+
+        this.datasetService
+        .getDataset(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe(dataset => {
+          this.dName = dataset.name;
+          this.dDescription = dataset.description;
+          if (typeof dataset.creationTime === 'number') {
+            this.createdTime = new Date(dataset.creationTime).toString();
+          }
+        })
 
         this.datasetService
         .retrieveDatasetVersionList(this.did)

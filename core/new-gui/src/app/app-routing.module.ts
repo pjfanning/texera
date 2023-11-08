@@ -64,7 +64,7 @@ if (environment.userSystemEnabled) {
         component: UserDatasetComponent,
       },
       {
-        path: "dataset/:did/:dname",
+        path: "dataset/:did",
         component: userDatasetViewComponent,
       },
       {

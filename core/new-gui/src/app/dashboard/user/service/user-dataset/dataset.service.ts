@@ -36,6 +36,13 @@ export class DatasetService {
     }).pipe()
   }
 
+  public getDataset(did: number): Observable<Dataset> {
+    return this.http.get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
+    .pipe(
+      map(datasetDashboard => datasetDashboard.dataset)
+    );
+  }
+
   public createDatasetVersion(
     did: number,
     baseVersion: string | null,
