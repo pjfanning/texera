@@ -5,7 +5,10 @@ import com.twitter.util.Promise
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputGateway, NetworkOutputGateway}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{
+  NetworkInputGateway,
+  NetworkOutputGateway
+}
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
@@ -53,9 +56,12 @@ class PythonWorkflowWorker(
   private var pythonServerProcess: Process = _
 
   private val networkInputPort = new NetworkInputGateway(actorId)
-  private val networkOutputPort = new NetworkOutputGateway(actorId, x => {
-    self ! TriggerSend(x)
-  })
+  private val networkOutputPort = new NetworkOutputGateway(
+    actorId,
+    x => {
+      self ! TriggerSend(x)
+    }
+  )
 
   def handleSendFromDP: Receive = {
     case TriggerSend(msg) =>

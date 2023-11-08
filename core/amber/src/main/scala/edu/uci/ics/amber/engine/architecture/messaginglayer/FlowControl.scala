@@ -4,7 +4,6 @@ import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
-
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
   * using the network communicator actor NC. The different parts of flow control work as follows:
@@ -33,7 +32,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
   */
 class FlowControl {
 
-  private var credit:Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+  private var credit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   def isOverloaded: Boolean = credit <= 0
 
   /**
@@ -45,7 +44,7 @@ class FlowControl {
 
   def addCredit(newCredit: Int): Unit = {
     credit += newCredit
-    if(credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair){
+    if (credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair) {
       credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
     }
     println(s"credit = $credit")

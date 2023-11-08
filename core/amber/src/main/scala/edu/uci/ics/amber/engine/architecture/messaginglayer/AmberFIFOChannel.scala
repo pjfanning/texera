@@ -48,7 +48,7 @@ class AmberFIFOChannel() {
 
   def take: WorkflowFIFOMessage = {
     val msg = fifoQueue.dequeue()
-    synchronized{
+    synchronized {
       consumedCredit += getInMemSize(msg)
     }
     msg
@@ -63,24 +63,23 @@ class AmberFIFOChannel() {
   def isEnabled: Boolean = enabled
 
   def getTotalMessageSize: Long = {
-    if(fifoQueue.nonEmpty){
+    if (fifoQueue.nonEmpty) {
       fifoQueue.map(getInMemSize(_)).sum
-    }else{
+    } else {
       0
     }
   }
 
   def getTotalStashedSize: Long =
-    if(ofoMap.nonEmpty){
+    if (ofoMap.nonEmpty) {
       ofoMap.values.map(getInMemSize(_)).sum
-    }else{
+    } else {
       0
     }
 
-
-  def getConsumedCredits:Long = {
+  def getConsumedCredits: Long = {
     var result = 0L
-    synchronized{
+    synchronized {
       result = consumedCredit
       consumedCredit = 0L
     }
