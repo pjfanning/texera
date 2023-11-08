@@ -29,7 +29,7 @@ class TrivialControlTester(
         case _                       => ???
       }
     }
-    sender ! NetworkAck(id, Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair)
+    sender ! NetworkAck(id, 0)
   }
 
   /** flow-control */
