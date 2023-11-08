@@ -56,4 +56,6 @@ class AmberFIFOChannel() {
   def isEnabled: Boolean = enabled
 
   def getTotalMessageSize: Long = fifoQueue.map(getInMemSize(_)).sum
+
+  def getTotalStashedSize: Long = ofoMap.values.map(getInMemSize(_)).sum
 }
