@@ -8,7 +8,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 }
 import edu.uci.ics.texera.web.model.websocket.request.CacheStatusUpdateRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, PAUSED, RUNNING}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
@@ -27,8 +27,12 @@ object WorkflowCacheChecker {
       return
     }
     if (workflowStateOpt.get.jobService.getValue != null) {
-      // disable check if the workflow is running.
-      return
+      val currentState =
+        workflowStateOpt.get.jobService.getValue.stateStore.jobMetadataStore.getState.state
+      if (currentState == RUNNING || currentState == PAUSED) {
+        // disable check if the workflow execution is active.
+        return
+      }
     }
     val oldPlan = workflowStateOpt.get.lastCompletedLogicalPlan
     if (oldPlan == null) {
