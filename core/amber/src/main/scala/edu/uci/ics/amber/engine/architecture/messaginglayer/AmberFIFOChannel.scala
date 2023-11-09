@@ -43,7 +43,7 @@ class AmberFIFOChannel() {
     current += 1
     while (ofoMap.contains(current)) {
       val msg = ofoMap(current)
-      fifoQueue.enqueue()
+      fifoQueue.enqueue(msg)
       holdCredit += getInMemSize(msg)
       ofoMap.remove(current)
       current += 1
