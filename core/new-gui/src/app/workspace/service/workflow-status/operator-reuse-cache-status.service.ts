@@ -30,6 +30,8 @@ export class OperatorReuseCacheStatusService {
     merge(
       this.workflowActionService.getTexeraGraph().getLinkAddStream(),
       this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
+      this.workflowActionService.getTexeraGraph().getOperatorAddStream(),
+      this.workflowActionService.getTexeraGraph().getOperatorDeleteStream(),
       this.workflowActionService
         .getTexeraGraph()
         .getOperatorPropertyChangeStream()
