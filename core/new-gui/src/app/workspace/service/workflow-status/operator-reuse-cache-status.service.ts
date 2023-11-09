@@ -47,7 +47,7 @@ export class OperatorReuseCacheStatusService {
         )
     ).subscribe(() => {
       const workflow = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
-      this.workflowWebsocketService.send("CacheStatusUpdateRequest", workflow);
+      this.workflowWebsocketService.send("EditingTimeCompilationRequest", workflow);
     });
   }
 
