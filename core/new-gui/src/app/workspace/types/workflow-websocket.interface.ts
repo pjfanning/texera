@@ -57,7 +57,7 @@ export interface WorkflowFatalError
 
 export interface WorkflowErrorEvent
   extends Readonly<{
-    errors: ReadonlyArray<WorkflowFatalError>;
+    fatalErrors: ReadonlyArray<WorkflowFatalError>;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
@@ -181,7 +181,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   AddBreakpointRequest: BreakpointInfo;
-  CacheStatusUpdateRequest: LogicalPlan;
+  EditingTimeCompilationRequest: LogicalPlan;
   HeartBeatRequest: {};
   ModifyLogicRequest: ModifyOperatorLogic;
   ResultExportRequest: ResultExportRequest;

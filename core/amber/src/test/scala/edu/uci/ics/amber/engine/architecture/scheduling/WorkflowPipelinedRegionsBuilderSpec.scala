@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import edu.uci.ics.amber.engine.e2e.TestOperators
-import edu.uci.ics.amber.engine.e2e.Utils.getWorkflow
+import edu.uci.ics.amber.engine.e2e.Utils.buildWorkflow
 import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
 import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.{
@@ -19,7 +19,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = getWorkflow(
+    val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         OperatorLink(
@@ -39,7 +39,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val headerlessCsvOpDesc2 = TestOperators.headerlessSmallCsvScanOpDesc()
     val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = getWorkflow(
+    val workflow = buildWorkflow(
       List(
         headerlessCsvOpDesc1,
         headerlessCsvOpDesc2,
@@ -91,7 +91,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = getWorkflow(
+    val workflow = buildWorkflow(
       List(
         headerlessCsvOpDesc1,
         keywordOpDesc,
@@ -127,7 +127,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val hashJoin1 = TestOperators.joinOpDesc("column-1", "Region")
     val hashJoin2 = TestOperators.joinOpDesc("column-2", "Country")
     val sink = TestOperators.sinkOpDesc()
-    val workflow = getWorkflow(
+    val workflow = buildWorkflow(
       List(
         buildCsv,
         probeCsv,
@@ -168,7 +168,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val training = new PythonUDFOpDescV2()
     val inference = new DualInputPortsPythonUDFOpDescV2()
     val sink = TestOperators.sinkOpDesc()
-    val workflow = getWorkflow(
+    val workflow = buildWorkflow(
       List(
         csv,
         split,

@@ -7,7 +7,7 @@ package edu.uci.ics.texera.web.workflowruntimestate
 
 @SerialVersionUID(0L)
 final case class WorkflowFatalError(
-    `type`: edu.uci.ics.texera.web.workflowruntimestate.ErrorType = edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR,
+    `type`: edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR,
     timestamp: com.google.protobuf.timestamp.Timestamp = com.google.protobuf.timestamp.Timestamp.defaultInstance,
     message: _root_.scala.Predef.String = "",
     details: _root_.scala.Predef.String = "",
@@ -110,7 +110,7 @@ final case class WorkflowFatalError(
         }
       };
     }
-    def withType(__v: edu.uci.ics.texera.web.workflowruntimestate.ErrorType): WorkflowFatalError = copy(`type` = __v)
+    def withType(__v: edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType): WorkflowFatalError = copy(`type` = __v)
     def withTimestamp(__v: com.google.protobuf.timestamp.Timestamp): WorkflowFatalError = copy(timestamp = __v)
     def withMessage(__v: _root_.scala.Predef.String): WorkflowFatalError = copy(message = __v)
     def withDetails(__v: _root_.scala.Predef.String): WorkflowFatalError = copy(details = __v)
@@ -163,7 +163,7 @@ final case class WorkflowFatalError(
 object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError] {
   implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError] = this
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError = {
-    var __type: edu.uci.ics.texera.web.workflowruntimestate.ErrorType = edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR
+    var __type: edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR
     var __timestamp: _root_.scala.Option[com.google.protobuf.timestamp.Timestamp] = _root_.scala.None
     var __message: _root_.scala.Predef.String = ""
     var __details: _root_.scala.Predef.String = ""
@@ -175,7 +175,7 @@ object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
       _tag__ match {
         case 0 => _done__ = true
         case 8 =>
-          __type = edu.uci.ics.texera.web.workflowruntimestate.ErrorType.fromValue(_input__.readEnum())
+          __type = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.fromValue(_input__.readEnum())
         case 18 =>
           __timestamp = _root_.scala.Some(__timestamp.fold(_root_.scalapb.LiteParser.readMessage[com.google.protobuf.timestamp.Timestamp](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
         case 26 =>
@@ -202,7 +202,7 @@ object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
       edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError(
-        `type` = edu.uci.ics.texera.web.workflowruntimestate.ErrorType.fromValue(__fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scalapb.descriptors.EnumValueDescriptor]).getOrElse(edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR.scalaValueDescriptor).number),
+        `type` = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.fromValue(__fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scalapb.descriptors.EnumValueDescriptor]).getOrElse(edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR.scalaValueDescriptor).number),
         timestamp = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[com.google.protobuf.timestamp.Timestamp]).getOrElse(com.google.protobuf.timestamp.Timestamp.defaultInstance),
         message = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
         details = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
@@ -223,11 +223,11 @@ object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = {
     (__fieldNumber: @_root_.scala.unchecked) match {
-      case 1 => edu.uci.ics.texera.web.workflowruntimestate.ErrorType
+      case 1 => edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType
     }
   }
   lazy val defaultInstance = edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError(
-    `type` = edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR,
+    `type` = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR,
     timestamp = com.google.protobuf.timestamp.Timestamp.defaultInstance,
     message = "",
     details = "",
@@ -235,7 +235,7 @@ object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
     workerId = ""
   )
   implicit class WorkflowFatalErrorLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError](_l) {
-    def `type`: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.ErrorType] = field(_.`type`)((c_, f_) => c_.copy(`type` = f_))
+    def `type`: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType] = field(_.`type`)((c_, f_) => c_.copy(`type` = f_))
     def timestamp: _root_.scalapb.lenses.Lens[UpperPB, com.google.protobuf.timestamp.Timestamp] = field(_.timestamp)((c_, f_) => c_.copy(timestamp = f_))
     def message: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.message)((c_, f_) => c_.copy(message = f_))
     def details: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.details)((c_, f_) => c_.copy(details = f_))
@@ -249,7 +249,7 @@ object WorkflowFatalError extends scalapb.GeneratedMessageCompanion[edu.uci.ics.
   final val OPERATORID_FIELD_NUMBER = 5
   final val WORKERID_FIELD_NUMBER = 6
   def of(
-    `type`: edu.uci.ics.texera.web.workflowruntimestate.ErrorType,
+    `type`: edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType,
     timestamp: com.google.protobuf.timestamp.Timestamp,
     message: _root_.scala.Predef.String,
     details: _root_.scala.Predef.String,

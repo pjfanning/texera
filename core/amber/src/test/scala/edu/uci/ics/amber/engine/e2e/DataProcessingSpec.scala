@@ -19,7 +19,7 @@
 //import com.twitter.util.{Await, Promise}
 //import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 //import edu.uci.ics.amber.engine.common.client.AmberClient
-//import edu.uci.ics.amber.engine.e2e.Utils.getWorkflow
+//import edu.uci.ics.amber.engine.e2e.Utils.buildWorkflow
 //import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 //
 //import scala.concurrent.duration._
@@ -99,7 +99,7 @@
 //  "Engine" should "execute headerlessCsv->sink workflow normally" in {
 //    val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(headerlessCsvOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -117,7 +117,7 @@
 //  "Engine" should "execute headerlessMultiLineDataCsv-->sink workflow normally" in {
 //    val headerlessCsvOpDesc = TestOperators.headerlessSmallMultiLineDataCsvScanOpDesc()
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(headerlessCsvOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -135,7 +135,7 @@
 //  "Engine" should "execute jsonl->sink workflow normally" in {
 //    val jsonlOp = TestOperators.smallJSONLScanOpDesc()
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(jsonlOp, sink),
 //      List(
 //        OperatorLink(
@@ -164,7 +164,7 @@
 //  "Engine" should "execute mediumFlattenJsonl->sink workflow normally" in {
 //    val jsonlOp = TestOperators.mediumFlattenJSONLScanOpDesc()
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(jsonlOp, sink),
 //      List(
 //        OperatorLink(
@@ -194,7 +194,7 @@
 //    val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
 //    val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(headerlessCsvOpDesc, keywordOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -214,7 +214,7 @@
 //    // Get only the highest count, for testing purposes
 //    val wordCountOpDesc = TestOperators.wordCloudOpDesc("column-1", 1)
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(headerlessCsvOpDesc, wordCountOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -234,7 +234,7 @@
 //  "Engine" should "execute csv->sink workflow normally" in {
 //    val csvOpDesc = TestOperators.smallCsvScanOpDesc()
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(csvOpDesc, sink),
 //      List(
 //        OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
@@ -248,7 +248,7 @@
 //    val csvOpDesc = TestOperators.smallCsvScanOpDesc()
 //    val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(csvOpDesc, keywordOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -268,7 +268,7 @@
 //    val countOpDesc =
 //      TestOperators.aggregateAndGroupByDesc("Region", AggregationFunction.COUNT, List[String]())
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(csvOpDesc, keywordOpDesc, countOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -296,7 +296,7 @@
 //        List[String]("Country")
 //      )
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
 //      List(
 //        OperatorLink(
@@ -322,7 +322,7 @@
 //    val headerlessCsvOpDesc2 = TestOperators.headerlessSmallCsvScanOpDesc()
 //    val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(
 //        headerlessCsvOpDesc1,
 //        headerlessCsvOpDesc2,
@@ -374,7 +374,7 @@
 //    )
 //
 //    val sink = TestOperators.sinkOpDesc()
-//    val workflow = getWorkflow(
+//    val workflow = buildWorkflow(
 //      List(inMemoryMsSQLSourceOpDesc, sink),
 //      List(
 //        OperatorLink(

@@ -152,6 +152,6 @@ export type ExecutionStateInfo = Readonly<
     }
   | {
       state: ExecutionState.Failed;
-      errorMessages: Readonly<WorkflowFatalError[]>;
+      errorMessages: ReadonlyArray<WorkflowFatalError>;
     }
 >;
