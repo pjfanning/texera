@@ -185,9 +185,6 @@ class WorkflowScheduler(
                 ),
                 workerID
               )
-              .onFailure { error =>
-                asyncRPCClient.sendToClient(FatalError(error, Some(workerID)))
-              }
           })
           .toSeq
       )
