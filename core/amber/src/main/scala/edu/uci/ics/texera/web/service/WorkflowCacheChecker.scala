@@ -15,7 +15,6 @@ object WorkflowCacheChecker {
       sessionState: SessionState,
       request: EditingTimeCompilationRequest
   ): Unit = {
-
     val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse()
     val cacheUpdateResult = request.opsToReuseResult
       .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))

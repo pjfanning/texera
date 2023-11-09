@@ -57,7 +57,7 @@ export interface WorkflowFatalError
 
 export interface WorkflowErrorEvent
   extends Readonly<{
-    errors: ReadonlyArray<WorkflowFatalError>;
+    fatalErrors: ReadonlyArray<WorkflowFatalError>;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
