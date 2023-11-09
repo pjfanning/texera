@@ -13,7 +13,7 @@ import edu.uci.ics.texera.web.model.websocket.response.ClusterStatusUpdateEvent
 import edu.uci.ics.texera.web.service.{WorkflowJobService, WorkflowService}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 
 import java.time.Instant
@@ -62,7 +62,7 @@ class ClusterListener extends Actor with AmberLogging {
       stats.withEndTimeStamp(System.currentTimeMillis())
     )
     jobService.stateStore.jobMetadataStore.updateState { jobInfo =>
-      updateWorkflowState(FAILED, jobInfo).addErrors(
+      updateWorkflowState(FAILED, jobInfo).addFatalErrors(
         WorkflowFatalError(
           FAILURE,
           Timestamp(Instant.now),

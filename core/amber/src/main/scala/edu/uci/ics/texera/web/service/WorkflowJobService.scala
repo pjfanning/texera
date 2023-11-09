@@ -8,18 +8,30 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{
+  TexeraWebSocketEvent,
+  WorkflowErrorEvent,
+  WorkflowStateEvent
+}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.{COMPILATION_ERROR, FAILURE}
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.{COMPILATION_ERROR, FAILURE}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED, READY, RUNNING}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
+  COMPLETED,
+  FAILED,
+  READY,
+  RUNNING
+}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.python.{
+  DualInputPortsPythonUDFOpDescV2,
+  PythonUDFOpDescV2
+}
 
 import java.time.Instant
 import scala.collection.mutable
@@ -34,10 +46,10 @@ class WorkflowJobService(
 
   val errorHandler: Throwable => Unit = { t =>
     {
-      t.printStackTrace()
+      logger.error("error during execution", t)
       stateStore.statsStore.updateState(stats => stats.withEndTimeStamp(System.currentTimeMillis()))
       stateStore.jobMetadataStore.updateState { jobInfo =>
-        updateWorkflowState(FAILED, jobInfo).addErrors(
+        updateWorkflowState(FAILED, jobInfo).addFatalErrors(
           WorkflowFatalError(
             FAILURE,
             Timestamp(Instant.now),
@@ -64,8 +76,8 @@ class WorkflowJobService(
         }
       }
       // Check if new error occurred
-      if (newState.errors != oldState.errors) {
-        outputEvts.append(WorkflowErrorEvent(newState.errors))
+      if (newState.fatalErrors != oldState.fatalErrors) {
+        outputEvts.append(WorkflowErrorEvent(newState.fatalErrors))
       }
       outputEvts
     })
@@ -81,7 +93,7 @@ class WorkflowJobService(
     logicalPlan = LogicalPlan(request.logicalPlan, workflowContext)
     logicalPlan.initializeLogicalPlan(stateStore)
     try {
-      workflowCompiler = createWorkflowCompiler(logicalPlan)
+      workflowCompiler = new WorkflowCompiler(logicalPlan)
       workflow = workflowCompiler.amberWorkflow(
         WorkflowIdentity(workflowContext.jobId),
         resultService.opResultStorage,
@@ -91,7 +103,7 @@ class WorkflowJobService(
       case e: Throwable =>
         stateStore.jobMetadataStore.updateState { metadataStore =>
           updateWorkflowState(FAILED, metadataStore)
-            .addErrors(
+            .addFatalErrors(
               WorkflowFatalError(
                 COMPILATION_ERROR,
                 Timestamp(Instant.now),
@@ -124,7 +136,7 @@ class WorkflowJobService(
   var jobReconfigurationService: JobReconfigurationService = _
   var jobStatsService: JobStatsService = _
   var jobRuntimeService: JobRuntimeService = _
-  var jobPythonService: JobConsoleService = _
+  var jobConsoleService: JobConsoleService = _
 
   def startWorkflow(): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
@@ -143,7 +155,7 @@ class WorkflowJobService(
       jobBreakpointService,
       jobReconfigurationService
     )
-    jobPythonService = new JobConsoleService(client, stateStore, wsInput, jobBreakpointService)
+    jobConsoleService = new JobConsoleService(client, stateStore, wsInput, jobBreakpointService)
 
     for (pair <- workflowCompiler.logicalPlan.breakpoints) {
       Await.result(
@@ -153,19 +165,21 @@ class WorkflowJobService(
     }
     resultService.attachToJob(stateStore, workflowCompiler.logicalPlan, client)
     stateStore.jobMetadataStore.updateState(jobInfo =>
-      updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionID)).withErrors(Seq.empty)
+      updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionID))
+        .withFatalErrors(Seq.empty)
     )
     stateStore.statsStore.updateState(stats => stats.withStartTimeStamp(System.currentTimeMillis()))
     client.sendAsyncWithCallback[Unit](
       StartWorkflow(),
-      _ => stateStore.jobMetadataStore.updateState(jobInfo => updateWorkflowState(RUNNING, jobInfo))
+      _ =>
+        stateStore.jobMetadataStore.updateState(jobInfo =>
+          if (jobInfo.state != FAILED) {
+            updateWorkflowState(RUNNING, jobInfo)
+          } else {
+            jobInfo
+          }
+        )
     )
-  }
-
-  private[this] def createWorkflowCompiler(
-      logicalPlan: LogicalPlan
-  ): WorkflowCompiler = {
-    new WorkflowCompiler(logicalPlan)
   }
 
   override def unsubscribeAll(): Unit = {
@@ -174,7 +188,7 @@ class WorkflowJobService(
       // runtime created
       jobBreakpointService.unsubscribeAll()
       jobRuntimeService.unsubscribeAll()
-      jobPythonService.unsubscribeAll()
+      jobConsoleService.unsubscribeAll()
       jobStatsService.unsubscribeAll()
       jobReconfigurationService.unsubscribeAll()
     }

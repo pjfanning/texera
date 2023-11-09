@@ -165,7 +165,7 @@ object ConsoleMessage extends scalapb.GeneratedMessageCompanion[edu.uci.ics.ambe
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessage = {
     var __workerId: _root_.scala.Predef.String = ""
     var __timestamp: _root_.scala.Option[com.google.protobuf.timestamp.Timestamp] = _root_.scala.None
-    var __msgType: edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.DEBUGGER
+    var __msgType: edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.PRINT
     var __source: _root_.scala.Predef.String = ""
     var __title: _root_.scala.Predef.String = ""
     var __message: _root_.scala.Predef.String = ""
@@ -204,7 +204,7 @@ object ConsoleMessage extends scalapb.GeneratedMessageCompanion[edu.uci.ics.ambe
       edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessage(
         workerId = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
         timestamp = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[com.google.protobuf.timestamp.Timestamp]).getOrElse(com.google.protobuf.timestamp.Timestamp.defaultInstance),
-        msgType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.fromValue(__fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scalapb.descriptors.EnumValueDescriptor]).getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.DEBUGGER.scalaValueDescriptor).number),
+        msgType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.fromValue(__fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[_root_.scalapb.descriptors.EnumValueDescriptor]).getOrElse(edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.PRINT.scalaValueDescriptor).number),
         source = __fieldsMap.get(scalaDescriptor.findFieldByNumber(4).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
         title = __fieldsMap.get(scalaDescriptor.findFieldByNumber(5).get).map(_.as[_root_.scala.Predef.String]).getOrElse(""),
         message = __fieldsMap.get(scalaDescriptor.findFieldByNumber(6).get).map(_.as[_root_.scala.Predef.String]).getOrElse("")
@@ -229,7 +229,7 @@ object ConsoleMessage extends scalapb.GeneratedMessageCompanion[edu.uci.ics.ambe
   lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessage(
     workerId = "",
     timestamp = com.google.protobuf.timestamp.Timestamp.defaultInstance,
-    msgType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.DEBUGGER,
+    msgType = edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessageType.PRINT,
     source = "",
     title = "",
     message = ""

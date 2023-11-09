@@ -118,7 +118,7 @@ export type WorkflowAvailableResultEvent = Readonly<{
 
 export type OperatorResultCacheStatus = "cache invalid" | "cache valid";
 
-export interface CacheStatusUpdateEvent
+export interface EditingTimeCompilationRequest
   extends Readonly<{
     cacheStatusMap: Record<string, OperatorResultCacheStatus>;
   }> {}
@@ -210,7 +210,7 @@ export type TexeraWebsocketEventTypeMap = {
   PaginatedResultEvent: PaginatedResultEvent;
   ResultExportResponse: ResultExportResponse;
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
-  CacheStatusUpdateEvent: CacheStatusUpdateEvent;
+  EditingTimeCompilationRequest: EditingTimeCompilationRequest;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
   WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
   ModifyLogicResponse: ModifyLogicResponse;

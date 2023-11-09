@@ -70,7 +70,7 @@ export class OperatorReuseCacheStatusService {
           this.jointUIService.changeOperatorReuseCacheStatus(mainJointPaper, op);
         });
       });
-    this.workflowWebsocketService.subscribeToEvent("CacheStatusUpdateEvent").subscribe(event => {
+    this.workflowWebsocketService.subscribeToEvent("EditingTimeCompilationRequest").subscribe(event => {
       const mainJointPaper = this.workflowActionService.getJointGraphWrapper().getMainJointPaper();
       if (!mainJointPaper) {
         return;

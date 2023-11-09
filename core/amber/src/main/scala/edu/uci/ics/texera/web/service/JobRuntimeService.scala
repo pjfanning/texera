@@ -5,13 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  WorkflowErrorEvent,
-  TexeraWebSocketEvent,
-  WorkflowStateEvent
-}
 import edu.uci.ics.texera.web.model.websocket.request.{
   SkipTupleRequest,
   WorkflowKillRequest,
@@ -21,8 +15,6 @@ import edu.uci.ics.texera.web.model.websocket.request.{
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
-
-import scala.collection.mutable
 
 class JobRuntimeService(
     client: AmberClient,
