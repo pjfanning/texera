@@ -80,6 +80,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           }
         case editingTimeCompilationRequest: EditingTimeCompilationRequest =>
           if (workflowStateOpt.isDefined) {
+            var stateStore = new JobStateStore()
             if (workflowStateOpt.get.jobService.hasValue) {
               val currentState =
                 workflowStateOpt.get.jobService.getValue.stateStore.jobMetadataStore.getState.state
@@ -87,6 +88,7 @@ class WorkflowWebsocketResource extends LazyLogging {
                 // disable check if the workflow execution is active.
                 return
               }
+              stateStore = workflowStateOpt.get.jobService.getValue.stateStore
             }
             val newPlan = {
               LogicalPlan.apply(
@@ -94,7 +96,6 @@ class WorkflowWebsocketResource extends LazyLogging {
                 new WorkflowContext()
               )
             }
-            val stateStore = new JobStateStore()
             newPlan.initializeLogicalPlan(stateStore)
             if (stateStore.jobMetadataStore.getState.state == FAILED) {
               sessionState.send(WorkflowStateEvent("Failed"))
