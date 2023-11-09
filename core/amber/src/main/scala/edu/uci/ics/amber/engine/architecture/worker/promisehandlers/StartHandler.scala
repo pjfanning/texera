@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, EndOfUpstream}
@@ -23,7 +23,13 @@ trait StartHandler {
 
   registerHandler { (msg: StartWorker, sender) =>
     if (dp.operator.isInstanceOf[ISourceOperatorExecutor]) {
-      dp.stateManager.assertState(READY, PAUSED)
+      dp.stateManager.assertState(READY)
+      dp.stateManager.transitTo(RUNNING)
+      // for source operator: add a virtual input channel just for kicking off the execution
+      dp.registerInput(
+        SOURCE_STARTER_ACTOR,
+        LinkIdentity(SOURCE_STARTER_OP, 0, dp.getOperatorId, 0)
+      )
       // for source operator: add a virtual input channel just for kicking off the execution
       dp.registerInput(
         SOURCE_STARTER_ACTOR,

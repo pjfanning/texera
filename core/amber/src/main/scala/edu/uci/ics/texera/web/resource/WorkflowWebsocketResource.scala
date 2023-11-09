@@ -9,9 +9,13 @@ import edu.uci.ics.texera.web.model.websocket.event.{WorkflowErrorEvent, Workflo
 import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
-import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.FAILURE
+import edu.uci.ics.texera.web.storage.JobStateStore
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.FAILURE
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, PAUSED, RUNNING}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
+import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicInteger
@@ -74,8 +78,39 @@ class WorkflowWebsocketResource extends LazyLogging {
               jobService.jobReconfigurationService.modifyOperatorLogic(modifyLogicRequest)
             sessionState.send(modifyLogicResponse)
           }
-        case cacheStatusUpdateRequest: CacheStatusUpdateRequest =>
-          WorkflowCacheChecker.handleCacheStatusUpdateRequest(session, cacheStatusUpdateRequest)
+        case editingTimeCompilationRequest: EditingTimeCompilationRequest =>
+          if (workflowStateOpt.isDefined) {
+            var stateStore = new JobStateStore()
+            if (workflowStateOpt.get.jobService.hasValue) {
+              val currentState =
+                workflowStateOpt.get.jobService.getValue.stateStore.jobMetadataStore.getState.state
+              if (currentState == RUNNING || currentState == PAUSED) {
+                // disable check if the workflow execution is active.
+                return
+              }
+              stateStore = workflowStateOpt.get.jobService.getValue.stateStore
+            }
+            val newPlan = {
+              LogicalPlan.apply(
+                editingTimeCompilationRequest.toLogicalPlanPojo(),
+                new WorkflowContext()
+              )
+            }
+            newPlan.initializeLogicalPlan(stateStore)
+            if (stateStore.jobMetadataStore.getState.state == FAILED) {
+              sessionState.send(WorkflowStateEvent("Failed"))
+              sessionState.send(
+                WorkflowErrorEvent(stateStore.jobMetadataStore.getState.fatalErrors)
+              )
+            } else {
+              WorkflowCacheChecker.handleCacheStatusUpdate(
+                workflowStateOpt.get.lastCompletedLogicalPlan,
+                newPlan,
+                sessionState,
+                editingTimeCompilationRequest
+              )
+            }
+          }
         case workflowExecuteRequest: WorkflowExecuteRequest =>
           workflowStateOpt match {
             case Some(workflow) => workflow.initJobService(workflowExecuteRequest, uidOpt)

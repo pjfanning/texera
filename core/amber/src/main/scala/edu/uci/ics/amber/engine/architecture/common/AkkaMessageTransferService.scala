@@ -64,9 +64,8 @@ class AkkaMessageTransferService(
       chainedStep: WorkflowFIFOMessage => Unit
   ): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(msg.channel, new FlowControl())
-    flowControl.inputMessage(msg).foreach { outMsg =>
-      chainedStep(outMsg)
-    }
+    flowControl.decreaseCredit(msg)
+    chainedStep(msg)
     checkForBackPressure()
   }
 
@@ -105,9 +104,6 @@ class AkkaMessageTransferService(
   def addCreditToChannel(channel: ChannelID, credit: Int): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(channel, new FlowControl())
     flowControl.addCredit(credit)
-    flowControl.getMessagesToForward.foreach(out =>
-      forwardToCongestionControl(out, refService.forwardToActor)
-    )
     checkForBackPressure()
   }
 
@@ -126,6 +122,7 @@ class AkkaMessageTransferService(
       return
     }
     backpressured = currentStatus
+    logger.info(s"current backpressure status = $backpressured")
     handleBackpressure(backpressured)
   }
 

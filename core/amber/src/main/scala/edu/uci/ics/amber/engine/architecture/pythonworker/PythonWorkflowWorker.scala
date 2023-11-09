@@ -10,6 +10,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkOutputGateway
 }
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.DataElement
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -55,7 +56,19 @@ class PythonWorkflowWorker(
   private var pythonServerProcess: Process = _
 
   private val networkInputPort = new NetworkInputGateway(actorId)
-  private val networkOutputPort = new NetworkOutputGateway(actorId, transferService.send)
+  private val networkOutputPort = new NetworkOutputGateway(
+    actorId,
+    x => {
+      self ! TriggerSend(x)
+    }
+  )
+
+  def handleSendFromDP: Receive = {
+    case TriggerSend(msg) =>
+      transferService.send(msg)
+  }
+
+  override def receive: Receive = super.receive orElse handleSendFromDP
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = networkInputPort.getChannel(workflowMsg.channel)

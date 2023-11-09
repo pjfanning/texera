@@ -4,10 +4,6 @@ import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks.{break, breakable}
-
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
   * using the network communicator actor NC. The different parts of flow control work as follows:
@@ -36,51 +32,21 @@ import scala.util.control.Breaks.{break, breakable}
   */
 class FlowControl {
 
-  private var credit:Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-  private val dataMessagesAwaitingCredits = new mutable.Queue[WorkflowFIFOMessage]()
-
+  private var credit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   def isOverloaded: Boolean = credit <= 0
 
   /**
     * Determines if an incoming message can be forwarded to the receiver based on the credits available.
     */
-  def inputMessage(msg: WorkflowFIFOMessage): Option[WorkflowFIFOMessage] = {
-    if (credit > 0) {
-      credit -= getInMemSize(msg).intValue()
-      if (dataMessagesAwaitingCredits.isEmpty) {
-        Some(msg)
-      } else {
-        dataMessagesAwaitingCredits.enqueue(msg)
-        Some(dataMessagesAwaitingCredits.dequeue())
-      }
-    } else {
-      dataMessagesAwaitingCredits.enqueue(msg)
-      None
-    }
-  }
-
-  def getMessagesToForward: Array[WorkflowFIFOMessage] = {
-    val messagesToSend = new ArrayBuffer[WorkflowFIFOMessage]()
-    breakable {
-      while (dataMessagesAwaitingCredits.nonEmpty) {
-        val msg = dataMessagesAwaitingCredits.head
-        val messageSize = getInMemSize(msg).intValue()
-        if (credit <= messageSize) {
-          messagesToSend.append(msg)
-          credit -= messageSize
-          dataMessagesAwaitingCredits.dequeue()
-        } else {
-          break
-        }
-      }
-    }
-    messagesToSend.toArray
+  def decreaseCredit(msg: WorkflowFIFOMessage): Unit = {
+    credit -= getInMemSize(msg)
   }
 
   def addCredit(newCredit: Int): Unit = {
     credit += newCredit
-    if(credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair){
+    if (credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair) {
       credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
     }
+    println(s"credit = $credit")
   }
 }

@@ -15,7 +15,7 @@ import edu.uci.ics.texera.workflow.common.workflow.{
 
 object Utils {
 
-  def getWorkflow(
+  def buildWorkflow(
       operators: List[OperatorDescriptor],
       links: List[OperatorLink],
       resultStorage: OpResultStorage = new OpResultStorage(),

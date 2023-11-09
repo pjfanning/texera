@@ -13,7 +13,7 @@ option (scalapb.options) = {
   no_default_values_in_constructor: false
 };
 
-enum ErrorType{
+enum FatalErrorType{
   COMPILATION_ERROR = 0;
   FAILURE = 1;
 }
@@ -84,7 +84,7 @@ message JobStatsStore {
 
 
 message WorkflowFatalError {
-  ErrorType type = 1;
+  FatalErrorType type = 1;
   google.protobuf.Timestamp timestamp = 2 [(scalapb.field).no_box = true];
   string message = 3;
   string details = 4;
@@ -94,7 +94,7 @@ message WorkflowFatalError {
 
 message JobMetadataStore{
   WorkflowAggregatedState state = 1;
-  repeated WorkflowFatalError errors = 2;
+  repeated WorkflowFatalError fatal_errors = 2;
   int64 eid = 3;
   bool is_recovering = 4;
 }

@@ -153,7 +153,7 @@ class WorkflowService(
 
     lifeCycleManager.registerCleanUpOnStateChange(job.stateStore)
     jobService.onNext(job)
-    if (job.stateStore.jobMetadataStore.getState.errors.isEmpty) {
+    if (job.stateStore.jobMetadataStore.getState.fatalErrors.isEmpty) {
       job.startWorkflow()
     }
   }

@@ -112,7 +112,7 @@ object ControlcommandsProto extends _root_.scalapb.GeneratedFileObject {
   xQSEndvcmtlckRlYnVnQ29tbWFuZEgAUhJ3b3JrZXJEZWJ1Z0NvbW1hbmQSpwEKGndvcmtlcl9leGVjdXRpb25fY29tcGxldGVkG
   GUgASgLMkguZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lLmFyY2hpdGVjdHVyZS53b3JrZXIuV29ya2VyRXhlY3V0aW9uQ29tcGxld
   GVkVjJCHeI/GhIYd29ya2VyRXhlY3V0aW9uQ29tcGxldGVkSABSGHdvcmtlckV4ZWN1dGlvbkNvbXBsZXRlZEIOCgxzZWFsZWRfd
-  mFsdWUqRQoSQ29uc29sZU1lc3NhZ2VUeXBlEgwKCERFQlVHR0VSEAASCQoFUFJJTlQQARIJCgVFUlJPUhACEgsKB0NPTU1BTkQQA
+  mFsdWUqRQoSQ29uc29sZU1lc3NhZ2VUeXBlEgkKBVBSSU5UEAASCQoFRVJST1IQARILCgdDT01NQU5EEAISDAoIREVCVUdHRVIQA
   0IJ4j8GSABYAHgBYgZwcm90bzM="""
       ).mkString)
   lazy val scalaDescriptor: _root_.scalapb.descriptors.FileDescriptor = {

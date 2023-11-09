@@ -223,9 +223,6 @@ class WorkflowScheduler(
                 ),
                 workerID
               )
-              .onFailure { error =>
-                asyncRPCClient.sendToClient(FatalError(error, Some(workerID)))
-              }
           })
           .toSeq
       )
@@ -368,7 +365,13 @@ class WorkflowScheduler(
     if (!startedRegions.contains(region.getId())) {
       constructingRegions.add(region.getId())
       constructRegion(region, akkaActorRefMappingService, actorService)
-      prepareAndStartRegion(region, actorService)
+      prepareAndStartRegion(region, actorService).rescue {
+        case err: Throwable =>
+          // this call may come from client or worker(by execution completed)
+          // thus we need to force it to send error to client.
+          asyncRPCClient.sendToClient(FatalError(err, None))
+          Future.Unit
+      }
     } else {
       // region has already been constructed. Just needs to resume
       resumeRegion(region, actorService)

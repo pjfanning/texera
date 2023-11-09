@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorId
 import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.COMPILATION_ERROR
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -72,7 +72,7 @@ case class LogicalPlan(
           )
       }
       jobStateStore.jobMetadataStore.updateState(metadataStore =>
-        updateWorkflowState(FAILED, metadataStore).addErrors(jobErrors: _*)
+        updateWorkflowState(FAILED, metadataStore).addFatalErrors(jobErrors: _*)
       )
     }
     inputSchemaMap = schemaMap

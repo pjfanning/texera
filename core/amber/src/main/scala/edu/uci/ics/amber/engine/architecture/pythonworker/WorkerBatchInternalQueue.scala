@@ -41,28 +41,11 @@ trait WorkerBatchInternalQueue {
   private val controlQueue = lbmq.getSubQueue(CONTROL_QUEUE)
 
   // the values in below maps are in batches
-  private val inQueueSizeMapping =
-    new mutable.HashMap[ChannelID, Long]() // read and written by main thread
-  @volatile private var outQueueSizeMapping =
+  private val consumedCredit =
     new mutable.HashMap[ChannelID, Long]() // written by DP thread, read by main thread
 
   def enqueueData(elem: InternalQueueElement): Unit = {
     dataQueue.add(elem)
-
-    if (Constants.flowControlEnabled) {
-      elem match {
-        case DataElement(dataPayload, from) =>
-          dataPayload match {
-            case frame: DataFrame =>
-              inQueueSizeMapping(from) =
-                inQueueSizeMapping.getOrElseUpdate(from, 0L) + frame.inMemSize
-            case _ =>
-            // do nothing
-          }
-        case _ =>
-        // do nothing
-      }
-    }
   }
   def enqueueMarker(elem: InternalQueueElement): Unit = {
     dataQueue.add(elem)
@@ -80,12 +63,14 @@ trait WorkerBatchInternalQueue {
     if (Constants.flowControlEnabled) {
       elem match {
         case DataElement(dataPayload, from) =>
-          dataPayload match {
-            case frame: DataFrame =>
-              outQueueSizeMapping(from) =
-                outQueueSizeMapping.getOrElseUpdate(from, 0L) + frame.inMemSize
-            case _ =>
-            // do nothing
+          synchronized {
+            consumedCredit(from) =
+              consumedCredit.getOrElseUpdate(from, 0L) + (dataPayload match {
+                case frame: DataFrame =>
+                  frame.inMemSize
+                case _ =>
+                  200L
+              })
           }
         case _ =>
         // do nothing
@@ -105,9 +90,15 @@ trait WorkerBatchInternalQueue {
   def isControlQueueEmpty: Boolean = controlQueue.isEmpty
 
   def getSenderCredits(sender: ChannelID): Int = {
-    val inBytes = inQueueSizeMapping.getOrElseUpdate(sender, 0L)
-    val outBytes = outQueueSizeMapping.getOrElseUpdate(sender, 0L)
-    (Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - (inBytes - outBytes)).toInt
+    if (sender.isControlChannel) {
+      Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+    } else {
+      synchronized {
+        val consumed = consumedCredit.getOrElseUpdate(sender, 0L)
+        consumedCredit(sender) = 0L //clear
+        consumed.toInt
+      }
+    }
   }
 
 }
