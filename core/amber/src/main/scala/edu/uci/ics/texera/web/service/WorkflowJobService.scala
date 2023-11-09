@@ -7,22 +7,22 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWor
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
+import edu.uci.ics.texera.Utils
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.ErrorType.{COMPILATION_ERROR, FAILURE}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, READY, RUNNING}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonUDFOpDescV2}
 
 import java.time.Instant
+import scala.collection.mutable
 
 class WorkflowJobService(
     workflowContext: WorkflowContext,
@@ -50,6 +50,26 @@ class WorkflowJobService(
   }
   val wsInput = new WebsocketInput(errorHandler)
   val stateStore = new JobStateStore()
+
+  addSubscription(
+    stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
+      val outputEvts = new mutable.ArrayBuffer[TexeraWebSocketEvent]()
+      // Update workflow state
+      if (newState.state != oldState.state || newState.isRecovering != oldState.isRecovering) {
+        // Check if is recovering
+        if (newState.isRecovering && newState.state != COMPLETED) {
+          outputEvts.append(WorkflowStateEvent("Recovering"))
+        } else {
+          outputEvts.append(WorkflowStateEvent(Utils.aggregatedStateToString(newState.state)))
+        }
+      }
+      // Check if new error occurred
+      if (newState.errors != oldState.errors) {
+        outputEvts.append(WorkflowErrorEvent(newState.errors))
+      }
+      outputEvts
+    })
+  )
 
   var logicalPlan: LogicalPlan = _
   var workflowCompiler: WorkflowCompiler = _

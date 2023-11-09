@@ -33,26 +33,6 @@ class JobRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
-  addSubscription(
-    stateStore.jobMetadataStore.registerDiffHandler((oldState, newState) => {
-      val outputEvts = new mutable.ArrayBuffer[TexeraWebSocketEvent]()
-      // Update workflow state
-      if (newState.state != oldState.state || newState.isRecovering != oldState.isRecovering) {
-        // Check if is recovering
-        if (newState.isRecovering && newState.state != COMPLETED) {
-          outputEvts.append(WorkflowStateEvent("Recovering"))
-        } else {
-          outputEvts.append(WorkflowStateEvent(Utils.aggregatedStateToString(newState.state)))
-        }
-      }
-      // Check if new error occurred
-      if (newState.errors != oldState.errors) {
-        outputEvts.append(WorkflowErrorEvent(newState.errors))
-      }
-      outputEvts
-    })
-  )
-
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
     throw new RuntimeException("skipping tuple is temporarily disabled")
