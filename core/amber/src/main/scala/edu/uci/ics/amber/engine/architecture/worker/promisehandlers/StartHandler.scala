@@ -3,13 +3,16 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, EndOfUpstream}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.LinkIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{SOURCE_STARTER_ACTOR, SOURCE_STARTER_OP}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{
+  SOURCE_STARTER_ACTOR,
+  SOURCE_STARTER_OP
+}
 
 object StartHandler {
   final case class StartWorker() extends ControlCommand[WorkerState]

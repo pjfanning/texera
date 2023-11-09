@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 
@@ -12,7 +13,7 @@ class AmberFIFOChannel() {
   private var current = 0L
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
-  private var consumedCredit = 0L
+  @volatile private var holdCredit = 0L
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber
@@ -38,9 +39,12 @@ class AmberFIFOChannel() {
 
   private def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
     fifoQueue.enqueue(data)
+    holdCredit += getInMemSize(data)
     current += 1
     while (ofoMap.contains(current)) {
-      fifoQueue.enqueue(ofoMap(current))
+      val msg = ofoMap(current)
+      fifoQueue.enqueue()
+      holdCredit += getInMemSize(msg)
       ofoMap.remove(current)
       current += 1
     }
@@ -48,9 +52,7 @@ class AmberFIFOChannel() {
 
   def take: WorkflowFIFOMessage = {
     val msg = fifoQueue.dequeue()
-    synchronized {
-      consumedCredit += getInMemSize(msg)
-    }
+    holdCredit -= getInMemSize(msg)
     msg
   }
 
@@ -77,12 +79,7 @@ class AmberFIFOChannel() {
       0
     }
 
-  def getConsumedCredits: Long = {
-    var result = 0L
-    synchronized {
-      result = consumedCredit
-      consumedCredit = 0L
-    }
-    result
+  def getAvailableCredits: Long = {
+    Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - holdCredit
   }
 }
