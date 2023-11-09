@@ -59,6 +59,11 @@ case class LogicalPlan(
   def initializeLogicalPlan(jobStateStore: JobStateStore): Unit = {
     // initialize the logical plan with the current context.
     operators.foreach(_.setContext(context))
+    jobStateStore.jobMetadataStore.updateState { metadataStore =>
+      metadataStore.withFatalErrors(
+        metadataStore.fatalErrors.filter(e => e.`type` != COMPILATION_ERROR)
+      )
+    }
     val (schemaMap, errorList) = propagateWorkflowSchema()
     if (errorList.nonEmpty) {
       val jobErrors = errorList.map {

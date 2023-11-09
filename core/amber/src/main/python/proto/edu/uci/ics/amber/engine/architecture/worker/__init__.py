@@ -10,10 +10,10 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 
 class ConsoleMessageType(betterproto.Enum):
-    DEBUGGER = 0
-    PRINT = 1
-    ERROR = 2
-    COMMAND = 3
+    PRINT = 0
+    ERROR = 1
+    COMMAND = 2
+    DEBUGGER = 3
 
 
 class WorkerState(betterproto.Enum):

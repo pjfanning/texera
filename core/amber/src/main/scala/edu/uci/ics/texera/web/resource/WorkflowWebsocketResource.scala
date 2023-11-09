@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.model.websocket.request._
 import edu.uci.ics.texera.web.model.websocket.response._
 import edu.uci.ics.texera.web.service.{WorkflowCacheChecker, WorkflowService}
 import edu.uci.ics.texera.web.storage.JobStateStore
-import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.FAILURE
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{FAILED, PAUSED, RUNNING}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.{ServletAwareConfigurator, SessionState}
@@ -129,10 +129,11 @@ class WorkflowWebsocketResource extends LazyLogging {
           WorkflowErrorEvent(
             Seq(
               WorkflowFatalError(
-                FAILURE,
+                COMPILATION_ERROR,
                 Timestamp(Instant.now),
                 err.toString,
-                err.getStackTrace.mkString("\n")
+                err.getStackTrace.mkString("\n"),
+                "unknown operator"
               )
             )
           )

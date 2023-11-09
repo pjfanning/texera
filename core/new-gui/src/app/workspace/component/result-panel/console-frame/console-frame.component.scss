@@ -26,6 +26,10 @@
       //border: solid darkblue;
     }
 
+    ::ng-deep .collapse-remove-padding .ant-collapse-header {
+      padding: 0 !important;
+    }
+
     .collapse-message-header {
       width: 100%;
       font-family: monaco, serif;
