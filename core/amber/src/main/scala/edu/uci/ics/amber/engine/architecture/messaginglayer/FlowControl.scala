@@ -4,6 +4,8 @@ import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
+import scala.collection.mutable
+
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
   * using the network communicator actor NC. The different parts of flow control work as follows:
@@ -32,21 +34,49 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
   */
 class FlowControl {
 
-  private var credit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-  def isOverloaded: Boolean = credit <= 0
+  private var senderSideCredit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+  private val stashedMessages: mutable.Queue[WorkflowFIFOMessage] = new mutable.Queue()
+  private var overloaded = false
+  def isOverloaded: Boolean = overloaded
 
   /**
     * Determines if an incoming message can be forwarded to the receiver based on the credits available.
     */
-  def decreaseCredit(msg: WorkflowFIFOMessage): Unit = {
-    credit -= getInMemSize(msg)
+  def enqueueMessage(msg: WorkflowFIFOMessage): Iterable[WorkflowFIFOMessage] = {
+    val creditNeeded = getInMemSize(msg)
+    if (stashedMessages.isEmpty) {
+      if (senderSideCredit >= creditNeeded) {
+        senderSideCredit -= creditNeeded
+        Iterable(msg)
+      } else {
+        overloaded = true
+        stashedMessages.enqueue(msg)
+        Iterable.empty
+      }
+    } else {
+      stashedMessages.enqueue(msg)
+      getMessagesToSend
+    }
   }
 
-  def addCredit(newCredit: Int): Unit = {
-    credit += newCredit
-    if (credit > Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair) {
-      credit = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+  def getMessagesToSend: Iterable[WorkflowFIFOMessage] = {
+    val toSend = mutable.ArrayBuffer[WorkflowFIFOMessage]()
+    while (stashedMessages.nonEmpty && !overloaded) {
+      val msg = stashedMessages.front
+      val creditNeeded = getInMemSize(msg)
+      if (senderSideCredit >= creditNeeded) {
+        senderSideCredit -= creditNeeded
+        toSend.append(msg)
+        stashedMessages.dequeue()
+      } else {
+        overloaded = true
+      }
     }
-    println(s"credit = $credit")
+    toSend
+  }
+
+  def updateCredit(newCredit: Int): Unit = {
+    senderSideCredit = newCredit
+    overloaded = false
   }
 }

@@ -147,7 +147,7 @@ class DataProcessor(
   }
 
   def getSenderCredits(channel: ChannelID): Int = {
-    inputPort.getChannel(channel).getConsumedCredits.toInt
+    inputPort.getChannel(channel).getAvailableCredits.toInt
   }
 
   def getInputPort(identifier: ActorVirtualIdentity): Int = {

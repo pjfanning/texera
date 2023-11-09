@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, RUNNING}
 import edu.uci.ics.amber.engine.common.ISourceOperatorExecutor
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, EndOfUpstream}

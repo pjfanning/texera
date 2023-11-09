@@ -107,7 +107,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
     case CreditRequest(channel) =>
       sender ! CreditResponse(channel, getSenderCredits(channel))
     case CreditResponse(channel, credit) =>
-      transferService.addCreditToChannel(channel, credit)
+      transferService.updateChannelCreditFromReceiver(channel, credit)
   }
 
   def handleDeadLetters: Receive = {

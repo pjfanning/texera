@@ -64,8 +64,9 @@ class AkkaMessageTransferService(
       chainedStep: WorkflowFIFOMessage => Unit
   ): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(msg.channel, new FlowControl())
-    flowControl.decreaseCredit(msg)
-    chainedStep(msg)
+    flowControl.enqueueMessage(msg).foreach { msg =>
+      chainedStep(msg)
+    }
     checkForBackPressure()
   }
 
@@ -97,13 +98,16 @@ class AkkaMessageTransferService(
       refService.forwardToActor(msg)
     }
     if (Constants.flowControlEnabled) {
-      addCreditToChannel(channelId, credit)
+      updateChannelCreditFromReceiver(channelId, credit)
     }
   }
 
-  def addCreditToChannel(channel: ChannelID, credit: Int): Unit = {
+  def updateChannelCreditFromReceiver(channel: ChannelID, credit: Int): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(channel, new FlowControl())
-    flowControl.addCredit(credit)
+    flowControl.updateCredit(credit)
+    flowControl.getMessagesToSend.foreach(out =>
+      forwardToCongestionControl(out, refService.forwardToActor)
+    )
     checkForBackPressure()
   }
 
@@ -122,7 +126,7 @@ class AkkaMessageTransferService(
       return
     }
     backpressured = currentStatus
-    logger.info(s"current backpressure status = $backpressured")
+    logger.debug(s"current backpressure status = $backpressured")
     handleBackpressure(backpressured)
   }
 
@@ -132,7 +136,7 @@ class AkkaMessageTransferService(
       case (channel, cc) =>
         val msgsNeedResend = cc.getTimedOutInTransitMessages
         if (msgsNeedResend.nonEmpty) {
-          logger.info(s"output for $channel: ${cc.getStatusReport}")
+          logger.debug(s"output for $channel: ${cc.getStatusReport}")
         }
         if (refService.hasActorRef(channel.from)) {
           msgsNeedResend.foreach { msg =>
