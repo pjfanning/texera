@@ -8,7 +8,6 @@ from typing import ContextManager
 
 from core.util.buffer.buffer_base import IBuffer
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
-    PythonConsoleMessageV2,
     ConsoleMessage,
     ConsoleMessageType,
 )
@@ -62,7 +61,7 @@ class replace_print(ContextManager):
                     title=complete_str,
                     message="",
                 )
-                self.buf.put(PythonConsoleMessageV2(console_message))
+                self.buf.put(console_message)
 
         builtins.print = wrapped_print
 

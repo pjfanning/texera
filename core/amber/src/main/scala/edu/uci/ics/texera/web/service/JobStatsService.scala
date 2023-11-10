@@ -20,8 +20,8 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 }
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.FAILURE
-import edu.uci.ics.texera.web.workflowruntimestate.{WorkflowFatalError, OperatorWorkerMapping}
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.{EXECUTION_FAILURE}
+import edu.uci.ics.texera.web.workflowruntimestate.{OperatorWorkerMapping, WorkflowFatalError}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
 
 import java.time.Instant
@@ -161,7 +161,7 @@ class JobStatsService(
       client
         .registerCallback[FatalError]((evt: FatalError) => {
           client.shutdown()
-          var opeartorId = ""
+          var opeartorId = "unknown operator"
           var workerId = ""
           if (evt.fromActor.isDefined) {
             opeartorId = VirtualIdentityUtils.getOperator(evt.fromActor.get).operator
@@ -173,7 +173,7 @@ class JobStatsService(
           stateStore.jobMetadataStore.updateState { jobInfo =>
             updateWorkflowState(FAILED, jobInfo).addFatalErrors(
               WorkflowFatalError(
-                FAILURE,
+                EXECUTION_FAILURE,
                 Timestamp(Instant.now),
                 evt.e.toString,
                 evt.e.getStackTrace.mkString("\n"),

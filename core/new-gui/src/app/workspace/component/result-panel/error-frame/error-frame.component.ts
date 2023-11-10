@@ -16,7 +16,7 @@ import { WorkflowActionService } from "../../../service/workflow-graph/model/wor
 export class ErrorFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   // display error message:
-  errorMessages: ReadonlyArray<WorkflowFatalError> = [];
+  categoryToErrorMapping: ReadonlyMap<string, ReadonlyArray<WorkflowFatalError>> = new Map();
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -37,9 +37,17 @@ export class ErrorFrameComponent implements OnInit, OnChanges {
   }
 
   renderError(): void {
-    this.errorMessages = this.executeWorkflowService.getErrorMessages();
+    let errorMessages = this.executeWorkflowService.getErrorMessages();
     if (this.operatorId) {
-      this.errorMessages = this.errorMessages.filter(err => err.operatorId === this.operatorId);
+      errorMessages = errorMessages.filter(err => err.operatorId === this.operatorId);
     }
+    this.categoryToErrorMapping = errorMessages.reduce((acc, obj) => {
+      const key = obj.type.name;
+      if (!acc.has(key)) {
+        acc.set(key, []);
+      }
+      acc.get(key)!.push(obj);
+      return acc;
+    }, new Map<string, WorkflowFatalError[]>());
   }
 }
