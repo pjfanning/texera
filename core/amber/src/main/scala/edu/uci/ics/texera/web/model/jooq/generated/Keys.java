@@ -4,9 +4,11 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.InputOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Project;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.PublicProject;
@@ -20,9 +22,11 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.records.EnvironmentRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileOfProjectRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileOfWorkflowRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.FileRecord;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.records.InputOfEnvironmentRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.ProjectRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.ProjectUserAccessRecord;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.records.PublicProjectRecord;
@@ -55,6 +59,7 @@ public class Keys {
     // IDENTITY definitions
     // -------------------------------------------------------------------------
 
+    public static final Identity<EnvironmentRecord, UInteger> IDENTITY_ENVIRONMENT = Identities0.IDENTITY_ENVIRONMENT;
     public static final Identity<FileRecord, UInteger> IDENTITY_FILE = Identities0.IDENTITY_FILE;
     public static final Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Identities0.IDENTITY_PROJECT;
     public static final Identity<UserRecord, UInteger> IDENTITY_USER = Identities0.IDENTITY_USER;
@@ -66,10 +71,12 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<EnvironmentRecord> KEY_ENVIRONMENT_PRIMARY = UniqueKeys0.KEY_ENVIRONMENT_PRIMARY;
     public static final UniqueKey<FileRecord> KEY_FILE_OWNER_UID = UniqueKeys0.KEY_FILE_OWNER_UID;
     public static final UniqueKey<FileRecord> KEY_FILE_PRIMARY = UniqueKeys0.KEY_FILE_PRIMARY;
     public static final UniqueKey<FileOfProjectRecord> KEY_FILE_OF_PROJECT_PRIMARY = UniqueKeys0.KEY_FILE_OF_PROJECT_PRIMARY;
     public static final UniqueKey<FileOfWorkflowRecord> KEY_FILE_OF_WORKFLOW_PRIMARY = UniqueKeys0.KEY_FILE_OF_WORKFLOW_PRIMARY;
+    public static final UniqueKey<InputOfEnvironmentRecord> KEY_INPUT_OF_ENVIRONMENT_PRIMARY = UniqueKeys0.KEY_INPUT_OF_ENVIRONMENT_PRIMARY;
     public static final UniqueKey<ProjectRecord> KEY_PROJECT_PRIMARY = UniqueKeys0.KEY_PROJECT_PRIMARY;
     public static final UniqueKey<ProjectRecord> KEY_PROJECT_OWNER_ID = UniqueKeys0.KEY_PROJECT_OWNER_ID;
     public static final UniqueKey<ProjectUserAccessRecord> KEY_PROJECT_USER_ACCESS_PRIMARY = UniqueKeys0.KEY_PROJECT_USER_ACCESS_PRIMARY;
@@ -96,6 +103,7 @@ public class Keys {
     public static final ForeignKey<FileOfProjectRecord, ProjectRecord> FILE_OF_PROJECT_IBFK_2 = ForeignKeys0.FILE_OF_PROJECT_IBFK_2;
     public static final ForeignKey<FileOfWorkflowRecord, FileRecord> FILE_OF_WORKFLOW_IBFK_1 = ForeignKeys0.FILE_OF_WORKFLOW_IBFK_1;
     public static final ForeignKey<FileOfWorkflowRecord, WorkflowRecord> FILE_OF_WORKFLOW_IBFK_2 = ForeignKeys0.FILE_OF_WORKFLOW_IBFK_2;
+    public static final ForeignKey<InputOfEnvironmentRecord, EnvironmentRecord> INPUT_OF_ENVIRONMENT_IBFK_1 = ForeignKeys0.INPUT_OF_ENVIRONMENT_IBFK_1;
     public static final ForeignKey<ProjectRecord, UserRecord> PROJECT_IBFK_1 = ForeignKeys0.PROJECT_IBFK_1;
     public static final ForeignKey<ProjectUserAccessRecord, UserRecord> PROJECT_USER_ACCESS_IBFK_1 = ForeignKeys0.PROJECT_USER_ACCESS_IBFK_1;
     public static final ForeignKey<ProjectUserAccessRecord, ProjectRecord> PROJECT_USER_ACCESS_IBFK_2 = ForeignKeys0.PROJECT_USER_ACCESS_IBFK_2;
@@ -103,6 +111,7 @@ public class Keys {
     public static final ForeignKey<UserConfigRecord, UserRecord> USER_CONFIG_IBFK_1 = ForeignKeys0.USER_CONFIG_IBFK_1;
     public static final ForeignKey<UserFileAccessRecord, UserRecord> USER_FILE_ACCESS_IBFK_1 = ForeignKeys0.USER_FILE_ACCESS_IBFK_1;
     public static final ForeignKey<UserFileAccessRecord, FileRecord> USER_FILE_ACCESS_IBFK_2 = ForeignKeys0.USER_FILE_ACCESS_IBFK_2;
+    public static final ForeignKey<WorkflowRecord, EnvironmentRecord> FK_WORKFLOW_ENVIRONMENT = ForeignKeys0.FK_WORKFLOW_ENVIRONMENT;
     public static final ForeignKey<WorkflowExecutionsRecord, WorkflowVersionRecord> WORKFLOW_EXECUTIONS_IBFK_1 = ForeignKeys0.WORKFLOW_EXECUTIONS_IBFK_1;
     public static final ForeignKey<WorkflowExecutionsRecord, UserRecord> WORKFLOW_EXECUTIONS_IBFK_2 = ForeignKeys0.WORKFLOW_EXECUTIONS_IBFK_2;
     public static final ForeignKey<WorkflowOfProjectRecord, WorkflowRecord> WORKFLOW_OF_PROJECT_IBFK_1 = ForeignKeys0.WORKFLOW_OF_PROJECT_IBFK_1;
@@ -120,6 +129,7 @@ public class Keys {
     // -------------------------------------------------------------------------
 
     private static class Identities0 {
+        public static Identity<EnvironmentRecord, UInteger> IDENTITY_ENVIRONMENT = Internal.createIdentity(Environment.ENVIRONMENT, Environment.ENVIRONMENT.EID);
         public static Identity<FileRecord, UInteger> IDENTITY_FILE = Internal.createIdentity(File.FILE, File.FILE.FID);
         public static Identity<ProjectRecord, UInteger> IDENTITY_PROJECT = Internal.createIdentity(Project.PROJECT, Project.PROJECT.PID);
         public static Identity<UserRecord, UInteger> IDENTITY_USER = Internal.createIdentity(User.USER, User.USER.UID);
@@ -129,10 +139,12 @@ public class Keys {
     }
 
     private static class UniqueKeys0 {
+        public static final UniqueKey<EnvironmentRecord> KEY_ENVIRONMENT_PRIMARY = Internal.createUniqueKey(Environment.ENVIRONMENT, "KEY_environment_PRIMARY", Environment.ENVIRONMENT.EID);
         public static final UniqueKey<FileRecord> KEY_FILE_OWNER_UID = Internal.createUniqueKey(File.FILE, "KEY_file_owner_uid", File.FILE.OWNER_UID, File.FILE.NAME);
         public static final UniqueKey<FileRecord> KEY_FILE_PRIMARY = Internal.createUniqueKey(File.FILE, "KEY_file_PRIMARY", File.FILE.FID);
         public static final UniqueKey<FileOfProjectRecord> KEY_FILE_OF_PROJECT_PRIMARY = Internal.createUniqueKey(FileOfProject.FILE_OF_PROJECT, "KEY_file_of_project_PRIMARY", FileOfProject.FILE_OF_PROJECT.FID, FileOfProject.FILE_OF_PROJECT.PID);
         public static final UniqueKey<FileOfWorkflowRecord> KEY_FILE_OF_WORKFLOW_PRIMARY = Internal.createUniqueKey(FileOfWorkflow.FILE_OF_WORKFLOW, "KEY_file_of_workflow_PRIMARY", FileOfWorkflow.FILE_OF_WORKFLOW.FID, FileOfWorkflow.FILE_OF_WORKFLOW.WID);
+        public static final UniqueKey<InputOfEnvironmentRecord> KEY_INPUT_OF_ENVIRONMENT_PRIMARY = Internal.createUniqueKey(InputOfEnvironment.INPUT_OF_ENVIRONMENT, "KEY_input_of_environment_PRIMARY", InputOfEnvironment.INPUT_OF_ENVIRONMENT.DID, InputOfEnvironment.INPUT_OF_ENVIRONMENT.EID);
         public static final UniqueKey<ProjectRecord> KEY_PROJECT_PRIMARY = Internal.createUniqueKey(Project.PROJECT, "KEY_project_PRIMARY", Project.PROJECT.PID);
         public static final UniqueKey<ProjectRecord> KEY_PROJECT_OWNER_ID = Internal.createUniqueKey(Project.PROJECT, "KEY_project_owner_id", Project.PROJECT.OWNER_ID, Project.PROJECT.NAME);
         public static final UniqueKey<ProjectUserAccessRecord> KEY_PROJECT_USER_ACCESS_PRIMARY = Internal.createUniqueKey(ProjectUserAccess.PROJECT_USER_ACCESS, "KEY_project_user_access_PRIMARY", ProjectUserAccess.PROJECT_USER_ACCESS.UID, ProjectUserAccess.PROJECT_USER_ACCESS.PID);
@@ -157,6 +169,7 @@ public class Keys {
         public static final ForeignKey<FileOfProjectRecord, ProjectRecord> FILE_OF_PROJECT_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_PROJECT_PRIMARY, FileOfProject.FILE_OF_PROJECT, "file_of_project_ibfk_2", FileOfProject.FILE_OF_PROJECT.PID);
         public static final ForeignKey<FileOfWorkflowRecord, FileRecord> FILE_OF_WORKFLOW_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_FILE_PRIMARY, FileOfWorkflow.FILE_OF_WORKFLOW, "file_of_workflow_ibfk_1", FileOfWorkflow.FILE_OF_WORKFLOW.FID);
         public static final ForeignKey<FileOfWorkflowRecord, WorkflowRecord> FILE_OF_WORKFLOW_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_WORKFLOW_PRIMARY, FileOfWorkflow.FILE_OF_WORKFLOW, "file_of_workflow_ibfk_2", FileOfWorkflow.FILE_OF_WORKFLOW.WID);
+        public static final ForeignKey<InputOfEnvironmentRecord, EnvironmentRecord> INPUT_OF_ENVIRONMENT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_ENVIRONMENT_PRIMARY, InputOfEnvironment.INPUT_OF_ENVIRONMENT, "input_of_environment_ibfk_1", InputOfEnvironment.INPUT_OF_ENVIRONMENT.EID);
         public static final ForeignKey<ProjectRecord, UserRecord> PROJECT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, Project.PROJECT, "project_ibfk_1", Project.PROJECT.OWNER_ID);
         public static final ForeignKey<ProjectUserAccessRecord, UserRecord> PROJECT_USER_ACCESS_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, ProjectUserAccess.PROJECT_USER_ACCESS, "project_user_access_ibfk_1", ProjectUserAccess.PROJECT_USER_ACCESS.UID);
         public static final ForeignKey<ProjectUserAccessRecord, ProjectRecord> PROJECT_USER_ACCESS_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_PROJECT_PRIMARY, ProjectUserAccess.PROJECT_USER_ACCESS, "project_user_access_ibfk_2", ProjectUserAccess.PROJECT_USER_ACCESS.PID);
@@ -164,6 +177,7 @@ public class Keys {
         public static final ForeignKey<UserConfigRecord, UserRecord> USER_CONFIG_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, UserConfig.USER_CONFIG, "user_config_ibfk_1", UserConfig.USER_CONFIG.UID);
         public static final ForeignKey<UserFileAccessRecord, UserRecord> USER_FILE_ACCESS_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, UserFileAccess.USER_FILE_ACCESS, "user_file_access_ibfk_1", UserFileAccess.USER_FILE_ACCESS.UID);
         public static final ForeignKey<UserFileAccessRecord, FileRecord> USER_FILE_ACCESS_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_FILE_PRIMARY, UserFileAccess.USER_FILE_ACCESS, "user_file_access_ibfk_2", UserFileAccess.USER_FILE_ACCESS.FID);
+        public static final ForeignKey<WorkflowRecord, EnvironmentRecord> FK_WORKFLOW_ENVIRONMENT = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_ENVIRONMENT_PRIMARY, Workflow.WORKFLOW, "fk_workflow_environment", Workflow.WORKFLOW.EID);
         public static final ForeignKey<WorkflowExecutionsRecord, WorkflowVersionRecord> WORKFLOW_EXECUTIONS_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_WORKFLOW_VERSION_PRIMARY, WorkflowExecutions.WORKFLOW_EXECUTIONS, "workflow_executions_ibfk_1", WorkflowExecutions.WORKFLOW_EXECUTIONS.VID);
         public static final ForeignKey<WorkflowExecutionsRecord, UserRecord> WORKFLOW_EXECUTIONS_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, WorkflowExecutions.WORKFLOW_EXECUTIONS, "workflow_executions_ibfk_2", WorkflowExecutions.WORKFLOW_EXECUTIONS.UID);
         public static final ForeignKey<WorkflowOfProjectRecord, WorkflowRecord> WORKFLOW_OF_PROJECT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_WORKFLOW_PRIMARY, WorkflowOfProject.WORKFLOW_OF_PROJECT, "workflow_of_project_ibfk_1", WorkflowOfProject.WORKFLOW_OF_PROJECT.WID);

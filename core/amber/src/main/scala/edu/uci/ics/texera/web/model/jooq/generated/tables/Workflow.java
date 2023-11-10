@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -35,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Workflow extends TableImpl<WorkflowRecord> {
 
-    private static final long serialVersionUID = -908784271;
+    private static final long serialVersionUID = -1216485099;
 
     /**
      * The reference instance of <code>texera_db.workflow</code>
@@ -81,6 +81,11 @@ public class Workflow extends TableImpl<WorkflowRecord> {
     public final TableField<WorkflowRecord, Timestamp> LAST_MODIFIED_TIME = createField(DSL.name("last_modified_time"), org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.field("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
 
     /**
+     * The column <code>texera_db.workflow.eid</code>.
+     */
+    public final TableField<WorkflowRecord, UInteger> EID = createField(DSL.name("eid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED, this, "");
+
+    /**
      * Create a <code>texera_db.workflow</code> table reference
      */
     public Workflow() {
@@ -120,7 +125,7 @@ public class Workflow extends TableImpl<WorkflowRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT, Indexes.WORKFLOW_PRIMARY);
+        return Arrays.<Index>asList(Indexes.WORKFLOW_FK_WORKFLOW_ENVIRONMENT, Indexes.WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT, Indexes.WORKFLOW_PRIMARY);
     }
 
     @Override
@@ -136,6 +141,15 @@ public class Workflow extends TableImpl<WorkflowRecord> {
     @Override
     public List<UniqueKey<WorkflowRecord>> getKeys() {
         return Arrays.<UniqueKey<WorkflowRecord>>asList(Keys.KEY_WORKFLOW_PRIMARY);
+    }
+
+    @Override
+    public List<ForeignKey<WorkflowRecord, ?>> getReferences() {
+        return Arrays.<ForeignKey<WorkflowRecord, ?>>asList(Keys.FK_WORKFLOW_ENVIRONMENT);
+    }
+
+    public Environment environment() {
+        return new Environment(this, Keys.FK_WORKFLOW_ENVIRONMENT);
     }
 
     @Override
@@ -165,11 +179,11 @@ public class Workflow extends TableImpl<WorkflowRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<String, String, UInteger, String, Timestamp, Timestamp> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row7<String, String, UInteger, String, Timestamp, Timestamp, UInteger> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

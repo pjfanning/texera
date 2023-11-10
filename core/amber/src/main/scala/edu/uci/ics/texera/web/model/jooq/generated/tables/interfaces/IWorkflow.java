@@ -76,6 +76,16 @@ public interface IWorkflow extends Serializable {
      */
     public Timestamp getLastModifiedTime();
 
+    /**
+     * Setter for <code>texera_db.workflow.eid</code>.
+     */
+    public void setEid(UInteger value);
+
+    /**
+     * Getter for <code>texera_db.workflow.eid</code>.
+     */
+    public UInteger getEid();
+
     // -------------------------------------------------------------------------
     // FROM and INTO
     // -------------------------------------------------------------------------

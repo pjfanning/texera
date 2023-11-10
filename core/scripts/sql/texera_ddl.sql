@@ -72,10 +72,12 @@ CREATE TABLE IF NOT EXISTS workflow
     `name`               VARCHAR(128)                NOT NULL,
 	`description`        VARCHAR(500),
     `wid`                INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `eid`                INT UNSIGNED,
     `content`            LONGTEXT                    NOT NULL,
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_time` TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`wid`)
+    PRIMARY KEY (`wid`),
+    FOREIGN KEY (`eid`) REFERENCES environment(`eid`) ON DELETE SET NULL
 ) ENGINE = INNODB,
   AUTO_INCREMENT = 1;
 
@@ -198,6 +200,25 @@ CREATE TABLE IF NOT EXISTS workflow_runtime_statistics
     PRIMARY KEY (`workflow_id`, `execution_id`, `operator_id`, `time`),
     FOREIGN KEY (`workflow_id`) REFERENCES `workflow` (`wid`) ON DELETE CASCADE,
     FOREIGN KEY (`execution_id`) REFERENCES `workflow_executions` (`eid`) ON DELETE CASCADE
+) ENGINE = INNODB;
+
+CREATE TABLE IF NOT EXISTS environment
+(
+    `eid`              INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `name`			   VARCHAR(128) NOT NULL DEFAULT 'Untitled Environment',
+    `description`      VARCHAR(1000),
+    `creation_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`eid`)
+) ENGINE = INNODB;
+
+
+CREATE TABLE IF NOT EXISTS input_of_environment
+(
+    `did`                   INT UNSIGNED NOT NULL,
+    `eid`                   INT UNSIGNED NOT NULL,
+    `version_descriptor`    VARCHAR(128),
+    PRIMARY KEY (`did`, `eid`),
+    FOREIGN KEY(`eid`) REFERENCES `environment` (`eid`) ON DELETE CASCADE
 ) ENGINE = INNODB;
 
 -- create fulltext search indexes

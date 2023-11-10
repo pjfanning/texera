@@ -4,9 +4,11 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.InputOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Project;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.PublicProject;
@@ -29,6 +31,11 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
 public class Tables {
 
     /**
+     * The table <code>texera_db.environment</code>.
+     */
+    public static final Environment ENVIRONMENT = Environment.ENVIRONMENT;
+
+    /**
      * The table <code>texera_db.file</code>.
      */
     public static final File FILE = File.FILE;
@@ -42,6 +49,11 @@ public class Tables {
      * The table <code>texera_db.file_of_workflow</code>.
      */
     public static final FileOfWorkflow FILE_OF_WORKFLOW = FileOfWorkflow.FILE_OF_WORKFLOW;
+
+    /**
+     * The table <code>texera_db.input_of_environment</code>.
+     */
+    public static final InputOfEnvironment INPUT_OF_ENVIRONMENT = InputOfEnvironment.INPUT_OF_ENVIRONMENT;
 
     /**
      * The table <code>texera_db.project</code>.
