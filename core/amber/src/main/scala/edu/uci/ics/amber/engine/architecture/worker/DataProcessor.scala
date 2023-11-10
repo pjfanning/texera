@@ -133,7 +133,7 @@ class DataProcessor(
   val stateManager: WorkerStateManager = new WorkerStateManager()
   // 5. batch producer
   val outputManager: OutputManager =
-    new OutputManager(actorId, outputPort)
+    new OutputManager(actorId, outputGateway)
   // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
 
@@ -148,7 +148,7 @@ class DataProcessor(
   }
 
   def getSenderCredits(channel: ChannelID): Int = {
-    inputPort.getChannel(channel).getAvailableCredits.toInt
+    inputGateway.getChannel(channel).getAvailableCredits.toInt
   }
 
   def getInputPort(identifier: ActorVirtualIdentity): Int = {

@@ -86,24 +86,18 @@ class DPThread(
     }
   }
 
-  def dpInterrupted(code: => Unit): Unit = {
-    dp.onInterrupt()
-    code
-    dp.onContinue()
-  }
-
   @throws[Exception]
   private[this] def runDPThreadMainLogic(): Unit = {
     // main DP loop
-    var inputPortExhausted = false
+    var waitingForInput = false
     while (!stopped) {
-      if (internalQueue.size > 0 || dp.pauseManager.isPaused || inputPortExhausted) {
+      if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
         val msgWithCallback = internalQueue.take
         msgWithCallback.msg match {
           case Left(msg) =>
-            val channel = dp.inputPort.getChannel(msg.channel)
+            val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
-            inputPortExhausted = false
+            waitingForInput = false
           case Right(ctrl) =>
             dp.processControlPayload(ChannelID(SELF, SELF, true), ctrl)
         }
@@ -112,7 +106,7 @@ class DPThread(
         }
       }
       if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
-        dp.inputPort.tryPickControlChannel match {
+        dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
             val msg = channel.take
             dp.processControlPayload(msg.channel, msg.payload.asInstanceOf[ControlPayload])
@@ -122,7 +116,7 @@ class DPThread(
         }
       } else {
         // take from input port
-        dp.inputPort.tryPickChannel match {
+        dp.inputGateway.tryPickChannel match {
           case Some(channel) =>
             val msg = channel.take
             logger.info(s"take $msg")
@@ -132,7 +126,7 @@ class DPThread(
               case payload: DataPayload =>
                 dp.processDataPayload(msg.channel, payload)
             }
-          case None => inputPortExhausted = true
+          case None => waitingForInput = true
         }
       }
     }

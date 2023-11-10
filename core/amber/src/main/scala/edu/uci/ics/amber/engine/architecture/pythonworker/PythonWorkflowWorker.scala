@@ -55,8 +55,8 @@ class PythonWorkflowWorker(
   // Python process
   private var pythonServerProcess: Process = _
 
-  private val networkInputPort = new NetworkInputGateway(actorId)
-  private val networkOutputPort = new NetworkOutputGateway(
+  private val networkInputGateway = new NetworkInputGateway(actorId)
+  private val networkOutputGateway = new NetworkOutputGateway(
     actorId,
     x => {
       self ! TriggerSend(x)
@@ -71,7 +71,7 @@ class PythonWorkflowWorker(
   override def receive: Receive = super.receive orElse handleSendFromDP
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    val channel = networkInputPort.getChannel(workflowMsg.channel)
+    val channel = networkInputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     while (channel.isEnabled && channel.hasMessage) {
       val msg = channel.take
@@ -124,7 +124,7 @@ class PythonWorkflowWorker(
     // Try to start the server until it succeeds
     var serverStart = false
     while (!serverStart) {
-      pythonProxyServer = new PythonProxyServer(networkOutputPort, actorId, portNumberPromise)
+      pythonProxyServer = new PythonProxyServer(networkOutputGateway, actorId, portNumberPromise)
       val future = serverThreadExecutor.submit(pythonProxyServer)
       try {
         future.get()
