@@ -1,4 +1,5 @@
 from core.util.buffer.timed_buffer import TimedBuffer
+from proto.edu.uci.ics.amber.engine.architecture.worker import ConsoleMessage
 
 
 class ConsoleMessageManager:
@@ -7,3 +8,6 @@ class ConsoleMessageManager:
 
     def get_messages(self, force_flush: bool = False):
         return self.print_buf.get(force_flush)
+
+    def put_message(self, msg: ConsoleMessage) -> None:
+        self.print_buf.put(msg)

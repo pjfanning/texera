@@ -65,7 +65,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         controller.
         """
         # flush the buffered console prints
-        self._check_and_report_print(force_flush=True)
+        self._check_and_report_console_messages(force_flush=True)
         self.context.operator_manager.operator.close()
         # stop the data processing thread
         self.data_processor.stop()
@@ -171,33 +171,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self._switch_context()
             yield self.context.tuple_processing_manager.get_output_tuple()
 
-    def report_exception(self, exc_info: ExceptionInfo) -> None:
-        """
-        Report the traceback of current stack when an exception occurs.
-        """
-        tb = traceback.extract_tb(exc_info[2])
-        filename, line_number, func_name, text = tb[-1]
-        base_name = os.path.basename(filename)
-        module_name, _ = os.path.splitext(base_name)
-        formatted_exception = traceback.format_exception(*exc_info)
-        title: str = formatted_exception[-1].strip()
-        message: str = "\n".join(formatted_exception)
-        control_command = set_one_of(
-            ControlCommandV2,
-            PythonConsoleMessageV2(
-                ConsoleMessage(
-                    worker_id=self.context.worker_id,
-                    timestamp=datetime.datetime.now(),
-                    msg_type=ConsoleMessageType.ERROR,
-                    source="{}:{}:{}".format(module_name, func_name, line_number),
-                    title=title,
-                    message=message,
-                )
-            ),
-        )
-        self._async_rpc_client.send(
-            ActorVirtualIdentity(name="CONTROLLER"), control_command
-        )
 
     def _process_control_element(self, control_element: ControlElement) -> None:
         """
@@ -323,7 +296,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         Pause the data processing.
         """
-        self._check_and_report_print(force_flush=True)
+        self._check_and_report_console_messages(force_flush=True)
         if self.context.state_manager.confirm_state(
             WorkerState.RUNNING, WorkerState.READY
         ):
@@ -373,12 +346,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
             )
             self._pause_dp()
 
-    def _check_and_report_exception(self) -> None:
+    def _check_exception(self) -> None:
         if self.context.exception_manager.has_exception():
-            self.report_exception(self.context.exception_manager.get_exc_info())
             self._pause_dp()
 
-    def _check_and_report_print(self, force_flush=False) -> None:
+    def _check_and_report_console_messages(self, force_flush=False) -> None:
         for msg in self.context.console_message_manager.get_messages(force_flush):
             self._send_console_message(msg)
 
@@ -392,6 +364,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             - Exception
         We check and report them each time coming back from DataProcessor.
         """
-        self._check_and_report_print()
+        self._check_and_report_console_messages(True)
         self._check_and_report_debug_event()
-        self._check_and_report_exception()
+        self._check_exception()
