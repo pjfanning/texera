@@ -76,7 +76,7 @@ class WorkflowWorker(
     logger.error(s"Encountered fatal error, worker is shutting done.", reason)
     postStop()
     dp.asyncRPCClient.send(
-      FatalError(reason),
+      FatalError(reason, Some(actorId)),
       CONTROLLER
     )
   }
