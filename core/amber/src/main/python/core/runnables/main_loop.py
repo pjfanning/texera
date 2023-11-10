@@ -171,7 +171,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self._switch_context()
             yield self.context.tuple_processing_manager.get_output_tuple()
 
-
     def _process_control_element(self, control_element: ControlElement) -> None:
         """
         Upon receipt of a ControlElement, unpack it into tag and payload to be handled.
