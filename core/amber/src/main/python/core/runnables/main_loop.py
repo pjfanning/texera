@@ -363,6 +363,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             - Exception
         We check and report them each time coming back from DataProcessor.
         """
-        self._check_and_report_console_messages(True)
+        self._check_and_report_console_messages(force_flush=True)
         self._check_and_report_debug_event()
         self._check_exception()
