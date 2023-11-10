@@ -22,6 +22,7 @@ trait StartHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
   registerHandler { (msg: StartWorker, sender) =>
+    logger.info("Starting the worker.")
     if (dp.operator.isInstanceOf[ISourceOperatorExecutor]) {
       dp.stateManager.assertState(READY)
       dp.stateManager.transitTo(RUNNING)

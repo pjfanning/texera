@@ -5,6 +5,7 @@ import akka.pattern.StatusReply.Ack
 import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{NetworkAck, NetworkMessage}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{WorkflowFIFOMessage, WorkflowRecoveryMessage}
 import edu.uci.ics.amber.engine.common.client.ClientActor.{
   ClosureRequest,
@@ -14,6 +15,7 @@ import edu.uci.ics.amber.engine.common.client.ClientActor.{
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
@@ -25,7 +27,8 @@ private[client] object ClientActor {
   case class CommandRequest(command: ControlCommand[_], promise: Promise[Any])
 }
 
-private[client] class ClientActor extends Actor {
+private[client] class ClientActor extends Actor with AmberLogging {
+  var actorId: ActorVirtualIdentity = ActorVirtualIdentity("Client")
   var controller: ActorRef = _
   var controlId = 0L
   val promiseMap = new mutable.LongMap[Promise[Any]]()
@@ -76,6 +79,6 @@ private[client] class ClientActor extends Actor {
       sender ! Ack
       controller ! x
     case other =>
-      println("client actor cannot handle " + other) //skip
+      logger.warn("client actor cannot handle " + other) //skip
   }
 }
