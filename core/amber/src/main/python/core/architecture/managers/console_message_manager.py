@@ -4,10 +4,10 @@ from proto.edu.uci.ics.amber.engine.architecture.worker import ConsoleMessage
 
 class ConsoleMessageManager:
     def __init__(self):
-        self.print_buf = TimedBuffer()
+        self.msg_buf = TimedBuffer()
 
     def get_messages(self, force_flush: bool = False):
-        return self.print_buf.get(force_flush)
+        return self.msg_buf.get(force_flush)
 
     def put_message(self, msg: ConsoleMessage) -> None:
-        self.print_buf.put(msg)
+        self.msg_buf.put(msg)

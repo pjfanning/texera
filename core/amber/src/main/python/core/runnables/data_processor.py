@@ -61,7 +61,7 @@ class DataProcessor(Runnable, Stoppable):
                 )
                 with replace_print(
                     self._context.worker_id,
-                    self._context.console_message_manager.print_buf,
+                    self._context.console_message_manager.msg_buf,
                 ):
                     for output in output_iterator:
                         # output could be a None, a TupleLike, or a TableLike.
