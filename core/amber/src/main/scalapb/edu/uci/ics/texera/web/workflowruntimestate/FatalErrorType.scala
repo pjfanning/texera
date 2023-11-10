@@ -8,7 +8,6 @@ package edu.uci.ics.texera.web.workflowruntimestate
 sealed abstract class FatalErrorType(val value: _root_.scala.Int) extends _root_.scalapb.GeneratedEnum {
   type EnumType = FatalErrorType
   def isCompilationError: _root_.scala.Boolean = false
-  def isInitializationError: _root_.scala.Boolean = false
   def isExecutionFailure: _root_.scala.Boolean = false
   def companion: _root_.scalapb.GeneratedEnumCompanion[FatalErrorType] = edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType
   final def asRecognized: _root_.scala.Option[edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.Recognized] = if (isUnrecognized) _root_.scala.None else _root_.scala.Some(this.asInstanceOf[edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.Recognized])
@@ -25,15 +24,8 @@ object FatalErrorType extends _root_.scalapb.GeneratedEnumCompanion[FatalErrorTy
   }
   
   @SerialVersionUID(0L)
-  case object INITIALIZATION_ERROR extends FatalErrorType(1) with FatalErrorType.Recognized {
+  case object EXECUTION_FAILURE extends FatalErrorType(1) with FatalErrorType.Recognized {
     val index = 1
-    val name = "INITIALIZATION_ERROR"
-    override def isInitializationError: _root_.scala.Boolean = true
-  }
-  
-  @SerialVersionUID(0L)
-  case object EXECUTION_FAILURE extends FatalErrorType(2) with FatalErrorType.Recognized {
-    val index = 2
     val name = "EXECUTION_FAILURE"
     override def isExecutionFailure: _root_.scala.Boolean = true
   }
@@ -41,11 +33,10 @@ object FatalErrorType extends _root_.scalapb.GeneratedEnumCompanion[FatalErrorTy
   @SerialVersionUID(0L)
   final case class Unrecognized(unrecognizedValue: _root_.scala.Int) extends FatalErrorType(unrecognizedValue) with _root_.scalapb.UnrecognizedEnum
   
-  lazy val values = scala.collection.immutable.Seq(COMPILATION_ERROR, INITIALIZATION_ERROR, EXECUTION_FAILURE)
+  lazy val values = scala.collection.immutable.Seq(COMPILATION_ERROR, EXECUTION_FAILURE)
   def fromValue(__value: _root_.scala.Int): FatalErrorType = __value match {
     case 0 => COMPILATION_ERROR
-    case 1 => INITIALIZATION_ERROR
-    case 2 => EXECUTION_FAILURE
+    case 1 => EXECUTION_FAILURE
     case __other => Unrecognized(__other)
   }
   def javaDescriptor: _root_.com.google.protobuf.Descriptors.EnumDescriptor = WorkflowruntimestateProto.javaDescriptor.getEnumTypes().get(0)

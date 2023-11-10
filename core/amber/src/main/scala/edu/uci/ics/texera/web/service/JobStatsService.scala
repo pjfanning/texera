@@ -161,7 +161,7 @@ class JobStatsService(
       client
         .registerCallback[FatalError]((evt: FatalError) => {
           client.shutdown()
-          var opeartorId = ""
+          var opeartorId = "unknown operator"
           var workerId = ""
           if (evt.fromActor.isDefined) {
             opeartorId = VirtualIdentityUtils.getOperator(evt.fromActor.get).operator

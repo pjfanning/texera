@@ -11,8 +11,7 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 class FatalErrorType(betterproto.Enum):
     COMPILATION_ERROR = 0
-    INITIALIZATION_ERROR = 1
-    EXECUTION_FAILURE = 2
+    EXECUTION_FAILURE = 1
 
 
 class WorkflowAggregatedState(betterproto.Enum):

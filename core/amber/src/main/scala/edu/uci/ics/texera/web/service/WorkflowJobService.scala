@@ -16,10 +16,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.{
-  EXECUTION_FAILURE,
-  INITIALIZATION_ERROR
-}
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
   COMPLETED,
@@ -109,7 +106,7 @@ class WorkflowJobService(
           updateWorkflowState(FAILED, metadataStore)
             .addFatalErrors(
               WorkflowFatalError(
-                INITIALIZATION_ERROR,
+                EXECUTION_FAILURE,
                 Timestamp(Instant.now),
                 e.toString,
                 e.getStackTrace.mkString("\n"),
