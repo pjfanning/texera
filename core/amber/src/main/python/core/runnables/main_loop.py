@@ -1,8 +1,6 @@
 import datetime
 import threading
-import traceback
 import typing
-import os
 from typing import Iterator, Optional, Union
 
 from loguru import logger
@@ -19,7 +17,6 @@ from core.models import (
     InternalQueue,
     SenderChangeMarker,
     Tuple,
-    ExceptionInfo,
 )
 from core.models.internal_queue import DataElement, ControlElement
 from core.runnables.data_processor import DataProcessor
