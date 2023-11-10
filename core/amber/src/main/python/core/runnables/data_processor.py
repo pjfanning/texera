@@ -15,7 +15,6 @@ from core.util.runnable.runnable import Runnable
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
     ConsoleMessage,
     ConsoleMessageType,
-    PythonConsoleMessageV2,
 )
 
 
@@ -61,7 +60,7 @@ class DataProcessor(Runnable, Stoppable):
                 )
                 with replace_print(
                     self._context.worker_id,
-                    self._context.console_message_manager.msg_buf,
+                    self._context.console_message_manager.print_buf,
                 ):
                     for output in output_iterator:
                         # output could be a None, a TupleLike, or a TableLike.
@@ -118,15 +117,13 @@ class DataProcessor(Runnable, Stoppable):
         message: str = "\n".join(formatted_exception)
 
         self._context.console_message_manager.put_message(
-            PythonConsoleMessageV2(
-                ConsoleMessage(
-                    worker_id=self._context.worker_id,
-                    timestamp=datetime.now(),
-                    msg_type=ConsoleMessageType.ERROR,
-                    source=f"{module_name}:{func_name}:{line_number}",
-                    title=title,
-                    message=message,
-                )
+            ConsoleMessage(
+                worker_id=self._context.worker_id,
+                timestamp=datetime.now(),
+                msg_type=ConsoleMessageType.ERROR,
+                source=f"{module_name}:{func_name}:{line_number}",
+                title=title,
+                message=message,
             )
         )
 
