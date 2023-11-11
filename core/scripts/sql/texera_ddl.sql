@@ -205,10 +205,12 @@ CREATE TABLE IF NOT EXISTS workflow_runtime_statistics
 CREATE TABLE IF NOT EXISTS environment
 (
     `eid`              INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `uid`              INT UNSIGNED NOT NULL,
     `name`			   VARCHAR(128) NOT NULL DEFAULT 'Untitled Environment',
     `description`      VARCHAR(1000),
     `creation_time`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`eid`)
+    PRIMARY KEY (`eid`),
+    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE
 ) ENGINE = INNODB;
 
 
@@ -218,7 +220,7 @@ CREATE TABLE IF NOT EXISTS input_of_environment
     `eid`                   INT UNSIGNED NOT NULL,
     `version_descriptor`    VARCHAR(128),
     PRIMARY KEY (`did`, `eid`),
-    FOREIGN KEY(`eid`) REFERENCES `environment` (`eid`) ON DELETE CASCADE
+    FOREIGN KEY (`eid`) REFERENCES `environment` (`eid`) ON DELETE CASCADE
 ) ENGINE = INNODB;
 
 -- create fulltext search indexes

@@ -39,6 +39,7 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     public static final Index ENVIRONMENT_PRIMARY = Indexes0.ENVIRONMENT_PRIMARY;
+    public static final Index ENVIRONMENT_UID = Indexes0.ENVIRONMENT_UID;
     public static final Index FILE_IDX_FILE_NAME_DESCRIPTION = Indexes0.FILE_IDX_FILE_NAME_DESCRIPTION;
     public static final Index FILE_OWNER_UID = Indexes0.FILE_OWNER_UID;
     public static final Index FILE_PRIMARY = Indexes0.FILE_PRIMARY;
@@ -84,6 +85,7 @@ public class Indexes {
 
     private static class Indexes0 {
         public static Index ENVIRONMENT_PRIMARY = Internal.createIndex("PRIMARY", Environment.ENVIRONMENT, new OrderField[] { Environment.ENVIRONMENT.EID }, true);
+        public static Index ENVIRONMENT_UID = Internal.createIndex("uid", Environment.ENVIRONMENT, new OrderField[] { Environment.ENVIRONMENT.UID }, false);
         public static Index FILE_IDX_FILE_NAME_DESCRIPTION = Internal.createIndex("idx_file_name_description", File.FILE, new OrderField[] { File.FILE.NAME, File.FILE.DESCRIPTION }, false);
         public static Index FILE_OWNER_UID = Internal.createIndex("owner_uid", File.FILE, new OrderField[] { File.FILE.OWNER_UID, File.FILE.NAME }, true);
         public static Index FILE_PRIMARY = Internal.createIndex("PRIMARY", File.FILE, new OrderField[] { File.FILE.FID }, true);

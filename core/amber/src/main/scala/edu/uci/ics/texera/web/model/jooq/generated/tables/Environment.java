@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -35,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Environment extends TableImpl<EnvironmentRecord> {
 
-    private static final long serialVersionUID = -2128994772;
+    private static final long serialVersionUID = 1873602254;
 
     /**
      * The reference instance of <code>texera_db.environment</code>
@@ -54,6 +54,11 @@ public class Environment extends TableImpl<EnvironmentRecord> {
      * The column <code>texera_db.environment.eid</code>.
      */
     public final TableField<EnvironmentRecord, UInteger> EID = createField(DSL.name("eid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false).identity(true), this, "");
+
+    /**
+     * The column <code>texera_db.environment.uid</code>.
+     */
+    public final TableField<EnvironmentRecord, UInteger> UID = createField(DSL.name("uid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
 
     /**
      * The column <code>texera_db.environment.name</code>.
@@ -110,7 +115,7 @@ public class Environment extends TableImpl<EnvironmentRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.ENVIRONMENT_PRIMARY);
+        return Arrays.<Index>asList(Indexes.ENVIRONMENT_PRIMARY, Indexes.ENVIRONMENT_UID);
     }
 
     @Override
@@ -126,6 +131,15 @@ public class Environment extends TableImpl<EnvironmentRecord> {
     @Override
     public List<UniqueKey<EnvironmentRecord>> getKeys() {
         return Arrays.<UniqueKey<EnvironmentRecord>>asList(Keys.KEY_ENVIRONMENT_PRIMARY);
+    }
+
+    @Override
+    public List<ForeignKey<EnvironmentRecord, ?>> getReferences() {
+        return Arrays.<ForeignKey<EnvironmentRecord, ?>>asList(Keys.ENVIRONMENT_IBFK_1);
+    }
+
+    public User user() {
+        return new User(this, Keys.ENVIRONMENT_IBFK_1);
     }
 
     @Override
@@ -155,11 +169,11 @@ public class Environment extends TableImpl<EnvironmentRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<UInteger, String, String, Timestamp> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row5<UInteger, UInteger, String, String, Timestamp> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

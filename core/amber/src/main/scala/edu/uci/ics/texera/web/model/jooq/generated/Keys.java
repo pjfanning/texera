@@ -98,6 +98,7 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<EnvironmentRecord, UserRecord> ENVIRONMENT_IBFK_1 = ForeignKeys0.ENVIRONMENT_IBFK_1;
     public static final ForeignKey<FileRecord, UserRecord> FILE_IBFK_1 = ForeignKeys0.FILE_IBFK_1;
     public static final ForeignKey<FileOfProjectRecord, FileRecord> FILE_OF_PROJECT_IBFK_1 = ForeignKeys0.FILE_OF_PROJECT_IBFK_1;
     public static final ForeignKey<FileOfProjectRecord, ProjectRecord> FILE_OF_PROJECT_IBFK_2 = ForeignKeys0.FILE_OF_PROJECT_IBFK_2;
@@ -164,6 +165,7 @@ public class Keys {
     }
 
     private static class ForeignKeys0 {
+        public static final ForeignKey<EnvironmentRecord, UserRecord> ENVIRONMENT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, Environment.ENVIRONMENT, "environment_ibfk_1", Environment.ENVIRONMENT.UID);
         public static final ForeignKey<FileRecord, UserRecord> FILE_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, File.FILE, "file_ibfk_1", File.FILE.OWNER_UID);
         public static final ForeignKey<FileOfProjectRecord, FileRecord> FILE_OF_PROJECT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_FILE_PRIMARY, FileOfProject.FILE_OF_PROJECT, "file_of_project_ibfk_1", FileOfProject.FILE_OF_PROJECT.FID);
         public static final ForeignKey<FileOfProjectRecord, ProjectRecord> FILE_OF_PROJECT_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_PROJECT_PRIMARY, FileOfProject.FILE_OF_PROJECT, "file_of_project_ibfk_2", FileOfProject.FILE_OF_PROJECT.PID);

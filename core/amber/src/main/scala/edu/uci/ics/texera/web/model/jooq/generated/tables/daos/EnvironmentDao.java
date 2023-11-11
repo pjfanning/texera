@@ -62,6 +62,20 @@ public class EnvironmentDao extends DAOImpl<EnvironmentRecord, edu.uci.ics.texer
     }
 
     /**
+     * Fetch records that have <code>uid BETWEEN lowerInclusive AND upperInclusive</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Environment> fetchRangeOfUid(UInteger lowerInclusive, UInteger upperInclusive) {
+        return fetchRange(Environment.ENVIRONMENT.UID, lowerInclusive, upperInclusive);
+    }
+
+    /**
+     * Fetch records that have <code>uid IN (values)</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Environment> fetchByUid(UInteger... values) {
+        return fetch(Environment.ENVIRONMENT.UID, values);
+    }
+
+    /**
      * Fetch records that have <code>name BETWEEN lowerInclusive AND upperInclusive</code>
      */
     public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Environment> fetchRangeOfName(String lowerInclusive, String upperInclusive) {

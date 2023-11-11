@@ -17,9 +17,10 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Environment implements IEnvironment {
 
-    private static final long serialVersionUID = 2097607094;
+    private static final long serialVersionUID = 1886066818;
 
     private UInteger  eid;
+    private UInteger  uid;
     private String    name;
     private String    description;
     private Timestamp creationTime;
@@ -28,6 +29,7 @@ public class Environment implements IEnvironment {
 
     public Environment(IEnvironment value) {
         this.eid = value.getEid();
+        this.uid = value.getUid();
         this.name = value.getName();
         this.description = value.getDescription();
         this.creationTime = value.getCreationTime();
@@ -35,11 +37,13 @@ public class Environment implements IEnvironment {
 
     public Environment(
         UInteger  eid,
+        UInteger  uid,
         String    name,
         String    description,
         Timestamp creationTime
     ) {
         this.eid = eid;
+        this.uid = uid;
         this.name = name;
         this.description = description;
         this.creationTime = creationTime;
@@ -53,6 +57,16 @@ public class Environment implements IEnvironment {
     @Override
     public void setEid(UInteger eid) {
         this.eid = eid;
+    }
+
+    @Override
+    public UInteger getUid() {
+        return this.uid;
+    }
+
+    @Override
+    public void setUid(UInteger uid) {
+        this.uid = uid;
     }
 
     @Override
@@ -90,6 +104,7 @@ public class Environment implements IEnvironment {
         StringBuilder sb = new StringBuilder("Environment (");
 
         sb.append(eid);
+        sb.append(", ").append(uid);
         sb.append(", ").append(name);
         sb.append(", ").append(description);
         sb.append(", ").append(creationTime);
@@ -105,6 +120,7 @@ public class Environment implements IEnvironment {
     @Override
     public void from(IEnvironment from) {
         setEid(from.getEid());
+        setUid(from.getUid());
         setName(from.getName());
         setDescription(from.getDescription());
         setCreationTime(from.getCreationTime());

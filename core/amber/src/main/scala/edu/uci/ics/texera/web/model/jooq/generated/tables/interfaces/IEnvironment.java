@@ -27,6 +27,16 @@ public interface IEnvironment extends Serializable {
     public UInteger getEid();
 
     /**
+     * Setter for <code>texera_db.environment.uid</code>.
+     */
+    public void setUid(UInteger value);
+
+    /**
+     * Getter for <code>texera_db.environment.uid</code>.
+     */
+    public UInteger getUid();
+
+    /**
      * Setter for <code>texera_db.environment.name</code>.
      */
     public void setName(String value);
