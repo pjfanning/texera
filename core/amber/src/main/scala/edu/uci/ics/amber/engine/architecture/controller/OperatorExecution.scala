@@ -41,7 +41,7 @@ class OperatorExecution(layerIdentity: LayerIdentity, numWorkers: Int) extends S
           id,
           UNINITIALIZED,
           WorkerStatistics(UNINITIALIZED, 0, 0),
-          mutable.HashSet(ChannelID(CONTROLLER, id, isControlChannel = true)),
+          mutable.HashSet(ChannelID(CONTROLLER, id, isControl = true)),
           null
         )
       )

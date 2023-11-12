@@ -61,7 +61,7 @@ class Controller(
   )
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    val channel = cp.inputPort.getChannel(workflowMsg.channel)
+    val channel = cp.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     while (channel.isEnabled && channel.hasMessage) {
       val msg = channel.take
@@ -75,7 +75,7 @@ class Controller(
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
-      cp.processControlPayload(ChannelID(SELF, SELF, isControlChannel = true), c)
+      cp.processControlPayload(ChannelID(SELF, SELF, isControl = true), c)
   }
 
   override def receive: Receive = {
