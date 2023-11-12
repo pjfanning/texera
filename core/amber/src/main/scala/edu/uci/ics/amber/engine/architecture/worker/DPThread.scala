@@ -1,11 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MessageWithCallback
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  DataPayload,
+  WorkflowFIFOMessage
+}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -21,7 +26,7 @@ import java.util.concurrent.{
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
-    internalQueue: LinkedBlockingQueue[MessageWithCallback]
+    internalQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]
 ) extends AmberLogging {
 
   // initialize dp thread upon construction
@@ -92,17 +97,15 @@ class DPThread(
     var waitingForInput = false
     while (!stopped) {
       if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
-        val msgWithCallback = internalQueue.take
-        msgWithCallback.msg match {
+        val msg = internalQueue.take
+        println(msg)
+        msg match {
           case Left(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
             waitingForInput = false
           case Right(ctrl) =>
-            dp.processControlPayload(ChannelID(SELF, SELF, true), ctrl)
-        }
-        if (msgWithCallback.callback != null) {
-          msgWithCallback.callback()
+            dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
       }
       if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
@@ -119,7 +122,6 @@ class DPThread(
         dp.inputGateway.tryPickChannel match {
           case Some(channel) =>
             val msg = channel.take
-            logger.info(s"take $msg")
             msg.payload match {
               case payload: ControlPayload =>
                 dp.processControlPayload(msg.channel, payload)

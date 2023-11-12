@@ -5,11 +5,8 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  MessageWithCallback,
-  TriggerSend
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.AkkaTimerService
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -35,11 +32,6 @@ object WorkflowWorker {
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
-
-  final case class MessageWithCallback(
-      msg: Either[WorkflowFIFOMessage, ControlInvocation],
-      callback: () => Unit
-  )
 }
 
 class WorkflowWorker(
@@ -47,19 +39,22 @@ class WorkflowWorker(
     workerIndex: Int,
     workerLayer: OpExecConfig
 ) extends WorkflowActor(actorId) {
-  val inputQueue: LinkedBlockingQueue[MessageWithCallback] =
+  val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()
   var dp = new DataProcessor(
     actorId,
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
-    x => {
-      self ! TriggerSend(x)
-    }
+    sendMessageFromDPToMain
   )
-  val adaptiveBatchingMonitor = new AdaptiveBatchingMonitor(actorService)
+  val timerService = new AkkaTimerService(actorService)
   val dpThread = new DPThread(actorId, dp, inputQueue)
+
+  def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
+    // limitation: TriggerSend will be processed after input messages before it.
+    self ! TriggerSend(msg)
+  }
 
   def handleSendFromDP: Receive = {
     case TriggerSend(msg) =>
@@ -68,7 +63,7 @@ class WorkflowWorker(
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
-      inputQueue.put(MessageWithCallback(Right(c), null))
+      inputQueue.put(Right(c))
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -86,34 +81,28 @@ class WorkflowWorker(
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    val senderRef = sender()
-    inputQueue.put(
-      MessageWithCallback(
-        Left(workflowMsg),
-        () => {
-          senderRef ! NetworkAck(id, dp.getSenderCredits(workflowMsg.channel))
-        }
-      )
-    )
+    println(workflowMsg)
+    inputQueue.put(Left(workflowMsg))
+    sender ! NetworkAck(id, dp.getSenderCredits(workflowMsg.channel))
   }
 
   /** flow-control */
-  override def getSenderCredits(channelEndpointID: ChannelID): Int =
-    dp.getSenderCredits(channelEndpointID)
+  override def getSenderCredits(channelID: ChannelID): Int =
+    dp.getSenderCredits(channelID)
 
   override def initState(): Unit = {
-    dp.initAdaptiveBatching(adaptiveBatchingMonitor)
+    dp.InitTimerService(timerService)
     dpThread.start()
   }
 
   override def postStop(): Unit = {
     super.postStop()
-    adaptiveBatchingMonitor.stopAdaptiveBatching()
+    timerService.stopAdaptiveBatching()
     dpThread.stop()
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
     val backpressureMessage = ControlInvocation(0, Backpressure(isBackpressured))
-    inputQueue.put(MessageWithCallback(Right(backpressureMessage), null))
+    inputQueue.put(Right(backpressureMessage))
   }
 }

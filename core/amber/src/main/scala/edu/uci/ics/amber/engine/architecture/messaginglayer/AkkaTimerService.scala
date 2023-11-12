@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
-class AdaptiveBatchingMonitor(actorService: AkkaActorService) {
+class AkkaTimerService(actorService: AkkaActorService) {
   var adaptiveBatchingHandle: Option[Cancellable] = None
   var isPaused = false
 

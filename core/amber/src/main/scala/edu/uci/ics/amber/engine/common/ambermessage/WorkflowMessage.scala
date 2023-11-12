@@ -5,10 +5,10 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 case class ChannelID(
     from: ActorVirtualIdentity,
     to: ActorVirtualIdentity,
-    isControlChannel: Boolean
+    isControl: Boolean
 ) {
   override def toString: String = {
-    s"Channel(${from.name},${to.name},${if (isControlChannel) "control" else "data"})"
+    s"Channel(${from.name},${to.name},${if (isControl) "control" else "data"})"
   }
 }
 

@@ -13,12 +13,13 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   private val inputChannels =
     new mutable.HashMap[ChannelID, AmberFIFOChannel]()
 
-  def tryPickControlChannel: Option[AmberFIFOChannel] =
+  def tryPickControlChannel: Option[AmberFIFOChannel] = {
     inputChannels
       .find {
-        case (cid, channel) => cid.isControlChannel && channel.isEnabled && channel.hasMessage
+        case (cid, channel) => cid.isControl && channel.isEnabled && channel.hasMessage
       }
       .map(_._2)
+  }
 
   def tryPickChannel: Option[AmberFIFOChannel] = {
     val control = tryPickControlChannel
@@ -30,13 +31,17 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   }
 
   def getAllDataChannels: Iterable[AmberFIFOChannel] =
-    inputChannels.filter(!_._1.isControlChannel).values
+    inputChannels.filter(!_._1.isControl).values
 
+  // this function is called by both main thread(for getting credit)
+  // and DP thread(for enqueuing messages) so a lock is required here
   def getChannel(channelId: ChannelID): AmberFIFOChannel = {
-    inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+    synchronized {
+      inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+    }
   }
 
   def getAllControlChannels: Iterable[AmberFIFOChannel] =
-    inputChannels.filter(_._1.isControlChannel).values
+    inputChannels.filter(_._1.isControl).values
 
 }

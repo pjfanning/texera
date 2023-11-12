@@ -50,7 +50,7 @@ class Controller(
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = ???
 
   /** flow-control */
-  override def getSenderCredits(channelEndpointID: ChannelID): Int = ???
+  override def getSenderCredits(channelID: ChannelID): Int = ???
 
   override def initState(): Unit = ???
 

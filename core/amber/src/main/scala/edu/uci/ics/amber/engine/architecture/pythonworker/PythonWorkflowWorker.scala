@@ -70,7 +70,7 @@ class PythonWorkflowWorker(
 
   override def receive: Receive = super.receive orElse handleSendFromDP
 
-  override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
+  override def handleInputMessage(messageId: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = networkInputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     while (channel.isEnabled && channel.hasMessage) {
@@ -83,17 +83,17 @@ class PythonWorkflowWorker(
         case p => logger.error(s"unhandled control payload: $p")
       }
     }
-    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
+    sender ! NetworkAck(messageId, getSenderCredits(workflowMsg.channel))
   }
 
   /** flow-control */
-  override def getSenderCredits(channelEndpointID: ChannelID): Int = {
-    pythonProxyClient.getSenderCredits(channelEndpointID)
+  override def getSenderCredits(channelID: ChannelID): Int = {
+    pythonProxyClient.getSenderCredits(channelID)
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
     val backpressureMessage = ControlInvocation(0, Backpressure(isBackpressured))
-    pythonProxyClient.enqueueCommand(backpressureMessage, ChannelID(SELF, SELF, true))
+    pythonProxyClient.enqueueCommand(backpressureMessage, ChannelID(SELF, SELF, isControl = true))
   }
 
   override def postStop(): Unit = {

@@ -1,8 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.AdaptiveBatchingMonitor
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MessageWithCallback
+import edu.uci.ics.amber.engine.architecture.messaginglayer.AkkaTimerService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
@@ -40,9 +39,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
-    val inputQueue = new LinkedBlockingQueue[MessageWithCallback]()
+    val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
+    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()
@@ -50,20 +49,13 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
     }
     val message = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples))
-    inputQueue.put(MessageWithCallback(Left(message), null))
-    var hasUnfinishedInput = false
+    inputQueue.put(Left(message))
     inputQueue.put(
-      MessageWithCallback(
-        Right(ControlInvocation(0, PauseWorker())),
-        () => {
-          hasUnfinishedInput = dp.hasUnfinishedInput
-        }
-      )
+      Right(ControlInvocation(0, PauseWorker()))
     )
     Thread.sleep(1000)
     assert(dp.pauseManager.isPaused)
-    assert(dp.hasUnfinishedInput == hasUnfinishedInput)
-    inputQueue.put(MessageWithCallback(Right(ControlInvocation(1, ResumeWorker())), null))
+    inputQueue.put(Right(ControlInvocation(1, ResumeWorker())))
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)
     }
@@ -71,9 +63,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume using fifo messages" in {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
-    val inputQueue = new LinkedBlockingQueue[MessageWithCallback]()
+    val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
+    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()
@@ -84,20 +76,13 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val pauseControl = WorkflowFIFOMessage(controlChannelID, 0, ControlInvocation(0, PauseWorker()))
     val resumeControl =
       WorkflowFIFOMessage(controlChannelID, 1, ControlInvocation(1, ResumeWorker()))
-    inputQueue.put(MessageWithCallback(Left(message), null))
-    var hasUnfinishedInput = false
+    inputQueue.put(Left(message))
     inputQueue.put(
-      MessageWithCallback(
-        Left(pauseControl),
-        () => {
-          hasUnfinishedInput = dp.hasUnfinishedInput
-        }
-      )
+      Left(pauseControl)
     )
     Thread.sleep(1000)
     assert(dp.pauseManager.isPaused)
-    assert(dp.hasUnfinishedInput == hasUnfinishedInput)
-    inputQueue.put(MessageWithCallback(Left(resumeControl), null))
+    inputQueue.put(Left(resumeControl))
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)
     }
@@ -105,11 +90,11 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle multiple batches from multiple sources" in {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
-    val inputQueue = new LinkedBlockingQueue[MessageWithCallback]()
+    val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
     dp.registerInput(anotherSender, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AdaptiveBatchingMonitor]
+    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()
@@ -122,11 +107,11 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
     val message4 = WorkflowFIFOMessage(dataChannelID, 2, DataFrame(tuples.slice(200, 300)))
     val message5 = WorkflowFIFOMessage(dataChannelID2, 1, DataFrame(tuples.slice(1000, 5000)))
-    inputQueue.put(MessageWithCallback(Left(message1), null))
-    inputQueue.put(MessageWithCallback(Left(message2), null))
-    inputQueue.put(MessageWithCallback(Left(message3), null))
-    inputQueue.put(MessageWithCallback(Left(message4), null))
-    inputQueue.put(MessageWithCallback(Left(message5), null))
+    inputQueue.put(Left(message1))
+    inputQueue.put(Left(message2))
+    inputQueue.put(Left(message3))
+    inputQueue.put(Left(message4))
+    inputQueue.put(Left(message5))
     Thread.sleep(1000)
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)

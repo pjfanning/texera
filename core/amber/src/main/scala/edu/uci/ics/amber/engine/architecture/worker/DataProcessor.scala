@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{AdaptiveBatchingMonitor, OutputManager}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{AkkaTimerService, OutputManager}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
   DPOutputIterator,
   FinalizeLink,
@@ -112,11 +112,11 @@ class DataProcessor(
   var inputBatch: Array[ITuple] = _
   var currentInputIdx: Int = -1
 
-  def initAdaptiveBatching(adaptiveBatchingMonitor: AdaptiveBatchingMonitor): Unit = {
+  def InitTimerService(adaptiveBatchingMonitor: AkkaTimerService): Unit = {
     this.adaptiveBatchingMonitor = adaptiveBatchingMonitor
   }
 
-  @transient var adaptiveBatchingMonitor: AdaptiveBatchingMonitor = _
+  @transient var adaptiveBatchingMonitor: AkkaTimerService = _
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)

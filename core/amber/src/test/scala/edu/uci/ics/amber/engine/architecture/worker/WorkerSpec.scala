@@ -102,7 +102,7 @@ class WorkerSpec
           new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
             override val outputManager: OutputManager = mockOutputManager
           }
-        this.dp.initAdaptiveBatching(adaptiveBatchingMonitor)
+        this.dp.InitTimerService(timerService)
         override val dpThread: DPThread = new DPThread(actorId, dp, inputQueue)
       }
     )
@@ -153,8 +153,8 @@ class WorkerSpec
       }.toArray
     }
     val batch1 = mkBatch(0, 400)
-    val batch2 = mkBatch(400, 800)
-    val batch3 = mkBatch(400, 500)
+    val batch2 = mkBatch(400, 500)
+    val batch3 = mkBatch(500, 800)
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
     (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))

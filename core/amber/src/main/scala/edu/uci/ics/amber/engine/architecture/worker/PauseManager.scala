@@ -25,7 +25,7 @@ class PauseManager(val actorId: ActorVirtualIdentity, inputGateway: NetworkInput
     inputs.foreach(input => {
       specificInputPauses.addBinding(pauseType, input)
       // disable specified data queues
-      inputGateway.getChannel(ChannelID(actorId, input, isControlChannel = false)).enable(false)
+      inputGateway.getChannel(ChannelID(actorId, input, isControl = false)).enable(false)
     })
   }
 
@@ -46,7 +46,7 @@ class PauseManager(val actorId: ActorVirtualIdentity, inputGateway: NetworkInput
     val pausedActorVids = specificInputPauses.values.flatten.toSet
     inputGateway.getAllDataChannels.foreach(_.enable(true))
     pausedActorVids.foreach { vid =>
-      inputGateway.getChannel(ChannelID(actorId, vid, isControlChannel = false)).enable(false)
+      inputGateway.getChannel(ChannelID(actorId, vid, isControl = false)).enable(false)
     }
   }
 
