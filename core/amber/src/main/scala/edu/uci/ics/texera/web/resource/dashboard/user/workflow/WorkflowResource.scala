@@ -502,6 +502,7 @@ class WorkflowResource extends LazyLogging {
               null,
               workflow.getContent,
               null,
+              null,
               null
             ),
             sessionUser
@@ -611,6 +612,28 @@ class WorkflowResource extends LazyLogging {
       workflowDao.update(userWorkflow)
     }
   }
+
+  @GET
+  @Path("/{wid}/environment")
+  def retrieveEnvironmentOfWorkflow(
+      @PathParam("wid") eid: UInteger,
+      @Auth user: SessionUser
+  ): Environment = ???
+
+  @POST
+  @Path("/{wid}/environment/bind")
+  def bindEnvironmentWithWorkflow(
+      @PathParam("wid") eid: UInteger,
+      @Auth user: SessionUser,
+      environment: Environment
+  ): Environment = ???
+
+  @POST
+  @Path("/{wid}/environment/unbind")
+  def unbindEnvironmentWithWorkflow(
+      @PathParam("wid") eid: UInteger,
+      @Auth user: SessionUser
+  ): Environment = ???
 
   /**
     * This method performs a full-text search in the content column of the

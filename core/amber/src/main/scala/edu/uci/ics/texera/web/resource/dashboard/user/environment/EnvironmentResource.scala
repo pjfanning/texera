@@ -3,11 +3,12 @@ package edu.uci.ics.texera.web.resource.dashboard.user.environment
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Environment
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Environment, InputOfEnvironment}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.EnvironmentDao
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
   DashboardEnvironment,
+  DashboardEnvironmentInput,
   EnvironmentIDs,
   UserNoPermissionExceptionMessage,
   context,
@@ -20,7 +21,7 @@ import org.jooq.types.UInteger
 
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.Response
-import javax.ws.rs.{GET, InternalServerErrorException, POST, Path, PathParam}
+import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam}
 
 object EnvironmentResource {
   private def withExceptionHandling[T](block: () => T): T = {
@@ -50,6 +51,10 @@ object EnvironmentResource {
   case class DashboardEnvironment(
       environment: Environment,
       isOwner: Boolean
+  )
+
+  case class DashboardEnvironmentInput(
+      input: InputOfEnvironment
   )
 
   case class EnvironmentIDs(eids: List[UInteger])
@@ -125,19 +130,43 @@ class EnvironmentResource {
       @Auth user: SessionUser
   ): DashboardEnvironment = ???
 
+  @GET
+  @Path("/{eid}/input")
+  def getInputsOfEnvironment(
+      @PathParam("eid") eid: UInteger,
+      @Auth user: SessionUser
+  ): Array[DashboardEnvironmentInput] = ???
+
+  @GET
+  @Path("/{eid}/input/{did}")
+  def getInputForEnvironment(
+      @PathParam("eid") eid: UInteger,
+      @PathParam("did") did: UInteger,
+      @Auth user: SessionUser
+  ): DashboardEnvironmentInput = ???
+
   @POST
-  @Path("/{eid}/bindWithWorkflow")
-  def bindEnvironmentWithWorkflow(
+  @Path("/{eid}/input/add")
+  def addInputForEnvironment(
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser,
-      wid: UInteger
+      inputOfEnvironment: InputOfEnvironment
   ): Response = ???
 
   @POST
-  @Path("/{eid}/unbindWithWorkflow")
-  def unbindEnvironmentWithWorkflow(
+  @Path("/{eid}/input/{did}/update")
+  def updateInputForEnvironment(
       @PathParam("eid") eid: UInteger,
+      @PathParam("did") did: UInteger,
       @Auth user: SessionUser,
-      wid: UInteger
+      inputOfEnvironment: InputOfEnvironment
+  ): Response = ???
+
+  @DELETE
+  @Path("/{eid}/input/{did}")
+  def deleteInputForEnvironment(
+      @PathParam("eid") eid: UInteger,
+      @PathParam("did") did: UInteger,
+      @Auth user: SessionUser
   ): Response = ???
 }
