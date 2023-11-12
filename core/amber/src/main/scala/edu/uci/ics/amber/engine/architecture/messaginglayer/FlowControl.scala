@@ -60,6 +60,7 @@ class FlowControl {
   }
 
   def getMessagesToSend: Iterable[WorkflowFIFOMessage] = {
+    overloaded = false
     val toSend = mutable.ArrayBuffer[WorkflowFIFOMessage]()
     while (stashedMessages.nonEmpty && !overloaded) {
       val msg = stashedMessages.front
@@ -77,6 +78,5 @@ class FlowControl {
 
   def updateCredit(newCredit: Int): Unit = {
     senderSideCredit = newCredit
-    overloaded = false
   }
 }

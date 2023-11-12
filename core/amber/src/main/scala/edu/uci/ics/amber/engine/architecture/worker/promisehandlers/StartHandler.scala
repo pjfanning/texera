@@ -22,6 +22,7 @@ trait StartHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
   registerHandler { (msg: StartWorker, sender) =>
+    logger.info("Starting the worker.")
     if (dp.operator.isInstanceOf[ISourceOperatorExecutor]) {
       dp.stateManager.assertState(READY)
       dp.stateManager.transitTo(RUNNING)
@@ -36,7 +37,7 @@ trait StartHandler {
         LinkIdentity(SOURCE_STARTER_OP, 0, dp.getOperatorId, 0)
       )
       dp.processDataPayload(
-        ChannelID(SOURCE_STARTER_ACTOR, dp.actorId, isControlChannel = false),
+        ChannelID(SOURCE_STARTER_ACTOR, dp.actorId, isControl = false),
         EndOfUpstream()
       )
       dp.stateManager.getCurrentState

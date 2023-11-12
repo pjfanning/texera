@@ -9,10 +9,9 @@ import betterproto
 from betterproto.grpc.grpclib_server import ServiceBase
 
 
-class ErrorType(betterproto.Enum):
+class FatalErrorType(betterproto.Enum):
     COMPILATION_ERROR = 0
-    RUNTIME_ERROR = 1
-    FAILURE = 2
+    EXECUTION_FAILURE = 1
 
 
 class WorkflowAggregatedState(betterproto.Enum):
@@ -30,7 +29,7 @@ class WorkflowAggregatedState(betterproto.Enum):
 
 @dataclass(eq=False, repr=False)
 class BreakpointFault(betterproto.Message):
-    actor_path: str = betterproto.string_field(1)
+    worker_name: str = betterproto.string_field(1)
     faulted_tuple: "BreakpointFaultBreakpointTuple" = betterproto.message_field(2)
 
 
@@ -103,8 +102,8 @@ class JobStatsStore(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class JobError(betterproto.Message):
-    type: "ErrorType" = betterproto.enum_field(1)
+class WorkflowFatalError(betterproto.Message):
+    type: "FatalErrorType" = betterproto.enum_field(1)
     timestamp: datetime = betterproto.message_field(2)
     message: str = betterproto.string_field(3)
     details: str = betterproto.string_field(4)
@@ -115,7 +114,7 @@ class JobError(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class JobMetadataStore(betterproto.Message):
     state: "WorkflowAggregatedState" = betterproto.enum_field(1)
-    errors: List["JobError"] = betterproto.message_field(2)
+    fatal_errors: List["WorkflowFatalError"] = betterproto.message_field(2)
     eid: int = betterproto.int64_field(3)
     is_recovering: bool = betterproto.bool_field(4)
 

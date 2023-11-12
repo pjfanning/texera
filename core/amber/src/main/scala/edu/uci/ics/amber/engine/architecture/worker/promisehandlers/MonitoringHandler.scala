@@ -45,10 +45,10 @@ trait MonitoringHandler {
   registerHandler { (msg: QuerySelfWorkloadMetrics, sender) =>
     try {
       val workloadMetrics = SelfWorkloadMetrics(
-        dp.inputPort.getAllDataChannels.map(_.getTotalMessageSize).sum,
-        dp.inputPort.getAllControlChannels.map(_.getTotalMessageSize).sum,
-        dp.inputPort.getAllDataChannels.map(_.getTotalStashedSize).sum,
-        dp.inputPort.getAllControlChannels.map(_.getTotalStashedSize).sum
+        dp.inputGateway.getAllDataChannels.map(_.getTotalMessageSize).sum,
+        dp.inputGateway.getAllControlChannels.map(_.getTotalMessageSize).sum,
+        dp.inputGateway.getAllDataChannels.map(_.getTotalStashedSize).sum,
+        dp.inputGateway.getAllControlChannels.map(_.getTotalStashedSize).sum
       )
 
       val samples = getWorkloadHistory(dp.outputManager)

@@ -2,12 +2,13 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ConsoleMessageHandler.ConsoleMessageTriggered
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ConsoleMessageHandler.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{AdaptiveBatchingMonitor, OutputManager}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{AkkaTimerService, OutputManager}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
   DPOutputIterator,
   FinalizeLink,
@@ -111,11 +112,11 @@ class DataProcessor(
   var inputBatch: Array[ITuple] = _
   var currentInputIdx: Int = -1
 
-  def initAdaptiveBatching(adaptiveBatchingMonitor: AdaptiveBatchingMonitor): Unit = {
+  def InitTimerService(adaptiveBatchingMonitor: AkkaTimerService): Unit = {
     this.adaptiveBatchingMonitor = adaptiveBatchingMonitor
   }
 
-  @transient var adaptiveBatchingMonitor: AdaptiveBatchingMonitor = _
+  @transient var adaptiveBatchingMonitor: AkkaTimerService = _
 
   def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
@@ -132,7 +133,7 @@ class DataProcessor(
   val stateManager: WorkerStateManager = new WorkerStateManager()
   // 5. batch producer
   val outputManager: OutputManager =
-    new OutputManager(actorId, outputPort)
+    new OutputManager(actorId, outputGateway)
   // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
 
@@ -147,7 +148,7 @@ class DataProcessor(
   }
 
   def getSenderCredits(channel: ChannelID): Int = {
-    inputPort.getChannel(channel).getAvailableCredits.toInt
+    inputGateway.getChannel(channel).getAvailableCredits.toInt
   }
 
   def getInputPort(identifier: ActorVirtualIdentity): Int = {

@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class PauseManager(val actorId: ActorVirtualIdentity, inputPort: NetworkInputGateway)
+class PauseManager(val actorId: ActorVirtualIdentity, inputGateway: NetworkInputGateway)
     extends AmberLogging {
 
   private val globalPauses = new mutable.HashSet[PauseType]()
@@ -18,14 +18,14 @@ class PauseManager(val actorId: ActorVirtualIdentity, inputPort: NetworkInputGat
   def pause(pauseType: PauseType): Unit = {
     globalPauses.add(pauseType)
     // disable all data queues
-    inputPort.getAllDataChannels.foreach(_.enable(false))
+    inputGateway.getAllDataChannels.foreach(_.enable(false))
   }
 
   def pauseInputChannel(pauseType: PauseType, inputs: List[ActorVirtualIdentity]): Unit = {
     inputs.foreach(input => {
       specificInputPauses.addBinding(pauseType, input)
       // disable specified data queues
-      inputPort.getChannel(ChannelID(actorId, input, isControlChannel = false)).enable(false)
+      inputGateway.getChannel(ChannelID(actorId, input, isControl = false)).enable(false)
     })
   }
 
@@ -39,14 +39,14 @@ class PauseManager(val actorId: ActorVirtualIdentity, inputPort: NetworkInputGat
     }
     // global pause is empty, specific input pause is also empty, resume all
     if (specificInputPauses.isEmpty) {
-      inputPort.getAllDataChannels.foreach(_.enable(true))
+      inputGateway.getAllDataChannels.foreach(_.enable(true))
       return
     }
     // need to resume specific input channels
     val pausedActorVids = specificInputPauses.values.flatten.toSet
-    inputPort.getAllDataChannels.foreach(_.enable(true))
+    inputGateway.getAllDataChannels.foreach(_.enable(true))
     pausedActorVids.foreach { vid =>
-      inputPort.getChannel(ChannelID(actorId, vid, isControlChannel = false)).enable(false)
+      inputGateway.getChannel(ChannelID(actorId, vid, isControl = false)).enable(false)
     }
   }
 

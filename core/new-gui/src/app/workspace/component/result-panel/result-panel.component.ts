@@ -165,7 +165,14 @@ export class ResultPanelComponent implements OnInit {
     }
 
     if (this.executeWorkflowService.getExecutionState().state === ExecutionState.Failed) {
-      this.displayError(this.currentOperatorId);
+      if (this.currentOperatorId == null) {
+        this.displayError(this.currentOperatorId);
+      } else {
+        const errorMessages = this.executeWorkflowService.getErrorMessages();
+        if (errorMessages.filter(msg => msg.operatorId === this.currentOperatorId).length > 0) {
+          this.displayError(this.currentOperatorId);
+        }
+      }
     } else {
       this.frameComponentConfigs.delete("Error");
     }
@@ -205,7 +212,7 @@ export class ResultPanelComponent implements OnInit {
   }
 
   displayError(operatorId: string | undefined) {
-    this.frameComponentConfigs.set("Error", {
+    this.frameComponentConfigs.set("Static Error", {
       component: ErrorFrameComponent,
       componentInputs: { operatorId },
     });

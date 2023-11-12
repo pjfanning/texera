@@ -19,7 +19,7 @@ class TrivialControlTester(
     new TesterAsyncRPCHandlerInitializer(ap.actorId, ap.asyncRPCClient, ap.asyncRPCServer)
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    val channel = ap.inputPort.getChannel(workflowMsg.channel)
+    val channel = ap.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     while (channel.isEnabled && channel.hasMessage) {
       val msg = channel.take
@@ -33,7 +33,7 @@ class TrivialControlTester(
   }
 
   /** flow-control */
-  override def getSenderCredits(channelEndpointID: ChannelID): Int = ???
+  override def getSenderCredits(channelID: ChannelID): Int = ???
 
   override def initState(): Unit = {}
 

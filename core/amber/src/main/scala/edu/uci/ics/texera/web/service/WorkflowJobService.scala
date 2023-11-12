@@ -16,7 +16,7 @@ import edu.uci.ics.texera.web.model.websocket.event.{
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.{COMPILATION_ERROR, FAILURE}
+import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
   COMPLETED,
@@ -43,6 +43,7 @@ class WorkflowJobService(
     lastCompletedLogicalPlan: Option[LogicalPlan]
 ) extends SubscriptionManager
     with LazyLogging {
+  logger.info("Creating a new execution job.")
 
   val errorHandler: Throwable => Unit = { t =>
     {
@@ -51,10 +52,11 @@ class WorkflowJobService(
       stateStore.jobMetadataStore.updateState { jobInfo =>
         updateWorkflowState(FAILED, jobInfo).addFatalErrors(
           WorkflowFatalError(
-            FAILURE,
+            EXECUTION_FAILURE,
             Timestamp(Instant.now),
             t.toString,
-            t.getStackTrace.mkString("\n")
+            t.getStackTrace.mkString("\n"),
+            "unknown operator"
           )
         )
       }
@@ -90,6 +92,7 @@ class WorkflowJobService(
   workflowCompilation()
 
   def workflowCompilation(): Unit = {
+    logger.info("Compiling the logical plan into a physical plan.")
     logicalPlan = LogicalPlan(request.logicalPlan, workflowContext)
     logicalPlan.initializeLogicalPlan(stateStore)
     try {
@@ -101,14 +104,16 @@ class WorkflowJobService(
       )
     } catch {
       case e: Throwable =>
+        logger.error("error occurred during physical plan compilation", e)
         stateStore.jobMetadataStore.updateState { metadataStore =>
           updateWorkflowState(FAILED, metadataStore)
             .addFatalErrors(
               WorkflowFatalError(
-                COMPILATION_ERROR,
+                EXECUTION_FAILURE,
                 Timestamp(Instant.now),
                 e.toString,
-                e.getStackTrace.mkString("\n")
+                e.getStackTrace.mkString("\n"),
+                "unknown operator"
               )
             )
         }
@@ -131,6 +136,7 @@ class WorkflowJobService(
   }
 
   // Runtime starts from here:
+  logger.info("Initialing an AmberClient, runtime starting...")
   var client: AmberClient = _
   var jobBreakpointService: JobBreakpointService = _
   var jobReconfigurationService: JobReconfigurationService = _
@@ -157,6 +163,7 @@ class WorkflowJobService(
     )
     jobConsoleService = new JobConsoleService(client, stateStore, wsInput, jobBreakpointService)
 
+    logger.info("Starting the workflow execution.")
     for (pair <- workflowCompiler.logicalPlan.breakpoints) {
       Await.result(
         jobBreakpointService.addBreakpoint(pair.operatorID, pair.breakpoint),

@@ -55,7 +55,9 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
     with Stash
     with AmberLogging {
 
-  /** Akka related */
+  //
+  // Akka related components:
+  //
   val actorService: AkkaActorService = new AkkaActorService(actorId, this.context)
   actorService.getAvailableNodeAddressesFunc = () => {
     implicit val timeout: Timeout = 5.seconds
@@ -73,7 +75,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
-  def allowActorRefRelatedMessages: Receive = {
+  def receiveActorRefRelatedMessages: Receive = {
     case GetActorRef(actorId, replyTo) =>
       actorRefMappingService.retrieveActorRef(actorId, replyTo)
     case RegisterActorRef(actorId, ref) =>
@@ -88,51 +90,55 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
         handleInputMessage(id, workflowMsg)
       } catch {
         case e: Throwable =>
-          e.printStackTrace()
+          logger.warn("actor failed due to exception", e)
           throw e
       }
     case NetworkAck(id, credits) =>
       transferService.receiveAck(id, credits)
   }
 
-  def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit
-
-  /** flow-control */
-  def getSenderCredits(channelEndpointID: ChannelID): Int
-
-  def handleBackpressure(isBackpressured: Boolean): Unit
-
-  // Actor behavior
-  def handleFlowControl: Receive = {
+  def receiveCreditMessages: Receive = {
     case CreditRequest(channel) =>
       sender ! CreditResponse(channel, getSenderCredits(channel))
     case CreditResponse(channel, credit) =>
       transferService.updateChannelCreditFromReceiver(channel, credit)
   }
 
-  def handleDeadLetters: Receive = {
+  def receiveDeadLetterMessage: Receive = {
     case MessageBecomesDeadLetter(msg) =>
       actorRefMappingService.removeActorRef(msg.internalMessage.channel.from)
   }
 
-  /** Worker lifecycle: Initialization */
+  def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit
+
+  //
+  //flow control:
+  //
+  def getSenderCredits(channelID: ChannelID): Int
+
+  def handleBackpressure(isBackpressured: Boolean): Unit
+
+  //
+  //Actor lifecycle: Initialization
+  //
+  def initState(): Unit
+
   override def preStart(): Unit = {
     try {
       transferService.initialize()
       initState()
     } catch {
       case t: Throwable =>
-        t.printStackTrace()
+        logger.warn("actor initialization failed due to exception", t)
         throw t
     }
   }
 
-  def initState(): Unit
-
   override def receive: Receive = {
-    allowActorRefRelatedMessages orElse
+    receiveActorRefRelatedMessages orElse
       receiveMessageAndAck orElse
-      handleFlowControl
+      receiveCreditMessages orElse
+      receiveDeadLetterMessage
   }
 
   override def postStop(): Unit = {

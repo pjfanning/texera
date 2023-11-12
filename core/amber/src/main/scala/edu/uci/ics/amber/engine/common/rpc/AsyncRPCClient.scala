@@ -54,7 +54,7 @@ object AsyncRPCClient {
 }
 
 class AsyncRPCClient(
-    controlOutputEndpoint: NetworkOutputGateway,
+    outputGateway: NetworkOutputGateway,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
@@ -63,15 +63,13 @@ class AsyncRPCClient(
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
     val (p, id) = createPromise[T]()
-    logger.info(
-      s"send request: ${cmd} to $to (controlID: ${id})"
-    )
-    controlOutputEndpoint.sendTo(to, ControlInvocation(id, cmd))
+    logger.debug(s"send request: $cmd to $to (controlID: $id)")
+    outputGateway.sendTo(to, ControlInvocation(id, cmd))
     p
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
-    controlOutputEndpoint.sendTo(CLIENT, ControlInvocation(0, cmd))
+    outputGateway.sendTo(CLIENT, ControlInvocation(0, cmd))
   }
 
   private def createPromise[T](): (Promise[T], Long) = {
@@ -106,7 +104,7 @@ class AsyncRPCClient(
       if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
         return
       }
-      logger.info(
+      logger.debug(
         s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $channel (controlID: ${ret.originalCommandID})"
       )
       ret.controlReturn match {

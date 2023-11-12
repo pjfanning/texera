@@ -91,7 +91,7 @@ class TrivialControlSpec
         NetworkMessage(
           seqNum,
           WorkflowFIFOMessage(
-            ChannelID(CONTROLLER, ActorVirtualIdentity("0"), isControlChannel = true),
+            ChannelID(CONTROLLER, ActorVirtualIdentity("0"), isControl = true),
             seqNum,
             ControlInvocation(seqNum, evt)
           )

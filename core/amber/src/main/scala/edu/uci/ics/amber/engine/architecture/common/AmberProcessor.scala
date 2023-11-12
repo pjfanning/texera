@@ -27,7 +27,7 @@ class AmberProcessor(
     with Serializable {
 
   /** FIFO & exactly once */
-  lazy val inputPort: NetworkInputGateway = new NetworkInputGateway(this.actorId)
+  lazy val inputGateway: NetworkInputGateway = new NetworkInputGateway(this.actorId)
 
   /** Fault-tolerance layer */
   var logStorage: DeterminantLogStorage = new EmptyLogStorage()
@@ -36,7 +36,7 @@ class AmberProcessor(
   var isReplaying = false
 
   // 1. Unified Output
-  val outputPort: NetworkOutputGateway =
+  val outputGateway: NetworkOutputGateway =
     new NetworkOutputGateway(
       this.actorId,
       msg => {
@@ -46,9 +46,9 @@ class AmberProcessor(
     )
   // 2. RPC Layer
   val asyncRPCClient: AsyncRPCClient =
-    new AsyncRPCClient(outputPort, actorId)
+    new AsyncRPCClient(outputGateway, actorId)
   val asyncRPCServer: AsyncRPCServer =
-    new AsyncRPCServer(outputPort, actorId)
+    new AsyncRPCServer(outputGateway, actorId)
   var cursor = new ProcessingStepCursor()
 
   def processControlPayload(

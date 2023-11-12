@@ -55,8 +55,8 @@ class PythonWorkflowWorker(
   // Python process
   private var pythonServerProcess: Process = _
 
-  private val networkInputPort = new NetworkInputGateway(actorId)
-  private val networkOutputPort = new NetworkOutputGateway(
+  private val networkInputGateway = new NetworkInputGateway(actorId)
+  private val networkOutputGateway = new NetworkOutputGateway(
     actorId,
     x => {
       self ! TriggerSend(x)
@@ -70,8 +70,8 @@ class PythonWorkflowWorker(
 
   override def receive: Receive = super.receive orElse handleSendFromDP
 
-  override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    val channel = networkInputPort.getChannel(workflowMsg.channel)
+  override def handleInputMessage(messageId: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
+    val channel = networkInputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     while (channel.isEnabled && channel.hasMessage) {
       val msg = channel.take
@@ -83,17 +83,17 @@ class PythonWorkflowWorker(
         case p => logger.error(s"unhandled control payload: $p")
       }
     }
-    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
+    sender ! NetworkAck(messageId, getSenderCredits(workflowMsg.channel))
   }
 
   /** flow-control */
-  override def getSenderCredits(channelEndpointID: ChannelID): Int = {
-    pythonProxyClient.getSenderCredits(channelEndpointID)
+  override def getSenderCredits(channelID: ChannelID): Int = {
+    pythonProxyClient.getSenderCredits(channelID)
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
     val backpressureMessage = ControlInvocation(0, Backpressure(isBackpressured))
-    pythonProxyClient.enqueueCommand(backpressureMessage, ChannelID(SELF, SELF, true))
+    pythonProxyClient.enqueueCommand(backpressureMessage, ChannelID(SELF, SELF, isControl = true))
   }
 
   override def postStop(): Unit = {
@@ -124,7 +124,7 @@ class PythonWorkflowWorker(
     // Try to start the server until it succeeds
     var serverStart = false
     while (!serverStart) {
-      pythonProxyServer = new PythonProxyServer(networkOutputPort, actorId, portNumberPromise)
+      pythonProxyServer = new PythonProxyServer(networkOutputGateway, actorId, portNumberPromise)
       val future = serverThreadExecutor.submit(pythonProxyServer)
       try {
         future.get()

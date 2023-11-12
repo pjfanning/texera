@@ -37,7 +37,7 @@ object AsyncRPCServer {
 }
 
 class AsyncRPCServer(
-    controlOutputEndpoint: NetworkOutputGateway,
+    outputGateway: NetworkOutputGateway,
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
@@ -85,7 +85,7 @@ class AsyncRPCServer(
     if (noReplyNeeded(id)) {
       return
     }
-    controlOutputEndpoint.sendTo(sender, ReturnInvocation(id, ret))
+    outputGateway.sendTo(sender, ReturnInvocation(id, ret))
   }
 
   def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
@@ -95,7 +95,7 @@ class AsyncRPCServer(
     if (call.command.isInstanceOf[QueryStatistics]) {
       return
     }
-    logger.info(
+    logger.debug(
       s"receive command: ${call.command} from $sender (controlID: ${call.commandID})"
     )
   }
