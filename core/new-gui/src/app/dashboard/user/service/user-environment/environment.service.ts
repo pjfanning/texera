@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import {DashboardEnvironment} from "../../type/environment";
-import {UserFileService} from "../user-file/user-file.service";
 
 @Injectable({
   providedIn: 'root'
@@ -9,38 +8,7 @@ export class EnvironmentService {
   private environments: DashboardEnvironment[] = [];
   private environmentOfWorkflow: Map<number, number> = new Map();
 
-  constructor(private userFileService: UserFileService) {}
-
-  updateEnvironmentWithFiles(eid: number): void {
-    this.userFileService.getFileList().subscribe(
-      (fileArr) => {
-        let filePaths: string[] = [];
-        for (let i = 0; i < fileArr.length; i++) {
-          const f = fileArr[i];
-          filePaths.push(f.ownerEmail + "/" + f.file.name);
-        }
-
-        this.environments[eid].environment.inputs = this.environments[eid].environment.inputs.concat(filePaths);
-        console.log("Input Arr: ", this.environments[eid].environment.inputs)
-      }
-    );
-  }
-
-  updateAllEnvironmentsWithFiles(): void {
-    this.userFileService.getFileList().subscribe(
-      (fileArr) => {
-        let filePaths: string[] = [];
-        for (let i = 0; i < fileArr.length; i++) {
-          const f = fileArr[i];
-          filePaths.push(f.ownerEmail + "/" + f.file.name);
-        }
-
-        for (let i = 0; i < this.environments.length; i++) {
-          this.environments[i].environment.inputs = this.environments[i].environment.inputs.concat(filePaths);
-        }
-      }
-    );
-  }
+  constructor() {}
 
   doesWorkflowHaveEnvironment(wid: number): boolean {
     return this.environmentOfWorkflow.has(wid);
@@ -51,8 +19,6 @@ export class EnvironmentService {
     const eid = this.environments.length;
     environment.environment.eid = eid; // Set the eid as the index
     this.environments.push(environment);
-
-    this.updateEnvironmentWithFiles(eid);
     return eid;
   }
 

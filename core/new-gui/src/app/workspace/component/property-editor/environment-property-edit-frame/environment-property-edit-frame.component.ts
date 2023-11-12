@@ -20,20 +20,12 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   @Input()
   isEnvSwitchable = true;
 
-  isDisplayOutput = false;
-
   environment: DashboardEnvironment | undefined;
 
   constructor(
     private environmentService: EnvironmentService,
     private modalService: NgbModal,
   ) {}
-
-  get environments(): string[] {
-    if (this.environment)
-      return Array.from(new Set(this.environment.environment.inputs));
-    return [];
-  }
 
   onClickSwitchEnvironment(): void {
     const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {

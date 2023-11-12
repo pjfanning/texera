@@ -6,7 +6,6 @@ import { DashboardFile, SortMethod } from "../../type/dashboard-file.interface";
 import { UserService } from "../../../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import Fuse from "fuse.js";
-import {EnvironmentService} from "../../service/user-environment/environment.service";
 
 @UntilDestroy()
 @Component({
@@ -34,8 +33,7 @@ export class UserFileComponent implements OnInit {
   constructor(
     private modalService: NgbModal,
     private userFileService: UserFileService,
-    private userService: UserService,
-    private environmentService: EnvironmentService,
+    private userService: UserService
   ) {
     this.uid = this.userService.getCurrentUser()?.uid;
   }
@@ -49,7 +47,6 @@ export class UserFileComponent implements OnInit {
 
     modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
       this.refreshDashboardFileEntries();
-      this.environmentService.updateAllEnvironmentsWithFiles();
     });
   }
 
