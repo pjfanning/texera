@@ -74,14 +74,19 @@ class Controller(
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
-    while (channel.isEnabled && channel.hasMessage) {
-      val msg = channel.take
-      msg.payload match {
-        case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
-        case p                       => throw new RuntimeException(s"controller cannot handle $p")
+    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
+    var waitingForInput = false
+    while (!waitingForInput) {
+      cp.inputGateway.tryPickChannel match {
+        case Some(channel) =>
+          val msg = channel.take
+          msg.payload match {
+            case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
+            case p                       => throw new RuntimeException(s"controller cannot handle $p")
+          }
+        case None => waitingForInput = true
       }
     }
-    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
   }
 
   def handleDirectInvocation: Receive = {
