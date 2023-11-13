@@ -1,39 +1,22 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import edu.uci.ics.amber.engine.architecture.logging.{
-  DeterminantLogger,
-  EmptyDeterminantLogger,
-  EmptyLogManagerImpl,
-  LogManager
-}
-import edu.uci.ics.amber.engine.architecture.logging.storage.{
-  DeterminantLogStorage,
-  EmptyLogStorage
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  NetworkInputGateway,
-  NetworkOutputGateway
-}
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, EmptyDeterminantLogger, EmptyLogManagerImpl, LogManager}
+import edu.uci.ics.amber.engine.architecture.logging.storage.{DeterminantLogStorage, EmptyLogStorage}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{NetworkInputGateway, NetworkOutputGateway}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class AmberProcessor(
     val actorId: ActorVirtualIdentity,
-    @transient var outputHandler: WorkflowFIFOMessage => Unit
+    @transient var outputHandler: (WorkflowFIFOMessage, Long) => Unit
 ) extends AmberLogging
     with Serializable {
 
   /** FIFO & exactly once */
   lazy val inputGateway: NetworkInputGateway = new NetworkInputGateway(this.actorId)
-
-  /** Fault-tolerance layer */
-  var logStorage: DeterminantLogStorage = new EmptyLogStorage()
-  var determinantLogger: DeterminantLogger = new EmptyDeterminantLogger()
-  var logManager: LogManager = new EmptyLogManagerImpl(outputHandler)
-  var isReplaying = false
 
   // 1. Unified Output
   val outputGateway: NetworkOutputGateway =
@@ -41,7 +24,7 @@ class AmberProcessor(
       this.actorId,
       msg => {
         // done by the same thread
-        logManager.sendCommitted(msg, cursor.getStep)
+        outputHandler(msg, cursor.getStep)
       }
     )
   // 2. RPC Layer
@@ -50,6 +33,13 @@ class AmberProcessor(
   val asyncRPCServer: AsyncRPCServer =
     new AsyncRPCServer(outputGateway, actorId)
   var cursor = new ProcessingStepCursor()
+
+  def doFaultTolerantProcessing(detLogger: DeterminantLogger, pickedChannelId: ChannelID, payload:WorkflowFIFOMessagePayload)(code: => Unit): Unit ={
+    detLogger.setCurrentSenderWithPayload(pickedChannelId, cursor.getStep, payload)
+    cursor.setCurrentChannel(pickedChannelId)
+    code
+    cursor.stepIncrement()
+  }
 
   def processControlPayload(
       channel: ChannelID,

@@ -1,31 +1,22 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  ControlPayload,
-  DataPayload,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{
-  CompletableFuture,
-  ExecutorService,
-  Executors,
-  Future,
-  LinkedBlockingQueue
-}
+import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future, LinkedBlockingQueue}
 
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
+    detLogger:DeterminantLogger,
     internalQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]
 ) extends AmberLogging {
 
@@ -94,6 +85,10 @@ class DPThread(
   @throws[Exception]
   private[this] def runDPThreadMainLogic(): Unit = {
     // main DP loop
+
+    //
+    // Main loop step 1: receive messages from actor and apply FIFO
+    //
     var waitingForInput = false
     while (!stopped) {
       if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
@@ -107,27 +102,44 @@ class DPThread(
             dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
       }
+
+      //
+      // Main loop step 2: do input selection
+      //
+      var pickedChannelId:ChannelID = null
+      var payloadToProcess:WorkflowFIFOMessagePayload = null
       if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
-            val msg = channel.take
-            dp.processControlPayload(msg.channel, msg.payload.asInstanceOf[ControlPayload])
+            pickedChannelId = channel.channelId
+            payloadToProcess = channel.take.payload
           case None =>
             // continue processing
-            dp.continueDataProcessing()
+            pickedChannelId = dp.cursor.getChannel
         }
       } else {
         // take from input port
         dp.inputGateway.tryPickChannel match {
           case Some(channel) =>
-            val msg = channel.take
-            msg.payload match {
-              case payload: ControlPayload =>
-                dp.processControlPayload(msg.channel, payload)
-              case payload: DataPayload =>
-                dp.processDataPayload(msg.channel, payload)
-            }
+            pickedChannelId = channel.channelId
+            payloadToProcess = channel.take.payload
           case None => waitingForInput = true
+        }
+      }
+
+      //
+      // Main loop step 3: process selected message payload
+      //
+      if(pickedChannelId != null) {
+        dp.doFaultTolerantProcessing(detLogger, pickedChannelId, payloadToProcess){
+          payloadToProcess match {
+            case null =>
+              dp.continueDataProcessing()
+            case payload: ControlPayload =>
+              dp.processControlPayload(pickedChannelId, payload)
+            case payload: DataPayload =>
+              dp.processDataPayload(pickedChannelId, payload)
+          }
         }
       }
     }

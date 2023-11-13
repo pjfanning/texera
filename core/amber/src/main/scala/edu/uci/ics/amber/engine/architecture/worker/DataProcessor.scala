@@ -8,35 +8,16 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{WorkerTimerService, OutputManager}
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  DPOutputIterator,
-  FinalizeLink,
-  FinalizeOperator
-}
+import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING
-}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  EpochMarker,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, DataPayload, EndOfUpstream, EpochMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
 
@@ -90,7 +71,7 @@ class DataProcessor(
     @transient var workerIdx: Int,
     @transient var operator: IOperatorExecutor,
     @transient var opConf: OpExecConfig,
-    outputHandler: WorkflowFIFOMessage => Unit
+    outputHandler: (WorkflowFIFOMessage, Long) => Unit
 ) extends AmberProcessor(actorId, outputHandler)
     with Serializable {
 
@@ -136,8 +117,6 @@ class DataProcessor(
     new OutputManager(actorId, outputGateway)
   // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
-
-  private var currentBatchChannel: ChannelID = _
 
   // dp thread stats:
   protected var inputTupleCount = 0L

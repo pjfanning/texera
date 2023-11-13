@@ -32,9 +32,6 @@ object DeterminantLogStorage {
     KryoPool.withByteArrayOutputStream(Runtime.getRuntime.availableProcessors * 2, ki)
   }
 
-  private val maxSize: Int =
-    AmberUtils.amberConfig.getInt("fault-tolerance.log-record-max-size-in-byte")
-
   // For debugging purpose only
   def fetchAllLogRecords(storage: DeterminantLogStorage): Iterable[InMemDeterminant] = {
     val reader = storage.getReader
@@ -50,10 +47,6 @@ object DeterminantLogStorage {
     lazy val output = new Output(outputStream)
     def writeLogRecord(obj: InMemDeterminant): Unit = {
       val bytes = kryoPool.toBytesWithClass(obj)
-      assert(
-        bytes.length < maxSize,
-        "Writing log record size = " + bytes.length + " which exceeds the max size of " + maxSize + " bytes"
-      )
       output.writeInt(bytes.length)
       output.write(bytes)
     }
@@ -73,10 +66,6 @@ object DeterminantLogStorage {
         private def internalNext(): InMemDeterminant = {
           try {
             val len = input.readInt()
-            assert(
-              len < maxSize,
-              "Reading log record size = " + len + " which exceeds the max size of " + maxSize + " bytes"
-            )
             val bytes = input.readBytes(len)
             kryoPool.fromBytes(bytes).asInstanceOf[InMemDeterminant]
           } catch {
@@ -95,20 +84,16 @@ object DeterminantLogStorage {
     }
   }
 
-  def getLogStorage(enabledLogging: Boolean, name: String): DeterminantLogStorage = {
-    val storageType: String =
-      AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type")
-    if (enabledLogging) {
-      storageType match {
-        case "local" => new LocalFSLogStorage(name)
-        case "hdfs" =>
-          val hdfsIP: String =
-            AmberUtils.amberConfig.getString("fault-tolerance.hdfs-storage.address")
-          new HDFSLogStorage(name, hdfsIP)
-        case other => throw new RuntimeException("Cannot support log storage type of " + other)
-      }
-    } else {
-      new EmptyLogStorage()
+  def getLogStorage(storageType:String, name: String): DeterminantLogStorage = {
+    storageType match {
+      case "local" => new LocalFSLogStorage(name)
+      case "hdfs" =>
+        val hdfsIP: String =
+          AmberUtils.amberConfig.getString("fault-tolerance.hdfs-storage.address")
+        new HDFSLogStorage(name, hdfsIP)
+      case "none" =>
+        new EmptyLogStorage()
+      case other => throw new RuntimeException("Cannot support log storage type of " + other)
     }
   }
 

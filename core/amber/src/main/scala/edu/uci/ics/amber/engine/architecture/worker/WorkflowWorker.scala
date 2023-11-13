@@ -5,8 +5,9 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{TriggerSend, WorkflowWorkerConfig, getWorkerLogName}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -19,39 +20,49 @@ object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
       workerIndex: Int,
-      workerLayer: OpExecConfig
+      workerLayer: OpExecConfig,
+      workerConf: WorkflowWorkerConfig
   ): Props =
     Props(
       new WorkflowWorker(
         id,
         workerIndex: Int,
-        workerLayer: OpExecConfig
+        workerLayer: OpExecConfig,
+        workerConf: WorkflowWorkerConfig
       )
     )
 
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
+
+  final case class WorkflowWorkerConfig(loggerType:String)
 }
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
-    workerLayer: OpExecConfig
+    workerLayer: OpExecConfig,
+    workerConf: WorkflowWorkerConfig
 ) extends WorkflowActor(actorId) {
   val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()
+  val logManager: LogManager = LogManager.getLogManager(workerConf.loggerType, getWorkerLogName(actorId), sendMessageFromLogWriterToActor)
   var dp = new DataProcessor(
     actorId,
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
-    sendMessageFromDPToMain
+    sendMessageFromDPToLogWriter
   )
   val timerService = new WorkerTimerService(actorService)
   val dpThread = new DPThread(actorId, dp, inputQueue)
 
-  def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
+  def sendMessageFromDPToLogWriter(msg: WorkflowFIFOMessage, step:Long): Unit = {
+    logManager.sendCommitted(msg, step)
+  }
+
+  def sendMessageFromLogWriterToActor(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
     self ! TriggerSend(msg)
   }
