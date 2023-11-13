@@ -43,9 +43,4 @@ export class SearchResultsComponent {
       this.loading = false;
     }
   }
-
-  // for dummy vars
-  public setEntries(entries: DashboardEntry[]) {
-    this.entries = entries;
-  }
 }
