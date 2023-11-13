@@ -33,13 +33,15 @@ object WorkflowWorker {
   def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
+
+  final case class WorkflowWorkerConfig(loggerType:String)
 }
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
     workerLayer: OpExecConfig
-) extends WorkflowActor(actorId) {
+) extends WorkflowActor(workerConf.logStorageType, actorId) {
   val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()
   var dp = new DataProcessor(
@@ -47,10 +49,10 @@ class WorkflowWorker(
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
-    sendMessageFromDPToMain
+    sendMessageToLogWriter
   )
   val timerService = new WorkerTimerService(actorService)
-  val dpThread = new DPThread(actorId, dp, inputQueue)
+  val dpThread = new DPThread(actorId, dp, logManager.getDeterminantLogger, inputQueue)
 
   def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
@@ -78,7 +80,7 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    super.receive orElse handleSendFromDP orElse handleDirectInvocation
+    super.receive orElse handleTriggerSend orElse handleDirectInvocation
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -99,6 +101,7 @@ class WorkflowWorker(
     super.postStop()
     timerService.stopAdaptiveBatching()
     dpThread.stop()
+    logManager.terminate()
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {

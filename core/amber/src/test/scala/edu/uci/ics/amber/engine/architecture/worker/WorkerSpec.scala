@@ -5,8 +5,10 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
@@ -72,8 +74,8 @@ class WorkerSpec
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val workerIndex = 0
   private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
-
-  private val mockHandler = mock[WorkflowFIFOMessage => Unit]
+  private val logManager = LogManager.getLogManager("none", "log", x => {})
+  private val mockHandler = mock[(WorkflowFIFOMessage, Long) => Unit]
   private val mockOutputManager = mock[OutputManager]
 
   def sendControlToWorker(
@@ -96,14 +98,16 @@ class WorkerSpec
       new WorkflowWorker(
         identifier1,
         workerIndex,
-        opExecConfig
+        opExecConfig,
+        WorkflowWorkerConfig("none")
       ) {
         this.dp =
           new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {
             override val outputManager: OutputManager = mockOutputManager
           }
         this.dp.InitTimerService(timerService)
-        override val dpThread: DPThread = new DPThread(actorId, dp, inputQueue)
+        override val dpThread: DPThread =
+          new DPThread(actorId, dp, logManager.getDeterminantLogger, inputQueue)
       }
     )
   }
@@ -111,7 +115,7 @@ class WorkerSpec
   "Worker" should "process AddPartitioning message correctly" in {
     val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
-    (mockHandler.apply _).expects(*).once()
+    (mockHandler.apply _).expects(*, *).once()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
     sendControlToWorker(worker, Array(invocation))
 
@@ -123,7 +127,7 @@ class WorkerSpec
     val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
     (mockOutputManager.passTupleToDownstream _).expects(ITuple(1), mockLink).once()
-    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockHandler.apply _).expects(*, *).anyNumberOfTimes()
     (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))
@@ -155,7 +159,7 @@ class WorkerSpec
     val batch1 = mkBatch(0, 400)
     val batch2 = mkBatch(400, 500)
     val batch3 = mkBatch(500, 800)
-    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockHandler.apply _).expects(*, *).anyNumberOfTimes()
     (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))
@@ -183,7 +187,7 @@ class WorkerSpec
     }
     val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink, mockPolicy).once()
-    (mockHandler.apply _).expects(*).anyNumberOfTimes()
+    (mockHandler.apply _).expects(*, *).anyNumberOfTimes()
     (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink))

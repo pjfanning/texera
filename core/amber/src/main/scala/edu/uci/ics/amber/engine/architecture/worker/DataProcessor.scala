@@ -137,7 +137,7 @@ class DataProcessor(
   // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
 
-  private var currentBatchChannel: ChannelID = _
+  private var currentBatchChannel:ChannelID = _
 
   // dp thread stats:
   protected var inputTupleCount = 0L

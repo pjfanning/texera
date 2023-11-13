@@ -4,8 +4,6 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -51,6 +49,7 @@ class Controller(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig
 ) extends WorkflowActor(
+      controllerConfig.logStorageType,
       CONTROLLER
     ) {
 
@@ -60,9 +59,7 @@ class Controller(
     workflow,
     controllerConfig,
     actorId,
-    msg => {
-      transferService.send(msg)
-    }
+    sendMessageToLogWriter
   )
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -74,9 +71,11 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          msg.payload match {
-            case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
-            case p                       => throw new RuntimeException(s"controller cannot handle $p")
+          cp.doFaultTolerantProcessing(detLogger, channel.channelId, msg.payload) {
+            msg.payload match {
+              case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
+              case p                       => throw new RuntimeException(s"controller cannot handle $p")
+            }
           }
         case None => waitingForInput = true
       }

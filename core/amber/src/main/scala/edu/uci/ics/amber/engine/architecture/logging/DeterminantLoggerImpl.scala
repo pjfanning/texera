@@ -11,7 +11,8 @@ class DeterminantLoggerImpl extends DeterminantLogger {
     step += 1
   }
 
-  def logDeterminant(inMemDeterminant: InMemDeterminant): Unit = {
+  def logDeterminant(inMemDeterminant: InMemDeterminant
+  ): Unit = {
     pushStepDelta()
     tempLogs.append(inMemDeterminant)
   }
