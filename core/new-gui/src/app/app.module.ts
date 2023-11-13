@@ -138,6 +138,7 @@ import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-data
 import {userDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
 import { NgbdModelDatasetFileAddComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
+import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 
 registerLocaleData(en);
 
@@ -184,6 +185,7 @@ registerLocaleData(en);
     NgbdModalWorkflowExecutionsComponent,
     NgbdModelDatasetFileAddComponent,
     ConsoleFrameComponent,
+    ErrorFrameComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
