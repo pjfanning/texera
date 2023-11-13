@@ -10,7 +10,7 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
     extends AmberLogging
     with Serializable {
 
-  private val inputChannels =
+  val inputChannels =
     new mutable.HashMap[ChannelID, AmberFIFOChannel]()
 
   def tryPickControlChannel: Option[AmberFIFOChannel] = {
