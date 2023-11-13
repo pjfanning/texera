@@ -5,7 +5,6 @@ import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
@@ -74,7 +73,6 @@ class WorkerSpec
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val workerIndex = 0
   private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
-  private val logManager = LogManager.getLogManager("none", "log", x => {})
   private val mockHandler = mock[(WorkflowFIFOMessage, Long) => Unit]
   private val mockOutputManager = mock[OutputManager]
 

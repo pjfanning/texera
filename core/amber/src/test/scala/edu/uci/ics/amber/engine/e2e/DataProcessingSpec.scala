@@ -16,13 +16,14 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import java.sql.PreparedStatement
-import com.twitter.util.{Await, Duration, Future, Promise}
+import com.twitter.util.{Await, Duration, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.e2e.Utils.buildWorkflow
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
+import scala.concurrent.duration.DurationInt
 
 class DataProcessingSpec
     extends TestKit(ActorSystem("DataProcessingSpec"))
