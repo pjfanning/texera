@@ -1,5 +1,20 @@
 import { Injectable } from '@angular/core';
 import {DashboardEnvironment} from "../../type/environment";
+import {NotificationService} from "../../../../common/service/notification/notification.service";
+import {HttpClient} from "@angular/common/http";
+import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
+import next from "ajv/dist/vocabularies/next";
+import {Observable, of} from "rxjs";
+import {catchError, filter, map} from "rxjs/operators";
+import {AppSettings} from "../../../../common/app-setting";
+
+export const ENVIRONMENT_BASE_URL = "environment";
+export const ENVIRONMENT_CREATE_URL = ENVIRONMENT_BASE_URL + "/create"
+export const ENVIRONMENT_DELETE_URL = ENVIRONMENT_BASE_URL + "/delete"
+export const ENVIRONMENT_INPUT_RETRIEVAL_URL = "/input"
+export const ENVIRONMENT_INPUT_ADD_URL = ENVIRONMENT_INPUT_RETRIEVAL_URL + "/add"
+
+
 
 @Injectable({
   providedIn: 'root'
@@ -8,18 +23,34 @@ export class EnvironmentService {
   private environments: DashboardEnvironment[] = [];
   private environmentOfWorkflow: Map<number, number> = new Map();
 
-  constructor() {}
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+    private workflowEnvironmentService: WorkflowEnvironmentService) {}
 
-  doesWorkflowHaveEnvironment(wid: number): boolean {
-    return this.environmentOfWorkflow.has(wid);
+  doesWorkflowHaveEnvironment(wid: number): Observable<boolean> {
+    return this.workflowEnvironmentService.retrieveEnvironmentOfWorkflow(wid).pipe(
+        map(environment => {
+          // If the environment is null, it means the workflow does not have an environment
+          return environment !== null;
+        }),
+        catchError(error => {
+          // Handle the error case, you might want to return false or re-throw the error
+          throw error
+        })
+    );
   }
 
+
   // Create: Add a new environment
-  addEnvironment(environment: DashboardEnvironment): number {
-    const eid = this.environments.length;
-    environment.environment.eid = eid; // Set the eid as the index
-    this.environments.push(environment);
-    return eid;
+  addEnvironment(environment: DashboardEnvironment): Observable<DashboardEnvironment> {
+    return this.http
+        .post<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_CREATE_URL}`, {
+          name: environment.environment.name,
+          description: environment.environment.description,
+          uid: environment.environment.uid,
+        })
+        .pipe()
   }
 
   getEnvironmentIdentifiers(): Map<number, string> {

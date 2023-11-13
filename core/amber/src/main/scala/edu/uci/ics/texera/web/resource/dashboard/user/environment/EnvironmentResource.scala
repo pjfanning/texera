@@ -47,7 +47,9 @@ object EnvironmentResource {
 
   case class DashboardEnvironment(
       environment: Environment,
-      isOwner: Boolean
+      isOwner: Boolean,
+      inputs: List[String],
+      outputs: List[String]
   )
 
   case class DashboardEnvironmentInput(
@@ -90,7 +92,9 @@ class EnvironmentResource {
                 createdEnvironment.getDescription,
                 createdEnvironment.getCreationTime
               ),
-              createdEnvironment.getUid == user.getUid
+              createdEnvironment.getUid == user.getUid,
+              List(),
+              List()
             )
           }
         }
@@ -136,7 +140,9 @@ class EnvironmentResource {
         environment match {
           case Some(env) => DashboardEnvironment(
             env,
-            env.getUid == user.getUid
+            env.getUid == user.getUid,
+            List(),
+            List()
           )
 
           case None => throw new Exception(EnvironmentNotFoundMessage)
