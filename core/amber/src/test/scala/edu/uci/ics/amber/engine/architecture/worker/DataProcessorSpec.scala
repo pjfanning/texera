@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushNetworkBuffer
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{AkkaTimerService, OutputManager}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{WorkerTimerService, OutputManager}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.InputExhausted
@@ -43,7 +43,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val opExecConfig =
     OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
-  private val adaptiveBatchingMonitor = mock[AkkaTimerService]
+  private val adaptiveBatchingMonitor = mock[WorkerTimerService]
   private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
 
   def mkDataProcessor: DataProcessor = {

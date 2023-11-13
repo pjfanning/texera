@@ -37,7 +37,7 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   // and DP thread(for enqueuing messages) so a lock is required here
   def getChannel(channelId: ChannelID): AmberFIFOChannel = {
     synchronized {
-      inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel())
+      inputChannels.getOrElseUpdate(channelId, new AmberFIFOChannel(actorId))
     }
   }
 
