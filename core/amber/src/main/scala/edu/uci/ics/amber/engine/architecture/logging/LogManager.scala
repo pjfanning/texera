@@ -1,7 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logging.storage.{
+  DeterminantLogStorage,
+  EmptyLogStorage
+}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   WorkflowFIFOMessage,
@@ -21,17 +24,15 @@ case object TerminateSignal extends InMemDeterminant {
 
 object LogManager {
   def getLogManager(
-      logStorageType: String,
-      logName: String,
+      logStorage: DeterminantLogStorage,
       handler: WorkflowFIFOMessage => Unit
   ): LogManager = {
-    logStorageType match {
-      case "none" =>
+    logStorage match {
+      case _: EmptyLogStorage =>
         new EmptyLogManagerImpl(handler)
       case other =>
         val manager = new LogManagerImpl(handler)
-        val storage = DeterminantLogStorage.getLogStorage(other, logName)
-        manager.setupWriter(storage.getWriter)
+        manager.setupWriter(other.getWriter)
         manager
     }
   }

@@ -12,6 +12,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   RegisterActorRef,
   TriggerSend
 }
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{
@@ -79,8 +80,10 @@ abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualId
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
+  val logStorage: DeterminantLogStorage =
+    DeterminantLogStorage.getLogStorage(logStorageType, getLogName)
   val logManager: LogManager =
-    LogManager.getLogManager(logStorageType, getLogName, sendMessageFromLogWriterToActor)
+    LogManager.getLogManager(logStorage, sendMessageFromLogWriterToActor)
   val detLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   def getLogName: String = actorId.name.replace("Worker:", "")

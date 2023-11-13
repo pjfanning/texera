@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
@@ -37,7 +38,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, _ => operator)
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
-  private val logManager: LogManager = LogManager.getLogManager("none", "log", x => {})
+  private val logStorage = DeterminantLogStorage.getLogStorage("none", "log")
+  private val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
   private val detLogger = logManager.getDeterminantLogger
 
   "DP Thread" should "handle pause/resume during processing" in {
@@ -119,6 +121,46 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)
     }
+  }
+
+  "DP Thread" should "write determinant logs to local storage while processing" in {
+    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
+    val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
+    val anotherSender = ActorVirtualIdentity("another")
+    dp.registerInput(senderID, mockLink)
+    dp.registerInput(anotherSender, mockLink)
+    dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
+    (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
+    val logStorage = DeterminantLogStorage.getLogStorage("local", "DPSpecTemp")
+    logStorage.deleteLog()
+    val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
+    val localDetLogger = logManager.getDeterminantLogger
+    val dpThread = new DPThread(identifier, dp, localDetLogger, inputQueue)
+    dpThread.start()
+    tuples.foreach { x =>
+      (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
+    }
+    val dataChannelID2 = ChannelID(anotherSender, identifier, false)
+    val message1 = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples.slice(0, 100)))
+    val message2 = WorkflowFIFOMessage(dataChannelID, 1, DataFrame(tuples.slice(100, 200)))
+    val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
+    val message4 = WorkflowFIFOMessage(dataChannelID, 2, DataFrame(tuples.slice(200, 300)))
+    val message5 = WorkflowFIFOMessage(dataChannelID2, 1, DataFrame(tuples.slice(1000, 5000)))
+    inputQueue.put(Left(message1))
+    inputQueue.put(Left(message2))
+    inputQueue.put(Left(message3))
+    Thread.sleep(1000)
+    inputQueue.put(Left(message4))
+    inputQueue.put(Left(message5))
+    Thread.sleep(1000)
+    while (dp.cursor.getStep < 4999) {
+      Thread.sleep(100)
+    }
+    logManager.sendCommitted(null, 8000) // drain in-mem records to flush
+    logManager.terminate()
+    val logs = logStorage.getReader.mkLogRecordIterator().toArray
+    logStorage.deleteLog()
+    assert(logs.length > 1)
   }
 
 }

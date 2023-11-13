@@ -8,16 +8,35 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
+  DPOutputIterator,
+  FinalizeLink,
+  FinalizeOperator
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, DataPayload, EndOfUpstream, EpochMarker, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
+  COMPLETED,
+  PAUSED,
+  READY,
+  RUNNING
+}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  DataFrame,
+  DataPayload,
+  EndOfUpstream,
+  EpochMarker,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity
+}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
 
@@ -118,7 +137,7 @@ class DataProcessor(
   // 6. epoch manager
   val epochManager: EpochManager = new EpochManager()
 
-  private var currentBatchChannel:ChannelID = _
+  private var currentBatchChannel: ChannelID = _
 
   // dp thread stats:
   protected var inputTupleCount = 0L
