@@ -2,27 +2,30 @@ package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogWriter
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ChannelID, ControlPayload, WorkflowExecutionPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  WorkflowFIFOMessage,
+  WorkflowFIFOMessagePayload
+}
 
 //In-mem formats:
-sealed trait InMemDeterminant{
-  val steps:Long
+sealed trait InMemDeterminant {
+  val steps: Long
 }
-case class ProcessingStep(channel: ChannelID, steps: Long, payload:WorkflowFIFOMessagePayload)
-  extends InMemDeterminant
-case class TimeStamp(value: Long, steps:Long) extends InMemDeterminant
-case object TerminateSignal extends InMemDeterminant{
+case class ProcessingStep(channel: ChannelID, steps: Long, payload: WorkflowFIFOMessagePayload)
+    extends InMemDeterminant
+case class TimeStamp(value: Long, steps: Long) extends InMemDeterminant
+case object TerminateSignal extends InMemDeterminant {
   val steps = 0
 }
 
 object LogManager {
   def getLogManager(
       logStorageType: String,
-      logName:String,
+      logName: String,
       handler: WorkflowFIFOMessage => Unit
   ): LogManager = {
-    logStorageType match{
+    logStorageType match {
       case "none" =>
         new EmptyLogManagerImpl(handler)
       case other =>
@@ -71,7 +74,7 @@ class LogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends LogManager {
   def getDeterminantLogger: DeterminantLogger = determinantLogger
 
   def sendCommitted(msg: WorkflowFIFOMessage, step: Long): Unit = {
-    writer.putDeterminants(determinantLogger.drainCurrentLogRecords())
+    writer.putDeterminants(determinantLogger.drainCurrentLogRecords(step))
     writer.putOutput(msg)
   }
 

@@ -9,8 +9,10 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   MessageBecomesDeadLetter,
   NetworkAck,
   NetworkMessage,
-  RegisterActorRef
+  RegisterActorRef,
+  TriggerSend
 }
+import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
 import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
@@ -48,9 +50,11 @@ object WorkflowActor {
     * @param internalMessage WorkflowMessage, the message payload
     */
   final case class NetworkMessage(messageId: Long, internalMessage: WorkflowFIFOMessage)
+
+  final case class TriggerSend(msg: WorkflowFIFOMessage)
 }
 
-abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
+abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualIdentity)
     extends Actor
     with Stash
     with AmberLogging {
@@ -74,6 +78,26 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
   actorRefMappingService.registerActorRef(actorId, self)
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
+
+  val logManager: LogManager =
+    LogManager.getLogManager(logStorageType, getLogName, sendMessageFromLogWriterToActor)
+  val detLogger: DeterminantLogger = logManager.getDeterminantLogger
+
+  def getLogName: String = actorId.name.replace("Worker:", "")
+
+  def sendMessageToLogWriter(msg: WorkflowFIFOMessage, step: Long): Unit = {
+    logManager.sendCommitted(msg, step)
+  }
+
+  def sendMessageFromLogWriterToActor(msg: WorkflowFIFOMessage): Unit = {
+    // limitation: TriggerSend will be processed after input messages before it.
+    self ! TriggerSend(msg)
+  }
+
+  def handleTriggerSend: Receive = {
+    case TriggerSend(msg) =>
+      transferService.send(msg)
+  }
 
   def receiveActorRefRelatedMessages: Receive = {
     case GetActorRef(actorId, replyTo) =>
@@ -136,6 +160,7 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
 
   override def receive: Receive = {
     receiveActorRefRelatedMessages orElse
+      handleTriggerSend orElse
       receiveMessageAndAck orElse
       receiveCreditMessages orElse
       receiveDeadLetterMessage

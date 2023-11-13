@@ -4,8 +4,12 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 
 abstract class DeterminantLogger {
 
-  def setCurrentSenderWithPayload(channel: ChannelID, step:Long, payload:WorkflowFIFOMessagePayload):Unit
+  def setCurrentSenderWithPayload(
+      channel: ChannelID,
+      step: Long,
+      payload: WorkflowFIFOMessagePayload
+  ): Unit
 
-  def drainCurrentLogRecords(step:Long): Array[InMemDeterminant]
+  def drainCurrentLogRecords(step: Long): Array[InMemDeterminant]
 
 }

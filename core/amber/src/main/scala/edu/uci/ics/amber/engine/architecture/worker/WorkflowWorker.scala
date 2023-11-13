@@ -5,9 +5,8 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{TriggerSend, WorkflowWorkerConfig, getWorkerLogName}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{WorkflowWorkerConfig}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -32,11 +31,7 @@ object WorkflowWorker {
       )
     )
 
-  def getWorkerLogName(id: ActorVirtualIdentity): String = id.name.replace("Worker:", "")
-
-  final case class TriggerSend(msg: WorkflowFIFOMessage)
-
-  final case class WorkflowWorkerConfig(loggerType:String)
+  final case class WorkflowWorkerConfig(logStorageType: String)
 }
 
 class WorkflowWorker(
@@ -44,33 +39,18 @@ class WorkflowWorker(
     workerIndex: Int,
     workerLayer: OpExecConfig,
     workerConf: WorkflowWorkerConfig
-) extends WorkflowActor(actorId) {
+) extends WorkflowActor(workerConf.logStorageType, actorId) {
   val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()
-  val logManager: LogManager = LogManager.getLogManager(workerConf.loggerType, getWorkerLogName(actorId), sendMessageFromLogWriterToActor)
   var dp = new DataProcessor(
     actorId,
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
-    sendMessageFromDPToLogWriter
+    sendMessageToLogWriter
   )
   val timerService = new WorkerTimerService(actorService)
-  val dpThread = new DPThread(actorId, dp, inputQueue)
-
-  def sendMessageFromDPToLogWriter(msg: WorkflowFIFOMessage, step:Long): Unit = {
-    logManager.sendCommitted(msg, step)
-  }
-
-  def sendMessageFromLogWriterToActor(msg: WorkflowFIFOMessage): Unit = {
-    // limitation: TriggerSend will be processed after input messages before it.
-    self ! TriggerSend(msg)
-  }
-
-  def handleSendFromDP: Receive = {
-    case TriggerSend(msg) =>
-      transferService.send(msg)
-  }
+  val dpThread = new DPThread(actorId, dp, logManager.getDeterminantLogger, inputQueue)
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
@@ -88,7 +68,7 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    super.receive orElse handleSendFromDP orElse handleDirectInvocation
+    super.receive orElse handleTriggerSend orElse handleDirectInvocation
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -109,6 +89,7 @@ class WorkflowWorker(
     super.postStop()
     timerService.stopAdaptiveBatching()
     dpThread.stop()
+    logManager.terminate()
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {

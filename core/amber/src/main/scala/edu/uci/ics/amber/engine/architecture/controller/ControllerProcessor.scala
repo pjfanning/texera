@@ -1,9 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService, AmberProcessor}
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.common.{
+  AkkaActorRefMappingService,
+  AkkaActorService,
+  AmberProcessor
+}
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 

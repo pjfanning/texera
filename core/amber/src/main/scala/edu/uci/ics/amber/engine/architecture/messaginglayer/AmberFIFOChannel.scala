@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import scala.collection.mutable
 
 /* The abstracted FIFO/exactly-once logic */
-class AmberFIFOChannel(val channelId:ChannelID) extends AmberLogging {
+class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
   override def actorId: ActorVirtualIdentity = channelId.to
 

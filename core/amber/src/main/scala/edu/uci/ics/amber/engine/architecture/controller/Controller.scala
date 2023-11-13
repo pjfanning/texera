@@ -3,8 +3,6 @@ package edu.uci.ics.amber.engine.architecture.controller
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, DeterminantLoggerImpl, LogManager}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.getWorkerLogName
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -25,7 +23,7 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
-    logStorageType:String
+    logStorageType: String
 )
 
 object Controller {
@@ -48,6 +46,7 @@ class Controller(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig
 ) extends WorkflowActor(
+      controllerConfig.logStorageType,
       CONTROLLER
     ) {
 
@@ -57,19 +56,8 @@ class Controller(
     workflow,
     controllerConfig,
     actorId,
-    sendMessageFromActorToLogWriter
+    sendMessageToLogWriter
   )
-
-  val logManager: LogManager = LogManager.getLogManager(controllerConfig.logStorageType, actorId.name, sendMessageFromLogWriterToActor)
-  val detLogger:DeterminantLogger = logManager.getDeterminantLogger
-
-  def sendMessageFromActorToLogWriter(msg:WorkflowFIFOMessage, step:Long): Unit ={
-    logManager.sendCommitted(msg, step)
-  }
-
-  def sendMessageFromLogWriterToActor(msg:WorkflowFIFOMessage): Unit ={
-    transferService.send(msg)
-  }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channel)
@@ -80,9 +68,11 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          msg.payload match {
-            case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
-            case p                       => throw new RuntimeException(s"controller cannot handle $p")
+          cp.doFaultTolerantProcessing(detLogger, channel.channelId, msg.payload) {
+            msg.payload match {
+              case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
+              case p                       => throw new RuntimeException(s"controller cannot handle $p")
+            }
           }
         case None => waitingForInput = true
       }

@@ -5,18 +5,30 @@ import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  DataPayload,
+  WorkflowFIFOMessage,
+  WorkflowFIFOMessagePayload
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future, LinkedBlockingQueue}
+import java.util.concurrent.{
+  CompletableFuture,
+  ExecutorService,
+  Executors,
+  Future,
+  LinkedBlockingQueue
+}
 
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
-    detLogger:DeterminantLogger,
+    detLogger: DeterminantLogger,
     internalQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]
 ) extends AmberLogging {
 
@@ -106,8 +118,8 @@ class DPThread(
       //
       // Main loop step 2: do input selection
       //
-      var pickedChannelId:ChannelID = null
-      var payloadToProcess:WorkflowFIFOMessagePayload = null
+      var pickedChannelId: ChannelID = null
+      var payloadToProcess: WorkflowFIFOMessagePayload = null
       if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
@@ -130,8 +142,8 @@ class DPThread(
       //
       // Main loop step 3: process selected message payload
       //
-      if(pickedChannelId != null) {
-        dp.doFaultTolerantProcessing(detLogger, pickedChannelId, payloadToProcess){
+      if (pickedChannelId != null) {
+        dp.doFaultTolerantProcessing(detLogger, pickedChannelId, payloadToProcess) {
           payloadToProcess match {
             case null =>
               dp.continueDataProcessing()
