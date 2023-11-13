@@ -27,7 +27,7 @@ export class WorkflowEnvironmentService {
     }
 
     public retrieveEnvironmentOfWorkflow(wid: number): Observable<DashboardEnvironment | null> {
-        return this.http.get<Environment>(`${AppSettings.getApiEndpoint()}/${wid}/${WORKFLOW_ENVIRONMENT_RETRIEVE_URL}`)
+        return this.http.get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${wid}/${WORKFLOW_ENVIRONMENT_RETRIEVE_URL}`)
             .pipe(
                 catchError(error => {
                     // Handle HTTP errors, potentially return Observable.of(null) or throw
@@ -38,12 +38,7 @@ export class WorkflowEnvironmentService {
                     if (!response) {
                         return null;
                     }
-                    return {
-                        environment: response,
-                        ownerName: undefined,
-                        inputs: [],
-                        outputs: []
-                    }
+                    return response
                 })
             );
     }

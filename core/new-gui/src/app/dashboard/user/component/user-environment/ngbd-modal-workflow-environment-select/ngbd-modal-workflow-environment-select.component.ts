@@ -18,7 +18,7 @@ export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
     private environmentService: EnvironmentService) {}
 
   ngOnInit(): void {
-    const environmentIdentifiers = this.environmentService.getEnvironmentIdentifiers();
+    const environmentIdentifiers = this.environmentService.retrieveEnvironments();
     this.environments = Array.from(environmentIdentifiers.entries()).map(([id, name]) => ({ id, name }));
   }
 

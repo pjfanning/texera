@@ -95,7 +95,7 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   }
 
   initEditor(): void {
-    const env = this.environmentService.getEnvironmentByIndex(this.eid);
+    const env = this.environmentService.retrieveEnvironmentByEid(this.eid);
     if (env == null) {
       throw new Error("Environment not exists!!!");
     } else {
