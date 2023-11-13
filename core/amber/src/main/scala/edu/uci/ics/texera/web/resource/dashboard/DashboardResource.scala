@@ -9,6 +9,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.enums.{
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.DashboardEnvironment
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFile
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -31,7 +32,8 @@ object DashboardResource {
       resourceType: String,
       workflow: DashboardWorkflow,
       project: Project,
-      file: DashboardFile
+      file: DashboardFile,
+      environment: DashboardEnvironment
   )
 
   case class DashboardSearchResult(
@@ -94,6 +96,7 @@ class DashboardResource {
     var workflowMatchQuery: Condition = noCondition()
     var projectMatchQuery: Condition = noCondition()
     var fileMatchQuery: Condition = noCondition()
+    var environmentMatchQuery: Condition = noCondition()
     for (key: String <- splitKeywords) {
       if (key != "") {
         val words = key.split("\\s+")
@@ -120,6 +123,13 @@ class DashboardResource {
         )
         fileMatchQuery = fileMatchQuery.and(
           getSearchQuery(subStringSearchEnabled, "texera_db.file.name, texera_db.file.description"),
+          key
+        )
+        environmentMatchQuery = environmentMatchQuery.and(
+          getSearchQuery(
+            subStringSearchEnabled,
+            "texera_db.environment.name, texera_db.environment.description"
+          ),
           key
         )
       }
@@ -317,6 +327,17 @@ class DashboardResource {
         fileMatchQuery
       )
       .and(fileOptionalFilters)
+
+    val environmentQuery = context
+      .select(
+        DSL.inline("environment").as("resourceType"),
+        ENVIRONMENT.NAME.as("name"),
+        ENVIRONMENT.DESCRIPTION.as("description"),
+        ENVIRONMENT.CREATION_TIME.as("creation_time"),
+        ENVIRONMENT.UID.as("owner_id")
+      )
+      .from(ENVIRONMENT)
+      .where(environmentMatchQuery)
 
     // Retrieve files to which all shared workflows have access
     val sharedWorkflowFileQuery = context
@@ -563,6 +584,18 @@ class DashboardResource {
                 )
             }
           orderedQuery.limit(count + 1).offset(offset).fetch()
+
+        case "environment" =>
+          val orderedQuery = orderBy match {
+            case "NameAsc"        => environmentQuery.orderBy(ENVIRONMENT.NAME.asc())
+            case "NameDesc"       => environmentQuery.orderBy(ENVIRONMENT.NAME.desc())
+            case "CreateTimeDesc" => environmentQuery.orderBy(ENVIRONMENT.CREATION_TIME.desc())
+            case _ =>
+              throw new BadRequestException(
+                "Unknown orderBy. Only 'NameAsc', 'NameDesc', 'CreateTimeDesc' are allowed"
+              )
+          }
+          orderedQuery.limit(count + 1).offset(offset).fetch()
         case "" =>
           val unionedTable =
             context
@@ -645,6 +678,18 @@ class DashboardResource {
                   )
                   .toString,
                 record.into(FILE).into(classOf[File])
+              )
+            } else {
+              null
+            },
+            if (resourceType == "environment") {
+              val environmentRecord = record.into(ENVIRONMENT).into(classOf[Environment])
+              val isOwner = environmentRecord.getUid == user.getUid
+              DashboardEnvironment(
+                environmentRecord,
+                isOwner,
+                List(),
+                List()
               )
             } else {
               null

@@ -149,14 +149,22 @@ class EnvironmentResource {
     withExceptionHandling { () =>
       {
         withTransaction(context) { ctx =>
+          val inputOfEnvironmentDao = new InputOfEnvironmentDao(ctx.configuration())
           val environment = getEnvironmentByEid(ctx, eid);
+
+          val inputsOfEnvironment = inputOfEnvironmentDao.fetchByEid(eid)
+          val inputs = ListBuffer()
+
+          inputsOfEnvironment.forEach(input => {
+            inputs += ("ds" + input.getDid)
+          })
 
           environment match {
             case Some(env) =>
               DashboardEnvironment(
                 env,
                 env.getUid == user.getUid,
-                List(),
+                inputs.toList,
                 List()
               )
 
