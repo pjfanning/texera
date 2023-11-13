@@ -19,7 +19,7 @@ export class userDatasetViewComponent implements OnInit {
 
     public currentFile: string = "";
     public currentFileObject: File | undefined = undefined;
-    public fileContent: string = "";
+    public fileURL: string = "";
 
     public isSiderCollapsed = false;
     public versionNames: ReadonlyArray<string> = [];
@@ -58,6 +58,7 @@ export class userDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(blob => {
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
+        this.fileURL = URL.createObjectURL(this.currentFileObject);
       })
     }
 
