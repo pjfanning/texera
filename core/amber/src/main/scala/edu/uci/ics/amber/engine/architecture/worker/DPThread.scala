@@ -98,7 +98,6 @@ class DPThread(
     while (!stopped) {
       if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
         val msg = internalQueue.take
-        println(msg)
         msg match {
           case Left(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)

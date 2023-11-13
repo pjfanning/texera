@@ -1,13 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.common.Constants
+import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
 /* The abstracted FIFO/exactly-once logic */
-class AmberFIFOChannel() {
+class AmberFIFOChannel(val actorId: ActorVirtualIdentity) extends AmberLogging {
 
   private val ofoMap = new mutable.HashMap[Long, WorkflowFIFOMessage]
   private var current = 0L
@@ -19,9 +20,11 @@ class AmberFIFOChannel() {
     val seq = msg.sequenceNumber
     val payload = msg.payload
     if (isDuplicated(seq)) {
-      println(s"received duplicated message $payload with seq = $seq while current seq = $current")
+      logger.debug(
+        s"received duplicated message $payload with seq = $seq while current seq = $current"
+      )
     } else if (isAhead(seq)) {
-      println(s"received ahead message $payload with seq = $seq while current seq = $current")
+      logger.debug(s"received ahead message $payload with seq = $seq while current seq = $current")
       stash(seq, msg)
     } else {
       enforceFIFO(msg)

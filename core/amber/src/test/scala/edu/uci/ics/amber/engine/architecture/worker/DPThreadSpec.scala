@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.AkkaTimerService
+import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
@@ -41,7 +41,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
+    dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()
@@ -65,7 +65,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
+    dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()
@@ -94,7 +94,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
     dp.registerInput(anotherSender, mockLink)
-    dp.adaptiveBatchingMonitor = mock[AkkaTimerService]
+    dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, inputQueue)
     dpThread.start()

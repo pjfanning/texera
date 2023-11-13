@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.messaginglayer.AkkaTimerService
+import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -48,7 +48,7 @@ class WorkflowWorker(
     workerLayer,
     sendMessageFromDPToMain
   )
-  val timerService = new AkkaTimerService(actorService)
+  val timerService = new WorkerTimerService(actorService)
   val dpThread = new DPThread(actorId, dp, inputQueue)
 
   def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
@@ -81,7 +81,6 @@ class WorkflowWorker(
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
-    println(workflowMsg)
     inputQueue.put(Left(workflowMsg))
     sender ! NetworkAck(id, dp.getSenderCredits(workflowMsg.channel))
   }
