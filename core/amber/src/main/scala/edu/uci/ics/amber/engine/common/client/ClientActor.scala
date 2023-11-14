@@ -3,9 +3,14 @@ package edu.uci.ics.amber.engine.common.client
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.StatusReply.Ack
 import com.twitter.util.Promise
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
+  CreditRequest,
+  CreditResponse,
+  NetworkAck,
+  NetworkMessage
+}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   WorkflowFIFOMessage,
@@ -46,6 +51,8 @@ private[client] class ClientActor extends Actor with AmberLogging {
       assert(controller == null)
       controller = context.actorOf(Controller.props(workflow, controllerConfig))
       sender ! Ack
+    case CreditRequest(channel: ChannelID) =>
+      sender ! CreditResponse(channel, Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair)
     case ClosureRequest(closure) =>
       try {
         sender ! closure()

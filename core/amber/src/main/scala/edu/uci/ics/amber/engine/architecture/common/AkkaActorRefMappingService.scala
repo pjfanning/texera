@@ -4,10 +4,11 @@ import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   GetActorRef,
   NetworkMessage,
-  RegisterActorRef
+  RegisterActorRef,
+  CreditRequest
 }
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, CreditRequest}
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 

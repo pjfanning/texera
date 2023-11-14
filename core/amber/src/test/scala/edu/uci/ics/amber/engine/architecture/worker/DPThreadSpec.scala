@@ -61,6 +61,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     Thread.sleep(1000)
     assert(dp.pauseManager.isPaused)
     inputQueue.put(Right(ControlInvocation(1, ResumeWorker())))
+    Thread.sleep(1000)
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)
     }
@@ -88,6 +89,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     Thread.sleep(1000)
     assert(dp.pauseManager.isPaused)
     inputQueue.put(Left(resumeControl))
+    Thread.sleep(1000)
     while (dp.hasUnfinishedInput) {
       Thread.sleep(100)
     }

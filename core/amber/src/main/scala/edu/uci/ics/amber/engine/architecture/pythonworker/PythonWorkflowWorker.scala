@@ -73,7 +73,7 @@ class PythonWorkflowWorker(
         case p => logger.error(s"unhandled control payload: $p")
       }
     }
-    sender ! NetworkAck(messageId, getSenderCredits(workflowMsg.channel))
+    sender ! NetworkAck(messageId)
   }
 
   /** flow-control */
