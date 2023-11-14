@@ -63,7 +63,7 @@ class Controller(
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
-    sender ! NetworkAck(id, getSenderCredits(workflowMsg.channel))
+    sender ! NetworkAck(id)
     var waitingForInput = false
     while (!waitingForInput) {
       cp.inputGateway.tryPickChannel match {
