@@ -106,11 +106,14 @@ class AkkaMessageTransferService(
       case (channel, fc) =>
         if (fc.isOverloaded) {
           existOverloadedChannel = true
-          if(!fc.isPollingForCredit){
+          if (!fc.isPollingForCredit) {
             fc.isPollingForCredit = true
-            actorService.scheduleOnce(50.millis, () => {
-              refService.askForCredit(channel)
-            })
+            actorService.scheduleOnce(
+              50.millis,
+              () => {
+                refService.askForCredit(channel)
+              }
+            )
           }
         }
     }
@@ -118,7 +121,8 @@ class AkkaMessageTransferService(
       return
     }
     backpressured = existOverloadedChannel
-    logger.info(s"current backpressure status = $backpressured channel credits = ${channelToFC.map(c => c._1 -> c._2.senderSideCredit)}")
+    logger.info(s"current backpressure status = $backpressured channel credits = ${channelToFC
+      .map(c => c._1 -> c._2.senderSideCredit)}")
     handleBackpressure(backpressured)
   }
 

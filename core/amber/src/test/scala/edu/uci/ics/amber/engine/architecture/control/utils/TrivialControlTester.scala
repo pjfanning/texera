@@ -2,7 +2,6 @@ package edu.uci.ics.amber.engine.architecture.control.utils
 
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.{AmberProcessor, WorkflowActor}
-import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
@@ -29,7 +28,7 @@ class TrivialControlTester(
         case _                       => ???
       }
     }
-    sender ! NetworkAck(id, Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair)
+    sender ! NetworkAck(id)
   }
 
   /** flow-control */

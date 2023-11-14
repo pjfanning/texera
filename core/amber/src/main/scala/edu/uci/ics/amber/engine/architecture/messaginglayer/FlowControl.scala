@@ -63,7 +63,7 @@ class FlowControl {
 
   def getMessagesToSend: Iterable[WorkflowFIFOMessage] = {
     val toSend = mutable.ArrayBuffer[WorkflowFIFOMessage]()
-    breakable{
+    breakable {
       while (stashedMessages.nonEmpty) {
         val msg = stashedMessages.front
         val creditNeeded = getInMemSize(msg)

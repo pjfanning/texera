@@ -114,9 +114,9 @@ class DPThread(
             dp.processControlPayload(msg.channel, msg.payload.asInstanceOf[ControlPayload])
           case None =>
             // continue processing
-            if(!dp.pauseManager.isPaused){
+            if (!dp.pauseManager.isPaused) {
               dp.continueDataProcessing()
-            }else{
+            } else {
               waitingForInput = true
             }
         }

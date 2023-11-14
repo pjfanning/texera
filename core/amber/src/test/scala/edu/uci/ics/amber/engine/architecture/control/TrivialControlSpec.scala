@@ -16,7 +16,6 @@ import edu.uci.ics.amber.engine.architecture.control.utils.NestedHandler.Nested
 import edu.uci.ics.amber.engine.architecture.control.utils.PingPongHandler.Ping
 import edu.uci.ics.amber.engine.architecture.control.utils.RecursionHandler.Recursion
 import edu.uci.ics.amber.engine.architecture.control.utils.TrivialControlTester
-import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -52,8 +51,7 @@ class TrivialControlSpec
             WorkflowFIFOMessage(_, _, ReturnInvocation(id, returnValue))
           ) =>
         probe.sender() ! NetworkAck(
-          msgID,
-          Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+          msgID
         )
         returnValue match {
           case e: Throwable => throw e

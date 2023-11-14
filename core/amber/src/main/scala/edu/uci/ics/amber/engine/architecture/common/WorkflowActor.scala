@@ -10,11 +10,8 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   CreditResponse,
   CreditRequest
 }
-import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 object WorkflowActor {
 
