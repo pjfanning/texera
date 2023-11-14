@@ -98,11 +98,11 @@ class DPThread(
     while (!stopped) {
       while (internalQueue.size > 0 || waitingForInput) {
         val msg = internalQueue.take
+        waitingForInput = false
         msg match {
           case Left(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
-            waitingForInput = false
           case Right(ctrl) =>
             dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
