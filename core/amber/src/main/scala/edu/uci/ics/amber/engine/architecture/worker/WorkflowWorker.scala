@@ -73,7 +73,7 @@ class WorkflowWorker(
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     inputQueue.put(Left(workflowMsg))
-    sender ! NetworkAck(id, dp.getSenderCredits(workflowMsg.channel))
+    sender ! NetworkAck(id)
   }
 
   /** flow-control */

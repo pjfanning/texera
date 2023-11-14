@@ -103,13 +103,13 @@ class DPThread(
     //
     var waitingForInput = false
     while (!stopped) {
-      if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
+      while (internalQueue.size > 0 || waitingForInput) {
         val msg = internalQueue.take
+        waitingForInput = false
         msg match {
           case Left(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
-            waitingForInput = false
           case Right(ctrl) =>
             dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
@@ -120,14 +120,18 @@ class DPThread(
       //
       var pickedChannelId: ChannelID = null
       var payloadToProcess: WorkflowFIFOMessagePayload = null
-      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
+      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput || dp.pauseManager.isPaused) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
             pickedChannelId = channel.channelId
             payloadToProcess = channel.take.payload
           case None =>
             // continue processing
-            pickedChannelId = dp.cursor.getChannel
+            if (!dp.pauseManager.isPaused) {
+              pickedChannelId = dp.cursor.getChannel
+            } else {
+              waitingForInput = true
+            }
         }
       } else {
         // take from input port

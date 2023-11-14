@@ -37,12 +37,3 @@ case class WorkflowRecoveryMessage(
     from: ActorVirtualIdentity,
     payload: RecoveryPayload
 )
-// sent from network communicator to next worker to poll for credit information
-case class CreditRequest(
-    channelEndpointID: ChannelID
-) extends WorkflowMessage
-
-case class CreditResponse(
-    channelEndpointID: ChannelID,
-    credit: Int
-) extends WorkflowMessage
