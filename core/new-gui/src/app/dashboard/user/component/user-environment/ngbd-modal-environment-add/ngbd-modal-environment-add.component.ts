@@ -1,51 +1,50 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
-import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup} from '@angular/forms';
+import {NgbActiveModal} from '@ng-bootstrap/ng-bootstrap';
 
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import { UserService } from "../../../../../common/service/user/user.service";
+import {UserService} from "../../../../../common/service/user/user.service";
 import {DashboardEntry} from "../../../type/dashboard-entry";
-import {DashboardEnvironment} from "../../../type/environment";
+import {DashboardEnvironment, Environment} from "../../../type/environment";
+import {EnvironmentService} from "../../../service/user-environment/environment.service";
 
 @UntilDestroy()
 @Component({
-  selector: 'ngbd-modal-environment-add.component',
-  templateUrl: './ngbd-modal-environment-add.component.html',
-  styleUrls: ['./ngbd-modal-environment-add.component.scss']
+    selector: 'ngbd-modal-environment-add.component',
+    templateUrl: './ngbd-modal-environment-add.component.html',
+    styleUrls: ['./ngbd-modal-environment-add.component.scss']
 })
 export class NgbdModalEnvironmentAddComponent implements OnInit {
-  validateForm: FormGroup;
+    validateForm: FormGroup;
 
-  constructor(
-    private activeModal: NgbActiveModal,
-    private formBuilder: FormBuilder,
-    private userService: UserService
-  ) {
-    this.validateForm = this.formBuilder.group({
-      name: ["Untitled Environment"],
-      description: [""],
-    });
-  }
+    constructor(
+        private activeModal: NgbActiveModal,
+        private formBuilder: FormBuilder,
+        private userService: UserService,
+        private environmentService: EnvironmentService
+    ) {
+        this.validateForm = this.formBuilder.group({
+            name: ["Untitled Environment"],
+            description: [""],
+        });
+    }
 
-  ngOnInit(): void {}
+    ngOnInit(): void {
+    }
 
-  close(): void {
-    this.activeModal.close();
-  }
+    close(): void {
+        this.activeModal.close();
+    }
 
-  onSubmitAddEnvironment(): void {
-    let new_entry: DashboardEnvironment = {
-      ownerName: "dummy",
-      environment: {
-        eid : 0,
-        name: this.validateForm.get('name')?.value,
-        description: this.validateForm.get('description')?.value,
-        creationTime: Date.now(),
-        inputs: [],
-        outputs: []
-      }
-    };
+    onSubmitAddEnvironment(): void {
+        let new_entry: Environment = {
+            eid: undefined,
+            uid: undefined,
+            name: this.validateForm.get('name')?.value,
+            description: this.validateForm.get('description')?.value,
+            creationTime: Date.now(),
+        };
 
-    this.activeModal.close(new_entry);
-  }
+        this.activeModal.close(new_entry);
+    }
 }

@@ -1,8 +1,8 @@
 
 <div class="container">
   <div class="frame-title">
-    <h4 class="frame-title" *ngIf="environment != undefined"
-    >{{environment.environment.name}}</h4>
+    <h4 class="frame-title"
+    >{{environmentName}}</h4>
   </div>
 
   <section class="data-section">
@@ -23,12 +23,11 @@
   <section class="input-section">
     <nz-collapse>
       <nz-collapse-panel
-        *ngIf="environment != undefined"
         [nzHeader]="'Input'" [nzActive]="true">
         <!-- Content for Input here -->
         <ul>
           <li *ngFor="
-          let input of environment.environment.inputs">
+          let input of environmentInputs">
             {{input}}
           </li>
         </ul>
@@ -39,12 +38,11 @@
   <section class="output-section">
     <nz-collapse>
       <nz-collapse-panel
-        *ngIf="environment != undefined"
         [nzHeader]="'Output'"
         [nzActive]="true">
         <!-- Content for Output here -->
         <ul>
-          <li *ngFor="let output of environment.environment.outputs">{{output}}</li>
+          <li *ngFor="let output of environmentOutputs">{{output}}</li>
         </ul>
       </nz-collapse-panel>
     </nz-collapse>

@@ -2,6 +2,7 @@ import {Observable, Subject} from "rxjs";
 import {WorkflowActionService} from "../../../../workspace/service/workflow-graph/model/workflow-action.service";
 import {Injectable} from "@angular/core";
 import {EnvironmentService} from "../user-environment/environment.service";
+import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
 
 export const DISPLAY_ENVIRONMENT_EDITOR_EVENT = "display_environment_editor_event";
 
@@ -13,7 +14,8 @@ export class EnvironmentEditorService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private environmentService: EnvironmentService
+    private environmentService: EnvironmentService,
+    private workflowEnvironmentService: WorkflowEnvironmentService
   ) {}
 
   public clickDisplayEnvironmentEditor(wid: number): void {
@@ -21,11 +23,13 @@ export class EnvironmentEditorService {
     const elements = this.workflowActionService.getJointGraphWrapper().getCurrentHighlights();
     this.workflowActionService.getJointGraphWrapper().unhighlightElements(elements);
 
-    let eid = this.environmentService.getEnvironmentOfWorkflow(wid);
-    if (eid == undefined) {
-      eid = 0;
-    }
-    this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()]);
+    this.workflowEnvironmentService.retrieveEnvironmentOfWorkflow(wid).subscribe(env => {
+      if (env && env.environment.eid) {
+        const eid = env.environment.eid;
+        this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()]);
+      }
+    });
+
   }
 
   public environmentEditorDisplayObservable(): Observable<readonly string[]> {

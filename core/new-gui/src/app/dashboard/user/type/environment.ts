@@ -1,13 +1,13 @@
 export interface DashboardEnvironment {
   environment: Environment,
-  isOwner: string | undefined,
+  isOwner: boolean | undefined,
   inputs: string[] | undefined,
   outputs: string[] | undefined,
 }
 
 export interface Environment {
   eid: number | undefined,
-  uid: number,
+  uid: number | undefined,
   name: string,
   description: string,
   creationTime: number | undefined,

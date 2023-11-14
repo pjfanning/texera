@@ -232,3 +232,5 @@ CREATE FULLTEXT INDEX `idx_user_name` ON `texera_db`.`user` (name);
 CREATE FULLTEXT INDEX `idx_user_project_name_description` ON `texera_db`.`project` (name, description);
 
 CREATE FULLTEXT INDEX `idx_file_name_description` ON `texera_db`.`file` (name, description);
+
+CREATE FULLTEXT INDEX `idx_user_environment_name_description` ON `texera_db`.`environment` (name, description);

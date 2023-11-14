@@ -2,6 +2,7 @@ import { UntilDestroy } from "@ngneat/until-destroy";
 import { Component, OnInit } from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
+import {DashboardEnvironment} from "../../../type/environment";
 
 @UntilDestroy()
 @Component({
@@ -11,7 +12,7 @@ import { EnvironmentService } from "../../../service/user-environment/environmen
 })
 export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
   selectedEnvironmentId: number | null = null;
-  environments: {id: number, name: string}[] = [];
+  environments: DashboardEnvironment[] = [];
 
   constructor(
     private activeModal: NgbActiveModal,
@@ -19,12 +20,14 @@ export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
 
   ngOnInit(): void {
     const environmentIdentifiers = this.environmentService.retrieveEnvironments();
-    this.environments = Array.from(environmentIdentifiers.entries()).map(([id, name]) => ({ id, name }));
+    this.environmentService.retrieveEnvironments().subscribe(envs => {
+      this.environments = envs
+    });
   }
 
   goToWorkflow(): void {
     if (this.selectedEnvironmentId !== null) {
-      const selectedEnvName = this.environments.find(env => env.id === this.selectedEnvironmentId)?.name;
+      const selectedEnvName = this.environments.find(env => env.environment.eid === this.selectedEnvironmentId)?.environment.name;
       console.log('Navigating to workflow with environment:', selectedEnvName);
       this.activeModal.close(this.selectedEnvironmentId);  // Close the modal and return the selected environment ID
     } else {

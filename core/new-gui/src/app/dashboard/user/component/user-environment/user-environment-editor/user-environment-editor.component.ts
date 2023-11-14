@@ -24,12 +24,13 @@ export class UserEnvironmentEditorComponent implements OnInit {
       // Get the eid from the params
       this.eid = +params['eid'];  // The '+' converts the string to a number
 
-      const env = this.environmentService.retrieveEnvironmentByEid(this.eid);
-      if (env == null) {
-        this.environment = undefined;
-      } else {
-        this.environment = env;
-      }
+      this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
+        if (env == null) {
+          this.environment = undefined;
+        } else {
+          this.environment = env;
+        }
+      })
     });
   }
 }

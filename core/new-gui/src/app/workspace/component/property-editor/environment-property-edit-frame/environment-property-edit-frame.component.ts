@@ -4,6 +4,7 @@ import {EnvironmentService} from "../../../../dashboard/user/service/user-enviro
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {NgbdModalEnvironmentDatasetAddComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
+import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
 
 @Component({
   selector: 'texera-environment-property-edit-frame',
@@ -22,8 +23,13 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
 
   environment: DashboardEnvironment | undefined;
 
+  environmentName: string = "";
+  environmentInputs: string[] = [];
+  environmentOutputs: string[] = [];
+
   constructor(
     private environmentService: EnvironmentService,
+    private workflowEnvironmentService: WorkflowEnvironmentService,
     private modalService: NgbModal,
   ) {}
 
@@ -38,29 +44,24 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
         if (selectedEnvironmentID == null) {
           // If an environment was not selected, create a new one and relate it
           // Here, you can perform further actions with the selected environment
-          const eid = this.environmentService.addEnvironment(
+          this.environmentService.addEnvironment(
             {
-              environment: {
-                eid: 0,
-                name: "Untitled Environment",
-                description: "Some description",
-                creationTime: Date.now(),
-                inputs: [],
-                outputs: [],
-              },
-              ownerName: "Hola"
+              eid: undefined,
+              uid: undefined,
+              name: "Untitled Environment",
+              description: "Some description",
+              creationTime: undefined
             }
-          )
-          const wid = this.wid;
-          if (wid)
-            this.environmentService.switchEnvironmentOfWorkflow(wid, eid);
-            this.eid = eid;
+          ).subscribe(env => {
+            const wid = this.wid;
+            if (wid && env.environment.eid)
+              this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, env.environment.eid);
+          })
         } else {
           // user choose a existing environment
           const wid = this.wid;
           if (wid)
-            this.environmentService.switchEnvironmentOfWorkflow(wid, selectedEnvironmentID);
-            this.eid = selectedEnvironmentID;
+            this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID);
         }
         this.initEditor();
       },
@@ -76,9 +77,10 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
     modalRef.result.then(
       (dsName) => {
         if (this.environment) {
-          console.log('Returned value from modal:', dsName);  // Will log 'someReturnValue'
-          this.environment.environment.inputs.push(dsName);
-          this.environmentService.updateEnvironment(this.environment.environment.eid, this.environment)
+          // TODO: placeholder for datasets
+          // console.log('Returned value from modal:', dsName);  // Will log 'someReturnValue'
+          // this.environment.environment.inputs.push(dsName);
+          // this.environmentService.updateEnvironment(this.environment.environment.eid, this.environment)
         }
       },
       (reason) => {
@@ -95,11 +97,24 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   }
 
   initEditor(): void {
-    const env = this.environmentService.retrieveEnvironmentByEid(this.eid);
-    if (env == null) {
-      throw new Error("Environment not exists!!!");
-    } else {
-      this.environment = env;
+    this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
+      if (env == null) {
+        throw new Error("Environment not exists!!!");
+      } else {
+        this.environment = env;
+      }
+    });
+  }
+
+  initEnvironmentDisplay(): void {
+    if (this.environment) {
+      this.environmentName = this.environment.environment.name;
+
+      if (this.environment.inputs)
+        this.environmentInputs = this.environment.inputs;
+
+      if (this.environment.outputs)
+        this.environmentOutputs = this.environment.outputs;
     }
   }
 

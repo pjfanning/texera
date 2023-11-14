@@ -7,7 +7,7 @@
     <label>From existing environments:</label>
     <select class="form-control" [(ngModel)]="selectedEnvironmentId">
       <option value="null" selected>Create a new environment</option>
-      <option *ngFor="let env of environments" [value]="env.id">{{env.id}}: {{env.name}}</option>
+      <option *ngFor="let env of environments" [value]="env.environment.eid">{{env.environment.eid}}: {{env.environment.name}}</option>
     </select>
   </div>
   <button class="btn btn-primary" (click)="goToWorkflow()">Go to the workflow editor</button>

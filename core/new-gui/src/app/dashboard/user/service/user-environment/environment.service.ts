@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {DashboardEnvironment} from "../../type/environment";
+import {DashboardEnvironment, Environment} from "../../type/environment";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {HttpClient} from "@angular/common/http";
 import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
@@ -44,12 +44,12 @@ export class EnvironmentService {
 
 
     // Create: Add a new environment
-    addEnvironment(environment: DashboardEnvironment): Observable<DashboardEnvironment> {
+    addEnvironment(environment: Environment): Observable<DashboardEnvironment> {
         return this.http
             .post<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_CREATE_URL}`, {
-                name: environment.environment.name,
-                description: environment.environment.description,
-                uid: environment.environment.uid,
+                name: environment.name,
+                description: environment.description,
+                uid: environment.uid,
             })
             .pipe()
     }
