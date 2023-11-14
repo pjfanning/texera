@@ -80,7 +80,7 @@ export class PropertyEditorComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe(event => {
-        const isDisplayEnvironmentEditor = event.length === 1 && event[0] === DISPLAY_ENVIRONMENT_EDITOR_EVENT;
+        const isDisplayEnvironmentEditor = event[0] === DISPLAY_ENVIRONMENT_EDITOR_EVENT;
         const highlightedOperators = this.workflowActionService
           .getJointGraphWrapper()
           .getCurrentHighlightedOperatorIDs();
@@ -89,8 +89,11 @@ export class PropertyEditorComponent implements OnInit {
         this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedCommentBoxIDs();
         const highlightedPorts = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedPortIDs();
         if (isDisplayEnvironmentEditor) {
-          const eid = parseInt(<string>event[1]);
-          const wid = parseInt(<string>event[2]);
+          const wid = parseInt(<string>event[1]);
+          let eid = undefined;
+          if (event.length == 3) {
+            eid = parseInt(<string>event[2]);
+          }
           this.switchFrameComponent({
             component: EnvironmentPropertyEditFrameComponent,
             componentInputs: {

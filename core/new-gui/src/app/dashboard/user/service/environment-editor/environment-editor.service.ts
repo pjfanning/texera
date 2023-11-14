@@ -15,22 +15,20 @@ export class EnvironmentEditorService {
   constructor(
     private workflowActionService: WorkflowActionService,
     private environmentService: EnvironmentService,
-    private workflowEnvironmentService: WorkflowEnvironmentService
   ) {}
 
-  public clickDisplayEnvironmentEditor(wid: number): void {
+  public clickDisplayEnvironmentEditor(wid: number, eid?: number): void {
     // unhighlight all the current highlighted operators/groups/links
     const elements = this.workflowActionService.getJointGraphWrapper().getCurrentHighlights();
     this.workflowActionService.getJointGraphWrapper().unhighlightElements(elements);
 
-    this.workflowEnvironmentService.retrieveEnvironmentOfWorkflow(wid).subscribe(env => {
-      if (env && env.environment.eid) {
-        const eid = env.environment.eid;
-        this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()]);
-        console.log([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()])
-      }
-    });
-
+    if (eid) {
+      // eid is presented, meaning that the environment id is set
+      this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, wid.toString(), eid.toString()]);
+    } else {
+      // eid is not presented, user need to choose one explicitly
+      this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, wid.toString()]);
+    }
   }
 
   public environmentEditorDisplayObservable(): Observable<readonly string[]> {

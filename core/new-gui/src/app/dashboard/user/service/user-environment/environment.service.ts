@@ -17,88 +17,74 @@ export const ENVIRONMENT_INPUT_ADD_URL = ENVIRONMENT_INPUT_RETRIEVAL_URL + "/add
 
 
 @Injectable({
-    providedIn: 'root'
+  providedIn: 'root'
 })
 export class EnvironmentService {
-    private environments: DashboardEnvironment[] = [];
-    private environmentOfWorkflow: Map<number, number> = new Map();
+  private environments: DashboardEnvironment[] = [];
 
-    constructor(
-        private http: HttpClient,
-        private notificationService: NotificationService,
-        private workflowEnvironmentService: WorkflowEnvironmentService) {
-    }
-
-    doesWorkflowHaveEnvironment(wid: number): Observable<boolean> {
-        return this.workflowEnvironmentService.retrieveEnvironmentOfWorkflow(wid).pipe(
-            map(environment => {
-                // If the environment is null, it means the workflow does not have an environment
-                return environment !== null;
-            }),
-            catchError(error => {
-                // Handle the error case, you might want to return false or re-throw the error
-                throw error
-            })
-        );
-    }
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService,
+    private workflowEnvironmentService: WorkflowEnvironmentService) {
+  }
 
 
-    // Create: Add a new environment
-    addEnvironment(environment: Environment): Observable<DashboardEnvironment> {
-        return this.http
-            .post<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_CREATE_URL}`, {
-                name: environment.name,
-                description: environment.description,
-                uid: environment.uid,
-            })
-            .pipe()
-    }
+  // Create: Add a new environment
+  addEnvironment(environment: Environment): Observable<DashboardEnvironment> {
+    return this.http
+      .post<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_CREATE_URL}`, {
+        name: environment.name,
+        description: environment.description,
+        uid: environment.uid,
+      })
+      .pipe()
+  }
 
-    retrieveEnvironments(): Observable<DashboardEnvironment[]> {
-        // TODO: finish this
-        return this.http
-            .get<DashboardEnvironment[]>(``)
-    }
+  retrieveEnvironments(): Observable<DashboardEnvironment[]> {
+    // TODO: finish this
+    return this.http
+      .get<DashboardEnvironment[]>(``)
+  }
 
-    getAllEnvironments(): DashboardEnvironment[] {
-        return this.environments;
-    }
+  getAllEnvironments(): DashboardEnvironment[] {
+    return this.environments;
+  }
 
-    // Read: Get an environment by its index (eid)
-    retrieveEnvironmentByEid(eid: number): Observable<null | DashboardEnvironment> {
-        return this.http
-            .get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}`)
-            .pipe(
-                catchError(error => {
-                    // Handle HTTP errors, potentially return Observable.of(null) or throw
-                    return throwError(error);
-                }),
-                map(response => {
-                    // If response is empty or null (considering backend sends 204 or empty object for None)
-                    if (!response) {
-                        return null;
-                    }
-                    return response
-                })
-            )
-    }
+  // Read: Get an environment by its index (eid)
+  retrieveEnvironmentByEid(eid: number): Observable<null | DashboardEnvironment> {
+    return this.http
+      .get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}`)
+      .pipe(
+        catchError(error => {
+          // Handle HTTP errors, potentially return Observable.of(null) or throw
+          return throwError(error);
+        }),
+        map(response => {
+          // If response is empty or null (considering backend sends 204 or empty object for None)
+          if (!response) {
+            return null;
+          }
+          return response
+        })
+      )
+  }
 
-    addInputToEnvironment(input: InputOfEnvironment): Observable<Response> {
-        const eid = input.eid;
+  addDatasetToEnvironment(input: InputOfEnvironment): Observable<Response> {
+    const eid = input.eid;
 
-        return this.http
-            .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_INPUT_ADD_URL}`, {
-                eid: input.eid,
-                did: input.did,
-                versionDescriptor: ""
-            })
-    }
+    return this.http
+      .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_INPUT_ADD_URL}`, {
+        eid: input.eid,
+        did: input.did,
+        versionDescriptor: ""
+      })
+  }
 
-    // Delete: Remove an environment by its index (eid)
-    deleteEnvironments(eids: number[]): Observable<Response> {
-        return this.http
-            .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_DELETE_URL}`, {
-                eids: eids
-            })
-    }
+  // Delete: Remove an environment by its index (eid)
+  deleteEnvironments(eids: number[]): Observable<Response> {
+    return this.http
+      .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_DELETE_URL}`, {
+        eids: eids
+      })
+  }
 }

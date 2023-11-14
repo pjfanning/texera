@@ -58,6 +58,7 @@ export class MenuComponent implements OnInit {
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
   public workflowId?: number;
+  public runtimeEnvironmentId?: number;
 
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -463,7 +464,7 @@ export class MenuComponent implements OnInit {
 
   onClickOpenEnvironmentEditor() {
     if (this.workflowId)
-      this.environmentEditorService.clickDisplayEnvironmentEditor(this.workflowId);
+      this.environmentEditorService.clickDisplayEnvironmentEditor(this.workflowId, this.runtimeEnvironmentId);
   }
 
   private handleWorkflowVersionDisplay(): void {

@@ -104,7 +104,7 @@ export class UserWorkflowListItemComponent {
   public onClickOpenEnvironmentSelectModal(): void {
     const wid = this.workflow.wid;
     if (wid != undefined) {
-      this.environmentService.doesWorkflowHaveEnvironment(wid).subscribe(hasEnv => {
+      this.workflowEnvironmentService.doesWorkflowHaveEnvironment(wid).subscribe(hasEnv => {
         if (!hasEnv) {
           const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
             backdrop: 'static',  // ensures the background is not clickable

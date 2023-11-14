@@ -11,43 +11,48 @@ export const WORKFLOW_ENVIRONMENT_BASE_URL = "environment"
 export const WORKFLOW_ENVIRONMENT_RETRIEVE_URL = WORKFLOW_ENVIRONMENT_BASE_URL;
 export const WORKFLOW_ENVIRONMENT_BIND_URL = WORKFLOW_ENVIRONMENT_BASE_URL + "/bind"
 export const WORKFLOW_ENVIRONMENT_UNBIND_URL = WORKFLOW_ENVIRONMENT_BASE_URL + "/unbind"
+
 @Injectable({
-    providedIn: "root",
+  providedIn: "root",
 })
 export class WorkflowEnvironmentService {
-    constructor(
-        private http: HttpClient,
-        private notificationService: NotificationService
-    ) {
-    }
+  private environmentOfWorkflow: Map<number, number> = new Map();
 
-    public retrieveEnvironmentOfWorkflow(wid: number): Observable<DashboardEnvironment | null> {
-        return this.http.get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${wid}/${WORKFLOW_ENVIRONMENT_RETRIEVE_URL}`)
-            .pipe(
-                catchError(error => {
-                    // Handle HTTP errors, potentially return Observable.of(null) or throw
-                    return throwError(error);
-                }),
-                map(response => {
-                    // If response is empty or null (considering backend sends 204 or empty object for None)
-                    if (!response) {
-                        return null;
-                    }
-                    return response
-                })
-            );
-    }
-
-    public bindWorkflowWithEnvironment(wid: number, eid: number): Observable<Response> {
-        return this.http
-            .post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${wid}/${WORKFLOW_ENVIRONMENT_BIND_URL}`, {
-                eid: eid
-            })
-    }
+  constructor(
+    private http: HttpClient,
+    private notificationService: NotificationService
+  ) {
+  }
 
 
-    public unbindWorkflowWithEnvironment(wid: number): Observable<Response> {
-        return this.http
-            .post<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${wid}/${WORKFLOW_ENVIRONMENT_UNBIND_URL}`, {})
-    }
+  public doesWorkflowHaveEnvironment(wid: number): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      subscriber.next(this.environmentOfWorkflow.has(wid));
+      subscriber.complete();
+    })
+  }
+
+  public retrieveEnvironmentIdOfWorkflow(wid: number): Observable<number | undefined> {
+    return new Observable<number | undefined>(subscriber => {
+      subscriber.next(this.environmentOfWorkflow.get(wid))
+      subscriber.complete()
+    })
+  }
+
+  public bindWorkflowWithEnvironment(wid: number, eid: number): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      this.environmentOfWorkflow.set(wid, eid);
+      subscriber.next(true);
+      subscriber.complete()
+    })
+  }
+
+
+  public unbindWorkflowWithEnvironment(wid: number): Observable<boolean> {
+    return new Observable<boolean>(subscriber => {
+      this.environmentOfWorkflow.delete(wid);
+      subscriber.next(true);
+      subscriber.complete()
+    })
+  }
 }
