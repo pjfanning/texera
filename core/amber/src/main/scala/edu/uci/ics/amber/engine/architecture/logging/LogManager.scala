@@ -15,7 +15,8 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
 sealed trait InMemDeterminant {
   val steps: Long
 }
-case class ProcessingStep(channel: ChannelID, steps: Long, payload: WorkflowFIFOMessagePayload)
+
+case class ProcessingStep(message: WorkflowFIFOMessage, steps: Long)
     extends InMemDeterminant
 case class TimeStamp(value: Long, steps: Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant {

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.logging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessagePayload}
 
 class EmptyDeterminantLogger extends DeterminantLogger {
-  override def setCurrentSenderWithPayload(
+  override def setCurrentStepWithMessage(
       channel: ChannelID,
       step: Long,
       payload: WorkflowFIFOMessagePayload

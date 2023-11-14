@@ -13,7 +13,7 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var lastStep = INIT_STEP
 
-  override def setCurrentSenderWithPayload(
+  override def setCurrentStepWithMessage(
       channel: ChannelID,
       step: Long,
       payload: WorkflowFIFOMessagePayload

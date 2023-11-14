@@ -7,10 +7,10 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import scala.collection.mutable
 
 class NetworkInputGateway(val actorId: ActorVirtualIdentity)
-    extends AmberLogging
+    extends InputGateway with AmberLogging
     with Serializable {
 
-  val inputChannels =
+  private val inputChannels =
     new mutable.HashMap[ChannelID, AmberFIFOChannel]()
 
   def tryPickControlChannel: Option[AmberFIFOChannel] = {

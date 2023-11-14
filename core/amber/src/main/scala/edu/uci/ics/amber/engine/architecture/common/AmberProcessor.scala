@@ -46,7 +46,7 @@ class AmberProcessor(
       pickedChannelId: ChannelID,
       payload: WorkflowFIFOMessagePayload
   )(code: => Unit): Unit = {
-    detLogger.setCurrentSenderWithPayload(pickedChannelId, cursor.getStep, payload)
+    detLogger.setCurrentStepWithMessage(pickedChannelId, cursor.getStep, payload)
     cursor.setCurrentChannel(pickedChannelId)
     code
     cursor.stepIncrement()

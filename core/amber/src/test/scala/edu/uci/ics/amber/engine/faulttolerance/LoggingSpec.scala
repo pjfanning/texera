@@ -60,7 +60,7 @@ class LoggingSpec
     val logManager = LogManager.getLogManager(logStorage, x => {})
     val detLogger = logManager.getDeterminantLogger
     payloadToLog.foreach { payload =>
-      detLogger.setCurrentSenderWithPayload(ChannelID(CONTROLLER, SELF, true), 0, payload)
+      detLogger.setCurrentStepWithMessage(ChannelID(CONTROLLER, SELF, true), 0, payload)
     }
     logManager.sendCommitted(null, 1000)
     logManager.terminate()
