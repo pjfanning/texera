@@ -27,6 +27,7 @@ export class EnvironmentEditorService {
       if (env && env.environment.eid) {
         const eid = env.environment.eid;
         this.environmentEditorObservable.next([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()]);
+        console.log([DISPLAY_ENVIRONMENT_EDITOR_EVENT, eid.toString(), wid.toString()])
       }
     });
 

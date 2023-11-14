@@ -15,6 +15,8 @@ DROP TABLE IF EXISTS `workflow_of_project`;
 DROP TABLE IF EXISTS `file_of_workflow`;
 DROP TABLE IF EXISTS `file_of_project`;
 DROP TABLE IF EXISTS `workflow_executions`;
+DROP TABLE IF EXISTS `dataset_of_environment`;
+DROP TABLE IF EXISTS `environment`;
 
 SET PERSIST time_zone = '+00:00'; -- this line is mandatory
 SET PERSIST sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
@@ -72,12 +74,10 @@ CREATE TABLE IF NOT EXISTS workflow
     `name`               VARCHAR(128)                NOT NULL,
 	`description`        VARCHAR(500),
     `wid`                INT UNSIGNED AUTO_INCREMENT NOT NULL,
-    `eid`                INT UNSIGNED,
     `content`            LONGTEXT                    NOT NULL,
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_time` TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`wid`),
-    FOREIGN KEY (`eid`) REFERENCES environment(`eid`) ON DELETE SET NULL
+    PRIMARY KEY (`wid`)
 ) ENGINE = INNODB,
   AUTO_INCREMENT = 1;
 
@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS file_of_workflow
 CREATE TABLE IF NOT EXISTS workflow_executions
 (
     `eid`             INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `environment_eid` INT UNSIGNED,
     `vid`             INT UNSIGNED NOT NULL,
     `uid`             INT UNSIGNED NOT NULL,
     `status`          TINYINT NOT NULL DEFAULT 1,
@@ -176,6 +177,7 @@ CREATE TABLE IF NOT EXISTS workflow_executions
     `name`				VARCHAR(128) NOT NULL DEFAULT 'Untitled Execution',
     `environment_version`    VARCHAR(128) NOT NULL,
     PRIMARY KEY (`eid`),
+    FOREIGN KEY (`environment_eid`) REFERENCES environment(`eid`) ON DELETE SET NULL,
     FOREIGN KEY (`vid`) REFERENCES `workflow_version` (`vid`) ON DELETE CASCADE,
     FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE
 ) ENGINE = INNODB;
@@ -214,7 +216,7 @@ CREATE TABLE IF NOT EXISTS environment
 ) ENGINE = INNODB;
 
 
-CREATE TABLE IF NOT EXISTS input_of_environment
+CREATE TABLE IF NOT EXISTS dataset_of_environment
 (
     `did`                   INT UNSIGNED NOT NULL,
     `eid`                   INT UNSIGNED NOT NULL,

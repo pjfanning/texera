@@ -35,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Environment extends TableImpl<EnvironmentRecord> {
 
-    private static final long serialVersionUID = 1873602254;
+    private static final long serialVersionUID = 672486922;
 
     /**
      * The reference instance of <code>texera_db.environment</code>
@@ -115,7 +115,7 @@ public class Environment extends TableImpl<EnvironmentRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.ENVIRONMENT_PRIMARY, Indexes.ENVIRONMENT_UID);
+        return Arrays.<Index>asList(Indexes.ENVIRONMENT_IDX_USER_ENVIRONMENT_NAME_DESCRIPTION, Indexes.ENVIRONMENT_PRIMARY, Indexes.ENVIRONMENT_UID);
     }
 
     @Override

@@ -4,11 +4,11 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
-import edu.uci.ics.texera.web.model.jooq.generated.tables.InputOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Project;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.PublicProject;
@@ -38,6 +38,9 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index DATASET_OF_ENVIRONMENT_EID = Indexes0.DATASET_OF_ENVIRONMENT_EID;
+    public static final Index DATASET_OF_ENVIRONMENT_PRIMARY = Indexes0.DATASET_OF_ENVIRONMENT_PRIMARY;
+    public static final Index ENVIRONMENT_IDX_USER_ENVIRONMENT_NAME_DESCRIPTION = Indexes0.ENVIRONMENT_IDX_USER_ENVIRONMENT_NAME_DESCRIPTION;
     public static final Index ENVIRONMENT_PRIMARY = Indexes0.ENVIRONMENT_PRIMARY;
     public static final Index ENVIRONMENT_UID = Indexes0.ENVIRONMENT_UID;
     public static final Index FILE_IDX_FILE_NAME_DESCRIPTION = Indexes0.FILE_IDX_FILE_NAME_DESCRIPTION;
@@ -47,8 +50,6 @@ public class Indexes {
     public static final Index FILE_OF_PROJECT_PRIMARY = Indexes0.FILE_OF_PROJECT_PRIMARY;
     public static final Index FILE_OF_WORKFLOW_PRIMARY = Indexes0.FILE_OF_WORKFLOW_PRIMARY;
     public static final Index FILE_OF_WORKFLOW_WID = Indexes0.FILE_OF_WORKFLOW_WID;
-    public static final Index INPUT_OF_ENVIRONMENT_EID = Indexes0.INPUT_OF_ENVIRONMENT_EID;
-    public static final Index INPUT_OF_ENVIRONMENT_PRIMARY = Indexes0.INPUT_OF_ENVIRONMENT_PRIMARY;
     public static final Index PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION = Indexes0.PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION;
     public static final Index PROJECT_OWNER_ID = Indexes0.PROJECT_OWNER_ID;
     public static final Index PROJECT_PRIMARY = Indexes0.PROJECT_PRIMARY;
@@ -62,9 +63,9 @@ public class Indexes {
     public static final Index USER_CONFIG_PRIMARY = Indexes0.USER_CONFIG_PRIMARY;
     public static final Index USER_FILE_ACCESS_FID = Indexes0.USER_FILE_ACCESS_FID;
     public static final Index USER_FILE_ACCESS_PRIMARY = Indexes0.USER_FILE_ACCESS_PRIMARY;
-    public static final Index WORKFLOW_FK_WORKFLOW_ENVIRONMENT = Indexes0.WORKFLOW_FK_WORKFLOW_ENVIRONMENT;
     public static final Index WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT = Indexes0.WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT;
     public static final Index WORKFLOW_PRIMARY = Indexes0.WORKFLOW_PRIMARY;
+    public static final Index WORKFLOW_EXECUTIONS_ENVIRONMENT_EID = Indexes0.WORKFLOW_EXECUTIONS_ENVIRONMENT_EID;
     public static final Index WORKFLOW_EXECUTIONS_PRIMARY = Indexes0.WORKFLOW_EXECUTIONS_PRIMARY;
     public static final Index WORKFLOW_EXECUTIONS_UID = Indexes0.WORKFLOW_EXECUTIONS_UID;
     public static final Index WORKFLOW_EXECUTIONS_VID = Indexes0.WORKFLOW_EXECUTIONS_VID;
@@ -84,6 +85,9 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index DATASET_OF_ENVIRONMENT_EID = Internal.createIndex("eid", DatasetOfEnvironment.DATASET_OF_ENVIRONMENT, new OrderField[] { DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.EID }, false);
+        public static Index DATASET_OF_ENVIRONMENT_PRIMARY = Internal.createIndex("PRIMARY", DatasetOfEnvironment.DATASET_OF_ENVIRONMENT, new OrderField[] { DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.DID, DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.EID }, true);
+        public static Index ENVIRONMENT_IDX_USER_ENVIRONMENT_NAME_DESCRIPTION = Internal.createIndex("idx_user_environment_name_description", Environment.ENVIRONMENT, new OrderField[] { Environment.ENVIRONMENT.NAME, Environment.ENVIRONMENT.DESCRIPTION }, false);
         public static Index ENVIRONMENT_PRIMARY = Internal.createIndex("PRIMARY", Environment.ENVIRONMENT, new OrderField[] { Environment.ENVIRONMENT.EID }, true);
         public static Index ENVIRONMENT_UID = Internal.createIndex("uid", Environment.ENVIRONMENT, new OrderField[] { Environment.ENVIRONMENT.UID }, false);
         public static Index FILE_IDX_FILE_NAME_DESCRIPTION = Internal.createIndex("idx_file_name_description", File.FILE, new OrderField[] { File.FILE.NAME, File.FILE.DESCRIPTION }, false);
@@ -93,8 +97,6 @@ public class Indexes {
         public static Index FILE_OF_PROJECT_PRIMARY = Internal.createIndex("PRIMARY", FileOfProject.FILE_OF_PROJECT, new OrderField[] { FileOfProject.FILE_OF_PROJECT.FID, FileOfProject.FILE_OF_PROJECT.PID }, true);
         public static Index FILE_OF_WORKFLOW_PRIMARY = Internal.createIndex("PRIMARY", FileOfWorkflow.FILE_OF_WORKFLOW, new OrderField[] { FileOfWorkflow.FILE_OF_WORKFLOW.FID, FileOfWorkflow.FILE_OF_WORKFLOW.WID }, true);
         public static Index FILE_OF_WORKFLOW_WID = Internal.createIndex("wid", FileOfWorkflow.FILE_OF_WORKFLOW, new OrderField[] { FileOfWorkflow.FILE_OF_WORKFLOW.WID }, false);
-        public static Index INPUT_OF_ENVIRONMENT_EID = Internal.createIndex("eid", InputOfEnvironment.INPUT_OF_ENVIRONMENT, new OrderField[] { InputOfEnvironment.INPUT_OF_ENVIRONMENT.EID }, false);
-        public static Index INPUT_OF_ENVIRONMENT_PRIMARY = Internal.createIndex("PRIMARY", InputOfEnvironment.INPUT_OF_ENVIRONMENT, new OrderField[] { InputOfEnvironment.INPUT_OF_ENVIRONMENT.DID, InputOfEnvironment.INPUT_OF_ENVIRONMENT.EID }, true);
         public static Index PROJECT_IDX_USER_PROJECT_NAME_DESCRIPTION = Internal.createIndex("idx_user_project_name_description", Project.PROJECT, new OrderField[] { Project.PROJECT.NAME, Project.PROJECT.DESCRIPTION }, false);
         public static Index PROJECT_OWNER_ID = Internal.createIndex("owner_id", Project.PROJECT, new OrderField[] { Project.PROJECT.OWNER_ID, Project.PROJECT.NAME }, true);
         public static Index PROJECT_PRIMARY = Internal.createIndex("PRIMARY", Project.PROJECT, new OrderField[] { Project.PROJECT.PID }, true);
@@ -108,9 +110,9 @@ public class Indexes {
         public static Index USER_CONFIG_PRIMARY = Internal.createIndex("PRIMARY", UserConfig.USER_CONFIG, new OrderField[] { UserConfig.USER_CONFIG.UID, UserConfig.USER_CONFIG.KEY }, true);
         public static Index USER_FILE_ACCESS_FID = Internal.createIndex("fid", UserFileAccess.USER_FILE_ACCESS, new OrderField[] { UserFileAccess.USER_FILE_ACCESS.FID }, false);
         public static Index USER_FILE_ACCESS_PRIMARY = Internal.createIndex("PRIMARY", UserFileAccess.USER_FILE_ACCESS, new OrderField[] { UserFileAccess.USER_FILE_ACCESS.UID, UserFileAccess.USER_FILE_ACCESS.FID }, true);
-        public static Index WORKFLOW_FK_WORKFLOW_ENVIRONMENT = Internal.createIndex("fk_workflow_environment", Workflow.WORKFLOW, new OrderField[] { Workflow.WORKFLOW.EID }, false);
         public static Index WORKFLOW_IDX_WORKFLOW_NAME_DESCRIPTION_CONTENT = Internal.createIndex("idx_workflow_name_description_content", Workflow.WORKFLOW, new OrderField[] { Workflow.WORKFLOW.NAME, Workflow.WORKFLOW.DESCRIPTION, Workflow.WORKFLOW.CONTENT }, false);
         public static Index WORKFLOW_PRIMARY = Internal.createIndex("PRIMARY", Workflow.WORKFLOW, new OrderField[] { Workflow.WORKFLOW.WID }, true);
+        public static Index WORKFLOW_EXECUTIONS_ENVIRONMENT_EID = Internal.createIndex("environment_eid", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.ENVIRONMENT_EID }, false);
         public static Index WORKFLOW_EXECUTIONS_PRIMARY = Internal.createIndex("PRIMARY", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.EID }, true);
         public static Index WORKFLOW_EXECUTIONS_UID = Internal.createIndex("uid", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.UID }, false);
         public static Index WORKFLOW_EXECUTIONS_VID = Internal.createIndex("vid", WorkflowExecutions.WORKFLOW_EXECUTIONS, new OrderField[] { WorkflowExecutions.WORKFLOW_EXECUTIONS.VID }, false);

@@ -7,7 +7,6 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
   EnvironmentDao,
-  InputOfEnvironmentDao,
   WorkflowDao,
   WorkflowOfProjectDao,
   WorkflowOfUserDao,
@@ -51,7 +50,6 @@ object WorkflowResource {
   )
   final private lazy val workflowOfProjectDao = new WorkflowOfProjectDao(context.configuration)
   final private lazy val environmentDao = new EnvironmentDao(context.configuration)
-  final private lazy val inputOfEnvironmentDao = new InputOfEnvironmentDao(context.configuration)
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -511,7 +509,6 @@ class WorkflowResource extends LazyLogging {
               null,
               workflow.getContent,
               null,
-              null,
               null
             ),
             sessionUser
@@ -620,93 +617,6 @@ class WorkflowResource extends LazyLogging {
       userWorkflow.setName(name)
       workflowDao.update(userWorkflow)
     }
-  }
-
-  @GET
-  @Path("/{wid}/environment")
-  def retrieveEnvironmentOfWorkflow(
-      @PathParam("wid") wid: UInteger,
-      @Auth sessionUser: SessionUser
-  ): Option[DashboardEnvironment] = {
-    val user = sessionUser.getUser
-
-    if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else if (!workflowOfUserExists(wid, user.getUid)) {
-      throw new BadRequestException("The workflow does not exist.")
-    }
-    val workflow = workflowDao.fetchOneByWid(wid)
-    val eid = workflow.getEid
-
-    if (eid != null) {
-      val environment = Option(environmentDao.fetchOneByEid(eid))
-
-      environment match {
-        case Some(env) =>
-          val inputsOfEnvironment = inputOfEnvironmentDao.fetchByEid(eid)
-          val inputs = ListBuffer()
-
-          inputsOfEnvironment.forEach(input => {
-            inputs += ("ds" + input.getDid)
-          })
-
-          Some(
-            DashboardEnvironment(
-              environment = env,
-              isOwner = env.getUid == user.getUid,
-              inputs = inputs.toList,
-              outputs = List()
-            )
-          )
-        case None => None
-      }
-    } else
-      None
-  }
-
-  @POST
-  @Path("/{wid}/environment/bind")
-  def bindEnvironmentWithWorkflow(
-      @PathParam("wid") wid: UInteger,
-      @Auth sessionUser: SessionUser,
-      eid: UInteger
-  ): Response = {
-    val user = sessionUser.getUser
-
-    if (!WorkflowAccessResource.hasWriteAccess(wid, user.getUid)) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else if (!workflowOfUserExists(wid, user.getUid)) {
-      throw new BadRequestException("The workflow does not exist.")
-    } else if (!environmentExists(eid)) {
-      throw new BadRequestException("The environment does not exist.")
-    }
-
-    val workflow = workflowDao.fetchOneByWid(wid)
-    workflow.setEid(eid)
-
-    workflowDao.update(workflow)
-    Response.ok().build()
-  }
-
-  @POST
-  @Path("/{wid}/environment/unbind")
-  def unbindEnvironmentWithWorkflow(
-      @PathParam("wid") wid: UInteger,
-      @Auth sessionUser: SessionUser
-  ): Response = {
-    val user = sessionUser.getUser
-
-    if (!WorkflowAccessResource.hasWriteAccess(wid, user.getUid)) {
-      throw new ForbiddenException("No sufficient access privilege.")
-    } else if (!workflowOfUserExists(wid, user.getUid)) {
-      throw new BadRequestException("The workflow does not exist.")
-    }
-
-    val workflow = workflowDao.fetchOneByWid(wid)
-    workflow.setEid(null)
-
-    workflowDao.update(workflow)
-    Response.ok().build()
   }
 
   /**

@@ -3,24 +3,10 @@ package edu.uci.ics.texera.web.resource.dashboard.user.environment
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Environment, InputOfEnvironment}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{DatasetOfEnvironment, Environment}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  EnvironmentDao,
-  InputOfEnvironmentDao
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
-  DashboardEnvironment,
-  DashboardEnvironmentInput,
-  EnvironmentIDs,
-  EnvironmentNotFoundMessage,
-  InputOfEnvironmentAlreadyExistsMessage,
-  UserNoPermissionExceptionMessage,
-  context,
-  doesUserOwnEnvironment,
-  getEnvironmentByEid,
-  withExceptionHandling
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentDao, DatasetOfEnvironmentDao}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DashboardEnvironmentInput, EnvironmentIDs, EnvironmentNotFoundMessage, InputOfEnvironmentAlreadyExistsMessage, UserNoPermissionExceptionMessage, context, doesUserOwnEnvironment, getEnvironmentByEid, withExceptionHandling}
 import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
@@ -65,7 +51,7 @@ object EnvironmentResource {
   )
 
   case class DashboardEnvironmentInput(
-      input: InputOfEnvironment,
+      input: DatasetOfEnvironment,
       inputName: String
   )
 
@@ -149,11 +135,11 @@ class EnvironmentResource {
     withExceptionHandling { () =>
       {
         withTransaction(context) { ctx =>
-          val inputOfEnvironmentDao = new InputOfEnvironmentDao(ctx.configuration())
+          val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
           val environment = getEnvironmentByEid(ctx, eid);
 
           val inputsOfEnvironment = inputOfEnvironmentDao.fetchByEid(eid)
-          val inputs = ListBuffer()
+          val inputs: ListBuffer[String] = ListBuffer()
 
           inputsOfEnvironment.forEach(input => {
             inputs += ("ds" + input.getDid)
@@ -183,7 +169,7 @@ class EnvironmentResource {
   ): List[DashboardEnvironmentInput] = {
     withExceptionHandling(() => {
       withTransaction(context) { ctx =>
-        val inputOfEnvironmentDao = new InputOfEnvironmentDao(ctx.configuration())
+        val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
 
         val inputs = inputOfEnvironmentDao.fetchByEid(eid)
         val res = ListBuffer[DashboardEnvironmentInput]()
@@ -212,7 +198,7 @@ class EnvironmentResource {
   def addInputForEnvironment(
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser,
-      inputOfEnvironment: InputOfEnvironment
+      inputOfEnvironment: DatasetOfEnvironment
   ): Response = {
     val uid = user.getUid
 
@@ -229,7 +215,7 @@ class EnvironmentResource {
 
         val env = environment.get
 
-        val inputOfEnvironmentDao = new InputOfEnvironmentDao(ctx.configuration())
+        val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
         val inputs = inputOfEnvironmentDao.fetchByEid(env.getEid)
 
         inputs.forEach(input =>
@@ -249,16 +235,16 @@ class EnvironmentResource {
 
   @POST
   @Path("/{eid}/input/{did}/update")
-  def updateInputForEnvironment(
+  def linkDatasetForEnvironment(
       @PathParam("eid") eid: UInteger,
       @PathParam("did") did: UInteger,
       @Auth user: SessionUser,
-      inputOfEnvironment: InputOfEnvironment
+      inputOfEnvironment: DatasetOfEnvironment
   ): Response = ???
 
   @DELETE
   @Path("/{eid}/input/{did}")
-  def deleteInputForEnvironment(
+  def unlinkDatasetForEnvironment(
       @PathParam("eid") eid: UInteger,
       @PathParam("did") did: UInteger,
       @Auth user: SessionUser

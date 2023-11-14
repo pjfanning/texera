@@ -4,11 +4,11 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
-import edu.uci.ics.texera.web.model.jooq.generated.tables.InputOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Project;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.ProjectUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.PublicProject;
@@ -46,6 +46,11 @@ public class TexeraDb extends SchemaImpl {
     public static final TexeraDb TEXERA_DB = new TexeraDb();
 
     /**
+     * The table <code>texera_db.dataset_of_environment</code>.
+     */
+    public final DatasetOfEnvironment DATASET_OF_ENVIRONMENT = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT;
+
+    /**
      * The table <code>texera_db.environment</code>.
      */
     public final Environment ENVIRONMENT = edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT;
@@ -64,11 +69,6 @@ public class TexeraDb extends SchemaImpl {
      * The table <code>texera_db.file_of_workflow</code>.
      */
     public final FileOfWorkflow FILE_OF_WORKFLOW = edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow.FILE_OF_WORKFLOW;
-
-    /**
-     * The table <code>texera_db.input_of_environment</code>.
-     */
-    public final InputOfEnvironment INPUT_OF_ENVIRONMENT = edu.uci.ics.texera.web.model.jooq.generated.tables.InputOfEnvironment.INPUT_OF_ENVIRONMENT;
 
     /**
      * The table <code>texera_db.project</code>.
@@ -157,11 +157,11 @@ public class TexeraDb extends SchemaImpl {
 
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
+            DatasetOfEnvironment.DATASET_OF_ENVIRONMENT,
             Environment.ENVIRONMENT,
             File.FILE,
             FileOfProject.FILE_OF_PROJECT,
             FileOfWorkflow.FILE_OF_WORKFLOW,
-            InputOfEnvironment.INPUT_OF_ENVIRONMENT,
             Project.PROJECT,
             ProjectUserAccess.PROJECT_USER_ACCESS,
             PublicProject.PUBLIC_PROJECT,

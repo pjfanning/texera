@@ -54,14 +54,23 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
             }
           ).subscribe(env => {
             const wid = this.wid;
-            if (wid && env.environment.eid)
-              this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, env.environment.eid);
+            if (wid && env.environment.eid) {
+              this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, env.environment.eid).subscribe(res => {
+                console.log(`bind with new env, wid: ${wid}, eid: ${env.environment.eid}`)
+              });
+
+
+            }
+
           })
         } else {
           // user choose a existing environment
           const wid = this.wid;
-          if (wid)
-            this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID);
+          if (wid) {
+            this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID).subscribe(res => {
+              console.log(`bind with new env, wid: ${wid}, eid: ${selectedEnvironmentID}`)
+            });
+          }
         }
         this.initEditor();
       },
