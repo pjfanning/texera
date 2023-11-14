@@ -5,6 +5,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 
 import scala.collection.mutable
+import scala.util.control.Breaks.{break, breakable}
 
 /**
   * We implement credit-based flow control. Suppose a sender worker S sends data in batches to a receiving worker R
@@ -34,9 +35,10 @@ import scala.collection.mutable
   */
 class FlowControl {
 
-  private var senderSideCredit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
+  var senderSideCredit: Long = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
   private val stashedMessages: mutable.Queue[WorkflowFIFOMessage] = new mutable.Queue()
   private var overloaded = false
+  var isPollingForCredit = false
   def isOverloaded: Boolean = overloaded
 
   /**
@@ -60,19 +62,21 @@ class FlowControl {
   }
 
   def getMessagesToSend: Iterable[WorkflowFIFOMessage] = {
-    overloaded = false
     val toSend = mutable.ArrayBuffer[WorkflowFIFOMessage]()
-    while (stashedMessages.nonEmpty && !overloaded) {
-      val msg = stashedMessages.front
-      val creditNeeded = getInMemSize(msg)
-      if (senderSideCredit >= creditNeeded) {
-        senderSideCredit -= creditNeeded
-        toSend.append(msg)
-        stashedMessages.dequeue()
-      } else {
-        overloaded = true
+    breakable {
+      while (stashedMessages.nonEmpty) {
+        val msg = stashedMessages.front
+        val creditNeeded = getInMemSize(msg)
+        if (senderSideCredit >= creditNeeded) {
+          senderSideCredit -= creditNeeded
+          toSend.append(msg)
+          stashedMessages.dequeue()
+        } else {
+          break
+        }
       }
     }
+    overloaded = stashedMessages.nonEmpty
     toSend
   }
 

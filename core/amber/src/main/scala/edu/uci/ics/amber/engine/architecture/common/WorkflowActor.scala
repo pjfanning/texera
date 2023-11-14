@@ -9,15 +9,12 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   MessageBecomesDeadLetter,
   NetworkAck,
   NetworkMessage,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  CreditRequest,
+  RegisterActorRef,
   CreditResponse,
-  WorkflowFIFOMessage
+  CreditRequest
 }
+import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.concurrent.Await
@@ -29,10 +26,7 @@ object WorkflowActor {
     *
     * @param messageId Long, id for a NetworkMessage, used for FIFO and ExactlyOnce
     */
-  final case class NetworkAck(
-      messageId: Long,
-      credits: Int = Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair
-  )
+  final case class NetworkAck(messageId: Long)
 
   final case class MessageBecomesDeadLetter(message: NetworkMessage)
 
@@ -48,6 +42,11 @@ object WorkflowActor {
     * @param internalMessage WorkflowMessage, the message payload
     */
   final case class NetworkMessage(messageId: Long, internalMessage: WorkflowFIFOMessage)
+
+  // sent from network communicator to next worker to poll for credit information
+  final case class CreditRequest(channelEndpointID: ChannelID)
+
+  final case class CreditResponse(channelEndpointID: ChannelID, credit: Int)
 }
 
 abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
@@ -93,8 +92,8 @@ abstract class WorkflowActor(val actorId: ActorVirtualIdentity)
           logger.warn("actor failed due to exception", e)
           throw e
       }
-    case NetworkAck(id, credits) =>
-      transferService.receiveAck(id, credits)
+    case NetworkAck(id) =>
+      transferService.receiveAck(id)
   }
 
   def receiveCreditMessages: Receive = {

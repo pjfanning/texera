@@ -96,25 +96,29 @@ class DPThread(
     // main DP loop
     var waitingForInput = false
     while (!stopped) {
-      if (internalQueue.size > 0 || dp.pauseManager.isPaused || waitingForInput) {
+      while (internalQueue.size > 0 || waitingForInput) {
         val msg = internalQueue.take
+        waitingForInput = false
         msg match {
           case Left(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
-            waitingForInput = false
           case Right(ctrl) =>
             dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
       }
-      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
+      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput || dp.pauseManager.isPaused) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
             val msg = channel.take
             dp.processControlPayload(msg.channel, msg.payload.asInstanceOf[ControlPayload])
           case None =>
             // continue processing
-            dp.continueDataProcessing()
+            if (!dp.pauseManager.isPaused) {
+              dp.continueDataProcessing()
+            } else {
+              waitingForInput = true
+            }
         }
       } else {
         // take from input port
