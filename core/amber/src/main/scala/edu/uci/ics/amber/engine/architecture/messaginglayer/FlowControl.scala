@@ -35,10 +35,11 @@ import scala.util.control.Breaks.{break, breakable}
   */
 class FlowControl {
 
-  private var inflightCredit: Long = 0
+  var inflightCredit: Long = 0
   private var queuedCredit: Long = 0
   private val stashedMessages: mutable.Queue[NetworkMessage] = new mutable.Queue()
   private var overloaded = false
+  var isPollingForCredit = false
   def isOverloaded: Boolean = overloaded
 
   /**

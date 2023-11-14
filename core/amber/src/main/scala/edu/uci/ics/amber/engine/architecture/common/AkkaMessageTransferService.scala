@@ -19,7 +19,6 @@ class AkkaMessageTransferService(
   override def actorId: ActorVirtualIdentity = actorService.id
 
   var resendHandle: Cancellable = Cancellable.alreadyCancelled
-  var creditPollingHandle: Cancellable = Cancellable.alreadyCancelled
 
   // add congestion control and flow control here
   val channelToCC = new mutable.HashMap[ChannelID, CongestionControl]()
@@ -44,7 +43,6 @@ class AkkaMessageTransferService(
 
   def stop(): Unit = {
     resendHandle.cancel()
-    creditPollingHandle.cancel()
   }
 
   private def checkCreditPolling(): Unit = {
@@ -115,6 +113,7 @@ class AkkaMessageTransferService(
 
   def updateChannelCreditFromReceiver(channel: ChannelID, queuedCredit: Long): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(channel, new FlowControl())
+    flowControl.isPollingForCredit = false
     flowControl.updateQueuedCredit(queuedCredit)
     flowControl.getMessagesToSend.foreach(out =>
       forwardToCongestionControl(out, refService.forwardToActor)

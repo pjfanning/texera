@@ -106,14 +106,18 @@ class DPThread(
       //
       var pickedChannelId: ChannelID = null
       var payloadToProcess: WorkflowFIFOMessagePayload = null
-      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput || dp.pauseManager.isPaused) {
+      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
             pickedChannelId = channel.channelId
             payloadToProcess = channel.take.payload
           case None =>
             // continue processing
-            pickedChannelId = dp.cursor.getChannel
+            if(!dp.pauseManager.isPaused){
+              dp.continueDataProcessing()
+            }else{
+              waitingForInput = true
+            }
         }
       } else {
         // take from input port
