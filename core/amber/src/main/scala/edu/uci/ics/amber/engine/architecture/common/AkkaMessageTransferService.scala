@@ -109,7 +109,7 @@ class AkkaMessageTransferService(
           if (!fc.isPollingForCredit) {
             fc.isPollingForCredit = true
             actorService.scheduleOnce(
-              50.millis,
+              Constants.creditPollingInitialDelayInMs.millis,
               () => {
                 refService.askForCredit(channel)
               }
