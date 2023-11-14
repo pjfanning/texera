@@ -19,7 +19,6 @@ class AkkaMessageTransferService(
   override def actorId: ActorVirtualIdentity = actorService.id
 
   var resendHandle: Cancellable = Cancellable.alreadyCancelled
-  var creditPollingHandle: Cancellable = Cancellable.alreadyCancelled
 
   // add congestion control and flow control here
   val channelToCC = new mutable.HashMap[ChannelID, CongestionControl]()
@@ -36,19 +35,11 @@ class AkkaMessageTransferService(
   var networkMessageID = 0L
 
   def initialize(): Unit = {
-    if (Constants.flowControlEnabled) {
-      creditPollingHandle = actorService.scheduleWithFixedDelay(
-        Constants.creditPollingInitialDelayInMs.millis,
-        Constants.creditPollingIntervalinMs.millis,
-        triggerCreditPolling
-      )
-    }
     resendHandle = actorService.scheduleWithFixedDelay(30.seconds, 30.seconds, triggerResend)
   }
 
   def stop(): Unit = {
     resendHandle.cancel()
-    creditPollingHandle.cancel()
   }
 
   def send(msg: WorkflowFIFOMessage): Unit = {
@@ -86,7 +77,7 @@ class AkkaMessageTransferService(
     networkMessageID += 1
   }
 
-  def receiveAck(msgId: Long, credit: Int): Unit = {
+  def receiveAck(msgId: Long): Unit = {
     if (!messageIDToIdentity.contains(msgId)) {
       return
     }
@@ -97,13 +88,11 @@ class AkkaMessageTransferService(
       congestionControl.markMessageInTransit(msg)
       refService.forwardToActor(msg)
     }
-    if (Constants.flowControlEnabled) {
-      updateChannelCreditFromReceiver(channelId, credit)
-    }
   }
 
   def updateChannelCreditFromReceiver(channel: ChannelID, credit: Int): Unit = {
     val flowControl = channelToFC.getOrElseUpdate(channel, new FlowControl())
+    flowControl.isPollingForCredit = false
     flowControl.updateCredit(credit)
     flowControl.getMessagesToSend.foreach(out =>
       forwardToCongestionControl(out, refService.forwardToActor)
@@ -111,22 +100,25 @@ class AkkaMessageTransferService(
     checkForBackPressure()
   }
 
-  private def triggerCreditPolling(): Unit = {
+  private def checkForBackPressure(): Unit = {
+    var existOverloadedChannel = false
     channelToFC.foreach {
       case (channel, fc) =>
         if (fc.isOverloaded) {
-          refService.askForCredit(channel)
+          existOverloadedChannel = true
+          if(!fc.isPollingForCredit){
+            fc.isPollingForCredit = true
+            actorService.scheduleOnce(50.millis, () => {
+              refService.askForCredit(channel)
+            })
+          }
         }
     }
-  }
-
-  private def checkForBackPressure(): Unit = {
-    val currentStatus = channelToFC.values.exists(_.isOverloaded)
-    if (backpressured == currentStatus) {
+    if (backpressured == existOverloadedChannel) {
       return
     }
-    backpressured = currentStatus
-    logger.debug(s"current backpressure status = $backpressured")
+    backpressured = existOverloadedChannel
+    logger.info(s"current backpressure status = $backpressured channel credits = ${channelToFC.map(c => c._1 -> c._2.senderSideCredit)}")
     handleBackpressure(backpressured)
   }
 

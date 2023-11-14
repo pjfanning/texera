@@ -5,6 +5,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
 
 /* The abstracted FIFO/exactly-once logic */
@@ -14,7 +15,7 @@ class AmberFIFOChannel(val actorId: ActorVirtualIdentity) extends AmberLogging {
   private var current = 0L
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
-  @volatile private var holdCredit = 0L
+  private val holdCredit = new AtomicLong()
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber
@@ -42,12 +43,12 @@ class AmberFIFOChannel(val actorId: ActorVirtualIdentity) extends AmberLogging {
 
   private def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
     fifoQueue.enqueue(data)
-    holdCredit += getInMemSize(data)
+    holdCredit.getAndAdd(getInMemSize(data))
     current += 1
     while (ofoMap.contains(current)) {
       val msg = ofoMap(current)
       fifoQueue.enqueue(msg)
-      holdCredit += getInMemSize(msg)
+      holdCredit.getAndAdd(getInMemSize(msg))
       ofoMap.remove(current)
       current += 1
     }
@@ -55,7 +56,7 @@ class AmberFIFOChannel(val actorId: ActorVirtualIdentity) extends AmberLogging {
 
   def take: WorkflowFIFOMessage = {
     val msg = fifoQueue.dequeue()
-    holdCredit -= getInMemSize(msg)
+    holdCredit.getAndAdd(-getInMemSize(msg))
     msg
   }
 
@@ -83,6 +84,6 @@ class AmberFIFOChannel(val actorId: ActorVirtualIdentity) extends AmberLogging {
     }
 
   def getAvailableCredits: Long = {
-    Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - holdCredit
+    Constants.unprocessedBatchesSizeLimitInBytesPerWorkerPair - holdCredit.get()
   }
 }
