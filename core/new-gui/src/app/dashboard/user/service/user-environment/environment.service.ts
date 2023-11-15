@@ -43,7 +43,8 @@ export class EnvironmentService {
   retrieveEnvironments(): Observable<DashboardEnvironment[]> {
     // TODO: finish this
     return this.http
-      .get<DashboardEnvironment[]>(``)
+      .get<DashboardEnvironment[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}`)
+      .pipe()
   }
 
   getAllEnvironments(): DashboardEnvironment[] {

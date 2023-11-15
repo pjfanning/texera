@@ -29,6 +29,10 @@ import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
 import {EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
+import {WorkflowEnvironmentService} from "../../../common/service/workflow-environment/workflow-environment.service";
+import {EnvironmentService} from "../../../dashboard/user/service/user-environment/environment.service";
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../../dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -82,6 +86,7 @@ export class MenuComponent implements OnInit {
   public onClickRunHandler: () => void;
 
   constructor(
+    private modalService: NgbModal,
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowActionService: WorkflowActionService,
     public workflowWebsocketService: WorkflowWebsocketService,
@@ -97,6 +102,8 @@ export class MenuComponent implements OnInit {
     public workflowUtilService: WorkflowUtilService,
     private userProjectService: UserProjectService,
     private notificationService: NotificationService,
+    private workflowEnvironmentService: WorkflowEnvironmentService,
+    private environmentService: EnvironmentService,
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService
   ) {
@@ -183,7 +190,69 @@ export class MenuComponent implements OnInit {
           text: "Run",
           icon: "play-circle",
           disable: false,
-          onClick: () => this.executeWorkflowService.executeWorkflow(this.currentExecutionName),
+          onClick: () => {
+            // check if there is a selected environment
+            if (this.workflowId) {
+              this.workflowEnvironmentService.doesWorkflowHaveEnvironment(this.workflowId).subscribe(hasEnvironment => {
+                if (hasEnvironment) {
+                  console.log("have environment")
+                  // @ts-ignore
+                  this.workflowEnvironmentService.retrieveEnvironmentIdOfWorkflow(this.workflowId).subscribe(eid => {
+                    console.log("execute the workflow in environment", eid)
+                    this.executeWorkflowService.executeWorkflow(this.currentExecutionName, eid)
+                  })
+                } else {
+                  console.log("does not have environment")
+
+                  // open the runtime environment selection dashboard
+                  const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
+                    backdrop: 'static',  // ensures the background is not clickable
+                    keyboard: false      // ensures the modal cannot be closed with the keyboard
+                  });
+
+                  modalRef.result.then(
+                    (selectedEnvironmentID: number | null) => {
+                      if (selectedEnvironmentID == null) {
+                        // If an environment was not selected, create a new one and relate it
+                        // Here, you can perform further actions with the selected environment
+                        this.environmentService.addEnvironment(
+                          {
+                            eid: undefined,
+                            uid: undefined,
+                            name: "Untitled Environment",
+                            description: "Some description",
+                            creationTime: undefined
+                          }
+                        ).subscribe(env => {
+                          const wid = this.workflowId;
+                          const eid = env.environment.eid;
+                          if (wid && eid) {
+                            this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, eid).subscribe(res => {
+                              console.log(`bind with new env, wid: ${wid}, eid: ${env.environment.eid}`)
+                              this.executeWorkflowService.executeWorkflow(this.currentExecutionName, eid)
+                            });
+                          }
+                        })
+
+                      } else {
+                        // user choose a existing environment
+                        const wid = this.workflowId;
+                        if (wid) {
+                          this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID).subscribe(res => {
+                            console.log(`bind with new env, wid: ${wid}, eid: ${selectedEnvironmentID}`)
+                            this.executeWorkflowService.executeWorkflow(this.currentExecutionName, selectedEnvironmentID)
+                          });
+                        }
+                      }
+                    },
+                    (reason) => {
+                      console.log('Modal was dismissed.', reason);
+                    }
+                  )
+                }
+              })
+            }
+          }
         };
       case ExecutionState.Initializing:
         return {

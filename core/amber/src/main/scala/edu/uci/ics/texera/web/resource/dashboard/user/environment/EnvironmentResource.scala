@@ -5,15 +5,15 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{DatasetOfEnvironment, Environment}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentDao, DatasetOfEnvironmentDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao}
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DashboardEnvironmentInput, EnvironmentIDs, EnvironmentNotFoundMessage, InputOfEnvironmentAlreadyExistsMessage, UserNoPermissionExceptionMessage, context, doesUserOwnEnvironment, getEnvironmentByEid, withExceptionHandling}
 import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.core.Response
-import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam}
+import javax.ws.rs.core.{MediaType, Response}
+import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam, Produces}
 import scala.collection.mutable.ListBuffer
 
 object EnvironmentResource {
@@ -66,6 +66,7 @@ object EnvironmentResource {
 
 @RolesAllowed(Array("REGULAR", "ADMIN"))
 @Path("/environment")
+@Produces(Array(MediaType.APPLICATION_JSON))
 class EnvironmentResource {
 
   @POST
@@ -96,6 +97,34 @@ class EnvironmentResource {
               List()
             )
           }
+        }
+      }
+    }
+  }
+
+  @GET
+  @Path("")
+  def retrieveEnvironments(@Auth user: SessionUser): List[DashboardEnvironment] = {
+    val uid = user.getUid
+
+    withExceptionHandling { () =>
+      {
+        withTransaction(context) { ctx =>
+          val environmentDao = new EnvironmentDao(ctx.configuration())
+
+          val environments = environmentDao.findAll()
+          val dashboardEnvironments: ListBuffer[DashboardEnvironment] = ListBuffer()
+
+          environments.forEach(env => {
+            dashboardEnvironments += DashboardEnvironment(
+              environment = env,
+              isOwner = env.getUid == uid,
+              inputs = List(),
+              outputs = List()
+            )
+          })
+
+          dashboardEnvironments.toList
         }
       }
     }

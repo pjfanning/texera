@@ -101,58 +101,6 @@ export class UserWorkflowListItemComponent {
       });
   }
 
-  public onClickOpenEnvironmentSelectModal(): void {
-    const wid = this.workflow.wid;
-    if (wid != undefined) {
-      this.workflowEnvironmentService.doesWorkflowHaveEnvironment(wid).subscribe(hasEnv => {
-        if (!hasEnv) {
-          const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
-            backdrop: 'static',  // ensures the background is not clickable
-            keyboard: false      // ensures the modal cannot be closed with the keyboard
-          });
-
-          modalRef.result.then(
-            (selectedEnvironmentID: number | null) => {
-              if (selectedEnvironmentID == null) {
-                // If an environment was not selected, create a new one and relate it
-                // Here, you can perform further actions with the selected environment
-                this.environmentService.addEnvironment(
-                  {
-                    eid: undefined,
-                    uid: undefined,
-                    name: "Untitled Environment",
-                    description: "Some description",
-                    creationTime: undefined
-                  }
-                ).subscribe(env => {
-                  const wid = this.workflow.wid;
-                  if (wid && env.environment.eid) {
-                    this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, env.environment.eid).subscribe(res => {
-                      console.log(`bind with new env, wid: ${wid}, eid: ${env.environment.eid}`)
-                    });
-                  }
-                })
-
-              } else {
-                // user choose a existing environment
-                const wid = this.workflow.wid;
-                if (wid) {
-                  this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID).subscribe(res => {
-                    console.log(`bind with new env, wid: ${wid}, eid: ${selectedEnvironmentID}`)
-                  });
-                }
-              }
-            },
-            (reason) => {
-              console.log('Modal was dismissed.', reason);
-            }
-          );
-        }
-      })
-    }
-
-  }
-
   public confirmUpdateWorkflowCustomDescription(description: string): void {
     this.workflowPersistService
       .updateWorkflowDescription(this.workflow.wid, description)

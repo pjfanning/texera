@@ -32,11 +32,17 @@ export class WorkflowEnvironmentService {
     })
   }
 
-  public retrieveEnvironmentIdOfWorkflow(wid: number): Observable<number | undefined> {
-    return new Observable<number | undefined>(subscriber => {
-      subscriber.next(this.environmentOfWorkflow.get(wid))
-      subscriber.complete()
-    })
+  public retrieveEnvironmentIdOfWorkflow(wid: number): Observable<number> {
+    return new Observable<number>(subscriber => {
+      const environmentId = this.environmentOfWorkflow.get(wid);
+
+      if (environmentId === undefined) {
+        subscriber.error(new Error("Environment ID not found for workflow ID " + wid));
+      } else {
+        subscriber.next(environmentId);
+        subscriber.complete();
+      }
+    });
   }
 
   public bindWorkflowWithEnvironment(wid: number, eid: number): Observable<boolean> {

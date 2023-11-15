@@ -21,7 +21,6 @@
         <a *ngIf="!editingName; else customWorkflowTitle"
            [routerLink]="ROUTER_WORKFLOW_BASE_URL + '/' + workflow.wid"
            class="workflow-name"
-           (click)="onClickOpenEnvironmentSelectModal()"
         >{{ workflow.name }}</a>
 
         <ng-template #customWorkflowTitle>

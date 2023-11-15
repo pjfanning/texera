@@ -179,24 +179,25 @@ export class ExecuteWorkflowService {
     return undefined;
   }
 
-  public executeWorkflow(executionName: string): void {
+  public executeWorkflow(executionName: string, environmentEid: number): void {
     if (environment.amberEngineEnabled) {
-      this.executeWorkflowAmberTexera(executionName);
+      this.executeWorkflowAmberTexera(executionName, environmentEid);
     } else {
       throw new Error("old texera engine not supported");
     }
   }
 
-  public executeWorkflowAmberTexera(executionName: string): void {
+  public executeWorkflowAmberTexera(executionName: string, environmentEid: number): void {
     // get the current workflow graph
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     console.log(logicalPlan);
-    this.sendExecutionRequest(executionName, logicalPlan);
+    this.sendExecutionRequest(executionName, environmentEid, logicalPlan);
   }
 
-  public sendExecutionRequest(executionName: string, logicalPlan: LogicalPlan): void {
+  public sendExecutionRequest(executionName: string, environmentEid: number, logicalPlan: LogicalPlan): void {
     const workflowExecuteRequest = {
       executionName: executionName,
+      environmentEid: environmentEid,
       engineVersion: version.hash,
       logicalPlan: logicalPlan,
     };
