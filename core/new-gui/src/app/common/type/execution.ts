@@ -4,6 +4,8 @@ export interface Execution {
   userName: string;
   userId: number;
   executionId: number;
+  executionEnvironmentName: string;
+  executionEnvironmentId: number;
   executionStatus: string;
   executionTime: number;
   executionName: string;

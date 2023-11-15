@@ -25,6 +25,8 @@ object AdminExecutionResource {
       userName: String,
       userId: UInteger,
       executionId: UInteger,
+      executionEnvironmentId: UInteger,
+      executionEnvironmentName: String,
       executionStatus: String,
       executionTime: Double,
       executionName: String,
@@ -70,13 +72,17 @@ class AdminExecutionResource {
         WORKFLOW_EXECUTIONS.STARTING_TIME,
         WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME,
         WORKFLOW_EXECUTIONS.STATUS,
-        WORKFLOW_EXECUTIONS.NAME
+        WORKFLOW_EXECUTIONS.NAME,
+        WORKFLOW_EXECUTIONS.ENVIRONMENT_EID,
+        ENVIRONMENT.NAME
       )
       .from(WORKFLOW_EXECUTIONS)
       .leftJoin(WORKFLOW_VERSION)
       .on(WORKFLOW_EXECUTIONS.VID.eq(WORKFLOW_VERSION.VID))
       .leftJoin(USER)
       .on(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
+      .leftJoin(ENVIRONMENT)
+      .on(WORKFLOW_EXECUTIONS.ENVIRONMENT_EID.eq(ENVIRONMENT.EID))
       .leftJoin(WORKFLOW)
       .on(WORKFLOW.WID.eq(WORKFLOW_VERSION.WID))
       .fetch()
@@ -106,6 +112,8 @@ class AdminExecutionResource {
           workflowRecord.get(USER.NAME),
           workflowRecord.get(WORKFLOW_EXECUTIONS.UID),
           workflowRecord.get(WORKFLOW_EXECUTIONS.EID),
+          workflowRecord.get(WORKFLOW_EXECUTIONS.ENVIRONMENT_EID),
+          workflowRecord.get(ENVIRONMENT.NAME),
           mapToName(workflowRecord.get(WORKFLOW_EXECUTIONS.STATUS)),
           timeDifferenceSeconds,
           workflowRecord.get(WORKFLOW_EXECUTIONS.NAME),

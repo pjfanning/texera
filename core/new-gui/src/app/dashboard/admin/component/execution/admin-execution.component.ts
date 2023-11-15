@@ -290,6 +290,7 @@ export class AdminExecutionComponent implements OnInit, OnDestroy {
 
   public sortByWorkflowName: NzTableSortFn<Execution> = (a: Execution, b: Execution) =>
     (b.workflowName || "").localeCompare(a.workflowName);
+  public sortByExecutionEnvironmentID: NzTableSortFn<Execution> = (a: Execution, b: Execution) => b.executionEnvironmentId - a.executionEnvironmentId;
   public sortByExecutionName: NzTableSortFn<Execution> = (a: Execution, b: Execution) =>
     (b.executionName || "").localeCompare(a.executionName);
   public sortByCompletedTime: NzTableSortFn<Execution> = (a: Execution, b: Execution) => b.endTime - a.endTime;
