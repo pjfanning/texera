@@ -24,7 +24,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   private did: number = 0;
 
   constructor(
-    public activeModal: NgbActiveModal, private userFileUploadService: UserFileUploadService, private datasetService: DatasetService
+    public activeModal: NgbActiveModal, private datasetService: DatasetService
   ) {}
 
   ngOnInit(): void {}
@@ -46,7 +46,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   }
 
   public isCreateButtonDisabled(): boolean {
-    return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
+    // return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
     return false;
   }
 

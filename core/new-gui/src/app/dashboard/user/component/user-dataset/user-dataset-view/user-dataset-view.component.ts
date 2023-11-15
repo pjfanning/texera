@@ -67,9 +67,13 @@ export class userDatasetViewComponent implements OnInit {
         this.blobFile = blob;
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
         this.fileURL = URL.createObjectURL(blob);
-
-        this.pdfDisplay = false;
-        setTimeout(() => this.pdfDisplay = true, 0);
+        
+        if (this.currentFile.endsWith(".pdf")) {
+          this.pdfDisplay = false;
+          setTimeout(() => this.pdfDisplay = true, 0);
+        } else {
+          this.pdfDisplay = false;
+        }
         console.log(this.currentFile);
       })
     }
