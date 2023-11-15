@@ -334,7 +334,8 @@ class DashboardResource {
         ENVIRONMENT.NAME.as("name"),
         ENVIRONMENT.DESCRIPTION.as("description"),
         ENVIRONMENT.CREATION_TIME.as("creation_time"),
-        ENVIRONMENT.UID.as("owner_id")
+        ENVIRONMENT.UID.as("uid"),
+        ENVIRONMENT.EID.as("eid")
       )
       .from(ENVIRONMENT)
       .where(environmentMatchQuery)

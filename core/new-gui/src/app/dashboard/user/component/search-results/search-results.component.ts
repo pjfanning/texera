@@ -41,6 +41,7 @@ export class SearchResultsComponent {
       this.more = results.more;
     } finally {
       this.loading = false;
+      console.log(this.entries)
     }
   }
 }
