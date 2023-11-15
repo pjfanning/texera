@@ -1,9 +1,12 @@
 import { UntilDestroy } from "@ngneat/until-destroy";
-import { Component, OnInit } from "@angular/core";
+import {Component, Input, OnInit} from "@angular/core";
 import { NgbActiveModal } from "@ng-bootstrap/ng-bootstrap";
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
 import {DashboardEnvironment} from "../../../type/environment";
 
+
+export const BUTTON_TEXT_GO_TO_EDITOR = "Go to the workflow editor";
+export const BUTTON_TEXT_RUN_WORKFLOW = "Run the workflow"
 @UntilDestroy()
 @Component({
   selector: 'ngbd-modal-workflow-environment-select.component',
@@ -13,12 +16,19 @@ import {DashboardEnvironment} from "../../../type/environment";
 export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
   selectedEnvironmentId: number | null = null;
   environments: DashboardEnvironment[] = [];
+  goButtonText: string = BUTTON_TEXT_GO_TO_EDITOR;
+
+  @Input()
+  isEditingWorkflow: boolean = true;
 
   constructor(
     private activeModal: NgbActiveModal,
     private environmentService: EnvironmentService) {}
 
   ngOnInit(): void {
+    if (!this.isEditingWorkflow) {
+      this.goButtonText = BUTTON_TEXT_RUN_WORKFLOW;
+    }
     const environmentIdentifiers = this.environmentService.retrieveEnvironments();
     this.environmentService.retrieveEnvironments().subscribe(envs => {
       console.log(envs)

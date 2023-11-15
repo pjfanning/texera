@@ -210,6 +210,8 @@ export class MenuComponent implements OnInit {
                     keyboard: false      // ensures the modal cannot be closed with the keyboard
                   });
 
+                  modalRef.componentInstance.isEditingWorkflow = false;
+
                   modalRef.result.then(
                     (selectedEnvironmentID: number | null) => {
                       if (selectedEnvironmentID == null) {
@@ -532,8 +534,20 @@ export class MenuComponent implements OnInit {
   }
 
   onClickOpenEnvironmentEditor() {
-    if (this.workflowId)
-      this.environmentEditorService.clickDisplayEnvironmentEditor(this.workflowId, this.runtimeEnvironmentId);
+    if (this.workflowId) {
+      const wid = this.workflowId;
+      this.workflowEnvironmentService.doesWorkflowHaveEnvironment(this.workflowId).subscribe(hasEnv => {
+        if (hasEnv && this.workflowId) {
+          this.workflowEnvironmentService.retrieveEnvironmentIdOfWorkflow(wid).subscribe(eid => {
+            this.runtimeEnvironmentId = eid;
+            this.environmentEditorService.clickDisplayEnvironmentEditor(wid, this.runtimeEnvironmentId);
+          })
+        } else {
+          this.environmentEditorService.clickDisplayEnvironmentEditor(wid, this.runtimeEnvironmentId);
+        }
+      })
+
+    }
   }
 
   private handleWorkflowVersionDisplay(): void {

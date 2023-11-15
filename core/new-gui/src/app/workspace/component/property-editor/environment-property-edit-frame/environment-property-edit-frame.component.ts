@@ -39,6 +39,8 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
       keyboard: false      // ensures the modal cannot be closed with the keyboard
     });
 
+    modalRef.componentInstance.isEditingWorkflow = true;
+
     modalRef.result.then(
       (selectedEnvironmentID: number | null) => {
         if (selectedEnvironmentID == null) {
@@ -54,25 +56,27 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
             }
           ).subscribe(env => {
             const wid = this.wid;
-            if (wid && env.environment.eid) {
-              this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, env.environment.eid).subscribe(res => {
+            const eid = env.environment.eid;
+            if (wid && eid) {
+              this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, eid).subscribe(res => {
                 console.log(`bind with new env, wid: ${wid}, eid: ${env.environment.eid}`)
+                this.eid = eid;
+                this.initEditor();
               });
-
-
             }
-
           })
         } else {
           // user choose a existing environment
           const wid = this.wid;
           if (wid) {
+
             this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID).subscribe(res => {
               console.log(`bind with new env, wid: ${wid}, eid: ${selectedEnvironmentID}`)
+              this.eid = selectedEnvironmentID;
+              this.initEditor();
             });
           }
         }
-        this.initEditor();
       },
       (reason) => {
         console.log('Modal was dismissed.', reason);
@@ -101,18 +105,23 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
 
   ngOnInit(): void {
     console.log(this.eid)
-    console.log(this.environmentService.getAllEnvironments())
     this.initEditor();
   }
 
   initEditor(): void {
-    this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
-      if (env == null) {
-        throw new Error("Environment not exists!!!");
-      } else {
-        this.environment = env;
-      }
-    });
+    if (this.eid) {
+      this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
+        if (env == null) {
+          throw new Error("Environment not exists!!!");
+        } else {
+          console.log("retrieve the environment: ", env)
+          this.environment = env;
+          this.initEnvironmentDisplay();
+        }
+      });
+    } else {
+      this.environmentName = "Runtime environment is not set"
+    }
   }
 
   initEnvironmentDisplay(): void {

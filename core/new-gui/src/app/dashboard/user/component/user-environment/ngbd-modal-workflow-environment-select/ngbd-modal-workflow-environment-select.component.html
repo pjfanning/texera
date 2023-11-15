@@ -10,5 +10,5 @@
       <option *ngFor="let env of environments" [value]="env.environment.eid">{{env.environment.eid}}: {{env.environment.name}}</option>
     </select>
   </div>
-  <button class="btn btn-primary" (click)="goToWorkflow()">Run the workflow</button>
+  <button class="btn btn-primary" (click)="goToWorkflow()">{{goButtonText}}</button>
 </div>
