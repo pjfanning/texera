@@ -39,6 +39,7 @@ import { NzUploadModule } from "ng-zorro-antd/upload";
 import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { FileUploadModule } from "ng2-file-upload";
 import { NgxJsonViewerModule } from "ngx-json-viewer";
+import { NgxDocViewerModule } from "ngx-doc-viewer"
 import { ColorPickerModule } from "ngx-color-picker";
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -139,6 +140,7 @@ import {userDatasetViewComponent} from "./dashboard/user/component/user-dataset/
 import { NzAlertModule } from "ng-zorro-antd/alert";
 import { NgbdModelDatasetFileAddComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
+import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 
 registerLocaleData(en);
 
@@ -237,6 +239,7 @@ registerLocaleData(en);
     NgbPopoverModule,
     RouterModule.forRoot([]),
     FileUploadModule,
+    PdfJsViewerModule,
     FormsModule,
     ReactiveFormsModule,
     FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),
@@ -267,6 +270,7 @@ registerLocaleData(en);
     NzUploadModule,
     NzNoAnimationModule,
     NgxJsonViewerModule,
+    NgxDocViewerModule,
     MatDialogModule,
     NzCardModule,
     NzStatisticModule,

@@ -12,6 +12,7 @@ import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion"
   styleUrls: ['./user-dataset-view.component.scss']
 })
 export class userDatasetViewComponent implements OnInit {
+
     public did: number = 0;
     public dName: string = "";
     public dDescription: string = "";
@@ -20,13 +21,19 @@ export class userDatasetViewComponent implements OnInit {
     public currentFile: string = "";
     public currentFileObject: File | undefined = undefined;
     public fileURL: string = "";
+    public blobFile: Blob = new Blob();
+    public pdfDisplay: boolean = false;
 
     public isSiderCollapsed = false;
     public versionNames: ReadonlyArray<string> = [];
     public selectedVersion: string = "";
     public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
 
-    constructor(private route: ActivatedRoute, private datasetService: DatasetService, private modalService: NgbModal) {}
+    constructor(
+      private route: ActivatedRoute, 
+      private datasetService: DatasetService, 
+      private modalService: NgbModal
+    ) {}
 
     ngOnInit(): void {
         this.route.params.subscribe(params => {
@@ -57,8 +64,13 @@ export class userDatasetViewComponent implements OnInit {
       .inspectDatasetSingleFile(this.did, this.selectedVersion, this.currentFile)
       .pipe(untilDestroyed(this))
       .subscribe(blob => {
+        this.blobFile = blob;
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
-        this.fileURL = URL.createObjectURL(this.currentFileObject);
+        this.fileURL = URL.createObjectURL(blob);
+
+        this.pdfDisplay = false;
+        setTimeout(() => this.pdfDisplay = true, 0);
+        console.log(this.currentFile);
       })
     }
 
