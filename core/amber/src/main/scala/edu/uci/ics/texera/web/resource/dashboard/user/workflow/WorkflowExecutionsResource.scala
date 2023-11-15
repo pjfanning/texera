@@ -130,6 +130,7 @@ class WorkflowExecutionsResource {
         .select(
           WORKFLOW_EXECUTIONS.EID,
           WORKFLOW_EXECUTIONS.VID,
+          WORKFLOW_EXECUTIONS.ENVIRONMENT_EID,
           field(
             context
               .select(USER.NAME)

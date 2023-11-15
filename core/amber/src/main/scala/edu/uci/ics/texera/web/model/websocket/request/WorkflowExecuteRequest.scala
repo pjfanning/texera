@@ -2,10 +2,12 @@ package edu.uci.ics.texera.web.model.websocket.request
 
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalLink}
+import org.jooq.types.UInteger
 
 case class WorkflowExecuteRequest(
     executionName: String,
     engineVersion: String,
+    environmentEid: UInteger,
     logicalPlan: LogicalPlanPojo
 ) extends TexeraWebSocketRequest
 

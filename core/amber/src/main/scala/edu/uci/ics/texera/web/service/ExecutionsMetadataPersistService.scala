@@ -35,6 +35,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
   def insertNewExecution(
       wid: UInteger,
       uid: Option[UInteger],
+      environmentEid: UInteger,
       executionName: String,
       environmentVersion: String
   ): Long = {
@@ -45,6 +46,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     if (executionName != "") {
       newExecution.setName(executionName)
     }
+    newExecution.setEnvironmentEid(environmentEid)
     newExecution.setVid(vid)
     newExecution.setUid(uid.orNull)
     newExecution.setStartingTime(new Timestamp(System.currentTimeMillis()))
