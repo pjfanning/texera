@@ -9,7 +9,6 @@ import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { Dataset } from "src/app/common/type/dataset";
 
 
-
 @UntilDestroy()
 @Component({
   templateUrl: "./ngbd-model-dataset-file-add.component.html",
@@ -40,14 +39,11 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   }
 
   public deleteFile(removedFile: FileUploadItem): void {
-    console.log(this.filesToBeUploaded.length);
     this.filesToBeUploaded = this.filesToBeUploaded.filter(file => file !== removedFile);
-    console.log(this.filesToBeUploaded.length);
   }
 
   public isCreateButtonDisabled(): boolean {
-    // return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
-    return false;
+    return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
   }
 
   public haveFileOver(fileOverEvent: boolean): void {

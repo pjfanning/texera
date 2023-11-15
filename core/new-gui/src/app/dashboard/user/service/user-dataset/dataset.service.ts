@@ -66,9 +66,10 @@ export class DatasetService {
     }
 
     files.forEach(file => {
-      formData.append(file.name, file);
+      const path = file['webkitRelativePath'] || file.name;
+      formData.append(path, file);
     });
-
+    console.log("success");
     return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
   }
 

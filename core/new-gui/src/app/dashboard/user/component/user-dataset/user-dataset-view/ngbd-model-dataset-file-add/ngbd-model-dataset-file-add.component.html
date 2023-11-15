@@ -16,19 +16,31 @@
     <div class="modal-section">
         <div class="modal-body">
             <div class="drag-file-area"
+                type="file"
                 (fileOver)="haveFileOver($event)" 
                 (onFileDrop)="getFileDropped($event)"
                 [ngClass]="{ 'have-file-over': haveDropZoneOver }" 
                 [uploader]="uploader" 
                 ng2FileDrop>
                 <i class="fa fa-cloud-upload-alt upload-icon"></i>
-                <span>
+                <!-- <span>
                     Drop Files Here or Click to Upload
-                </span>
+                </span> -->
                 <input 
                     #clickUpload 
                     (change)="handleClickUploadFile($event)" 
-                    multiple type="file" id="file-upload" />
+                    multiple 
+                    type="file"
+                    id="directory-upload"
+                    webkitdirectory
+                    directory/>
+                <label for="directory-upload">Choose directory</label>
+                <input 
+                    #clickUpload 
+                    (change)="handleClickUploadFile($event)" 
+                    multiple 
+                    type="file"
+                    id="file-upload"/>
                 <label for="file-upload">Choose file</label>
             </div>
             <ul class="file-list" *ngIf="getFileArrayLength()">
