@@ -8,6 +8,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule } from "@angular/router";
+import { TreeModule } from '@circlon/angular-tree-component';
 import { NgbModule, NgbPopoverModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
@@ -39,7 +40,6 @@ import { NzUploadModule } from "ng-zorro-antd/upload";
 import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { FileUploadModule } from "ng2-file-upload";
 import { NgxJsonViewerModule } from "ngx-json-viewer";
-import { NgxDocViewerModule } from "ngx-doc-viewer"
 import { ColorPickerModule } from "ngx-color-picker";
 import { AppRoutingModule } from "./app-routing.module";
 import { AppComponent } from "./app.component";
@@ -238,6 +238,7 @@ registerLocaleData(en);
     NgbModule,
     NgbPopoverModule,
     RouterModule.forRoot([]),
+    TreeModule,
     FileUploadModule,
     PdfJsViewerModule,
     FormsModule,
@@ -270,7 +271,6 @@ registerLocaleData(en);
     NzUploadModule,
     NzNoAnimationModule,
     NgxJsonViewerModule,
-    NgxDocViewerModule,
     MatDialogModule,
     NzCardModule,
     NzStatisticModule,

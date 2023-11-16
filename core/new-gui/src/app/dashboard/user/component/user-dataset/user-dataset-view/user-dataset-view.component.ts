@@ -6,6 +6,7 @@ import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
 import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
 import * as Papa from 'papaparse';
+import { TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode } from '@circlon/angular-tree-component';
 
 
 @UntilDestroy()
@@ -33,11 +34,11 @@ export class userDatasetViewComponent implements OnInit {
 
     public versionNames: ReadonlyArray<string> = [];
     public selectedVersion: string = "";
-    public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
+    public dataNodeList: DatasetVersionHierarchyNode[] = [];
 
     constructor(
-      private route: ActivatedRoute, 
-      private datasetService: DatasetService, 
+      private route: ActivatedRoute,
+      private datasetService: DatasetService,
       private modalService: NgbModal
     ) {}
 
@@ -60,17 +61,12 @@ export class userDatasetViewComponent implements OnInit {
         this.datasetService
         .retrieveDatasetVersionList(this.did)
         .pipe(untilDestroyed(this))
-        .subscribe( versionNames => { 
+        .subscribe( versionNames => {
           this.versionNames = versionNames;
           this.selectedVersion = this.versionNames[0];
           this.onVersionSelected(this.selectedVersion);
         });
 
-    }
-
-    turnAllDisplayOff() {
-      this.pdfDisplay = false;
-      this.csvDisplay = false;
     }
 
     loadContent(file: string) {
@@ -83,12 +79,14 @@ export class userDatasetViewComponent implements OnInit {
         this.blobFile = blob;
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
         this.fileURL = URL.createObjectURL(blob);
-        
+        console.log(this.fileURL);
         if (this.currentFile.endsWith(".pdf")) {
-          this.turnAllDisplayOff();
+          this.pdfDisplay = false;
+          this.csvDisplay = false;
           setTimeout(() => this.pdfDisplay = true, 0);
         } else if (this.currentFile.endsWith(".csv")) {
-          this.turnAllDisplayOff();
+          this.csvDisplay = false;
+          this.pdfDisplay = false;
           Papa.parse(this.currentFileObject, {
             complete: (results) => {
               console.log(results.data);
@@ -97,7 +95,7 @@ export class userDatasetViewComponent implements OnInit {
           });
           this.csvDisplay = true;
         } else {
-          this.turnAllDisplayOff();
+          this.pdfDisplay = false;
         }
         console.log(this.currentFile);
       })
@@ -113,24 +111,40 @@ export class userDatasetViewComponent implements OnInit {
 
     onVersionSelected(versionName: string): void {
       this.selectedVersion = versionName;
-      
+
       this.datasetService
       .retrieveDatasetVersionFileHierarchy(this.did, this.selectedVersion)
       .pipe(untilDestroyed(this))
       .subscribe(dataNodeList => {
         this.dataNodeList = dataNodeList;
-        this.turnAllDisplayOff();
         this.loadContent(this.dataNodeList[0].name);
       })
     }
 
     public openFileAddComponent() {
       const modalRef = this.modalService.open(NgbdModelDatasetFileAddComponent);
-  
+
       modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
 
       });
-      
+
       modalRef.componentInstance.did = this.did;
     }
+
+    options: ITreeOptions = {
+      displayField: 'name',
+      hasChildrenField: 'children',
+      actionMapping: {
+        mouse: {
+          click: (tree: any, node: any, $event: any) => {
+            if (node.hasChildren) {
+              TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event);
+            } else {
+              this.loadContent(node.data.name);
+            }
+          }
+        }
+      }
+    };
+ 
 }
