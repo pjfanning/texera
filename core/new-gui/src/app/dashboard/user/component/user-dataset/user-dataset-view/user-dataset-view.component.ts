@@ -69,9 +69,16 @@ export class userDatasetViewComponent implements OnInit {
 
     }
 
+    turnOffAllDisplay() {
+      this.pdfDisplay = false;
+      this.csvDisplay = false;
+    }
+
     loadContent(file: string, prefix: string) {
       this.currentFile = file;
       let path = file;
+
+      this.turnOffAllDisplay();
 
       if (prefix !== "") {
         path = prefix + "/" + file;
@@ -84,25 +91,18 @@ export class userDatasetViewComponent implements OnInit {
         this.blobFile = blob;
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
         this.fileURL = URL.createObjectURL(blob);
-        console.log(this.fileURL);
         if (this.currentFile.endsWith(".pdf")) {
-          this.pdfDisplay = false;
-          this.csvDisplay = false;
           setTimeout(() => this.pdfDisplay = true, 0);
         } else if (this.currentFile.endsWith(".csv")) {
-          this.csvDisplay = false;
-          this.pdfDisplay = false;
           Papa.parse(this.currentFileObject, {
             complete: (results) => {
-              console.log(results.data);
               this.csvContent = results.data;
             }
           });
           this.csvDisplay = true;
         } else {
-          this.pdfDisplay = false;
+          this.turnOffAllDisplay();
         }
-        console.log(this.currentFile);
       })
     }
 
