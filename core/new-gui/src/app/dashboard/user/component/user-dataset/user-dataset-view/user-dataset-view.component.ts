@@ -69,11 +69,16 @@ export class userDatasetViewComponent implements OnInit {
 
     }
 
-    loadContent(file: string) {
+    loadContent(file: string, prefix: string) {
       this.currentFile = file;
+      let path = file;
 
+      if (prefix !== "") {
+        path = prefix + "/" + file;
+      }
+      
       this.datasetService
-      .inspectDatasetSingleFile(this.did, this.selectedVersion, this.currentFile)
+      .inspectDatasetSingleFile(this.did, this.selectedVersion, path)
       .pipe(untilDestroyed(this))
       .subscribe(blob => {
         this.blobFile = blob;
@@ -117,7 +122,7 @@ export class userDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(dataNodeList => {
         this.dataNodeList = dataNodeList;
-        this.loadContent(this.dataNodeList[0].name);
+        this.loadContent(this.dataNodeList[0].name, this.dataNodeList[0].dir);
       })
     }
 
@@ -140,7 +145,7 @@ export class userDatasetViewComponent implements OnInit {
             if (node.hasChildren) {
               TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event);
             } else {
-              this.loadContent(node.data.name);
+              this.loadContent(node.data.name, node.data.dir);
             }
           }
         }
