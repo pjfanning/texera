@@ -1,13 +1,14 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
+import com.typesafe.scalalogging.Logger
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload}
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, DEBUG, INFO, RPCLogLevel, ReturnInvocation, logControl}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
@@ -35,21 +36,33 @@ import scala.collection.mutable
 object AsyncRPCClient {
 
   final val IgnoreReply = -1
-  final val IgnoreReplyAndDoNotLog = -2
 
-  def noReplyNeeded(id: Long): Boolean = id < 0
+  sealed trait RPCLogLevel
+  final case object DEBUG extends RPCLogLevel
+  final case object INFO extends RPCLogLevel
+
+  def logControl(logger:Logger, logLevel: RPCLogLevel, logString:String): Unit ={
+    logLevel match {
+      case AsyncRPCClient.DEBUG =>
+        logger.debug(logString)
+      case AsyncRPCClient.INFO =>
+        logger.info(logString)
+    }
+  }
 
   /** The invocation of a control command
     * @param commandID
     * @param command
+    * @param logLevel
     */
-  case class ControlInvocation(commandID: Long, command: ControlCommand[_]) extends ControlPayload
+  case class ControlInvocation(commandID: Long, command: ControlCommand[_], logLevel:RPCLogLevel) extends ControlPayload
 
   /** The invocation of a return to a promise.
     * @param originalCommandID
     * @param controlReturn
+    * @param logLevel
     */
-  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any) extends ControlPayload
+  case class ReturnInvocation(originalCommandID: Long, controlReturn: Any, logLevel:RPCLogLevel) extends ControlPayload
 
 }
 
@@ -61,15 +74,15 @@ class AsyncRPCClient(
   private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()
   private var promiseID = 0L
 
-  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
+  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity, logLevel:RPCLogLevel = INFO): Future[T] = {
     val (p, id) = createPromise[T]()
-    logger.debug(s"send request: $cmd to $to (controlID: $id)")
-    outputGateway.sendTo(to, ControlInvocation(id, cmd))
+    logControl(logger, logLevel, s"send request: $cmd to $to (controlID: $id)")
+    outputGateway.sendTo(to, ControlInvocation(id, cmd, logLevel))
     p
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
-    outputGateway.sendTo(CLIENT, ControlInvocation(0, cmd))
+    outputGateway.sendTo(CLIENT, ControlInvocation(0, cmd, DEBUG))
   }
 
   private def createPromise[T](): (Promise[T], Long) = {
@@ -97,25 +110,16 @@ class AsyncRPCClient(
   }
 
   def logControlReply(ret: ReturnInvocation, channel: ChannelID): Unit = {
-    if (ret.originalCommandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-      return
-    }
-    if (ret.controlReturn != null) {
-      if (ret.controlReturn.isInstanceOf[WorkerStatistics]) {
-        return
-      }
-      logger.debug(
-        s"receive reply: ${ret.controlReturn.getClass.getSimpleName} from $channel (controlID: ${ret.originalCommandID})"
-      )
-      ret.controlReturn match {
-        case throwable: Throwable =>
-          logger.error(s"received error from $channel", throwable)
-        case _ =>
-      }
-    } else {
-      logger.info(
-        s"receive reply: null from $channel (controlID: ${ret.originalCommandID})"
-      )
+    ret.controlReturn match {
+      case throwable: Throwable =>
+        logger.error(s"received error from $channel", throwable)
+      case other =>
+        val logString = if (other != null) {
+          s"receive reply: ${other.getClass.getSimpleName} from $channel (controlID: ${ret.originalCommandID})"
+        } else {
+          s"receive reply: null from $channel (controlID: ${ret.originalCommandID})"
+        }
+        logControl(logger, ret.logLevel, logString)
     }
   }
 

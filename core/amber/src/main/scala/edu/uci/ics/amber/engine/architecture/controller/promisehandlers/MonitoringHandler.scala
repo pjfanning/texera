@@ -5,6 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandle
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.MonitoringHandler.ControllerInitiateMonitoring
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.MonitoringHandler.QuerySelfWorkloadMetrics
 import edu.uci.ics.amber.engine.common.Constants
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.DEBUG
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -68,7 +69,7 @@ trait MonitoringHandler {
 
       // send Monitoring message
       val requests = workers.map(worker =>
-        send(QuerySelfWorkloadMetrics(), worker).map({
+        send(QuerySelfWorkloadMetrics(), worker, DEBUG).map({
           case (metrics, samples) => {
             cp.executionState
               .getOperatorExecution(worker)

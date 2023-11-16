@@ -4,11 +4,7 @@ import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{
-  ControlInvocation,
-  ReturnInvocation,
-  noReplyNeeded
-}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, IgnoreReply, RPCLogLevel, ReturnInvocation, logControl, noReplyNeeded}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -55,23 +51,22 @@ class AsyncRPCServer(
   }
 
   def receive(control: ControlInvocation, senderID: ActorVirtualIdentity): Unit = {
-    logger.debug(
-      s"receive command: ${control.command} from $senderID (controlID: ${control.commandID})"
-    )
+    val logString = s"receive command: ${control.command} from $senderID (controlID: ${control.commandID})"
+    logControl(logger, control.logLevel, logString)
     try {
       execute((control.command, senderID))
         .onSuccess { ret =>
-          returnResult(senderID, control.commandID, ret)
+          returnResult(senderID, control.commandID, ret, control.logLevel)
         }
         .onFailure { err =>
           logger.error("Exception occurred", err)
-          returnResult(senderID, control.commandID, err)
+          returnResult(senderID, control.commandID, err, control.logLevel)
         }
 
     } catch {
       case err: Throwable =>
         // if error occurs, return it to the sender.
-        returnResult(senderID, control.commandID, err)
+        returnResult(senderID, control.commandID, err, control.logLevel)
 
       // if throw this exception right now, the above message might not be able
       // to be sent out. We do not throw for now.
@@ -79,28 +74,22 @@ class AsyncRPCServer(
     }
   }
 
-  def execute(cmd: (ControlCommand[_], ActorVirtualIdentity)): Future[_] = {
+  def execute(cmd: (ControlCommand[_], ActorVirtualIdentity), logLevel: RPCLogLevel): Future[_] = {
+    logControl(logger, logLevel, s"execute request: $cmd")
     handlers(cmd)
   }
 
   @inline
-  private def returnResult(sender: ActorVirtualIdentity, id: Long, ret: Any): Unit = {
-    if (noReplyNeeded(id)) {
+  private def returnResult(sender: ActorVirtualIdentity, id: Long, ret: Any, logLevel: RPCLogLevel): Unit = {
+    if (id == IgnoreReply) {
       return
     }
+    logControl(logger, logLevel, s"return result: $ret to $sender (controlID: ${id})")
     outputGateway.sendTo(sender, ReturnInvocation(id, ret))
   }
 
   def logControlInvocation(call: ControlInvocation, sender: ActorVirtualIdentity): Unit = {
-    if (call.commandID == AsyncRPCClient.IgnoreReplyAndDoNotLog) {
-      return
-    }
-    if (call.command.isInstanceOf[QueryStatistics]) {
-      return
-    }
-    logger.debug(
-      s"receive command: ${call.command} from $sender (controlID: ${call.commandID})"
-    )
+    logControl(logger, call.logLevel, s"receive command: ${call.command} from $sender (controlID: ${call.commandID})")
   }
 
 }

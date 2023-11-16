@@ -2,10 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler._
-import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerAsyncRPCHandlerInitializer,
-  Workflow
-}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerAsyncRPCHandlerInitializer, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseSkewMitigationHandler.PauseSkewMitigation
@@ -13,6 +10,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutabl
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SharePartitionHandler.SharePartition
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.DEBUG
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec
@@ -291,7 +289,8 @@ trait SkewDetectionHandler {
               Constants.reshapeFirstPhaseSharingNumerator,
               Constants.reshapeFirstPhaseSharingDenominator
             ),
-            id
+            id,
+            DEBUG
           )
         )
       })
@@ -337,7 +336,8 @@ trait SkewDetectionHandler {
                 redirectNumerator,
                 skewedLoad.toLong
               ),
-              id
+              id,
+              DEBUG
             )
           )
 
@@ -357,7 +357,7 @@ trait SkewDetectionHandler {
       .getOperatorExecution(prevWorkerLayer.id)
       .getBuiltWorkerIds
       .foreach(id => {
-        futuresArr.append(send(PauseSkewMitigation(skewedWorker, helperWorker), id))
+        futuresArr.append(send(PauseSkewMitigation(skewedWorker, helperWorker), id, DEBUG))
       })
     Future.collect(futuresArr)
   }
@@ -402,7 +402,7 @@ trait SkewDetectionHandler {
             val currHelperWorker = skewedAndHelper._2
             val stateTransferOrIntimationNeeded = skewedAndHelper._3
             if (stateTransferOrIntimationNeeded) {
-              send(SendImmutableState(currHelperWorker), currSkewedWorker).map(
+              send(SendImmutableState(currHelperWorker), currSkewedWorker, DEBUG).map(
                 stateTransferOrIntimationSuccessful => {
                   if (stateTransferOrIntimationSuccessful) {
                     workflowReshapeState.skewedToStateTransferOrIntimationDone(currSkewedWorker) =

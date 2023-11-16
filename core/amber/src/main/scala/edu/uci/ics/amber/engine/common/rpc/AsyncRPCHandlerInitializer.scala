@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.Future
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{INFO, RPCLogLevel}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -71,12 +72,12 @@ class AsyncRPCHandlerInitializer(
     registerImpl({ case (c: C, s) => handler(c, s) })
   }
 
-  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
-    ctrlSource.send(cmd, to)
+  def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity, logLevel: RPCLogLevel = INFO): Future[T] = {
+    ctrlSource.send(cmd, to, logLevel)
   }
 
-  def execute[T](cmd: ControlCommand[T], sender: ActorVirtualIdentity): Future[T] = {
-    ctrlReceiver.execute((cmd, sender)).asInstanceOf[Future[T]]
+  def execute[T](cmd: ControlCommand[T], sender: ActorVirtualIdentity, logLevel: RPCLogLevel = INFO): Future[T] = {
+    ctrlReceiver.execute((cmd, sender), logLevel).asInstanceOf[Future[T]]
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {

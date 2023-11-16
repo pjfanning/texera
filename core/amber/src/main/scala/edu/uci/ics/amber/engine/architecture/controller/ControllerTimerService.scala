@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.SkewDetectionHandler.ControllerInitiateSkewDetection
 import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, DEBUG}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 
@@ -26,8 +26,9 @@ class ControllerTimerService(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.statusUpdateIntervalMs.get, MILLISECONDS),
           ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateQueryStatistics()
+            AsyncRPCClient.IgnoreReply,
+            ControllerInitiateQueryStatistics(),
+            DEBUG
           )
         )
       )
@@ -43,8 +44,9 @@ class ControllerTimerService(
           0.milliseconds,
           FiniteDuration.apply(controllerConfig.monitoringIntervalMs.get, MILLISECONDS),
           ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateMonitoring()
+            AsyncRPCClient.IgnoreReply,
+            ControllerInitiateMonitoring(),
+            DEBUG
           )
         )
       )
@@ -60,8 +62,9 @@ class ControllerTimerService(
           Constants.reshapeSkewDetectionInitialDelayInMs.milliseconds,
           FiniteDuration.apply(controllerConfig.skewDetectionIntervalMs.get, MILLISECONDS),
           ControlInvocation(
-            AsyncRPCClient.IgnoreReplyAndDoNotLog,
-            ControllerInitiateSkewDetection()
+            AsyncRPCClient.IgnoreReply,
+            ControllerInitiateSkewDetection(),
+            DEBUG
           )
         )
       )

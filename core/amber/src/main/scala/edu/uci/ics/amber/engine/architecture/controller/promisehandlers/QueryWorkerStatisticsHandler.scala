@@ -3,9 +3,9 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowStatusUpdate
-
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.DEBUG
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -31,7 +31,7 @@ trait QueryWorkerStatisticsHandler {
     // send QueryStatistics message
     val requests = workers.map(worker =>
       // must immediately update worker state and stats after reply
-      send(QueryStatistics(), worker).map(res => {
+      send(QueryStatistics(), worker, DEBUG).map(res => {
         val workerInfo = cp.executionState.getOperatorExecution(worker).getWorkerInfo(worker)
         workerInfo.state = res.workerState
         workerInfo.stats = res
