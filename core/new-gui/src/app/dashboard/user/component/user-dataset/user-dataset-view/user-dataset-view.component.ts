@@ -68,6 +68,11 @@ export class userDatasetViewComponent implements OnInit {
 
     }
 
+    turnAllDisplayOff() {
+      this.pdfDisplay = false;
+      this.csvDisplay = false;
+    }
+
     loadContent(file: string) {
       this.currentFile = file;
 
@@ -80,12 +85,10 @@ export class userDatasetViewComponent implements OnInit {
         this.fileURL = URL.createObjectURL(blob);
         
         if (this.currentFile.endsWith(".pdf")) {
-          this.pdfDisplay = false;
-          this.csvDisplay = false;
+          this.turnAllDisplayOff();
           setTimeout(() => this.pdfDisplay = true, 0);
         } else if (this.currentFile.endsWith(".csv")) {
-          this.csvDisplay = false;
-          this.pdfDisplay = false;
+          this.turnAllDisplayOff();
           Papa.parse(this.currentFileObject, {
             complete: (results) => {
               console.log(results.data);
@@ -94,7 +97,7 @@ export class userDatasetViewComponent implements OnInit {
           });
           this.csvDisplay = true;
         } else {
-          this.pdfDisplay = false;
+          this.turnAllDisplayOff();
         }
         console.log(this.currentFile);
       })
@@ -116,6 +119,7 @@ export class userDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(dataNodeList => {
         this.dataNodeList = dataNodeList;
+        this.turnAllDisplayOff();
         this.loadContent(this.dataNodeList[0].name);
       })
     }
