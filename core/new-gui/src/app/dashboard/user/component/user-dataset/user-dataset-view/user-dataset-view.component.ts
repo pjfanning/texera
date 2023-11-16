@@ -55,12 +55,17 @@ export class userDatasetViewComponent implements OnInit {
           if (typeof dataset.creationTime === 'number') {
             this.createdTime = new Date(dataset.creationTime).toString();
           }
-        })
+        });
 
         this.datasetService
         .retrieveDatasetVersionList(this.did)
         .pipe(untilDestroyed(this))
-        .subscribe( versionNames => { this.versionNames = versionNames; } )
+        .subscribe( versionNames => { 
+          this.versionNames = versionNames;
+          this.selectedVersion = this.versionNames[0];
+          this.onVersionSelected(this.selectedVersion);
+        });
+
     }
 
     loadContent(file: string) {
@@ -111,6 +116,7 @@ export class userDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(dataNodeList => {
         this.dataNodeList = dataNodeList;
+        this.loadContent(this.dataNodeList[0].name);
       })
     }
 
