@@ -5,6 +5,8 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
 import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
+import * as Papa from 'papaparse';
+
 
 @UntilDestroy()
 @Component({
@@ -22,7 +24,9 @@ export class userDatasetViewComponent implements OnInit {
     public currentFileObject: File | undefined = undefined;
     public fileURL: string = "";
     public blobFile: Blob = new Blob();
+    public csvContent: any[] = [];
     public pdfDisplay: boolean = false;
+    public csvDisplay: boolean = false;
 
     public isSiderCollapsed = false;
     public versionNames: ReadonlyArray<string> = [];
@@ -70,7 +74,18 @@ export class userDatasetViewComponent implements OnInit {
         
         if (this.currentFile.endsWith(".pdf")) {
           this.pdfDisplay = false;
+          this.csvDisplay = false;
           setTimeout(() => this.pdfDisplay = true, 0);
+        } else if (this.currentFile.endsWith(".csv")) {
+          this.csvDisplay = false;
+          this.pdfDisplay = false;
+          Papa.parse(this.currentFileObject, {
+            complete: (results) => {
+              console.log(results.data);
+              this.csvContent = results.data;
+            }
+          });
+          this.csvDisplay = true;
         } else {
           this.pdfDisplay = false;
         }

@@ -64,13 +64,20 @@
             </p>
         </div>
       </div>
-      <div style="padding-top: 15px;">
-        <div style="margin-left: 30px; width: 100%; height: 2000px">
+      <div style="padding-top: 15px; margin-left: 30px; width: 100%; height: 80%; overflow-y: scroll;">
           <ng2-pdfjs-viewer
             *ngIf="pdfDisplay"
             pdfSrc="{{fileURL}}">
           </ng2-pdfjs-viewer>
-        </div>
+          <table
+            *ngIf="csvDisplay"
+            class="csv-table">
+            <tr *ngFor="let row of csvContent">
+              <td *ngFor="let cell of row">
+                {{ cell }}
+              </td>
+            </tr>
+          </table>
       </div>
     </nz-content>
   <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="250">
