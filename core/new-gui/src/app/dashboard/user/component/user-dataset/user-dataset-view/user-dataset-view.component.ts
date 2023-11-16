@@ -29,6 +29,8 @@ export class userDatasetViewComponent implements OnInit {
     public csvDisplay: boolean = false;
 
     public isSiderCollapsed = false;
+    public isMaximized = false;
+
     public versionNames: ReadonlyArray<string> = [];
     public selectedVersion: string = "";
     public dataNodeList: ReadonlyArray<DatasetVersionHierarchyNode> = [];
@@ -93,12 +95,12 @@ export class userDatasetViewComponent implements OnInit {
       })
     }
 
-    clickToHideTree() {
-      this.isSiderCollapsed = true;
+    clickToMaximizeMinimize() {
+      this.isMaximized = !this.isMaximized;
     }
-    
-    clickToShowTree() {
-      this.isSiderCollapsed = false;
+
+    clickToHideShowTree() {
+      this.isSiderCollapsed = !this.isSiderCollapsed;
     }
 
     onVersionSelected(versionName: string): void {
