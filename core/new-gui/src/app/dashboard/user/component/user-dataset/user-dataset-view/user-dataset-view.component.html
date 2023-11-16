@@ -94,13 +94,13 @@
           </table>
       </div>
     </nz-content>
-  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="250">
+  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
       <div class="file-list-title">
         <h5>Data Explorer</h5>
       </div>
       <div class="version-storage">
         <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
-        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" nzBorderless ngModel="{{selectedVersion}}">
+        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" nzBorderless ngModel="{{selectedVersion}}" style="width: 100%">
           <nz-option *ngFor="let name of versionNames" [nzValue]="name" [nzLabel]="name"></nz-option>
         </nz-select>
       </div>
