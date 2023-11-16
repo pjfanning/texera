@@ -104,7 +104,9 @@
           <nz-option *ngFor="let name of versionNames" [nzValue]="name" [nzLabel]="name"></nz-option>
         </nz-select>
       </div>
-      <tree-root [nodes]="dataNodeList" [options]="options"></tree-root>
+      <div>
+        <tree-root [nodes]="dataNodeList" [options]="options"></tree-root>
+      </div>
       <button
         class="rounded-button"
         (click)="openFileAddComponent()">
