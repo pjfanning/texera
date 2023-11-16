@@ -122,7 +122,11 @@ export class userDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(dataNodeList => {
         this.dataNodeList = dataNodeList;
-        this.loadContent(this.dataNodeList[0].name, this.dataNodeList[0].dir);
+        let currentNode = this.dataNodeList[0];
+        while (currentNode.type === "directory" && currentNode.children) {
+          currentNode = currentNode.children[0];
+        }
+        this.loadContent(currentNode.name, currentNode.dir);
       })
     }
 
