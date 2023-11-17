@@ -1,8 +1,6 @@
 import { Injectable } from "@angular/core";
 import { OperatorMetadataService } from "../operator-metadata/operator-metadata.service";
 import { OperatorSchema } from "../../types/operator-schema.interface";
-
-import { OperatorResultCacheStatus } from "../../types/workflow-websocket.interface";
 import { abbreviateNumber } from "js-abbreviation-number";
 import { Point, OperatorPredicate, OperatorLink, CommentBox } from "../../types/workflow-common.interface";
 import { Group, GroupBoundingBox } from "../workflow-graph/model/operator-group";
@@ -10,6 +8,7 @@ import { OperatorState, OperatorStatistics } from "../../types/execute-workflow.
 import * as joint from "jointjs";
 import { fromEventPattern, Observable } from "rxjs";
 import { Coeditor, User } from "../../../common/type/user";
+import { OperatorResultCacheStatus } from "../../types/workflow-websocket.interface";
 
 /**
  * Defines the SVG element for the breakpoint button
@@ -126,25 +125,18 @@ export const sourceOperatorHandle = "M 0 0 L 0 8 L 8 8 L 8 0 z";
  */
 export const targetOperatorHandle = "M 12 0 L 0 6 L 12 12 z";
 
-export const operatorCacheTextClass = "texera-operator-result-cache-text";
-export const operatorCacheIconClass = "texera-operator-result-cache-icon";
-export const operatorStateBGClass = "texera-operator-state-background";
+export const operatorReuseCacheTextClass = "texera-operator-result-reuse-text";
+export const operatorReuseCacheIconClass = "texera-operator-result-reuse-icon";
+export const operatorViewResultIconClass = "texera-operator-view-result-icon";
 export const operatorStateClass = "texera-operator-state";
-
-export const operatorProcessedCountBGClass = "texera-operator-processed-count-background";
 export const operatorProcessedCountClass = "texera-operator-processed-count";
-export const operatorOutputCountBGClass = "texera-operator-output-count-background";
 export const operatorOutputCountClass = "texera-operator-output-count";
-export const operatorAbbreviatedCountBGClass = "texera-operator-abbreviated-count-background";
 export const operatorAbbreviatedCountClass = "texera-operator-abbreviated-count";
 export const operatorCoeditorEditingClass = "texera-operator-coeditor-editing";
-export const operatorCoeditorEditingBGClass = "texera-operator-coeditor-editing-background";
 export const operatorCoeditorChangedPropertyClass = "texera-operator-coeditor-changed-property";
-export const operatorCoeditorChangedPropertyBGClass = "texera-operator-coeditor-changed-property-background";
 
 export const operatorIconClass = "texera-operator-icon";
 export const operatorNameClass = "texera-operator-name";
-export const operatorNameBGClass = "texera-operator-name-background";
 
 export const linkPathStrokeColor = "#919191";
 
@@ -159,22 +151,19 @@ class TexeraCustomJointElement extends joint.shapes.devs.Model {
     <g class="element-node">
       <rect class="body"></rect>
       <image class="${operatorIconClass}"></image>
-      <text class="${operatorNameBGClass}"></text>
       <text class="${operatorNameClass}"></text>
-      <text class="${operatorProcessedCountBGClass}"></text>
       <text class="${operatorProcessedCountClass}"></text>
-      <text class="${operatorOutputCountBGClass}"></text>
       <text class="${operatorOutputCountClass}"></text>
-      <text class="${operatorAbbreviatedCountBGClass}"></text>
       <text class="${operatorAbbreviatedCountClass}"></text>
-      <text class="${operatorStateBGClass}"></text>
       <text class="${operatorStateClass}"></text>
-      <text class="${operatorCacheTextClass}"></text>
-      <text class="${operatorCoeditorEditingBGClass}"></text>
+      <text class="${operatorReuseCacheTextClass}"></text>
       <text class="${operatorCoeditorEditingClass}"></text>
-      <text class="${operatorCoeditorChangedPropertyBGClass}"></text>
       <text class="${operatorCoeditorChangedPropertyClass}"></text>
-      <image class="${operatorCacheIconClass}"></image>
+      <image class="${operatorViewResultIconClass}"></image>
+      <image class="${operatorReuseCacheIconClass}"></image>
+      <text class="${operatorCoeditorEditingClass}"></text>
+      <text class="${operatorCoeditorChangedPropertyClass}"></text>
+      <image class="${operatorViewResultIconClass}"></image>
       <rect class="boundary"></rect>
       <path class="left-boundary"></path>
       <path class="right-boundary"></path>
@@ -341,12 +330,9 @@ export class JointUIService {
     const outputCountText = isSink ? "" : abbreviateNumber(statistics.aggregatedOutputRowCount);
     const abbreviatedText = processedCountText + (isSource || isSink ? "" : " → ") + outputCountText;
     jointPaper.getModelById(operatorID).attr({
-      [`.${operatorProcessedCountBGClass}`]: isSink ? { text: processedText, "ref-y": -30 } : { text: processedText },
       [`.${operatorProcessedCountClass}`]: isSink ? { text: processedText, "ref-y": -30 } : { text: processedText },
       [`.${operatorOutputCountClass}`]: { text: outputText },
-      [`.${operatorOutputCountBGClass}`]: { text: outputText },
       [`.${operatorAbbreviatedCountClass}`]: { text: abbreviatedText },
-      [`.${operatorAbbreviatedCountBGClass}`]: { text: abbreviatedText },
     });
   }
 
@@ -372,13 +358,9 @@ export class JointUIService {
 
   public foldOperatorDetails(jointPaper: joint.dia.Paper, operatorID: string): void {
     jointPaper.getModelById(operatorID).attr({
-      [`.${operatorAbbreviatedCountBGClass}`]: { visibility: "visible" },
       [`.${operatorAbbreviatedCountClass}`]: { visibility: "visible" },
       [`.${operatorProcessedCountClass}`]: { visibility: "hidden" },
-      [`.${operatorProcessedCountBGClass}`]: { visibility: "hidden" },
-      [`.${operatorOutputCountBGClass}`]: { visibility: "hidden" },
       [`.${operatorOutputCountClass}`]: { visibility: "hidden" },
-      [`.${operatorStateBGClass}`]: { visibility: "hidden" },
       [`.${operatorStateClass}`]: { visibility: "hidden" },
       ".delete-button": { visibility: "hidden" },
       ".add-input-port-button": { visibility: "hidden" },
@@ -390,13 +372,9 @@ export class JointUIService {
 
   public unfoldOperatorDetails(jointPaper: joint.dia.Paper, operatorID: string): void {
     jointPaper.getModelById(operatorID).attr({
-      [`.${operatorAbbreviatedCountBGClass}`]: { visibility: "hidden" },
       [`.${operatorAbbreviatedCountClass}`]: { visibility: "hidden" },
       [`.${operatorProcessedCountClass}`]: { visibility: "visible" },
-      [`.${operatorProcessedCountBGClass}`]: { visibility: "visible" },
-      [`.${operatorOutputCountBGClass}`]: { visibility: "visible" },
       [`.${operatorOutputCountClass}`]: { visibility: "visible" },
-      [`.${operatorStateBGClass}`]: { visibility: "visible" },
       [`.${operatorStateClass}`]: { visibility: "visible" },
       ".delete-button": { visibility: "visible" },
       ".add-input-port-button": { visibility: "visible" },
@@ -465,7 +443,6 @@ export class JointUIService {
     }
     jointPaper.getModelById(operatorID).attr({
       [`.${operatorStateClass}`]: { text: operatorState.toString() },
-      [`.${operatorStateBGClass}`]: { text: operatorState.toString() },
       [`.${operatorStateClass}`]: { fill: fillColor },
       "rect.body": { stroke: fillColor },
       [`.${operatorAbbreviatedCountClass}`]: { fill: fillColor },
@@ -531,7 +508,16 @@ export class JointUIService {
     jointPaper.getModelById(operator.operatorID).attr("rect.body/fill", JointUIService.getOperatorFillColor(operator));
   }
 
-  public changeOperatorCacheStatus(
+  public changeOperatorViewResultStatus(
+    jointPaper: joint.dia.Paper,
+    operator: OperatorPredicate,
+    viewResult?: boolean
+  ): void {
+    const icon = JointUIService.getOperatorViewResultIcon(operator);
+    jointPaper.getModelById(operator.operatorID).attr(`.${operatorViewResultIconClass}/xlink:href`, icon);
+  }
+
+  public changeOperatorReuseCacheStatus(
     jointPaper: joint.dia.Paper,
     operator: OperatorPredicate,
     cacheStatus?: OperatorResultCacheStatus
@@ -539,10 +525,10 @@ export class JointUIService {
     const cacheText = JointUIService.getOperatorCacheDisplayText(operator, cacheStatus);
     const cacheIcon = JointUIService.getOperatorCacheIcon(operator, cacheStatus);
 
-    const cacheIndicatorText = cacheText === "" ? "" : "cache";
-    jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheTextClass}/text`, cacheIndicatorText);
-    jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheIconClass}/xlink:href`, cacheIcon);
-    jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheIconClass}/title`, cacheText);
+    // jointPaper.getModelById(operator.operatorID).attr(`.${operatorCacheTextClass}/text`, cacheStatus);
+    jointPaper.getModelById(operator.operatorID).attr(`.${operatorReuseCacheIconClass}/xlink:href`, cacheIcon);
+    const icon = JointUIService.getOperatorViewResultIcon(operator);
+    jointPaper.getModelById(operator.operatorID).attr(`.${operatorViewResultIconClass}/xlink:href`, icon);
   }
 
   public changeOperatorJointDisplayName(
@@ -551,7 +537,6 @@ export class JointUIService {
     displayName: string
   ): void {
     jointPaper.getModelById(operator.operatorID).attr(`.${operatorNameClass}/text`, displayName);
-    jointPaper.getModelById(operator.operatorID).attr(`.${operatorNameBGClass}/text`, displayName);
   }
 
   public getBreakpointButton(): new () => joint.linkTools.Button {
@@ -775,19 +760,6 @@ export class JointUIService {
     operatorType: string
   ): joint.shapes.devs.ModelSelectors {
     const operatorStyleAttrs = {
-      ".texera-operator-coeditor-editing-background": {
-        text: "",
-        "font-size": "14px",
-        "font-weight": "bold",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "hidden",
-        "ref-x": -50,
-        "ref-y": 100,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "start",
-      },
       ".texera-operator-coeditor-editing": {
         text: "",
         "font-size": "14px",
@@ -798,19 +770,6 @@ export class JointUIService {
         ref: "rect.body",
         "y-alignment": "middle",
         "x-alignment": "start",
-      },
-      ".texera-operator-coeditor-changed-property-background": {
-        text: "",
-        "font-size": "14px",
-        "font-weight": "bold",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "hidden",
-        "ref-x": 0.5,
-        "ref-y": 120,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
       },
       ".texera-operator-coeditor-changed-property": {
         text: "",
@@ -823,36 +782,12 @@ export class JointUIService {
         "y-alignment": "middle",
         "x-alignment": "middle",
       },
-      ".texera-operator-state-background": {
-        text: "",
-        "font-size": "14px",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "hidden",
-        "ref-x": 0.5,
-        "ref-y": 100,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
-      },
       ".texera-operator-state": {
         text: "",
         "font-size": "14px",
         visibility: "hidden",
         "ref-x": 0.5,
         "ref-y": 100,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
-      },
-      ".texera-operator-abbreviated-count-background": {
-        text: "",
-        "font-size": "14px",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "visible",
-        "ref-x": 0.5,
-        "ref-y": -30,
         ref: "rect.body",
         "y-alignment": "middle",
         "x-alignment": "middle",
@@ -868,18 +803,6 @@ export class JointUIService {
         "y-alignment": "middle",
         "x-alignment": "middle",
       },
-      ".texera-operator-processed-count-background": {
-        text: "",
-        "font-size": "14px",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "hidden",
-        "ref-x": 0.5,
-        "ref-y": -50,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
-      },
       ".texera-operator-processed-count": {
         text: "",
         fill: "green",
@@ -887,18 +810,6 @@ export class JointUIService {
         visibility: "hidden",
         "ref-x": 0.5,
         "ref-y": -50,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
-      },
-      ".texera-operator-output-count-background": {
-        text: "",
-        "font-size": "14px",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        visibility: "hidden",
-        "ref-x": 0.5,
-        "ref-y": -30,
         ref: "rect.body",
         "y-alignment": "middle",
         "x-alignment": "middle",
@@ -947,17 +858,6 @@ export class JointUIService {
         fill: "transparent",
         "ref-x": -30,
         "ref-y": -10,
-      },
-      ".texera-operator-name-background": {
-        text: operatorDisplayName,
-        "font-size": "14px",
-        stroke: "#f5f5f5",
-        "stroke-width": "1em",
-        "ref-x": 0.5,
-        "ref-y": 80,
-        ref: "rect.body",
-        "y-alignment": "middle",
-        "x-alignment": "middle",
       },
       ".texera-operator-name": {
         text: operatorDisplayName,
@@ -1019,7 +919,7 @@ export class JointUIService {
         "x-alignment": "middle",
         "y-alignment": "middle",
       },
-      ".texera-operator-result-cache-text": {
+      ".texera-operator-result-reuse-text": {
         text: JointUIService.getOperatorCacheDisplayText(operator) === "" ? "" : "cache",
         fill: "#595959",
         "font-size": "14px",
@@ -1030,13 +930,22 @@ export class JointUIService {
         "y-alignment": "middle",
         "x-alignment": "middle",
       },
-      ".texera-operator-result-cache-icon": {
+      ".texera-operator-result-reuse-icon": {
         "xlink:href": JointUIService.getOperatorCacheIcon(operator),
-        title: JointUIService.getOperatorCacheDisplayText(operator),
         width: 40,
         height: 40,
         "ref-x": 75,
         "ref-y": 50,
+        ref: "rect.body",
+        "x-alignment": "middle",
+        "y-alignment": "middle",
+      },
+      ".texera-operator-view-result-icon": {
+        "xlink:href": JointUIService.getOperatorViewResultIcon(operator),
+        width: 20,
+        height: 20,
+        "ref-x": 75,
+        "ref-y": 20,
         ref: "rect.body",
         "x-alignment": "middle",
         "y-alignment": "middle",
@@ -1054,30 +963,30 @@ export class JointUIService {
     operator: OperatorPredicate,
     cacheStatus?: OperatorResultCacheStatus
   ): string {
-    if (cacheStatus && cacheStatus !== "cache not enabled") {
-      return cacheStatus;
+    if (cacheStatus === undefined || !operator.markedForReuse) {
+      return "";
     }
-    const isCached = operator.isCached ?? false;
-    return isCached ? "to be cached" : "";
+    return cacheStatus;
   }
 
   public static getOperatorCacheIcon(operator: OperatorPredicate, cacheStatus?: OperatorResultCacheStatus): string {
-    if (cacheStatus && cacheStatus !== "cache not enabled") {
-      if (cacheStatus === "cache valid") {
-        return "assets/svg/operator-result-cache-successful.svg";
-      } else if (cacheStatus === "cache invalid") {
-        return "assets/svg/operator-result-cache-invalid.svg";
-      } else {
-        const _exhaustiveCheck: never = cacheStatus;
-        return "";
-      }
+    console.log("getting operator cache icon for " + operator.operatorID);
+    console.log("cache status: " + cacheStatus);
+    if (!operator.markedForReuse) {
+      return "";
+    }
+    if (cacheStatus === "cache valid") {
+      return "assets/svg/operator-reuse-cache-valid.svg";
     } else {
-      const isCached = operator.isCached ?? false;
-      if (isCached) {
-        return "assets/svg/operator-result-cache-to-be-cached.svg";
-      } else {
-        return "";
-      }
+      return "assets/svg/operator-reuse-cache-invalid.svg";
+    }
+  }
+
+  public static getOperatorViewResultIcon(operator: OperatorPredicate): string {
+    if (operator.viewResult) {
+      return "assets/svg/operator-view-result.svg";
+    } else {
+      return "";
     }
   }
 

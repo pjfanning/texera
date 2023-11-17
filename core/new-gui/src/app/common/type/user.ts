@@ -1,3 +1,4 @@
+import { NumberValue } from "d3";
 import { Point } from "../../workspace/types/workflow-common.interface";
 
 /**
@@ -6,14 +7,52 @@ import { Point } from "../../workspace/types/workflow-common.interface";
  * Corresponds to `core/amber/src/main/scala/edu/uci/ics/texera/web/resource/auth/UserResource.scala`
  */
 
-type Role = "INACTIVE" | "RESTRICTED" | "REGULAR" | "ADMIN";
+// Please check Role at \core\amber\src\main\scala\edu\uci\ics\texera\web\model\jooq\generated\enums\UserRole.java
+export enum Role {
+  INACTIVE = "INACTIVE",
+  RESTRICTED = "RESTRICTED",
+  REGULAR = "REGULAR",
+  ADMIN = "ADMIN",
+}
+
 export interface User
   extends Readonly<{
-    name: string;
     uid: number;
+    name: string;
+    email: string;
     googleId?: string;
-    role?: Role;
+    role: Role;
     color?: string;
+  }> {}
+
+export interface File
+  extends Readonly<{
+    userId: number;
+    fileId: number;
+    fileName: string;
+    fileSize: number;
+    uploadedTime: number;
+    description: string;
+  }> {}
+
+export interface Workflow
+  extends Readonly<{
+    userId: number;
+    workflowId: number;
+    workflowName: string;
+  }> {}
+
+export interface MongoWorkflow {
+  workflowName: string;
+  executions: MongoExecution[];
+}
+
+export interface MongoExecution
+  extends Readonly<{
+    workflowName: string;
+    size: number;
+    pointer: string;
+    eid: number;
   }> {}
 
 /**

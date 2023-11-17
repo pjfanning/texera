@@ -2,7 +2,8 @@ package edu.uci.ics.amber.engine.e2e
 
 import edu.uci.ics.texera.workflow.operators.aggregate.{
   AggregationFunction,
-  SpecializedAverageOpDesc
+  AggregationOperation,
+  SpecializedAggregateOpDesc
 }
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
@@ -11,6 +12,7 @@ import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.asterixdb.AsterixDBSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.mysql.MySQLSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpDescV2
 import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 
 object TestOperators {
@@ -79,11 +81,13 @@ object TestOperators {
       attributeToAggregate: String,
       aggFunction: AggregationFunction,
       groupByAttributes: List[String]
-  ): SpecializedAverageOpDesc = {
-    val aggOp = new SpecializedAverageOpDesc()
-    aggOp.aggFunction = aggFunction
-    aggOp.attribute = attributeToAggregate
-    aggOp.resultAttribute = "aggregate-result"
+  ): SpecializedAggregateOpDesc = {
+    val aggOp = new SpecializedAggregateOpDesc()
+    val aggFunc = new AggregationOperation()
+    aggFunc.aggFunction = aggFunction
+    aggFunc.attribute = attributeToAggregate
+    aggFunc.resultAttribute = "aggregate-result"
+    aggOp.aggregations = List(aggFunc)
     aggOp.groupByKeys = groupByAttributes
     aggOp
   }
@@ -127,5 +131,19 @@ object TestOperators {
     wordCountOpDesc.textColumn = textColumn
     wordCountOpDesc.topN = topN
     wordCountOpDesc
+  }
+
+  def pythonOpDesc(): PythonUDFOpDescV2 = {
+    val udf = new PythonUDFOpDescV2()
+    udf.workers = 1
+    udf.code = """
+        |from pytexera import *
+        |
+        |class ProcessTupleOperator(UDFOperatorV2):
+        |    @overrides
+        |    def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
+        |        yield tuple_
+        |""".stripMargin
+    udf
   }
 }

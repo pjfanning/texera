@@ -1,30 +1,28 @@
 package edu.uci.ics.amber.engine.e2e
 
-import akka.actor.{ActorSystem, PoisonPill, Props}
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.actor.{ActorSystem, Props}
+import akka.testkit.{ImplicitSender, TestKit}
 import akka.util.Timeout
 import ch.vorburger.mariadb4j.DB
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller._
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 import edu.uci.ics.texera.workflow.common.workflow._
 import edu.uci.ics.texera.workflow.operators.aggregate.AggregationFunction
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import java.sql.PreparedStatement
 
+import java.sql.PreparedStatement
 import com.twitter.util.{Await, Promise}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.e2e.Utils.buildWorkflow
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 
-import scala.collection.mutable
 import scala.concurrent.duration._
 
 class DataProcessingSpec
@@ -48,27 +46,18 @@ class DataProcessingSpec
     resultStorage.close()
   }
 
-  def buildWorkflow(
-      operators: mutable.MutableList[OperatorDescriptor],
-      links: mutable.MutableList[OperatorLink]
-  ): Workflow = {
-    val context = new WorkflowContext
-    context.jobId = "workflow-test"
-
-    val texeraWorkflowCompiler = new WorkflowCompiler(
-      WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
-      context
-    )
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity("workflow-test"), resultStorage)
-  }
-
   def executeWorkflow(workflow: Workflow): Map[String, List[ITuple]] = {
     var results: Map[String, List[ITuple]] = null
     val client = new AmberClient(system, workflow, ControllerConfig.default, error => {})
     val completion = Promise[Unit]
+    client.registerCallback[FatalError](evt => {
+      completion.setException(evt.e)
+      client.shutdown()
+    })
     client
       .registerCallback[WorkflowCompleted](evt => {
-        results = workflow.getEndOperators
+        results = workflow.physicalPlan.getSinkOperators
+          .map(sinkOpId => workflow.physicalPlan.operatorMap(sinkOpId))
           .filter(op => resultStorage.contains(op.id.operator))
           .map { op => (op.id.operator, resultStorage.get(op.id.operator).getAll.toList) }
           .toMap
@@ -76,7 +65,6 @@ class DataProcessingSpec
       })
     Await.result(client.sendAsync(StartWorkflow()))
     Await.result(completion)
-    client.shutdown()
     results
   }
 
@@ -117,13 +105,14 @@ class DataProcessingSpec
     val headerlessCsvOpDesc = TestOperators.headerlessSmallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(headerlessCsvOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -134,13 +123,14 @@ class DataProcessingSpec
     val headerlessCsvOpDesc = TestOperators.headerlessSmallMultiLineDataCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(headerlessCsvOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -151,13 +141,14 @@ class DataProcessingSpec
     val jsonlOp = TestOperators.smallJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](jsonlOp, sink),
-      mutable.MutableList[OperatorLink](
+      List(jsonlOp, sink),
+      List(
         OperatorLink(
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -172,19 +163,21 @@ class DataProcessingSpec
       assert(schema.getAttribute("created_at").getType == AttributeType.TIMESTAMP)
       assert(schema.getAttributes.size() == 9)
     }
+
   }
 
   "Engine" should "execute mediumFlattenJsonl->sink workflow normally" in {
     val jsonlOp = TestOperators.mediumFlattenJSONLScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](jsonlOp, sink),
-      mutable.MutableList[OperatorLink](
+      List(jsonlOp, sink),
+      List(
         OperatorLink(
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     val results = executeWorkflow(workflow)(sink.operatorID)
 
@@ -207,14 +200,15 @@ class DataProcessingSpec
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("column-1", "Asia")
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, keywordOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(headerlessCsvOpDesc, keywordOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -226,14 +220,15 @@ class DataProcessingSpec
     val wordCountOpDesc = TestOperators.wordCloudOpDesc("column-1", 1)
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](headerlessCsvOpDesc, wordCountOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(headerlessCsvOpDesc, wordCountOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(wordCountOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     val result = executeWorkflow(workflow).values
     // Assert that only one tuple came out successfully
@@ -245,10 +240,11 @@ class DataProcessingSpec
     val csvOpDesc = TestOperators.smallCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](csvOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(csvOpDesc, sink),
+      List(
         OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -258,14 +254,15 @@ class DataProcessingSpec
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(csvOpDesc, keywordOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -277,8 +274,8 @@ class DataProcessingSpec
       TestOperators.aggregateAndGroupByDesc("Region", AggregationFunction.COUNT, List[String]())
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, countOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(csvOpDesc, keywordOpDesc, countOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
@@ -288,7 +285,8 @@ class DataProcessingSpec
           OperatorPort(countOpDesc.operatorID, 0)
         ),
         OperatorLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -304,9 +302,8 @@ class DataProcessingSpec
       )
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable
-        .MutableList[OperatorDescriptor](csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
@@ -319,7 +316,8 @@ class DataProcessingSpec
           OperatorPort(averageAndGroupByOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
@@ -330,13 +328,13 @@ class DataProcessingSpec
     val joinOpDesc = TestOperators.joinOpDesc("column-1", "column-1")
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](
+      List(
         headerlessCsvOpDesc1,
         headerlessCsvOpDesc2,
         joinOpDesc,
         sink
       ),
-      mutable.MutableList[OperatorLink](
+      List(
         OperatorLink(
           OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 0)
@@ -349,24 +347,25 @@ class DataProcessingSpec
           OperatorPort(joinOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
   }
 
   // TODO: use mock data to perform the test, remove dependency on the real AsterixDB
-//  "Engine" should "execute asterixdb->sink workflow normally" in {
-//
-//    val asterixDBOp = TestOperators.asterixDBSourceOpDesc()
-//    val sink = TestOperators.sinkOpDesc()
-//    val (id, workflow) = buildWorkflow(
-//      mutable.MutableList[OperatorDescriptor](asterixDBOp, sink),
-//      mutable.MutableList[OperatorLink](
-//        OperatorLink(OperatorPort(asterixDBOp.operatorID, 0), OperatorPort(sink.operatorID, 0))
-//      )
-//    )
-//    executeWorkflow(id, workflow)
-//  }
+  //  "Engine" should "execute asterixdb->sink workflow normally" in {
+  //
+  //    val asterixDBOp = TestOperators.asterixDBSourceOpDesc()
+  //    val sink = TestOperators.sinkOpDesc()
+  //    val (id, workflow) = buildWorkflow(
+  //      List(asterixDBOp, sink),
+  //      List(
+  //        OperatorLink(OperatorPort(asterixDBOp.operatorID, 0), OperatorPort(sink.operatorID, 0))
+  //      )
+  //    )
+  //    executeWorkflow(id, workflow)
+  //  }
 
   "Engine" should "execute mysql->sink workflow normally" in {
     val (host, port, database, table, username, password) = initializeInMemoryMySQLInstance()
@@ -381,13 +380,14 @@ class DataProcessingSpec
 
     val sink = TestOperators.sinkOpDesc()
     val workflow = buildWorkflow(
-      mutable.MutableList[OperatorDescriptor](inMemoryMsSQLSourceOpDesc, sink),
-      mutable.MutableList[OperatorLink](
+      List(inMemoryMsSQLSourceOpDesc, sink),
+      List(
         OperatorLink(
           OperatorPort(inMemoryMsSQLSourceOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
-      )
+      ),
+      resultStorage
     )
     executeWorkflow(workflow)
 

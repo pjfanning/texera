@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.pythonworker
 
+import com.twitter.util.{Await, Promise}
 import edu.uci.ics.amber.engine.architecture.pythonworker.WorkerBatchInternalQueue.{
   ControlElement,
   ControlElementV2,
@@ -17,13 +18,13 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.apache.arrow.flight._
-import org.apache.arrow.memory.{BufferAllocator, RootAllocator}
+import org.apache.arrow.memory.{ArrowBuf, BufferAllocator, RootAllocator}
 import org.apache.arrow.vector.VectorSchemaRoot
 
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable
-import scala.math.pow
 
-class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
+class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtualIdentity)
     extends Runnable
     with AmberLogging
     with AutoCloseable
@@ -31,11 +32,22 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
 
   val allocator: BufferAllocator =
     new RootAllocator().newChildAllocator("flight-client", 0, Long.MaxValue)
-  val location: Location = Location.forGrpcInsecure("localhost", portNumber)
-  private val MAX_TRY_COUNT: Int = 5
+  val location: Location = (() => {
+    // Read port number from promise until it's available
+    val portNumber = Await.result(portNumberPromise)
+    Location.forGrpcInsecure("localhost", portNumber)
+  })()
+
+  private val MAX_TRY_COUNT: Int = 2
   private val UNIT_WAIT_TIME_MS = 200
   private var flightClient: FlightClient = _
   private var running: Boolean = true
+
+  private var pythonQueueInMemSize: Long = _
+
+  def getPythonQueueInMemSize(): Long = {
+    pythonQueueInMemSize
+  }
 
   override def run(): Unit = {
     establishConnection()
@@ -47,19 +59,17 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
     var tryCount = 0
     while (!connected && tryCount <= MAX_TRY_COUNT) {
       try {
-        logger.info(s"trying to connect to $location")
         flightClient = FlightClient.builder(allocator, location).build()
         connected = new String(flightClient.doAction(new Action("heartbeat")).next.getBody) == "ack"
         if (!connected)
           throw new RuntimeException("heartbeat failed")
       } catch {
         case _: RuntimeException =>
-          val retryWaitTimeInMs = UNIT_WAIT_TIME_MS * pow(2, tryCount).toInt
           logger.warn(
-            s"Failed to connect to Flight Server in this attempt, retrying after $retryWaitTimeInMs ms... remaining attempts: ${MAX_TRY_COUNT - tryCount}"
+            s"Failed to connect to Flight Server in this attempt, retrying after $UNIT_WAIT_TIME_MS ms... remaining attempts: ${MAX_TRY_COUNT - tryCount}"
           )
           flightClient.close()
-          Thread.sleep(retryWaitTimeInMs)
+          Thread.sleep(UNIT_WAIT_TIME_MS)
           tryCount += 1
       }
     }
@@ -73,12 +83,12 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
   def mainLoop(): Unit = {
     while (running) {
       getElement match {
-        case DataElement(dataPayload, from) =>
-          sendData(dataPayload, from)
-        case ControlElement(cmd, from) =>
-          sendControlV1(from, cmd)
-        case ControlElementV2(cmd, from) =>
-          sendControlV2(from, cmd)
+        case DataElement(dataPayload, channel) =>
+          sendData(dataPayload, channel.from)
+        case ControlElement(cmd, channel) =>
+          sendControlV1(channel.from, cmd)
+        case ControlElementV2(cmd, channel) =>
+          sendControlV2(channel.from, cmd)
       }
     }
   }
@@ -100,8 +110,23 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
   ): Result = {
     val controlMessage = PythonControlMessage(from, payload)
     val action: Action = new Action("control", controlMessage.toByteArray)
+
     logger.debug(s"sending control $controlMessage")
-    flightClient.doAction(action).next()
+    // Arrow allows multiple results from the Action call return as a stream (interator).
+    // In Arrow 11, it alerts if the results are not consumed fully.
+    val results = flightClient.doAction(action)
+    // As we do our own Async RPC management, we are currently not using results from Action call.
+    // In the future, this results can include credits for flow control purpose.
+    val result = results.next()
+
+    // extract info needed to calculate sender credits from ack
+    // ackResult contains number of batches inside Python worker internal queue
+    pythonQueueInMemSize = new String(result.getBody).toLong
+
+    // However, we will only expect exactly one result for now.
+    assert(!results.hasNext)
+
+    result
   }
 
   def sendControlV1(from: ActorVirtualIdentity, payload: ControlPayload): Unit = {
@@ -123,7 +148,7 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
 
     val schema = if (tuples.isEmpty) new Schema() else tuples.front.getSchema
     val descriptor = FlightDescriptor.command(PythonDataHeader(from, isEnd).toByteArray)
-    logger.info(
+    logger.debug(
       s"sending data with descriptor ${PythonDataHeader(from, isEnd)}, schema $schema, size of batch ${tuples.size}"
     )
     val flightListener = new SyncPutListener
@@ -136,18 +161,29 @@ class PythonProxyClient(portNumber: Int, val actorId: ActorVirtualIdentity)
     writer.putNext()
     schemaRoot.clear()
     writer.completed()
-    flightListener.getResult()
+
+    // for calculating sender credits - get back number of batches in Python worker queue
+    val ackMsgBuf: ArrowBuf = flightListener.poll(5, TimeUnit.SECONDS).getApplicationMetadata
+    pythonQueueInMemSize = ackMsgBuf.getLong(0)
+    ackMsgBuf.close()
+
     flightListener.close()
 
   }
 
   override def close(): Unit = {
-
     val action: Action = new Action("shutdown")
-    flightClient.doAction(action) // do not expect reply
+    try {
+      flightClient.doAction(action) // do not expect reply
 
-    flightClient.close()
-
+      flightClient.close()
+    } catch {
+      case _: NullPointerException =>
+        running = false
+        logger.warn(
+          s"Unable to close the flight client because it is null"
+        )
+    }
     // stop the main loop
     running = false
   }

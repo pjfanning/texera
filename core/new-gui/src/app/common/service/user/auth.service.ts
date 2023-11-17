@@ -1,13 +1,11 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { from, interval, Observable, of, Subscription } from "rxjs";
+import { interval, Observable, Subscription } from "rxjs";
 import { AppSettings } from "../../app-setting";
-import { User } from "../../type/user";
+import { User, Role } from "../../type/user";
 import { timer } from "rxjs";
-import { mergeMap, startWith, ignoreElements } from "rxjs/operators";
+import { startWith, ignoreElements } from "rxjs/operators";
 import { JwtHelperService } from "@auth0/angular-jwt";
-import { GoogleAuthService } from "ng-gapi";
-import GoogleAuth = gapi.auth2.GoogleAuth;
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../../environments/environment";
 
@@ -36,7 +34,6 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private jwtHelperService: JwtHelperService,
-    private googleAuthService: GoogleAuthService,
     private notificationService: NotificationService
   ) {}
 
@@ -61,19 +58,10 @@ export class AuthService {
    * It will automatically login, save the user account inside and trigger userChangeEvent when success
 
    */
-  public googleAuth(): Observable<Readonly<{ accessToken: string }>> {
-    return this.googleAuthService.getAuth().pipe(
-      mergeMap((auth: GoogleAuth) =>
-        // grantOfflineAccess allows application to access specified scopes offline
-        from(auth.grantOfflineAccess()).pipe(
-          mergeMap(({ code }) =>
-            this.http.post<Readonly<{ accessToken: string }>>(
-              `${AppSettings.getApiEndpoint()}/${AuthService.GOOGLE_LOGIN_ENDPOINT}`,
-              { authCode: code }
-            )
-          )
-        )
-      )
+  public googleAuth(credential: string): Observable<Readonly<{ accessToken: string }>> {
+    return this.http.post<Readonly<{ accessToken: string }>>(
+      `${AppSettings.getApiEndpoint()}/${AuthService.GOOGLE_LOGIN_ENDPOINT}`,
+      `${credential}`
     );
   }
 
@@ -93,15 +81,14 @@ export class AuthService {
   /**
    * this method will clear the saved user account and trigger userChangeEvent
    */
-  public logout(): Observable<undefined> {
+  public logout(): undefined {
     AuthService.removeAccessToken();
-
     this.tokenExpirationSubscription?.unsubscribe();
     this.refreshTokenSubscription?.unsubscribe();
-    return of(undefined);
+    return undefined;
   }
 
-  public loginWithExistingToken(): Observable<User | undefined> {
+  public loginWithExistingToken(): User | undefined {
     this.tokenExpirationSubscription?.unsubscribe();
     const token = AuthService.getAccessToken();
 
@@ -115,19 +102,24 @@ export class AuthService {
     }
 
     const role = this.jwtHelperService.decodeToken(token).role;
+    const email = this.jwtHelperService.decodeToken(token).email;
 
-    if (this.inviteOnly && role == "INACTIVE") {
-      this.notificationService.error("Account pending approval!");
+    if (this.inviteOnly && role == Role.INACTIVE) {
+      this.notificationService.loading("The account request of <b>" + email + "</b> is received and pending.", {
+        nzDuration: 10,
+      });
       return this.logout();
     }
 
     this.registerAutoLogout();
     this.registerAutoRefreshToken();
-    return of(<User>{
+    return {
+      uid: this.jwtHelperService.decodeToken(token).userId,
       name: this.jwtHelperService.decodeToken(token).sub,
+      email: email,
       googleId: this.jwtHelperService.decodeToken(token).googleId,
       role: role,
-    });
+    };
   }
 
   /**

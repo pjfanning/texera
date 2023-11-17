@@ -18,13 +18,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random.{nextInt, nextLong}
 
 class IntervalOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
-  val left: LinkIdentity = linkID()
-  val right: LinkIdentity = linkID()
+  val left: Int = 0
+  val right: Int = 1
 
   var opDesc: IntervalJoinOpDesc = _
   var counter: Int = 0
 
-  def linkID(): LinkIdentity = LinkIdentity(layerID(), layerID())
+  def linkID(): LinkIdentity = LinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
 
   def layerID(): LayerIdentity = {
     counter += 1
@@ -220,8 +220,7 @@ class IntervalOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     val outputSchema = opDesc.getOutputSchema(inputSchemas)
     val opExec = new IntervalJoinOpExec(
       OperatorSchemaInfo(inputSchemas, Array(outputSchema)),
-      opDesc,
-      left
+      opDesc
     )
     opExec.open()
     counter = 0
@@ -416,8 +415,7 @@ class IntervalOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     val outputSchema = opDesc.getOutputSchema(inputSchemas)
     val opExec = new IntervalJoinOpExec(
       OperatorSchemaInfo(inputSchemas, Array(outputSchema)),
-      opDesc,
-      left
+      opDesc
     )
 
     opExec.open()

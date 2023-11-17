@@ -35,23 +35,29 @@ export interface WorkflowExecuteRequest
     logicalPlan: LogicalPlan;
   }> {}
 
-export interface RegisterWIdEvent extends Readonly<{ message: string }> {}
-
-export interface TexeraConstraintViolation
+export interface RegisterWIdEvent
   extends Readonly<{
     message: string;
-    propertyPath: string;
   }> {}
 
-export interface WorkflowError
-  extends Readonly<{
-    operatorErrors: Record<string, TexeraConstraintViolation>;
-    generalErrors: Record<string, string>;
-  }> {}
-
-export interface WorkflowExecutionError
+export interface WorkflowFatalError
   extends Readonly<{
     message: string;
+    details: string;
+    operatorId: string;
+    workerId: string;
+    type: {
+      name: string;
+    };
+    timestamp: {
+      nanos: number;
+      seconds: number;
+    };
+  }> {}
+
+export interface WorkflowErrorEvent
+  extends Readonly<{
+    fatalErrors: ReadonlyArray<WorkflowFatalError>;
   }> {}
 
 export type ModifyOperatorLogic = Readonly<{
@@ -95,8 +101,6 @@ export type ResultExportRequest = Readonly<{
   operatorName: string;
 }>;
 
-export type CacheStatusUpdateRequest = LogicalPlan;
-
 export type ResultExportResponse = Readonly<{
   status: "success" | "error";
   message: string;
@@ -112,7 +116,7 @@ export type WorkflowAvailableResultEvent = Readonly<{
   availableOperators: ReadonlyArray<OperatorAvailableResult>;
 }>;
 
-export type OperatorResultCacheStatus = "cache invalid" | "cache valid" | "cache not enabled";
+export type OperatorResultCacheStatus = "cache invalid" | "cache valid";
 
 export interface CacheStatusUpdateEvent
   extends Readonly<{
@@ -145,6 +149,25 @@ export type WorkerAssignmentUpdateEvent = Readonly<{
   workerIds: readonly string[];
 }>;
 
+export type ExecutionDurationUpdateEvent = Readonly<{
+  duration: number;
+  isRunning: boolean;
+}>;
+
+export type ClusterStatusUpdateEvent = Readonly<{
+  numWorkers: number;
+}>;
+
+export type ModifyLogicResponse = Readonly<{
+  opId: string;
+  isValid: boolean;
+  errorMessage: string;
+}>;
+
+export type ModifyLogicCompletedEvent = Readonly<{
+  opIds: readonly string[];
+}>;
+
 export type DebugCommandRequest = Readonly<{
   operatorId: string;
   workerId: string;
@@ -158,7 +181,7 @@ export type WorkflowStateInfo = Readonly<{
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWIdRequest: RegisterWIdRequest;
   AddBreakpointRequest: BreakpointInfo;
-  CacheStatusUpdateRequest: CacheStatusUpdateRequest;
+  EditingTimeCompilationRequest: LogicalPlan;
   HeartBeatRequest: {};
   ModifyLogicRequest: ModifyOperatorLogic;
   ResultExportRequest: ResultExportRequest;
@@ -177,20 +200,23 @@ export type TexeraWebsocketEventTypeMap = {
   RegisterWIdResponse: RegisterWIdEvent;
   HeartBeatResponse: {};
   WorkflowStateEvent: WorkflowStateInfo;
-  WorkflowErrorEvent: WorkflowError;
   OperatorStatisticsUpdateEvent: OperatorStatsUpdate;
   WebResultUpdateEvent: WorkflowResultUpdateEvent;
   RecoveryStartedEvent: {};
+  WorkflowErrorEvent: WorkflowErrorEvent;
   BreakpointTriggeredEvent: BreakpointTriggerInfo;
   ConsoleUpdateEvent: ConsoleUpdateEvent;
   OperatorCurrentTuplesUpdateEvent: OperatorCurrentTuples;
   PaginatedResultEvent: PaginatedResultEvent;
-  WorkflowExecutionErrorEvent: WorkflowExecutionError;
   ResultExportResponse: ResultExportResponse;
   WorkflowAvailableResultEvent: WorkflowAvailableResultEvent;
   CacheStatusUpdateEvent: CacheStatusUpdateEvent;
   PythonExpressionEvaluateResponse: PythonExpressionEvaluateResponse;
   WorkerAssignmentUpdateEvent: WorkerAssignmentUpdateEvent;
+  ModifyLogicResponse: ModifyLogicResponse;
+  ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
+  ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
+  ClusterStatusUpdateEvent: ClusterStatusUpdateEvent;
 };
 
 // helper type definitions to generate the request and event types

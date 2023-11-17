@@ -13,14 +13,14 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 
 class HashJoinOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
-  val build: LinkIdentity = linkID()
-  val probe: LinkIdentity = linkID()
+  val build: Int = 0
+  val probe: Int = 1
 
   var opExec: HashJoinOpExec[String] = _
   var opDesc: HashJoinOpDesc[String] = _
   var counter: Int = 0
 
-  def linkID(): LinkIdentity = LinkIdentity(layerID(), layerID())
+  def linkID(): LinkIdentity = LinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
 
   def layerID(): LayerIdentity = {
     counter += 1
@@ -54,7 +54,6 @@ class HashJoinOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     val outputSchema = opDesc.getOutputSchema(inputSchemas)
 
     opExec = new HashJoinOpExec[String](
-      build,
       "build_1",
       "probe_1",
       JoinType.INNER,
@@ -87,7 +86,6 @@ class HashJoinOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     val inputSchemas = Array(schema("same", 1), schema("same", 2))
     val outputSchema = opDesc.getOutputSchema(inputSchemas)
     opExec = new HashJoinOpExec[String](
-      build,
       "same",
       "same",
       JoinType.INNER,
@@ -122,7 +120,6 @@ class HashJoinOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     val inputSchemas = Array(schema("same", 1), schema("same", 2))
     val outputSchema = opDesc.getOutputSchema(inputSchemas)
     opExec = new HashJoinOpExec[String](
-      build,
       "same",
       "same",
       JoinType.FULL_OUTER,

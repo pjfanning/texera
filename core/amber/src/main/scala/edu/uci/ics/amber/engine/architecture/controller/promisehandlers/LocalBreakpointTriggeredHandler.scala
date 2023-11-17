@@ -13,7 +13,6 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
-import scala.collection.convert.ImplicitConversions.`collection asJava`
 import scala.collection.mutable
 
 object LocalBreakpointTriggeredHandler {
@@ -34,8 +33,8 @@ trait LocalBreakpointTriggeredHandler {
   registerHandler { (msg: LocalBreakpointTriggered, sender) =>
     {
       // get the operator where the worker triggers breakpoint
-      val targetOp = workflow.getOperator(sender)
-      val opID = targetOp.id.operator
+      val targetOp = cp.executionState.getOperatorExecution(sender)
+      val opID = cp.workflow.getOperator(sender).id
       // get global breakpoints given local breakpoints
       val unResolved = msg.localBreakpoints
         .filter {
@@ -57,7 +56,7 @@ trait LocalBreakpointTriggeredHandler {
         // first pause the workers, then get their local breakpoints
         Future
           .collect(
-            targetOp.getAllWorkers.map { worker =>
+            targetOp.getBuiltWorkerIds.map { worker =>
               send(PauseWorker(), worker).flatMap { ret =>
                 send(QueryAndRemoveBreakpoints(unResolved), worker)
               }
@@ -82,7 +81,7 @@ trait LocalBreakpointTriggeredHandler {
                   .map { gbp =>
                     // attach new version if not resolved
                     execute(
-                      AssignGlobalBreakpoint(gbp, targetOp.id.operator),
+                      AssignGlobalBreakpoint(gbp, opID.operator),
                       CONTROLLER
                     )
                   }
@@ -103,7 +102,7 @@ trait LocalBreakpointTriggeredHandler {
                     .unit
                 } else {
                   // other wise, report to frontend and pause entire workflow
-                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID))
+                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID.operator))
                   execute(PauseWorkflow(), CONTROLLER)
                 }
               }

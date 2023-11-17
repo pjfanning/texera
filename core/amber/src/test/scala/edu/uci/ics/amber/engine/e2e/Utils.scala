@@ -1,37 +1,34 @@
 package edu.uci.ics.amber.engine.e2e
 
-import akka.actor.Props
-import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
+import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.{
   BreakpointInfo,
+  LogicalPlan,
   OperatorLink,
-  WorkflowCompiler,
-  WorkflowInfo
+  WorkflowCompiler
 }
-
-import scala.collection.mutable
 
 object Utils {
 
-  def getWorkflow(
-      operators: mutable.MutableList[OperatorDescriptor],
-      links: mutable.MutableList[OperatorLink],
-      jobId: String = "workflow-test",
-      workflowTag: String = "workflow-test"
+  def buildWorkflow(
+      operators: List[OperatorDescriptor],
+      links: List[OperatorLink],
+      resultStorage: OpResultStorage = new OpResultStorage(),
+      jobId: String = "workflow_test",
+      workflowTag: String = "workflow_test"
   ): Workflow = {
     val context = new WorkflowContext
     context.jobId = jobId
-
     val texeraWorkflowCompiler = new WorkflowCompiler(
-      WorkflowInfo(operators, links, mutable.MutableList[BreakpointInfo]()),
-      context
+      LogicalPlan(context, operators, links, List[BreakpointInfo]())
     )
-
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), new OpResultStorage())
+    texeraWorkflowCompiler.logicalPlan.initializeLogicalPlan(new JobStateStore())
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), resultStorage)
   }
 
 }

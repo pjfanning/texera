@@ -1,80 +1,73 @@
 package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
-import akka.actor.ActorContext
-import edu.uci.ics.amber.engine.architecture.controller.Workflow
+import edu.uci.ics.amber.engine.architecture.common.AkkaActorService
+import edu.uci.ics.amber.engine.architecture.controller.{ExecutionState, Workflow}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RegionsTimeSlotExpiredHandler.RegionsTimeSlotExpired
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.Constants
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
 
 import scala.collection.mutable
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
-import scala.jdk.CollectionConverters.asScalaSet
 import scala.util.control.Breaks.{break, breakable}
 
-class SingleReadyRegionTimeInterleaved(
-    workflow: Workflow,
-    ctx: ActorContext
-) extends SchedulingPolicy(workflow) {
+class SingleReadyRegionTimeInterleaved(scheduleOrder: mutable.Buffer[PipelinedRegion])
+    extends SchedulingPolicy(scheduleOrder) {
 
   var currentlyExecutingRegions = new mutable.LinkedHashSet[PipelinedRegion]()
 
-  override def checkRegionCompleted(region: PipelinedRegion): Unit = {
-    super.checkRegionCompleted(region)
-    if (isRegionCompleted(region)) {
+  override def checkRegionCompleted(
+      workflow: Workflow,
+      executionState: ExecutionState,
+      region: PipelinedRegion
+  ): Unit = {
+    super.checkRegionCompleted(workflow, executionState, region)
+    if (isRegionCompleted(workflow, executionState, region)) {
       currentlyExecutingRegions.remove(region)
     }
   }
 
-  override def onWorkerCompletion(workerId: ActorVirtualIdentity): Set[PipelinedRegion] = {
-    val region = getRegion(workerId)
-    if (region.isEmpty) {
-      throw new WorkflowRuntimeException(
-        s"WorkflowScheduler: Worker ${workerId} completed from a non-running region"
-      )
-    } else {
-      checkRegionCompleted(region.get)
-    }
-    if (isRegionCompleted(region.get)) {
-      getNextSchedulingWork()
+  override def onWorkerCompletion(
+      workflow: Workflow,
+      executionState: ExecutionState,
+      workerId: ActorVirtualIdentity
+  ): Set[PipelinedRegion] = {
+    val regions = getRegions(workflow, workerId)
+    regions.foreach(r => checkRegionCompleted(workflow, executionState, r))
+    if (regions.exists(r => isRegionCompleted(workflow, executionState, r))) {
+      getNextSchedulingWork(workflow)
     } else {
       Set()
     }
   }
 
-  override def onLinkCompletion(linkId: LinkIdentity): Set[PipelinedRegion] = {
-    val region = getRegion(linkId)
-    if (region == null) {
-      throw new WorkflowRuntimeException(
-        s"WorkflowScheduler: Link ${linkId.toString()} completed from a non-running region"
-      )
-    } else {
-      val completedLinks =
-        completedLinksOfRegion.getOrElseUpdate(region.get, new mutable.HashSet[LinkIdentity]())
-      completedLinks.add(linkId)
-      completedLinksOfRegion(region.get) = completedLinks
-      checkRegionCompleted(region.get)
-    }
-    if (isRegionCompleted(region.get)) {
-      getNextSchedulingWork()
+  override def onLinkCompletion(
+      workflow: Workflow,
+      executionState: ExecutionState,
+      linkId: LinkIdentity
+  ): Set[PipelinedRegion] = {
+    val regions = getRegions(linkId)
+    regions.foreach(r => completedLinksOfRegion.addBinding(r, linkId))
+    regions.foreach(r => checkRegionCompleted(workflow, executionState, r))
+    if (regions.exists(r => isRegionCompleted(workflow, executionState, r))) {
+      getNextSchedulingWork(workflow)
     } else {
       Set()
     }
   }
 
-  override def getNextSchedulingWork(): Set[PipelinedRegion] = {
+  override def getNextSchedulingWork(workflow: Workflow): Set[PipelinedRegion] = {
     breakable {
       while (regionsScheduleOrder.nonEmpty) {
         val nextRegion = regionsScheduleOrder.head
-        val upstreamRegions = asScalaSet(workflow.getPipelinedRegionsDAG().getAncestors(nextRegion))
+        val upstreamRegions = workflow.physicalPlan.regionAncestorMapping(nextRegion)
         if (upstreamRegions.forall(completedRegions.contains)) {
-          assert(!sentToBeScheduledRegions.contains(nextRegion))
+          assert(!scheduledRegions.contains(nextRegion))
           currentlyExecutingRegions.add(nextRegion)
           regionsScheduleOrder.remove(0)
-          sentToBeScheduledRegions.add(nextRegion)
+          scheduledRegions.add(nextRegion)
         } else {
           break
         }
@@ -93,15 +86,17 @@ class SingleReadyRegionTimeInterleaved(
 
   }
 
-  override def addToRunningRegions(regions: Set[PipelinedRegion]): Unit = {
+  override def addToRunningRegions(
+      regions: Set[PipelinedRegion],
+      actorService: AkkaActorService
+  ): Unit = {
     regions.foreach(r => runningRegions.add(r))
-    ctx.system.scheduler.scheduleOnce(
+    actorService.sendToSelfOnce(
       FiniteDuration.apply(Constants.timeSlotExpirationDurationInMs, MILLISECONDS),
-      ctx.self,
       ControlInvocation(
         AsyncRPCClient.IgnoreReplyAndDoNotLog,
         RegionsTimeSlotExpired(regions)
       )
-    )(ctx.dispatcher)
+    )
   }
 }

@@ -1,15 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
+import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.operators.SinkOpExecConfig
 
 import scala.collection.mutable
 
@@ -41,15 +39,17 @@ trait WorkerExecutionCompletedHandler {
         .collect(statsRequests)
         .flatMap(_ => {
           // if entire workflow is completed, clean up
-          if (workflow.isCompleted) {
+          if (cp.executionState.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
             sendToClient(WorkflowCompleted())
-            disableStatusUpdate()
-            disableMonitoring()
-            disableSkewHandling()
+            cp.controllerTimerService.disableStatusUpdate()
+            cp.controllerTimerService.disableMonitoring()
+            cp.controllerTimerService.disableSkewHandling()
             Future.Done
           } else {
-            scheduler.onWorkerCompletion(sender).flatMap(_ => Future.Unit)
+            cp.workflowScheduler
+              .onWorkerCompletion(cp.workflow, cp.actorRefService, cp.actorService, sender)
+              .flatMap(_ => Future.Unit)
           }
         })
     }

@@ -6,16 +6,25 @@ from typing import Callable, Dict, Iterator, Optional, Tuple
 
 from loguru import logger
 from overrides import overrides
-from pyarrow import Table, py_buffer
+from pyarrow import Table, py_buffer, Buffer
 from pyarrow.flight import (
     Action,
     FlightDescriptor,
     FlightServerBase,
     MetadataRecordBatchReader,
+    FlightMetadataWriter,
     Result,
     ServerCallContext,
 )
-from pyarrow.ipc import RecordBatchStreamWriter
+
+import socket
+
+
+def get_free_local_port():
+    # results a free random port
+    with socket.socket() as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
 
 
 class ProxyServer(FlightServerBase):
@@ -81,12 +90,18 @@ class ProxyServer(FlightServerBase):
         return ack_decorator
 
     def __init__(
-        self, scheme: str = "grpc+tcp", host: str = "localhost", port: int = 5005
+        self,
+        scheme: str = "grpc+tcp",
+        host: str = "localhost",
+        port: Optional[int] = None,
     ):
+        if port is None:
+            port = get_free_local_port()
         location = f"{scheme}://{host}:{port}"
         super(ProxyServer, self).__init__(location)
         logger.debug(f"Serving on {location}")
-        self.host = host
+
+        self._port_number = port
 
         # action name to callable map, will contain registered actions,
         # identified by action name.
@@ -101,18 +116,18 @@ class ProxyServer(FlightServerBase):
         self.register(
             name="shutdown",
             action=ProxyServer.ack(msg="Bye bye!")(
-                lambda: threading.Thread(target=self._shutdown).start()
+                lambda: threading.Thread(target=self.graceful_shutdown).start()
             ),
             description="Shut down this server.",
         )
 
-        # register control, this is the default action for the client to invoke
-        # after receiving control.
+        # register control, set default action for the client to invoke
+        # after receiving control.  it should invoke the control_handler defined
+        # in network_receiver and return number of batches in internal_queue to be
+        # used for credit calculation
         self.register(
             name="control",
-            action=ProxyServer.ack()(
-                lambda control_message: self.process_control(control_message)
-            ),
+            action=lambda control_message: self.process_control(control_message),
             description="Process the control message",
         )
 
@@ -137,11 +152,12 @@ class ProxyServer(FlightServerBase):
         context: ServerCallContext,
         descriptor: FlightDescriptor,
         reader: MetadataRecordBatchReader,
-        writer: RecordBatchStreamWriter,
+        writer: FlightMetadataWriter,
     ):
         """
         Put a data table into the server, the data will be handled by the
-        `self.process_data()` handler.
+        `self.process_data()` handler.  Also send back number of sender batches
+        currently in internal queue for credit calculations
 
         :param context: server context, containing information of middlewares.
         :param descriptor: the descriptor of this batch of data.
@@ -153,7 +169,13 @@ class ProxyServer(FlightServerBase):
         data: Table = reader.read_all()
         command: bytes = descriptor.command
         logger.debug(f"getting a data batch {data}")
-        self.process_data(command, data)
+
+        sender_credits = self.process_data(command, data)
+        if isinstance(sender_credits, int):
+            sender_credits_buf: Buffer = py_buffer(
+                sender_credits.to_bytes(length=8, byteorder="little")
+            )
+            writer.write(sender_credits_buf)
 
     ###############################
     # Actions related methods #
@@ -202,9 +224,9 @@ class ProxyServer(FlightServerBase):
                 encoded = result
             else:
                 encoded = str(result).encode("utf-8")
+            yield Result(py_buffer(encoded))
         else:
             raise KeyError("Unknown action {!r}".format(action_name))
-        yield Result(py_buffer(encoded))
 
     @logger.catch(reraise=True)
     def register(self, name: str, action: Callable, description: str = "") -> None:
@@ -257,8 +279,11 @@ class ProxyServer(FlightServerBase):
     ##################
     # helper methods #
     ##################
-    def _shutdown(self):
+    def graceful_shutdown(self):
         """Shut down after a delay."""
         logger.debug("Server is shutting down...")
-        time.sleep(1)
+        time.sleep(0.2)
         self.shutdown()
+
+    def get_port_number(self):
+        return self._port_number

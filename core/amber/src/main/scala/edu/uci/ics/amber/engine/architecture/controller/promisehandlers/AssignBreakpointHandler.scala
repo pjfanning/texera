@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandle
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.AssignBreakpointHandler.AssignGlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AssignLocalBreakpointHandler.AssignLocalBreakpoint
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, OperatorIdentity}
 
 object AssignBreakpointHandler {
   final case class AssignGlobalBreakpoint[T](
@@ -26,11 +26,16 @@ trait AssignBreakpointHandler {
   registerHandler { (msg: AssignGlobalBreakpoint[_], sender) =>
     {
       // get target operator
-      val operator = workflow.getOperator(msg.operatorID)
+      val operatorId = new OperatorIdentity(cp.workflow.workflowId.id, msg.operatorID)
+      val operators = cp.workflow.physicalPlan.layersOfLogicalOperator(operatorId)
+
+      // get the last operator (output of the operator)
+      val operator = operators.last
+      val opExecution = cp.executionState.getOperatorExecution(operator.id)
       // attach the breakpoint
-      operator.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
+      opExecution.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
       // get target workers from the operator given a breakpoint
-      val targetWorkers = operator.assignBreakpoint(msg.breakpoint)
+      val targetWorkers = opExecution.assignBreakpoint(msg.breakpoint)
 
       val workersTobeAssigned: List[(ActorVirtualIdentity, LocalBreakpoint)] =
         msg.breakpoint.partition(targetWorkers).toList
