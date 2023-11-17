@@ -8,7 +8,7 @@ class ProjectionOpExecV2(var attributes: List[String]) extends MapOpExec {
 
   def project(tuple: Tuple): Tuple = {
     Preconditions.checkArgument(attributes.nonEmpty)
-    val builder = Tuple.newBuilder()
+    val builder = Tuple.newBuilder(tuple.getSchema)
 
     attributes.foreach(attrName => {
       builder.add(

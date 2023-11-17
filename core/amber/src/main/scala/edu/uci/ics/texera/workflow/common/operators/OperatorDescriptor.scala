@@ -30,8 +30,11 @@ import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSampling
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDescimport edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
-import edu.uci.ics.texera.workflow.operators.source.scan.csv. CSVScanSourceOpDescimport edu.uci.ics.texera.workflow.operators.source.scan.csvOld.CSVOldScanSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
+import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
+import edu.uci.ics.texera.workflow.operators.source.scan.csv. CSVScanSourceOpDesc
+import edu.uci.ics.texera.workflow.operators.source.scan.csvOld.CSVOldScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.json.JSONLScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.text.{
   TextInputSourceOpDesc,

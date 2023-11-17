@@ -11,7 +11,7 @@ import {
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
 import { WorkflowStatusService } from "../../../service/workflow-status/workflow-status.service";
 import { Subject } from "rxjs";
-import { AbstractControl, Form, FormGroup } from "@angular/forms";
+import { AbstractControl, FormGroup } from "@angular/forms";
 import { FormlyFieldConfig, FormlyFormOptions } from "@ngx-formly/core";
 import Ajv from "ajv";
 import { FormlyJsonschema } from "@ngx-formly/core/json-schema";
@@ -53,7 +53,6 @@ import { WorkflowVersionService } from "../../../../dashboard/user/service/workf
 import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
 // @ts-ignore
 import { levenshtein } from "edit-distance";
-import { OperatorPredicate } from "src/app/workspace/types/workflow-common.interface";
 import { UserFileService } from "../../../../dashboard/user/service/user-file/user-file.service";
 import { ShareAccess } from "../../../../dashboard/user/type/share-access.interface";
 import { ShareAccessService } from "../../../../dashboard/user/service/share-access/share-access.service";
@@ -62,7 +61,6 @@ import Quill from "quill";
 import QuillCursors from "quill-cursors";
 import * as Y from "yjs";
 import { CollabWrapperComponent } from "../../../../common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
-import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
 
 export type PropertyDisplayComponent = TypeCastingDisplayComponent;
 
