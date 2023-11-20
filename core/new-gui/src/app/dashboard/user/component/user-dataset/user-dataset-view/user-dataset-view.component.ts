@@ -36,6 +36,8 @@ export class userDatasetViewComponent implements OnInit {
     public selectedVersion: string = "";
     public dataNodeList: DatasetVersionHierarchyNode[] = [];
 
+    public isLoading: boolean = false;
+
     constructor(
       private route: ActivatedRoute,
       private datasetService: DatasetService,
@@ -83,7 +85,9 @@ export class userDatasetViewComponent implements OnInit {
       if (prefix !== "") {
         path = prefix + "/" + file;
       }
-      
+
+      this.isLoading = true;
+
       this.datasetService
       .inspectDatasetSingleFile(this.did, this.selectedVersion, path)
       .pipe(untilDestroyed(this))
@@ -92,16 +96,21 @@ export class userDatasetViewComponent implements OnInit {
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
         this.fileURL = URL.createObjectURL(blob);
         if (this.currentFile.endsWith(".pdf")) {
-          setTimeout(() => this.pdfDisplay = true, 0);
+          setTimeout(() => {
+            this.pdfDisplay = true;
+            this.isLoading = false;
+        }, 0);
         } else if (this.currentFile.endsWith(".csv")) {
           Papa.parse(this.currentFileObject, {
             complete: (results) => {
-              this.csvContent = results.data;
+                this.csvContent = results.data;
+                this.csvDisplay = true;
+                this.isLoading = false;
             }
-          });
-          this.csvDisplay = true;
+        });
         } else {
           this.turnOffAllDisplay();
+          this.isLoading = false;
         }
       })
     }
@@ -155,5 +164,5 @@ export class userDatasetViewComponent implements OnInit {
         }
       }
     };
- 
+
 }

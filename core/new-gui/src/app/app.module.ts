@@ -5,6 +5,7 @@ import { NgModule } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule } from "@angular/router";
@@ -272,6 +273,7 @@ registerLocaleData(en);
     NzNoAnimationModule,
     NgxJsonViewerModule,
     MatDialogModule,
+    MatProgressSpinnerModule,
     NzCardModule,
     NzStatisticModule,
     NzTagModule,
