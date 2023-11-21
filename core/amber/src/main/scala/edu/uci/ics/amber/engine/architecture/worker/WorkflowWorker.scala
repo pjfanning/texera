@@ -86,7 +86,7 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    super.receive orElse handleTriggerSend orElse handleDirectInvocation
+    super.receive orElse handleDirectInvocation
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
