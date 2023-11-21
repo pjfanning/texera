@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
 import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
 import scala.collection.mutable
 
@@ -13,28 +13,27 @@ class DeterminantLoggerImpl extends DeterminantLogger {
 
   private var lastStep = INIT_STEP
 
-  override def setCurrentSenderWithPayload(
-      channel: ChannelID,
+  override def setCurrentStepWithMessage(
       step: Long,
-      payload: WorkflowFIFOMessagePayload
+      channel: ChannelID,
+      message: Option[WorkflowFIFOMessage]
   ): Unit = {
     // by default, record all message content in control channels.
     if (currentChannel != channel || channel.isControl) {
       currentChannel = channel
       lastStep = step
-      val recordedPayload = if (channel.isControl) {
-        payload
+      if (channel.isControl && message.isDefined) {
+        tempLogs.append(ProcessingStepWithContent(message.get, step))
       } else {
-        null
+        tempLogs.append(ProcessingStep(channel, step))
       }
-      tempLogs.append(ProcessingStep(currentChannel, step, recordedPayload))
     }
   }
 
   def drainCurrentLogRecords(step: Long): Array[InMemDeterminant] = {
     if (lastStep != step) {
       lastStep = step
-      tempLogs.append(ProcessingStep(currentChannel, step, null))
+      tempLogs.append(ProcessingStep(currentChannel, step))
     }
     val result = tempLogs.toArray
     tempLogs.clear()

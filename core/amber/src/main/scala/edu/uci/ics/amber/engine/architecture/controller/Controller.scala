@@ -10,7 +10,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, 
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
-
 import scala.concurrent.duration.DurationInt
 
 object ControllerConfig {
@@ -20,7 +19,7 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      "none"
+      AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type")
     )
 }
 
@@ -73,7 +72,7 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          cp.doFaultTolerantProcessing(detLogger, channel.channelId, msg.payload) {
+          cp.doFaultTolerantProcessing(detLogger, msg.channel, Some(msg)) {
             msg.payload match {
               case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
               case p                       => throw new RuntimeException(s"controller cannot handle $p")
@@ -103,9 +102,7 @@ class Controller(
   override def getQueuedCredit(channelID: ChannelID): Long = {
     0 // no queued credit for controller
   }
-
   override def handleBackpressure(isBackpressured: Boolean): Unit = {}
-
   // adopted solution from
   // https://stackoverflow.com/questions/54228901/right-way-of-exception-handling-when-using-akka-actors
   override val supervisorStrategy: SupervisorStrategy =

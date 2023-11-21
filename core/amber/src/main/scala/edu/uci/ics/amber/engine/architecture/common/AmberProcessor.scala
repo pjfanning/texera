@@ -6,12 +6,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkOutputGateway
 }
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  ControlPayload,
-  WorkflowFIFOMessage,
-  WorkflowFIFOMessagePayload
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -43,11 +38,11 @@ class AmberProcessor(
 
   def doFaultTolerantProcessing(
       detLogger: DeterminantLogger,
-      pickedChannelId: ChannelID,
-      payload: WorkflowFIFOMessagePayload
+      channel: ChannelID,
+      message: Option[WorkflowFIFOMessage]
   )(code: => Unit): Unit = {
-    detLogger.setCurrentSenderWithPayload(pickedChannelId, cursor.getStep, payload)
-    cursor.setCurrentChannel(pickedChannelId)
+    detLogger.setCurrentStepWithMessage(cursor.getStep, channel, message)
+    cursor.setCurrentChannel(channel)
     code
     cursor.stepIncrement()
   }

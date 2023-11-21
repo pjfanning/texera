@@ -9,8 +9,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
   DataPayload,
-  WorkflowFIFOMessage,
-  WorkflowFIFOMessagePayload
+  WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -96,8 +95,6 @@ class DPThread(
 
   @throws[Exception]
   private[this] def runDPThreadMainLogic(): Unit = {
-    // main DP loop
-
     //
     // Main loop step 1: receive messages from actor and apply FIFO
     //
@@ -114,20 +111,21 @@ class DPThread(
             dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
         }
       }
+
       //
       // Main loop step 2: do input selection
       //
-      var pickedChannelId: ChannelID = null
-      var payloadToProcess: WorkflowFIFOMessagePayload = null
-      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput) {
+      var channelID: ChannelID = null
+      var msgOpt: Option[WorkflowFIFOMessage] = None
+      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput || dp.pauseManager.isPaused) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
-            pickedChannelId = channel.channelId
-            payloadToProcess = channel.take.payload
+            channelID = channel.channelId
+            msgOpt = Some(channel.take)
           case None =>
             // continue processing
             if (!dp.pauseManager.isPaused) {
-              pickedChannelId = dp.cursor.getChannel
+              channelID = dp.cursor.getChannel
             } else {
               waitingForInput = true
             }
@@ -136,26 +134,31 @@ class DPThread(
         // take from input port
         dp.inputGateway.tryPickChannel match {
           case Some(channel) =>
-            pickedChannelId = channel.channelId
-            payloadToProcess = channel.take.payload
+            channelID = channel.channelId
+            msgOpt = Some(channel.take)
           case None => waitingForInput = true
         }
       }
+
       //
       // Main loop step 3: process selected message payload
       //
-      if (pickedChannelId != null) {
-        dp.doFaultTolerantProcessing(detLogger, pickedChannelId, payloadToProcess) {
-          payloadToProcess match {
-            case null =>
+      if (channelID != null) {
+        dp.doFaultTolerantProcessing(detLogger, channelID, msgOpt) {
+          msgOpt match {
+            case None =>
               dp.continueDataProcessing()
-            case payload: ControlPayload =>
-              dp.processControlPayload(pickedChannelId, payload)
-            case payload: DataPayload =>
-              dp.processDataPayload(pickedChannelId, payload)
+            case Some(msg) =>
+              msg.payload match {
+                case payload: ControlPayload =>
+                  dp.processControlPayload(msg.channel, payload)
+                case payload: DataPayload =>
+                  dp.processDataPayload(msg.channel, payload)
+              }
           }
         }
       }
+      // End of Main loop
     }
   }
 }

@@ -14,6 +14,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   DataFrame,
+  WorkflowFIFOMessage,
   WorkflowFIFOMessagePayload
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -60,7 +61,9 @@ class LoggingSpec
     val logManager = LogManager.getLogManager(logStorage, x => {})
     val detLogger = logManager.getDeterminantLogger
     payloadToLog.foreach { payload =>
-      detLogger.setCurrentSenderWithPayload(ChannelID(CONTROLLER, SELF, true), 0, payload)
+      val channel = ChannelID(CONTROLLER, SELF, isControl = true)
+      val msgOpt = Some(WorkflowFIFOMessage(channel, 0, payload))
+      detLogger.setCurrentStepWithMessage(0, channel, msgOpt)
     }
     logManager.sendCommitted(null, 1000)
     logManager.terminate()
