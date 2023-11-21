@@ -388,6 +388,36 @@ class DatasetResource {
     })
   }
 
+  @POST
+  @Path("/{did}/version/delete")
+  def deleteDatasetVersions(
+      @PathParam("did") did: UInteger,
+      @Auth user: SessionUser,
+      versions: DatasetVersions
+  ): Response = {
+    val uid = user.getUid
+    withExceptionHandling(() => {
+      withTransaction(context)(ctx => {
+        if (!userAllowedToReadDataset(ctx, did, uid)) {
+          throw new UserHasNoAccessToDatasetException(did.intValue())
+        }
+
+        val targetDataset = getDatasetByID(ctx, did)
+        val targetDatasetStoragePath = targetDataset.getStoragePath
+        val datasetVersions = new GitSharedRepoVersionControl(targetDatasetStoragePath)
+
+        // TODO: how to keep the atomicity?
+        versions.versions.foreach((versionName) => {
+          val versionPath = datasetVersions.getDatasetVersionPath(versionName)
+          val versionFileStorage = new LocalFileStorage(versionPath)
+          versionFileStorage.remove()
+        })
+
+        Response.ok().build()
+      })
+    })
+  }
+
   @GET
   @Path("/{did}/version/{version}/hierarchy")
   def inspectDatasetFileHierarchy(

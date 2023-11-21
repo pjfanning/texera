@@ -16,6 +16,7 @@ import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
+import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path
