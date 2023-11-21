@@ -15,6 +15,11 @@ export interface DatasetVersionHierarchyNode {
   dir: string;
 }
 
+export interface FileSizeLimits {
+ [key: string]: number;
+}
+
+
 export function parseHierarchyToNodes(hierarchy: DatasetVersionHierarchy): DatasetVersionHierarchyNode[] {
   const isDirectory = (node: DatasetVersionHierarchy | string): node is DatasetVersionHierarchy => {
     return typeof node === 'object' && node !== null && !(node instanceof Array);

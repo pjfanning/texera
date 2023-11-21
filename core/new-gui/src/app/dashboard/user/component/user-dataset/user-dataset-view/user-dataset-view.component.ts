@@ -7,7 +7,7 @@ import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/
 import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
 import * as Papa from 'papaparse';
 import { TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode } from '@circlon/angular-tree-component';
-
+import { FileSizeLimits } from "src/app/common/type/datasetVersion";
 
 @UntilDestroy()
 @Component({
@@ -37,6 +37,12 @@ export class userDatasetViewComponent implements OnInit {
     public dataNodeList: DatasetVersionHierarchyNode[] = [];
 
     public isLoading: boolean = false;
+
+    private FILE_SIZE_LIMITS: FileSizeLimits = {
+      ".pdf": 15 * 1024 * 1024, // 15 MB
+      ".csv": 2 * 1024 * 1024,    // 2 MB
+    };
+    private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
     constructor(
       private route: ActivatedRoute,
@@ -95,6 +101,19 @@ export class userDatasetViewComponent implements OnInit {
         this.blobFile = blob;
         this.currentFileObject = new File([blob], this.currentFile, { type: blob.type });
         this.fileURL = URL.createObjectURL(blob);
+
+        const lastDotIndex = this.currentFile.lastIndexOf('.');
+        const fileExtension = lastDotIndex !== -1 ? this.currentFile.slice(lastDotIndex) : '';
+        const MaxSize = this.FILE_SIZE_LIMITS[fileExtension] || this.DEFAULT_MAX_SIZE;
+
+        const fileSize = blob.size
+
+        if (fileSize > MaxSize) {
+          this.modalService.open('The file is too large to load.');
+          this.isLoading = false;
+          return;
+        }
+
         if (this.currentFile.endsWith(".pdf")) {
           setTimeout(() => {
             this.pdfDisplay = true;
