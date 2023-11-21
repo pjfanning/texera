@@ -145,8 +145,11 @@ export class userDatasetViewComponent implements OnInit {
       modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
 
       });
-
+      
+      let allVersions: string[] = [...this.versionNames];
+      allVersions.push("");
       modalRef.componentInstance.did = this.did;
+      modalRef.componentInstance.existedVersions = [...allVersions]; 
     }
 
     options: ITreeOptions = {

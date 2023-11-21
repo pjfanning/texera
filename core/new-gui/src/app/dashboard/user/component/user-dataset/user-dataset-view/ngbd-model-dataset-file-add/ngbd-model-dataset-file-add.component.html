@@ -9,7 +9,11 @@
     </nz-card>
 
     <div class="version-notes-container">
-        <h6 class="notes-title">Version Name</h6>
+        <h6 class="notes-title1">Base Version Name</h6>
+        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a Base Version" (ngModelChange)="onBaseVersionSelected($event)" nzBorderless ngModel="{{baseVersion}}" style="width: 100%">
+            <nz-option *ngFor="let name of existedVersions" [nzValue]="name" [nzLabel]="name"></nz-option>
+        </nz-select>
+        <h6 class="notes-title2">New Version Name</h6>
         <input nz-input placeholder="" [(ngModel)]="versionName" class="version-input" />
     </div>
 
@@ -43,14 +47,28 @@
                     id="file-upload"/>
                 <label for="file-upload">Choose file</label>
             </div>
-            <ul class="file-list" *ngIf="getFileArrayLength()">
-                <li *ngFor="let file of getFileArray()" class="file-queue-item">
-                    <span>{{ file.name }}</span>
-                    <button (click)="deleteFile(file)" [disabled]="file.isUploadingFlag" class="queue-delete-button">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </li>
-            </ul>
+            <div *ngIf="baseVersionFiles.length">
+                <h6 class="prev-upload-title">Previous Uploads</h6>
+                <ul class="file-list">
+                    <li *ngFor="let file of baseVersionFiles" class="file-queue-item">
+                        <span>{{ file.name }}</span>
+                        <button (click)="deleteOldFile(file)" class="queue-delete-button">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div *ngIf="getFileArrayLength()">
+                <h6 class="new-upload-title">New Uploads</h6>
+                <ul class="file-list">
+                    <li *ngFor="let file of getFileArray()" class="file-queue-item">
+                        <span>{{ file.name }}</span>
+                        <button (click)="deleteNewFile(file)" [disabled]="file.isUploadingFlag" class="queue-delete-button">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
         </div>
         <div class="modal-footer align-right">
             <button (click)="createVersion()" [disabled]="isCreateButtonDisabled()" class="upload-btn">Create</button>

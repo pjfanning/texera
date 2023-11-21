@@ -49,19 +49,20 @@ export class DatasetService {
 
   public createDatasetVersion(
     did: number,
-    baseVersion: string | null,
+    baseVersion: string,
     newVersion: string,
-    remove: string | null,
+    remove: string,
     files: File[]
   ): Observable<any> {
     const formData = new FormData();
 
-    if (baseVersion !== null) {
+    if (baseVersion !== "") {
       formData.append('baseVersion', baseVersion);
     }
     formData.append('version', newVersion);
 
-    if (remove !== null) {
+    if (remove !== "") {
+      console.log(remove);
       formData.append('remove', remove);
     }
 

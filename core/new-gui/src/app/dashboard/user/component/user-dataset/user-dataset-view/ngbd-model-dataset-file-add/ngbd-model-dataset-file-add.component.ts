@@ -6,7 +6,7 @@ import { UserFileUploadService } from "../../../../service/user-file/user-file-u
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../../service/user-dataset/dataset.service";
 import { NgbActiveModal, NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { Dataset } from "src/app/common/type/dataset";
+import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
 
 
 @UntilDestroy()
@@ -18,7 +18,11 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   public versionName: string = '';
   public haveDropZoneOver: boolean = false;
   public uploader: FileUploader = new FileUploader({ url: "" });
-  
+  public baseVersion: string = "";
+  public existedVersions: string[] = [];
+  public baseVersionFiles: DatasetVersionHierarchyNode[] = [];
+  public removedOldFiles: string = "";
+
   private filesToBeUploaded: FileUploadItem[] = [];
   private did: number = 0;
 
@@ -38,8 +42,17 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
     return this.filesToBeUploaded.length;
   }
 
-  public deleteFile(removedFile: FileUploadItem): void {
+  public deleteNewFile(removedFile: FileUploadItem): void {
     this.filesToBeUploaded = this.filesToBeUploaded.filter(file => file !== removedFile);
+  }
+
+  public deleteOldFile(removedFile: DatasetVersionHierarchyNode): void {
+    this.baseVersionFiles = this.baseVersionFiles.filter(file => file !== removedFile);
+    if (this.removedOldFiles !== ""){
+      this.removedOldFiles = this.removedOldFiles + "," + removedFile.dir + "/" + removedFile.name;
+    } else {
+      this.removedOldFiles = removedFile.dir + "/" + removedFile.name;
+    }
   }
 
   public isCreateButtonDisabled(): boolean {
@@ -81,13 +94,35 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
     }
 
     this.datasetService
-    .createDatasetVersion(this.did, null, this.versionName, null, files)
+    .createDatasetVersion(this.did, this.baseVersion, this.versionName, this.removedOldFiles, files)
     .pipe(untilDestroyed(this))
     .subscribe(() => {
       this.filesToBeUploaded = [];
       this.activeModal.dismiss('Cross click');
     })
 
+  }
+
+  public onBaseVersionSelected(versionName: string) {
+    this.baseVersion = versionName;
+    this.baseVersionFiles = [];
+
+    this.datasetService
+    .retrieveDatasetVersionFileHierarchy(this.did, this.baseVersion)
+    .pipe(untilDestroyed(this))
+    .subscribe(hierarchyList => {
+      hierarchyList.forEach(node => this.iterateFilesInBaseVersion(node))
+    })
+  }
+
+  public iterateFilesInBaseVersion(node: DatasetVersionHierarchyNode): void {
+      if (node.type === "file") {
+        this.baseVersionFiles.push(node);
+      } else {
+        node.children?.forEach(subNode => {
+          this.iterateFilesInBaseVersion(subNode);
+        })
+      }
   }
 
 }
