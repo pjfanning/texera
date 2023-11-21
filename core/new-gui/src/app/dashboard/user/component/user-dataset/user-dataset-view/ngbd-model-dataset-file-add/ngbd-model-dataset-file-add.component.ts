@@ -49,10 +49,19 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   public deleteOldFile(removedFile: DatasetVersionHierarchyNode): void {
     this.baseVersionFiles = this.baseVersionFiles.filter(file => file !== removedFile);
     if (this.removedOldFiles !== ""){
-      this.removedOldFiles = this.removedOldFiles + "," + removedFile.dir + "/" + removedFile.name;
+      if (removedFile.dir) {
+        this.removedOldFiles = this.removedOldFiles + "," + removedFile.dir + "/" + removedFile.name;
+      } else {
+        this.removedOldFiles = this.removedOldFiles + "," + removedFile.name;
+      }
     } else {
-      this.removedOldFiles = removedFile.dir + "/" + removedFile.name;
+      if (removedFile.dir) {
+        this.removedOldFiles = removedFile.dir + "/" + removedFile.name;
+      } else {
+        this.removedOldFiles = removedFile.name;
+      }
     }
+    console.log(this.removedOldFiles);
   }
 
   public isCreateButtonDisabled(): boolean {
@@ -119,6 +128,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
       if (node.type === "file") {
         this.baseVersionFiles.push(node);
       } else {
+        // this.baseVersionFiles.push(node);
         node.children?.forEach(subNode => {
           this.iterateFilesInBaseVersion(subNode);
         })

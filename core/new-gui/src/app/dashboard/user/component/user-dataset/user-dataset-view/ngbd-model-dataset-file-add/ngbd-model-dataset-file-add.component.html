@@ -51,7 +51,7 @@
                 <h6 class="prev-upload-title">Previous Uploads</h6>
                 <ul class="file-list">
                     <li *ngFor="let file of baseVersionFiles" class="file-queue-item">
-                        <span>{{ file.name }}</span>
+                        <span>{{file.type}}: {{ file.name }}</span>
                         <button (click)="deleteOldFile(file)" class="queue-delete-button">
                             <i class="fa fa-trash"></i>
                         </button>
