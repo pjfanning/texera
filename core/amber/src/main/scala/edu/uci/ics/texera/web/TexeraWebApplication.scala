@@ -28,6 +28,9 @@ import edu.uci.ics.texera.web.resource.dashboard.user.project.{
   PublicProjectResource
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource.ExecutionResultEntry
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowExecutionsResource, WorkflowResource, WorkflowVersionResource}
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
