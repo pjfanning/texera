@@ -62,7 +62,6 @@ export class DatasetService {
     formData.append('version', newVersion);
 
     if (remove !== "") {
-      console.log(remove);
       formData.append('remove', remove);
     }
 
@@ -70,7 +69,6 @@ export class DatasetService {
       const path = file['webkitRelativePath'] || file.name;
       formData.append(path, file);
     });
-    console.log("success");
     return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
   }
 
