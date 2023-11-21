@@ -3,8 +3,10 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.DatasetAlreadyExistsException
 
 import java.io._
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, SimpleFileVisitor}
 import java.util.Comparator
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.FileVisitResult
 
 class LocalFileStorage(baseDir: String) {
 
@@ -46,7 +48,29 @@ class LocalFileStorage(baseDir: String) {
 
   def removeFile(path: String): Boolean = {
     try {
-      Files.deleteIfExists(Paths.get(getFullPath(path)))
+      val fullPath = Paths.get(getFullPath(path))
+
+      if (Files.isDirectory(fullPath)) {
+        Files.walkFileTree(fullPath, new SimpleFileVisitor[Path] {
+          override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+            Files.delete(file)
+            FileVisitResult.CONTINUE
+          }
+
+          override def postVisitDirectory(dir: Path, ioException: IOException): FileVisitResult = {
+            if (ioException == null) {
+              Files.delete(dir)
+              FileVisitResult.CONTINUE
+            } else {
+              throw ioException
+            }
+          }
+        })
+      } else {
+        Files.deleteIfExists(fullPath)
+      }
+
+      true
     } catch {
       case _: Exception => false
     }
