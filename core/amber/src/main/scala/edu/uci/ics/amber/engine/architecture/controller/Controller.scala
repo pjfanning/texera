@@ -4,6 +4,8 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
@@ -18,7 +20,7 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      AmberUtils.amberConfig.getBoolean("fault-tolerance.enable-determinant-logging")
+      "none"
     )
 }
 
@@ -26,7 +28,7 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
-    var supportFaultTolerance: Boolean
+    logStorageType: String
 )
 
 object Controller {

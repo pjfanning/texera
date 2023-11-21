@@ -90,7 +90,7 @@ class DataProcessor(
     @transient var workerIdx: Int,
     @transient var operator: IOperatorExecutor,
     @transient var opConf: OpExecConfig,
-    outputHandler: WorkflowFIFOMessage => Unit
+    outputHandler: (WorkflowFIFOMessage, Long) => Unit
 ) extends AmberProcessor(actorId, outputHandler)
     with Serializable {
 

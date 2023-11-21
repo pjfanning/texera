@@ -1,11 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.logging
 
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessagePayload}
+
 abstract class DeterminantLogger {
 
-  def stepIncrement(): Unit
+  def setCurrentSenderWithPayload(
+      channel: ChannelID,
+      step: Long,
+      payload: WorkflowFIFOMessagePayload
+  ): Unit
 
-  def logDeterminant(inMemDeterminant: InMemDeterminant): Unit
-
-  def drainCurrentLogRecords(): Array[InMemDeterminant]
+  def drainCurrentLogRecords(step: Long): Array[InMemDeterminant]
 
 }

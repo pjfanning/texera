@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
 }
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.common.{AmberLogging, Constants}
+import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,

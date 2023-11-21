@@ -16,12 +16,11 @@ sealed trait InMemDeterminant {
   val steps: Long
 }
 case class ProcessingStep(channel: ChannelID, steps: Long, payload: WorkflowFIFOMessagePayload)
-  extends InMemDeterminant
+    extends InMemDeterminant
 case class TimeStamp(value: Long, steps: Long) extends InMemDeterminant
 case object TerminateSignal extends InMemDeterminant {
   val steps = 0
 }
-
 
 object LogManager {
   def getLogManager(

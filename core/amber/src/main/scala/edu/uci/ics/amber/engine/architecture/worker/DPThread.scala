@@ -1,16 +1,29 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DataPayload, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  DataPayload,
+  WorkflowFIFOMessage,
+  WorkflowFIFOMessagePayload
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
-import java.util.concurrent.{CompletableFuture, ExecutorService, Executors, Future, LinkedBlockingQueue}
+import java.util.concurrent.{
+  CompletableFuture,
+  ExecutorService,
+  Executors,
+  Future,
+  LinkedBlockingQueue
+}
 
 class DPThread(
     val actorId: ActorVirtualIdentity,
@@ -113,9 +126,9 @@ class DPThread(
             payloadToProcess = channel.take.payload
           case None =>
             // continue processing
-            if(!dp.pauseManager.isPaused){
-              dp.continueDataProcessing()
-            }else{
+            if (!dp.pauseManager.isPaused) {
+              pickedChannelId = dp.cursor.getChannel
+            } else {
               waitingForInput = true
             }
         }

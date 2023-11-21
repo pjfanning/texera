@@ -6,7 +6,10 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  TriggerSend,
+  WorkflowWorkerConfig
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -20,13 +23,15 @@ object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
       workerIndex: Int,
-      workerLayer: OpExecConfig
+      workerLayer: OpExecConfig,
+      workerConf: WorkflowWorkerConfig
   ): Props =
     Props(
       new WorkflowWorker(
         id,
         workerIndex: Int,
-        workerLayer: OpExecConfig
+        workerLayer: OpExecConfig,
+        workerConf
       )
     )
 
@@ -34,13 +39,14 @@ object WorkflowWorker {
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
 
-  final case class WorkflowWorkerConfig(loggerType:String)
+  final case class WorkflowWorkerConfig(logStorageType: String)
 }
 
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
-    workerLayer: OpExecConfig
+    workerLayer: OpExecConfig,
+    workerConf: WorkflowWorkerConfig
 ) extends WorkflowActor(workerConf.logStorageType, actorId) {
   val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()

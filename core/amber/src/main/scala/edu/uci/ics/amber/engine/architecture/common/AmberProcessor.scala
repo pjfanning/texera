@@ -9,7 +9,8 @@ import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
-  WorkflowFIFOMessage
+  WorkflowFIFOMessage,
+  WorkflowFIFOMessagePayload
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.{AsyncRPCClient, AsyncRPCServer}
@@ -17,7 +18,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class AmberProcessor(
     val actorId: ActorVirtualIdentity,
-    @transient var outputHandler: WorkflowFIFOMessage => Unit
+    @transient var outputHandler: (WorkflowFIFOMessage, Long) => Unit
 ) extends AmberLogging
     with Serializable {
 
@@ -30,7 +31,7 @@ class AmberProcessor(
       this.actorId,
       msg => {
         // done by the same thread
-        outputHandler(msg)
+        outputHandler(msg, cursor.getStep)
       }
     )
   // 2. RPC Layer
