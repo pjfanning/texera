@@ -12,7 +12,7 @@ class ReplayOrderEnforcer() {
   private var nextChannel: ChannelID = _
   private var replayCompleted = true
   private var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
-  private var onComplete: () => Unit = () => {}
+  private var onComplete: () => Unit = _
 
   def isReplayCompleted: Boolean = replayCompleted
 
@@ -44,10 +44,6 @@ class ReplayOrderEnforcer() {
   }
 
   def forwardReplayProcess(currentStep: Long): Unit = {
-    if (replayCompleted) {
-      // recovery completed
-      onComplete()
-    }
     while (currentStep == switchStep) {
       if (channelStepOrder.nonEmpty) {
         loadNextDeterminant()
@@ -56,6 +52,11 @@ class ReplayOrderEnforcer() {
         switchStep = INIT_STEP - 1
         replayCompleted = true
       }
+    }
+    if (replayCompleted && onComplete != null) {
+      // recovery completed
+      onComplete()
+      onComplete = null
     }
   }
 
