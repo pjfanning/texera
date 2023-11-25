@@ -58,7 +58,7 @@ class PythonWorkflowWorker(
   private val networkInputGateway = new NetworkInputGateway(actorId)
   private val networkOutputGateway = new NetworkOutputGateway(
     actorId,
-    msg => sendMessageToLogWriter(msg, 0)
+    logManager.sendCommitted
   )
 
   override def handleInputMessage(messageId: Long, workflowMsg: WorkflowFIFOMessage): Unit = {

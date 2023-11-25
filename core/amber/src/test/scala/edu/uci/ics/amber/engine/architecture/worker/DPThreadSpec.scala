@@ -40,15 +40,14 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = DeterminantLogStorage.getLogStorage("none", "log")
   private val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
-  private val detLogger = logManager.getDeterminantLogger
 
   "DP Thread" should "handle pause/resume during processing" in {
-    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
+    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -68,12 +67,12 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   }
 
   "DP Thread" should "handle pause/resume using fifo messages" in {
-    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
+    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -96,14 +95,14 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   }
 
   "DP Thread" should "handle multiple batches from multiple sources" in {
-    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
+    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -126,7 +125,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   }
 
   "DP Thread" should "write determinant logs to local storage while processing" in {
-    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
+    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
     val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
@@ -136,8 +135,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val logStorage = DeterminantLogStorage.getLogStorage("local", "DPSpecTemp")
     logStorage.deleteLog()
     val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
-    val localDetLogger = logManager.getDeterminantLogger
-    val dpThread = new DPThread(identifier, dp, localDetLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -155,10 +153,10 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     inputQueue.put(Left(message4))
     inputQueue.put(Left(message5))
     Thread.sleep(1000)
-    while (dp.cursor.getStep < 4999) {
+    while (logManager.getStep < 4999) {
       Thread.sleep(100)
     }
-    logManager.sendCommitted(null, 8000) // drain in-mem records to flush
+    logManager.sendCommitted(null) // drain in-mem records to flush
     logManager.terminate()
     val logs = logStorage.getReader.mkLogRecordIterator().toArray
     logStorage.deleteLog()

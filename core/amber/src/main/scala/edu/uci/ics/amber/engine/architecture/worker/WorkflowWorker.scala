@@ -55,10 +55,10 @@ class WorkflowWorker(
     workerIndex,
     workerLayer.initIOperatorExecutor((workerIndex, workerLayer)),
     workerLayer,
-    sendMessageToLogWriter
+    logManager.sendCommitted
   )
   val timerService = new WorkerTimerService(actorService)
-  val dpThread = new DPThread(actorId, dp, logManager.getDeterminantLogger, inputQueue)
+  val dpThread = new DPThread(actorId, dp, logManager, inputQueue)
 
   def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.

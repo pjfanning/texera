@@ -60,7 +60,7 @@ class Controller(
     workflow,
     controllerConfig,
     actorId,
-    sendMessageToLogWriter
+    logManager.sendCommitted
   )
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -72,7 +72,7 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          cp.doFaultTolerantProcessing(detLogger, msg.channel, Some(msg)) {
+          logManager.doFaultTolerantProcessing(msg.channel, Some(msg)) {
             msg.payload match {
               case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
               case p                       => throw new RuntimeException(s"controller cannot handle $p")

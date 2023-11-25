@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.common
 
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
   NetworkInputGateway,
   NetworkOutputGateway
@@ -13,7 +12,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class AmberProcessor(
     val actorId: ActorVirtualIdentity,
-    @transient var outputHandler: (WorkflowFIFOMessage, Long) => Unit
+    @transient var outputHandler: WorkflowFIFOMessage => Unit
 ) extends AmberLogging
     with Serializable {
 
@@ -26,7 +25,7 @@ class AmberProcessor(
       this.actorId,
       msg => {
         // done by the same thread
-        outputHandler(msg, cursor.getStep)
+        outputHandler(msg)
       }
     )
   // 2. RPC Layer
@@ -34,18 +33,6 @@ class AmberProcessor(
     new AsyncRPCClient(outputGateway, actorId)
   val asyncRPCServer: AsyncRPCServer =
     new AsyncRPCServer(outputGateway, actorId)
-  var cursor = new ProcessingStepCursor()
-
-  def doFaultTolerantProcessing(
-      detLogger: DeterminantLogger,
-      channel: ChannelID,
-      message: Option[WorkflowFIFOMessage]
-  )(code: => Unit): Unit = {
-    detLogger.setCurrentStepWithMessage(cursor.getStep, channel, message)
-    cursor.setCurrentChannel(channel)
-    code
-    cursor.stepIncrement()
-  }
 
   def processControlPayload(
       channel: ChannelID,

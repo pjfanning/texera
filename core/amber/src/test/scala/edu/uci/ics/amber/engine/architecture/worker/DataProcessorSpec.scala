@@ -42,7 +42,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     )
   private val opExecConfig =
     OpExecConfig.oneToOneLayer(operatorIdentity, _ => operator).addInput(linkID.from, 0, 0)
-  private val outputHandler = mock[(WorkflowFIFOMessage, Long) => Unit]
+  private val outputHandler = mock[WorkflowFIFOMessage => Unit]
   private val adaptiveBatchingMonitor = mock[WorkerTimerService]
   private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
 
@@ -61,7 +61,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   "data processor" should "process data messages" in {
     val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
-    (outputHandler.apply _).expects(*, *).once()
+    (outputHandler.apply _).expects(*).once()
     (operator.open _).expects().once()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -95,7 +95,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   "data processor" should "process control messages during data processing" in {
     val dp = mkDataProcessor
     dp.stateManager.transitTo(READY)
-    (outputHandler.apply _).expects(*, *).anyNumberOfTimes()
+    (outputHandler.apply _).expects(*).anyNumberOfTimes()
     (operator.open _).expects().once()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)

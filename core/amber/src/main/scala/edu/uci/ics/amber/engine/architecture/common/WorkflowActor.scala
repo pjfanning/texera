@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   RegisterActorRef
 }
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.{DeterminantLogger, LogManager}
+import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
@@ -85,13 +85,8 @@ abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualId
     DeterminantLogStorage.getLogStorage(logStorageType, getLogName)
   val logManager: LogManager =
     LogManager.getLogManager(logStorage, sendMessageFromLogWriterToActor)
-  val detLogger: DeterminantLogger = logManager.getDeterminantLogger
 
   def getLogName: String = actorId.name.replace("Worker:", "")
-
-  def sendMessageToLogWriter(msg: WorkflowFIFOMessage, step: Long): Unit = {
-    logManager.sendCommitted(msg, step)
-  }
 
   def sendMessageFromLogWriterToActor(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
