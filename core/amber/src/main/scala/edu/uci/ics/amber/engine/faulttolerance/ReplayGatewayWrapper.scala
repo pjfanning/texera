@@ -1,44 +1,17 @@
 package edu.uci.ics.amber.engine.faulttolerance
 
 import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  ProcessingStep,
-  ProcessingStepWithContent,
-  TerminateSignal,
-  TimeStamp
-}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  AmberFIFOChannel,
-  InputGateway,
-  NetworkInputGateway
-}
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
+import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
+import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessingStep, ProcessingStepWithContent, TerminateSignal, TimeStamp}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{AmberFIFOChannel, InputGateway, NetworkInputGateway}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ChannelID}
 
 import scala.collection.mutable
 
 class ReplayGatewayWrapper(
-    logs: mutable.Queue[InMemDeterminant],
-    cursor: ProcessingStepCursor,
+    orderEnforcer: ReplayOrderEnforcer,
     val networkInputGateway: NetworkInputGateway
 ) extends InputGateway {
-
-  private def checkCurrentStep(steps: Long, channel: AmberFIFOChannel): Option[AmberFIFOChannel] = {
-    if (cursor.getStep < steps) {
-      //continue processing data message
-      None
-    } else if (cursor.getStep > steps) {
-      throw new RuntimeException(
-        s"cursor exceed the logged sequence! current cursor = ${cursor.getStep}, next log record = ${logs.front}"
-      )
-    } else {
-      if (channel.hasMessage) {
-        Some(channel)
-      } else {
-        None
-      }
-    }
-  }
 
   private def enforceChannelOrderInLog(): Option[AmberFIFOChannel] = {
     logs.front match {
@@ -53,8 +26,13 @@ class ReplayGatewayWrapper(
   }
 
   override def tryPickControlChannel: Option[AmberFIFOChannel] = {
-    if (logs.nonEmpty) {
-      enforceChannelOrderInLog()
+    if (!orderEnforcer.isReplayCompleted) {
+      val targetChannel = getChannel(orderEnforcer.currentChannel)
+      if (targetChannel.hasMessage) {
+        Some()
+      } else {
+
+      }
     } else {
       networkInputGateway.tryPickControlChannel
     }
