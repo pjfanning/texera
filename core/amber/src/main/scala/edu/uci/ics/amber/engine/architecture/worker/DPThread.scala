@@ -15,6 +15,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
+import edu.uci.ics.amber.engine.faulttolerance.ReplayOrderEnforcer
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{
@@ -29,6 +30,7 @@ class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
     logManager: ReplayLogManager,
+    replayOrderEnforcer: ReplayOrderEnforcer,
     internalQueue: LinkedBlockingQueue[DPInputQueueElement]
 ) extends AmberLogging {
 
@@ -64,7 +66,7 @@ class DPThread(
       return
     }
     dpThreadExecutor = Executors.newSingleThreadExecutor
-    if (dp.stateManager.getCurrentState == UNINITIALIZED) {
+    if (replayOrderEnforcer.isReplayCompleted && dp.stateManager.getCurrentState == UNINITIALIZED) {
       dp.stateManager.transitTo(READY)
     }
     if (dpThread == null) {
@@ -109,6 +111,7 @@ class DPThread(
     //
     // Main loop step 1: receive messages from actor and apply FIFO
     //
+    replayOrderEnforcer.forwardReplayProcess(dp.cursor.getStep)
     var waitingForInput = false
     while (!stopped) {
       while (internalQueue.size > 0 || waitingForInput) {

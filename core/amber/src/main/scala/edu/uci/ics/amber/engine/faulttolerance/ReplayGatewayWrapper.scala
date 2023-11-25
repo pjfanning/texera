@@ -1,46 +1,33 @@
 package edu.uci.ics.amber.engine.faulttolerance
 
-import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor
-import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessingStep, ProcessingStepWithContent, TerminateSignal, TimeStamp}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{AmberFIFOChannel, InputGateway, NetworkInputGateway}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelEndpointID, ChannelID}
-
-import scala.collection.mutable
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{AmberFIFOChannel, InputGateway}
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 class ReplayGatewayWrapper(
     orderEnforcer: ReplayOrderEnforcer,
-    val networkInputGateway: NetworkInputGateway
+    val networkInputGateway: InputGateway
 ) extends InputGateway {
 
-  private def enforceChannelOrderInLog(): Option[AmberFIFOChannel] = {
-    logs.front match {
-      case ProcessingStep(channel, steps) =>
-        checkCurrentStep(steps, getChannel(channel))
-      case ProcessingStepWithContent(message, steps) =>
-        val c = getChannel(message.channel)
-        checkCurrentStep(steps, c)
-      case TimeStamp(value, steps) => ??? //TODO: add support later
-      case TerminateSignal         => throw new RuntimeException("TerminateSignal should not appear in log")
+  def pickInOrder: Option[AmberFIFOChannel] = {
+    val targetChannel = getChannel(orderEnforcer.currentChannel)
+    if (targetChannel.hasMessage) {
+      Some(targetChannel)
+    } else {
+      None
     }
   }
 
   override def tryPickControlChannel: Option[AmberFIFOChannel] = {
     if (!orderEnforcer.isReplayCompleted) {
-      val targetChannel = getChannel(orderEnforcer.currentChannel)
-      if (targetChannel.hasMessage) {
-        Some()
-      } else {
-
-      }
+      pickInOrder
     } else {
       networkInputGateway.tryPickControlChannel
     }
   }
 
   override def tryPickChannel: Option[AmberFIFOChannel] = {
-    if (logs.nonEmpty) {
-      enforceChannelOrderInLog()
+    if (!orderEnforcer.isReplayCompleted) {
+      pickInOrder
     } else {
       networkInputGateway.tryPickChannel
     }

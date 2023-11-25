@@ -1,49 +1,57 @@
 package edu.uci.ics.amber.engine.faulttolerance
 
 import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.architecture.logging.ProcessingStep
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 import scala.collection.mutable
 
-class ReplayOrderEnforcer(channelStepOrder: mutable.Queue[(Long, ChannelID)], onRecoveryComplete: () => Unit) {
+class ReplayOrderEnforcer() {
   private var switchStep = INIT_STEP
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelID = _
-  private var replayCompleted = false
+  private var replayCompleted = true
+  private var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
+  private var onComplete: () => Unit = () => {}
 
-  def isReplayCompleted:Boolean = replayCompleted
+  def isReplayCompleted: Boolean = replayCompleted
 
   var currentChannel: ChannelID = _
 
-  def initialize(currentDPStep: Long): Unit = {
+  def setReplayTo(
+      stepsInLog: mutable.Queue[ProcessingStep],
+      currentDPStep: Long,
+      dest: Long,
+      onComplete: () => Unit
+  ): Unit = {
+    assert(currentDPStep <= dest)
+    this.replayCompleted = false
+    this.switchStep = INIT_STEP
+    this.channelStepOrder = stepsInLog
+    this.onComplete = onComplete
     // restore replay progress by dropping some of the entries
-    switchStep = INIT_STEP
     while (channelStepOrder.nonEmpty && switchStep <= currentDPStep) {
       loadNextDeterminant()
     }
-  }
-
-  def setReplayTo(currentDPStep: Long, dest: Long): Unit = {
-    assert(currentDPStep <= dest)
-    replayTo = dest
+    this.replayTo = dest
   }
 
   private def loadNextDeterminant(): Unit = {
     val channelStep = channelStepOrder.dequeue()
     currentChannel = nextChannel
-    switchStep = channelStep._1
-    nextChannel = channelStep._2
+    switchStep = channelStep.steps
+    nextChannel = channelStep.channelID
   }
 
-  def forwardReplayProcess(currentStep:Long): Unit ={
-    if(replayCompleted){
+  def forwardReplayProcess(currentStep: Long): Unit = {
+    if (replayCompleted) {
       // recovery completed
-      onRecoveryComplete()
+      onComplete()
     }
-    while(currentStep == switchStep){
-      if(channelStepOrder.nonEmpty){
+    while (currentStep == switchStep) {
+      if (channelStepOrder.nonEmpty) {
         loadNextDeterminant()
-      }else{
+      } else {
         currentChannel = nextChannel
         switchStep = INIT_STEP - 1
         replayCompleted = true
@@ -52,4 +60,3 @@ class ReplayOrderEnforcer(channelStepOrder: mutable.Queue[(Long, ChannelID)], on
   }
 
 }
-

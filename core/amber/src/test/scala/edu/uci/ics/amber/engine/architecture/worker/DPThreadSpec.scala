@@ -21,6 +21,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
+import edu.uci.ics.amber.engine.faulttolerance.ReplayOrderEnforcer
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -44,6 +45,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
+  private val replayOrderEnforcer = new ReplayOrderEnforcer()
   private val logStorage = ReplayLogStorage.getLogStorage("none", "log")
   private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
 
@@ -54,7 +56,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -80,7 +82,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -111,7 +113,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -145,7 +147,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val logStorage = ReplayLogStorage.getLogStorage("local", "DPSpecTemp")
     logStorage.deleteLog()
     val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
-    val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
+    val dpThread = new DPThread(identifier, dp, logManager, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)

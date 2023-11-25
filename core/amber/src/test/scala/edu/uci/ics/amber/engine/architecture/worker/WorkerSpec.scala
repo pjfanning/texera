@@ -97,7 +97,7 @@ class WorkerSpec
         identifier1,
         workerIndex,
         opExecConfig,
-        WorkflowWorkerConfig("none")
+        WorkflowWorkerConfig("none", None)
       ) {
         this.dp = new DataProcessor(identifier1, mockHandler) {
           override val outputManager: OutputManager = mockOutputManager
@@ -105,7 +105,13 @@ class WorkerSpec
         this.dp.initOperator(0, opExecConfig, Iterator.empty)
         this.dp.InitTimerService(timerService)
         override val dpThread: DPThread =
-          new DPThread(actorId, dp, logManager, inputQueue)
+          new DPThread(
+            actorId,
+            dp,
+            logManager,
+            replayOrderEnforcer,
+            inputQueue
+          )
       }
     )
   }
