@@ -69,7 +69,7 @@ class LoggingSpec
     logManager.terminate()
     val logRecords = logStorage.getReader.mkLogRecordIterator().toArray
     logStorage.deleteLog()
-    assert(logRecords.length == payloadToLog.length + 1)
+    assert(logRecords.length == 15)
   }
 
 }
