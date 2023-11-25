@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{
+  InputGateway,
   NetworkInputGateway,
   NetworkOutputGateway
 }
@@ -18,7 +19,7 @@ class AmberProcessor(
     with Serializable {
 
   /** FIFO & exactly once */
-  lazy val inputGateway: NetworkInputGateway = new NetworkInputGateway(this.actorId)
+  var inputGateway: InputGateway = new NetworkInputGateway(this.actorId)
 
   // 1. Unified Output
   val outputGateway: NetworkOutputGateway =

@@ -259,7 +259,7 @@ case class OpExecConfig(
             workerId,
             i,
             this,
-            WorkflowWorkerConfig("none")
+            WorkflowWorkerConfig("none", None)
           )
         }
         val ref =

@@ -15,6 +15,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
+import edu.uci.ics.amber.engine.faulttolerance.ReplayOrderEnforcer
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -41,6 +42,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   private val logStorage = DeterminantLogStorage.getLogStorage("none", "log")
   private val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
   private val detLogger = logManager.getDeterminantLogger
+  private val replayOrderEnforcer = new ReplayOrderEnforcer()
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, 0, operator, opExecConfig, (x, y) => {})
@@ -48,7 +50,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, detLogger, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -73,7 +75,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, detLogger, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -103,7 +105,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val dpThread = new DPThread(identifier, dp, detLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, detLogger, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
@@ -137,7 +139,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     logStorage.deleteLog()
     val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
     val localDetLogger = logManager.getDeterminantLogger
-    val dpThread = new DPThread(identifier, dp, localDetLogger, inputQueue)
+    val dpThread = new DPThread(identifier, dp, localDetLogger, replayOrderEnforcer, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)

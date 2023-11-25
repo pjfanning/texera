@@ -3,8 +3,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayComplete, ReplayStart}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.logging.{MessageContent, ProcessingStep}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   TriggerSend,
@@ -16,8 +18,10 @@ import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.faulttolerance.{ReplayGatewayWrapper, ReplayOrderEnforcer}
 
 import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.mutable
 
 object WorkflowWorker {
   def props(
@@ -39,7 +43,8 @@ object WorkflowWorker {
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
 
-  final case class WorkflowWorkerConfig(logStorageType: String)
+  final case class WorkflowWorkerConfig(logStorageType: String, replayTo: Option[Long])
+
 }
 
 class WorkflowWorker(
@@ -58,7 +63,34 @@ class WorkflowWorker(
     sendMessageToLogWriter
   )
   val timerService = new WorkerTimerService(actorService)
-  val dpThread = new DPThread(actorId, dp, logManager.getDeterminantLogger, inputQueue)
+
+  val replayOrderEnforcer = new ReplayOrderEnforcer()
+  if (workerConf.replayTo.isDefined) {
+    context.parent ! ReplayStart(actorId)
+    val logs = logStorage.getReader.mkLogRecordIterator().toArray
+    val steps = mutable.Queue[ProcessingStep]()
+    logs.foreach {
+      case s: ProcessingStep =>
+        steps.enqueue(s)
+      case MessageContent(message) =>
+        dp.inputGateway.getChannel(message.channel).acceptMessage(message)
+      case other =>
+        throw new RuntimeException(s"cannot handle $other in the log")
+    }
+    replayOrderEnforcer.setReplayTo(
+      steps,
+      dp.cursor.getStep,
+      workerConf.replayTo.get,
+      () => {
+        context.parent ! ReplayComplete(actorId)
+        dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].networkInputGateway
+      }
+    )
+    dp.inputGateway = new ReplayGatewayWrapper(replayOrderEnforcer, dp.inputGateway)
+  }
+
+  val dpThread =
+    new DPThread(actorId, dp, logManager.getDeterminantLogger, replayOrderEnforcer, inputQueue)
 
   def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
