@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 class NetworkInputGateway(val actorId: ActorVirtualIdentity)
     extends AmberLogging
-    with Serializable {
+    with Serializable with InputGateway{
 
   private val inputChannels =
     new mutable.HashMap[ChannelID, AmberFIFOChannel]()
