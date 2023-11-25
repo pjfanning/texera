@@ -8,17 +8,12 @@ import edu.uci.ics.amber.engine.architecture.logging.storage.{
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
 //In-mem formats:
-sealed trait InMemDeterminant {
-  val steps: Long
-}
+sealed trait InMemDeterminant
 
-case class ProcessingStepWithContent(message: WorkflowFIFOMessage, steps: Long)
-    extends InMemDeterminant
+case class MessageContent(message: WorkflowFIFOMessage) extends InMemDeterminant
 case class ProcessingStep(channelID: ChannelID, steps: Long) extends InMemDeterminant
 case class TimeStamp(value: Long, steps: Long) extends InMemDeterminant
-case object TerminateSignal extends InMemDeterminant {
-  val steps = 0
-}
+case object TerminateSignal extends InMemDeterminant
 
 object LogManager {
   def getLogManager(

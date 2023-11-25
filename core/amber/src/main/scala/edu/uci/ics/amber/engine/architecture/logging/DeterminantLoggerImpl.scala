@@ -18,14 +18,12 @@ class DeterminantLoggerImpl extends DeterminantLogger {
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   ): Unit = {
-    // by default, record all message content in control channels.
-    if (currentChannel != channel || channel.isControl) {
+    if (currentChannel != channel || message.isDefined) {
       currentChannel = channel
       lastStep = step
-      if (channel.isControl && message.isDefined) {
-        tempLogs.append(ProcessingStepWithContent(message.get, step))
-      } else {
-        tempLogs.append(ProcessingStep(channel, step))
+      tempLogs.append(ProcessingStep(channel, step))
+      if (message.isDefined) {
+        tempLogs.append(MessageContent(message.get))
       }
     }
   }
