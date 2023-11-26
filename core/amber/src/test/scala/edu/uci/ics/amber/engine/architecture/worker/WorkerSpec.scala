@@ -109,7 +109,6 @@ class WorkerSpec
             actorId,
             dp,
             logManager,
-            replayOrderEnforcer,
             inputQueue
           )
       }
