@@ -21,6 +21,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity
 }
 import edu.uci.ics.amber.engine.common.{
+  AmberUtils,
   Constants,
   IOperatorExecutor,
   ISourceOperatorExecutor,
@@ -259,7 +260,10 @@ case class OpExecConfig(
             workerId,
             i,
             this,
-            WorkflowWorkerConfig("none", None)
+            WorkflowWorkerConfig(
+              AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
+              Some(Long.MaxValue)
+            )
           )
         }
         val ref =

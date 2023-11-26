@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayComplete, ReplayStart}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
@@ -62,21 +62,27 @@ class WorkflowWorker(
   )
   val timerService = new WorkerTimerService(actorService)
 
-  if (workerConf.replayTo.isDefined) {
-    context.parent ! ReplayStart(actorId)
-    val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
-    replayGateway.setupReplay(
-      logStorage,
-      workerConf.replayTo.get,
-      () => {
-        context.parent ! ReplayComplete(actorId)
-        dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].inputGateway
-      }
-    )
-  }
-
   val dpThread =
     new DPThread(actorId, dp, logManager, inputQueue)
+
+  override def initState(): Unit = {
+    dp.InitTimerService(timerService)
+    if (workerConf.replayTo.isDefined) {
+      context.parent ! ReplayStatusUpdate(actorId, status = true)
+      val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
+      dp.inputGateway = replayGateway
+      replayGateway.setupReplay(
+        logStorage,
+        workerConf.replayTo.get,
+        () => {
+          logger.info("replay completed!")
+          context.parent ! ReplayStatusUpdate(actorId, status = false)
+          dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
+        }
+      )
+    }
+    dpThread.start()
+  }
 
   def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
@@ -115,11 +121,6 @@ class WorkflowWorker(
   /** flow-control */
   override def getQueuedCredit(channelID: ChannelID): Long =
     dp.getQueuedCredit(channelID)
-
-  override def initState(): Unit = {
-    dp.InitTimerService(timerService)
-    dpThread.start()
-  }
 
   override def postStop(): Unit = {
     super.postStop()

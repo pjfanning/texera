@@ -49,19 +49,25 @@ trait LogManager {
 }
 
 class EmptyLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends LogManager {
+  private val cursor = new ProcessingStepCursor()
+
   override def setupWriter(logWriter: DeterminantLogStorage.DeterminantLogWriter): Unit = {}
 
   override def sendCommitted(msg: WorkflowFIFOMessage): Unit = {
     handler(msg)
   }
 
-  override def getStep: Long = 0L
+  override def getStep: Long = cursor.getStep
 
   override def terminate(): Unit = {}
 
   override def doFaultTolerantProcessing(channel: ChannelID, message: Option[WorkflowFIFOMessage])(
       code: => Unit
-  ): Unit = code
+  ): Unit = {
+    cursor.setCurrentChannel(channel)
+    code
+    cursor.stepIncrement()
+  }
 }
 
 class LogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends LogManager {

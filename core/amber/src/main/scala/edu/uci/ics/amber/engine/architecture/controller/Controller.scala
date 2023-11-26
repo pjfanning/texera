@@ -4,6 +4,7 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
@@ -24,7 +25,7 @@ object ControllerConfig {
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
       AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-      None
+      Some(Long.MaxValue)
     )
 }
 
@@ -51,9 +52,7 @@ object Controller {
       )
     )
 
-  final case class ReplayStart(id: ActorVirtualIdentity)
-
-  final case class ReplayComplete(id: ActorVirtualIdentity)
+  final case class ReplayStatusUpdate(id: ActorVirtualIdentity, status: Boolean)
 }
 
 class Controller(
@@ -73,10 +72,33 @@ class Controller(
     logManager.sendCommitted
   )
 
+  val replayManager = new GlobalReplayManager(
+    () => {
+      cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
+    },
+    () => {
+      cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
+    }
+  )
+
   override def initState(): Unit = {
     cp.setupActorService(actorService)
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
+    if (controllerConfig.replayTo.isDefined) {
+      replayManager.markRecoveryStatus(CONTROLLER, true)
+      val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
+      cp.inputGateway = replayGateway
+      replayGateway.setupReplay(
+        logStorage,
+        controllerConfig.replayTo.get,
+        () => {
+          replayManager.markRecoveryStatus(CONTROLLER, false)
+          cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
+        }
+      )
+      processMessages()
+    }
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -119,8 +141,13 @@ class Controller(
       processMessages()
   }
 
+  def handleReplayMessages: Receive = {
+    case ReplayStatusUpdate(id, status) =>
+      replayManager.markRecoveryStatus(id, status)
+  }
+
   override def receive: Receive = {
-    super.receive orElse handleDirectInvocation
+    super.receive orElse handleDirectInvocation orElse handleReplayMessages
   }
 
   /** flow-control */

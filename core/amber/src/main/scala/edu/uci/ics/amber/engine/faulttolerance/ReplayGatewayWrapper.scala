@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 import scala.collection.mutable
 
-class ReplayGatewayWrapper(val inputGateway: InputGateway, logManager: LogManager)
+class ReplayGatewayWrapper(val originalGateway: InputGateway, logManager: LogManager)
     extends InputGateway {
 
   val orderEnforcer: ReplayOrderEnforcer = new ReplayOrderEnforcer()
@@ -23,7 +23,7 @@ class ReplayGatewayWrapper(val inputGateway: InputGateway, logManager: LogManage
       case s: ProcessingStep =>
         steps.enqueue(s)
       case MessageContent(message) =>
-        inputGateway.getChannel(message.channel).acceptMessage(message)
+        originalGateway.getChannel(message.channel).acceptMessage(message)
       case other =>
         throw new RuntimeException(s"cannot handle $other in the log")
     }
@@ -35,8 +35,11 @@ class ReplayGatewayWrapper(val inputGateway: InputGateway, logManager: LogManage
     )
   }
 
-  private def pickInOrder: Option[AmberFIFOChannel] = {
-    orderEnforcer.forwardReplayProcess(logManager.getStep)
+  private def pickInOrder(forceControl: Boolean): Option[AmberFIFOChannel] = {
+    assert(orderEnforcer.currentChannel != null)
+    if (forceControl && !orderEnforcer.currentChannel.isControl) {
+      return None
+    }
     val targetChannel = getChannel(orderEnforcer.currentChannel)
     if (targetChannel.hasMessage) {
       Some(targetChannel)
@@ -46,30 +49,32 @@ class ReplayGatewayWrapper(val inputGateway: InputGateway, logManager: LogManage
   }
 
   override def tryPickControlChannel: Option[AmberFIFOChannel] = {
+    orderEnforcer.forwardReplayProcess(logManager.getStep)
     if (!orderEnforcer.isReplayCompleted) {
-      pickInOrder
+      pickInOrder(true)
     } else {
-      inputGateway.tryPickControlChannel
+      originalGateway.tryPickControlChannel
     }
   }
 
   override def tryPickChannel: Option[AmberFIFOChannel] = {
+    orderEnforcer.forwardReplayProcess(logManager.getStep)
     if (!orderEnforcer.isReplayCompleted) {
-      pickInOrder
+      pickInOrder(false)
     } else {
-      inputGateway.tryPickChannel
+      originalGateway.tryPickChannel
     }
   }
 
   override def getAllDataChannels: Iterable[AmberFIFOChannel] = {
-    inputGateway.getAllDataChannels
+    originalGateway.getAllDataChannels
   }
 
   override def getChannel(channelId: ChannelID): AmberFIFOChannel = {
-    inputGateway.getChannel(channelId)
+    originalGateway.getChannel(channelId)
   }
 
   override def getAllControlChannels: Iterable[AmberFIFOChannel] = {
-    inputGateway.getAllControlChannels
+    originalGateway.getAllControlChannels
   }
 }

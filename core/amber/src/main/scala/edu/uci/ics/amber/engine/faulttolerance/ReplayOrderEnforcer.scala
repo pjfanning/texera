@@ -24,7 +24,10 @@ class ReplayOrderEnforcer() {
       dest: Long,
       onComplete: () => Unit
   ): Unit = {
-    assert(currentDPStep <= dest)
+    if (dest <= currentDPStep) {
+      onComplete()
+      return
+    }
     this.replayCompleted = false
     this.switchStep = INIT_STEP
     this.channelStepOrder = stepsInLog
@@ -34,6 +37,7 @@ class ReplayOrderEnforcer() {
       loadNextDeterminant()
     }
     this.replayTo = dest
+    forwardReplayProcess(currentDPStep)
   }
 
   private def loadNextDeterminant(): Unit = {
