@@ -2,8 +2,13 @@ package edu.uci.ics.amber.engine.faulttolerance
 
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
-import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor
-import edu.uci.ics.amber.engine.architecture.logging.ProcessingStep
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
+import edu.uci.ics.amber.engine.architecture.logging.{
+  InMemDeterminant,
+  LogManagerImpl,
+  ProcessingStep
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
@@ -21,6 +26,21 @@ class ReplaySpec
     with AnyFlatSpecLike
     with BeforeAndAfterAll {
 
+  class IterableReadOnlyLogStore(iter: Iterable[InMemDeterminant]) extends DeterminantLogStorage {
+    override def getWriter: DeterminantLogStorage.DeterminantLogWriter = ???
+
+    override def getReader: DeterminantLogStorage.DeterminantLogReader =
+      new DeterminantLogReader(null) {
+        override def mkLogRecordIterator(): Iterator[InMemDeterminant] = iter.toIterator
+      }
+
+    override def isLogAvailableForRead: Boolean = true
+
+    override def deleteLog(): Unit = ???
+
+    override def cleanPartiallyWrittenLogFile(): Unit = ???
+  }
+
   private val actorId = ActorVirtualIdentity("test")
   private val actorId2 = ActorVirtualIdentity("upstream1")
   private val actorId3 = ActorVirtualIdentity("upstream2")
@@ -28,6 +48,7 @@ class ReplaySpec
   private val channelId2 = ChannelID(actorId2, actorId, isControl = false)
   private val channelId3 = ChannelID(actorId3, actorId, isControl = false)
   private val channelId4 = ChannelID(actorId2, actorId, isControl = true)
+  private val logManager = new LogManagerImpl(x => {})
 
   "replay input gate" should "replay the message payload in log order" in {
     val networkInputGateway = new NetworkInputGateway(actorId)
@@ -44,17 +65,13 @@ class ReplaySpec
         .getChannel(channelID)
         .acceptMessage(WorkflowFIFOMessage(channelID, seq, ControlInvocation(0, StartWorker())))
     }
-
-    val cursor = new ProcessingStepCursor()
-    val orderEnforcer = new ReplayOrderEnforcer()
-    orderEnforcer.setReplayTo(logRecords, -1, 1000, () => {})
-    val wrapper = new ReplayGatewayWrapper(orderEnforcer, networkInputGateway)
-
+    val wrapper = new ReplayGatewayWrapper(networkInputGateway, logManager)
+    wrapper.setupReplay(new IterableReadOnlyLogStore(logRecords), 1000, () => {})
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
       val msg = wrapper.tryPickChannel.get.take
-      cursor.stepIncrement()
-      orderEnforcer.forwardReplayProcess(cursor.getStep)
-      assert(msg.channel == channelID && msg.sequenceNumber == seq)
+      logManager.doFaultTolerantProcessing(msg.channel, Some(msg)) {
+        assert(msg.channel == channelID && msg.sequenceNumber == seq)
+      }
     }
     assert(wrapper.tryPickChannel.isEmpty)
     assert(networkInputGateway.tryPickChannel.isEmpty)

@@ -6,7 +6,6 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayComplete, ReplayStart}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logging.{MessageContent, ProcessingStep}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
@@ -21,10 +20,9 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.faulttolerance.{ReplayGatewayWrapper, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
 
 import java.util.concurrent.LinkedBlockingQueue
-import scala.collection.mutable
 
 object WorkflowWorker {
   def props(
@@ -69,33 +67,21 @@ class WorkflowWorker(
   )
   val timerService = new WorkerTimerService(actorService)
 
-  val replayOrderEnforcer = new ReplayOrderEnforcer()
   if (workerConf.replayTo.isDefined) {
     context.parent ! ReplayStart(actorId)
-    val logs = logStorage.getReader.mkLogRecordIterator().toArray
-    val steps = mutable.Queue[ProcessingStep]()
-    logs.foreach {
-      case s: ProcessingStep =>
-        steps.enqueue(s)
-      case MessageContent(message) =>
-        dp.inputGateway.getChannel(message.channel).acceptMessage(message)
-      case other =>
-        throw new RuntimeException(s"cannot handle $other in the log")
-    }
-    replayOrderEnforcer.setReplayTo(
-      steps,
-      dp.cursor.getStep,
+    val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
+    replayGateway.setupReplay(
+      logStorage,
       workerConf.replayTo.get,
       () => {
         context.parent ! ReplayComplete(actorId)
-        dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].networkInputGateway
+        dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].inputGateway
       }
     )
-    dp.inputGateway = new ReplayGatewayWrapper(replayOrderEnforcer, dp.inputGateway)
   }
 
   val dpThread =
-    new DPThread(actorId, dp, logManager, replayOrderEnforcer, inputQueue)
+    new DPThread(actorId, dp, logManager, inputQueue)
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>

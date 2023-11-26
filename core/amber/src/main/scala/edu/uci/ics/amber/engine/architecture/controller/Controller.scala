@@ -6,17 +6,15 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logging.{MessageContent, ProcessingStep}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
-import edu.uci.ics.amber.engine.faulttolerance.{ReplayGatewayWrapper, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
 
 import scala.collection.mutable
-
 import scala.concurrent.duration.DurationInt
 
 object ControllerConfig {
@@ -91,29 +89,18 @@ class Controller(
     }
   )
 
-  val replayOrderEnforcer = new ReplayOrderEnforcer()
   if (controllerConfig.replayTo.isDefined) {
     replayManager.markRecoveryStatus(CONTROLLER, true)
-    val logs = logStorage.getReader.mkLogRecordIterator().toArray
-    val steps = mutable.Queue[ProcessingStep]()
-    logs.foreach {
-      case s: ProcessingStep =>
-        steps.enqueue(s)
-      case MessageContent(message) =>
-        cp.inputGateway.getChannel(message.channel).acceptMessage(message)
-      case other =>
-        throw new RuntimeException(s"cannot handle $other in the log")
-    }
-    replayOrderEnforcer.setReplayTo(
-      steps,
-      cp.cursor.getStep,
+    val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
+    replayGateway.setupReplay(
+      logStorage,
       controllerConfig.replayTo.get,
       () => {
         replayManager.markRecoveryStatus(CONTROLLER, false)
-        cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].networkInputGateway
+        cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].inputGateway
       }
     )
-    cp.inputGateway = new ReplayGatewayWrapper(replayOrderEnforcer, cp.inputGateway)
+    cp.inputGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
