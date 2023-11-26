@@ -13,7 +13,7 @@ class ControllerProcessor(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig,
     actorId: ActorVirtualIdentity,
-    outputHandler: (WorkflowFIFOMessage, Long) => Unit
+    outputHandler: WorkflowFIFOMessage => Unit
 ) extends AmberProcessor(actorId, outputHandler) {
 
   val executionState = new ExecutionState(workflow)

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logging.DeterminantLogger
+import edu.uci.ics.amber.engine.architecture.logging.LogManager
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
@@ -28,7 +28,7 @@ import java.util.concurrent.{
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
-    detLogger: DeterminantLogger,
+    logManager: LogManager,
     replayOrderEnforcer: ReplayOrderEnforcer,
     internalQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]
 ) extends AmberLogging {
@@ -128,7 +128,7 @@ class DPThread(
           case None =>
             // continue processing
             if (!dp.pauseManager.isPaused) {
-              channelID = dp.cursor.getChannel
+              channelID = dp.currentBatchChannel
             } else {
               waitingForInput = true
             }
@@ -147,7 +147,7 @@ class DPThread(
       // Main loop step 3: process selected message payload
       //
       if (channelID != null) {
-        dp.doFaultTolerantProcessing(detLogger, channelID, msgOpt) {
+        logManager.doFaultTolerantProcessing(channelID, msgOpt) {
           msgOpt match {
             case None =>
               dp.continueDataProcessing()

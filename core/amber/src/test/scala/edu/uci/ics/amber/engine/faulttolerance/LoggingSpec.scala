@@ -59,13 +59,14 @@ class LoggingSpec
     val logStorage = DeterminantLogStorage.getLogStorage("local", tempLogFileName)
     logStorage.deleteLog()
     val logManager = LogManager.getLogManager(logStorage, x => {})
-    val detLogger = logManager.getDeterminantLogger
     payloadToLog.foreach { payload =>
       val channel = ChannelID(CONTROLLER, SELF, isControl = true)
       val msgOpt = Some(WorkflowFIFOMessage(channel, 0, payload))
-      detLogger.setCurrentStepWithMessage(0, channel, msgOpt)
+      logManager.doFaultTolerantProcessing(channel, msgOpt) {
+        // do nothing
+      }
     }
-    logManager.sendCommitted(null, 1000)
+    logManager.sendCommitted(null)
     logManager.terminate()
     val logRecords = logStorage.getReader.mkLogRecordIterator().toArray
     logStorage.deleteLog()
