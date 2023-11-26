@@ -20,7 +20,9 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   LinkIdentity,
   OperatorIdentity
 }
-import edu.uci.ics.amber.engine.common.{Constants, VirtualIdentityUtils}
+import edu.uci.ics.amber.engine.common.{AmberUtils,
+  Constants,
+   VirtualIdentityUtils}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
@@ -293,7 +295,10 @@ case class OpExecConfig(
             workerId,
             i,
             workerLayer = this,
-            WorkflowWorkerConfig("none", None)
+            WorkflowWorkerConfig(
+              AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
+              Some(Long.MaxValue)
+            )
           )
         }
         val ref =
