@@ -73,33 +73,20 @@ class Controller(
     logManager.sendCommitted
   )
 
-  val replayManager = new GlobalReplayManager(
-    () => {
-      cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
-    },
-    () => {
-      cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
-    }
-  )
-
-  if (controllerConfig.replayTo.isDefined) {
-    replayManager.markRecoveryStatus(CONTROLLER, true)
-    val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
-    replayGateway.setupReplay(
-      logStorage,
-      controllerConfig.replayTo.get,
-      () => {
-        replayManager.markRecoveryStatus(CONTROLLER, false)
-        cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].inputGateway
-      }
-    )
-    cp.inputGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
+  override def initState(): Unit = {
+    cp.setupActorService(actorService)
+    cp.setupTimerService(controllerTimerService)
+    cp.setupActorRefService(actorRefMappingService)
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channel))
+    processMessages()
+  }
+
+  def processMessages(): Unit = {
     var waitingForInput = false
     while (!waitingForInput) {
       cp.inputGateway.tryPickChannel match {
@@ -118,17 +105,22 @@ class Controller(
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
-      cp.processControlPayload(ChannelID(SELF, SELF, isControl = true), c)
+      // only client and self can send direction invocations
+      val source = if (sender == self) {
+        SELF
+      } else {
+        CLIENT
+      }
+      val selfControlChannelId = ChannelID(source, SELF, isControl = true)
+      val channel = cp.inputGateway.getChannel(selfControlChannelId)
+      channel.acceptMessage(
+        WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, c)
+      )
+      processMessages()
   }
 
   override def receive: Receive = {
     super.receive orElse handleDirectInvocation
-  }
-
-  override def initState(): Unit = {
-    cp.setupActorService(actorService)
-    cp.setupTimerService(controllerTimerService)
-    cp.setupActorRefService(actorRefMappingService)
   }
 
   /** flow-control */
