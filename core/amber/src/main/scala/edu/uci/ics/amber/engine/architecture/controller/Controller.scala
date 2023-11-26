@@ -8,8 +8,10 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
+
 import scala.concurrent.duration.DurationInt
 
 object ControllerConfig {
@@ -63,10 +65,20 @@ class Controller(
     logManager.sendCommitted
   )
 
+  override def initState(): Unit = {
+    cp.setupActorService(actorService)
+    cp.setupTimerService(controllerTimerService)
+    cp.setupActorRefService(actorRefMappingService)
+  }
+
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channel)
     channel.acceptMessage(workflowMsg)
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channel))
+    processMessages()
+  }
+
+  def processMessages(): Unit = {
     var waitingForInput = false
     while (!waitingForInput) {
       cp.inputGateway.tryPickChannel match {
@@ -85,17 +97,22 @@ class Controller(
 
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
-      cp.processControlPayload(ChannelID(SELF, SELF, isControl = true), c)
+      // only client and self can send direction invocations
+      val source = if (sender == self) {
+        SELF
+      } else {
+        CLIENT
+      }
+      val selfControlChannelId = ChannelID(source, SELF, isControl = true)
+      val channel = cp.inputGateway.getChannel(selfControlChannelId)
+      channel.acceptMessage(
+        WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, c)
+      )
+      processMessages()
   }
 
   override def receive: Receive = {
     super.receive orElse handleDirectInvocation
-  }
-
-  override def initState(): Unit = {
-    cp.setupActorService(actorService)
-    cp.setupTimerService(controllerTimerService)
-    cp.setupActorRefService(actorRefMappingService)
   }
 
   /** flow-control */
