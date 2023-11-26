@@ -108,7 +108,14 @@ class DPThread(
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
           case Right(ctrl) =>
-            dp.processControlPayload(ChannelID(SELF, SELF, isControl = true), ctrl)
+            // establish order according to receiving order.
+            // Note: this will not guarantee fifo & exactly-once
+            // Please make sure the control here is IDEMPOTENT and ORDER-INDEPENDENT.
+            val selfControlChannelId = ChannelID(SELF, SELF, isControl = true)
+            val channel = dp.inputGateway.getChannel(selfControlChannelId)
+            channel.acceptMessage(
+              WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, ctrl)
+            )
         }
       }
 

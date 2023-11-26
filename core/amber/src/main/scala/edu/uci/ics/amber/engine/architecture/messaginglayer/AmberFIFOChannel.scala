@@ -34,6 +34,8 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     }
   }
 
+  def getCurrentSeq: Long = current
+
   private def isDuplicated(sequenceNumber: Long): Boolean =
     sequenceNumber < current || ofoMap.contains(sequenceNumber)
 
