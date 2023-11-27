@@ -80,6 +80,12 @@ class WorkflowWorker(
           dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
         }
       )
+      logger.info(
+        s"setting up replay, " +
+          s"current step = ${logManager.getStep} " +
+          s"target step = ${workerConf.replayTo.get} " +
+          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
+      )
     }
     dpThread.start()
   }

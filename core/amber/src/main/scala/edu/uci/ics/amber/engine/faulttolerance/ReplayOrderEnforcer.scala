@@ -11,7 +11,7 @@ class ReplayOrderEnforcer() {
   private var replayTo = INIT_STEP
   private var nextChannel: ChannelID = _
   private var replayCompleted = true
-  private var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
+  var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
   private var onComplete: () => Unit = _
 
   def isReplayCompleted: Boolean = replayCompleted
