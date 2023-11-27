@@ -60,16 +60,6 @@ class WorkflowWorker(
   val timerService = new WorkerTimerService(actorService)
   val dpThread = new DPThread(actorId, dp, logManager, inputQueue)
 
-  def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
-    // limitation: TriggerSend will be processed after input messages before it.
-    self ! TriggerSend(msg)
-  }
-
-  def handleSendFromDP: Receive = {
-    case TriggerSend(msg) =>
-      transferService.send(msg)
-  }
-
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
       inputQueue.put(Right(c))
