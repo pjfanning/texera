@@ -25,7 +25,7 @@ object ControllerConfig {
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
       AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-      Some(Long.MaxValue)
+      None
     )
 }
 

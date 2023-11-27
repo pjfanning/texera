@@ -262,7 +262,7 @@ case class OpExecConfig(
             this,
             WorkflowWorkerConfig(
               AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-              Some(Long.MaxValue)
+              None
             )
           )
         }
