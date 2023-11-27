@@ -151,7 +151,12 @@ class DPThread(
       // Main loop step 3: process selected message payload
       //
       if (channelID != null) {
-        logManager.doFaultTolerantProcessing(channelID, msgOpt) {
+        val msgToLog = if (channelID.isControl) {
+          msgOpt
+        } else {
+          None //skip large dataframes
+        }
+        logManager.doFaultTolerantProcessing(channelID, msgToLog) {
           msgOpt match {
             case None =>
               dp.continueDataProcessing()
