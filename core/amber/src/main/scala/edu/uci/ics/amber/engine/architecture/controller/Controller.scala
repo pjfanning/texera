@@ -27,7 +27,7 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      Map.empty,Map.empty
+      x => None,x => None
     )
 }
 
@@ -89,16 +89,22 @@ class Controller(
     val stateRestoreConfig = controllerConfig.stateRestoreConfigs(CONTROLLER)
     if (stateRestoreConfig.isDefined) {
       val logs = DeterminantLogStorage.getLogStorage(Some(stateRestoreConfig.get.readFrom))
-      replayManager.markRecoveryStatus(CONTROLLER, true)
+      replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
       val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
       cp.inputGateway = replayGateway
       replayGateway.setupReplay(
         logs,
         stateRestoreConfig.get.replayTo,
         () => {
-          replayManager.markRecoveryStatus(CONTROLLER, false)
+          replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
           cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
         }
+      )
+      logger.info(
+        s"setting up replay, " +
+          s"current step = ${logManager.getStep} " +
+          s"target step = ${controllerConfig.replayTo.get} " +
+          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
       processMessages()
     }

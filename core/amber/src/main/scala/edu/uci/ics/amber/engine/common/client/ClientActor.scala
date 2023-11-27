@@ -28,7 +28,6 @@ import edu.uci.ics.amber.engine.common.client.ClientActor.{
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER}
 
 import scala.collection.mutable
 

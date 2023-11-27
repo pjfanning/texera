@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErr
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{TriggerSend, WorkflowWorkerConfig}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker. WorkflowWorkerConfig
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -84,19 +84,14 @@ class WorkflowWorker(
           dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
         }
       )
-      logger.info(s"setting up replay, current step = ${logManager.getStep} target step = ${workerConf.stateRestoreConfig.get.replayTo} # of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}")
+      logger.info(
+        s"setting up replay, " +
+          s"current step = ${logManager.getStep} " +
+          s"target step = ${workerConf.replayTo.get} " +
+          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
+      )
     }
     dpThread.start()
-  }
-
-  def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
-    // limitation: TriggerSend will be processed after input messages before it.
-    self ! TriggerSend(msg)
-  }
-
-  def handleSendFromDP: Receive = {
-    case TriggerSend(msg) =>
-      transferService.send(msg)
   }
 
   def handleDirectInvocation: Receive = {
