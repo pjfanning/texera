@@ -87,16 +87,22 @@ class Controller(
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
     if (controllerConfig.replayTo.isDefined) {
-      replayManager.markRecoveryStatus(CONTROLLER, true)
+      replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
       val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
       cp.inputGateway = replayGateway
       replayGateway.setupReplay(
         logStorage,
         controllerConfig.replayTo.get,
         () => {
-          replayManager.markRecoveryStatus(CONTROLLER, false)
+          replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
           cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
         }
+      )
+      logger.info(
+        s"setting up replay, " +
+          s"current step = ${logManager.getStep} " +
+          s"target step = ${controllerConfig.replayTo.get} " +
+          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
       processMessages()
     }
