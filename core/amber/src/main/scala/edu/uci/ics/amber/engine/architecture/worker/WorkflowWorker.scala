@@ -7,10 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  TriggerSend,
-  WorkflowWorkerConfig
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -88,16 +85,6 @@ class WorkflowWorker(
       )
     }
     dpThread.start()
-  }
-
-  def sendMessageFromDPToMain(msg: WorkflowFIFOMessage): Unit = {
-    // limitation: TriggerSend will be processed after input messages before it.
-    self ! TriggerSend(msg)
-  }
-
-  def handleSendFromDP: Receive = {
-    case TriggerSend(msg) =>
-      transferService.send(msg)
   }
 
   def handleDirectInvocation: Receive = {
