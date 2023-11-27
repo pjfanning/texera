@@ -35,7 +35,7 @@ object PythonWorkflowWorker {
 
 class PythonWorkflowWorker(
     actorId: ActorVirtualIdentity
-) extends WorkflowActor("none", actorId) {
+) extends WorkflowActor(None, actorId) {
 
   // For receiving the Python server port number that will be available later
   private lazy val portNumberPromise = Promise[Int]()

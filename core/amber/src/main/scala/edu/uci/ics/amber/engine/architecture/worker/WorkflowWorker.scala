@@ -3,14 +3,12 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  TriggerSend,
-  WorkflowWorkerConfig
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{TriggerSend, WorkflowWorkerConfig}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.BackpressureHandler.Backpressure
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage._
@@ -18,6 +16,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -41,7 +40,11 @@ object WorkflowWorker {
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
 
-  final case class WorkflowWorkerConfig(logStorageType: String, replayTo: Option[Long])
+  final case class StateRestoreConfig(readFrom: StepLoggingConfig, replayTo:Long)
+
+  final case class StepLoggingConfig(logStorageType: String, storageKey: String)
+
+  final case class WorkflowWorkerConfig(stateRestoreConfig: Option[StateRestoreConfig], stepLoggingConfig: Option[StepLoggingConfig])
 
 }
 
@@ -50,7 +53,7 @@ class WorkflowWorker(
     workerIndex: Int,
     workerLayer: OpExecConfig,
     workerConf: WorkflowWorkerConfig
-) extends WorkflowActor(workerConf.logStorageType, actorId) {
+) extends WorkflowActor(workerConf.stepLoggingConfig, actorId) {
   val inputQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]] =
     new LinkedBlockingQueue()
   var dp = new DataProcessor(
@@ -67,19 +70,21 @@ class WorkflowWorker(
 
   override def initState(): Unit = {
     dp.InitTimerService(timerService)
-    if (workerConf.replayTo.isDefined) {
+    if (workerConf.stateRestoreConfig.isDefined) {
       context.parent ! ReplayStatusUpdate(actorId, status = true)
+      val logs = DeterminantLogStorage.getLogStorage(Some(workerConf.stateRestoreConfig.get.readFrom))
       val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
       dp.inputGateway = replayGateway
       replayGateway.setupReplay(
-        logStorage,
-        workerConf.replayTo.get,
+        logs,
+        workerConf.stateRestoreConfig.get.replayTo,
         () => {
           logger.info("replay completed!")
           context.parent ! ReplayStatusUpdate(actorId, status = false)
           dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
         }
       )
+      logger.info(s"setting up replay, current step = ${logManager.getStep} target step = ${workerConf.stateRestoreConfig.get.replayTo} # of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}")
     }
     dpThread.start()
   }

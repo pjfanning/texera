@@ -4,18 +4,10 @@ import akka.actor.{Actor, ActorRef, Address, Stash}
 import akka.pattern.ask
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
-  CreditRequest,
-  CreditResponse,
-  GetActorRef,
-  MessageBecomesDeadLetter,
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CreditRequest, CreditResponse, GetActorRef, MessageBecomesDeadLetter, NetworkAck, NetworkMessage, RegisterActorRef}
 import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
 import edu.uci.ics.amber.engine.architecture.logging.LogManager
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{StepLoggingConfig, TriggerSend}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.AmberLogging
@@ -56,7 +48,7 @@ object WorkflowActor {
   final case class CreditResponse(channelEndpointID: ChannelID, credit: Long)
 }
 
-abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualIdentity)
+abstract class WorkflowActor(loggingConfig: Option[StepLoggingConfig], val actorId: ActorVirtualIdentity)
     extends Actor
     with Stash
     with AmberLogging {
@@ -82,7 +74,7 @@ abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualId
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
   val logStorage: DeterminantLogStorage =
-    DeterminantLogStorage.getLogStorage(logStorageType, getLogName)
+    DeterminantLogStorage.getLogStorage(loggingConfig)
   val logManager: LogManager =
     LogManager.getLogManager(logStorage, sendMessageFromLogWriterToActor)
 

@@ -3,14 +3,14 @@ package edu.uci.ics.amber.engine.architecture.logging.storage
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
 import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessingStep}
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{
-  DeterminantLogReader,
-  DeterminantLogWriter
-}
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.{DeterminantLogReader, DeterminantLogWriter}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StepLoggingConfig
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2Message.SealedValue.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import java.io.{DataInputStream, DataOutputStream}
 import scala.collection.mutable.ArrayBuffer
@@ -31,6 +31,7 @@ object DeterminantLogStorage {
     }.withRegistrar(r)
     KryoPool.withByteArrayOutputStream(Runtime.getRuntime.availableProcessors * 2, ki)
   }
+
 
   // For debugging purpose only
   def fetchAllLogRecords(storage: DeterminantLogStorage): Iterable[InMemDeterminant] = {
@@ -84,16 +85,20 @@ object DeterminantLogStorage {
     }
   }
 
-  def getLogStorage(storageType: String, name: String): DeterminantLogStorage = {
-    storageType match {
-      case "local" => new LocalFSLogStorage(name)
-      case "hdfs" =>
-        val hdfsIP: String =
-          AmberUtils.amberConfig.getString("fault-tolerance.hdfs-storage.address")
-        new HDFSLogStorage(name, hdfsIP)
-      case "none" =>
+  def getLogStorage(stepLoggingConfig: Option[StepLoggingConfig]): DeterminantLogStorage = {
+    stepLoggingConfig match {
+      case None =>
         new EmptyLogStorage()
-      case other => throw new RuntimeException("Cannot support log storage type of " + other)
+      case Some(conf) =>
+        conf.logStorageType match {
+          case "local" => new LocalFSLogStorage(conf.storageKey)
+          case "hdfs" =>
+            val hdfsIP: String =
+              AmberUtils.amberConfig.getString("fault-tolerance.hdfs-storage.address")
+            new HDFSLogStorage(conf.storageKey, hdfsIP)
+          case other =>
+            throw new RuntimeException("Cannot support log storage type of " + other)
+        }
     }
   }
 
@@ -108,15 +113,5 @@ abstract class DeterminantLogStorage {
   def isLogAvailableForRead: Boolean
 
   def deleteLog(): Unit
-
-  def cleanPartiallyWrittenLogFile(): Unit
-
-  protected def copyReadableLogRecords(writer: DeterminantLogWriter): Unit = {
-    val recordIterator = getReader.mkLogRecordIterator()
-    while (recordIterator.hasNext) {
-      writer.writeLogRecord(recordIterator.next())
-    }
-    writer.close()
-  }
 
 }

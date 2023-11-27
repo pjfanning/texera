@@ -5,25 +5,17 @@ import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StateRestoreConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, WorkflowIdentity}
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowStateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
-  COMPLETED,
-  FAILED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
@@ -93,7 +85,7 @@ class WorkflowJobService(
     try {
       workflowCompiler = new WorkflowCompiler(logicalPlan)
       workflow = workflowCompiler.amberWorkflow(
-        WorkflowIdentity(workflowContext.jobId),
+        WorkflowIdentity(workflowContext.wId.toString),
         resultService.opResultStorage,
         lastCompletedLogicalPlan
       )
@@ -115,10 +107,6 @@ class WorkflowJobService(
     }
   }
 
-  private val controllerConfig = {
-    ControllerConfig.default
-  }
-
   // Runtime starts from here:
   logger.info("Initialing an AmberClient, runtime starting...")
   var client: AmberClient = _
@@ -128,7 +116,7 @@ class WorkflowJobService(
   var jobRuntimeService: JobRuntimeService = _
   var jobConsoleService: JobConsoleService = _
 
-  def startWorkflow(): Unit = {
+  def startWorkflow(controllerConfig:ControllerConfig): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
       controllerConfig,

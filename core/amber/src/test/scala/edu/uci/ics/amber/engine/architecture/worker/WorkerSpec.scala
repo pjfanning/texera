@@ -97,7 +97,7 @@ class WorkerSpec
         identifier1,
         workerIndex,
         opExecConfig,
-        WorkflowWorkerConfig("none", None)
+        WorkflowWorkerConfig(None, None)
       ) {
         this.dp =
           new DataProcessor(identifier1, workerIndex, mockOpExecutor, opExecConfig, mockHandler) {

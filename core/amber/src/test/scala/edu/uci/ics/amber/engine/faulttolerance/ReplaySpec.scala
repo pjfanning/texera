@@ -37,8 +37,6 @@ class ReplaySpec
     override def isLogAvailableForRead: Boolean = true
 
     override def deleteLog(): Unit = ???
-
-    override def cleanPartiallyWrittenLogFile(): Unit = ???
   }
 
   private val actorId = ActorVirtualIdentity("test")

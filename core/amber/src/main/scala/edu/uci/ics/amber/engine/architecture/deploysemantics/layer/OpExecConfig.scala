@@ -4,29 +4,13 @@ import akka.actor.Deploy
 import akka.remote.RemoteScope
 import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService}
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, OperatorExecution}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
-  AddressInfo,
-  LocationPreference,
-  PreferController,
-  RoundRobinPreference
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
-import edu.uci.ics.amber.engine.common.{
-  AmberUtils,
-  Constants,
-  IOperatorExecutor,
-  ISourceOperatorExecutor,
-  VirtualIdentityUtils
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.{SELF, makeLayer}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.{AmberUtils, Constants, IOperatorExecutor, ISourceOperatorExecutor, VirtualIdentityUtils}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.udf.python.PythonUDFOpExecV2
@@ -252,7 +236,6 @@ case class OpExecConfig(
         val workerId: ActorVirtualIdentity = VirtualIdentityUtils.createWorkerIdentity(id, i)
         val locationPreference = this.locationPreference.getOrElse(new RoundRobinPreference())
         val preferredAddress = locationPreference.getPreferredLocation(addressInfo, this, i)
-
         val workflowWorker = if (this.isPythonOperator) {
           PythonWorkflowWorker.props(workerId)
         } else {
@@ -261,8 +244,8 @@ case class OpExecConfig(
             i,
             this,
             WorkflowWorkerConfig(
-              AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-              Some(Long.MaxValue)
+              controllerConf.stateRestoreConfigs(workerId),
+              controllerConf.stepLoggingConfigs(workerId)
             )
           )
         }

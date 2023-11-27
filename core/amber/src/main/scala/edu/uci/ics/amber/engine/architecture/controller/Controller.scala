@@ -4,9 +4,11 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{StateRestoreConfig, StepLoggingConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -14,6 +16,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import scala.concurrent.duration.DurationInt
 
@@ -24,8 +27,7 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-      Some(Long.MaxValue)
+      Map.empty,Map.empty
     )
 }
 
@@ -33,8 +35,8 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
-    logStorageType: String,
-    replayTo: Option[Long]
+    stateRestoreConfigs: ActorVirtualIdentity => Option[StateRestoreConfig],
+    stepLoggingConfigs: ActorVirtualIdentity => Option[StepLoggingConfig]
 )
 
 object Controller {
@@ -59,10 +61,9 @@ class Controller(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig
 ) extends WorkflowActor(
-      controllerConfig.logStorageType,
+      controllerConfig.stepLoggingConfigs(CONTROLLER),
       CONTROLLER
     ) {
-
   actorRefMappingService.registerActorRef(CLIENT, context.parent)
   val controllerTimerService = new ControllerTimerService(controllerConfig, actorService)
   val cp = new ControllerProcessor(
@@ -85,13 +86,15 @@ class Controller(
     cp.setupActorService(actorService)
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
-    if (controllerConfig.replayTo.isDefined) {
+    val stateRestoreConfig = controllerConfig.stateRestoreConfigs(CONTROLLER)
+    if (stateRestoreConfig.isDefined) {
+      val logs = DeterminantLogStorage.getLogStorage(Some(stateRestoreConfig.get.readFrom))
       replayManager.markRecoveryStatus(CONTROLLER, true)
       val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
       cp.inputGateway = replayGateway
       replayGateway.setupReplay(
-        logStorage,
-        controllerConfig.replayTo.get,
+        logs,
+        stateRestoreConfig.get.replayTo,
         () => {
           replayManager.markRecoveryStatus(CONTROLLER, false)
           cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway

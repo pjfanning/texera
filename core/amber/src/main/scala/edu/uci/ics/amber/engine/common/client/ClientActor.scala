@@ -47,8 +47,6 @@ private[client] class ClientActor extends Actor with AmberLogging {
   val promiseMap = new mutable.LongMap[Promise[Any]]()
   var handlers: PartialFunction[Any, Unit] = PartialFunction.empty
 
-  private val controlChannelId = ChannelID(CLIENT, CONTROLLER, isControl = true)
-
   private def getQueuedCredit(channel: ChannelID): Long = {
     0L // client does not have queued credits
   }

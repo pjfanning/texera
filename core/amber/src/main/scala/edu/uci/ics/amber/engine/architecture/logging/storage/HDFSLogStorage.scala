@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 
 import java.net.URI
 
-class HDFSLogStorage(name: String, hdfsIP: String) extends DeterminantLogStorage with LazyLogging {
+class HDFSLogStorage(logKey: String, hdfsIP: String) extends DeterminantLogStorage with LazyLogging {
   var hdfs: FileSystem = _
   val hdfsConf = new Configuration
   hdfsConf.set("dfs.client.block.write.replace-datanode-on-failure.enable", "false")
@@ -20,13 +20,13 @@ class HDFSLogStorage(name: String, hdfsIP: String) extends DeterminantLogStorage
     case e: Exception =>
       logger.warn("Caught error during creating hdfs", e)
   }
-  private val recoveryLogFolder: Path = new Path("/recovery-logs")
-  if (!hdfs.exists(recoveryLogFolder)) {
-    hdfs.mkdirs(recoveryLogFolder)
+  private val recoveryLogPath: Path = new Path("/recovery-logs/"+logKey+".logfile")
+  if (!hdfs.exists(recoveryLogPath.getParent)) {
+    hdfs.mkdirs(recoveryLogPath.getParent)
   }
 
   private def getLogPath: Path = {
-    new Path("/recovery-logs/" + name + ".logfile")
+    recoveryLogPath
   }
 
   override def getWriter: DeterminantLogWriter = {
@@ -48,16 +48,6 @@ class HDFSLogStorage(name: String, hdfsIP: String) extends DeterminantLogStorage
     if (hdfs.exists(path)) {
       hdfs.delete(path, false)
     }
-  }
-
-  override def cleanPartiallyWrittenLogFile(): Unit = {
-    var tmpPath = getLogPath
-    tmpPath = tmpPath.suffix(".tmp")
-    copyReadableLogRecords(new DeterminantLogWriter(hdfs.create(tmpPath)))
-    if (hdfs.exists(getLogPath)) {
-      hdfs.delete(getLogPath, false)
-    }
-    hdfs.rename(tmpPath, getLogPath)
   }
 
   override def isLogAvailableForRead: Boolean = {
