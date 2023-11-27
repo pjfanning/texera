@@ -4,12 +4,13 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
