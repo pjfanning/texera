@@ -122,8 +122,13 @@ export class UserDatasetComponent implements AfterViewInit {
   public onClickOpenDatasetAddComponent(): void {
     const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
 
+    modalRef.componentInstance.datasetAdded.pipe(untilDestroyed(this))
+     .subscribe(() => {
+     this.reloadDashboardDatasetEntries(true); // Refresh the dataset list when a new dataset is added
+    });
+
     modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
-      this.reloadDashboardDatasetEntries(true)
+      this.reloadDashboardDatasetEntries(true) //maybe delete this two lines? did not work for refresh
     });
   }
 

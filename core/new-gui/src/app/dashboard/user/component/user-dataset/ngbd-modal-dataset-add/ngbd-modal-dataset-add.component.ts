@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { OnInit, Component, EventEmitter, Output } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { Dataset } from "../../../../../common/type/dataset";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
@@ -15,6 +14,8 @@ import { UserService } from "../../../../../common/service/user/user.service";
 })
 export class NgbdModalDatasetAddComponent implements OnInit {
   validateForm: FormGroup;
+
+  @Output() datasetAdded = new EventEmitter<void>();
 
   constructor(
     private activeModal: NgbActiveModal,
@@ -49,7 +50,10 @@ export class NgbdModalDatasetAddComponent implements OnInit {
     this.datasetService.createDataset(ds)
       .pipe(untilDestroyed(this))
       .subscribe({
-        next: value => console.log("Dataset Creation succeeded"),
+        next: value => {
+          console.log("Dataset Creation succeeded");
+          this.datasetAdded.emit(); // Emit the event after successful addition
+        },
         error: (err) => alert(JSON.stringify(err.error)),
         complete: () => this.activeModal.close()
       });
