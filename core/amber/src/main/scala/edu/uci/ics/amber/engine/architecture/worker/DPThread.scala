@@ -156,7 +156,7 @@ class DPThread(
         } else {
           None //skip large dataframes
         }
-        logManager.doFaultTolerantProcessing(channelID, msgToLog) {
+        logManager.withFaultTolerant(channelID, msgToLog) {
           msgOpt match {
             case None =>
               dp.continueDataProcessing()

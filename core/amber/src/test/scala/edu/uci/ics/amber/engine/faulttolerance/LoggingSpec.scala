@@ -62,7 +62,7 @@ class LoggingSpec
     payloadToLog.foreach { payload =>
       val channel = ChannelID(CONTROLLER, SELF, isControl = true)
       val msgOpt = Some(WorkflowFIFOMessage(channel, 0, payload))
-      logManager.doFaultTolerantProcessing(channel, msgOpt) {
+      logManager.withFaultTolerant(channel, msgOpt) {
         // do nothing
       }
     }

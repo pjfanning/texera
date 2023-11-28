@@ -41,7 +41,7 @@ trait LogManager {
 
   def getStep: Long
 
-  def doFaultTolerantProcessing(
+  def withFaultTolerant(
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   )(code: => Unit): Unit
@@ -59,7 +59,7 @@ class EmptyLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends LogManag
 
   override def terminate(): Unit = {}
 
-  override def doFaultTolerantProcessing(channel: ChannelID, message: Option[WorkflowFIFOMessage])(
+  override def withFaultTolerant(channel: ChannelID, message: Option[WorkflowFIFOMessage])(
       code: => Unit
   ): Unit = code
 }
@@ -72,7 +72,7 @@ class LogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends LogManager {
 
   private val cursor = new ProcessingStepCursor()
 
-  def doFaultTolerantProcessing(
+  def withFaultTolerant(
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   )(code: => Unit): Unit = {
