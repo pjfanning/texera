@@ -77,6 +77,16 @@ export class userDatasetViewComponent implements OnInit {
 
     }
 
+    refreshVersionList() {
+      this.datasetService.retrieveDatasetVersionList(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe(versionNames => {
+          this.versionNames = versionNames;
+          this.selectedVersion = this.versionNames[0];
+          this.onVersionSelected(this.selectedVersion);
+        });
+    }
+
     turnOffAllDisplay() {
       this.pdfDisplay = false;
       this.csvDisplay = false;
@@ -161,15 +171,21 @@ export class userDatasetViewComponent implements OnInit {
     public openFileAddComponent() {
       const modalRef = this.modalService.open(NgbdModelDatasetFileAddComponent);
 
+      modalRef.componentInstance.versionAdded.pipe(untilDestroyed(this))
+        .subscribe(() => {
+        this.refreshVersionList();
+      });
+
       modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
 
       });
-      
+
       let allVersions: string[] = [...this.versionNames];
       allVersions.push("");
       modalRef.componentInstance.did = this.did;
-      modalRef.componentInstance.existedVersions = [...allVersions]; 
+      modalRef.componentInstance.existedVersions = [...allVersions];
     }
+
 
     options: ITreeOptions = {
       displayField: 'name',

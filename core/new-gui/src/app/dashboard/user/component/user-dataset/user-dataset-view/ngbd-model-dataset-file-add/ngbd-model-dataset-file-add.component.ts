@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { OnInit, Component, Output, EventEmitter } from '@angular/core';
 import { ActivatedRoute } from "@angular/router";
 import { FileUploader } from "ng2-file-upload";
 import { FileUploadItem } from "../../../../type/dashboard-file.interface";
@@ -26,6 +26,8 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   private filesToBeUploaded: FileUploadItem[] = [];
   private did: number = 0;
 
+  @Output() versionAdded = new EventEmitter<void>();
+
   constructor(
     public activeModal: NgbActiveModal, private datasetService: DatasetService
   ) {}
@@ -33,7 +35,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   ngOnInit(): void {}
 
   // will be replaced by new service function
-  
+
   public getFileArray(): FileUploadItem[] {
     return this.filesToBeUploaded;
   }
@@ -65,7 +67,7 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
   }
 
   public isCreateButtonDisabled(): boolean {
-    return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag); 
+    return this.filesToBeUploaded.every(fileUploadItem => fileUploadItem.isUploadingFlag);
   }
 
   public haveFileOver(fileOverEvent: boolean): void {
@@ -108,8 +110,13 @@ export class NgbdModelDatasetFileAddComponent implements OnInit {
     .subscribe(() => {
       this.filesToBeUploaded = [];
       this.activeModal.dismiss('Cross click');
+      this.onVersionAdd();
     })
 
+  }
+
+  onVersionAdd() {
+    this.versionAdded.emit();
   }
 
   public onBaseVersionSelected(versionName: string) {
