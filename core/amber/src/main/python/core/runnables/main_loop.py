@@ -357,4 +357,3 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self._check_and_report_console_messages(force_flush=True)
         self._check_and_report_debug_event()
         self._check_exception()
-
