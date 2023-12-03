@@ -12,8 +12,10 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   ActorCommandElement,
   DPInputQueueElement,
   FIFOMessageElement,
-  TimerBasedControlElement
+  TimerBasedControlElement,
+  WorkflowWorkerConfig
 }
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
@@ -45,7 +47,6 @@ object WorkflowWorker {
   final case class FIFOMessageElement(msg: WorkflowFIFOMessage) extends DPInputQueueElement
   final case class TimerBasedControlElement(control: ControlInvocation) extends DPInputQueueElement
   final case class ActorCommandElement(cmd: ActorCommand) extends DPInputQueueElement
-
 
   final case class WorkflowWorkerConfig(logStorageType: String)
 }

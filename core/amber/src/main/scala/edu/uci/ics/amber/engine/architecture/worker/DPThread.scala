@@ -7,7 +7,12 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READ
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DataPayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  DataPayload,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -121,9 +126,9 @@ class DPThread(
             val channel = dp.inputGateway.getChannel(selfControlChannelId)
             channel.acceptMessage(
               WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, control)
+            )
           case WorkflowWorker.ActorCommandElement(msg) =>
             handleActorCommand(msg)
-            )
         }
       }
 

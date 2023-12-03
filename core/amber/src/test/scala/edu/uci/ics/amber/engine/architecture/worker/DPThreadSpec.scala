@@ -134,8 +134,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   }
 
   "DP Thread" should "write determinant logs to local storage while processing" in {
-    val dp = new DataProcessor(identifier, 0, operator, opExecConfig, x => {})
-    val inputQueue = new LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]()
+    val dp = new DataProcessor(identifier, x => {})
+    dp.initOperator(0, opExecConfig, Iterator.empty)
+    val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
     dp.registerInput(anotherSender, mockLink)
@@ -155,12 +156,12 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
     val message4 = WorkflowFIFOMessage(dataChannelID, 2, DataFrame(tuples.slice(200, 300)))
     val message5 = WorkflowFIFOMessage(dataChannelID2, 1, DataFrame(tuples.slice(1000, 5000)))
-    inputQueue.put(Left(message1))
-    inputQueue.put(Left(message2))
-    inputQueue.put(Left(message3))
+    inputQueue.put(FIFOMessageElement(message1))
+    inputQueue.put(FIFOMessageElement(message2))
+    inputQueue.put(FIFOMessageElement(message3))
     Thread.sleep(1000)
-    inputQueue.put(Left(message4))
-    inputQueue.put(Left(message5))
+    inputQueue.put(FIFOMessageElement(message4))
+    inputQueue.put(FIFOMessageElement(message5))
     Thread.sleep(1000)
     while (logManager.getStep < 4999) {
       Thread.sleep(100)
