@@ -168,9 +168,9 @@ class DPThread(
       // Main loop step 3: process selected message payload
       //
       if (channelID != null) {
-        val msgToLog = if(channelID.isControl){
+        val msgToLog = if (channelID.isControl) {
           msgOpt
-        }else{
+        } else {
           None //skip large dataframes
         }
         logManager.withFaultTolerant(channelID, msgToLog) {

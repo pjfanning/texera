@@ -3,11 +3,8 @@ package edu.uci.ics.texera.web.service
 import java.util.concurrent.ConcurrentHashMap
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StepLoggingConfig
+import edu.uci.ics.amber.engine.architecture.logreplay.LogReplayUtils
 import edu.uci.ics.amber.engine.common.AmberUtils
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.amber.engine.faulttolerance.LogReplayUtils
 
 import scala.collection.JavaConverters._
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
@@ -148,7 +145,7 @@ class WorkflowService(
       req.executionName,
       convertToJson(req.engineVersion)
     )
-    if(workflowContext.executionID == -1){
+    if (workflowContext.executionID == -1) {
       workflowContext.executionID = WorkflowWebsocketResource.nextExecutionID.incrementAndGet
     }
 
@@ -165,12 +162,13 @@ class WorkflowService(
       val logStorage = AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type")
       val executionId = workflowContext.executionID.toString
       val controllerConfig = ControllerConfig.default.copy(
-        stateRestoreConfigs = if(executionId == "1"){
-          x => None
-        }else{
+        stateRestoreConfigs = if (executionId == "1") { x =>
+          None
+        } else {
           LogReplayUtils.recoveryConfGen(workflowContext.wId.intValue(), "1", logStorage)
         },
-        stepLoggingConfigs = LogReplayUtils.logConfGen(workflowContext.wId.intValue(), executionId, logStorage)
+        stepLoggingConfigs =
+          LogReplayUtils.logConfGen(workflowContext.wId.intValue(), executionId, logStorage)
       )
       job.startWorkflow(controllerConfig)
     }

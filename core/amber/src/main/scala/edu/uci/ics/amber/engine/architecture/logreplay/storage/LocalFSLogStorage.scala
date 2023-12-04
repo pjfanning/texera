@@ -6,11 +6,11 @@ import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.
 }
 
 import java.io.{DataInputStream, DataOutputStream}
-import java.nio.file.{Files, Path, Paths, StandardCopyOption, StandardOpenOption}
+import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
 class LocalFSLogStorage(logKey: String) extends ReplayLogStorage {
 
-  private val recoveryLogPath: Path = Paths.get("").resolve("recovery-logs/"+logKey + ".logfile")
+  private val recoveryLogPath: Path = Paths.get("").resolve("recovery-logs/" + logKey + ".logfile")
   if (!Files.exists(recoveryLogPath.getParent)) {
     Files.createDirectories(recoveryLogPath.getParent)
   }

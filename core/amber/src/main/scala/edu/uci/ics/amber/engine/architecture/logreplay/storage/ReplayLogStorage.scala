@@ -2,7 +2,6 @@ package edu.uci.ics.amber.engine.architecture.logreplay.storage
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
-import edu.uci.ics.amber.engine.architecture.logging.{InMemDeterminant, ProcessingStep}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StepLoggingConfig
 import edu.uci.ics.amber.engine.architecture.logreplay.{
   MessageContent,
@@ -17,8 +16,6 @@ import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlComma
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.AmberUtils
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import java.io.{DataInputStream, DataOutputStream}
 import scala.collection.mutable.ArrayBuffer
@@ -41,7 +38,6 @@ object ReplayLogStorage {
     }.withRegistrar(r)
     KryoPool.withByteArrayOutputStream(Runtime.getRuntime.availableProcessors * 2, ki)
   }
-
 
   // For debugging purpose only
   def fetchAllLogRecords(storage: ReplayLogStorage): Iterable[ReplayLogRecord] = {

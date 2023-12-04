@@ -22,8 +22,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
-import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -51,11 +49,14 @@ object WorkflowWorker {
   final case class TimerBasedControlElement(control: ControlInvocation) extends DPInputQueueElement
   final case class ActorCommandElement(cmd: ActorCommand) extends DPInputQueueElement
 
-  final case class StateRestoreConfig(readFrom: StepLoggingConfig, replayTo:Long)
+  final case class StateRestoreConfig(readFrom: StepLoggingConfig, replayTo: Long)
 
   final case class StepLoggingConfig(logStorageType: String, storageKey: String)
 
-  final case class WorkflowWorkerConfig(stateRestoreConfig: Option[StateRestoreConfig], stepLoggingConfig: Option[StepLoggingConfig])
+  final case class WorkflowWorkerConfig(
+      stateRestoreConfig: Option[StateRestoreConfig],
+      stepLoggingConfig: Option[StepLoggingConfig]
+  )
 
 }
 
@@ -95,7 +96,7 @@ class WorkflowWorker(
       logger.info(
         s"setting up replay, " +
           s"current step = ${logManager.getStep} " +
-          s"target step = ${workerConf.replayTo.get} " +
+          s"target step = ${workerConf.stateRestoreConfig.get.replayTo} " +
           s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
     }

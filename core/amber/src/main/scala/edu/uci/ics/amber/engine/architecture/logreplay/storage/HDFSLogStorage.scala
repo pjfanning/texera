@@ -20,7 +20,7 @@ class HDFSLogStorage(logKey: String, hdfsIP: String) extends ReplayLogStorage wi
     case e: Exception =>
       logger.warn("Caught error during creating hdfs", e)
   }
-  private val recoveryLogPath: Path = new Path("/recovery-logs/"+logKey+".logfile")
+  private val recoveryLogPath: Path = new Path("/recovery-logs/" + logKey + ".logfile")
   if (!hdfs.exists(recoveryLogPath.getParent)) {
     hdfs.mkdirs(recoveryLogPath.getParent)
   }

@@ -8,7 +8,10 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusU
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{StateRestoreConfig, StepLoggingConfig}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  StateRestoreConfig,
+  StepLoggingConfig
+}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
@@ -16,7 +19,6 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
-import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import scala.concurrent.duration.DurationInt
 
@@ -27,7 +29,8 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      x => None,x => None
+      x => None,
+      x => None
     )
 }
 
@@ -91,7 +94,7 @@ class Controller(
       val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
       cp.inputGateway = replayGateway
       replayGateway.setupReplay(
-        logStorage,
+        logs,
         stateRestoreConfig.get.replayTo,
         () => {
           replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
@@ -101,7 +104,7 @@ class Controller(
       logger.info(
         s"setting up replay, " +
           s"current step = ${logManager.getStep} " +
-          s"target step = ${controllerConfig.replayTo.get} " +
+          s"target step = ${stateRestoreConfig.get.replayTo} " +
           s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
       processMessages()
