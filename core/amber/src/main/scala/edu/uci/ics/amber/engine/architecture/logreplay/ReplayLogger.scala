@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 
 abstract class ReplayLogger {
 
-  def setCurrentStepWithMessage(
+  def logCurrentStepWithMessage(
       step: Long,
       channel: ChannelID,
       msg: Option[WorkflowFIFOMessage]

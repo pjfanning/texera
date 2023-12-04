@@ -7,7 +7,7 @@ class EmptyReplayLogger extends ReplayLogger {
     Array.empty
   }
 
-  override def setCurrentStepWithMessage(
+  override def logCurrentStepWithMessage(
       step: Long,
       channel: ChannelID,
       msg: Option[WorkflowFIFOMessage]

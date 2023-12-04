@@ -72,7 +72,7 @@ class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayL
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   )(code: => Unit): Unit = {
-    replayLogger.setCurrentStepWithMessage(cursor.getStep, channel, message)
+    replayLogger.logCurrentStepWithMessage(cursor.getStep, channel, message)
     cursor.setCurrentChannel(channel)
     try {
       code
