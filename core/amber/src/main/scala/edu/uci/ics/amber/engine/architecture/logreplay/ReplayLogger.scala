@@ -1,8 +1,8 @@
-package edu.uci.ics.amber.engine.architecture.logging
+package edu.uci.ics.amber.engine.architecture.logreplay
 
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
-abstract class DeterminantLogger {
+abstract class ReplayLogger {
 
   def setCurrentStepWithMessage(
       step: Long,
@@ -10,6 +10,6 @@ abstract class DeterminantLogger {
       msg: Option[WorkflowFIFOMessage]
   ): Unit
 
-  def drainCurrentLogRecords(step: Long): Array[InMemDeterminant]
+  def drainCurrentLogRecords(step: Long): Array[ReplayLogRecord]
 
 }

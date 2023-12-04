@@ -1,8 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
@@ -44,8 +44,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
-  private val logStorage = DeterminantLogStorage.getLogStorage("none", "log")
-  private val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
+  private val logStorage = ReplayLogStorage.getLogStorage("none", "log")
+  private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, x => {})
@@ -142,9 +142,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val logStorage = DeterminantLogStorage.getLogStorage("local", "DPSpecTemp")
+    val logStorage = ReplayLogStorage.getLogStorage("local", "DPSpecTemp")
     logStorage.deleteLog()
-    val logManager: LogManager = LogManager.getLogManager(logStorage, x => {})
+    val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>

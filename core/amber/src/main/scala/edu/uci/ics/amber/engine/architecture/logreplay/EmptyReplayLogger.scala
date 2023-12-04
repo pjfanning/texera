@@ -1,9 +1,9 @@
-package edu.uci.ics.amber.engine.architecture.logging
+package edu.uci.ics.amber.engine.architecture.logreplay
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
-class EmptyDeterminantLogger extends DeterminantLogger {
+class EmptyReplayLogger extends ReplayLogger {
 
-  override def drainCurrentLogRecords(step: Long): Array[InMemDeterminant] = {
+  override def drainCurrentLogRecords(step: Long): Array[ReplayLogRecord] = {
     Array.empty
   }
 

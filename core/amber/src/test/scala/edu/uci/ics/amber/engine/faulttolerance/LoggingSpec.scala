@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
@@ -56,9 +56,9 @@ class LoggingSpec
 
   "determinant logger" should "log processing steps in local storage" in {
     val tempLogFileName = "tempLogFile"
-    val logStorage = DeterminantLogStorage.getLogStorage("local", tempLogFileName)
+    val logStorage = ReplayLogStorage.getLogStorage("local", tempLogFileName)
     logStorage.deleteLog()
-    val logManager = LogManager.getLogManager(logStorage, x => {})
+    val logManager = ReplayLogManager.createLogManager(logStorage, x => {})
     payloadToLog.foreach { payload =>
       val channel = ChannelID(CONTROLLER, SELF, isControl = true)
       val msgOpt = Some(WorkflowFIFOMessage(channel, 0, payload))

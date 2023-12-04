@@ -1,13 +1,13 @@
-package edu.uci.ics.amber.engine.architecture.logging
+package edu.uci.ics.amber.engine.architecture.logreplay
 
 import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
 import scala.collection.mutable
 
-class DeterminantLoggerImpl extends DeterminantLogger {
+class ReplayLoggerImpl extends ReplayLogger {
 
-  private val tempLogs = mutable.ArrayBuffer[InMemDeterminant]()
+  private val tempLogs = mutable.ArrayBuffer[ReplayLogRecord]()
 
   private var currentChannel: ChannelID = _
 
@@ -18,17 +18,18 @@ class DeterminantLoggerImpl extends DeterminantLogger {
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   ): Unit = {
-    if (currentChannel != channel || message.isDefined) {
-      currentChannel = channel
-      lastStep = step
-      tempLogs.append(ProcessingStep(channel, step))
-      if (message.isDefined) {
-        tempLogs.append(MessageContent(message.get))
-      }
+    if (currentChannel == channel && message.isEmpty) {
+      return
+    }
+    currentChannel = channel
+    lastStep = step
+    tempLogs.append(ProcessingStep(channel, step))
+    if (message.isDefined) {
+      tempLogs.append(MessageContent(message.get))
     }
   }
 
-  def drainCurrentLogRecords(step: Long): Array[InMemDeterminant] = {
+  def drainCurrentLogRecords(step: Long): Array[ReplayLogRecord] = {
     if (lastStep != step) {
       lastStep = step
       tempLogs.append(ProcessingStep(currentChannel, step))

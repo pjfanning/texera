@@ -292,7 +292,7 @@ case class OpExecConfig(
           WorkflowWorker.props(
             workerId,
             i,
-            this,
+            workerLayer = this,
             WorkflowWorkerConfig("none")
           )
         }

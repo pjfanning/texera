@@ -13,8 +13,8 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
   NetworkMessage,
   RegisterActorRef
 }
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.TriggerSend
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
@@ -81,10 +81,10 @@ abstract class WorkflowActor(logStorageType: String, val actorId: ActorVirtualId
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
-  val logStorage: DeterminantLogStorage =
-    DeterminantLogStorage.getLogStorage(logStorageType, getLogName)
-  val logManager: LogManager =
-    LogManager.getLogManager(logStorage, sendMessageFromLogWriterToActor)
+  val logStorage: ReplayLogStorage =
+    ReplayLogStorage.getLogStorage(logStorageType, getLogName)
+  val logManager: ReplayLogManager =
+    ReplayLogManager.createLogManager(logStorage, sendMessageFromLogWriterToActor)
 
   def getLogName: String = actorId.name.replace("Worker:", "")
 

@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.DPInputQueueElement
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
@@ -28,7 +28,7 @@ import java.util.concurrent.{
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
-    logManager: LogManager,
+    logManager: ReplayLogManager,
     internalQueue: LinkedBlockingQueue[DPInputQueueElement]
 ) extends AmberLogging {
 
