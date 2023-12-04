@@ -1,0 +1,35 @@
+
+<nz-timeline
+[nzPending]="replay.isReplaying ? 'Replaying to ' + (replay.selectedKey / 1000) + 's ...' : false">
+  <nz-timeline-item
+  *ngFor="let t of replay.history.keys();"
+  [nzDot]="replay.history.get(t)!.isInteraction? interaction:nonInteraction"
+  [nzColor]="(replay.history.get(t)!.checkpointStatus === 'partial' ? 'green' : (replay.history.get(t)!.checkpointStatus === 'none' ? 'gray': 'blue'))"
+  >
+    <div
+      [style]="{
+        'padding-bottom': replay.history.get(t)!.padding+'px',
+        'padding-top': '0px',
+        'margin-top': '0px',
+        'margin-bottom': '0px',
+        'font-weight': replay.selectedKey === t? 'bold': 'normal'
+        }">
+      <p *ngIf="!replay.history.get(t)!.isInteraction" [style]="{'cursor':'default','margin-bottom': '0px'}">{{(t / 1000) + 's'}}</p>
+      <p *ngIf="replay.history.get(t)!.isInteraction" (click)="replay.selectReplayPoint(t)" [style]="{'cursor': 'pointer', 'margin-bottom': '0px'}">{{(t / 1000) + 's'}}</p>
+    </div>
+  </nz-timeline-item>
+</nz-timeline>
+<ng-template #nonInteraction>
+  <span nz-icon nzType="down-square"></span>
+</ng-template>
+
+<ng-template #interaction>
+  <span nz-icon nzType="play-circle"></span>
+</ng-template>
+
+<button
+  id="close-button"
+  nz-button
+  (click)="replay.closeReplayPanel()">
+  close replay
+</button>

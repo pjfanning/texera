@@ -135,6 +135,8 @@ import { PublicProjectComponent } from "./dashboard/user/component/user-project/
 import { NzAlertModule } from "ng-zorro-antd/alert";
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
+import {ReplayDisplayComponent} from "./workspace/component/left-panel/replay-display/replay-display.component";
+import {NzTimelineModule} from "ng-zorro-antd/timeline";
 
 registerLocaleData(en);
 
@@ -210,6 +212,7 @@ registerLocaleData(en);
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
+    ReplayDisplayComponent,
   ],
   imports: [
     BrowserModule,
@@ -278,6 +281,7 @@ registerLocaleData(en);
     MarkdownModule.forRoot(),
     DragDropModule,
     NzAlertModule,
+    NzTimelineModule,
   ],
   providers: [
     AuthGuardService,

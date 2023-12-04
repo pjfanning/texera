@@ -74,7 +74,7 @@ class Controller(
     logManager.sendCommitted
   )
 
-  val replayManager = new GlobalReplayManager(
+  private val replayManager = new GlobalReplayManager(
     () => {
       cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
     },

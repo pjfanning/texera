@@ -29,6 +29,7 @@ import { of, Subscription, throwError, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
 import { assert } from "../../../common/util/assert";
+import { ReplayWorkflowService } from "../../service/replay-workflow/replay-workflow.service";
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -96,7 +97,8 @@ export class NavigationComponent implements OnInit {
     private userProjectService: UserProjectService,
     private notificationService: NotificationService,
     public operatorMenu: OperatorMenuService,
-    public coeditorPresenceService: CoeditorPresenceService
+    public coeditorPresenceService: CoeditorPresenceService,
+    public workflowReplayService: ReplayWorkflowService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")

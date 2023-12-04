@@ -7,8 +7,14 @@ import {
   OPEN_VERSIONS_FRAME_EVENT,
   WorkflowVersionService,
 } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
+import {
+  DISPLAY_WORKFLOW_EXECUTION_REPLAY,
+  ReplayWorkflowService
+} from "../../service/replay-workflow/replay-workflow.service";
+import {merge} from "rxjs";
+import {ReplayDisplayComponent} from "./replay-display/replay-display.component";
 
-export type LeftFrameComponent = OperatorMenuFrameComponent | VersionsFrameComponent;
+export type LeftFrameComponent = OperatorMenuFrameComponent | VersionsFrameComponent | ReplayDisplayComponent;
 export type LeftFrameComponentConfig = DynamicComponentConfig<LeftFrameComponent>;
 
 @UntilDestroy()
@@ -20,7 +26,8 @@ export type LeftFrameComponentConfig = DynamicComponentConfig<LeftFrameComponent
 export class LeftPanelComponent implements OnInit {
   frameComponentConfig?: LeftFrameComponentConfig;
 
-  constructor(private workflowVersionService: WorkflowVersionService) {}
+  constructor(private workflowVersionService: WorkflowVersionService,
+              public replayWorkflowService: ReplayWorkflowService) {}
 
   ngOnInit(): void {
     this.registerVersionDisplayEventsHandler();
@@ -42,16 +49,22 @@ export class LeftPanelComponent implements OnInit {
   }
 
   registerVersionDisplayEventsHandler(): void {
-    this.workflowVersionService
-      .workflowVersionsDisplayObservable()
+    merge(this.workflowVersionService
+      .workflowVersionsDisplayObservable(), this.replayWorkflowService.displayWorkflowReplayStream())
       .pipe(untilDestroyed(this))
       .subscribe(event => {
-        if (event === OPEN_VERSIONS_FRAME_EVENT) {
+        const isDisplayWorkflowVersions =event===OPEN_VERSIONS_FRAME_EVENT;
+        const isDisplayWorkflowReplay = event === DISPLAY_WORKFLOW_EXECUTION_REPLAY;
+        if (isDisplayWorkflowVersions) {
           this.switchFrameComponent({
             component: VersionsFrameComponent,
           });
-        } else {
-          // CLOSE_VERSIONS_FRAME_EVENT
+        } if (isDisplayWorkflowReplay) {
+          this.switchFrameComponent({
+            component: ReplayDisplayComponent,
+          });
+        }else {
+          // go back to operator menu
           this.switchFrameComponent({
             component: OperatorMenuFrameComponent,
           });
