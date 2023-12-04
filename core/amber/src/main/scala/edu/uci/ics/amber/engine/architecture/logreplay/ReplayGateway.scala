@@ -5,8 +5,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 
 import scala.collection.mutable
 
-class ReplayGateway(logManager: ReplayLogManager)
-    extends InputGateway {
+class ReplayGateway(logManager: ReplayLogManager) extends InputGateway {
 
   val orderEnforcer: ReplayOrderEnforcer = new ReplayOrderEnforcer()
   private val inputChannels =
@@ -29,7 +28,7 @@ class ReplayGateway(logManager: ReplayLogManager)
     orderEnforcer.forwardReplayProcess(logManager.getStep)
     if (!orderEnforcer.isReplayCompleted) {
       pickInOrder(true)
-    }else{
+    } else {
       None
     }
   }

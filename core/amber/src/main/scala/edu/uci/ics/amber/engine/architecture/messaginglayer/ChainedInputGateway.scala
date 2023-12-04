@@ -4,22 +4,21 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 
 import scala.collection.mutable
 
-
 class ChainedInputGateway(gateways: mutable.ListBuffer[InputGateway]) extends InputGateway {
   override def tryPickControlChannel: Option[AmberFIFOChannel] = {
-      var msg: Option[WorkflowFIFOMessage] = None
-      gateways.init.foreach(gateway =>{
-              msg match {
-                case Some(msg) => gateway.acceptMessage( msg)
-                case None =>
-              }
+    var msg: Option[WorkflowFIFOMessage] = None
+    gateways.init.foreach(gateway => {
+      msg match {
+        case Some(msg) => gateway.acceptMessage(msg)
+        case None      =>
+      }
 
-              msg = gateway.tryPickControlChannel match {
-                case Some(channel) => Some(channel.take)
-                case None=> return None
-              }
-      })
-      gateways.last.tryPickControlChannel
+      msg = gateway.tryPickControlChannel match {
+        case Some(channel) => Some(channel.take)
+        case None          => return None
+      }
+    })
+    gateways.last.tryPickControlChannel
   }
 
   override def tryPickChannel: Option[AmberFIFOChannel] = {
@@ -27,12 +26,12 @@ class ChainedInputGateway(gateways: mutable.ListBuffer[InputGateway]) extends In
     gateways.init.foreach(gateway => {
       msg match {
         case Some(msg) => gateway.acceptMessage(msg)
-        case None =>
+        case None      =>
       }
 
       msg = gateway.tryPickChannel match {
         case Some(channel) => Some(channel.take)
-        case None => return None
+        case None          => return None
       }
     })
     gateways.last.tryPickChannel
@@ -43,7 +42,7 @@ class ChainedInputGateway(gateways: mutable.ListBuffer[InputGateway]) extends In
   }
 
   override def getChannel(channelId: ChannelID): AmberFIFOChannel = {
-      gateways.last.getChannel(channelId)
+    gateways.last.getChannel(channelId)
   }
 
   override def getAllControlChannels: Iterable[AmberFIFOChannel] = {
@@ -51,14 +50,14 @@ class ChainedInputGateway(gateways: mutable.ListBuffer[InputGateway]) extends In
   }
 
   override def acceptMessage(message: WorkflowFIFOMessage): Unit = {
-    gateways.head.acceptMessage( message)
+    gateways.head.acceptMessage(message)
   }
 
   def append(gateway: InputGateway): Unit = {
-    gateways+=gateway
+    gateways += gateway
   }
 
-  def remove(gateway:InputGateway):Unit ={
-    gateways-=gateway
+  def remove(gateway: InputGateway): Unit = {
+    gateways -= gateway
   }
 }

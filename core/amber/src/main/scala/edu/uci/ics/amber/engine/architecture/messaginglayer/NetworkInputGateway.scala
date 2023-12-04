@@ -45,9 +45,8 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   def getAllControlChannels: Iterable[AmberFIFOChannel] =
     inputChannels.filter(_._1.isControl).values
 
-  def acceptMessage( message: WorkflowFIFOMessage): Unit = {
-      getChannel(message.channel).acceptMessage(message)
+  def acceptMessage(message: WorkflowFIFOMessage): Unit = {
+    getChannel(message.channel).acceptMessage(message)
   }
-
 
 }

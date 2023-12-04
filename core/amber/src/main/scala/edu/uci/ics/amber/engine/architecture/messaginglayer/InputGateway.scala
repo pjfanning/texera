@@ -13,5 +13,5 @@ trait InputGateway {
 
   def getAllControlChannels: Iterable[AmberFIFOChannel]
 
-  def acceptMessage(message:WorkflowFIFOMessage) :Unit
+  def acceptMessage(message: WorkflowFIFOMessage): Unit
 }

@@ -7,9 +7,9 @@ import scala.collection.mutable
 
 class ReplayLogGenerator {
   def generate(
-                   logStorage: ReplayLogStorage,
-                 ): Tuple2[mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]] = {
-    val logs = logStorage.getReader.mkLogRecordIterator().toArray
+      logStorage: ReplayLogStorage
+  ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
+    val logs = logStorage.getReader.mkLogRecordIterator()
     val steps = mutable.Queue[ProcessingStep]()
     val messages = mutable.Queue[WorkflowFIFOMessage]()
     logs.foreach {
@@ -20,6 +20,6 @@ class ReplayLogGenerator {
       case other =>
         throw new RuntimeException(s"cannot handle $other in the log")
     }
-     Tuple2(steps, messages)
+    (steps, messages)
   }
 }

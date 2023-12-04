@@ -10,7 +10,13 @@ import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayGateway, ReplayLog
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, TimerBasedControlElement, WorkflowWorkerConfig}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  ActorCommandElement,
+  DPInputQueueElement,
+  FIFOMessageElement,
+  TimerBasedControlElement,
+  WorkflowWorkerConfig
+}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -90,7 +96,8 @@ class WorkflowWorker(
           s"target step = ${workerConf.replayTo.get} " +
           s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
-    }}
+    }
+  }
 
   override def initState(): Unit = {
     dp.InitTimerService(timerService)
