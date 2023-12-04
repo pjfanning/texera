@@ -2,12 +2,13 @@ package edu.uci.ics.amber.engine.faulttolerance
 
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage.DeterminantLogReader
-import edu.uci.ics.amber.engine.architecture.logging.{
-  InMemDeterminant,
-  LogManagerImpl,
-  ProcessingStep
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.ReplayLogReader
+import edu.uci.ics.amber.engine.architecture.logreplay.{
+  ProcessingStep,
+  ReplayGatewayWrapper,
+  ReplayLogManagerImpl,
+  ReplayLogRecord
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
@@ -26,12 +27,12 @@ class ReplaySpec
     with AnyFlatSpecLike
     with BeforeAndAfterAll {
 
-  class IterableReadOnlyLogStore(iter: Iterable[InMemDeterminant]) extends DeterminantLogStorage {
-    override def getWriter: DeterminantLogStorage.DeterminantLogWriter = ???
+  class IterableReadOnlyLogStore(iter: Iterable[ReplayLogRecord]) extends ReplayLogStorage {
+    override def getWriter: ReplayLogStorage.ReplayLogWriter = ???
 
-    override def getReader: DeterminantLogStorage.DeterminantLogReader =
-      new DeterminantLogReader(null) {
-        override def mkLogRecordIterator(): Iterator[InMemDeterminant] = iter.toIterator
+    override def getReader: ReplayLogStorage.ReplayLogReader =
+      new ReplayLogReader(null) {
+        override def mkLogRecordIterator(): Iterator[ReplayLogRecord] = iter.toIterator
       }
 
     override def isLogAvailableForRead: Boolean = true
@@ -46,7 +47,7 @@ class ReplaySpec
   private val channelId2 = ChannelID(actorId2, actorId, isControl = false)
   private val channelId3 = ChannelID(actorId3, actorId, isControl = false)
   private val channelId4 = ChannelID(actorId2, actorId, isControl = true)
-  private val logManager = new LogManagerImpl(x => {})
+  private val logManager = new ReplayLogManagerImpl(x => {})
 
   "replay input gate" should "replay the message payload in log order" in {
     val networkInputGateway = new NetworkInputGateway(actorId)
@@ -67,7 +68,7 @@ class ReplaySpec
     wrapper.setupReplay(new IterableReadOnlyLogStore(logRecords), 1000, () => {})
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
       val msg = wrapper.tryPickChannel.get.take
-      logManager.doFaultTolerantProcessing(msg.channel, Some(msg)) {
+      logManager.withFaultTolerant(msg.channel, Some(msg)) {
         assert(msg.channel == channelID && msg.sequenceNumber == seq)
       }
     }

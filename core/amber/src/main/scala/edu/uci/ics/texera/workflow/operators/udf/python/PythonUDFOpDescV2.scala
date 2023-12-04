@@ -4,24 +4,21 @@ import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.{
   InputPort,
   OperatorGroupConstants,
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.{
-  PortDescriptor,
-  OperatorDescriptor,
-  StateTransferFunc
-}
+import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{PartitionInfo, UnknownPartition}
 
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
-class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
+class PythonUDFOpDescV2 extends OperatorDescriptor {
   @JsonProperty(
     required = true,
     defaultValue =
@@ -78,9 +75,14 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
       opInfo.inputPorts.map(_ => None)
     }
     val dependency: Map[Int, Int] = if (inputPorts != null) {
-      inputPorts.zipWithIndex.flatMap {
-        case (port, i) => port.dependencies.map(dependee => i -> dependee)
-      }.toMap
+      inputPorts.zipWithIndex
+        .filter {
+          case (port, _) => port.dependencies != null
+        }
+        .flatMap {
+          case (port, i) => port.dependencies.map(dependee => i -> dependee)
+        }
+        .toMap
     } else {
       Map()
     }
@@ -89,7 +91,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
       OpExecConfig
         .oneToOneLayer(
           operatorIdentifier,
-          _ => new PythonUDFOpExecV2(code, operatorSchemaInfo.outputSchemas.head)
+          OpExecInitInfo(code)
         )
         .copy(
           numWorkers = workers,
@@ -100,11 +102,12 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
           partitionRequirement = partitionRequirement,
           dependency = dependency
         )
+        .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     else
       OpExecConfig
         .manyToOneLayer(
           operatorIdentifier,
-          _ => new PythonUDFOpExecV2(code, operatorSchemaInfo.outputSchemas.head)
+          OpExecInitInfo(code)
         )
         .copy(
           derivePartition = _ => UnknownPartition(),
@@ -114,6 +117,7 @@ class PythonUDFOpDescV2 extends OperatorDescriptor with PortDescriptor {
           partitionRequirement = partitionRequirement,
           dependency = dependency
         )
+        .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
   }
 
   override def operatorInfo: OperatorInfo = {

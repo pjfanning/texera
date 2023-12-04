@@ -1,9 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.DPInputQueueElement
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
+import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
@@ -11,7 +13,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   DataPayload,
   WorkflowFIFOMessage
 }
-import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely
@@ -27,8 +28,8 @@ import java.util.concurrent.{
 class DPThread(
     val actorId: ActorVirtualIdentity,
     dp: DataProcessor,
-    logManager: LogManager,
-    internalQueue: LinkedBlockingQueue[Either[WorkflowFIFOMessage, ControlInvocation]]
+    logManager: ReplayLogManager,
+    internalQueue: LinkedBlockingQueue[DPInputQueueElement]
 ) extends AmberLogging {
 
   // initialize dp thread upon construction
@@ -36,6 +37,8 @@ class DPThread(
   var dpThreadExecutor: ExecutorService = _
   @transient
   var dpThread: Future[_] = _
+
+  var backpressureStatus = false
 
   def getThreadName: String = "DP-thread"
 
@@ -93,6 +96,14 @@ class DPThread(
     }
   }
 
+  def handleActorCommand(cmd: ActorCommand): Unit = {
+    cmd match {
+      case Backpressure(enabled) =>
+        backpressureStatus = enabled
+      case _ => // no op
+    }
+  }
+
   @throws[Exception]
   private[this] def runDPThreadMainLogic(): Unit = {
     //
@@ -101,21 +112,23 @@ class DPThread(
     var waitingForInput = false
     while (!stopped) {
       while (internalQueue.size > 0 || waitingForInput) {
-        val msg = internalQueue.take
+        val elem = internalQueue.take
         waitingForInput = false
-        msg match {
-          case Left(msg) =>
+        elem match {
+          case WorkflowWorker.FIFOMessageElement(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
             channel.acceptMessage(msg)
-          case Right(ctrl) =>
+          case WorkflowWorker.TimerBasedControlElement(control) =>
             // establish order according to receiving order.
             // Note: this will not guarantee fifo & exactly-once
             // Please make sure the control here is IDEMPOTENT and ORDER-INDEPENDENT.
-            val selfControlChannelId = ChannelID(SELF, SELF, isControl = true)
-            val channel = dp.inputGateway.getChannel(selfControlChannelId)
+            val controlChannelId = ChannelID(SELF, SELF, isControl = true)
+            val channel = dp.inputGateway.getChannel(controlChannelId)
             channel.acceptMessage(
-              WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, ctrl)
+              WorkflowFIFOMessage(controlChannelId, channel.getCurrentSeq, control)
             )
+          case WorkflowWorker.ActorCommandElement(msg) =>
+            handleActorCommand(msg)
         }
       }
 
@@ -131,7 +144,7 @@ class DPThread(
             msgOpt = Some(channel.take)
           case None =>
             // continue processing
-            if (!dp.pauseManager.isPaused) {
+            if (!dp.pauseManager.isPaused && !backpressureStatus) {
               channelID = dp.currentBatchChannel
             } else {
               waitingForInput = true
@@ -139,7 +152,11 @@ class DPThread(
         }
       } else {
         // take from input port
-        dp.inputGateway.tryPickChannel match {
+        if (backpressureStatus) {
+          dp.inputGateway.tryPickControlChannel
+        } else {
+          dp.inputGateway.tryPickChannel
+        } match {
           case Some(channel) =>
             channelID = channel.channelId
             msgOpt = Some(channel.take)
@@ -156,7 +173,7 @@ class DPThread(
         }else{
           None //skip large dataframes
         }
-        logManager.doFaultTolerantProcessing(channelID, msgToLog) {
+        logManager.withFaultTolerant(channelID, msgToLog) {
           msgOpt match {
             case None =>
               dp.continueDataProcessing()

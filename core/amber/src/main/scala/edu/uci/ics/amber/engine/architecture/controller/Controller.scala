@@ -7,15 +7,15 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{StateRestoreConfig, StepLoggingConfig}
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.{AmberUtils, Constants}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
-import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import scala.concurrent.duration.DurationInt
@@ -40,8 +40,6 @@ final case class ControllerConfig(
 )
 
 object Controller {
-
-  val recoveryDelay: Long = AmberUtils.amberConfig.getLong("fault-tolerance.delay-before-recovery")
 
   def props(
       workflow: Workflow,
@@ -88,12 +86,12 @@ class Controller(
     cp.setupActorRefService(actorRefMappingService)
     val stateRestoreConfig = controllerConfig.stateRestoreConfigs(CONTROLLER)
     if (stateRestoreConfig.isDefined) {
-      val logs = DeterminantLogStorage.getLogStorage(Some(stateRestoreConfig.get.readFrom))
+      val logs = ReplayLogStorage.getLogStorage(Some(stateRestoreConfig.get.readFrom))
       replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
       val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
       cp.inputGateway = replayGateway
       replayGateway.setupReplay(
-        logs,
+        logStorage,
         stateRestoreConfig.get.replayTo,
         () => {
           replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
@@ -123,7 +121,7 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          logManager.doFaultTolerantProcessing(msg.channel, Some(msg)) {
+          logManager.withFaultTolerant(msg.channel, Some(msg)) {
             msg.payload match {
               case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
               case p                       => throw new RuntimeException(s"controller cannot handle $p")
@@ -142,10 +140,10 @@ class Controller(
       } else {
         CLIENT
       }
-      val selfControlChannelId = ChannelID(source, SELF, isControl = true)
-      val channel = cp.inputGateway.getChannel(selfControlChannelId)
+      val controlChannelId = ChannelID(source, SELF, isControl = true)
+      val channel = cp.inputGateway.getChannel(controlChannelId)
       channel.acceptMessage(
-        WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, c)
+        WorkflowFIFOMessage(controlChannelId, channel.getCurrentSeq, c)
       )
       processMessages()
   }

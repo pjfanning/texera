@@ -5,8 +5,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CreditRequest, CreditResponse, GetActorRef, MessageBecomesDeadLetter, NetworkAck, NetworkMessage, RegisterActorRef}
-import edu.uci.ics.amber.engine.architecture.logging.storage.DeterminantLogStorage
-import edu.uci.ics.amber.engine.architecture.logging.LogManager
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{StepLoggingConfig, TriggerSend}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
@@ -73,10 +73,10 @@ abstract class WorkflowActor(loggingConfig: Option[StepLoggingConfig], val actor
   val transferService: AkkaMessageTransferService =
     new AkkaMessageTransferService(actorService, actorRefMappingService, handleBackpressure)
 
-  val logStorage: DeterminantLogStorage =
-    DeterminantLogStorage.getLogStorage(loggingConfig)
-  val logManager: LogManager =
-    LogManager.getLogManager(logStorage, sendMessageFromLogWriterToActor)
+  val logStorage: ReplayLogStorage =
+    ReplayLogStorage.getLogStorage(loggingConfig)
+  val logManager: ReplayLogManager =
+    ReplayLogManager.createLogManager(logStorage, sendMessageFromLogWriterToActor)
 
   def getLogName: String = actorId.name.replace("Worker:", "")
 
