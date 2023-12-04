@@ -102,10 +102,10 @@ class Controller(
       } else {
         CLIENT
       }
-      val selfControlChannelId = ChannelID(source, SELF, isControl = true)
-      val channel = cp.inputGateway.getChannel(selfControlChannelId)
+      val controlChannelId = ChannelID(source, SELF, isControl = true)
+      val channel = cp.inputGateway.getChannel(controlChannelId)
       channel.acceptMessage(
-        WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, c)
+        WorkflowFIFOMessage(controlChannelId, channel.getCurrentSeq, c)
       )
       processMessages()
   }

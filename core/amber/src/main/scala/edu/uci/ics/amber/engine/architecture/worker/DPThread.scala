@@ -122,10 +122,10 @@ class DPThread(
             // establish order according to receiving order.
             // Note: this will not guarantee fifo & exactly-once
             // Please make sure the control here is IDEMPOTENT and ORDER-INDEPENDENT.
-            val selfControlChannelId = ChannelID(SELF, SELF, isControl = true)
-            val channel = dp.inputGateway.getChannel(selfControlChannelId)
+            val controlChannelId = ChannelID(SELF, SELF, isControl = true)
+            val channel = dp.inputGateway.getChannel(controlChannelId)
             channel.acceptMessage(
-              WorkflowFIFOMessage(selfControlChannelId, channel.getCurrentSeq, control)
+              WorkflowFIFOMessage(controlChannelId, channel.getCurrentSeq, control)
             )
           case WorkflowWorker.ActorCommandElement(msg) =>
             handleActorCommand(msg)
