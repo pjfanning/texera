@@ -94,6 +94,7 @@ class Controller(
         replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
         cp.inputGateway.remove(replayGateway)
       }
+      logs._2.foreach(message => cp.inputGateway.acceptMessage(message))
       replayGateway.orderEnforcer.setReplayTo(
         logs._1,
         logManager.getStep,

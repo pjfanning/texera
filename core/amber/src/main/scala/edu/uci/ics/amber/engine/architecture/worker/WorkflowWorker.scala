@@ -77,6 +77,7 @@ class WorkflowWorker(
         context.parent ! ReplayStatusUpdate(actorId, status = false)
         dp.inputGateway.remove(replayGateway)
       }
+      logs._2.foreach(message => dp.inputGateway.acceptMessage(message))
       replayGateway.orderEnforcer.setReplayTo(
         logs._1,
         logManager.getStep,
