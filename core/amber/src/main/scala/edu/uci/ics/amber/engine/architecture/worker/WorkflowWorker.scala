@@ -100,6 +100,7 @@ class WorkflowWorker(
           s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
     }
+    dp.initOperator(workerIndex, workerLayer, currentOutputIterator = Iterator.empty)
     dpThread.start()
   }
 

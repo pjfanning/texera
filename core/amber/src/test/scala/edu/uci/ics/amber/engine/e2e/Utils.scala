@@ -18,15 +18,14 @@ object Utils {
   def buildWorkflow(
       operators: List[OperatorDescriptor],
       links: List[OperatorLink],
-      resultStorage: OpResultStorage = new OpResultStorage(),
-      workflowTag: String = "workflow_test"
+      resultStorage: OpResultStorage = new OpResultStorage()
   ): Workflow = {
     val context = new WorkflowContext
     val texeraWorkflowCompiler = new WorkflowCompiler(
       LogicalPlan(context, operators, links, List[BreakpointInfo]())
     )
     texeraWorkflowCompiler.logicalPlan.initializeLogicalPlan(new JobStateStore())
-    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(workflowTag), resultStorage)
+    texeraWorkflowCompiler.amberWorkflow(WorkflowIdentity(context.wId.toString), resultStorage)
   }
 
 }
