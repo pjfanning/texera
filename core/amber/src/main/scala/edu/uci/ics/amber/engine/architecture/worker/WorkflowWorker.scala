@@ -6,17 +6,11 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
+import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayGateway, ReplayLogGenerator}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  ActorCommandElement,
-  DPInputQueueElement,
-  FIFOMessageElement,
-  TimerBasedControlElement,
-  WorkflowWorkerConfig
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, TimerBasedControlElement, WorkflowWorkerConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -70,20 +64,24 @@ class WorkflowWorker(
   val dpThread =
     new DPThread(actorId, dp, logManager, inputQueue)
 
-  override def initState(): Unit = {
-    dp.InitTimerService(timerService)
+  def setupReplay(): Unit = {
     if (workerConf.replayTo.isDefined) {
       context.parent ! ReplayStatusUpdate(actorId, status = true)
-      val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
-      dp.inputGateway = replayGateway
-      replayGateway.setupReplay(
-        logStorage,
-        workerConf.replayTo.get,
-        () => {
-          logger.info("replay completed!")
-          context.parent ! ReplayStatusUpdate(actorId, status = false)
-          dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
-        }
+      val replayGateway = new ReplayGateway(logManager)
+      dp.inputGateway.append(replayGateway)
+      val replayLogGenerator = new ReplayLogGenerator()
+      val logs = replayLogGenerator.generate(logStorage)
+      val replayTo = workerConf.replayTo.get
+      val onReplayComplete = () => {
+        logger.info("replay completed!")
+        context.parent ! ReplayStatusUpdate(actorId, status = false)
+        dp.inputGateway.remove(replayGateway)
+      }
+      replayGateway.orderEnforcer.setReplayTo(
+        logs._1,
+        logManager.getStep,
+        replayTo,
+        onReplayComplete
       )
       logger.info(
         s"setting up replay, " +
@@ -91,7 +89,11 @@ class WorkflowWorker(
           s"target step = ${workerConf.replayTo.get} " +
           s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
       )
-    }
+    }}
+
+  override def initState(): Unit = {
+    dp.InitTimerService(timerService)
+    setupReplay()
     dp.initOperator(workerIndex, workerLayer, currentOutputIterator = Iterator.empty)
     dpThread.start()
   }

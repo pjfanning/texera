@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -44,5 +44,10 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
 
   def getAllControlChannels: Iterable[AmberFIFOChannel] =
     inputChannels.filter(_._1.isControl).values
+
+  def acceptMessage( message: WorkflowFIFOMessage): Unit = {
+      getChannel(message.channel).acceptMessage(message)
+  }
+
 
 }

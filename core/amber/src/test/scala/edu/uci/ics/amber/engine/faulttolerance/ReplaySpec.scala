@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.ReplayLogReader
 import edu.uci.ics.amber.engine.architecture.logreplay.{
   ProcessingStep,
-  ReplayGatewayWrapper,
+  ReplayGateway,
   ReplayLogManagerImpl,
   ReplayLogRecord
 }
@@ -66,7 +66,7 @@ class ReplaySpec
         .getChannel(channelID)
         .acceptMessage(WorkflowFIFOMessage(channelID, seq, ControlInvocation(0, StartWorker())))
     }
-    val wrapper = new ReplayGatewayWrapper(networkInputGateway, logManager)
+    val wrapper = new ReplayGateway(networkInputGateway, logManager)
     wrapper.setupReplay(new IterableReadOnlyLogStore(logRecords), 1000, () => {})
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
       val msg = wrapper.tryPickChannel.get.take

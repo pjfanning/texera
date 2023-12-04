@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
 trait InputGateway {
   def tryPickControlChannel: Option[AmberFIFOChannel]
@@ -12,4 +12,6 @@ trait InputGateway {
   def getChannel(channelId: ChannelID): AmberFIFOChannel
 
   def getAllControlChannels: Iterable[AmberFIFOChannel]
+
+  def acceptMessage(message:WorkflowFIFOMessage) :Unit
 }

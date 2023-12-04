@@ -7,7 +7,8 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
+import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayGateway, ReplayLogGenerator}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.ChainedInputGateway
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -81,21 +82,23 @@ class Controller(
     }
   )
 
-  override def initState(): Unit = {
-    cp.setupActorService(actorService)
-    cp.setupTimerService(controllerTimerService)
-    cp.setupActorRefService(actorRefMappingService)
+  def setupReplay(): Unit = {
     if (controllerConfig.replayTo.isDefined) {
       replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-      val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
-      cp.inputGateway = replayGateway
-      replayGateway.setupReplay(
-        logStorage,
-        controllerConfig.replayTo.get,
-        () => {
-          replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-          cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
-        }
+      val replayGateway = new ReplayGateway(logManager)
+      cp.inputGateway.append(replayGateway)
+      val replayLogGenerator = new ReplayLogGenerator()
+      val logs = replayLogGenerator.generate(logStorage)
+      val replayTo = controllerConfig.replayTo.get
+      val onReplayComplete = () => {
+        replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
+        cp.inputGateway.remove(replayGateway)
+      }
+      replayGateway.orderEnforcer.setReplayTo(
+        logs._1,
+        logManager.getStep,
+        replayTo,
+        onReplayComplete
       )
       logger.info(
         s"setting up replay, " +
@@ -105,6 +108,15 @@ class Controller(
       )
       processMessages()
     }
+  }
+
+  override def initState(): Unit = {
+    cp.setupActorService(actorService)
+    cp.setupTimerService(controllerTimerService)
+    cp.setupActorRefService(actorRefMappingService)
+
+    setupReplay()
+
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
