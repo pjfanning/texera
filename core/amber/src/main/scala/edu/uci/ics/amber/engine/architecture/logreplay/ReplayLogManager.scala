@@ -29,50 +29,21 @@ object ReplayLogManager {
 }
 
 trait ReplayLogManager {
+
+  protected val cursor = new ProcessingStepCursor()
+
   def setupWriter(logWriter: ReplayLogWriter): Unit
 
   def sendCommitted(msg: WorkflowFIFOMessage): Unit
 
   def terminate(): Unit
 
-  def getStep: Long
-
-  def withFaultTolerant(
-      channel: ChannelID,
-      message: Option[WorkflowFIFOMessage]
-  )(code: => Unit): Unit
-
-}
-
-class EmptyReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
-  override def setupWriter(logWriter: ReplayLogStorage.ReplayLogWriter): Unit = {}
-
-  override def sendCommitted(msg: WorkflowFIFOMessage): Unit = {
-    handler(msg)
-  }
-
-  override def getStep: Long = 0L
-
-  override def terminate(): Unit = {}
-
-  override def withFaultTolerant(channel: ChannelID, message: Option[WorkflowFIFOMessage])(
-      code: => Unit
-  ): Unit = code
-}
-
-class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
-
-  private val replayLogger = new ReplayLoggerImpl()
-
-  private var writer: AsyncReplayLogWriter = _
-
-  private val cursor = new ProcessingStepCursor()
+  def getStep: Long = cursor.getStep
 
   def withFaultTolerant(
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
   )(code: => Unit): Unit = {
-    replayLogger.logCurrentStepWithMessage(cursor.getStep, channel, message)
     cursor.setCurrentChannel(channel)
     try {
       code
@@ -83,19 +54,43 @@ class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayL
     }
   }
 
-  def getStep: Long = cursor.getStep
+}
 
-  def setupWriter(logWriter: ReplayLogWriter): Unit = {
+class EmptyReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
+  override def setupWriter(logWriter: ReplayLogStorage.ReplayLogWriter): Unit = {}
+
+  override def sendCommitted(msg: WorkflowFIFOMessage): Unit = {
+    handler(msg)
+  }
+
+  override def terminate(): Unit = {}
+}
+
+class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
+
+  private val replayLogger = new ReplayLoggerImpl()
+
+  private var writer: AsyncReplayLogWriter = _
+
+  override def withFaultTolerant(
+      channel: ChannelID,
+      message: Option[WorkflowFIFOMessage]
+  )(code: => Unit): Unit = {
+    replayLogger.logCurrentStepWithMessage(cursor.getStep, channel, message)
+    super.withFaultTolerant(channel, message)(code)
+  }
+
+  override def setupWriter(logWriter: ReplayLogWriter): Unit = {
     writer = new AsyncReplayLogWriter(handler, logWriter)
     writer.start()
   }
 
-  def sendCommitted(msg: WorkflowFIFOMessage): Unit = {
+  override def sendCommitted(msg: WorkflowFIFOMessage): Unit = {
     writer.putLogRecords(replayLogger.drainCurrentLogRecords(cursor.getStep))
     writer.putOutput(msg)
   }
 
-  def terminate(): Unit = {
+  override def terminate(): Unit = {
     writer.terminate()
   }
 

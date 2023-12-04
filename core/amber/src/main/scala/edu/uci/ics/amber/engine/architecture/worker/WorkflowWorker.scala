@@ -3,9 +3,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
@@ -20,7 +21,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.faulttolerance.ReplayGatewayWrapper
 
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -124,7 +124,6 @@ class WorkflowWorker(
   override def getQueuedCredit(channelID: ChannelID): Long = {
     dp.getQueuedCredit(channelID)
   }
-
 
   override def postStop(): Unit = {
     super.postStop()
