@@ -6,8 +6,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import scala.collection.mutable
 
 class ReplayLogGenerator {
-  val orderEnforcer: ReplayOrderEnforcer = new ReplayOrderEnforcer()
-
   def generate(
                    logStorage: ReplayLogStorage,
                  ): Tuple2[mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]] = {
