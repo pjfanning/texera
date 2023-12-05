@@ -1,66 +1,64 @@
 package edu.uci.ics.amber.engine.architecture.logreplay
 
-import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 import scala.collection.mutable
 
-class ReplayOrderEnforcer() {
-  private var switchStep = INIT_STEP
-  private var replayTo = INIT_STEP
-  private var nextChannel: ChannelID = _
-  private var replayCompleted = true
-  var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
-  private var onComplete: () => Unit = _
+class ReplayOrderEnforcer(
+                           logManager: ReplayLogManager,
+                           channelStepOrder: mutable.Queue[ProcessingStep],
+                           startStep: Long,
+                           replayTo: Long,
+                           var onComplete: () => Unit
+) extends OrderEnforcer {
+  private var currentStep: Long = 0
+  private var currentChannelID: ChannelID = _
+  private var replayCompleting: Boolean = false
+  var isCompleted: Boolean = startStep > replayTo
 
-  def isReplayCompleted: Boolean = replayCompleted
-
-  var currentChannel: ChannelID = _
-
-  def setReplayTo(
-      stepsInLog: mutable.Queue[ProcessingStep],
-      currentDPStep: Long,
-      dest: Long,
-      onComplete: () => Unit
-  ): Unit = {
-    if (dest <= currentDPStep) {
-      onComplete()
-      return
-    }
-    this.replayCompleted = false
-    this.switchStep = INIT_STEP
-    this.channelStepOrder = stepsInLog
-    this.onComplete = onComplete
-    // restore replay progress by dropping some of the entries
-    while (channelStepOrder.nonEmpty && switchStep <= currentDPStep) {
-      loadNextDeterminant()
-    }
-    this.replayTo = dest
-    forwardReplayProcess(currentDPStep)
+  // restore replay progress by dropping some of the entries
+  while (channelStepOrder.nonEmpty && currentStep <= startStep) {
+    forwardNext()
   }
 
-  private def loadNextDeterminant(): Unit = {
-    val channelStep = channelStepOrder.dequeue()
-    currentChannel = nextChannel
-    switchStep = channelStep.steps
-    nextChannel = channelStep.channelID
+  private def forwardNext(): Unit = {
+    if (channelStepOrder.nonEmpty) {
+      val nextStep = channelStepOrder.dequeue()
+      currentStep = nextStep.steps
+      currentChannelID = nextStep.channelID
+    } else {
+      replayCompleting = true
+    }
+
   }
 
-  def forwardReplayProcess(currentStep: Long): Unit = {
-    while (currentStep == switchStep) {
-      if (channelStepOrder.nonEmpty) {
-        loadNextDeterminant()
-      } else {
-        currentChannel = nextChannel
-        switchStep = INIT_STEP - 1
-        replayCompleted = true
+  def canProceed(channelID: ChannelID): Boolean = {
+    val step = logManager.getStep
+    val ret = if (step < currentStep) {
+      // still processing data
+      false
+    } else if (currentChannelID != channelID) {
+      false // skip
+    } else if (step == currentStep) {
+      // getting a ProcessStep of a data, which is generated from a flush
+      forwardNext()
+      if (replayCompleting) {
+        isCompleted = true
+        if (onComplete!= null){
+          onComplete()
+          onComplete = null
+        }
       }
+      currentChannelID == channelID
+    } else {
+      throw new RuntimeException("step > currentStep, it should not happen")
     }
-    if (replayCompleted && onComplete != null) {
-      // recovery completed
-      onComplete()
-      onComplete = null
-    }
-  }
 
+    if (step == this.replayTo) {
+      false
+    } else {
+      ret
+    }
+
+  }
 }

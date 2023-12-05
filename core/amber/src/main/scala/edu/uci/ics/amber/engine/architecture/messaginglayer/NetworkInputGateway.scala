@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import edu.uci.ics.amber.engine.architecture.logreplay.OrderEnforcer
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -14,21 +15,38 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   private val inputChannels =
     new mutable.HashMap[ChannelID, AmberFIFOChannel]()
 
+  private val enforcers = mutable.ListBuffer[OrderEnforcer]()
+
   def tryPickControlChannel: Option[AmberFIFOChannel] = {
-    inputChannels
+    val ret = inputChannels
       .find {
-        case (cid, channel) => cid.isControl && channel.isEnabled && channel.hasMessage
+        case (cid, channel) =>
+          cid.isControl && channel.isEnabled && channel.hasMessage && enforcers.forall(
+            _.canProceed(cid)
+          )
       }
       .map(_._2)
+
+    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer=> enforcers -= enforcer )
+    ret
   }
 
   def tryPickChannel: Option[AmberFIFOChannel] = {
     val control = tryPickControlChannel
-    if (control.isDefined) {
+    val ret = if (control.isDefined) {
       control
     } else {
-      inputChannels.values.find(c => c.isEnabled && c.hasMessage)
+      inputChannels
+        .find({
+          case (cid, channel) =>
+            !cid.isControl && channel.isEnabled && channel.hasMessage && enforcers.forall(
+              _.canProceed(cid)
+            )
+        })
+        .map(_._2)
     }
+    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer=> enforcers -= enforcer )
+    ret
   }
 
   def getAllDataChannels: Iterable[AmberFIFOChannel] =
@@ -49,4 +67,7 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
     getChannel(message.channel).acceptMessage(message)
   }
 
+  override def addEnforcer(enforcer: OrderEnforcer): Unit = {
+    enforcers += enforcer
+  }
 }

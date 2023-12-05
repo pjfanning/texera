@@ -7,8 +7,7 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayGateway, ReplayLogGenerator}
-import edu.uci.ics.amber.engine.architecture.messaginglayer.ChainedInputGateway
+import edu.uci.ics.amber.engine.architecture.logreplay.{ ReplayLogGenerator, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -85,27 +84,28 @@ class Controller(
   def setupReplay(): Unit = {
     if (controllerConfig.replayTo.isDefined) {
       replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-      val replayGateway = new ReplayGateway(logManager)
-      cp.inputGateway.append(replayGateway)
-      val replayLogGenerator = new ReplayLogGenerator()
-      val logs = replayLogGenerator.generate(logStorage)
+
+      val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
       val replayTo = controllerConfig.replayTo.get
       val onReplayComplete = () => {
         replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-        cp.inputGateway.remove(replayGateway)
       }
-      logs._2.foreach(message => cp.inputGateway.acceptMessage(message))
-      replayGateway.orderEnforcer.setReplayTo(
-        logs._1,
-        logManager.getStep,
+      val orderEnforcer = new ReplayOrderEnforcer(
+        logManager,
+        processSteps,
+        startStep = logManager.getStep,
         replayTo,
         onReplayComplete
       )
+
+      cp.inputGateway.addEnforcer(orderEnforcer)
+      messages.foreach(message => cp.inputGateway.acceptMessage(message))
+
       logger.info(
         s"setting up replay, " +
           s"current step = ${logManager.getStep} " +
           s"target step = ${controllerConfig.replayTo.get} " +
-          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
+          s"# of log record to replay = ${processSteps.size}"
       )
       processMessages()
     }

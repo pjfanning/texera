@@ -4,12 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.ReplayLogReader
-import edu.uci.ics.amber.engine.architecture.logreplay.{
-  ProcessingStep,
-  ReplayGateway,
-  ReplayLogManagerImpl,
-  ReplayLogRecord
-}
+import edu.uci.ics.amber.engine.architecture.logreplay.{ProcessingStep, ReplayGateway, ReplayLogGenerator, ReplayLogManagerImpl, ReplayLogRecord}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
@@ -20,6 +15,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 class ReplaySpec
     extends TestKit(ActorSystem("ReplaySpec"))
@@ -66,45 +62,47 @@ class ReplaySpec
         .getChannel(channelID)
         .acceptMessage(WorkflowFIFOMessage(channelID, seq, ControlInvocation(0, StartWorker())))
     }
-    val wrapper = new ReplayGateway(networkInputGateway, logManager)
-    wrapper.setupReplay(new IterableReadOnlyLogStore(logRecords), 1000, () => {})
+    val inputGateway = new ChainedInputGateway(ListBuffer.empty)
+    val replayGateway = new ReplayGateway(logManager)
+    replayGateway.orderEnforcer.setReplayTo(logRecords, -1, 1000, () => {})
+    inputGateway.append(replayGateway)
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
-      val msg = wrapper.tryPickChannel.get.take
+      val msg = inputGateway.tryPickChannel.get.take
       logManager.withFaultTolerant(msg.channel, Some(msg)) {
         assert(msg.channel == channelID && msg.sequenceNumber == seq)
       }
     }
-    assert(wrapper.tryPickChannel.isEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     assert(networkInputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId2, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     assert(
       networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId2
     )
     inputMessage(channelId4, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     assert(
       networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId4
     )
     inputMessage(channelId1, 0)
     inputMessage(channelId1, 1)
     inputMessage(channelId1, 2)
-    assert(wrapper.tryPickChannel.nonEmpty && wrapper.tryPickChannel.get.channelId == channelId1)
+    assert(inputGateway.tryPickChannel.nonEmpty && inputGateway.tryPickChannel.get.channelId == channelId1)
     processMessage(channelId1, 0)
-    assert(wrapper.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 1)
-    assert(wrapper.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId4, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     assert(networkInputGateway.tryPickChannel.nonEmpty)
     inputMessage(channelId3, 0)
     processMessage(channelId3, 0)
-    assert(wrapper.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 2)
-    assert(wrapper.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId2, 0)
   }
