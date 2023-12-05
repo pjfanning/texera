@@ -89,7 +89,9 @@ class WorkflowWorker(
         onReplayComplete
       )
       dp.inputGateway.addEnforcer(orderEnforcer)
-      messages.foreach(message => dp.inputGateway.acceptMessage(message))
+      messages.foreach(message =>
+        dp.inputGateway.getChannel(message.channel).acceptMessage(message)
+      )
 
       logger.info(
         s"setting up replay, " +
@@ -101,9 +103,9 @@ class WorkflowWorker(
   }
 
   override def initState(): Unit = {
-    dp.InitTimerService(timerService)
-    setupReplay()
+    dp.initTimerService(timerService)
     dp.initOperator(workerIndex, workerLayer, currentOutputIterator = Iterator.empty)
+    setupReplay()
     dpThread.start()
   }
 

@@ -24,8 +24,8 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-      None
+      logStorageType = AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
+      replayTo = None
     )
 }
 
@@ -38,8 +38,6 @@ final case class ControllerConfig(
 )
 
 object Controller {
-
-  val recoveryDelay: Long = AmberUtils.amberConfig.getLong("fault-tolerance.delay-before-recovery")
 
   def props(
       workflow: Workflow,
@@ -72,23 +70,28 @@ class Controller(
     logManager.sendCommitted
   )
 
-  val replayManager = new GlobalReplayManager(
+  // manages the lifecycle of entire replay process
+  // triggers onStart callback when the first worker/controller marks itself as recovering.
+  // triggers onComplete callback when all worker/controller finishes recovering.
+  private val globalReplayManager = new GlobalReplayManager(
     () => {
+      //onStart
       cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
     },
     () => {
+      //onComplete
       cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
     }
   )
 
   def setupReplay(): Unit = {
     if (controllerConfig.replayTo.isDefined) {
-      replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
+      globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
 
       val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
       val replayTo = controllerConfig.replayTo.get
       val onReplayComplete = () => {
-        replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
+        globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
       }
       val orderEnforcer = new ReplayOrderEnforcer(
         logManager,
@@ -99,7 +102,9 @@ class Controller(
       )
 
       cp.inputGateway.addEnforcer(orderEnforcer)
-      messages.foreach(message => cp.inputGateway.acceptMessage(message))
+      messages.foreach(message =>
+        cp.inputGateway.getChannel(message.channel).acceptMessage(message)
+      )
 
       logger.info(
         s"setting up replay, " +
@@ -115,9 +120,7 @@ class Controller(
     cp.setupActorService(actorService)
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
-
     setupReplay()
-
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -162,7 +165,7 @@ class Controller(
 
   def handleReplayMessages: Receive = {
     case ReplayStatusUpdate(id, status) =>
-      replayManager.markRecoveryStatus(id, status)
+      globalReplayManager.markRecoveryStatus(id, status)
   }
 
   override def receive: Receive = {

@@ -15,7 +15,7 @@ class ReplayOrderEnforcer(
   var isCompleted: Boolean = startStep > replayTo
 
   // restore replay progress by dropping some of the entries
-  while (channelStepOrder.nonEmpty && channelStepOrder.head.steps <= startStep) {
+  while (channelStepOrder.nonEmpty && channelStepOrder.head.step <= startStep) {
     forwardNext()
   }
 
@@ -29,7 +29,7 @@ class ReplayOrderEnforcer(
   def canProceed(channelID: ChannelID): Boolean = {
     val step = logManager.getStep
     // release the next log record if the step matches
-    if (channelStepOrder.nonEmpty && channelStepOrder.head.steps == step) {
+    if (channelStepOrder.nonEmpty && channelStepOrder.head.step == step) {
       forwardNext()
     }
     // two cases to terminate replay:
