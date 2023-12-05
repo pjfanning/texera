@@ -4,5 +4,5 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 trait OrderEnforcer {
   var isCompleted: Boolean
-  def canProceed(channelID:ChannelID): Boolean
+  def canProceed(channelID: ChannelID): Boolean
 }

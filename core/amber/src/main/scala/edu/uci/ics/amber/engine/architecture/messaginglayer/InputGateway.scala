@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.logreplay.{OrderEnforcer, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.logreplay.OrderEnforcer
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 
 trait InputGateway {
@@ -16,5 +16,5 @@ trait InputGateway {
 
   def acceptMessage(message: WorkflowFIFOMessage): Unit
 
-  def addEnforcer(enforcer: OrderEnforcer) :Unit
+  def addEnforcer(enforcer: OrderEnforcer): Unit
 }

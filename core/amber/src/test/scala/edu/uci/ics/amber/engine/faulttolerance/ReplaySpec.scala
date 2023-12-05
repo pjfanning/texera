@@ -4,7 +4,12 @@ import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit}
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.ReplayLogReader
-import edu.uci.ics.amber.engine.architecture.logreplay.{ProcessingStep, ReplayGateway, ReplayLogGenerator, ReplayLogManagerImpl, ReplayLogRecord}
+import edu.uci.ics.amber.engine.architecture.logreplay.{
+  ProcessingStep,
+  ReplayLogManagerImpl,
+  ReplayLogRecord,
+  ReplayOrderEnforcer
+}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
@@ -15,7 +20,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 class ReplaySpec
     extends TestKit(ActorSystem("ReplaySpec"))
@@ -48,7 +52,6 @@ class ReplaySpec
   private val logManager = new ReplayLogManagerImpl(x => {})
 
   "replay input gate" should "replay the message payload in log order" in {
-    val networkInputGateway = new NetworkInputGateway(actorId)
     val logRecords = mutable.Queue[ProcessingStep](
       ProcessingStep(channelId1, -1),
       ProcessingStep(channelId4, 1),
@@ -56,16 +59,14 @@ class ReplaySpec
       ProcessingStep(channelId1, 3),
       ProcessingStep(channelId2, 4)
     )
-
+    val inputGateway = new NetworkInputGateway(actorId)
     def inputMessage(channelID: ChannelID, seq: Long): Unit = {
-      networkInputGateway
+      inputGateway
         .getChannel(channelID)
         .acceptMessage(WorkflowFIFOMessage(channelID, seq, ControlInvocation(0, StartWorker())))
     }
-    val inputGateway = new ChainedInputGateway(ListBuffer.empty)
-    val replayGateway = new ReplayGateway(logManager)
-    replayGateway.orderEnforcer.setReplayTo(logRecords, -1, 1000, () => {})
-    inputGateway.append(replayGateway)
+    val orderEnforcer = new ReplayOrderEnforcer(logManager, logRecords, -1, 1000, () => {})
+    inputGateway.addEnforcer(orderEnforcer)
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
       val msg = inputGateway.tryPickChannel.get.take
       logManager.withFaultTolerant(msg.channel, Some(msg)) {
@@ -73,37 +74,27 @@ class ReplaySpec
       }
     }
     assert(inputGateway.tryPickChannel.isEmpty)
-    assert(networkInputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId2, 0)
     assert(inputGateway.tryPickChannel.isEmpty)
-    assert(
-      networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId2
-    )
     inputMessage(channelId4, 0)
     assert(inputGateway.tryPickChannel.isEmpty)
-    assert(
-      networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId4
-    )
     inputMessage(channelId1, 0)
     inputMessage(channelId1, 1)
     inputMessage(channelId1, 2)
-    assert(inputGateway.tryPickChannel.nonEmpty && inputGateway.tryPickChannel.get.channelId == channelId1)
+    assert(
+      inputGateway.tryPickChannel.nonEmpty && inputGateway.tryPickChannel.get.channelId == channelId1
+    )
     processMessage(channelId1, 0)
     assert(inputGateway.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 1)
     assert(inputGateway.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId4, 0)
     assert(inputGateway.tryPickChannel.isEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
     inputMessage(channelId3, 0)
     processMessage(channelId3, 0)
     assert(inputGateway.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 2)
     assert(inputGateway.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId2, 0)
   }
 

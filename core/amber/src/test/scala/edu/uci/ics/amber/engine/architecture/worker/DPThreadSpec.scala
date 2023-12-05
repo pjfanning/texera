@@ -44,7 +44,6 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
-  private val replayOrderEnforcer = new ReplayOrderEnforcer()
   private val logStorage = ReplayLogStorage.getLogStorage("none", "log")
   private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
 

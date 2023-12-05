@@ -27,7 +27,7 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
       }
       .map(_._2)
 
-    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer=> enforcers -= enforcer )
+    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer => enforcers -= enforcer)
     ret
   }
 
@@ -45,7 +45,7 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
         })
         .map(_._2)
     }
-    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer=> enforcers -= enforcer )
+    enforcers.filter(enforcer => enforcer.isCompleted).foreach(enforcer => enforcers -= enforcer)
     ret
   }
 

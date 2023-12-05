@@ -1,23 +1,23 @@
 package edu.uci.ics.amber.engine.architecture.logreplay
 
+import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 import scala.collection.mutable
 
 class ReplayOrderEnforcer(
-                           logManager: ReplayLogManager,
-                           channelStepOrder: mutable.Queue[ProcessingStep],
-                           startStep: Long,
-                           replayTo: Long,
-                           var onComplete: () => Unit
+    logManager: ReplayLogManager,
+    channelStepOrder: mutable.Queue[ProcessingStep],
+    startStep: Long,
+    replayTo: Long,
+    var onComplete: () => Unit
 ) extends OrderEnforcer {
-  private var currentStep: Long = 0
+  private var currentStep: Long = INIT_STEP - 1
   private var currentChannelID: ChannelID = _
-  private var replayCompleting: Boolean = false
   var isCompleted: Boolean = startStep > replayTo
 
   // restore replay progress by dropping some of the entries
-  while (channelStepOrder.nonEmpty && currentStep <= startStep) {
+  while (channelStepOrder.nonEmpty && currentStep < startStep) {
     forwardNext()
   }
 
@@ -26,39 +26,25 @@ class ReplayOrderEnforcer(
       val nextStep = channelStepOrder.dequeue()
       currentStep = nextStep.steps
       currentChannelID = nextStep.channelID
-    } else {
-      replayCompleting = true
     }
-
   }
 
   def canProceed(channelID: ChannelID): Boolean = {
     val step = logManager.getStep
-    val ret = if (step < currentStep) {
-      // still processing data
-      false
-    } else if (currentChannelID != channelID) {
-      false // skip
-    } else if (step == currentStep) {
-      // getting a ProcessStep of a data, which is generated from a flush
+    while (step > currentStep) {
       forwardNext()
-      if (replayCompleting) {
+    }
+    if (currentChannelID != channelID) {
+      false
+    } else {
+      if (step == this.replayTo || channelStepOrder.isEmpty) {
         isCompleted = true
-        if (onComplete!= null){
+        if (onComplete != null) {
           onComplete()
           onComplete = null
         }
       }
-      currentChannelID == channelID
-    } else {
-      throw new RuntimeException("step > currentStep, it should not happen")
+      true
     }
-
-    if (step == this.replayTo) {
-      false
-    } else {
-      ret
-    }
-
   }
 }
