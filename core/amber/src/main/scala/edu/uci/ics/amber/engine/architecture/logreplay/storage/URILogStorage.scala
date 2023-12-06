@@ -34,7 +34,7 @@ class URILogStorage(logFolderURI: URI) extends ReplayLogStorage with LazyLogging
   }
 
   override def getWriter(logFileName:String): ReplayLogWriter = {
-    new ReplayLogWriter(fileSystem.append(folderPath.suffix(logFileName)))
+    new ReplayLogWriter(fileSystem.create(folderPath.suffix(logFileName)))
   }
 
   override def getReader(logFileName:String): ReplayLogReader = {
@@ -42,7 +42,7 @@ class URILogStorage(logFolderURI: URI) extends ReplayLogStorage with LazyLogging
     if (fileSystem.exists(path)) {
       new ReplayLogReader(() => fileSystem.open(path))
     } else {
-      new EmptyLogStorage().getReader
+      new EmptyLogStorage().getReader(logFileName)
     }
   }
 

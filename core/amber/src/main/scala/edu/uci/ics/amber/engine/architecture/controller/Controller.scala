@@ -88,7 +88,7 @@ class Controller(
     if (controllerConfig.replayTo.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
 
-      val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
+      val (processSteps, messages) = ReplayLogGenerator.generate(logStorage, getLogName)
       val replayTo = controllerConfig.replayTo.get
       val onReplayComplete = () => {
         globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)

@@ -5,26 +5,18 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  DPInputQueueElement,
-  FIFOMessageElement,
-  TimerBasedControlElement
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{DPInputQueueElement, FIFOMessageElement, TimerBasedControlElement}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
+import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
 
 class DPThreadSpec extends AnyFlatSpec with MockFactory {
@@ -44,8 +36,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
-  private val logStorage = ReplayLogStorage.getLogStorage("none", "log")
-  private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
+  private val logStorage = ReplayLogStorage.getLogStorage(None)
+  private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage,"none", x => {})
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, x => {})
@@ -142,15 +134,15 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val logStorage = ReplayLogStorage.getLogStorage("local", "DPSpecTemp")
+    val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file://./recovery-logs/tmp")))
     logStorage.deleteFolder()
-    val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
+    val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage,"tmpLog", x => {})
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
     }
-    val dataChannelID2 = ChannelID(anotherSender, identifier, false)
+    val dataChannelID2 = ChannelID(anotherSender, identifier, isControl = false)
     val message1 = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples.slice(0, 100)))
     val message2 = WorkflowFIFOMessage(dataChannelID, 1, DataFrame(tuples.slice(100, 200)))
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
@@ -168,7 +160,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     }
     logManager.sendCommitted(null) // drain in-mem records to flush
     logManager.terminate()
-    val logs = logStorage.getReader.mkLogRecordIterator().toArray
+    val logs = logStorage.getReader("tmpLog").mkLogRecordIterator().toArray
     logStorage.deleteFolder()
     assert(logs.length > 1)
   }
