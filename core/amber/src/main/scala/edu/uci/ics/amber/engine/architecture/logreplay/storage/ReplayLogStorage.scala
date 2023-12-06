@@ -39,8 +39,8 @@ object ReplayLogStorage {
   }
 
   // For debugging purpose only
-  def fetchAllLogRecords(storage: ReplayLogStorage): Iterable[ReplayLogRecord] = {
-    val reader = storage.getReader
+  def fetchAllLogRecords(storage: ReplayLogStorage, logFileName:String): Iterable[ReplayLogRecord] = {
+    val reader = storage.getReader(logFileName)
     val recordIter = reader.mkLogRecordIterator()
     val buffer = new ArrayBuffer[ReplayLogRecord]()
     while (recordIter.hasNext) {
@@ -107,22 +107,9 @@ object ReplayLogStorage {
 
 abstract class ReplayLogStorage {
 
-  def getWriter: ReplayLogWriter
+  def getWriter(logFileName:String): ReplayLogWriter
 
-  def getReader: ReplayLogReader
+  def getReader(logFileName:String): ReplayLogReader
 
-  def isLogAvailableForRead: Boolean
-
-  def deleteLog(): Unit
-
-  def cleanPartiallyWrittenLogFile(): Unit
-
-  protected def copyReadableLogRecords(writer: ReplayLogWriter): Unit = {
-    val recordIterator = getReader.mkLogRecordIterator()
-    while (recordIterator.hasNext) {
-      writer.writeLogRecord(recordIterator.next())
-    }
-    writer.close()
-  }
-
+  def deleteFolder(): Unit
 }

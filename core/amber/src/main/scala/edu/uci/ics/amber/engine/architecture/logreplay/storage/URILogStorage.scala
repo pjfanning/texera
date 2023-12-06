@@ -15,67 +15,42 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
 import org.slf4j.LoggerFactory
 
-object URILogStorage{
 
-  
-
-}
-
-
-class URILogStorage(fileSystemURI: URI) extends ReplayLogStorage with LazyLogging {
+class URILogStorage(logFolderURI: URI) extends ReplayLogStorage with LazyLogging {
   var fileSystem: FileSystem = _
   val fsConf = new Configuration
-  val filePath = new Path(fileSystemURI.getPath)
+  val folderPath = new Path(logFolderURI.getPath)
   // configuration for HDFS
   fsConf.set("dfs.client.block.write.replace-datanode-on-failure.enable", "false")
   try {
-    fileSystem = FileSystem.get(fileSystemURI, fsConf) // Supports various URI schemes
+    fileSystem = FileSystem.get(logFolderURI, fsConf) // Supports various URI schemes
   } catch {
     case e: Exception =>
       logger.warn("Caught error during creating file system", e)
   }
 
-  if (!fileSystem.exists(filePath)) {
-    fileSystem.mkdirs(filePath)
+  if (!fileSystem.exists(folderPath)) {
+    fileSystem.mkdirs(folderPath)
   }
 
-  override def getWriter: ReplayLogWriter = {
-    new ReplayLogWriter(fileSystem.append(getLogPath))
+  override def getWriter(logFileName:String): ReplayLogWriter = {
+    new ReplayLogWriter(fileSystem.append(folderPath.suffix(logFileName)))
   }
 
-  override def getReader: ReplayLogReader = {
-    val path = getLogPath
-    if (hdfs.exists(path)) {
-      new ReplayLogReader(() => hdfs.open(path))
+  override def getReader(logFileName:String): ReplayLogReader = {
+    val path = folderPath.suffix(logFileName)
+    if (fileSystem.exists(path)) {
+      new ReplayLogReader(() => fileSystem.open(path))
     } else {
       new EmptyLogStorage().getReader
     }
   }
 
-  override def deleteLog(): Unit = {
-    // delete log if exists
-    val path = getLogPath
-    if (hdfs.exists(path)) {
-      hdfs.delete(path, false)
+  override def deleteFolder(): Unit = {
+    // delete the entire log folder if exists
+    if (!fileSystem.exists(folderPath)) {
+      fileSystem.delete(folderPath, true)
     }
   }
 
-  override def cleanPartiallyWrittenLogFile(): Unit = {
-    var tmpPath = getLogPath
-    tmpPath = tmpPath.suffix(".tmp")
-    copyReadableLogRecords(new ReplayLogWriter(hdfs.create(tmpPath)))
-    if (hdfs.exists(getLogPath)) {
-      hdfs.delete(getLogPath, false)
-    }
-    hdfs.rename(tmpPath, getLogPath)
-  }
-
-  override def isLogAvailableForRead: Boolean = {
-    if (hdfs.exists(getLogPath)) {
-      val stats = hdfs.getFileStatus(getLogPath)
-      stats.isFile && stats.getLen > 0
-    } else {
-      false
-    }
-  }
 }

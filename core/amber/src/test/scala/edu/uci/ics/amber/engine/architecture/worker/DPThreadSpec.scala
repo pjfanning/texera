@@ -143,7 +143,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val logStorage = ReplayLogStorage.getLogStorage("local", "DPSpecTemp")
-    logStorage.deleteLog()
+    logStorage.deleteFolder()
     val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
@@ -169,7 +169,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     logManager.sendCommitted(null) // drain in-mem records to flush
     logManager.terminate()
     val logs = logStorage.getReader.mkLogRecordIterator().toArray
-    logStorage.deleteLog()
+    logStorage.deleteFolder()
     assert(logs.length > 1)
   }
 
