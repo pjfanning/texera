@@ -10,27 +10,37 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 
 import java.net.URI
 
-class HDFSLogStorage(name: String, hdfsIP: String) extends ReplayLogStorage with LazyLogging {
-  var hdfs: FileSystem = _
-  val hdfsConf = new Configuration
-  hdfsConf.set("dfs.client.block.write.replace-datanode-on-failure.enable", "false")
+import java.net.URI
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.hadoop.conf.Configuration
+import org.slf4j.LoggerFactory
+
+object URILogStorage{
+
+  
+
+}
+
+
+class URILogStorage(fileSystemURI: URI) extends ReplayLogStorage with LazyLogging {
+  var fileSystem: FileSystem = _
+  val fsConf = new Configuration
+  val filePath = new Path(fileSystemURI.getPath)
+  // configuration for HDFS
+  fsConf.set("dfs.client.block.write.replace-datanode-on-failure.enable", "false")
   try {
-    hdfs = FileSystem.get(new URI(hdfsIP), hdfsConf)
+    fileSystem = FileSystem.get(fileSystemURI, fsConf) // Supports various URI schemes
   } catch {
     case e: Exception =>
-      logger.warn("Caught error during creating hdfs", e)
-  }
-  private val recoveryLogFolder: Path = new Path("/recovery-logs")
-  if (!hdfs.exists(recoveryLogFolder)) {
-    hdfs.mkdirs(recoveryLogFolder)
+      logger.warn("Caught error during creating file system", e)
   }
 
-  private def getLogPath: Path = {
-    new Path("/recovery-logs/" + name + ".logfile")
+  if (!fileSystem.exists(filePath)) {
+    fileSystem.mkdirs(filePath)
   }
 
   override def getWriter: ReplayLogWriter = {
-    new ReplayLogWriter(hdfs.append(getLogPath))
+    new ReplayLogWriter(fileSystem.append(getLogPath))
   }
 
   override def getReader: ReplayLogReader = {
