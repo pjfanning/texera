@@ -12,7 +12,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   StateRestoreConfig,
   StepLoggingConfig
 }
-import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
+import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogGenerator, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -29,8 +29,8 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      x => None,
-      x => None
+      logStorageType = AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
+      replayTo = None
     )
 }
 
@@ -74,41 +74,57 @@ class Controller(
     logManager.sendCommitted
   )
 
-  private val replayManager = new GlobalReplayManager(
+  // manages the lifecycle of entire replay process
+  // triggers onStart callback when the first worker/controller marks itself as recovering.
+  // triggers onComplete callback when all worker/controller finishes recovering.
+  private val globalReplayManager = new GlobalReplayManager(
     () => {
+      //onStart
       cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(true))
     },
     () => {
+      //onComplete
       cp.asyncRPCClient.sendToClient(WorkflowRecoveryStatus(false))
     }
   )
+
+  def setupReplay(): Unit = {
+    if (controllerConfig.replayTo.isDefined) {
+      globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
+
+      val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
+      val replayTo = controllerConfig.replayTo.get
+      val onReplayComplete = () => {
+        globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
+      }
+      val orderEnforcer = new ReplayOrderEnforcer(
+        logManager,
+        processSteps,
+        startStep = logManager.getStep,
+        replayTo,
+        onReplayComplete
+      )
+
+      cp.inputGateway.addEnforcer(orderEnforcer)
+      messages.foreach(message =>
+        cp.inputGateway.getChannel(message.channel).acceptMessage(message)
+      )
+
+      logger.info(
+        s"setting up replay, " +
+          s"current step = ${logManager.getStep} " +
+          s"target step = ${stateRestoreConfig.get.replayTo} " +
+          s"# of log record to replay = ${processSteps.size}"
+      )
+      processMessages()
+    }
+  }
 
   override def initState(): Unit = {
     cp.setupActorService(actorService)
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
-    val stateRestoreConfig = controllerConfig.stateRestoreConfigs(CONTROLLER)
-    if (stateRestoreConfig.isDefined) {
-      val logs = ReplayLogStorage.getLogStorage(Some(stateRestoreConfig.get.readFrom))
-      replayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
-      val replayGateway = new ReplayGatewayWrapper(cp.inputGateway, logManager)
-      cp.inputGateway = replayGateway
-      replayGateway.setupReplay(
-        logs,
-        stateRestoreConfig.get.replayTo,
-        () => {
-          replayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
-          cp.inputGateway = cp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
-        }
-      )
-      logger.info(
-        s"setting up replay, " +
-          s"current step = ${logManager.getStep} " +
-          s"target step = ${stateRestoreConfig.get.replayTo} " +
-          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
-      )
-      processMessages()
-    }
+    setupReplay()
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
@@ -153,7 +169,7 @@ class Controller(
 
   def handleReplayMessages: Receive = {
     case ReplayStatusUpdate(id, status) =>
-      replayManager.markRecoveryStatus(id, status)
+      globalReplayManager.markRecoveryStatus(id, status)
   }
 
   override def receive: Receive = {

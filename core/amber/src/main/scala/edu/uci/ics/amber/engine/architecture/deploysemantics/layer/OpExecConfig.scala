@@ -293,8 +293,8 @@ case class OpExecConfig(
             i,
             this,
             WorkflowWorkerConfig(
-              controllerConf.stateRestoreConfigs(workerId),
-              controllerConf.stepLoggingConfigs(workerId)
+              logStorageType = AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
+              replayTo = None
             )
           )
         }

@@ -18,7 +18,7 @@ class AmberProcessor(
     with Serializable {
 
   /** FIFO & exactly once */
-  var inputGateway: InputGateway = new NetworkInputGateway(this.actorId)
+  val inputGateway: InputGateway = new NetworkInputGateway(this.actorId)
 
   // 1. Unified Output
   val outputGateway: NetworkOutputGateway =

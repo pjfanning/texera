@@ -6,9 +6,9 @@ import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.ReplayLogReader
 import edu.uci.ics.amber.engine.architecture.logreplay.{
   ProcessingStep,
-  ReplayGatewayWrapper,
   ReplayLogManagerImpl,
-  ReplayLogRecord
+  ReplayLogRecord,
+  ReplayOrderEnforcer
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkInputGateway
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
@@ -50,7 +50,6 @@ class ReplaySpec
   private val logManager = new ReplayLogManagerImpl(x => {})
 
   "replay input gate" should "replay the message payload in log order" in {
-    val networkInputGateway = new NetworkInputGateway(actorId)
     val logRecords = mutable.Queue[ProcessingStep](
       ProcessingStep(channelId1, -1),
       ProcessingStep(channelId4, 1),
@@ -58,52 +57,42 @@ class ReplaySpec
       ProcessingStep(channelId1, 3),
       ProcessingStep(channelId2, 4)
     )
-
+    val inputGateway = new NetworkInputGateway(actorId)
     def inputMessage(channelID: ChannelID, seq: Long): Unit = {
-      networkInputGateway
+      inputGateway
         .getChannel(channelID)
         .acceptMessage(WorkflowFIFOMessage(channelID, seq, ControlInvocation(0, StartWorker())))
     }
-    val wrapper = new ReplayGatewayWrapper(networkInputGateway, logManager)
-    wrapper.setupReplay(new IterableReadOnlyLogStore(logRecords), 1000, () => {})
+    val orderEnforcer = new ReplayOrderEnforcer(logManager, logRecords, -1, 1000, () => {})
+    inputGateway.addEnforcer(orderEnforcer)
     def processMessage(channelID: ChannelID, seq: Long): Unit = {
-      val msg = wrapper.tryPickChannel.get.take
+      val msg = inputGateway.tryPickChannel.get.take
       logManager.withFaultTolerant(msg.channel, Some(msg)) {
         assert(msg.channel == channelID && msg.sequenceNumber == seq)
       }
     }
-    assert(wrapper.tryPickChannel.isEmpty)
-    assert(networkInputGateway.tryPickChannel.isEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId2, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
-    assert(
-      networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId2
-    )
+    assert(inputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId4, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
-    assert(
-      networkInputGateway.tryPickChannel.nonEmpty && networkInputGateway.tryPickChannel.get.channelId == channelId4
-    )
+    assert(inputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId1, 0)
     inputMessage(channelId1, 1)
     inputMessage(channelId1, 2)
-    assert(wrapper.tryPickChannel.nonEmpty && wrapper.tryPickChannel.get.channelId == channelId1)
+    assert(
+      inputGateway.tryPickChannel.nonEmpty && inputGateway.tryPickChannel.get.channelId == channelId1
+    )
     processMessage(channelId1, 0)
-    assert(wrapper.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 1)
-    assert(wrapper.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId4, 0)
-    assert(wrapper.tryPickChannel.isEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.isEmpty)
     inputMessage(channelId3, 0)
     processMessage(channelId3, 0)
-    assert(wrapper.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId1, 2)
-    assert(wrapper.tryPickChannel.nonEmpty)
-    assert(networkInputGateway.tryPickChannel.nonEmpty)
+    assert(inputGateway.tryPickChannel.nonEmpty)
     processMessage(channelId2, 0)
   }
 

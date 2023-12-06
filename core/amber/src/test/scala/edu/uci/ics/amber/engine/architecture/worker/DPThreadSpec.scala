@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogManager, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
@@ -45,7 +45,6 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .oneToOneLayer(operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
-  private val replayOrderEnforcer = new ReplayOrderEnforcer()
   private val logStorage = ReplayLogStorage.getLogStorage(None)
   private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
 

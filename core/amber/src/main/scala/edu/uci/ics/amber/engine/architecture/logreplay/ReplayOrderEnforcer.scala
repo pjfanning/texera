@@ -1,66 +1,48 @@
 package edu.uci.ics.amber.engine.architecture.logreplay
 
-import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor.INIT_STEP
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 
 import scala.collection.mutable
 
-class ReplayOrderEnforcer() {
-  private var switchStep = INIT_STEP
-  private var replayTo = INIT_STEP
-  private var nextChannel: ChannelID = _
-  private var replayCompleted = true
-  var channelStepOrder: mutable.Queue[ProcessingStep] = mutable.Queue.empty
-  private var onComplete: () => Unit = _
+class ReplayOrderEnforcer(
+    logManager: ReplayLogManager,
+    channelStepOrder: mutable.Queue[ProcessingStep],
+    startStep: Long,
+    replayTo: Long,
+    var onComplete: () => Unit
+) extends OrderEnforcer {
+  private var currentChannelID: ChannelID = _
+  var isCompleted: Boolean = startStep > replayTo
 
-  def isReplayCompleted: Boolean = replayCompleted
-
-  var currentChannel: ChannelID = _
-
-  def setReplayTo(
-      stepsInLog: mutable.Queue[ProcessingStep],
-      currentDPStep: Long,
-      dest: Long,
-      onComplete: () => Unit
-  ): Unit = {
-    if (dest <= currentDPStep) {
-      onComplete()
-      return
-    }
-    this.replayCompleted = false
-    this.switchStep = INIT_STEP
-    this.channelStepOrder = stepsInLog
-    this.onComplete = onComplete
-    // restore replay progress by dropping some of the entries
-    while (channelStepOrder.nonEmpty && switchStep <= currentDPStep) {
-      loadNextDeterminant()
-    }
-    this.replayTo = dest
-    forwardReplayProcess(currentDPStep)
+  // restore replay progress by dropping some of the entries
+  while (channelStepOrder.nonEmpty && channelStepOrder.head.step <= startStep) {
+    forwardNext()
   }
 
-  private def loadNextDeterminant(): Unit = {
-    val channelStep = channelStepOrder.dequeue()
-    currentChannel = nextChannel
-    switchStep = channelStep.steps
-    nextChannel = channelStep.channelID
+  private def forwardNext(): Unit = {
+    if (channelStepOrder.nonEmpty) {
+      val nextStep = channelStepOrder.dequeue()
+      currentChannelID = nextStep.channelID
+    }
   }
 
-  def forwardReplayProcess(currentStep: Long): Unit = {
-    while (currentStep == switchStep) {
-      if (channelStepOrder.nonEmpty) {
-        loadNextDeterminant()
-      } else {
-        currentChannel = nextChannel
-        switchStep = INIT_STEP - 1
-        replayCompleted = true
+  def canProceed(channelID: ChannelID): Boolean = {
+    val step = logManager.getStep
+    // release the next log record if the step matches
+    if (channelStepOrder.nonEmpty && channelStepOrder.head.step == step) {
+      forwardNext()
+    }
+    // two cases to terminate replay:
+    // 1. no next log record with step > current step, which means further processing is not logged.
+    // 2. current step == replayTo, no need to continue.
+    if (channelStepOrder.isEmpty || step == replayTo) {
+      isCompleted = true
+      if (onComplete != null) {
+        onComplete()
+        onComplete = null // make sure the onComplete is called only once.
       }
     }
-    if (replayCompleted && onComplete != null) {
-      // recovery completed
-      onComplete()
-      onComplete = null
-    }
+    // only proceed if the current channel ID matches the channel ID of the log record
+    currentChannelID == channelID
   }
-
 }

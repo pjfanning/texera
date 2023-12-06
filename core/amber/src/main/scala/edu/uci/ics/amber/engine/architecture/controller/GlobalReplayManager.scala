@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
 
-class GlobalReplayManager(onRecoveryStart: () => Unit, onRecoveryEnd: () => Unit) {
+class GlobalReplayManager(onRecoveryStart: () => Unit, onRecoveryComplete: () => Unit) {
   private val recovering = mutable.HashSet[ActorVirtualIdentity]()
   def markRecoveryStatus(vid: ActorVirtualIdentity, isRecovering: Boolean): Unit = {
     val globalRecovering = recovering.nonEmpty
@@ -17,7 +17,7 @@ class GlobalReplayManager(onRecoveryStart: () => Unit, onRecoveryEnd: () => Unit
       onRecoveryStart()
     }
     if (globalRecovering && recovering.isEmpty) {
-      onRecoveryEnd()
+      onRecoveryComplete()
     }
   }
 }

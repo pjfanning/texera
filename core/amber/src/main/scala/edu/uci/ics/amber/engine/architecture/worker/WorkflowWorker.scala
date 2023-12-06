@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusU
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
-import edu.uci.ics.amber.engine.architecture.logreplay.ReplayGatewayWrapper
+import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogGenerator, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
@@ -77,30 +77,40 @@ class WorkflowWorker(
   val dpThread =
     new DPThread(actorId, dp, logManager, inputQueue)
 
-  override def initState(): Unit = {
-    dp.InitTimerService(timerService)
+  def setupReplay(): Unit = {
     if (workerConf.stateRestoreConfig.isDefined) {
       context.parent ! ReplayStatusUpdate(actorId, status = true)
-      val logs = ReplayLogStorage.getLogStorage(Some(workerConf.stateRestoreConfig.get.readFrom))
-      val replayGateway = new ReplayGatewayWrapper(dp.inputGateway, logManager)
-      dp.inputGateway = replayGateway
-      replayGateway.setupReplay(
-        logs,
-        workerConf.stateRestoreConfig.get.replayTo,
-        () => {
-          logger.info("replay completed!")
-          context.parent ! ReplayStatusUpdate(actorId, status = false)
-          dp.inputGateway = dp.inputGateway.asInstanceOf[ReplayGatewayWrapper].originalGateway
-        }
+      val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
+      val replayTo = workerConf.replayTo.get
+      val onReplayComplete = () => {
+        logger.info("replay completed!")
+        context.parent ! ReplayStatusUpdate(actorId, status = false)
+      }
+      val orderEnforcer = new ReplayOrderEnforcer(
+        logManager,
+        processSteps,
+        startStep = logManager.getStep,
+        replayTo,
+        onReplayComplete
       )
+      dp.inputGateway.addEnforcer(orderEnforcer)
+      messages.foreach(message =>
+        dp.inputGateway.getChannel(message.channel).acceptMessage(message)
+      )
+
       logger.info(
         s"setting up replay, " +
           s"current step = ${logManager.getStep} " +
           s"target step = ${workerConf.stateRestoreConfig.get.replayTo} " +
-          s"# of log record to replay = ${replayGateway.orderEnforcer.channelStepOrder.size}"
+          s"# of log record to replay = ${messages.size}"
       )
     }
+  }
+
+  override def initState(): Unit = {
+    dp.initTimerService(timerService)
     dp.initOperator(workerIndex, workerLayer, currentOutputIterator = Iterator.empty)
+    setupReplay()
     dpThread.start()
   }
 

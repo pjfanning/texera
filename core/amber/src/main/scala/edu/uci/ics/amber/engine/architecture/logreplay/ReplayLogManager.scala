@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMess
 sealed trait ReplayLogRecord
 
 case class MessageContent(message: WorkflowFIFOMessage) extends ReplayLogRecord
-case class ProcessingStep(channelID: ChannelID, steps: Long) extends ReplayLogRecord
+case class ProcessingStep(channelID: ChannelID, step: Long) extends ReplayLogRecord
 case object TerminateSignal extends ReplayLogRecord
 
 object ReplayLogManager {
