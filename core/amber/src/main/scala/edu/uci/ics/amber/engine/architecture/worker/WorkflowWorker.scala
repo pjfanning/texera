@@ -6,7 +6,6 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogGenerator, ReplayOrderEnforcer}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
@@ -81,7 +80,7 @@ class WorkflowWorker(
     if (workerConf.stateRestoreConfig.isDefined) {
       context.parent ! ReplayStatusUpdate(actorId, status = true)
       val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
-      val replayTo = workerConf.replayTo.get
+      val replayTo = workerConf.stateRestoreConfig.get.replayTo
       val onReplayComplete = () => {
         logger.info("replay completed!")
         context.parent ! ReplayStatusUpdate(actorId, status = false)

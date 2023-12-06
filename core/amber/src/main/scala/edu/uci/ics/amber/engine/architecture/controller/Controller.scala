@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   StateRestoreConfig,
   StepLoggingConfig
@@ -29,8 +28,8 @@ object ControllerConfig {
       skewDetectionIntervalMs = Option(Constants.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs =
         Option(AmberUtils.amberConfig.getLong("constants.status-update-interval")),
-      logStorageType = AmberUtils.amberConfig.getString("fault-tolerance.log-storage-type"),
-      replayTo = None
+      x => None,
+      x => None
     )
 }
 
@@ -89,11 +88,12 @@ class Controller(
   )
 
   def setupReplay(): Unit = {
-    if (controllerConfig.replayTo.isDefined) {
+    val stateRestoreConfig = controllerConfig.stateRestoreConfigs(CONTROLLER)
+    if (stateRestoreConfig.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
 
       val (processSteps, messages) = ReplayLogGenerator.generate(logStorage)
-      val replayTo = controllerConfig.replayTo.get
+      val replayTo = stateRestoreConfig.get.replayTo
       val onReplayComplete = () => {
         globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
       }
