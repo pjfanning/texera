@@ -28,9 +28,9 @@ class ReplaySpec
     with BeforeAndAfterAll {
 
   class IterableReadOnlyLogStore(iter: Iterable[ReplayLogRecord]) extends ReplayLogStorage {
-    override def getWriter(logFileName:String): ReplayLogStorage.ReplayLogWriter = ???
+    override def getWriter(logFileName: String): ReplayLogStorage.ReplayLogWriter = ???
 
-    override def getReader(logFileName:String): ReplayLogStorage.ReplayLogReader =
+    override def getReader(logFileName: String): ReplayLogStorage.ReplayLogReader =
       new ReplayLogReader(null) {
         override def mkLogRecordIterator(): Iterator[ReplayLogRecord] = iter.toIterator
       }

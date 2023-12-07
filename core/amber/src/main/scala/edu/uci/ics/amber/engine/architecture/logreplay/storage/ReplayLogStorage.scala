@@ -2,8 +2,15 @@ package edu.uci.ics.amber.engine.architecture.logreplay.storage
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
-import edu.uci.ics.amber.engine.architecture.logreplay.{MessageContent, ProcessingStep, ReplayLogRecord}
-import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.{ReplayLogReader, ReplayLogWriter}
+import edu.uci.ics.amber.engine.architecture.logreplay.{
+  MessageContent,
+  ProcessingStep,
+  ReplayLogRecord
+}
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.{
+  ReplayLogReader,
+  ReplayLogWriter
+}
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2Message.SealedValue.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -32,7 +39,10 @@ object ReplayLogStorage {
   }
 
   // For debugging purpose only
-  def fetchAllLogRecords(storage: ReplayLogStorage, logFileName:String): Iterable[ReplayLogRecord] = {
+  def fetchAllLogRecords(
+      storage: ReplayLogStorage,
+      logFileName: String
+  ): Iterable[ReplayLogRecord] = {
     val reader = storage.getReader(logFileName)
     val recordIter = reader.mkLogRecordIterator()
     val buffer = new ArrayBuffer[ReplayLogRecord]()
@@ -83,19 +93,19 @@ object ReplayLogStorage {
     }
   }
 
-  def getLogStorage(logFolderURI:Option[URI]): ReplayLogStorage = {
+  def getLogStorage(logFolderURI: Option[URI]): ReplayLogStorage = {
     logFolderURI match {
       case Some(value) => new URILogStorage(value)
-      case None => new EmptyLogStorage()
+      case None        => new EmptyLogStorage()
     }
   }
 }
 
 abstract class ReplayLogStorage {
 
-  def getWriter(logFileName:String): ReplayLogWriter
+  def getWriter(logFileName: String): ReplayLogWriter
 
-  def getReader(logFileName:String): ReplayLogReader
+  def getReader(logFileName: String): ReplayLogReader
 
   def deleteFolder(): Unit
 }

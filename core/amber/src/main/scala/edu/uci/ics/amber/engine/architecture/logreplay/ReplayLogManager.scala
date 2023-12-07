@@ -15,7 +15,7 @@ case object TerminateSignal extends ReplayLogRecord
 object ReplayLogManager {
   def createLogManager(
       logStorage: ReplayLogStorage,
-      logFileName:String,
+      logFileName: String,
       handler: WorkflowFIFOMessage => Unit
   ): ReplayLogManager = {
     logStorage match {

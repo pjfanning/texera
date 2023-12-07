@@ -5,13 +5,22 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{DPInputQueueElement, FIFOMessageElement, TimerBasedControlElement}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  DPInputQueueElement,
+  FIFOMessageElement,
+  TimerBasedControlElement
+}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
@@ -37,7 +46,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = ReplayLogStorage.getLogStorage(None)
-  private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage,"none", x => {})
+  private val logManager: ReplayLogManager =
+    ReplayLogManager.createLogManager(logStorage, "none", x => {})
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, x => {})
@@ -134,9 +144,10 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
-    val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file://./recovery-logs/tmp")))
+    val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file:///recovery-logs/tmp")))
     logStorage.deleteFolder()
-    val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage,"tmpLog", x => {})
+    val logManager: ReplayLogManager =
+      ReplayLogManager.createLogManager(logStorage, "tmpLog", x => {})
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
     dpThread.start()
     tuples.foreach { x =>

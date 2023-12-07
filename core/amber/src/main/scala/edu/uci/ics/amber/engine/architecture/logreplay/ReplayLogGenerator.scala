@@ -8,7 +8,7 @@ import scala.collection.mutable
 object ReplayLogGenerator {
   def generate(
       logStorage: ReplayLogStorage,
-      logFileName: String,
+      logFileName: String
   ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
     val logs = logStorage.getReader(logFileName).mkLogRecordIterator()
     val steps = mutable.Queue[ProcessingStep]()

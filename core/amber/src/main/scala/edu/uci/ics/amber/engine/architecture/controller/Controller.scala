@@ -24,7 +24,7 @@ object ControllerConfig {
       monitoringIntervalMs = Option(AmberConfig.monitoringIntervalInMs),
       skewDetectionIntervalMs = Option(AmberConfig.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
-      logStorageType = AmberConfig.faultToleranceLogStorage,
+      logStorageType = AmberConfig.faultToleranceLogRootFolder,
       replayTo = None
     )
 }

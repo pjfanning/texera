@@ -11,10 +11,20 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartition
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.StartHandler.StartWorker
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage, WorkflowFIFOMessagePayload}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  DataFrame,
+  WorkflowFIFOMessage,
+  WorkflowFIFOMessagePayload
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity, LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
@@ -47,10 +57,9 @@ class LoggingSpec
   )
 
   "determinant logger" should "log processing steps in local storage" in {
-    val tempLogFileName = "tempLogFile"
-    val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file://./recovery-logs/tmp")))
+    val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file:///recovery-logs/tmp")))
     logStorage.deleteFolder()
-    val logManager = ReplayLogManager.createLogManager(logStorage,"tmpLog", x => {})
+    val logManager = ReplayLogManager.createLogManager(logStorage, "tmpLog", x => {})
     payloadToLog.foreach { payload =>
       val channel = ChannelID(CONTROLLER, SELF, isControl = true)
       val msgOpt = Some(WorkflowFIFOMessage(channel, 0, payload))
