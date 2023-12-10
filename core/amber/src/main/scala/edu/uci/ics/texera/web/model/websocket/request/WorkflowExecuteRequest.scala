@@ -10,9 +10,9 @@ case class WorkflowExecuteRequest(
 ) extends TexeraWebSocketRequest
 
 case class LogicalPlanPojo(
-                            operators: List[LogicalOp],
-                            links: List[LogicalLink],
-                            breakpoints: List[BreakpointInfo],
-                            opsToViewResult: List[String],
-                            opsToReuseResult: List[String]
+    operators: List[LogicalOp],
+    links: List[LogicalLink],
+    breakpoints: List[BreakpointInfo],
+    opsToViewResult: List[String],
+    opsToReuseResult: List[String]
 )

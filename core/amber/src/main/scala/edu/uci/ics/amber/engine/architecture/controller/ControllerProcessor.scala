@@ -16,7 +16,7 @@ class ControllerProcessor(
     outputHandler: WorkflowFIFOMessage => Unit
 ) extends AmberProcessor(actorId, outputHandler) {
 
-  val executionState = new ExecutionState(workflow)
+  val executionState = new ExecutionState(executionId = 1, workflow)
   val workflowScheduler =
     new WorkflowScheduler(
       workflow.executionPlan.getAllRegions.toBuffer,

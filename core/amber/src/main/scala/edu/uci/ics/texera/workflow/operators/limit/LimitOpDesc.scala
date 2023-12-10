@@ -24,9 +24,10 @@ class LimitOpDesc extends LogicalOp {
   @JsonPropertyDescription("the max number of output rows")
   var limit: Int = _
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     val limitPerWorker = equallyPartitionGoal(limit, AmberConfig.numWorkerPerOperatorByDefault)
     OpExecConfig.oneToOneLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(p => new LimitOpExec(limitPerWorker(p._1)))
     )
@@ -44,11 +45,8 @@ class LimitOpDesc extends LogicalOp {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
 
-  override def runtimeReconfiguration(
-                                       newOpDesc: LogicalOp,
-                                       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
-    val newOpExecConfig = newOpDesc.operatorExecutor(operatorSchemaInfo)
+  override def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+    val newOpExecConfig = newOpDesc.operatorExecutor(executionId, operatorSchemaInfo)
     val stateTransferFunc: StateTransferFunc = (oldOp, newOp) => {
       val oldLimitOp = oldOp.asInstanceOf[LimitOpExec]
       val newLimitOp = newOp.asInstanceOf[LimitOpExec]

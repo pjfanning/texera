@@ -65,11 +65,11 @@ class DualInputPortsPythonUDFOpDescV2 extends LogicalOp {
   )
   var outputColumns: List[Attribute] = List()
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     if (workers > 1)
       OpExecConfig
-        .oneToOneLayer(
+        .oneToOneLayer(  executionId,
           operatorIdentifier,
           OpExecInitInfo(code)
         )
@@ -82,7 +82,7 @@ class DualInputPortsPythonUDFOpDescV2 extends LogicalOp {
         .withInputPorts(operatorInfo.inputPorts)
     else
       OpExecConfig
-        .manyToOneLayer(
+        .manyToOneLayer(  executionId,
           operatorIdentifier,
           OpExecInitInfo(code)
         )

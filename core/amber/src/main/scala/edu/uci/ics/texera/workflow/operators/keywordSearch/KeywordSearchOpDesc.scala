@@ -27,8 +27,9 @@ class KeywordSearchOpDesc extends FilterOpDesc {
   @JsonPropertyDescription("keywords")
   var keyword: String = _
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     OpExecConfig.oneToOneLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new KeywordSearchOpExec(this))
     )

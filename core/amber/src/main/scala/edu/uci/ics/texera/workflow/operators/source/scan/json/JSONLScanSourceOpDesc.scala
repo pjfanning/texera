@@ -25,7 +25,7 @@ class JSONLScanSourceOpDesc extends ScanSourceOpDesc {
   fileTypeName = Option("JSONL")
 
   @throws[IOException]
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     filePath match {
       case Some(path) =>
         // count lines and partition the task to each worker
@@ -41,7 +41,7 @@ class JSONLScanSourceOpDesc extends ScanSourceOpDesc {
         val numWorkers = AmberConfig.numWorkerPerOperatorByDefault
 
         OpExecConfig
-          .sourceLayer(
+          .sourceLayer(  executionId,
             operatorIdentifier,
             OpExecInitInfo(p => {
               val i = p._1

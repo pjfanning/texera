@@ -17,9 +17,7 @@ import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageReader;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.immutable.List;
-import scala.util.Left;
 
-import java.io.Serializable;
 import java.util.function.Function;
 
 import static edu.uci.ics.texera.workflow.common.IncrementalOutputMode.SET_SNAPSHOT;
@@ -48,8 +46,8 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     private Option<Integer> upstreamPort = Option.empty();
 
     @Override
-    public OpExecConfig operatorExecutor(OperatorSchemaInfo operatorSchemaInfo) {
-        return OpExecConfig.localLayer(
+    public OpExecConfig operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+        return OpExecConfig.localLayer(executionId,
                 operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, OpExecConfig>, IOperatorExecutor> & java.io.Serializable) worker -> new ProgressiveSinkOpExec(operatorSchemaInfo, outputMode, storage.getStorageWriter()))
         ).withPorts(this.operatorInfo());
@@ -107,10 +105,14 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     }
 
     @JsonIgnore
-    public void setStorage(SinkStorageReader storage) { this.storage = storage; }
+    public void setStorage(SinkStorageReader storage) {
+        this.storage = storage;
+    }
 
     @JsonIgnore
-    public SinkStorageReader getStorage() { return this.storage; }
+    public SinkStorageReader getStorage() {
+        return this.storage;
+    }
 
     public Option<String> getUpstreamId() {
         return upstreamId;

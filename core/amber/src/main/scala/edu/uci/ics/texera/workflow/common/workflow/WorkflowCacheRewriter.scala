@@ -68,7 +68,9 @@ object WorkflowCacheRewriter {
       })
 
     assert(
-      resultPlan.getTerminalOperatorIds.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc])
+      resultPlan.getTerminalOperatorIds.forall(o =>
+        resultPlan.getOperator(o).isInstanceOf[SinkOpDesc]
+      )
     )
 
     resultPlan.propagateWorkflowSchema(None)
@@ -112,7 +114,7 @@ object WorkflowCacheRewriter {
               storageType
             )
           )
-          sink.getStorage.setSchema(logicalPlan.outputSchemaMap(o.operatorIdentifier.operator).head)
+          sink.getStorage.setSchema(logicalPlan.outputSchemaMap(o.operatorIdentifier.id).head)
           // add the sink collection name to the JSON array of sinks
           sinksPointers.add(o.context.executionId + "_" + storageKey)
         }

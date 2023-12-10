@@ -29,7 +29,7 @@ object AggregatedVizOpExecConfig {
   ): PhysicalPlan = {
 
     val aggregateOperators =
-      AggregateOpDesc.opExecPhysicalPlan(id, List(aggFunc), groupByKeys, operatorSchemaInfo)
+      AggregateOpDesc.opExecPhysicalPlan( 0, id, List(aggFunc), groupByKeys, operatorSchemaInfo)
     val tailAggregateOp = aggregateOperators.sinkOperators.last
 
     new PhysicalPlan(

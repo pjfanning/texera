@@ -14,8 +14,9 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Sche
 
 class DistinctOpDesc extends LogicalOp {
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     OpExecConfig.hashLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new DistinctOpExec()),
       operatorSchemaInfo.inputSchemas(0).getAttributes.toArray.indices.toArray

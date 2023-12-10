@@ -14,8 +14,9 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Sche
 
 class IntersectOpDesc extends LogicalOp {
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     OpExecConfig.hashLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new IntersectOpExec()),
       operatorSchemaInfo.inputSchemas(0).getAttributes.toArray.indices.toArray

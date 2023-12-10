@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
-class ExecutionState(workflow: Workflow) {
+class ExecutionState(val executionId: Long, workflow: Workflow) {
 
   private val linkExecutions: Map[LinkIdentity, LinkExecution] =
     workflow.partitioningPlan.strategies.map { link =>
@@ -19,7 +19,7 @@ class ExecutionState(workflow: Workflow) {
     }
   private val operatorExecutions: Map[LayerIdentity, OperatorExecution] =
     workflow.physicalPlan.operators.map { opConf =>
-      opConf.id -> new OperatorExecution(opConf.id, opConf.numWorkers)
+      opConf.id -> new OperatorExecution(executionId, opConf.id, opConf.numWorkers)
     }.toMap
 
   def getAllBuiltWorkers: Iterable[ActorVirtualIdentity] =

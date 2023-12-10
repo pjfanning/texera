@@ -18,12 +18,12 @@ object PhysicalPlan {
     new PhysicalPlan(operatorList.toList, links.toList)
   }
 
-  def apply(logicalPlan: LogicalPlan): PhysicalPlan = {
+  def apply(executionId: Long, logicalPlan: LogicalPlan): PhysicalPlan = {
 
     var physicalPlan = PhysicalPlan(List(), List())
 
     logicalPlan.operators.foreach(o => {
-      val subPlan = o.operatorExecutorMultiLayer(logicalPlan.opSchemaInfo(o.operatorId))
+      val subPlan = o.operatorExecutorMultiLayer(executionId, logicalPlan.opSchemaInfo(o.operatorId))
       physicalPlan = physicalPlan.addSubPlan(subPlan)
     })
 

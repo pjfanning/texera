@@ -66,7 +66,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
   )
   var outputColumns: List[Attribute] = List()
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     val opInfo = this.operatorInfo
     val partitionRequirement: List[Option[PartitionInfo]] = if (inputPorts != null) {
@@ -89,7 +89,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
 
     if (workers > 1)
       OpExecConfig
-        .oneToOneLayer(
+        .oneToOneLayer(  executionId,
           operatorIdentifier,
           OpExecInitInfo(code)
         )
@@ -105,7 +105,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     else
       OpExecConfig
-        .manyToOneLayer(
+        .manyToOneLayer(  executionId,
           operatorIdentifier,
           OpExecInitInfo(code)
         )
@@ -165,10 +165,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
     outputSchemaBuilder.build
   }
 
-  override def runtimeReconfiguration(
-                                       newOpDesc: LogicalOp,
-                                       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
-    Success(newOpDesc.operatorExecutor(operatorSchemaInfo), None)
+  override def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+    Success(newOpDesc.operatorExecutor(executionId, operatorSchemaInfo), None)
   }
 }

@@ -30,8 +30,8 @@ class PostgreSQLSourceOpDesc extends SQLSourceOpDesc {
   )
   override def getKeywords: Option[String] = super.getKeywords
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig =
-    OpExecConfig.sourceLayer(
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig =
+    OpExecConfig.sourceLayer(  executionId,
       operatorIdentifier,
       OpExecInitInfo(_ =>
         new PostgreSQLSourceOpExec(

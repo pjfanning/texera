@@ -20,8 +20,8 @@ case class BreakpointInfo(operatorID: String, breakpoint: Breakpoint)
 object LogicalPlan {
 
   private def toJgraphtDAG(
-                            operatorList: List[LogicalOp],
-                            links: List[LogicalLink]
+      operatorList: List[LogicalOp],
+      links: List[LogicalLink]
   ): DirectedAcyclicGraph[String, LogicalLink] = {
     val workflowDag =
       new DirectedAcyclicGraph[String, LogicalLink](classOf[LogicalLink])
@@ -46,11 +46,11 @@ object LogicalPlan {
 }
 
 case class LogicalPlan(
-                        context: WorkflowContext,
-                        operators: List[LogicalOp],
-                        links: List[LogicalLink],
-                        breakpoints: List[BreakpointInfo],
-                        inputSchemaMap: Map[OperatorIdentity, List[Option[Schema]]] = Map.empty
+    context: WorkflowContext,
+    operators: List[LogicalOp],
+    links: List[LogicalLink],
+    breakpoints: List[BreakpointInfo],
+    inputSchemaMap: Map[OperatorIdentity, List[Option[Schema]]] = Map.empty
 ) extends LazyLogging {
 
   lazy val operatorMap: Map[String, LogicalOp] =
@@ -58,7 +58,6 @@ case class LogicalPlan(
 
   lazy val jgraphtDag: DirectedAcyclicGraph[String, LogicalLink] =
     LogicalPlan.toJgraphtDAG(operators, links)
-
 
   lazy val outputSchemaMap: Map[String, List[Schema]] =
     operatorMap.values
@@ -68,7 +67,7 @@ case class LogicalPlan(
             inputSchemaMap(o.operatorIdentifier).map(s => s.get).toArray
           else Array()
         val outputSchemas = o.getOutputSchemas(inputSchemas).toList
-        (o.operatorIdentifier.operator, outputSchemas)
+        (o.operatorIdentifier.id, outputSchemas)
       })
       .toMap
 
@@ -89,7 +88,8 @@ case class LogicalPlan(
   def getUpstreamOps(opId: String): List[LogicalOp] = {
     jgraphtDag
       .incomingEdgesOf(opId)
-      .map(e => operatorMap(e.origin.operatorID)).toList
+      .map(e => operatorMap(e.origin.operatorID))
+      .toList
   }
 
   // returns a new logical plan with the given operator added
@@ -107,7 +107,7 @@ case class LogicalPlan(
       ),
       breakpoints.filter(b => b.operatorID != operatorId),
       inputSchemaMap.filter({
-        case (opId, _) => opId.operator != operatorId
+        case (opId, _) => opId.id != operatorId
       })
     )
   }
@@ -154,7 +154,7 @@ case class LogicalPlan(
       if (!op.isInstanceOf[SourceOperatorDescriptor])
         inputSchemaMap(op.operatorIdentifier).map(s => s.get).toArray
       else Array()
-    val outputSchemas = outputSchemaMap(op.operatorIdentifier.operator).toArray
+    val outputSchemas = outputSchemaMap(op.operatorIdentifier.id).toArray
     OperatorSchemaInfo(inputSchemas, outputSchemas)
   }
 
@@ -173,7 +173,7 @@ case class LogicalPlan(
       new mutable.HashMap[OperatorIdentity, mutable.MutableList[Option[Schema]]]()
         .withDefault(op =>
           mutable.MutableList
-            .fill(operatorMap(op.operator).operatorInfo.inputPorts.size)(Option.empty)
+            .fill(operatorMap(op.id).operatorInfo.inputPorts.size)(Option.empty)
         )
     // propagate output schema following topological order
     val topologicalOrderIterator = jgraphtDag.iterator()

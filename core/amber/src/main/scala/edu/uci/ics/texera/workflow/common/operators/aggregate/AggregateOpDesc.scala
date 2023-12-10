@@ -12,6 +12,7 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 object AggregateOpDesc {
 
   def opExecPhysicalPlan(
+                          executionId:Long,
       id: OperatorIdentity,
       aggFuncs: List[DistributedAggregation[Object]],
       groupByKeys: List[String],
@@ -20,6 +21,7 @@ object AggregateOpDesc {
     val partialLayer =
       OpExecConfig
         .oneToOneLayer(
+          executionId,
           makeLayer(id, "localAgg"),
           OpExecInitInfo(_ => new PartialAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
         )
@@ -29,6 +31,7 @@ object AggregateOpDesc {
     val finalLayer = if (groupByKeys == null || groupByKeys.isEmpty) {
       OpExecConfig
         .localLayer(
+          executionId,
           makeLayer(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
         )
@@ -41,6 +44,7 @@ object AggregateOpDesc {
 
       OpExecConfig
         .hashLayer(
+          executionId,
           makeLayer(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo)),
           partitionColumns
@@ -58,16 +62,16 @@ object AggregateOpDesc {
 
 abstract class AggregateOpDesc extends LogicalOp {
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException("multi-layer op should use operatorExecutorMultiLayer")
   }
 
-  override def operatorExecutorMultiLayer(operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan = {
-    var plan = aggregateOperatorExecutor(operatorSchemaInfo)
+  override def operatorExecutorMultiLayer(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan = {
+    var plan = aggregateOperatorExecutor(  executionId, operatorSchemaInfo)
     plan.operators.foreach(op => plan = plan.setOperator(op.copy(isOneToManyOp = true)))
     plan
   }
 
-  def aggregateOperatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan
+  def aggregateOperatorExecutor(  executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan
 
 }

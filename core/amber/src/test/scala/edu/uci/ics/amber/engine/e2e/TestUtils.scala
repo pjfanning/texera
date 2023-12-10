@@ -12,11 +12,10 @@ import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, WorkflowCompile
 object TestUtils {
 
   def buildWorkflow(
-                     operators: List[LogicalOp],
-                     links: List[LogicalLink],
-                     resultStorage: OpResultStorage = new OpResultStorage(),
-                     jobId: String = "workflow_test",
-                     workflowTag: String = "workflow_test"
+      operators: List[LogicalOp],
+      links: List[LogicalLink],
+      resultStorage: OpResultStorage = new OpResultStorage(),
+      jobId: String = "workflow_test",
   ): Workflow = {
     val context = new WorkflowContext
     context.jobId = jobId
@@ -25,7 +24,7 @@ object TestUtils {
       context
     )
     workflowCompiler.compile(
-      WorkflowIdentity(workflowTag),
+      WorkflowIdentity(0),
       resultStorage,
       None,
       new JobStateStore()

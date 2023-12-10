@@ -168,17 +168,17 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
-  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobId, operatorId)
+  def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
-  def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException(
       "operator " + operatorIdentifier + " is not migrated to new OpExec API"
     )
   }
 
   // a logical operator corresponds multiple physical operators (a small DAG)
-  def operatorExecutorMultiLayer(operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan = {
-    new PhysicalPlan(List(operatorExecutor(operatorSchemaInfo)), List())
+  def operatorExecutorMultiLayer(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan = {
+    new PhysicalPlan(List(operatorExecutor(executionId, operatorSchemaInfo)), List())
   }
 
   def operatorInfo: OperatorInfo
@@ -206,10 +206,7 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
     this.context = workflowContext
   }
 
-  def runtimeReconfiguration(
-                              newOpDesc: LogicalOp,
-                              operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     throw new UnsupportedOperationException(
       "operator " + getClass.getSimpleName + " does not support reconfiguration"
     )

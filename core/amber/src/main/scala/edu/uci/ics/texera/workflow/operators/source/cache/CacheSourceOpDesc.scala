@@ -23,8 +23,8 @@ class CacheSourceOpDesc(val targetSinkStorageId: String, opResultStorage: OpResu
 
   override def sourceSchema(): Schema = schema
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
-    OpExecConfig.sourceLayer(
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+    OpExecConfig.sourceLayer(  executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new CacheSourceOpExec(opResultStorage.get(targetSinkStorageId)))
     )

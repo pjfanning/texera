@@ -73,7 +73,7 @@ class IntervalJoinOpDesc extends LogicalOp {
   @JsonPropertyDescription("Year, Month, Day, Hour, Minute or Second")
   var timeIntervalType: Option[TimeIntervalType] = _
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     val partitionRequirement = List(
       Option(HashPartition(List(operatorSchemaInfo.inputSchemas(0).getIndex(leftAttributeName)))),
       Option(HashPartition(List(operatorSchemaInfo.inputSchemas(1).getIndex(rightAttributeName))))
@@ -81,6 +81,7 @@ class IntervalJoinOpDesc extends LogicalOp {
 
     OpExecConfig
       .oneToOneLayer(
+        executionId,
         operatorIdentifier,
         OpExecInitInfo(_ => new IntervalJoinOpExec(operatorSchemaInfo, this))
       )

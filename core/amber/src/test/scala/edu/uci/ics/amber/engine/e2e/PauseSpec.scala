@@ -38,8 +38,8 @@ class PauseSpec
   }
 
   def shouldPause(
-                   operators: List[LogicalOp],
-                   links: List[LogicalLink]
+      operators: List[LogicalOp],
+      links: List[LogicalLink]
   ): Unit = {
     val client =
       new AmberClient(

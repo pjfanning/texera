@@ -14,11 +14,8 @@ abstract class FilterOpDesc extends LogicalOp {
     schemas(0)
   }
 
-  override def runtimeReconfiguration(
-                                       newOpDesc: LogicalOp,
-                                       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
-    Success(newOpDesc.operatorExecutor(operatorSchemaInfo), None)
+  override def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+    Success(newOpDesc.operatorExecutor(executionId, operatorSchemaInfo), None)
   }
 
 }

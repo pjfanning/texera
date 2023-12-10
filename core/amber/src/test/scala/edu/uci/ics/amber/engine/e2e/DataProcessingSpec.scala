@@ -58,7 +58,9 @@ class DataProcessingSpec
     client
       .registerCallback[WorkflowCompleted](evt => {
         results = workflow.logicalPlan.getTerminalOperatorIds
-          .map(sinkOpId => (sinkOpId, workflow.logicalPlan.getUpstreamOps(sinkOpId).head.operatorId))
+          .map(sinkOpId =>
+            (sinkOpId, workflow.logicalPlan.getUpstreamOps(sinkOpId).head.operatorId)
+          )
           .filter {
             case (_, upstreamOpId) => resultStorage.contains(upstreamOpId)
           }

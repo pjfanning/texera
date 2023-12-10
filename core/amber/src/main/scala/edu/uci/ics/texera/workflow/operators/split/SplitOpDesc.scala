@@ -26,9 +26,9 @@ class SplitOpDesc extends LogicalOp {
   @JsonIgnore
   val seeds: Array[Int] = Array.fill(AmberConfig.numWorkerPerOperatorByDefault)(Random.nextInt)
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     OpExecConfig
-      .oneToOneLayer(operatorIdentifier, OpExecInitInfo(p => new SplitOpExec(p._1, this)))
+      .oneToOneLayer(  executionId,operatorIdentifier, OpExecInitInfo(p => new SplitOpExec(p._1, this)))
       .withPorts(operatorInfo)
   }
 

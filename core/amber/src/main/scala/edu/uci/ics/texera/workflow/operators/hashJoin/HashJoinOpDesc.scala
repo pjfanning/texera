@@ -51,7 +51,7 @@ class HashJoinOpDesc[K] extends LogicalOp {
   @JsonPropertyDescription("select the join type to execute")
   var joinType: JoinType = JoinType.INNER
 
-  override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = {
+  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     val partitionRequirement = List(
       Option(HashPartition(List(operatorSchemaInfo.inputSchemas(0).getIndex(buildAttributeName)))),
       Option(HashPartition(List(operatorSchemaInfo.inputSchemas(1).getIndex(probeAttributeName))))
@@ -82,6 +82,7 @@ class HashJoinOpDesc[K] extends LogicalOp {
 
     OpExecConfig
       .oneToOneLayer(
+        executionId,
         operatorIdentifier,
         OpExecInitInfo(_ =>
           new HashJoinOpExec[K](
