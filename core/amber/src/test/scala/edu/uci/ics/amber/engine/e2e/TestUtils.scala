@@ -7,13 +7,13 @@ import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
-import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, WorkflowCompiler}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, WorkflowCompiler}
 
 object TestUtils {
 
   def buildWorkflow(
                      operators: List[LogicalOp],
-                     links: List[OperatorLink],
+                     links: List[LogicalLink],
                      resultStorage: OpResultStorage = new OpResultStorage(),
                      jobId: String = "workflow_test",
                      workflowTag: String = "workflow_test"

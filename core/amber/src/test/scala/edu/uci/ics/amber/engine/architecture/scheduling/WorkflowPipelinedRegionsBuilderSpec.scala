@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
-import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
 import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.{
   DualInputPortsPythonUDFOpDescV2,
@@ -20,11 +20,11 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
 
@@ -45,15 +45,15 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc2.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(joinOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -94,19 +94,19 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(keywordOpDesc.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(joinOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -131,23 +131,23 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(buildCsv.operatorID, 0),
           OperatorPort(hashJoin1.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(probeCsv.operatorID, 0),
           OperatorPort(hashJoin1.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(buildCsv.operatorID, 0),
           OperatorPort(hashJoin2.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(hashJoin1.operatorID, 0),
           OperatorPort(hashJoin2.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(hashJoin2.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -172,23 +172,23 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(csv.operatorID, 0),
           OperatorPort(split.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(split.operatorID, 0),
           OperatorPort(training.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(training.operatorID, 0),
           OperatorPort(inference.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(split.operatorID, 1),
           OperatorPort(inference.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(inference.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )

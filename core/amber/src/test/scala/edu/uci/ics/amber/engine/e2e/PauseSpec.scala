@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHa
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
-import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
@@ -39,7 +39,7 @@ class PauseSpec
 
   def shouldPause(
                    operators: List[LogicalOp],
-                   links: List[OperatorLink]
+                   links: List[LogicalLink]
   ): Unit = {
     val client =
       new AmberClient(
@@ -71,7 +71,7 @@ class PauseSpec
     shouldPause(
       List(csvOpDesc, sink),
       List(
-        OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
   }
@@ -86,11 +86,11 @@ class PauseSpec
     shouldPause(
       List(csvOpDesc, keywordOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
   }

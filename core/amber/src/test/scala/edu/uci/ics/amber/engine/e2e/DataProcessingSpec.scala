@@ -113,7 +113,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -131,7 +131,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -149,7 +149,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(jsonlOp, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -178,7 +178,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(jsonlOp, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(jsonlOp.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -208,11 +208,11 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       ),
       resultStorage
     )
@@ -228,11 +228,11 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, wordCountOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(wordCountOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(wordCountOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       ),
       resultStorage
     )
@@ -248,7 +248,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(csvOpDesc, sink),
       List(
-        OperatorLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       ),
       resultStorage
     )
@@ -262,11 +262,11 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       ),
       resultStorage
     )
@@ -282,15 +282,15 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, countOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(keywordOpDesc.operatorID, 0),
           OperatorPort(countOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(countOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       ),
       resultStorage
     )
@@ -310,15 +310,15 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(csvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(keywordOpDesc.operatorID, 0),
           OperatorPort(averageAndGroupByOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(averageAndGroupByOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -341,15 +341,15 @@ class DataProcessingSpec
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc2.operatorID, 0),
           OperatorPort(joinOpDesc.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(joinOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
@@ -388,7 +388,7 @@ class DataProcessingSpec
     val workflow = buildWorkflow(
       List(inMemoryMsSQLSourceOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(inMemoryMsSQLSourceOpDesc.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )

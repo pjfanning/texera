@@ -20,10 +20,10 @@ object LogicalPlan {
 
   private def toJgraphtDAG(
                             operatorList: List[LogicalOp],
-                            links: List[OperatorLink]
-  ): DirectedAcyclicGraph[String, OperatorLink] = {
+                            links: List[LogicalLink]
+  ): DirectedAcyclicGraph[String, LogicalLink] = {
     val workflowDag =
-      new DirectedAcyclicGraph[String, OperatorLink](classOf[OperatorLink])
+      new DirectedAcyclicGraph[String, LogicalLink](classOf[LogicalLink])
     operatorList.foreach(op => workflowDag.addVertex(op.operatorID))
     links.foreach(l =>
       workflowDag.addEdge(
@@ -47,7 +47,7 @@ object LogicalPlan {
 case class LogicalPlan(
                         context: WorkflowContext,
                         operators: List[LogicalOp],
-                        links: List[OperatorLink],
+                        links: List[LogicalLink],
                         breakpoints: List[BreakpointInfo],
                         inputSchemaMap: Map[OperatorIdentity, List[Option[Schema]]] = Map.empty
 ) extends LazyLogging {
@@ -55,7 +55,7 @@ case class LogicalPlan(
   lazy val operatorMap: Map[String, LogicalOp] =
     operators.map(op => (op.operatorID, op)).toMap
 
-  lazy val jgraphtDag: DirectedAcyclicGraph[String, OperatorLink] =
+  lazy val jgraphtDag: DirectedAcyclicGraph[String, LogicalLink] =
     LogicalPlan.toJgraphtDAG(operators, links)
 
   lazy val sourceOperators: List[String] =
@@ -123,7 +123,7 @@ case class LogicalPlan(
       fromPort: Int = 0,
       toPort: Int = 0
   ): LogicalPlan = {
-    val newLink = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val newLink = LogicalLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links :+ newLink
     this.copy(context, operators, newLinks, breakpoints)
   }
@@ -135,7 +135,7 @@ case class LogicalPlan(
       fromPort: Int = 0,
       toPort: Int = 0
   ): LogicalPlan = {
-    val linkToRemove = OperatorLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val linkToRemove = LogicalLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
     val newLinks = links.filter(l => l != linkToRemove)
     this.copy(context, operators, newLinks, breakpoints)
   }
@@ -148,7 +148,7 @@ case class LogicalPlan(
     downstream.toList
   }
 
-  def getDownstreamEdges(operatorID: String): List[OperatorLink] = {
+  def getDownstreamEdges(operatorID: String): List[LogicalLink] = {
     links.filter(l => l.origin.operatorID == operatorID)
   }
 

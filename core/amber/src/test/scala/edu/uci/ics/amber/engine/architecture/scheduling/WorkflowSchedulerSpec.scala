@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
-import edu.uci.ics.texera.workflow.common.workflow.{OperatorLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -31,11 +31,11 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     val workflow = buildWorkflow(
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(headerlessCsvOpDesc.operatorID, 0),
           OperatorPort(keywordOpDesc.operatorID, 0)
         ),
-        OperatorLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
       )
     )
     val executionState = new ExecutionState(workflow)
@@ -80,23 +80,23 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
         sink
       ),
       List(
-        OperatorLink(
+        LogicalLink(
           OperatorPort(buildCsv.operatorID, 0),
           OperatorPort(hashJoin1.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(probeCsv.operatorID, 0),
           OperatorPort(hashJoin1.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(buildCsv.operatorID, 0),
           OperatorPort(hashJoin2.operatorID, 0)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(hashJoin1.operatorID, 0),
           OperatorPort(hashJoin2.operatorID, 1)
         ),
-        OperatorLink(
+        LogicalLink(
           OperatorPort(hashJoin2.operatorID, 0),
           OperatorPort(sink.operatorID, 0)
         )
