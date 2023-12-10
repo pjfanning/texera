@@ -11,13 +11,13 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.UnknownPartition
 
 import scala.collection.JavaConverters._
 
-class DualInputPortsPythonUDFOpDescV2 extends OperatorDescriptor {
+class DualInputPortsPythonUDFOpDescV2 extends LogicalOp {
   @JsonProperty(
     required = true,
     defaultValue =

@@ -9,10 +9,10 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 
-class DistinctOpDesc extends OperatorDescriptor {
+class DistinctOpDesc extends LogicalOp {
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     OpExecConfig.hashLayer(

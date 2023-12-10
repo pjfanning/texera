@@ -11,13 +11,13 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
+import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.operators.util.OperatorDescriptorUtils.equallyPartitionGoal
 
 import scala.util.{Success, Try}
 
-class LimitOpDesc extends OperatorDescriptor {
+class LimitOpDesc extends LogicalOp {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Limit")
@@ -45,8 +45,8 @@ class LimitOpDesc extends OperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
 
   override def runtimeReconfiguration(
-      newOpDesc: OperatorDescriptor,
-      operatorSchemaInfo: OperatorSchemaInfo
+                                       newOpDesc: LogicalOp,
+                                       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     val newOpExecConfig = newOpDesc.operatorExecutor(operatorSchemaInfo)
     val stateTransferFunc: StateTransferFunc = (oldOp, newOp) => {

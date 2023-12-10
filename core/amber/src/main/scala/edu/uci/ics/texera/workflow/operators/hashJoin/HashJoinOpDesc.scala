@@ -15,7 +15,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo}
 
@@ -32,7 +32,7 @@ import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
   }
 }
 """)
-class HashJoinOpDesc[K] extends OperatorDescriptor {
+class HashJoinOpDesc[K] extends LogicalOp {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Left Input Attribute")

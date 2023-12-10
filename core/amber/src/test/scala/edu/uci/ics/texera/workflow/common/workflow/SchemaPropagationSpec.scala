@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
@@ -52,7 +52,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     val mlModelSchema = Schema.newBuilder().add("model", AttributeType.STRING).build()
     val mlVizSchema = Schema.newBuilder().add("visualization", AttributeType.STRING).build()
 
-    val mlTrainingOp = new OperatorDescriptor() {
+    val mlTrainingOp = new LogicalOp() {
       override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = ???
 
       override def operatorInfo: OperatorInfo =
@@ -74,7 +74,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     }
     mlTrainingOp.operatorID = "mlTrainingOp"
 
-    val mlInferOp = new OperatorDescriptor() {
+    val mlInferOp = new LogicalOp() {
       override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = ???
 
       override def operatorInfo: OperatorInfo =

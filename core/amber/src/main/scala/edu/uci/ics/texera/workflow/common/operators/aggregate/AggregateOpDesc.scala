@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OutputPort}
-import edu.uci.ics.texera.workflow.common.operators.OperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
@@ -56,7 +56,7 @@ object AggregateOpDesc {
 
 }
 
-abstract class AggregateOpDesc extends OperatorDescriptor {
+abstract class AggregateOpDesc extends LogicalOp {
 
   override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException("multi-layer op should use operatorExecutorMultiLayer")

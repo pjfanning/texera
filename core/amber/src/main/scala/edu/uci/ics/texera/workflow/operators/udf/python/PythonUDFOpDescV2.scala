@@ -11,14 +11,14 @@ import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorInfo,
   OutputPort
 }
-import edu.uci.ics.texera.workflow.common.operators.{OperatorDescriptor, StateTransferFunc}
+import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, StateTransferFunc}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{PartitionInfo, UnknownPartition}
 
 import scala.collection.JavaConverters._
 import scala.util.{Success, Try}
 
-class PythonUDFOpDescV2 extends OperatorDescriptor {
+class PythonUDFOpDescV2 extends LogicalOp {
   @JsonProperty(
     required = true,
     defaultValue =
@@ -166,8 +166,8 @@ class PythonUDFOpDescV2 extends OperatorDescriptor {
   }
 
   override def runtimeReconfiguration(
-      newOpDesc: OperatorDescriptor,
-      operatorSchemaInfo: OperatorSchemaInfo
+                                       newOpDesc: LogicalOp,
+                                       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     Success(newOpDesc.operatorExecutor(operatorSchemaInfo), None)
   }

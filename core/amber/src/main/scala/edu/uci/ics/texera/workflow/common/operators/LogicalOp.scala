@@ -158,7 +158,7 @@ trait StateTransferFunc
     new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot")
   )
 )
-abstract class OperatorDescriptor extends PortDescriptor with Serializable {
+abstract class LogicalOp extends PortDescriptor with Serializable {
 
   @JsonIgnore
   var context: WorkflowContext = _
@@ -207,8 +207,8 @@ abstract class OperatorDescriptor extends PortDescriptor with Serializable {
   }
 
   def runtimeReconfiguration(
-      newOpDesc: OperatorDescriptor,
-      operatorSchemaInfo: OperatorSchemaInfo
+                              newOpDesc: LogicalOp,
+                              operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     throw new UnsupportedOperationException(
       "operator " + getClass.getSimpleName + " does not support reconfiguration"
