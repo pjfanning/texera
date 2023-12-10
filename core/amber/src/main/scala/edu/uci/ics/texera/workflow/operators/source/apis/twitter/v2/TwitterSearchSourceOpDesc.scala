@@ -33,9 +33,13 @@ class TwitterSearchSourceOpDesc extends TwitterSourceOpDesc {
   @JsonSchemaDescription("Maximum number of tweets to retrieve")
   var limit: Int = _
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig =
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig =
     // TODO: use multiple workers
-    OpExecConfig.sourceLayer(  executionId,
+    OpExecConfig.sourceLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new TwitterSearchSourceOpExec(this, operatorSchemaInfo))
     )

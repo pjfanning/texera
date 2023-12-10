@@ -38,7 +38,10 @@ class BulkDownloaderOpDesc extends LogicalOp {
   )
   var resultAttribute: String = _
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig = {
     assert(context.userId.isDefined)
     OpExecConfig.oneToOneLayer(
       executionId,

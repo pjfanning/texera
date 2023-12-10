@@ -28,7 +28,7 @@ object VirtualIdentityUtils {
   def getOperator(workerId: ActorVirtualIdentity): LayerIdentity = {
     workerId.name match {
       case workerNamePattern(_, operator, layer, _) =>
-        LayerIdentity( operator, layer)
+        LayerIdentity(operator, layer)
     }
   }
 

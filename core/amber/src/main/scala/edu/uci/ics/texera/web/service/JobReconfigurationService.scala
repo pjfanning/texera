@@ -64,7 +64,11 @@ class JobReconfigurationService(
     val opId = newOp.operatorId
     val currentOp = workflow.logicalPlan.operatorMap(opId)
     val reconfiguredPhysicalOp =
-      currentOp.runtimeReconfiguration(workflow.workflowId.id, newOp, workflow.logicalPlan.opSchemaInfo(opId))
+      currentOp.runtimeReconfiguration(
+        workflow.workflowId.id,
+        newOp,
+        workflow.logicalPlan.opSchemaInfo(opId)
+      )
     reconfiguredPhysicalOp match {
       case Failure(exception) => ModifyLogicResponse(opId, isValid = false, exception.getMessage)
       case Success(op) => {

@@ -31,7 +31,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterEach {
   private val identifier: ActorVirtualIdentity = ActorVirtualIdentity("DP mock")
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
-  private val operatorIdentity: OperatorIdentity = OperatorIdentity( "testOperator")
+  private val operatorIdentity: OperatorIdentity = OperatorIdentity("testOperator")
   private val operator = mock[OperatorExecutor]
   private val linkID: LinkIdentity =
     LinkIdentity(
@@ -42,8 +42,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     )
   private val opExecConfig =
     OpExecConfig
-      .oneToOneLayer(
-        1, operatorIdentity, OpExecInitInfo(_ => operator))
+      .oneToOneLayer(1, operatorIdentity, OpExecInitInfo(_ => operator))
       .addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
   private val adaptiveBatchingMonitor = mock[WorkerTimerService]

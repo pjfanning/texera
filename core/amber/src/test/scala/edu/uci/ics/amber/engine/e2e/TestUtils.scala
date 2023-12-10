@@ -15,7 +15,7 @@ object TestUtils {
       operators: List[LogicalOp],
       links: List[LogicalLink],
       resultStorage: OpResultStorage = new OpResultStorage(),
-      jobId: String = "workflow_test",
+      jobId: String = "workflow_test"
   ): Workflow = {
     val context = new WorkflowContext
     context.jobId = jobId
@@ -23,8 +23,9 @@ object TestUtils {
       LogicalPlanPojo(operators, links, List(), List(), List()),
       context
     )
+    val workflowIdentity = WorkflowIdentity(context.executionId)
     workflowCompiler.compile(
-      WorkflowIdentity(0),
+      workflowIdentity,
       resultStorage,
       None,
       new JobStateStore()

@@ -177,7 +177,10 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   }
 
   // a logical operator corresponds multiple physical operators (a small DAG)
-  def operatorExecutorMultiLayer(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalPlan = {
+  def operatorExecutorMultiLayer(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): PhysicalPlan = {
     new PhysicalPlan(List(operatorExecutor(executionId, operatorSchemaInfo)), List())
   }
 
@@ -206,7 +209,11 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
     this.context = workflowContext
   }
 
-  def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  def runtimeReconfiguration(
+      executionId: Long,
+      newOpDesc: LogicalOp,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     throw new UnsupportedOperationException(
       "operator " + getClass.getSimpleName + " does not support reconfiguration"
     )

@@ -43,7 +43,10 @@ class SortPartitionsOpDesc extends LogicalOp {
   @JsonPropertyDescription("Maximum value of the domain of the attribute.")
   var domainMax: Long = _
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig = {
     val partitionRequirement = List(
       Option(
         RangePartition(
@@ -55,7 +58,8 @@ class SortPartitionsOpDesc extends LogicalOp {
     )
 
     OpExecConfig
-      .oneToOneLayer(  executionId,
+      .oneToOneLayer(
+        executionId,
         operatorIdentifier,
         OpExecInitInfo(p =>
           new SortPartitionOpExec(

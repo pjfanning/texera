@@ -64,14 +64,12 @@ class WorkerSpec
   }
   private val operatorIdentity = OperatorIdentity("testOperator")
   private val layerId1 =
-    LayerIdentity( operatorIdentity.id, "1st-layer")
+    LayerIdentity(operatorIdentity.id, "1st-layer")
   private val layerId2 =
-    LayerIdentity( operatorIdentity.id, "2nd-layer")
+    LayerIdentity(operatorIdentity.id, "2nd-layer")
   private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
   private val opExecConfig = OpExecConfig
-    .oneToOneLayer(
-      0,
-      operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
+    .oneToOneLayer(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val workerIndex = 0
   private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))

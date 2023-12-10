@@ -30,8 +30,12 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
 
   fileTypeName = Option("")
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig =
-    OpExecConfig.sourceLayer(  executionId,
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig =
+    OpExecConfig.sourceLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new FileScanSourceOpExec(this))
     )

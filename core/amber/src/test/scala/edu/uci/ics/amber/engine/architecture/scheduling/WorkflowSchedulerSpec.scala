@@ -17,7 +17,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       executionState: ExecutionState,
       opID: String
   ): Unit = {
-    val opIdentity = new OperatorIdentity( opID)
+    val opIdentity = new OperatorIdentity(opID)
     val layers = workflow.physicalPlan.layersOfLogicalOperator(opIdentity)
     layers.foreach { layer =>
       executionState.getOperatorExecution(layer.id).setAllWorkerState(COMPLETED)
@@ -54,7 +54,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       scheduler.schedulingPolicy.startWorkflow(workflow),
       null
     )
-    val opIdentity = new OperatorIdentity( headerlessCsvOpDesc.operatorId)
+    val opIdentity = new OperatorIdentity(headerlessCsvOpDesc.operatorId)
     val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
     val nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
@@ -117,7 +117,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       null
     )
     Set(buildCsv.operatorId).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
-    val opIdentity = new OperatorIdentity( buildCsv.operatorId)
+    val opIdentity = new OperatorIdentity(buildCsv.operatorId)
     val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
     var nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
@@ -133,14 +133,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity( buildCsv.operatorId)
+            new OperatorIdentity(buildCsv.operatorId)
           )
           .last
           .id,
         0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity( hashJoin1.operatorId)
+            new OperatorIdentity(hashJoin1.operatorId)
           )
           .head
           .id,
@@ -154,14 +154,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity( buildCsv.operatorId)
+            new OperatorIdentity(buildCsv.operatorId)
           )
           .last
           .id,
         0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity( hashJoin2.operatorId)
+            new OperatorIdentity(hashJoin2.operatorId)
           )
           .head
           .id,
@@ -174,7 +174,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     Set(probeCsv.operatorId, hashJoin1.operatorId, hashJoin2.operatorId, sink.operatorId).foreach(
       opID => setOperatorCompleted(workflow, executionState, opID)
     )
-    val probeId = new OperatorIdentity( probeCsv.operatorId)
+    val probeId = new OperatorIdentity(probeCsv.operatorId)
     val probeLayerId = workflow.physicalPlan.layersOfLogicalOperator(probeId).head.id
     nextRegions = scheduler.schedulingPolicy.onWorkerCompletion(
       workflow,

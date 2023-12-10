@@ -57,7 +57,10 @@ class MaterializationRewriter(
     )
     opResultStorage.get(materializationWriter.operatorId).setSchema(matWriterOutputSchema)
     val matWriterOpExecConfig =
-      materializationWriter.operatorExecutor(context.executionId, OperatorSchemaInfo(Array(matWriterInputSchema), Array(matWriterOutputSchema)))
+      materializationWriter.operatorExecutor(
+        context.executionId,
+        OperatorSchemaInfo(Array(matWriterInputSchema), Array(matWriterOutputSchema))
+      )
 
     val materializationReader = new CacheSourceOpDesc(
       materializationWriter.operatorId,
@@ -67,7 +70,10 @@ class MaterializationRewriter(
     materializationReader.schema = materializationWriter.getStorage.getSchema
     val matReaderOutputSchema = materializationReader.getOutputSchemas(Array())
     val matReaderOpExecConfig =
-      materializationReader.operatorExecutor(context.executionId, OperatorSchemaInfo(Array(), matReaderOutputSchema))
+      materializationReader.operatorExecutor(
+        context.executionId,
+        OperatorSchemaInfo(Array(), matReaderOutputSchema)
+      )
 
     // create 2 links for materialization
     val readerToDestLink = LinkIdentity(matReaderOpExecConfig.id, 0, toOpId, toInputPortIdx)

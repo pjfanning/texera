@@ -36,10 +36,18 @@ object OpExecConfig {
   // 1) it initializes at the controller jvm.
   // 2) it only has 1 worker actor.
   // 3) it has no input ports.
-  def sourceLayer(executionId: Long, opId: OperatorIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def sourceLayer(
+      executionId: Long,
+      opId: OperatorIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     sourceLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
 
-  def sourceLayer(executionId: Long, layerId: LayerIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def sourceLayer(
+      executionId: Long,
+      layerId: LayerIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     OpExecConfig(
       executionId,
       layerId,
@@ -49,16 +57,32 @@ object OpExecConfig {
       inputPorts = List.empty
     )
 
-  def oneToOneLayer(executionId: Long, opId: OperatorIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def oneToOneLayer(
+      executionId: Long,
+      opId: OperatorIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     oneToOneLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
 
-  def oneToOneLayer(executionId: Long, layerId: LayerIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def oneToOneLayer(
+      executionId: Long,
+      layerId: LayerIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     OpExecConfig(executionId, layerId, opExecInitInfo = opExecInitInfo)
 
-  def manyToOneLayer(executionId: Long, opId: OperatorIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def manyToOneLayer(
+      executionId: Long,
+      opId: OperatorIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     manyToOneLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
 
-  def manyToOneLayer(executionId: Long, layerId: LayerIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig = {
+  def manyToOneLayer(
+      executionId: Long,
+      layerId: LayerIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig = {
     OpExecConfig(
       executionId,
       layerId,
@@ -69,25 +93,33 @@ object OpExecConfig {
     )
   }
 
-  def localLayer(executionId: Long, opId: OperatorIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig =
+  def localLayer(
+      executionId: Long,
+      opId: OperatorIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig =
     localLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
 
-  def localLayer(executionId: Long, layerId: LayerIdentity, opExecInitInfo: OpExecInitInfo): OpExecConfig = {
+  def localLayer(
+      executionId: Long,
+      layerId: LayerIdentity,
+      opExecInitInfo: OpExecInitInfo
+  ): OpExecConfig = {
     manyToOneLayer(executionId, layerId, opExecInitInfo).copy(locationPreference =
       Option(new PreferController())
     )
   }
 
   def hashLayer(
-                 executionId: Long,
-                 opId: OperatorIdentity,
+      executionId: Long,
+      opId: OperatorIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
   ): OpExecConfig = hashLayer(executionId, makeLayer(opId, "main"), opExec, hashColumnIndices)
 
   def hashLayer(
-                 executionId: Long,
-                 layerId: LayerIdentity,
+      executionId: Long,
+      layerId: LayerIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
   ): OpExecConfig = {

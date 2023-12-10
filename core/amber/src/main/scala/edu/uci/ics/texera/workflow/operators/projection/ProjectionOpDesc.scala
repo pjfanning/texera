@@ -21,7 +21,10 @@ class ProjectionOpDesc extends MapOpDesc {
 
   var attributes: List[AttributeUnit] = List()
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig = {
     oneToOneLayer(
       executionId,
       operatorIdentifier,

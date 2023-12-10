@@ -45,8 +45,12 @@ class ReservoirSamplingOpDesc extends LogicalOp {
     kPerActor(actor)
   }
 
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
-    OpExecConfig.oneToOneLayer(  executionId,
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig = {
+    OpExecConfig.oneToOneLayer(
+      executionId,
       operatorIdentifier,
       OpExecInitInfo(p => new ReservoirSamplingOpExec(p._1, this))
     )

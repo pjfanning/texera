@@ -14,12 +14,18 @@ import org.scalatest.flatspec.AnyFlatSpec
 class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
   private abstract class TempTestSourceOpDesc extends SourceOperatorDescriptor {
-    override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = ???
+    override def operatorExecutor(
+        executionId: Long,
+        operatorSchemaInfo: OperatorSchemaInfo
+    ): OpExecConfig = ???
     override def operatorInfo: OperatorInfo =
       OperatorInfo("", "", "", List(InputPort()), List(OutputPort()))
   }
   private class TempTestSinkOpDesc extends SinkOpDesc {
-    override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = ???
+    override def operatorExecutor(
+        executionId: Long,
+        operatorSchemaInfo: OperatorSchemaInfo
+    ): OpExecConfig = ???
     override def operatorInfo: OperatorInfo =
       OperatorInfo("", "", "", List(InputPort()), List(OutputPort()))
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
@@ -54,7 +60,10 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     val mlVizSchema = Schema.newBuilder().add("visualization", AttributeType.STRING).build()
 
     val mlTrainingOp = new LogicalOp() {
-      override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = ???
+      override def operatorExecutor(
+          executionId: Long,
+          operatorSchemaInfo: OperatorSchemaInfo
+      ): OpExecConfig = ???
 
       override def operatorInfo: OperatorInfo =
         OperatorInfo(
@@ -76,7 +85,10 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     mlTrainingOp.operatorId = "mlTrainingOp"
 
     val mlInferOp = new LogicalOp() {
-      override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = ???
+      override def operatorExecutor(
+          executionId: Long,
+          operatorSchemaInfo: OperatorSchemaInfo
+      ): OpExecConfig = ???
 
       override def operatorInfo: OperatorInfo =
         OperatorInfo(

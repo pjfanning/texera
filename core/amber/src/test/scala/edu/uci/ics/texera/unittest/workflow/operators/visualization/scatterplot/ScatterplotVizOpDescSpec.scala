@@ -61,7 +61,10 @@ class ScatterplotVizOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
   it should "raise IllegalArgumentException if the field type is not a number" in {
     val outputSchema = scatterplotOpDesc.getOutputSchema(Array(wrongTypesSchema))
     assertThrows[IllegalArgumentException] {
-      scatterplotOpDesc.operatorExecutor(0, OperatorSchemaInfo(Array(wrongTypesSchema), Array(outputSchema)))
+      scatterplotOpDesc.operatorExecutor(
+        0,
+        OperatorSchemaInfo(Array(wrongTypesSchema), Array(outputSchema))
+      )
     }
   }
 

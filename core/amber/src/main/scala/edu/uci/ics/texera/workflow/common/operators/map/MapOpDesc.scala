@@ -8,7 +8,11 @@ import scala.util.{Failure, Success, Try}
 
 abstract class MapOpDesc extends LogicalOp {
 
-  override def runtimeReconfiguration(executionId: Long, newOpDesc: LogicalOp, operatorSchemaInfo: OperatorSchemaInfo): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  override def runtimeReconfiguration(
+      executionId: Long,
+      newOpDesc: LogicalOp,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
     val newSchemas = newOpDesc.getOutputSchema(operatorSchemaInfo.inputSchemas)
     if (!newSchemas.equals(operatorSchemaInfo.outputSchemas(0))) {
       Failure(

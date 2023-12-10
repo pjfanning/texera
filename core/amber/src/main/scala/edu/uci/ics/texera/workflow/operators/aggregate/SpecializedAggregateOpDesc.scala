@@ -31,7 +31,7 @@ class SpecializedAggregateOpDesc extends AggregateOpDesc {
   var groupByKeys: List[String] = _
 
   override def aggregateOperatorExecutor(
-                                          executionId:Long,
+      executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {
     if (aggregations.isEmpty) {

@@ -37,7 +37,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
       executionName: String,
       environmentVersion: String
   ): Long = {
-    if (!userSystemEnabled) return -1
+    if (!userSystemEnabled) return 1
     // first retrieve the latest version of this workflow
     val vid = getLatestVersion(wid)
     val newExecution = new WorkflowExecutions()

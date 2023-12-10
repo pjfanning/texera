@@ -34,14 +34,18 @@ class CSVScanSourceOpDesc extends ScanSourceOpDesc {
   fileTypeName = Option("CSV")
 
   @throws[IOException]
-  override def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  override def operatorExecutor(
+      executionId: Long,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): OpExecConfig = {
     // fill in default values
     if (customDelimiter.isEmpty || customDelimiter.get.isEmpty)
       customDelimiter = Option(",")
 
     filePath match {
       case Some(_) =>
-        OpExecConfig.sourceLayer(  executionId,
+        OpExecConfig.sourceLayer(
+          executionId,
           operatorIdentifier,
           OpExecInitInfo(_ => new CSVScanSourceOpExec(this))
         )
