@@ -21,10 +21,10 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorID, 0),
-          OperatorPort(keywordOpDesc.operatorID, 0)
+          OperatorPort(headerlessCsvOpDesc.operatorId, 0),
+          OperatorPort(keywordOpDesc.operatorId, 0)
         ),
-        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
       )
     )
 
@@ -46,16 +46,16 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
-          OperatorPort(joinOpDesc.operatorID, 0)
+          OperatorPort(headerlessCsvOpDesc1.operatorId, 0),
+          OperatorPort(joinOpDesc.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc2.operatorID, 0),
-          OperatorPort(joinOpDesc.operatorID, 1)
+          OperatorPort(headerlessCsvOpDesc2.operatorId, 0),
+          OperatorPort(joinOpDesc.operatorId, 1)
         ),
         LogicalLink(
-          OperatorPort(joinOpDesc.operatorID, 0),
-          OperatorPort(sink.operatorID, 0)
+          OperatorPort(joinOpDesc.operatorId, 0),
+          OperatorPort(sink.operatorId, 0)
         )
       )
     )
@@ -65,10 +65,10 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     assert(pipelinedRegions.size == 2)
 
     val buildRegion = pipelinedRegions
-      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc1.operatorID))
+      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc1.operatorId))
       .get
     val probeRegion = pipelinedRegions
-      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc2.operatorID))
+      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc2.operatorId))
       .get
 
     assert(ancestorMapping(probeRegion).size == 1)
@@ -76,7 +76,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     assert(buildRegion.blockingDownstreamOperatorsInOtherRegions.length == 1)
     assert(
       buildRegion.blockingDownstreamOperatorsInOtherRegions.exists(pair =>
-        pair._1.operator == joinOpDesc.operatorID
+        pair._1.operator == joinOpDesc.operatorId
       )
     )
   }
@@ -95,20 +95,20 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
-          OperatorPort(joinOpDesc.operatorID, 0)
+          OperatorPort(headerlessCsvOpDesc1.operatorId, 0),
+          OperatorPort(joinOpDesc.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorID, 0),
-          OperatorPort(keywordOpDesc.operatorID, 0)
+          OperatorPort(headerlessCsvOpDesc1.operatorId, 0),
+          OperatorPort(keywordOpDesc.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorID, 0),
-          OperatorPort(joinOpDesc.operatorID, 1)
+          OperatorPort(keywordOpDesc.operatorId, 0),
+          OperatorPort(joinOpDesc.operatorId, 1)
         ),
         LogicalLink(
-          OperatorPort(joinOpDesc.operatorID, 0),
-          OperatorPort(sink.operatorID, 0)
+          OperatorPort(joinOpDesc.operatorId, 0),
+          OperatorPort(sink.operatorId, 0)
         )
       )
     )
@@ -132,24 +132,24 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(buildCsv.operatorID, 0),
-          OperatorPort(hashJoin1.operatorID, 0)
+          OperatorPort(buildCsv.operatorId, 0),
+          OperatorPort(hashJoin1.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(probeCsv.operatorID, 0),
-          OperatorPort(hashJoin1.operatorID, 1)
+          OperatorPort(probeCsv.operatorId, 0),
+          OperatorPort(hashJoin1.operatorId, 1)
         ),
         LogicalLink(
-          OperatorPort(buildCsv.operatorID, 0),
-          OperatorPort(hashJoin2.operatorID, 0)
+          OperatorPort(buildCsv.operatorId, 0),
+          OperatorPort(hashJoin2.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(hashJoin1.operatorID, 0),
-          OperatorPort(hashJoin2.operatorID, 1)
+          OperatorPort(hashJoin1.operatorId, 0),
+          OperatorPort(hashJoin2.operatorId, 1)
         ),
         LogicalLink(
-          OperatorPort(hashJoin2.operatorID, 0),
-          OperatorPort(sink.operatorID, 0)
+          OperatorPort(hashJoin2.operatorId, 0),
+          OperatorPort(sink.operatorId, 0)
         )
       )
     )
@@ -173,24 +173,24 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(csv.operatorID, 0),
-          OperatorPort(split.operatorID, 0)
+          OperatorPort(csv.operatorId, 0),
+          OperatorPort(split.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(split.operatorID, 0),
-          OperatorPort(training.operatorID, 0)
+          OperatorPort(split.operatorId, 0),
+          OperatorPort(training.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(training.operatorID, 0),
-          OperatorPort(inference.operatorID, 0)
+          OperatorPort(training.operatorId, 0),
+          OperatorPort(inference.operatorId, 0)
         ),
         LogicalLink(
-          OperatorPort(split.operatorID, 1),
-          OperatorPort(inference.operatorID, 1)
+          OperatorPort(split.operatorId, 1),
+          OperatorPort(inference.operatorId, 1)
         ),
         LogicalLink(
-          OperatorPort(inference.operatorID, 0),
-          OperatorPort(sink.operatorID, 0)
+          OperatorPort(inference.operatorId, 0),
+          OperatorPort(sink.operatorId, 0)
         )
       )
     )

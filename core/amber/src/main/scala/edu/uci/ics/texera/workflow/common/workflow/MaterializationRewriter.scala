@@ -51,18 +51,18 @@ class MaterializationRewriter(
       materializationWriter.getOutputSchemas(Array(matWriterInputSchema))(0)
     materializationWriter.setStorage(
       opResultStorage.create(
-        key = materializationWriter.operatorID,
+        key = materializationWriter.operatorId,
         mode = OpResultStorage.defaultStorageMode
       )
     )
-    opResultStorage.get(materializationWriter.operatorID).setSchema(matWriterOutputSchema)
+    opResultStorage.get(materializationWriter.operatorId).setSchema(matWriterOutputSchema)
     val matWriterOpExecConfig =
       materializationWriter.operatorExecutor(
         OperatorSchemaInfo(Array(matWriterInputSchema), Array(matWriterOutputSchema))
       )
 
     val materializationReader = new CacheSourceOpDesc(
-      materializationWriter.operatorID,
+      materializationWriter.operatorId,
       opResultStorage: OpResultStorage
     )
     materializationReader.setContext(context)

@@ -7,7 +7,7 @@ package edu.uci.ics.texera.workflow.common.metadata
   * @author Zuozhi Wang
   */
 object PropertyNameConstants { // logical plan property names
-  final val OPERATOR_ID = "operatorID"
+  final val OPERATOR_ID = "operatorId"
   final val OPERATOR_TYPE = "operatorType"
   final val ORIGIN_OPERATOR_ID = "origin"
   final val DESTINATION_OPERATOR_ID = "destination"

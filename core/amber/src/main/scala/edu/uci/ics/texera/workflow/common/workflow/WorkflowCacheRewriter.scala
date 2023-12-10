@@ -26,8 +26,8 @@ object WorkflowCacheRewriter {
     val opsCanUseCache = opsToReuseCache.intersect(validCachesFromLastExecution)
 
     // remove sinks directly connected to operators that are already reusing cache
-    val unnecessarySinks = resultPlan.getTerminalOperators.filter(sink => {
-      opsCanUseCache.contains(resultPlan.getUpstream(sink).head.operatorID)
+    val unnecessarySinks = resultPlan.getTerminalOperatorIds.filter(sink => {
+      opsCanUseCache.contains(resultPlan.getUpstreamOps(sink).head.operatorId)
     })
     unnecessarySinks.foreach(o => {
       resultPlan = resultPlan.removeOperator(o)
@@ -46,7 +46,7 @@ object WorkflowCacheRewriter {
           e.destination.portOrdinal
         )
         resultPlan = resultPlan.addEdge(
-          materializationReader.operatorID,
+          materializationReader.operatorId,
           e.destination.operatorID,
           0,
           e.destination.portOrdinal
@@ -56,9 +56,9 @@ object WorkflowCacheRewriter {
 
     // after an operator is replaced with reading from cached result
     // its upstream operators can be removed if it's not used by other sinks
-    val allOperators = resultPlan.operators.map(op => op.operatorID).toSet
+    val allOperators = resultPlan.operators.map(op => op.operatorId).toSet
     val sinkOps =
-      resultPlan.operators.filter(op => op.isInstanceOf[SinkOpDesc]).map(o => o.operatorID)
+      resultPlan.operators.filter(op => op.isInstanceOf[SinkOpDesc]).map(o => o.operatorId)
     val usefulOperators = sinkOps ++ sinkOps.flatMap(o => resultPlan.getAncestorOpIds(o)).toSet
     // remove operators that are no longer reachable by any sink
     allOperators
@@ -68,7 +68,7 @@ object WorkflowCacheRewriter {
       })
 
     assert(
-      resultPlan.terminalOperators.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc])
+      resultPlan.getTerminalOperatorIds.forall(o => resultPlan.getOperator(o).isInstanceOf[SinkOpDesc])
     )
 
     resultPlan.propagateWorkflowSchema(None)
@@ -95,7 +95,7 @@ object WorkflowCacheRewriter {
     // assign storage to texera-managed sinks before generating exec config
     logicalPlan.operators.foreach {
       case o @ (sink: ProgressiveSinkOpDesc) =>
-        val storageKey = sink.getUpstreamId.getOrElse(o.operatorID)
+        val storageKey = sink.getUpstreamId.getOrElse(o.operatorId)
         // due to the size limit of single document in mongoDB (16MB)
         // for sinks visualizing HTMLs which could possibly be large in size, we always use the memory storage.
         val storageType = {
@@ -112,7 +112,7 @@ object WorkflowCacheRewriter {
               storageType
             )
           )
-          sink.getStorage.setSchema(logicalPlan.outputSchemaMap(o.operatorIdentifier).head)
+          sink.getStorage.setSchema(logicalPlan.outputSchemaMap(o.operatorIdentifier.operator).head)
           // add the sink collection name to the JSON array of sinks
           sinksPointers.add(o.context.executionId + "_" + storageKey)
         }

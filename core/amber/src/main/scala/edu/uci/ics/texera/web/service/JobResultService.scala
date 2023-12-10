@@ -241,7 +241,7 @@ class JobResultService(
 
     // For operators connected to a sink and sinks,
     // create result service so that the results can be displayed.
-    logicalPlan.getTerminalOperators.map(sink => {
+    logicalPlan.getTerminalOperatorIds.map(sink => {
       logicalPlan.getOperator(sink) match {
         case sinkOp: ProgressiveSinkOpDesc =>
           sinkOperators += ((sinkOp.getUpstreamId.get, sinkOp))

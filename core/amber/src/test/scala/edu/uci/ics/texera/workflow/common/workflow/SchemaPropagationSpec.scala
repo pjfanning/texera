@@ -37,17 +37,17 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     val trainingScan = new TempTestSourceOpDesc() {
       override def sourceSchema(): Schema = dataSchema
     }
-    trainingScan.operatorID = "trainingScan"
+    trainingScan.operatorId = "trainingScan"
 
     val testingScan = new TempTestSourceOpDesc() {
       override def sourceSchema(): Schema = dataSchema
     }
-    testingScan.operatorID = "testingScan"
+    testingScan.operatorId = "testingScan"
 
     val inferenceScan = new TempTestSourceOpDesc() {
       override def sourceSchema(): Schema = dataSchema
     }
-    inferenceScan.operatorID = "inferenceScan"
+    inferenceScan.operatorId = "inferenceScan"
 
     val mlModelSchema = Schema.newBuilder().add("model", AttributeType.STRING).build()
     val mlVizSchema = Schema.newBuilder().add("visualization", AttributeType.STRING).build()
@@ -72,7 +72,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
         Array(mlVizSchema, mlModelSchema)
       }
     }
-    mlTrainingOp.operatorID = "mlTrainingOp"
+    mlTrainingOp.operatorId = "mlTrainingOp"
 
     val mlInferOp = new LogicalOp() {
       override def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo) = ???
@@ -93,13 +93,13 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
         Array(schemas(1))
       }
     }
-    mlInferOp.operatorID = "mlInferOp"
+    mlInferOp.operatorId = "mlInferOp"
 
     val mlVizSink = new TempTestSinkOpDesc
-    mlVizSink.operatorID = "mlVizSink"
+    mlVizSink.operatorId = "mlVizSink"
 
     val inferenceSink = new TempTestSinkOpDesc
-    inferenceSink.operatorID = "inferenceSink"
+    inferenceSink.operatorId = "inferenceSink"
 
     val operators = List(
       trainingScan,
@@ -113,28 +113,28 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val links = List(
       LogicalLink(
-        OperatorPort(trainingScan.operatorID),
-        OperatorPort(mlTrainingOp.operatorID, 0)
+        OperatorPort(trainingScan.operatorId),
+        OperatorPort(mlTrainingOp.operatorId, 0)
       ),
       LogicalLink(
-        OperatorPort(testingScan.operatorID),
-        OperatorPort(mlTrainingOp.operatorID, 1)
+        OperatorPort(testingScan.operatorId),
+        OperatorPort(mlTrainingOp.operatorId, 1)
       ),
       LogicalLink(
-        OperatorPort(inferenceScan.operatorID),
-        OperatorPort(mlInferOp.operatorID, 1)
+        OperatorPort(inferenceScan.operatorId),
+        OperatorPort(mlInferOp.operatorId, 1)
       ),
       LogicalLink(
-        OperatorPort(mlTrainingOp.operatorID, 0),
-        OperatorPort(mlVizSink.operatorID)
+        OperatorPort(mlTrainingOp.operatorId, 0),
+        OperatorPort(mlVizSink.operatorId)
       ),
       LogicalLink(
-        OperatorPort(mlTrainingOp.operatorID, 1),
-        OperatorPort(mlInferOp.operatorID, 0)
+        OperatorPort(mlTrainingOp.operatorId, 1),
+        OperatorPort(mlInferOp.operatorId, 0)
       ),
       LogicalLink(
-        OperatorPort(mlInferOp.operatorID, 0),
-        OperatorPort(inferenceSink.operatorID, 0)
+        OperatorPort(mlInferOp.operatorId, 0),
+        OperatorPort(inferenceSink.operatorId, 0)
       )
     )
 

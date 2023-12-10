@@ -33,7 +33,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
 
   // checks the validity of the cache given the old plan and the new plan
   // returns a set of operator IDs that can be reused
-  // the operatorID is also the storage key
+  // the operatorId is also the storage key
   def getValidCacheReuse: Set[String] = {
     if (oldWorkflowOpt.isEmpty) {
       return Set()
@@ -61,8 +61,8 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
       .forEachRemaining(opId => {
         val newOp = newWorkflow.getOperator(opId)
         val newOpUpstreamClasses = newWorkflow
-          .getUpstream(opId)
-          .map(op => equivalenceClass("new-" + op.operatorID))
+          .getUpstreamOps(opId)
+          .map(op => equivalenceClass("new-" + op.operatorId))
         val oldOp = oldWorkflow.operators.find(op => op.equals(newOp)).orNull
 
         // check if the old workflow contains the same operator content
@@ -70,10 +70,10 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
           getNextClassId // operator not found, create a new class
         } else {
           // check its inputs are all in the same equivalence class
-          val oldId = "old-" + oldOp.operatorID
+          val oldId = "old-" + oldOp.operatorId
           val oldOpUpstreamClasses = oldWorkflow
-            .getUpstream(oldOp.operatorID)
-            .map(op => equivalenceClass("old-" + op.operatorID))
+            .getUpstreamOps(oldOp.operatorId)
+            .map(op => equivalenceClass("old-" + op.operatorId))
           if (oldOpUpstreamClasses.equals(newOpUpstreamClasses)) {
             equivalenceClass(oldId) // same equivalence class
           } else {
@@ -85,9 +85,9 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
 
     // for each cached operator in the old workflow,
     // check if it can be still used in the new workflow
-    oldWorkflow.terminalOperators
+    oldWorkflow.getTerminalOperatorIds
       .map(sinkOpId => {
-        val opId = oldWorkflow.getUpstream(sinkOpId).head.operatorID
+        val opId = oldWorkflow.getUpstreamOps(sinkOpId).head.operatorId
         val oldCachedOpId = "old-" + opId
         // find its equivalence class
         val oldClassId = equivalenceClass(oldCachedOpId)

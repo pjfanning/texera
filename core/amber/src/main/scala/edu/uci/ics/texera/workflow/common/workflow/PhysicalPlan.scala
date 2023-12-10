@@ -23,7 +23,7 @@ object PhysicalPlan {
     var physicalPlan = PhysicalPlan(List(), List())
 
     logicalPlan.operators.foreach(o => {
-      val subPlan = o.operatorExecutorMultiLayer(logicalPlan.opSchemaInfo(o.operatorID))
+      val subPlan = o.operatorExecutorMultiLayer(logicalPlan.opSchemaInfo(o.operatorId))
       physicalPlan = physicalPlan.addSubPlan(subPlan)
     })
 
@@ -32,7 +32,7 @@ object PhysicalPlan {
       val fromLogicalOp = logicalPlan.operatorMap(link.origin.operatorID).operatorIdentifier
       val fromPort = link.origin.portOrdinal
       val fromPortName = logicalPlan.operators
-        .filter(op => op.operatorID == link.origin.operatorID)
+        .filter(op => op.operatorId == link.origin.operatorID)
         .head
         .operatorInfo
         .outputPorts(fromPort)
@@ -42,7 +42,7 @@ object PhysicalPlan {
       val toLogicalOp = logicalPlan.operatorMap(link.destination.operatorID).operatorIdentifier
       val toPort = link.destination.portOrdinal
       val toPortName = logicalPlan.operators
-        .filter(op => op.operatorID == link.destination.operatorID)
+        .filter(op => op.operatorId == link.destination.operatorID)
         .head
         .operatorInfo
         .inputPorts(toPort)

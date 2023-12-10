@@ -11,6 +11,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Sche
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import org.jgrapht.graph.DirectedAcyclicGraph
 
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{JavaConverters, mutable}
 
@@ -24,7 +25,7 @@ object LogicalPlan {
   ): DirectedAcyclicGraph[String, LogicalLink] = {
     val workflowDag =
       new DirectedAcyclicGraph[String, LogicalLink](classOf[LogicalLink])
-    operatorList.foreach(op => workflowDag.addVertex(op.operatorID))
+    operatorList.foreach(op => workflowDag.addVertex(op.operatorId))
     links.foreach(l =>
       workflowDag.addEdge(
         l.origin.operatorID,
@@ -53,47 +54,42 @@ case class LogicalPlan(
 ) extends LazyLogging {
 
   lazy val operatorMap: Map[String, LogicalOp] =
-    operators.map(op => (op.operatorID, op)).toMap
+    operators.map(op => (op.operatorId, op)).toMap
 
   lazy val jgraphtDag: DirectedAcyclicGraph[String, LogicalLink] =
     LogicalPlan.toJgraphtDAG(operators, links)
 
-  lazy val sourceOperators: List[String] =
-    operatorMap.keys.filter(op => jgraphtDag.inDegreeOf(op) == 0).toList
 
-  lazy val terminalOperators: List[String] =
-    operatorMap.keys
-      .filter(op => jgraphtDag.outDegreeOf(op) == 0)
-      .toList
-
-  lazy val outputSchemaMap: Map[OperatorIdentity, List[Schema]] =
+  lazy val outputSchemaMap: Map[String, List[Schema]] =
     operatorMap.values
       .map(o => {
         val inputSchemas: Array[Schema] =
-          if (!operatorMap(o.operatorID).isInstanceOf[SourceOperatorDescriptor])
+          if (!operatorMap(o.operatorId).isInstanceOf[SourceOperatorDescriptor])
             inputSchemaMap(o.operatorIdentifier).map(s => s.get).toArray
           else Array()
         val outputSchemas = o.getOutputSchemas(inputSchemas).toList
-        (o.operatorIdentifier, outputSchemas)
+        (o.operatorIdentifier.operator, outputSchemas)
       })
       .toMap
 
   def getOperator(operatorID: String): LogicalOp = operatorMap(operatorID)
 
-  def getSourceOperators: List[String] = this.sourceOperators
+  def getSourceOperatorIds: List[String] =
+    operatorMap.keys.filter(op => jgraphtDag.inDegreeOf(op) == 0).toList
 
-  def getTerminalOperators: List[String] = this.terminalOperators
+  def getTerminalOperatorIds: List[String] =
+    operatorMap.keys
+      .filter(op => jgraphtDag.outDegreeOf(op) == 0)
+      .toList
 
-  def getAncestorOpIds(operatorID: String): Set[String] = {
-    JavaConverters.asScalaSet(jgraphtDag.getAncestors(operatorID)).toSet
+  def getAncestorOpIds(opId: String): Set[String] = {
+    JavaConverters.asScalaSet(jgraphtDag.getAncestors(opId)).toSet
   }
 
-  def getUpstream(operatorID: String): List[LogicalOp] = {
-    val upstream = new mutable.MutableList[LogicalOp]
+  def getUpstreamOps(opId: String): List[LogicalOp] = {
     jgraphtDag
-      .incomingEdgesOf(operatorID)
-      .forEach(e => upstream += operatorMap(e.origin.operatorID))
-    upstream.toList
+      .incomingEdgesOf(opId)
+      .map(e => operatorMap(e.origin.operatorID)).toList
   }
 
   // returns a new logical plan with the given operator added
@@ -105,13 +101,13 @@ case class LogicalPlan(
   def removeOperator(operatorId: String): LogicalPlan = {
     this.copy(
       context,
-      operators.filter(o => o.operatorID != operatorId),
+      operators.filter(o => o.operatorId != operatorId),
       links.filter(l =>
         l.origin.operatorID != operatorId && l.destination.operatorID != operatorId
       ),
       breakpoints.filter(b => b.operatorID != operatorId),
       inputSchemaMap.filter({
-        case (opId, schemas) => opId.operator != operatorId
+        case (opId, _) => opId.operator != operatorId
       })
     )
   }
@@ -158,7 +154,7 @@ case class LogicalPlan(
       if (!op.isInstanceOf[SourceOperatorDescriptor])
         inputSchemaMap(op.operatorIdentifier).map(s => s.get).toArray
       else Array()
-    val outputSchemas = outputSchemaMap(op.operatorIdentifier).toArray
+    val outputSchemas = outputSchemaMap(op.operatorIdentifier.operator).toArray
     OperatorSchemaInfo(inputSchemas, outputSchemas)
   }
 
@@ -228,7 +224,7 @@ case class LogicalPlan(
       }
 
       // update input schema of all outgoing links
-      val outLinks = links.filter(link => link.origin.operatorID == op.operatorID)
+      val outLinks = links.filter(link => link.origin.operatorID == op.operatorId)
       outLinks.foreach(link => {
         val dest = operatorMap(link.destination.operatorID)
         // get the input schema list, should be pre-populated with size equals to num of ports

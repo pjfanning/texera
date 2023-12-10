@@ -164,11 +164,11 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   var context: WorkflowContext = _
 
   @JsonProperty(PropertyNameConstants.OPERATOR_ID)
-  var operatorID: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
+  var operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
-  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobId, operatorID)
+  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobId, operatorId)
 
   def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException(

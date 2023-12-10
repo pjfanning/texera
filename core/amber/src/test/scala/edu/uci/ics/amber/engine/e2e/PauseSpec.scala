@@ -67,11 +67,11 @@ class PauseSpec
   "Engine" should "be able to pause csv->sink workflow" in {
     val csvOpDesc = TestOperators.mediumCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    logger.info(s"csv-id ${csvOpDesc.operatorID}, sink-id ${sink.operatorID}")
+    logger.info(s"csv-id ${csvOpDesc.operatorId}, sink-id ${sink.operatorId}")
     shouldPause(
       List(csvOpDesc, sink),
       List(
-        LogicalLink(OperatorPort(csvOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(csvOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
       )
     )
   }
@@ -81,16 +81,16 @@ class PauseSpec
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
     val sink = TestOperators.sinkOpDesc()
     logger.info(
-      s"csv-id ${csvOpDesc.operatorID}, keyword-id ${keywordOpDesc.operatorID}, sink-id ${sink.operatorID}"
+      s"csv-id ${csvOpDesc.operatorId}, keyword-id ${keywordOpDesc.operatorId}, sink-id ${sink.operatorId}"
     )
     shouldPause(
       List(csvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorID, 0),
-          OperatorPort(keywordOpDesc.operatorID, 0)
+          OperatorPort(csvOpDesc.operatorId, 0),
+          OperatorPort(keywordOpDesc.operatorId, 0)
         ),
-        LogicalLink(OperatorPort(keywordOpDesc.operatorID, 0), OperatorPort(sink.operatorID, 0))
+        LogicalLink(OperatorPort(keywordOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
       )
     )
   }
