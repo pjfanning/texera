@@ -117,8 +117,8 @@ class DataProcessingSpec
       List(headerlessCsvOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -135,8 +135,8 @@ class DataProcessingSpec
       List(headerlessCsvOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -153,8 +153,8 @@ class DataProcessingSpec
       List(jsonlOp, sink),
       List(
         LogicalLink(
-          OperatorPort(jsonlOp.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(jsonlOp.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -182,8 +182,8 @@ class DataProcessingSpec
       List(jsonlOp, sink),
       List(
         LogicalLink(
-          OperatorPort(jsonlOp.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(jsonlOp.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -212,12 +212,12 @@ class DataProcessingSpec
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -235,12 +235,12 @@ class DataProcessingSpec
       List(headerlessCsvOpDesc, wordCountOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(wordCountOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(wordCountOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(wordCountOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(wordCountOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -258,8 +258,8 @@ class DataProcessingSpec
       List(csvOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -275,12 +275,12 @@ class DataProcessingSpec
       List(csvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -298,16 +298,16 @@ class DataProcessingSpec
       List(csvOpDesc, keywordOpDesc, countOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(countOpDesc.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(countOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(countOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(countOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -329,16 +329,16 @@ class DataProcessingSpec
       List(csvOpDesc, keywordOpDesc, averageAndGroupByOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(averageAndGroupByOpDesc.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(averageAndGroupByOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(averageAndGroupByOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(averageAndGroupByOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -360,16 +360,16 @@ class DataProcessingSpec
       ),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc2.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 1)
+          LogicalPort(headerlessCsvOpDesc2.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(joinOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(joinOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage
@@ -407,8 +407,8 @@ class DataProcessingSpec
       List(inMemoryMsSQLSourceOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(inMemoryMsSQLSourceOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(inMemoryMsSQLSourceOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       ),
       resultStorage

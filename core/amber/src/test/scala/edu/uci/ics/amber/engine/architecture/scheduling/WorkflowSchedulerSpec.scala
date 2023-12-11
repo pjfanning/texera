@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity}
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPort}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -32,12 +32,12 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -85,24 +85,24 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(buildCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin1.operatorIdentifier, 0)
+          LogicalPort(buildCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin1.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(probeCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin1.operatorIdentifier, 1)
+          LogicalPort(probeCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin1.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(buildCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin2.operatorIdentifier, 0)
+          LogicalPort(buildCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin2.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(hashJoin1.operatorIdentifier, 0),
-          OperatorPort(hashJoin2.operatorIdentifier, 1)
+          LogicalPort(hashJoin1.operatorIdentifier, 0),
+          LogicalPort(hashJoin2.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(hashJoin2.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(hashJoin2.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )

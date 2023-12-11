@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHa
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPort}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AnyFlatSpecLike
 
@@ -72,8 +72,8 @@ class PauseSpec
       List(csvOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -90,12 +90,12 @@ class PauseSpec
       List(csvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(csvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )

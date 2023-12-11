@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, OperatorPort}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPort}
 import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.{
   DualInputPortsPythonUDFOpDescV2,
@@ -21,12 +21,12 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -49,16 +49,16 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc2.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 1)
+          LogicalPort(headerlessCsvOpDesc2.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(joinOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(joinOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -98,20 +98,20 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
+          LogicalPort(headerlessCsvOpDesc1.operatorIdentifier, 0),
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
-          OperatorPort(joinOpDesc.operatorIdentifier, 1)
+          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
+          LogicalPort(joinOpDesc.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(joinOpDesc.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(joinOpDesc.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -135,24 +135,24 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(buildCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin1.operatorIdentifier, 0)
+          LogicalPort(buildCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin1.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(probeCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin1.operatorIdentifier, 1)
+          LogicalPort(probeCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin1.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(buildCsv.operatorIdentifier, 0),
-          OperatorPort(hashJoin2.operatorIdentifier, 0)
+          LogicalPort(buildCsv.operatorIdentifier, 0),
+          LogicalPort(hashJoin2.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(hashJoin1.operatorIdentifier, 0),
-          OperatorPort(hashJoin2.operatorIdentifier, 1)
+          LogicalPort(hashJoin1.operatorIdentifier, 0),
+          LogicalPort(hashJoin2.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(hashJoin2.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(hashJoin2.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
@@ -176,24 +176,24 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(csv.operatorIdentifier, 0),
-          OperatorPort(split.operatorIdentifier, 0)
+          LogicalPort(csv.operatorIdentifier, 0),
+          LogicalPort(split.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(split.operatorIdentifier, 0),
-          OperatorPort(training.operatorIdentifier, 0)
+          LogicalPort(split.operatorIdentifier, 0),
+          LogicalPort(training.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(training.operatorIdentifier, 0),
-          OperatorPort(inference.operatorIdentifier, 0)
+          LogicalPort(training.operatorIdentifier, 0),
+          LogicalPort(inference.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(split.operatorIdentifier, 1),
-          OperatorPort(inference.operatorIdentifier, 1)
+          LogicalPort(split.operatorIdentifier, 1),
+          LogicalPort(inference.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(inference.operatorIdentifier, 0),
-          OperatorPort(sink.operatorIdentifier, 0)
+          LogicalPort(inference.operatorIdentifier, 0),
+          LogicalPort(sink.operatorIdentifier, 0)
         )
       )
     )
