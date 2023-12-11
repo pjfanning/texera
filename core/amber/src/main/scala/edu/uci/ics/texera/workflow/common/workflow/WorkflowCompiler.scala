@@ -81,7 +81,7 @@ class WorkflowCompiler(
     )
 
     // the PhysicalPlan with topology expanded.
-    var physicalPlan = PhysicalPlan(workflowId.id, rewrittenLogicalPlan)
+    var physicalPlan = PhysicalPlan(workflowId.executionId, rewrittenLogicalPlan)
 
     // generate an ExecutionPlan with regions.
     //  currently, WorkflowPipelinedRegionsBuilder is the only ExecutionPlan generator.

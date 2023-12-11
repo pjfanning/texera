@@ -26,8 +26,8 @@ object VirtualidentityProto extends _root_.scalapb.GeneratedFileObject {
   i4uZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lLmNvbW1vbi5MYXllcklkZW50aXR5QgziPwkSBGZyb23wAQFSBGZyb20SKQoIZnJvb
   VBvcnQYAiABKAVCDeI/ChIIZnJvbVBvcnRSCGZyb21Qb3J0EkoKAnRvGAMgASgLMi4uZWR1LnVjaS5pY3MuYW1iZXIuZW5naW5lL
   mNvbW1vbi5MYXllcklkZW50aXR5QgriPwcSAnRv8AEBUgJ0bxIjCgZ0b1BvcnQYBCABKAVCC+I/CBIGdG9Qb3J0UgZ0b1BvcnQiK
-  woQT3BlcmF0b3JJZGVudGl0eRIXCgJpZBgCIAEoCUIH4j8EEgJpZFICaWQiKwoQV29ya2Zsb3dJZGVudGl0eRIXCgJpZBgBIAEoA
-  0IH4j8EEgJpZFICaWRCCeI/BkgAWAB4AWIGcHJvdG8z"""
+  woQT3BlcmF0b3JJZGVudGl0eRIXCgJpZBgBIAEoCUIH4j8EEgJpZFICaWQiRgoQV29ya2Zsb3dJZGVudGl0eRIyCgtleGVjdXRpb
+  25JZBgBIAEoA0IQ4j8NEgtleGVjdXRpb25JZFILZXhlY3V0aW9uSWRCCeI/BkgAWAB4AWIGcHJvdG8z"""
       ).mkString)
   lazy val scalaDescriptor: _root_.scalapb.descriptors.FileDescriptor = {
     val scalaProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(ProtoBytes)

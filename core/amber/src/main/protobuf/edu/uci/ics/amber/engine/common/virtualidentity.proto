@@ -35,18 +35,18 @@ message LinkIdentity {
   int32 toPort = 4;
 }
 
-// final case class LinkIdentity (
+// final case class OperatorIdentity (
 //    id: String
 // )
 message OperatorIdentity {
-  string id = 2;
+  string id = 1;
 }
 
 // final case class WorkflowIdentity (
-//    id: Long
+//    executionId: Long
 // )
 message WorkflowIdentity {
-  int64 id = 1;
+  int64 executionId = 1;
 }
 
 
