@@ -43,8 +43,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
 
     val oldWorkflow = oldWorkflowOpt.get
     // for each operator in the old workflow, add it to its own equivalence class
-    oldWorkflow.jgraphtDag
-      .iterator()
+    oldWorkflow.getTopologicalOpIds
       .forEachRemaining(opId => {
         val oldId = "old-" + opId
         equivalenceClass.put(oldId, nextClassId)
@@ -58,8 +57,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
     //
     // if both conditions are met, then the two operators are equal,
     // else a new equivalence class is created
-    newWorkflow.jgraphtDag
-      .iterator()
+    newWorkflow.getTopologicalOpIds
       .forEachRemaining(opId => {
         val newOp = newWorkflow.getOperator(opId)
         val newOpUpstreamClasses = newWorkflow
