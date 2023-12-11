@@ -11,6 +11,7 @@ import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import org.jooq.types.UInteger
 
 import java.sql.Timestamp
+import java.util.concurrent.atomic.AtomicLong
 
 /**
   * This global object handles inserting a new entry to the DB to store metadata information about every workflow execution
@@ -18,6 +19,7 @@ import java.sql.Timestamp
   */
 object ExecutionsMetadataPersistService extends LazyLogging {
   final private lazy val context = SqlServer.createDSLContext()
+  private var localExecutionId = new AtomicLong(0L)
   private final val userSystemEnabled: Boolean = AmberConfig.isUserSystemEnabled
   private val workflowExecutionsDao = new WorkflowExecutionsDao(
     context.configuration
@@ -37,7 +39,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
       executionName: String,
       environmentVersion: String
   ): Long = {
-    if (!userSystemEnabled) return -1
+    if (!userSystemEnabled) return localExecutionId.getAndIncrement()
     // first retrieve the latest version of this workflow
     val vid = getLatestVersion(wid)
     val newExecution = new WorkflowExecutions()

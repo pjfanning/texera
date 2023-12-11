@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
 }
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
-import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.{AmberConfig, AmberLogging}
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
@@ -60,13 +60,13 @@ object OutputManager {
 
 /** This class is a container of all the transfer partitioners.
   *
-  * @param selfID         ActorVirtualIdentity of self.
+  * @param actorId         ActorVirtualIdentity of self.
   * @param dataOutputPort DataOutputPort
   */
 class OutputManager(
-    selfID: ActorVirtualIdentity,
+    val actorId: ActorVirtualIdentity,
     dataOutputPort: NetworkOutputGateway
-) {
+) extends AmberLogging {
 
   val partitioners = mutable.HashMap[LinkIdentity, Partitioner]()
 
@@ -78,6 +78,7 @@ class OutputManager(
     * @param partitioning Partitioning, describes how and whom to send to.
     */
   def addPartitionerWithPartitioning(link: LinkIdentity, partitioning: Partitioning): Unit = {
+    logger.info(s"adding partitioning $link $partitioning")
     val partitioner = toPartitioner(partitioning)
     partitioners.update(link, partitioner)
     partitioner.allReceivers.foreach(receiver => {
@@ -96,7 +97,10 @@ class OutputManager(
       outputPort: LinkIdentity
   ): Unit = {
     val partitioner =
-      partitioners.getOrElse(outputPort, throw new RuntimeException("output port not found"))
+      partitioners.getOrElse(
+        outputPort,
+        throw new RuntimeException(s"output port not found for $outputPort")
+      )
     val it = partitioner.getBucketIndex(tuple)
     it.foreach(bucketIndex =>
       networkOutputBuffers((outputPort, partitioner.allReceivers(bucketIndex))).addTuple(tuple)

@@ -5,6 +5,11 @@ import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  WorkerReplayLoggingConfig,
+  WorkerStateRestoreConfig
+}
+import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils
@@ -93,7 +98,7 @@ class WorkflowJobService(
     try {
       workflowCompiler = new WorkflowCompiler(request.logicalPlan, workflowContext)
       workflow = workflowCompiler.compile(
-        WorkflowIdentity(workflowContext.jobId),
+        WorkflowIdentity(workflowContext.wid.toString),
         resultService.opResultStorage,
         lastCompletedLogicalPlan,
         jobStateStore
@@ -116,10 +121,6 @@ class WorkflowJobService(
     }
   }
 
-  private val controllerConfig = {
-    ControllerConfig.default
-  }
-
   // Runtime starts from here:
   logger.info("Initialing an AmberClient, runtime starting...")
   var client: AmberClient = _
@@ -130,9 +131,25 @@ class WorkflowJobService(
   var jobConsoleService: JobConsoleService = _
 
   def startWorkflow(): Unit = {
+    var controllerConf = ControllerConfig.default
+    controllerConf = controllerConf.copy(workerLoggingConfMapping = { _ =>
+      AmberConfig.faultToleranceLogRootFolder.map(uri =>
+        WorkerReplayLoggingConfig(writeTo =
+          uri.resolve(workflowContext.wid + "/" + workflowContext.executionId)
+        )
+      )
+    })
+    controllerConf = controllerConf.copy(workerRestoreConfMapping = { _ =>
+      AmberConfig.faultToleranceLogRootFolder.map(uri =>
+        WorkerStateRestoreConfig(
+          readFrom = uri.resolve(workflowContext.wid + "/" + (workflowContext.executionId - 1)),
+          replayTo = Long.MaxValue
+        )
+      )
+    })
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
-      controllerConfig,
+      controllerConf,
       errorHandler
     )
 

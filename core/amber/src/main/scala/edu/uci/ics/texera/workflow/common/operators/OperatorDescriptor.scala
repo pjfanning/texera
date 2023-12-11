@@ -168,7 +168,7 @@ abstract class OperatorDescriptor extends PortDescriptor with Serializable {
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
-  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.jobId, operatorID)
+  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.wid.toString, operatorID)
 
   def operatorExecutor(operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException(

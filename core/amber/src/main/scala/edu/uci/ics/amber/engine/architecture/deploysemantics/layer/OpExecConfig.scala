@@ -298,8 +298,8 @@ case class OpExecConfig(
             i,
             workerLayer = this,
             WorkflowWorkerConfig(
-              logStorageType = AmberConfig.faultToleranceLogRootFolder,
-              replayTo = None
+              restoreConfOpt = controllerConf.workerRestoreConfMapping(workerId),
+              replayLogConfOpt = controllerConf.workerLoggingConfMapping(workerId)
             )
           )
         }

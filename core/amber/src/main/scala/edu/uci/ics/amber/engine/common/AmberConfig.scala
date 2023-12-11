@@ -3,7 +3,9 @@ package edu.uci.ics.amber.engine.common
 import akka.actor.Address
 import com.typesafe.config.{Config, ConfigFactory}
 import edu.uci.ics.texera.Utils
+
 import java.io.File
+import java.net.URI
 
 object AmberConfig {
 
@@ -90,8 +92,14 @@ object AmberConfig {
     getConfSource.getBoolean("fault-tolerance.enable-determinant-logging")
   val faultToleranceLogFlushIntervalInMs: Long =
     getConfSource.getLong("fault-tolerance.log-flush-interval-ms")
-  val faultToleranceLogRootFolder: String =
-    getConfSource.getString("fault-tolerance.log-storage-root-folder-uri")
+  val faultToleranceLogRootFolder: Option[URI] = {
+    val locationStr = getConfSource.getString("fault-tolerance.log-storage-root-folder-uri")
+    if (locationStr.isBlank) {
+      None
+    } else {
+      Some(new URI(locationStr))
+    }
+  }
 
   // Storage configuration
   val sinkStorageMode: String = getConfSource.getString("storage.mode")
