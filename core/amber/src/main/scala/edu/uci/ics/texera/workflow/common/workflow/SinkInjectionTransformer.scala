@@ -17,7 +17,7 @@ object SinkInjectionTransformer {
     // for any operators marked as view result without a sink, add a sink
     val viewResultOps = opsToViewResult
       .map(idString => OperatorIdentity(idString))
-      .filter(opId => !logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc]))
+      .filter(opId => !logicalPlan.getDownstreamOps(opId).exists(op => op.isInstanceOf[SinkOpDesc]))
 
     val operatorsToAddSink = (nonSinkTerminalOps ++ viewResultOps).toSet
     operatorsToAddSink.foreach(opId => {

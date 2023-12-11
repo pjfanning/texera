@@ -137,7 +137,7 @@ case class LogicalPlan(
     this.copy(context, operators, newLinks, breakpoints)
   }
 
-  def getDownstream(opId: OperatorIdentity): List[LogicalOp] = {
+  def getDownstreamOps(opId: OperatorIdentity): List[LogicalOp] = {
     val downstream = new mutable.MutableList[LogicalOp]
     jgraphtDag
       .outgoingEdgesOf(opId)

@@ -22,9 +22,9 @@ object PhysicalPlan {
 
     var physicalPlan = PhysicalPlan(List(), List())
 
-    logicalPlan.operators.foreach(o => {
+    logicalPlan.operators.foreach(op => {
       val subPlan =
-        o.operatorExecutorMultiLayer(executionId, logicalPlan.opSchemaInfo(o.operatorIdentifier))
+        op.operatorExecutorMultiLayer(executionId, logicalPlan.opSchemaInfo(op.operatorIdentifier))
       physicalPlan = physicalPlan.addSubPlan(subPlan)
     })
 
