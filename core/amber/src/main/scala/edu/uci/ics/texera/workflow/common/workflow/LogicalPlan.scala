@@ -118,7 +118,7 @@ case class LogicalPlan(
       fromPort: Int = 0,
       toPort: Int = 0
   ): LogicalPlan = {
-    val newLink = LogicalLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val newLink = LogicalLink(LogicalPort(from, fromPort), LogicalPort(to, toPort))
     val newLinks = links :+ newLink
     this.copy(context, operators, newLinks, breakpoints)
   }
@@ -130,7 +130,7 @@ case class LogicalPlan(
       fromPort: Int = 0,
       toPort: Int = 0
   ): LogicalPlan = {
-    val linkToRemove = LogicalLink(OperatorPort(from, fromPort), OperatorPort(to, toPort))
+    val linkToRemove = LogicalLink(LogicalPort(from, fromPort), LogicalPort(to, toPort))
     val newLinks = links.filter(l => l != linkToRemove)
     this.copy(context, operators, newLinks, breakpoints)
   }
