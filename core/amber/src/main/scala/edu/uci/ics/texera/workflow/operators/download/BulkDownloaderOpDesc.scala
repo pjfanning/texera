@@ -42,13 +42,13 @@ class BulkDownloaderOpDesc extends LogicalOp {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): OpExecConfig = {
-    assert(context.userId.isDefined)
+    assert(getContext.userId.isDefined)
     OpExecConfig.oneToOneLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ =>
         new BulkDownloaderOpExec(
-          context,
+          getContext,
           urlAttribute,
           resultAttribute,
           operatorSchemaInfo

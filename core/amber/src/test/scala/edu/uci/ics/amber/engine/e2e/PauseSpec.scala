@@ -67,7 +67,7 @@ class PauseSpec
   "Engine" should "be able to pause csv->sink workflow" in {
     val csvOpDesc = TestOperators.mediumCsvScanOpDesc()
     val sink = TestOperators.sinkOpDesc()
-    logger.info(s"csv-id ${csvOpDesc.operatorId}, sink-id ${sink.operatorId}")
+    logger.info(s"csv-id ${csvOpDesc.operatorIdentifier}, sink-id ${sink.operatorIdentifier}")
     shouldPause(
       List(csvOpDesc, sink),
       List(
@@ -84,7 +84,7 @@ class PauseSpec
     val keywordOpDesc = TestOperators.keywordSearchOpDesc("Region", "Asia")
     val sink = TestOperators.sinkOpDesc()
     logger.info(
-      s"csv-id ${csvOpDesc.operatorId}, keyword-id ${keywordOpDesc.operatorId}, sink-id ${sink.operatorId}"
+      s"csv-id ${csvOpDesc.operatorIdentifier}, keyword-id ${keywordOpDesc.operatorIdentifier}, sink-id ${sink.operatorIdentifier}"
     )
     shouldPause(
       List(csvOpDesc, keywordOpDesc, sink),

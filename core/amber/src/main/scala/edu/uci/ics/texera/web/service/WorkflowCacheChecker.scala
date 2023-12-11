@@ -64,7 +64,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
         val newOp = newWorkflow.getOperator(opId)
         val newOpUpstreamClasses = newWorkflow
           .getUpstreamOps(opId)
-          .map(op => equivalenceClass("new-" + op.operatorId))
+          .map(op => equivalenceClass("new-" + op.operatorIdentifier))
         val oldOp = oldWorkflow.operators.find(op => op.equals(newOp)).orNull
 
         // check if the old workflow contains the same operator content
@@ -72,10 +72,10 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
           getNextClassId // operator not found, create a new class
         } else {
           // check its inputs are all in the same equivalence class
-          val oldId = "old-" + oldOp.operatorId
+          val oldId = "old-" + oldOp.operatorIdentifier
           val oldOpUpstreamClasses = oldWorkflow
             .getUpstreamOps(oldOp.operatorIdentifier)
-            .map(op => equivalenceClass("old-" + op.operatorId))
+            .map(op => equivalenceClass("old-" + op.operatorIdentifier))
           if (oldOpUpstreamClasses.equals(newOpUpstreamClasses)) {
             equivalenceClass(oldId) // same equivalence class
           } else {

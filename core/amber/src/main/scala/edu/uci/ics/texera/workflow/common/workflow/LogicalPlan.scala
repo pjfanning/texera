@@ -162,7 +162,7 @@ case class LogicalPlan(
   ): LogicalPlan = {
 
     operators.foreach(operator => {
-      if (operator.context == null) {
+      if (operator.getContext == null) {
         operator.setContext(context)
       }
     })

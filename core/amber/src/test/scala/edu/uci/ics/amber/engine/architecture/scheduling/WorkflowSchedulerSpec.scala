@@ -15,10 +15,9 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
   def setOperatorCompleted(
       workflow: Workflow,
       executionState: ExecutionState,
-      opID: String
+      opID: OperatorIdentity
   ): Unit = {
-    val opIdentity = new OperatorIdentity(opID)
-    val layers = workflow.physicalPlan.layersOfLogicalOperator(opIdentity)
+    val layers = workflow.physicalPlan.layersOfLogicalOperator(opID)
     layers.foreach { layer =>
       executionState.getOperatorExecution(layer.id).setAllWorkerState(COMPLETED)
     }
@@ -50,14 +49,16 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
         ControllerConfig.default,
         null
       )
-    Set(headerlessCsvOpDesc.operatorId, keywordOpDesc.operatorId, sink.operatorId).foreach(opID =>
-      setOperatorCompleted(workflow, executionState, opID)
-    )
+    Set(
+      headerlessCsvOpDesc.operatorIdentifier,
+      keywordOpDesc.operatorIdentifier,
+      sink.operatorIdentifier
+    ).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
     scheduler.schedulingPolicy.addToRunningRegions(
       scheduler.schedulingPolicy.startWorkflow(workflow),
       null
     )
-    val opIdentity = new OperatorIdentity(headerlessCsvOpDesc.operatorId)
+    val opIdentity = headerlessCsvOpDesc.operatorIdentifier
     val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
     val nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
@@ -119,8 +120,10 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       scheduler.schedulingPolicy.startWorkflow(workflow),
       null
     )
-    Set(buildCsv.operatorId).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
-    val opIdentity = new OperatorIdentity(buildCsv.operatorId)
+    Set(buildCsv.operatorIdentifier).foreach(opID =>
+      setOperatorCompleted(workflow, executionState, opID)
+    )
+    val opIdentity = buildCsv.operatorIdentifier
     val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
     var nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
@@ -136,14 +139,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity(buildCsv.operatorId)
+            buildCsv.operatorIdentifier
           )
           .last
           .id,
         0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity(hashJoin1.operatorId)
+            hashJoin1.operatorIdentifier
           )
           .head
           .id,
@@ -157,14 +160,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       LinkIdentity(
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity(buildCsv.operatorId)
+            buildCsv.operatorIdentifier
           )
           .last
           .id,
         0,
         workflow.physicalPlan
           .layersOfLogicalOperator(
-            new OperatorIdentity(hashJoin2.operatorId)
+            hashJoin2.operatorIdentifier
           )
           .head
           .id,
@@ -174,10 +177,13 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     assert(nextRegions.nonEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions.size == 1)
     scheduler.schedulingPolicy.addToRunningRegions(nextRegions, null)
-    Set(probeCsv.operatorId, hashJoin1.operatorId, hashJoin2.operatorId, sink.operatorId).foreach(
-      opID => setOperatorCompleted(workflow, executionState, opID)
-    )
-    val probeId = new OperatorIdentity(probeCsv.operatorId)
+    Set(
+      probeCsv.operatorIdentifier,
+      hashJoin1.operatorIdentifier,
+      hashJoin2.operatorIdentifier,
+      sink.operatorIdentifier
+    ).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
+    val probeId = probeCsv.operatorIdentifier
     val probeLayerId = workflow.physicalPlan.layersOfLogicalOperator(probeId).head.id
     nextRegions = scheduler.schedulingPolicy.onWorkerCompletion(
       workflow,

@@ -129,20 +129,20 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val links = List(
       LogicalLink(
-        LogicalPort(trainingScan.operatorIdentifier),
+        LogicalPort(trainingScan.operatorIdentifier, 0),
         LogicalPort(mlTrainingOp.operatorIdentifier, 0)
       ),
       LogicalLink(
-        LogicalPort(testingScan.operatorIdentifier),
+        LogicalPort(testingScan.operatorIdentifier, 0),
         LogicalPort(mlTrainingOp.operatorIdentifier, 1)
       ),
       LogicalLink(
-        LogicalPort(inferenceScan.operatorIdentifier),
+        LogicalPort(inferenceScan.operatorIdentifier, 0),
         LogicalPort(mlInferOp.operatorIdentifier, 1)
       ),
       LogicalLink(
         LogicalPort(mlTrainingOp.operatorIdentifier, 0),
-        LogicalPort(mlVizSink.operatorIdentifier)
+        LogicalPort(mlVizSink.operatorIdentifier, 0)
       ),
       LogicalLink(
         LogicalPort(mlTrainingOp.operatorIdentifier, 1),

@@ -161,10 +161,10 @@ trait StateTransferFunc
 abstract class LogicalOp extends PortDescriptor with Serializable {
 
   @JsonIgnore
-  var context: WorkflowContext = _
+  private var context: WorkflowContext = _
 
   @JsonProperty(PropertyNameConstants.OPERATOR_ID)
-  val operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
+  private val operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
@@ -205,6 +205,7 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
 
   override def toString: String = ToStringBuilder.reflectionToString(this)
 
+  def getContext: WorkflowContext = this.context
   def setContext(workflowContext: WorkflowContext): Unit = {
     this.context = workflowContext
   }

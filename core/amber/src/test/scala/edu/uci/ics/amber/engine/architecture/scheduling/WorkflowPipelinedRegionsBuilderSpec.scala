@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPort}
@@ -68,10 +69,18 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     assert(pipelinedRegions.size == 2)
 
     val buildRegion = pipelinedRegions
-      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc1.operatorId))
+      .find(v =>
+        v.operators.toList.exists(op =>
+          OperatorIdentity(op.operator) == headerlessCsvOpDesc1.operatorIdentifier
+        )
+      )
       .get
     val probeRegion = pipelinedRegions
-      .find(v => v.operators.toList.exists(op => op.operator == headerlessCsvOpDesc2.operatorId))
+      .find(v =>
+        v.operators.toList.exists(op =>
+          OperatorIdentity(op.operator) == headerlessCsvOpDesc2.operatorIdentifier
+        )
+      )
       .get
 
     assert(ancestorMapping(probeRegion).size == 1)
@@ -79,7 +88,7 @@ class WorkflowPipelinedRegionsBuilderSpec extends AnyFlatSpec with MockFactory {
     assert(buildRegion.blockingDownstreamOperatorsInOtherRegions.length == 1)
     assert(
       buildRegion.blockingDownstreamOperatorsInOtherRegions.exists(pair =>
-        pair._1.operator == joinOpDesc.operatorId
+        OperatorIdentity(pair._1.operator) == joinOpDesc.operatorIdentifier
       )
     )
   }

@@ -110,14 +110,14 @@ object WorkflowCacheRewriter {
         } else {
           sink.setStorage(
             storage.create(
-              o.context.executionId + "_",
+              o.getContext.executionId + "_",
               storageKey,
               storageType
             )
           )
           sink.getStorage.setSchema(logicalPlan.outputSchemaMap(o.operatorIdentifier.id).head)
           // add the sink collection name to the JSON array of sinks
-          sinksPointers.add(o.context.executionId + "_" + storageKey)
+          sinksPointers.add(o.getContext.executionId + "_" + storageKey)
         }
         storage.get(storageKey)
 
