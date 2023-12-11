@@ -2,6 +2,7 @@ package edu.uci.ics.texera.workflow.operators.source.cache
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorGroupConstants,
   OperatorInfo,
@@ -14,7 +15,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Sche
 import java.util.Collections.singletonList
 import scala.collection.JavaConverters.asScalaBuffer
 
-class CacheSourceOpDesc(val targetSinkStorageId: String, opResultStorage: OpResultStorage)
+class CacheSourceOpDesc(val targetSinkStorageId: OperatorIdentity, opResultStorage: OpResultStorage)
     extends SourceOperatorDescriptor {
   assert(null != targetSinkStorageId)
   assert(null != opResultStorage)

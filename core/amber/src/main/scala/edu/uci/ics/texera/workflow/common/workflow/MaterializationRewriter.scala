@@ -1,7 +1,11 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  LayerIdentity,
+  LinkIdentity,
+  OperatorIdentity
+}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
@@ -36,14 +40,18 @@ class MaterializationRewriter(
     materializationWriter.setContext(context)
 
     val fromOpIdInputSchema: Array[Schema] =
-      if (!logicalPlan.operatorMap(fromOpId.operator).isInstanceOf[SourceOperatorDescriptor])
+      if (
+        !logicalPlan
+          .getOperator(OperatorIdentity(fromOpId.operator))
+          .isInstanceOf[SourceOperatorDescriptor]
+      )
         logicalPlan
-          .inputSchemaMap(logicalPlan.operatorMap(fromOpId.operator).operatorIdentifier)
+          .inputSchemaMap(logicalPlan.getOperator(fromOpId.operator).operatorIdentifier)
           .map(s => s.get)
           .toArray
       else Array()
     val matWriterInputSchema = logicalPlan
-      .operatorMap(fromOpId.operator)
+      .getOperator(fromOpId.operator)
       .getOutputSchemas(
         fromOpIdInputSchema
       )(fromOutputPortIdx)
@@ -51,11 +59,11 @@ class MaterializationRewriter(
       materializationWriter.getOutputSchemas(Array(matWriterInputSchema))(0)
     materializationWriter.setStorage(
       opResultStorage.create(
-        key = materializationWriter.operatorId,
+        key = materializationWriter.operatorIdentifier,
         mode = OpResultStorage.defaultStorageMode
       )
     )
-    opResultStorage.get(materializationWriter.operatorId).setSchema(matWriterOutputSchema)
+    opResultStorage.get(materializationWriter.operatorIdentifier).setSchema(matWriterOutputSchema)
     val matWriterOpExecConfig =
       materializationWriter.operatorExecutor(
         context.executionId,
@@ -63,7 +71,7 @@ class MaterializationRewriter(
       )
 
     val materializationReader = new CacheSourceOpDesc(
-      materializationWriter.operatorId,
+      materializationWriter.operatorIdentifier,
       opResultStorage: OpResultStorage
     )
     materializationReader.setContext(context)

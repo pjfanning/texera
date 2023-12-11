@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
 import edu.uci.ics.amber.engine.common.IOperatorExecutor;
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity;
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode;
 import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
@@ -40,7 +41,7 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     // corresponding upstream operator ID and output port, will be set by workflow compiler
     @JsonIgnore
-    private Option<String> upstreamId = Option.empty();
+    private Option<OperatorIdentity> upstreamId = Option.empty();
 
     @JsonIgnore
     private Option<Integer> upstreamPort = Option.empty();
@@ -114,11 +115,11 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
         return this.storage;
     }
 
-    public Option<String> getUpstreamId() {
+    public Option<OperatorIdentity> getUpstreamId() {
         return upstreamId;
     }
 
-    public void setUpstreamId(String upstreamId) {
+    public void setUpstreamId(OperatorIdentity upstreamId) {
         this.upstreamId = Option.apply(upstreamId);
     }
 

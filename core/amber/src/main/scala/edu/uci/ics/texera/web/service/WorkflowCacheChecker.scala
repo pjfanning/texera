@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.service
 
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.web.model.websocket.request.EditingTimeCompilationRequest
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 
@@ -14,7 +15,8 @@ object WorkflowCacheChecker {
   ): Map[String, String] = {
     val validCacheOps = new WorkflowCacheChecker(oldPlan, newPlan).getValidCacheReuse
     val cacheUpdateResult = request.opsToReuseResult
-      .map(o => (o, if (validCacheOps.contains(o)) "cache valid" else "cache invalid"))
+      .map(idString => OperatorIdentity(idString))
+      .map(opId => (opId.id, if (validCacheOps.contains(opId)) "cache valid" else "cache invalid"))
       .toMap
     cacheUpdateResult
   }
@@ -34,7 +36,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
   // checks the validity of the cache given the old plan and the new plan
   // returns a set of operator IDs that can be reused
   // the operatorId is also the storage key
-  def getValidCacheReuse: Set[String] = {
+  def getValidCacheReuse: Set[OperatorIdentity] = {
     if (oldWorkflowOpt.isEmpty) {
       return Set()
     }
@@ -72,7 +74,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
           // check its inputs are all in the same equivalence class
           val oldId = "old-" + oldOp.operatorId
           val oldOpUpstreamClasses = oldWorkflow
-            .getUpstreamOps(oldOp.operatorId)
+            .getUpstreamOps(oldOp.operatorIdentifier)
             .map(op => equivalenceClass("old-" + op.operatorId))
           if (oldOpUpstreamClasses.equals(newOpUpstreamClasses)) {
             equivalenceClass(oldId) // same equivalence class
@@ -87,7 +89,7 @@ class WorkflowCacheChecker(oldWorkflowOpt: Option[LogicalPlan], newWorkflow: Log
     // check if it can be still used in the new workflow
     oldWorkflow.getTerminalOperatorIds
       .map(sinkOpId => {
-        val opId = oldWorkflow.getUpstreamOps(sinkOpId).head.operatorId
+        val opId = oldWorkflow.getUpstreamOps(sinkOpId).head.operatorIdentifier
         val oldCachedOpId = "old-" + opId
         // find its equivalence class
         val oldClassId = equivalenceClass(oldCachedOpId)

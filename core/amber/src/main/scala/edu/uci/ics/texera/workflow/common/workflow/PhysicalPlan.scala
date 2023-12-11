@@ -24,26 +24,26 @@ object PhysicalPlan {
 
     logicalPlan.operators.foreach(o => {
       val subPlan =
-        o.operatorExecutorMultiLayer(executionId, logicalPlan.opSchemaInfo(o.operatorId))
+        o.operatorExecutorMultiLayer(executionId, logicalPlan.opSchemaInfo(o.operatorIdentifier))
       physicalPlan = physicalPlan.addSubPlan(subPlan)
     })
 
     // connect inter-operator links
     logicalPlan.links.foreach(link => {
-      val fromLogicalOp = logicalPlan.operatorMap(link.origin.operatorID).operatorIdentifier
+      val fromLogicalOp = logicalPlan.getOperator(link.origin.operatorId).operatorIdentifier
       val fromPort = link.origin.portOrdinal
       val fromPortName = logicalPlan.operators
-        .filter(op => op.operatorId == link.origin.operatorID)
+        .filter(op => op.operatorIdentifier == link.origin.operatorId)
         .head
         .operatorInfo
         .outputPorts(fromPort)
         .displayName
       val fromLayer = physicalPlan.findLayerForOutputPort(fromLogicalOp, fromPortName)
 
-      val toLogicalOp = logicalPlan.operatorMap(link.destination.operatorID).operatorIdentifier
+      val toLogicalOp = logicalPlan.getOperator(link.destination.operatorId).operatorIdentifier
       val toPort = link.destination.portOrdinal
       val toPortName = logicalPlan.operators
-        .filter(op => op.operatorId == link.destination.operatorID)
+        .filter(op => op.operatorIdentifier == link.destination.operatorId)
         .head
         .operatorInfo
         .inputPorts(toPort)

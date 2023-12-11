@@ -32,10 +32,13 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(headerlessCsvOpDesc.operatorId, 0),
-          OperatorPort(keywordOpDesc.operatorId, 0)
+          OperatorPort(headerlessCsvOpDesc.operatorIdentifier, 0),
+          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
         ),
-        LogicalLink(OperatorPort(keywordOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
+        LogicalLink(
+          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
+          OperatorPort(sink.operatorIdentifier, 0)
+        )
       )
     )
     val executionId = 1
@@ -82,24 +85,24 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          OperatorPort(buildCsv.operatorId, 0),
-          OperatorPort(hashJoin1.operatorId, 0)
+          OperatorPort(buildCsv.operatorIdentifier, 0),
+          OperatorPort(hashJoin1.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(probeCsv.operatorId, 0),
-          OperatorPort(hashJoin1.operatorId, 1)
+          OperatorPort(probeCsv.operatorIdentifier, 0),
+          OperatorPort(hashJoin1.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(buildCsv.operatorId, 0),
-          OperatorPort(hashJoin2.operatorId, 0)
+          OperatorPort(buildCsv.operatorIdentifier, 0),
+          OperatorPort(hashJoin2.operatorIdentifier, 0)
         ),
         LogicalLink(
-          OperatorPort(hashJoin1.operatorId, 0),
-          OperatorPort(hashJoin2.operatorId, 1)
+          OperatorPort(hashJoin1.operatorIdentifier, 0),
+          OperatorPort(hashJoin2.operatorIdentifier, 1)
         ),
         LogicalLink(
-          OperatorPort(hashJoin2.operatorId, 0),
-          OperatorPort(sink.operatorId, 0)
+          OperatorPort(hashJoin2.operatorIdentifier, 0),
+          OperatorPort(sink.operatorIdentifier, 0)
         )
       )
     )

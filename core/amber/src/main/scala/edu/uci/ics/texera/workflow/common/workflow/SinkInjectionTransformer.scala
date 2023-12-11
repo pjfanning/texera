@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
@@ -14,9 +15,9 @@ object SinkInjectionTransformer {
       !logicalPlan.getOperator(opId).isInstanceOf[SinkOpDesc]
     )
     // for any operators marked as view result without a sink, add a sink
-    val viewResultOps = opsToViewResult.filter(opId =>
-      !logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc])
-    )
+    val viewResultOps = opsToViewResult
+      .map(idString => OperatorIdentity(idString))
+      .filter(opId => !logicalPlan.getDownstream(opId).exists(op => op.isInstanceOf[SinkOpDesc]))
 
     val operatorsToAddSink = (nonSinkTerminalOps ++ viewResultOps).toSet
     operatorsToAddSink.foreach(opId => {
@@ -25,7 +26,7 @@ object SinkInjectionTransformer {
         val sink = new ProgressiveSinkOpDesc()
         logicalPlan = logicalPlan
           .addOperator(sink)
-          .addEdge(op.operatorId, sink.operatorId, outPort)
+          .addEdge(op.operatorIdentifier, sink.operatorIdentifier, outPort)
       })
     })
 
@@ -43,13 +44,13 @@ object SinkInjectionTransformer {
       val sinkOp = logicalPlan.getOperator(sinkOpId).asInstanceOf[ProgressiveSinkOpDesc]
       val upstream = logicalPlan.getUpstreamOps(sinkOpId).headOption
       val edge = logicalPlan.links.find(l =>
-        l.origin.operatorID == upstream.map(_.operatorId).orNull
-          && l.destination.operatorID == sinkOpId
+        l.origin.operatorId == upstream.map(_.operatorIdentifier).orNull
+          && l.destination.operatorId == sinkOpId
       )
       assert(upstream.nonEmpty)
       if (upstream.nonEmpty && edge.nonEmpty) {
         // set upstream ID and port
-        sinkOp.setUpstreamId(upstream.get.operatorId)
+        sinkOp.setUpstreamId(upstream.get.operatorIdentifier)
         sinkOp.setUpstreamPort(edge.get.origin.portOrdinal)
 
         // set output mode for visualization operator

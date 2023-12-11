@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
@@ -42,24 +43,25 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val dataSchema = Schema.newBuilder().add("dataCol", AttributeType.INTEGER).build()
     val trainingScan = new TempTestSourceOpDesc() {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("trainingScan")
       override def sourceSchema(): Schema = dataSchema
     }
-    trainingScan.operatorId = "trainingScan"
 
     val testingScan = new TempTestSourceOpDesc() {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("testingScan")
       override def sourceSchema(): Schema = dataSchema
     }
-    testingScan.operatorId = "testingScan"
 
     val inferenceScan = new TempTestSourceOpDesc() {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("inferenceScan")
       override def sourceSchema(): Schema = dataSchema
     }
-    inferenceScan.operatorId = "inferenceScan"
 
     val mlModelSchema = Schema.newBuilder().add("model", AttributeType.STRING).build()
     val mlVizSchema = Schema.newBuilder().add("visualization", AttributeType.STRING).build()
 
     val mlTrainingOp = new LogicalOp() {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("mlTrainingOp")
       override def operatorExecutor(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
@@ -82,9 +84,9 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
         Array(mlVizSchema, mlModelSchema)
       }
     }
-    mlTrainingOp.operatorId = "mlTrainingOp"
 
     val mlInferOp = new LogicalOp() {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("mlInferOp")
       override def operatorExecutor(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
@@ -106,13 +108,14 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
         Array(schemas(1))
       }
     }
-    mlInferOp.operatorId = "mlInferOp"
 
-    val mlVizSink = new TempTestSinkOpDesc
-    mlVizSink.operatorId = "mlVizSink"
+    val mlVizSink = new TempTestSinkOpDesc {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("mlVizSink")
+    }
 
-    val inferenceSink = new TempTestSinkOpDesc
-    inferenceSink.operatorId = "inferenceSink"
+    val inferenceSink = new TempTestSinkOpDesc {
+      override def operatorIdentifier: OperatorIdentity = OperatorIdentity("inferenceSink")
+    }
 
     val operators = List(
       trainingScan,
@@ -126,28 +129,28 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val links = List(
       LogicalLink(
-        OperatorPort(trainingScan.operatorId),
-        OperatorPort(mlTrainingOp.operatorId, 0)
+        OperatorPort(trainingScan.operatorIdentifier),
+        OperatorPort(mlTrainingOp.operatorIdentifier, 0)
       ),
       LogicalLink(
-        OperatorPort(testingScan.operatorId),
-        OperatorPort(mlTrainingOp.operatorId, 1)
+        OperatorPort(testingScan.operatorIdentifier),
+        OperatorPort(mlTrainingOp.operatorIdentifier, 1)
       ),
       LogicalLink(
-        OperatorPort(inferenceScan.operatorId),
-        OperatorPort(mlInferOp.operatorId, 1)
+        OperatorPort(inferenceScan.operatorIdentifier),
+        OperatorPort(mlInferOp.operatorIdentifier, 1)
       ),
       LogicalLink(
-        OperatorPort(mlTrainingOp.operatorId, 0),
-        OperatorPort(mlVizSink.operatorId)
+        OperatorPort(mlTrainingOp.operatorIdentifier, 0),
+        OperatorPort(mlVizSink.operatorIdentifier)
       ),
       LogicalLink(
-        OperatorPort(mlTrainingOp.operatorId, 1),
-        OperatorPort(mlInferOp.operatorId, 0)
+        OperatorPort(mlTrainingOp.operatorIdentifier, 1),
+        OperatorPort(mlInferOp.operatorIdentifier, 0)
       ),
       LogicalLink(
-        OperatorPort(mlInferOp.operatorId, 0),
-        OperatorPort(inferenceSink.operatorId, 0)
+        OperatorPort(mlInferOp.operatorIdentifier, 0),
+        OperatorPort(inferenceSink.operatorIdentifier, 0)
       )
     )
 

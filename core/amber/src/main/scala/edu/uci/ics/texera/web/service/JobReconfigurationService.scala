@@ -61,8 +61,8 @@ class JobReconfigurationService(
   def modifyOperatorLogic(modifyLogicRequest: ModifyLogicRequest): TexeraWebSocketEvent = {
     val newOp = modifyLogicRequest.operator
     newOp.setContext(workflow.logicalPlan.context)
-    val opId = newOp.operatorId
-    val currentOp = workflow.logicalPlan.operatorMap(opId)
+    val opId = newOp.operatorIdentifier
+    val currentOp = workflow.logicalPlan.getOperator(opId)
     val reconfiguredPhysicalOp =
       currentOp.runtimeReconfiguration(
         workflow.workflowId.id,
@@ -70,12 +70,12 @@ class JobReconfigurationService(
         workflow.logicalPlan.opSchemaInfo(opId)
       )
     reconfiguredPhysicalOp match {
-      case Failure(exception) => ModifyLogicResponse(opId, isValid = false, exception.getMessage)
+      case Failure(exception) => ModifyLogicResponse(opId.id, isValid = false, exception.getMessage)
       case Success(op) => {
         stateStore.reconfigurationStore.updateState(old =>
           old.copy(unscheduledReconfigs = old.unscheduledReconfigs :+ op)
         )
-        ModifyLogicResponse(opId, isValid = true, "")
+        ModifyLogicResponse(opId.id, isValid = true, "")
       }
     }
   }

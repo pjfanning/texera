@@ -71,7 +71,10 @@ class PauseSpec
     shouldPause(
       List(csvOpDesc, sink),
       List(
-        LogicalLink(OperatorPort(csvOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
+        LogicalLink(
+          OperatorPort(csvOpDesc.operatorIdentifier, 0),
+          OperatorPort(sink.operatorIdentifier, 0)
+        )
       )
     )
   }
@@ -87,10 +90,13 @@ class PauseSpec
       List(csvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          OperatorPort(csvOpDesc.operatorId, 0),
-          OperatorPort(keywordOpDesc.operatorId, 0)
+          OperatorPort(csvOpDesc.operatorIdentifier, 0),
+          OperatorPort(keywordOpDesc.operatorIdentifier, 0)
         ),
-        LogicalLink(OperatorPort(keywordOpDesc.operatorId, 0), OperatorPort(sink.operatorId, 0))
+        LogicalLink(
+          OperatorPort(keywordOpDesc.operatorIdentifier, 0),
+          OperatorPort(sink.operatorIdentifier, 0)
+        )
       )
     )
   }
