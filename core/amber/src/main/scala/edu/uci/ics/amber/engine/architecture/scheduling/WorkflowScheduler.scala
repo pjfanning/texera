@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{
   OperatorExecution,
   Workflow
 }
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
@@ -28,8 +28,8 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
@@ -51,10 +51,10 @@ class WorkflowScheduler(
 
   // Since one operator/link(i.e. links within an operator) can belong to multiple regions, we need to keep
   // track of those already built
-  private val builtOperators = new mutable.HashSet[LayerIdentity]()
-  private val openedOperators = new mutable.HashSet[LayerIdentity]()
-  private val initializedPythonOperators = new mutable.HashSet[LayerIdentity]()
-  private val activatedLink = new mutable.HashSet[LinkIdentity]()
+  private val builtOperators = new mutable.HashSet[PhysicalOpIdentity]()
+  private val openedOperators = new mutable.HashSet[PhysicalOpIdentity]()
+  private val initializedPythonOperators = new mutable.HashSet[PhysicalOpIdentity]()
+  private val activatedLink = new mutable.HashSet[PhysicalLinkIdentity]()
 
   private val constructingRegions = new mutable.HashSet[PipelinedRegionIdentity]()
   private val startedRegions = new mutable.HashSet[PipelinedRegionIdentity]()
@@ -83,7 +83,7 @@ class WorkflowScheduler(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
-      linkId: LinkIdentity
+      linkId: PhysicalLinkIdentity
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, linkId)
     doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorRefMappingService, akkaActorService)
@@ -145,11 +145,11 @@ class WorkflowScheduler(
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService
   ): Unit = {
-    val builtOpsInRegion = new mutable.HashSet[LayerIdentity]()
-    var frontier: Iterable[LayerIdentity] = workflow.getSourcesOfRegion(region)
+    val builtOpsInRegion = new mutable.HashSet[PhysicalOpIdentity]()
+    var frontier: Iterable[PhysicalOpIdentity] = workflow.getSourcesOfRegion(region)
     while (frontier.nonEmpty) {
-      frontier.foreach { (op: LayerIdentity) =>
-        val prev: Array[(LayerIdentity, OpExecConfig)] =
+      frontier.foreach { (op: PhysicalOpIdentity) =>
+        val prev: Array[(PhysicalOpIdentity, PhysicalOp)] =
           workflow.physicalPlan
             .getUpstream(op)
             .filter(upStreamOp =>
@@ -182,7 +182,7 @@ class WorkflowScheduler(
 
   private def buildOperator(
       workflow: Workflow,
-      operatorIdentity: LayerIdentity,
+      operatorIdentity: PhysicalOpIdentity,
       opExecution: OperatorExecution,
       actorRefService: AkkaActorRefMappingService,
       controllerActorService: AkkaActorService
@@ -315,8 +315,8 @@ class WorkflowScheduler(
       WorkerAssignmentUpdate(
         executionState.getOperatorToWorkers
           .map({
-            case (opId: LayerIdentity, workerIds: Seq[ActorVirtualIdentity]) =>
-              opId.operator -> workerIds.map(_.name)
+            case (opId: PhysicalOpIdentity, workerIds: Seq[ActorVirtualIdentity]) =>
+              opId.logicalOpId.id -> workerIds.map(_.name)
           })
           .toMap
       )

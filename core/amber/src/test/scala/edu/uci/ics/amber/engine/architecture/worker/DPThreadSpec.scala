@@ -1,9 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfo, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   DPInputQueueElement,
@@ -17,9 +17,9 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
@@ -36,11 +36,11 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   private val operator = mock[OperatorExecutor]
   private val operatorIdentity = OperatorIdentity("testOperator")
   private val layerId1 =
-    LayerIdentity(operatorIdentity.id, "1st-layer")
+    PhysicalOpIdentity(operatorIdentity, "1st-layer")
   private val layerId2 =
-    LayerIdentity(operatorIdentity.id, "1st-layer")
-  private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
-  private val opExecConfig = OpExecConfig
+    PhysicalOpIdentity(operatorIdentity, "1st-layer")
+  private val mockLink = PhysicalLinkIdentity(layerId1, 0, layerId2, 0)
+  private val opExecConfig = PhysicalOp
     .oneToOneLayer(1, operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray

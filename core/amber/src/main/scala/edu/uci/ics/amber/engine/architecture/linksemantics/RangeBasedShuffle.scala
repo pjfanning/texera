@@ -1,16 +1,16 @@
 package edu.uci.ics.amber.engine.architecture.linksemantics
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
   Partitioning,
   RangeBasedShufflePartitioning
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
 
 class RangeBasedShuffle(
-    from: OpExecConfig,
+    from: PhysicalOp,
     fromPort: Int,
-    to: OpExecConfig,
+    to: PhysicalOp,
     toPort: Int,
     batchSize: Int,
     rangeColumnIndices: Seq[Int],
@@ -18,7 +18,7 @@ class RangeBasedShuffle(
     rangeMax: Long
 ) extends LinkStrategy(from, fromPort, to, toPort, batchSize) {
   override def getPartitioning: Iterable[
-    (ActorVirtualIdentity, LinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
+    (ActorVirtualIdentity, PhysicalLinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
   ] = {
     from.identifiers.map(x =>
       (

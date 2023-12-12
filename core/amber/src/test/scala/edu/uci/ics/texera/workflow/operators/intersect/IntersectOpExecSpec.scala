@@ -1,7 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.intersect
 
 import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
+}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import org.scalatest.BeforeAndAfter
@@ -21,12 +25,13 @@ class IntersectOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     )
     .build()
 
-  def layerID(): LayerIdentity = {
+  def layerID(): PhysicalOpIdentity = {
     counter += 1
-    LayerIdentity("" + counter, "" + counter)
+    PhysicalOpIdentity(OperatorIdentity("" + counter), "" + counter)
   }
 
-  def linkID(): LinkIdentity = LinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
+  def linkID(): PhysicalLinkIdentity =
+    PhysicalLinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
 
   def tuple(): Tuple = {
     counter += 1

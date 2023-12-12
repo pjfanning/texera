@@ -1,7 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
 import edu.uci.ics.amber.engine.common.InputExhausted
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
+}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{
   Attribute,
@@ -20,11 +24,12 @@ class HashJoinOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
   var opDesc: HashJoinOpDesc[String] = _
   var counter: Int = 0
 
-  def linkID(): LinkIdentity = LinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
+  def linkID(): PhysicalLinkIdentity =
+    PhysicalLinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
 
-  def layerID(): LayerIdentity = {
+  def layerID(): PhysicalOpIdentity = {
     counter += 1
-    LayerIdentity("" + counter, "" + counter)
+    PhysicalOpIdentity(OperatorIdentity("" + counter), "" + counter)
   }
 
   def tuple(name: String, n: Int = 1, i: Option[Int]): Tuple = {

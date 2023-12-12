@@ -1,6 +1,10 @@
 package edu.uci.ics.amber.engine.common
 
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  OperatorIdentity,
+  PhysicalOpIdentity
+}
 
 import scala.util.matching.Regex
 
@@ -19,16 +23,18 @@ object VirtualIdentityUtils {
 
   def createWorkerIdentity(
       executionId: Long,
-      layer: LayerIdentity,
+      layer: PhysicalOpIdentity,
       workerId: Int
   ): ActorVirtualIdentity = {
-    ActorVirtualIdentity(s"Worker:WF$executionId-${layer.operator}-${layer.layerID}-$workerId")
+    ActorVirtualIdentity(
+      s"Worker:WF$executionId-${layer.logicalOpId.id}-${layer.layerName}-$workerId"
+    )
   }
 
-  def getOperator(workerId: ActorVirtualIdentity): LayerIdentity = {
+  def getOperator(workerId: ActorVirtualIdentity): PhysicalOpIdentity = {
     workerId.name match {
-      case workerNamePattern(_, operator, layer, _) =>
-        LayerIdentity(operator, layer)
+      case workerNamePattern(_, operator, layerName, _) =>
+        PhysicalOpIdentity(OperatorIdentity(operator), layerName)
     }
   }
 

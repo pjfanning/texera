@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.github.tototoshi.csv.{CSVReader, DefaultCSVFormat}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.common.{AmberConfig}
+import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.inferSchemaFromRows
 import edu.uci.ics.texera.workflow.common.tuple.schema.{
   Attribute,
@@ -38,7 +38,7 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
+  ): PhysicalOp = {
     // fill in default values
     if (customDelimiter.get.isEmpty)
       customDelimiter = Option(",")
@@ -48,7 +48,7 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
         val totalBytes: Long = new File(path).length()
         val numWorkers: Int = AmberConfig.numWorkerPerOperatorByDefault
 
-        OpExecConfig
+        PhysicalOp
           .sourceLayer(
             executionId,
             operatorIdentifier,

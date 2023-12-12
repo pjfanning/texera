@@ -8,9 +8,9 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
-  OpExecConfig,
   OpExecInitInfoWithCode,
-  OpExecInitInfoWithFunc
+  OpExecInitInfoWithFunc,
+  PhysicalOp
 }
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
@@ -38,8 +38,8 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
@@ -57,7 +57,7 @@ object DataProcessor {
 
     override def inMemSize: Long = 0
   }
-  case class FinalizeLink(link: LinkIdentity) extends SpecialDataTuple
+  case class FinalizeLink(link: PhysicalLinkIdentity) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
 
   class DPOutputIterator extends Iterator[(ITuple, Option[Int])] {
@@ -96,12 +96,12 @@ class DataProcessor(
     with Serializable {
 
   @transient var workerIdx: Int = 0
-  @transient var opConf: OpExecConfig = _
+  @transient var opConf: PhysicalOp = _
   @transient var operator: IOperatorExecutor = _
 
   def initOperator(
       workerIdx: Int,
-      opConf: OpExecConfig,
+      opConf: PhysicalOp,
       currentOutputIterator: Iterator[(ITuple, Option[Int])]
   ): Unit = {
     this.workerIdx = workerIdx
@@ -114,7 +114,7 @@ class DataProcessor(
     this.upstreamLinkStatus.setAllUpstreamLinkIds(
       if (opConf.isSourceOperator)
         Set(
-          LinkIdentity(SOURCE_STARTER_OP, 0, opConf.id, 0)
+          PhysicalLinkIdentity(SOURCE_STARTER_OP, 0, opConf.id, 0)
         ) // special case for source operator
       else
         opConf.inputToOrdinalMapping.keySet
@@ -135,7 +135,7 @@ class DataProcessor(
 
   @transient var adaptiveBatchingMonitor: WorkerTimerService = _
 
-  def getOperatorId: LayerIdentity = VirtualIdentityUtils.getOperator(actorId)
+  def getOperatorId: PhysicalOpIdentity = VirtualIdentityUtils.getOperator(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
   // inner dependencies
@@ -158,7 +158,7 @@ class DataProcessor(
   protected var inputTupleCount = 0L
   protected var outputTupleCount = 0L
 
-  def registerInput(identifier: ActorVirtualIdentity, input: LinkIdentity): Unit = {
+  def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLinkIdentity): Unit = {
     upstreamLinkStatus.registerInput(identifier, input)
   }
 
@@ -173,7 +173,7 @@ class DataProcessor(
     else opConf.inputToOrdinalMapping(inputLink)
   }
 
-  def getOutputLinkByPort(outputPort: Option[Int]): List[LinkIdentity] = {
+  def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLinkIdentity] = {
     if (outputPort.isEmpty) {
       opConf.outputToOrdinalMapping.keySet.toList
     } else {

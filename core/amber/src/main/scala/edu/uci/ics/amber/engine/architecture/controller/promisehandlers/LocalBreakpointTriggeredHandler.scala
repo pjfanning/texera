@@ -81,7 +81,7 @@ trait LocalBreakpointTriggeredHandler {
                   .map { gbp =>
                     // attach new version if not resolved
                     execute(
-                      AssignGlobalBreakpoint(gbp, opID.operator),
+                      AssignGlobalBreakpoint(gbp, opID.logicalOpId.id),
                       CONTROLLER
                     )
                   }
@@ -102,7 +102,7 @@ trait LocalBreakpointTriggeredHandler {
                     .unit
                 } else {
                   // other wise, report to frontend and pause entire workflow
-                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID.operator))
+                  sendToClient(BreakpointTriggered(mutable.HashMap.empty, opID.logicalOpId.id))
                   execute(PauseWorkflow(), CONTROLLER)
                 }
               }

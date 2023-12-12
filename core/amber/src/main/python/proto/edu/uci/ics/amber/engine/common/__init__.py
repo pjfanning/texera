@@ -15,9 +15,9 @@ class ActorVirtualIdentity(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class LayerIdentity(betterproto.Message):
+class PhysicalLinkIdentity(betterproto.Message):
     """
-    final case class LayerIdentity (    workflow: String,    operator: String,
+    final case class PhysicalLinkIdentity (    workflow: String,    operator: String,
     layerID: String )
     """
 
@@ -27,22 +27,22 @@ class LayerIdentity(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class LinkIdentity(betterproto.Message):
+class PhysicalLinkIdentity(betterproto.Message):
     """
-    final case class LinkIdentity (    from: LayerIdentity,    to:
-    LayerIdentity )
+    final case class PhysicalLinkIdentity (    from: PhysicalLinkIdentity,    to:
+    PhysicalLinkIdentity )
     """
 
-    from_: "LayerIdentity" = betterproto.message_field(1)
+    from_: "PhysicalLinkIdentity" = betterproto.message_field(1)
     from_port: int = betterproto.int32_field(2)
-    to: "LayerIdentity" = betterproto.message_field(3)
+    to: "PhysicalLinkIdentity" = betterproto.message_field(3)
     to_port: int = betterproto.int32_field(4)
 
 
 @dataclass(eq=False, repr=False)
 class OperatorIdentity(betterproto.Message):
     """
-    final case class LinkIdentity (    workflow: String,    operator: String )
+    final case class PhysicalLinkIdentity (    workflow: String,    operator: String )
     """
 
     workflow: str = betterproto.string_field(1)

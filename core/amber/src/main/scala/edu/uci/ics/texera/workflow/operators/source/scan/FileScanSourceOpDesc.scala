@@ -6,7 +6,7 @@ import com.kjetland.jackson.jsonSchema.annotations.{
   JsonSchemaString,
   JsonSchemaTitle
 }
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, OpExecInitInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.HideAnnotation
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.text.TextSourceOpDesc
@@ -33,8 +33,8 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig =
-    OpExecConfig.sourceLayer(
+  ): PhysicalOp =
+    PhysicalOp.sourceLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new FileScanSourceOpExec(this))

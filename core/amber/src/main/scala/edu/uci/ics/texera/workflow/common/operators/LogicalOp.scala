@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.common.operators
 
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.web.OPversion
@@ -170,7 +170,7 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   var operatorVersion: String = getOperatorVersion()
   def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
-  def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
+  def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalOp = {
     throw new UnsupportedOperationException(
       "operator " + operatorIdentifier + " is not migrated to new OpExec API"
     )
@@ -214,7 +214,7 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
       executionId: Long,
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
     throw new UnsupportedOperationException(
       "operator " + getClass.getSimpleName + " does not support reconfiguration"
     )

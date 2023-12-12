@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
   WorkerModifyLogic,
@@ -13,7 +13,7 @@ import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
 
 object ModifyOperatorLogicHandler {
   case class WorkerModifyLogic(
-      opExecConfig: OpExecConfig,
+      opExecConfig: PhysicalOp,
       stateTransferFunc: Option[StateTransferFunc]
   ) extends ControlCommand[Unit]
 

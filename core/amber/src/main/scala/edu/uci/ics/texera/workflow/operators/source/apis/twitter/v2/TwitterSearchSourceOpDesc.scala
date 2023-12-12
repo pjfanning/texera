@@ -6,7 +6,7 @@ import com.kjetland.jackson.jsonSchema.annotations.{
   JsonSchemaInject,
   JsonSchemaTitle
 }
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.annotations.UIWidget
 import edu.uci.ics.texera.workflow.common.tuple.schema.{
@@ -36,9 +36,9 @@ class TwitterSearchSourceOpDesc extends TwitterSourceOpDesc {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig =
+  ): PhysicalOp =
     // TODO: use multiple workers
-    OpExecConfig.sourceLayer(
+    PhysicalOp.sourceLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new TwitterSearchSourceOpExec(this, operatorSchemaInfo))

@@ -1,6 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfo, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
@@ -19,9 +19,9 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import org.scalamock.scalatest.MockFactory
@@ -33,15 +33,15 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
   private val operatorIdentity: OperatorIdentity = OperatorIdentity("testOperator")
   private val operator = mock[OperatorExecutor]
-  private val linkID: LinkIdentity =
-    LinkIdentity(
-      LayerIdentity("testUpstream", "main"),
+  private val linkID: PhysicalLinkIdentity =
+    PhysicalLinkIdentity(
+      PhysicalOpIdentity(OperatorIdentity("testUpstream"), "main"),
       0,
-      LayerIdentity("testOperator", "main"),
+      PhysicalOpIdentity(OperatorIdentity("testOperator"), "main"),
       0
     )
   private val opExecConfig =
-    OpExecConfig
+    PhysicalOp
       .oneToOneLayer(1, operatorIdentity, OpExecInitInfo(_ => operator))
       .addInput(linkID.from, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]

@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
@@ -18,7 +18,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     override def operatorExecutor(
         executionId: Long,
         operatorSchemaInfo: OperatorSchemaInfo
-    ): OpExecConfig = ???
+    ): PhysicalOp = ???
     override def operatorInfo: OperatorInfo =
       OperatorInfo("", "", "", List(InputPort()), List(OutputPort()))
   }
@@ -26,7 +26,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
     override def operatorExecutor(
         executionId: Long,
         operatorSchemaInfo: OperatorSchemaInfo
-    ): OpExecConfig = ???
+    ): PhysicalOp = ???
     override def operatorInfo: OperatorInfo =
       OperatorInfo("", "", "", List(InputPort()), List(OutputPort()))
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
@@ -65,7 +65,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
       override def operatorExecutor(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
-      ): OpExecConfig = ???
+      ): PhysicalOp = ???
 
       override def operatorInfo: OperatorInfo =
         OperatorInfo(
@@ -90,7 +90,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
       override def operatorExecutor(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
-      ): OpExecConfig = ???
+      ): PhysicalOp = ???
 
       override def operatorInfo: OperatorInfo =
         OperatorInfo(

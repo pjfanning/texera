@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
 import edu.uci.ics.amber.clustering.SingleNodeListener
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkMessage
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, OpExecInitInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfo, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
@@ -17,9 +17,9 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import org.scalamock.scalatest.MockFactory
@@ -64,11 +64,11 @@ class WorkerSpec
   }
   private val operatorIdentity = OperatorIdentity("testOperator")
   private val layerId1 =
-    LayerIdentity(operatorIdentity.id, "1st-layer")
+    PhysicalOpIdentity(operatorIdentity, "1st-layer")
   private val layerId2 =
-    LayerIdentity(operatorIdentity.id, "2nd-layer")
-  private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
-  private val opExecConfig = OpExecConfig
+    PhysicalOpIdentity(operatorIdentity, "2nd-layer")
+  private val mockLink = PhysicalLinkIdentity(layerId1, 0, layerId2, 0)
+  private val opExecConfig = PhysicalOp
     .oneToOneLayer(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val workerIndex = 0

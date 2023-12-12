@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.symmetricDifference
 
 import com.google.common.base.Preconditions
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.{
   InputPort,
@@ -17,8 +17,8 @@ class SymmetricDifferenceOpDesc extends LogicalOp {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
-    OpExecConfig.hashLayer(
+  ): PhysicalOp = {
+    PhysicalOp.hashLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new SymmetricDifferenceOpExec()),

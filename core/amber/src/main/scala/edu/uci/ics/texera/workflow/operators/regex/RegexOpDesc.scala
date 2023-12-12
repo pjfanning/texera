@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.regex
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.{
   InputPort,
@@ -33,8 +33,8 @@ class RegexOpDesc extends FilterOpDesc {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
-    OpExecConfig.oneToOneLayer(
+  ): PhysicalOp = {
+    PhysicalOp.oneToOneLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new RegexOpExec(this))

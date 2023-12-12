@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.udf.python
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.{
   InputPort,
@@ -69,7 +69,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
+  ): PhysicalOp = {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     val opInfo = this.operatorInfo
     val partitionRequirement: List[Option[PartitionInfo]] = if (inputPorts != null) {
@@ -91,7 +91,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
     }
 
     if (workers > 1)
-      OpExecConfig
+      PhysicalOp
         .oneToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           numWorkers = workers,
@@ -104,7 +104,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
         )
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     else
-      OpExecConfig
+      PhysicalOp
         .manyToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           derivePartition = _ => UnknownPartition(),
@@ -166,7 +166,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
       executionId: Long,
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
     Success(newOpDesc.operatorExecutor(executionId, operatorSchemaInfo), None)
   }
 }

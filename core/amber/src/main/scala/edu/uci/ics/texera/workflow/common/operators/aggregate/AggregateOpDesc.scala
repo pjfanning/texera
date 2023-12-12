@@ -1,9 +1,9 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{LinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, OperatorIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
@@ -19,7 +19,7 @@ object AggregateOpDesc {
       schemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {
     val partialLayer =
-      OpExecConfig
+      PhysicalOp
         .oneToOneLayer(
           executionId,
           makeLayer(id, "localAgg"),
@@ -29,7 +29,7 @@ object AggregateOpDesc {
         .copy(isOneToManyOp = true, inputPorts = List(InputPort("in")))
 
     val finalLayer = if (groupByKeys == null || groupByKeys.isEmpty) {
-      OpExecConfig
+      PhysicalOp
         .localLayer(
           executionId,
           makeLayer(id, "globalAgg"),
@@ -42,7 +42,7 @@ object AggregateOpDesc {
         if (groupByKeys == null) Array()
         else groupByKeys.indices.toArray // group by columns are always placed in the beginning
 
-      OpExecConfig
+      PhysicalOp
         .hashLayer(
           executionId,
           makeLayer(id, "globalAgg"),
@@ -54,7 +54,7 @@ object AggregateOpDesc {
 
     new PhysicalPlan(
       List(partialLayer, finalLayer),
-      List(LinkIdentity(partialLayer.id, 0, finalLayer.id, 0))
+      List(PhysicalLinkIdentity(partialLayer.id, 0, finalLayer.id, 0))
     )
   }
 
@@ -65,7 +65,7 @@ abstract class AggregateOpDesc extends LogicalOp {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
+  ): PhysicalOp = {
     throw new UnsupportedOperationException("multi-layer op should use operatorExecutorMultiLayer")
   }
 

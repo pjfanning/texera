@@ -3,8 +3,8 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder.replaceVertex
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  LayerIdentity,
-  LinkIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity,
   WorkflowIdentity
 }
 import edu.uci.ics.texera.workflow.common.workflow.{
@@ -55,7 +55,8 @@ class WorkflowPipelinedRegionsBuilder(
       classOf[DefaultEdge]
     )
 
-  private val materializationWriterReaderPairs = new mutable.HashMap[LayerIdentity, LayerIdentity]()
+  private val materializationWriterReaderPairs =
+    new mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]()
 
   /**
     * Uses the outLinks and operatorToOpExecConfig to create a DAG similar to the workflow but with all
@@ -64,7 +65,7 @@ class WorkflowPipelinedRegionsBuilder(
     * @return
     */
   private def getBlockingEdgesRemovedDAG: PhysicalPlan = {
-    val edgesToRemove = new mutable.MutableList[LinkIdentity]()
+    val edgesToRemove = new mutable.MutableList[PhysicalLinkIdentity]()
 
     physicalPlan.allOperatorIds.foreach(opId => {
       val upstreamOps = physicalPlan.getUpstream(opId)
@@ -89,8 +90,8 @@ class WorkflowPipelinedRegionsBuilder(
     */
   @throws(classOf[java.lang.IllegalArgumentException])
   private def addEdgeBetweenRegions(
-      prevInOrderOperator: LayerIdentity,
-      nextInOrderOperator: LayerIdentity
+      prevInOrderOperator: PhysicalOpIdentity,
+      nextInOrderOperator: PhysicalOpIdentity
   ): Unit = {
     val prevInOrderRegions = getPipelinedRegionsFromOperatorId(prevInOrderOperator)
     val nextInOrderRegions = getPipelinedRegionsFromOperatorId(nextInOrderOperator)
@@ -182,7 +183,7 @@ class WorkflowPipelinedRegionsBuilder(
         case _: java.lang.IllegalArgumentException =>
           // edge causes a cycle. Code shouldn't reach here.
           throw new WorkflowRuntimeException(
-            s"PipelinedRegionsBuilder: Cyclic dependency between regions of ${writer.operator} and ${reader.operator}"
+            s"PipelinedRegionsBuilder: Cyclic dependency between regions of ${writer.logicalOpId.id} and ${reader.logicalOpId.id}"
           )
       }
     }
@@ -190,7 +191,10 @@ class WorkflowPipelinedRegionsBuilder(
     true
   }
 
-  private def findAllLinks(from: LayerIdentity, to: LayerIdentity): List[LinkIdentity] = {
+  private def findAllLinks(
+      from: PhysicalOpIdentity,
+      to: PhysicalOpIdentity
+  ): List[PhysicalLinkIdentity] = {
     physicalPlan.links.filter(link => link.from == from && link.to == to)
 
   }
@@ -202,7 +206,7 @@ class WorkflowPipelinedRegionsBuilder(
     }
   }
 
-  private def getPipelinedRegionsFromOperatorId(opId: LayerIdentity): Set[PipelinedRegion] = {
+  private def getPipelinedRegionsFromOperatorId(opId: PhysicalOpIdentity): Set[PipelinedRegion] = {
     val regionsForOperator = new mutable.HashSet[PipelinedRegion]()
     pipelinedRegionsDAG
       .vertexSet()
@@ -216,7 +220,7 @@ class WorkflowPipelinedRegionsBuilder(
 
   private def populateTerminalOperatorsForBlockingLinks(): Unit = {
     val regionTerminalOperatorInOtherRegions =
-      new mutable.HashMap[PipelinedRegion, ArrayBuffer[LayerIdentity]]()
+      new mutable.HashMap[PipelinedRegion, ArrayBuffer[PhysicalOpIdentity]]()
     this.physicalPlan
       .topologicalIterator()
       .foreach(opId => {
@@ -233,7 +237,7 @@ class WorkflowPipelinedRegionsBuilder(
                 ) {
                   val terminalOps = regionTerminalOperatorInOtherRegions.getOrElseUpdate(
                     prevInOrderRegion,
-                    new ArrayBuffer[LayerIdentity]()
+                    new ArrayBuffer[PhysicalOpIdentity]()
                   )
                   terminalOps.append(opId)
                   regionTerminalOperatorInOtherRegions(prevInOrderRegion) = terminalOps

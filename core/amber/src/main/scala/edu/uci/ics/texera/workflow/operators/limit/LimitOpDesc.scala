@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.limit
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.texera.workflow.common.metadata.{
   InputPort,
@@ -27,9 +27,9 @@ class LimitOpDesc extends LogicalOp {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
+  ): PhysicalOp = {
     val limitPerWorker = equallyPartitionGoal(limit, AmberConfig.numWorkerPerOperatorByDefault)
-    OpExecConfig.oneToOneLayer(
+    PhysicalOp.oneToOneLayer(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(p => new LimitOpExec(limitPerWorker(p._1)))
@@ -52,7 +52,7 @@ class LimitOpDesc extends LogicalOp {
       executionId: Long,
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): Try[(OpExecConfig, Option[StateTransferFunc])] = {
+  ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
     val newOpExecConfig = newOpDesc.operatorExecutor(executionId, operatorSchemaInfo)
     val stateTransferFunc: StateTransferFunc = (oldOp, newOp) => {
       val oldLimitOp = oldOp.asInstanceOf[LimitOpExec]

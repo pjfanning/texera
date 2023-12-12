@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.split
 
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.texera.workflow.common.metadata.{
@@ -29,8 +29,8 @@ class SplitOpDesc extends LogicalOp {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
-    OpExecConfig
+  ): PhysicalOp = {
+    PhysicalOp
       .oneToOneLayer(
         executionId,
         operatorIdentifier,

@@ -72,7 +72,7 @@ class JobConsoleService(
           stateStore.consoleStore.updateState { jobInfo =>
             val opId =
               VirtualIdentityUtils.getOperator(ActorVirtualIdentity(evt.consoleMessage.workerId))
-            addConsoleMessage(jobInfo, opId.operator, evt.consoleMessage)
+            addConsoleMessage(jobInfo, opId.logicalOpId.id, evt.consoleMessage)
           }
         })
     )

@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.linksemantics._
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
-import edu.uci.ics.amber.engine.common.virtualidentity.{LayerIdentity, LinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, PhysicalOpIdentity}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -10,13 +10,13 @@ import scala.collection.mutable.ArrayBuffer
 class PartitionEnforcer(physicalPlan: PhysicalPlan) {
 
   // a map of an operator to its output partition info
-  val outputPartitionInfos = new mutable.HashMap[LayerIdentity, PartitionInfo]()
-  val linkMapping = new mutable.HashMap[LinkIdentity, LinkStrategy]()
+  val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()
+  val linkMapping = new mutable.HashMap[PhysicalLinkIdentity, LinkStrategy]()
 
   def getOutputPartition(
-      current: LayerIdentity,
+      current: PhysicalOpIdentity,
       fromPort: Int,
-      input: LayerIdentity,
+      input: PhysicalOpIdentity,
       inputPort: Int
   ): (LinkStrategy, PartitionInfo) = {
     val layer = physicalPlan.getLayer(current)

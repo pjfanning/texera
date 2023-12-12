@@ -6,15 +6,14 @@ import edu.uci.ics.amber.engine.architecture.controller.{
   ControllerAsyncRPCHandlerInitializer,
   Workflow
 }
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerWorkloadInfo
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, WorkerWorkloadInfo}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseSkewMitigationHandler.PauseSkewMitigation
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SendImmutableStateHandler.SendImmutableState
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.SharePartitionHandler.SharePartition
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, LayerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -230,7 +229,7 @@ object SkewDetectionHandler {
     * Get the worker layer from the previous operator where the partitioning logic will be changed
     * by Reshape.
     */
-  def getPreviousWorkerLayer(opId: LayerIdentity, workflow: Workflow): OpExecConfig = {
+  def getPreviousWorkerLayer(opId: PhysicalOpIdentity, workflow: Workflow): PhysicalOp = {
     val upstreamLayers = workflow.getUpStreamConnectedOpExecConfig(opId).values.toList
 
     if (workflow.getOpExecConfig(opId).isHashJoinOperator) {
@@ -272,7 +271,7 @@ trait SkewDetectionHandler {
     * `skewedAndHelperWorkersList`.
     */
   private def implementFirstPhasePartitioning[T](
-      prevWorkerLayer: OpExecConfig,
+      prevWorkerLayer: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
@@ -299,7 +298,7 @@ trait SkewDetectionHandler {
   }
 
   private def implementSecondPhasePartitioning[T](
-      prevWorkerLayer: OpExecConfig,
+      prevWorkerLayer: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
@@ -347,7 +346,7 @@ trait SkewDetectionHandler {
   }
 
   private def implementPauseMitigation[T](
-      prevWorkerLayer: OpExecConfig,
+      prevWorkerLayer: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {

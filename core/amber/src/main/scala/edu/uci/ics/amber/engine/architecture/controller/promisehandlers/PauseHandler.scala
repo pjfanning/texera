@@ -63,7 +63,7 @@ trait PauseHandler {
               )
               .map { ret =>
                 // for each paused operator, send the input tuple
-                sendToClient(ReportCurrentProcessingTuple(layerId.operator, buffer.toArray))
+                sendToClient(ReportCurrentProcessingTuple(layerId.logicalOpId.id, buffer.toArray))
               }
         }.toSeq)
         .map { ret =>

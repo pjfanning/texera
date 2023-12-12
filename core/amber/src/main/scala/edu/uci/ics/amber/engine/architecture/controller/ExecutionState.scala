@@ -1,23 +1,23 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.Address
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecConfig, WorkerInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, WorkerInfo}
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
 class ExecutionState(workflow: Workflow) {
 
-  private val linkExecutions: Map[LinkIdentity, LinkExecution] =
+  private val linkExecutions: Map[PhysicalLinkIdentity, LinkExecution] =
     workflow.partitioningPlan.strategies.map { link =>
       link._1 -> new LinkExecution(link._2.totalReceiversCount)
     }
-  private val operatorExecutions: Map[LayerIdentity, OperatorExecution] =
+  private val operatorExecutions: Map[PhysicalOpIdentity, OperatorExecution] =
     workflow.physicalPlan.operators.map { opConf =>
       opConf.id -> new OperatorExecution(
         executionId = workflow.workflowId.executionId,
@@ -31,7 +31,7 @@ class ExecutionState(workflow: Workflow) {
       .flatMap(operator => operator.getBuiltWorkerIds.map(worker => operator.getWorkerInfo(worker)))
       .map(_.id)
 
-  def getOperatorExecution(op: LayerIdentity): OperatorExecution = {
+  def getOperatorExecution(op: PhysicalOpIdentity): OperatorExecution = {
     operatorExecutions(op)
   }
 
@@ -50,9 +50,10 @@ class ExecutionState(workflow: Workflow) {
     throw new NoSuchElementException(s"cannot find operator with worker = $worker")
   }
 
-  def getLinkExecution(link: LinkIdentity): LinkExecution = linkExecutions(link)
+  def getLinkExecution(link: PhysicalLinkIdentity): LinkExecution = linkExecutions(link)
 
-  def getAllOperatorExecutions: Iterable[(LayerIdentity, OperatorExecution)] = operatorExecutions
+  def getAllOperatorExecutions: Iterable[(PhysicalOpIdentity, OperatorExecution)] =
+    operatorExecutions
 
   def getAllWorkersOfRegion(region: PipelinedRegion): Array[ActorVirtualIdentity] = {
     val allOperatorsInRegion =
@@ -70,7 +71,7 @@ class ExecutionState(workflow: Workflow) {
   }
 
   def getWorkflowStatus: Map[String, OperatorRuntimeStats] = {
-    operatorExecutions.map(op => (op._1.operator, op._2.getOperatorStatistics)).toMap
+    operatorExecutions.map(op => (op._1.logicalOpId.id, op._2.getOperatorStatistics)).toMap
   }
 
   def isCompleted: Boolean =
@@ -101,19 +102,21 @@ class ExecutionState(workflow: Workflow) {
     }
   }
 
-  def getOperatorToWorkers: Iterable[(LayerIdentity, Seq[ActorVirtualIdentity])] = {
+  def getOperatorToWorkers: Iterable[(PhysicalOpIdentity, Seq[ActorVirtualIdentity])] = {
     workflow.physicalPlan.allOperatorIds.map(opId => {
       (opId, getAllWorkersForOperators(Array(opId)).toSeq)
     })
   }
 
   def getAllWorkersForOperators(
-      operators: Array[LayerIdentity]
+      operators: Array[PhysicalOpIdentity]
   ): Array[ActorVirtualIdentity] = {
     operators.flatMap(opId => getOperatorExecution(opId).getBuiltWorkerIds)
   }
 
-  def getPythonOperators(fromOperatorsList: Array[LayerIdentity]): Array[LayerIdentity] = {
+  def getPythonOperators(
+      fromOperatorsList: Array[PhysicalOpIdentity]
+  ): Array[PhysicalOpIdentity] = {
     fromOperatorsList.filter(opId =>
       getOperatorExecution(opId).getBuiltWorkerIds.nonEmpty &&
         workflow.physicalPlan.operatorMap(opId).isPythonOperator
@@ -121,8 +124,8 @@ class ExecutionState(workflow: Workflow) {
   }
 
   def getPythonWorkerToOperatorExec(
-      pythonOperators: Array[LayerIdentity]
-  ): Iterable[(ActorVirtualIdentity, OpExecConfig)] = {
+      pythonOperators: Array[PhysicalOpIdentity]
+  ): Iterable[(ActorVirtualIdentity, PhysicalOp)] = {
     pythonOperators
       .map(opId => workflow.physicalPlan.operatorMap(opId))
       .filter(op => op.isPythonOperator)

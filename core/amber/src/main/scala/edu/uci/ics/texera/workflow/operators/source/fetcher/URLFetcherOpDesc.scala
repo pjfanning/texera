@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.source.fetcher
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecConfig
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.texera.workflow.common.metadata.{
   OperatorGroupConstants,
@@ -46,8 +46,8 @@ class URLFetcherOpDesc extends SourceOperatorDescriptor {
   override def operatorExecutor(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
-  ): OpExecConfig = {
-    OpExecConfig
+  ): PhysicalOp = {
+    PhysicalOp
       .sourceLayer(
         executionId,
         operatorIdentifier,

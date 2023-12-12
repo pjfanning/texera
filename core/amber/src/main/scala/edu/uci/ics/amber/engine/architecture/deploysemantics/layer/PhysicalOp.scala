@@ -16,9 +16,9 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorke
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{AmberConfig, VirtualIdentityUtils}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, OutputPort}
@@ -30,7 +30,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator
 
 import scala.collection.mutable.ArrayBuffer
 
-object OpExecConfig {
+object PhysicalOp {
 
   // all source operator should use source layer
   // 1) it initializes at the controller jvm.
@@ -40,15 +40,15 @@ object OpExecConfig {
       executionId: Long,
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
+  ): PhysicalOp =
     sourceLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
 
   def sourceLayer(
       executionId: Long,
-      layerId: LayerIdentity,
+      layerId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
-    OpExecConfig(
+  ): PhysicalOp =
+    PhysicalOp(
       executionId,
       layerId,
       opExecInitInfo = opExecInitInfo,
@@ -61,29 +61,29 @@ object OpExecConfig {
       executionId: Long,
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
+  ): PhysicalOp =
     oneToOneLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
 
   def oneToOneLayer(
       executionId: Long,
-      layerId: LayerIdentity,
+      layerId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
-    OpExecConfig(executionId, layerId, opExecInitInfo = opExecInitInfo)
+  ): PhysicalOp =
+    PhysicalOp(executionId, layerId, opExecInitInfo = opExecInitInfo)
 
   def manyToOneLayer(
       executionId: Long,
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
+  ): PhysicalOp =
     manyToOneLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
 
   def manyToOneLayer(
       executionId: Long,
-      layerId: LayerIdentity,
+      layerId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig = {
-    OpExecConfig(
+  ): PhysicalOp = {
+    PhysicalOp(
       executionId,
       layerId,
       opExecInitInfo = opExecInitInfo,
@@ -97,14 +97,14 @@ object OpExecConfig {
       executionId: Long,
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig =
+  ): PhysicalOp =
     localLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
 
   def localLayer(
       executionId: Long,
-      layerId: LayerIdentity,
+      layerId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
-  ): OpExecConfig = {
+  ): PhysicalOp = {
     manyToOneLayer(executionId, layerId, opExecInitInfo).copy(locationPreference =
       Option(new PreferController())
     )
@@ -115,15 +115,15 @@ object OpExecConfig {
       opId: OperatorIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
-  ): OpExecConfig = hashLayer(executionId, makeLayer(opId, "main"), opExec, hashColumnIndices)
+  ): PhysicalOp = hashLayer(executionId, makeLayer(opId, "main"), opExec, hashColumnIndices)
 
   def hashLayer(
       executionId: Long,
-      layerId: LayerIdentity,
+      layerId: PhysicalOpIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
-  ): OpExecConfig = {
-    OpExecConfig(
+  ): PhysicalOp = {
+    PhysicalOp(
       executionId,
       id = layerId,
       opExecInitInfo = opExec,
@@ -134,9 +134,9 @@ object OpExecConfig {
 
 }
 
-case class OpExecConfig(
+case class PhysicalOp(
     executionId: Long,
-    id: LayerIdentity,
+    id: PhysicalOpIdentity,
     // information regarding initializing an operator executor instance
     opExecInitInfo: OpExecInitInfo,
     // preference of parallelism (total number of workers)
@@ -155,8 +155,8 @@ case class OpExecConfig(
     inputPorts: List[InputPort] = List(InputPort()),
     outputPorts: List[OutputPort] = List(OutputPort()),
     // mapping of all input/output operators connected on a specific input/output port index
-    inputToOrdinalMapping: Map[LinkIdentity, Int] = Map(),
-    outputToOrdinalMapping: Map[LinkIdentity, Int] = Map(),
+    inputToOrdinalMapping: Map[PhysicalLinkIdentity, Int] = Map(),
+    outputToOrdinalMapping: Map[PhysicalLinkIdentity, Int] = Map(),
     // input ports that are blocking
     blockingInputs: List[Int] = List(),
     // execution dependency of ports
@@ -207,66 +207,66 @@ case class OpExecConfig(
   }
 
   // creates a copy with the specified port information
-  def withPorts(operatorInfo: OperatorInfo): OpExecConfig = {
+  def withPorts(operatorInfo: OperatorInfo): PhysicalOp = {
     this.copy(inputPorts = operatorInfo.inputPorts, outputPorts = operatorInfo.outputPorts)
   }
 
-  def withLocationPreference(preference: Option[LocationPreference]): OpExecConfig = {
+  def withLocationPreference(preference: Option[LocationPreference]): PhysicalOp = {
     this.copy(locationPreference = preference)
   }
 
-  def withInputPorts(inputs: List[InputPort]): OpExecConfig = {
+  def withInputPorts(inputs: List[InputPort]): PhysicalOp = {
     this.copy(inputPorts = inputs)
   }
-  def withOutputPorts(outputs: List[OutputPort]): OpExecConfig = {
+  def withOutputPorts(outputs: List[OutputPort]): PhysicalOp = {
     this.copy(outputPorts = outputs)
   }
 
   // creates a copy with an additional input operator specified on an input port
-  def addInput(from: LayerIdentity, fromPort: Int, toPort: Int): OpExecConfig = {
+  def addInput(from: PhysicalOpIdentity, fromPort: Int, toPort: Int): PhysicalOp = {
     this.copy(inputToOrdinalMapping =
-      inputToOrdinalMapping + (LinkIdentity(from, fromPort, this.id, toPort) -> toPort)
+      inputToOrdinalMapping + (PhysicalLinkIdentity(from, fromPort, this.id, toPort) -> toPort)
     )
   }
 
   // creates a copy with an additional output operator specified on an output port
-  def addOutput(to: LayerIdentity, fromPort: Int, toPort: Int): OpExecConfig = {
+  def addOutput(to: PhysicalOpIdentity, fromPort: Int, toPort: Int): PhysicalOp = {
     this.copy(outputToOrdinalMapping =
-      outputToOrdinalMapping + (LinkIdentity(this.id, fromPort, to, toPort) -> fromPort)
+      outputToOrdinalMapping + (PhysicalLinkIdentity(this.id, fromPort, to, toPort) -> fromPort)
     )
   }
 
   // creates a copy with a removed input operator
-  def removeInput(link: LinkIdentity): OpExecConfig = {
+  def removeInput(link: PhysicalLinkIdentity): PhysicalOp = {
     this.copy(inputToOrdinalMapping = inputToOrdinalMapping - link)
   }
 
   // creates a copy with a removed output operator
-  def removeOutput(link: LinkIdentity): OpExecConfig = {
+  def removeOutput(link: PhysicalLinkIdentity): PhysicalOp = {
     this.copy(outputToOrdinalMapping = outputToOrdinalMapping - link)
   }
 
   // creates a copy with the new ID
-  def withId(id: LayerIdentity): OpExecConfig = this.copy(id = id)
+  def withId(id: PhysicalOpIdentity): PhysicalOp = this.copy(id = id)
 
   // creates a copy with the number of workers specified
-  def withNumWorkers(numWorkers: Int): OpExecConfig = this.copy(numWorkers = numWorkers)
+  def withNumWorkers(numWorkers: Int): PhysicalOp = this.copy(numWorkers = numWorkers)
 
   // creates a copy with the specified property that whether this operator is one-to-many
-  def withIsOneToManyOp(isOneToManyOp: Boolean): OpExecConfig =
+  def withIsOneToManyOp(isOneToManyOp: Boolean): PhysicalOp =
     this.copy(isOneToManyOp = isOneToManyOp)
 
   // creates a copy with the schema information
-  def withOperatorSchemaInfo(schemaInfo: OperatorSchemaInfo): OpExecConfig =
+  def withOperatorSchemaInfo(schemaInfo: OperatorSchemaInfo): PhysicalOp =
     this.copy(schemaInfo = Some(schemaInfo))
 
   // returns all input links on a specific input port
-  def getInputLinks(portIndex: Int): List[LinkIdentity] = {
+  def getInputLinks(portIndex: Int): List[PhysicalLinkIdentity] = {
     inputToOrdinalMapping.filter(p => p._2 == portIndex).keys.toList
   }
 
   // returns all the input operators on a specific input port
-  def getInputOperators(portIndex: Int): List[LayerIdentity] = {
+  def getInputOperators(portIndex: Int): List[PhysicalOpIdentity] = {
     getInputLinks(portIndex).map(link => link.from)
   }
 
@@ -275,14 +275,14 @@ case class OpExecConfig(
   }
 
   def identifier(i: Int): ActorVirtualIdentity = {
-    VirtualIdentityUtils.createWorkerIdentity(executionId, id.operator, id.layerID, i)
+    VirtualIdentityUtils.createWorkerIdentity(executionId, id.logicalOpId.id, id.layerName, i)
   }
 
   /**
     * Tells whether the input on this link is blocking i.e. the operator doesn't output anything till this link
     * outputs all its tuples
     */
-  def isInputBlocking(input: LinkIdentity): Boolean = {
+  def isInputBlocking(input: PhysicalLinkIdentity): Boolean = {
     inputToOrdinalMapping.get(input).exists(port => realBlockingInputs.contains(port))
   }
 
@@ -290,8 +290,9 @@ case class OpExecConfig(
     * Some operators process their inputs in a particular order. Eg: 2 phase hash join first
     * processes the build input, then the probe input.
     */
-  def getInputProcessingOrder(): Array[LinkIdentity] = {
-    val dependencyDag = new DirectedAcyclicGraph[LinkIdentity, DefaultEdge](classOf[DefaultEdge])
+  def getInputProcessingOrder(): Array[PhysicalLinkIdentity] = {
+    val dependencyDag =
+      new DirectedAcyclicGraph[PhysicalLinkIdentity, DefaultEdge](classOf[DefaultEdge])
     dependency.foreach(dep => {
       val prevInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._2).get._1
       val nextInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._1).get._1
@@ -304,8 +305,8 @@ case class OpExecConfig(
       dependencyDag.addEdge(prevInOrder, nextInOrder)
     })
     val topologicalIterator =
-      new TopologicalOrderIterator[LinkIdentity, DefaultEdge](dependencyDag)
-    val processingOrder = new ArrayBuffer[LinkIdentity]()
+      new TopologicalOrderIterator[PhysicalLinkIdentity, DefaultEdge](dependencyDag)
+    val processingOrder = new ArrayBuffer[PhysicalLinkIdentity]()
     while (topologicalIterator.hasNext) {
       processingOrder.append(topologicalIterator.next())
     }

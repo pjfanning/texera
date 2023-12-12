@@ -2,9 +2,9 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  LayerIdentity,
-  LinkIdentity,
-  OperatorIdentity
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
@@ -23,8 +23,8 @@ class MaterializationRewriter(
   def addMaterializationToLink(
       physicalPlan: PhysicalPlan,
       logicalPlan: LogicalPlan,
-      linkId: LinkIdentity,
-      writerReaderPairs: mutable.HashMap[LayerIdentity, LayerIdentity]
+      linkId: PhysicalLinkIdentity,
+      writerReaderPairs: mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]
   ): PhysicalPlan = {
 
     val fromOpId = linkId.from
@@ -42,16 +42,16 @@ class MaterializationRewriter(
     val fromOpIdInputSchema: Array[Schema] =
       if (
         !logicalPlan
-          .getOperator(OperatorIdentity(fromOpId.operator))
+          .getOperator(OperatorIdentity(fromOpId.logicalOpId.id))
           .isInstanceOf[SourceOperatorDescriptor]
       )
         logicalPlan
-          .inputSchemaMap(logicalPlan.getOperator(fromOpId.operator).operatorIdentifier)
+          .inputSchemaMap(logicalPlan.getOperator(fromOpId.logicalOpId.id).operatorIdentifier)
           .map(s => s.get)
           .toArray
       else Array()
     val matWriterInputSchema = logicalPlan
-      .getOperator(fromOpId.operator)
+      .getOperator(fromOpId.logicalOpId.id)
       .getOutputSchemas(
         fromOpIdInputSchema
       )(fromOutputPortIdx)
@@ -84,8 +84,9 @@ class MaterializationRewriter(
       )
 
     // create 2 links for materialization
-    val readerToDestLink = LinkIdentity(matReaderOpExecConfig.id, 0, toOpId, toInputPortIdx)
-    val sourceToWriterLink = LinkIdentity(fromOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
+    val readerToDestLink = PhysicalLinkIdentity(matReaderOpExecConfig.id, 0, toOpId, toInputPortIdx)
+    val sourceToWriterLink =
+      PhysicalLinkIdentity(fromOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
     // add the pair to the map for later adding edges between 2 regions.
     writerReaderPairs(matWriterOpExecConfig.id) = matReaderOpExecConfig.id
 
