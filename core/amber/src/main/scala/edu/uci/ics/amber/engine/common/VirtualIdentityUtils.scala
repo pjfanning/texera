@@ -31,7 +31,7 @@ object VirtualIdentityUtils {
     )
   }
 
-  def getOperator(workerId: ActorVirtualIdentity): PhysicalOpIdentity = {
+  def getPhysicalOpId(workerId: ActorVirtualIdentity): PhysicalOpIdentity = {
     workerId.name match {
       case workerNamePattern(_, operator, layerName, _) =>
         PhysicalOpIdentity(OperatorIdentity(operator), layerName)

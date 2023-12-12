@@ -149,14 +149,7 @@ class WorkflowScheduler(
     var frontier: Iterable[PhysicalOpIdentity] = workflow.getSourcesOfRegion(region)
     while (frontier.nonEmpty) {
       frontier.foreach { (op: PhysicalOpIdentity) =>
-        val prev: Array[(PhysicalOpIdentity, PhysicalOp)] =
-          workflow.physicalPlan
-            .getUpstreamPhysicalOpIds(op)
-            .filter(upStreamOp =>
-              builtOperators.contains(upStreamOp) && region.getOperators.contains(upStreamOp)
-            )
-            .map(upStreamOp => (upStreamOp, workflow.getOpExecConfig(upStreamOp)))
-            .toArray // Last layer of upstream operators in the same region.
+        // Last layer of upstream operators in the same region.
         if (!builtOperators.contains(op)) {
           buildOperator(
             workflow,
@@ -182,13 +175,13 @@ class WorkflowScheduler(
 
   private def buildOperator(
       workflow: Workflow,
-      operatorIdentity: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       opExecution: OperatorExecution,
       actorRefService: AkkaActorRefMappingService,
       controllerActorService: AkkaActorService
   ): Unit = {
-    val workerLayer = workflow.getOpExecConfig(operatorIdentity)
-    workerLayer.build(
+    val physicalOp = workflow.physicalPlan.getOperator(physicalOpId)
+    physicalOp.build(
       controllerActorService,
       actorRefService,
       opExecution,

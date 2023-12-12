@@ -30,7 +30,7 @@ class UpstreamLinkStatus(val actorId: ActorVirtualIdentity) extends AmberLogging
   def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLink): Unit = {
     assert(
       allUpstreamLinkIds.contains(input),
-      "unexpected input link " + input + " for operator " + VirtualIdentityUtils.getOperator(
+      "unexpected input link " + input + " for operator " + VirtualIdentityUtils.getPhysicalOpId(
         actorId
       )
     )

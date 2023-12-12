@@ -31,10 +31,11 @@ import scala.collection.mutable.ArrayBuffer
 
 object PhysicalOp {
 
-  // all source operator should use sourcePhysicalOp
-  // 1) it initializes at the controller jvm.
-  // 2) it only has 1 worker actor.
-  // 3) it has no input ports.
+  /** all source operators should use sourcePhysicalOp to give the following configs:
+    *  1) it initializes at the controller jvm.
+    *  2) it only has 1 worker actor.
+    *  3) it has no input ports.
+    */
   def sourcePhysicalOperator(
       executionId: Long,
       logicalOpId: OperatorIdentity,

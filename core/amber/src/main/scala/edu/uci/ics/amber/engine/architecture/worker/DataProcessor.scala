@@ -135,7 +135,7 @@ class DataProcessor(
 
   @transient var adaptiveBatchingMonitor: WorkerTimerService = _
 
-  def getOperatorId: PhysicalOpIdentity = VirtualIdentityUtils.getOperator(actorId)
+  def getOperatorId: PhysicalOpIdentity = VirtualIdentityUtils.getPhysicalOpId(actorId)
   def getWorkerIndex: Int = VirtualIdentityUtils.getWorkerIndex(actorId)
 
   // inner dependencies

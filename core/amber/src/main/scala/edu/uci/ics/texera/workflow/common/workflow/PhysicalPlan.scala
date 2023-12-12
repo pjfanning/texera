@@ -1,15 +1,14 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  OperatorIdentity,
-  PhysicalLink,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, OperatorIdentity, PhysicalLink, PhysicalOpIdentity}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
 
 object PhysicalPlan {
 
@@ -217,5 +216,9 @@ case class PhysicalPlan(
     )
     resultPlan
   }
+
+  def getPhysicalOpByWorkerId(workerId: ActorVirtualIdentity): PhysicalOp =
+    getOperator(VirtualIdentityUtils.getPhysicalOpId(workerId))
+
 
 }

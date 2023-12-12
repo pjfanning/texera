@@ -1,8 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.{ExecutionPlan, PipelinedRegion}
-import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity._
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, PartitioningPlan, PhysicalPlan}
 
@@ -48,26 +46,5 @@ class Workflow(
       })
     sources.toArray
   }
-
-  def getWorkflowId: WorkflowIdentity = workflowId
-
-  /**
-    * Returns the worker layer of the upstream operators that links to the `opId` operator's
-    * worker layer.
-    */
-  def getUpStreamConnectedOpExecConfig(
-      opID: PhysicalOpIdentity
-  ): mutable.HashMap[PhysicalOpIdentity, PhysicalOp] = {
-    val upstreamOperatorToLayers = new mutable.HashMap[PhysicalOpIdentity, PhysicalOp]()
-    physicalPlan
-      .getUpstreamPhysicalOpIds(opID)
-      .foreach(uOpID => upstreamOperatorToLayers(uOpID) = physicalPlan.operatorMap(opID))
-    upstreamOperatorToLayers
-  }
-
-  def getOpExecConfig(workerID: ActorVirtualIdentity): PhysicalOp =
-    physicalPlan.operatorMap(VirtualIdentityUtils.getOperator(workerID))
-
-  def getOpExecConfig(opID: PhysicalOpIdentity): PhysicalOp = physicalPlan.operatorMap(opID)
 
 }

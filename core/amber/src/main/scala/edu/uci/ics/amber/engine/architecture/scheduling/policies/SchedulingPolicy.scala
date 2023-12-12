@@ -70,7 +70,7 @@ abstract class SchedulingPolicy(
       workflow: Workflow,
       workerId: ActorVirtualIdentity
   ): Set[PipelinedRegion] = {
-    val opId = workflow.getOpExecConfig(workerId).id
+    val opId = workflow.physicalPlan.getPhysicalOpByWorkerId(workerId).id
     runningRegions.filter(r => r.getOperators.contains(opId)).toSet
   }
 
