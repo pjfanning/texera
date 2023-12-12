@@ -69,7 +69,7 @@ abstract class AggregateOpDesc extends LogicalOp {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    throw new UnsupportedOperationException("multi-layer op should use getPhysicalPlan")
+    throw new UnsupportedOperationException("should implement `getPhysicalPlan` instead")
   }
 
   override def getPhysicalPlan(
