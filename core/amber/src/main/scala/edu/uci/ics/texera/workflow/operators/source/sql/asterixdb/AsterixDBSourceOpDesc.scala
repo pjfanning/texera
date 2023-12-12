@@ -98,7 +98,7 @@ class AsterixDBSourceOpDesc extends SQLSourceOpDesc {
   )
   override def getKeywords: Option[String] = super.getKeywords
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =

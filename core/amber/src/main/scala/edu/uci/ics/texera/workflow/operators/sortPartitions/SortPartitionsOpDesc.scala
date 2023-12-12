@@ -43,7 +43,7 @@ class SortPartitionsOpDesc extends LogicalOp {
   @JsonPropertyDescription("Maximum value of the domain of the attribute.")
   var domainMax: Long = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

@@ -73,7 +73,7 @@ class IntervalJoinOpDesc extends LogicalOp {
   @JsonPropertyDescription("Year, Month, Day, Hour, Minute or Second")
   var timeIntervalType: Option[TimeIntervalType] = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

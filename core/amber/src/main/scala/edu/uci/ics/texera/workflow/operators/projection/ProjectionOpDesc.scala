@@ -21,7 +21,7 @@ class ProjectionOpDesc extends MapOpDesc {
 
   var attributes: List[AttributeUnit] = List()
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

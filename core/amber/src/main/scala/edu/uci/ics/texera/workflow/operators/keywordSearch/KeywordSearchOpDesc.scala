@@ -27,7 +27,7 @@ class KeywordSearchOpDesc extends FilterOpDesc {
   @JsonPropertyDescription("keywords")
   var keyword: String = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

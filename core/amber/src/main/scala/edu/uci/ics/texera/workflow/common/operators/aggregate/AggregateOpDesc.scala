@@ -2,8 +2,7 @@ package edu.uci.ics.texera.workflow.common.operators.aggregate
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
-import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLink, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{OperatorIdentity, PhysicalLink, PhysicalOpIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
@@ -22,7 +21,7 @@ object AggregateOpDesc {
       PhysicalOp
         .oneToOneLayer(
           executionId,
-          makeLayer(id, "localAgg"),
+          PhysicalOpIdentity(id, "localAgg"),
           OpExecInitInfo(_ => new PartialAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
         )
         // a hacky solution to have unique port names for reference purpose
@@ -32,7 +31,7 @@ object AggregateOpDesc {
       PhysicalOp
         .localLayer(
           executionId,
-          makeLayer(id, "globalAgg"),
+          PhysicalOpIdentity(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
         )
         // a hacky solution to have unique port names for reference purpose
@@ -45,7 +44,7 @@ object AggregateOpDesc {
       PhysicalOp
         .hashLayer(
           executionId,
-          makeLayer(id, "globalAgg"),
+          PhysicalOpIdentity(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo)),
           partitionColumns
         )
@@ -62,14 +61,14 @@ object AggregateOpDesc {
 
 abstract class AggregateOpDesc extends LogicalOp {
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    throw new UnsupportedOperationException("multi-layer op should use operatorExecutorMultiLayer")
+    throw new UnsupportedOperationException("multi-layer op should use getPhysicalPlan")
   }
 
-  override def operatorExecutorMultiLayer(
+  override def getPhysicalPlan(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {

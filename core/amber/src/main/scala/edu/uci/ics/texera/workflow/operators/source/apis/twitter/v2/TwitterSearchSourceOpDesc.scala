@@ -33,7 +33,7 @@ class TwitterSearchSourceOpDesc extends TwitterSourceOpDesc {
   @JsonSchemaDescription("Maximum number of tweets to retrieve")
   var limit: Int = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =

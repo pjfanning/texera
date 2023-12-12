@@ -38,7 +38,7 @@ class UnnestStringOpDesc extends FlatMapOpDesc {
       outputPorts = List(OutputPort())
     )
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

@@ -32,7 +32,7 @@ public class TypeCastingOpDesc extends MapOpDesc {
     public List<TypeCastingUnit> typeCastingUnits = new ArrayList<>();
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         Preconditions.checkArgument(!typeCastingUnits.isEmpty());
         return PhysicalOp.oneToOneLayer(executionId, operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new TypeCastingOpExec(operatorSchemaInfo.outputSchemas()[0])));

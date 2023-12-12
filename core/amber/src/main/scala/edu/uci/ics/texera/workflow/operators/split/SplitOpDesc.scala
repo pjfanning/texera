@@ -26,7 +26,7 @@ class SplitOpDesc extends LogicalOp {
   @JsonIgnore
   val seeds: Array[Int] = Array.fill(AmberConfig.numWorkerPerOperatorByDefault)(Random.nextInt)
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

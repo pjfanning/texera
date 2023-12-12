@@ -21,7 +21,7 @@ abstract class MapOpDesc extends LogicalOp {
         )
       )
     } else {
-      Success(newOpDesc.operatorExecutor(executionId, operatorSchemaInfo), None)
+      Success(newOpDesc.getPhysicalOp(executionId, operatorSchemaInfo), None)
     }
   }
 

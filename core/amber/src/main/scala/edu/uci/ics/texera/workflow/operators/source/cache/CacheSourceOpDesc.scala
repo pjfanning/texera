@@ -24,7 +24,7 @@ class CacheSourceOpDesc(val targetSinkStorageId: OperatorIdentity, opResultStora
 
   override def sourceSchema(): Schema = schema
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

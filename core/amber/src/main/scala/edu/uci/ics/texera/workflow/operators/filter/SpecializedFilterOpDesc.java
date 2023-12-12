@@ -26,7 +26,7 @@ public class SpecializedFilterOpDesc extends FilterOpDesc {
     public List<FilterPredicate> predicates;
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         return PhysicalOp.oneToOneLayer(
                 executionId,
                 operatorIdentifier(),

@@ -63,17 +63,17 @@ public class WordCloudOpDesc extends VisualizationOperator {
             .add(partialAggregateSchema).build();
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
-        throw new UnsupportedOperationException("opExec implemented in operatorExecutorMultiLayer");
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+        throw new UnsupportedOperationException("opExec implemented in getPhysicalPlan");
     }
 
     @Override
-    public PhysicalPlan operatorExecutorMultiLayer(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalPlan getPhysicalPlan(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         if (topN == null) {
             topN = 100;
         }
 
-        PhysicalOpIdentity partialId = util.makeLayer(operatorIdentifier(), "partial");
+        PhysicalOpIdentity partialId = new PhysicalOpIdentity(operatorIdentifier(), "partial");
         PhysicalOp partialLayer = PhysicalOp.oneToOneLayer(executionId,
                 this.operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new WordCloudOpPartialExec(textColumn))
@@ -81,7 +81,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
                 asScalaBuffer(singletonList(new OutputPort("internal-output"))).toList());
 
 
-        PhysicalOpIdentity finalId = util.makeLayer(operatorIdentifier(), "global");
+        PhysicalOpIdentity finalId = new PhysicalOpIdentity(operatorIdentifier(), "global");
         PhysicalOp finalLayer = PhysicalOp.manyToOneLayer(executionId,
                         this.operatorIdentifier(),
                         OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new WordCloudOpFinalExec(topN))

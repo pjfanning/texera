@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
 import scala.collection.mutable
 
 trait PythonOperatorDescriptor extends LogicalOp {
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

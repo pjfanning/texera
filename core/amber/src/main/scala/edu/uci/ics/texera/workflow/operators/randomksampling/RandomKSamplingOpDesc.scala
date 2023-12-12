@@ -31,7 +31,7 @@ class RandomKSamplingOpDesc extends FilterOpDesc {
   @JsonIgnore
   def getSeed(index: Int): Int = seeds(index)
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

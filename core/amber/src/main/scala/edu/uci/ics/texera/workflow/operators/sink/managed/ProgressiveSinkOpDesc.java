@@ -47,7 +47,7 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     private Option<Integer> upstreamPort = Option.empty();
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         return PhysicalOp.localLayer(executionId,
                 operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new ProgressiveSinkOpExec(operatorSchemaInfo, outputMode, storage.getStorageWriter()))

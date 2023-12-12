@@ -25,7 +25,7 @@ class JSONLScanSourceOpDesc extends ScanSourceOpDesc {
   fileTypeName = Option("JSONL")
 
   @throws[IOException]
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

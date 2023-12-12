@@ -13,7 +13,6 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorkerConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
@@ -41,7 +40,7 @@ object PhysicalOp {
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    sourceLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
+    sourceLayer(executionId, layerId = PhysicalOpIdentity(opId, "main"), opExecInitInfo)
 
   def sourceLayer(
       executionId: Long,
@@ -62,7 +61,7 @@ object PhysicalOp {
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    oneToOneLayer(executionId, layerId = makeLayer(opId, "main"), opExecInitInfo)
+    oneToOneLayer(executionId, layerId = PhysicalOpIdentity(opId, "main"), opExecInitInfo)
 
   def oneToOneLayer(
       executionId: Long,
@@ -76,7 +75,7 @@ object PhysicalOp {
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    manyToOneLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
+    manyToOneLayer(executionId, PhysicalOpIdentity(opId, "main"), opExecInitInfo)
 
   def manyToOneLayer(
       executionId: Long,
@@ -98,7 +97,7 @@ object PhysicalOp {
       opId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    localLayer(executionId, makeLayer(opId, "main"), opExecInitInfo)
+    localLayer(executionId, PhysicalOpIdentity(opId, "main"), opExecInitInfo)
 
   def localLayer(
       executionId: Long,
@@ -115,7 +114,7 @@ object PhysicalOp {
       opId: OperatorIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
-  ): PhysicalOp = hashLayer(executionId, makeLayer(opId, "main"), opExec, hashColumnIndices)
+  ): PhysicalOp = hashLayer(executionId, PhysicalOpIdentity(opId, "main"), opExec, hashColumnIndices)
 
   def hashLayer(
       executionId: Long,

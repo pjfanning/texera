@@ -31,10 +31,7 @@ import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{
-  TwitterFullArchiveSearchSourceOpDesc,
-  TwitterSearchSourceOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.FileScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
@@ -48,12 +45,7 @@ import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonLambdaFunctionOpDesc,
-  PythonTableReducerOpDesc,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonTableReducerOpDesc, PythonUDFOpDescV2}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.boxPlot.BoxPlotOpDesc
@@ -64,10 +56,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatterplot.Scatterpl
 import edu.uci.ics.texera.workflow.operators.visualization.ganttChart.GanttChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.urlviz.UrlVizOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.DotPlot.DotPlotOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.{
-  WordCloudOpDesc,
-  WordCloudV2OpDesc
-}
+import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.{WordCloudOpDesc, WordCloudV2OpDesc}
 import edu.uci.ics.texera.workflow.operators.visualization.filledAreaPlot.FilledAreaPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.bubbleChart.BubbleChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ImageViz.ImageVisualizerOpDesc
@@ -75,6 +64,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.hierarchychart.Hierar
 import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.DumbbellPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.linechart.LineChartOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
+import org.apache.zookeeper.KeeperException.UnimplementedException
 
 import java.util.UUID
 import scala.util.Try
@@ -170,18 +160,16 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   var operatorVersion: String = getOperatorVersion()
   def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
-  def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalOp = {
-    throw new UnsupportedOperationException(
-      "operator " + operatorIdentifier + " is not migrated to new OpExec API"
-    )
+  def getPhysicalOp(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalOp = {
+    throw new UnimplementedException()
   }
 
   // a logical operator corresponds multiple physical operators (a small DAG)
-  def operatorExecutorMultiLayer(
+  def getPhysicalPlan(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {
-    new PhysicalPlan(List(operatorExecutor(executionId, operatorSchemaInfo)), List())
+    new PhysicalPlan(List(getPhysicalOp(executionId, operatorSchemaInfo)), List())
   }
 
   def operatorInfo: OperatorInfo

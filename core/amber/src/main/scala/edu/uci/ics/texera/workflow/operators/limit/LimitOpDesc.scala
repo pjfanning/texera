@@ -24,7 +24,7 @@ class LimitOpDesc extends LogicalOp {
   @JsonPropertyDescription("the max number of output rows")
   var limit: Int = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
@@ -53,7 +53,7 @@ class LimitOpDesc extends LogicalOp {
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
-    val newOpExecConfig = newOpDesc.operatorExecutor(executionId, operatorSchemaInfo)
+    val newOpExecConfig = newOpDesc.getPhysicalOp(executionId, operatorSchemaInfo)
     val stateTransferFunc: StateTransferFunc = (oldOp, newOp) => {
       val oldLimitOp = oldOp.asInstanceOf[LimitOpExec]
       val newLimitOp = newOp.asInstanceOf[LimitOpExec]

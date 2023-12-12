@@ -48,7 +48,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     public List<Attribute> columns;
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         OpExecInitInfo exec = OpExecInitInfo.apply(code);
         Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
         if (workers > 1) {

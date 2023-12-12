@@ -19,7 +19,7 @@ abstract class FilterOpDesc extends LogicalOp {
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
-    Success(newOpDesc.operatorExecutor(executionId, operatorSchemaInfo), None)
+    Success(newOpDesc.getPhysicalOp(executionId, operatorSchemaInfo), None)
   }
 
 }

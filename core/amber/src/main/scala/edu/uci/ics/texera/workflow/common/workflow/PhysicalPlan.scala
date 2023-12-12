@@ -23,7 +23,7 @@ object PhysicalPlan {
 
     logicalPlan.operators.foreach(op => {
       val subPlan =
-        op.operatorExecutorMultiLayer(
+        op.getPhysicalPlan(
           executionId,
           logicalPlan.getOpSchemaInfo(op.operatorIdentifier)
         )
@@ -32,7 +32,7 @@ object PhysicalPlan {
 
     // connect inter-operator links
     logicalPlan.links.foreach(link => {
-      val fromLogicalOp = logicalPlan.getOperator(link.origin.operatorId).operatorIdentifier
+      val fromLogicalOp = link.origin.operatorId
       val fromPort = link.origin.portOrdinal
       val fromPortName = logicalPlan.operators
         .filter(op => op.operatorIdentifier == link.origin.operatorId)

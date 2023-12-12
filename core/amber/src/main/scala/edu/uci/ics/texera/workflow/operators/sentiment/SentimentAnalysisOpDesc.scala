@@ -38,7 +38,7 @@ class SentimentAnalysisOpDesc extends MapOpDesc {
   @JsonPropertyDescription("column name of the sentiment analysis result")
   var resultAttribute: String = _
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

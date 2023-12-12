@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
   private abstract class TempTestSourceOpDesc extends SourceOperatorDescriptor {
-    override def operatorExecutor(
+    override def getPhysicalOp(
         executionId: Long,
         operatorSchemaInfo: OperatorSchemaInfo
     ): PhysicalOp = ???
@@ -23,7 +23,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
       OperatorInfo("", "", "", List(InputPort()), List(OutputPort()))
   }
   private class TempTestSinkOpDesc extends SinkOpDesc {
-    override def operatorExecutor(
+    override def getPhysicalOp(
         executionId: Long,
         operatorSchemaInfo: OperatorSchemaInfo
     ): PhysicalOp = ???
@@ -62,7 +62,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val mlTrainingOp = new LogicalOp() {
       override def operatorIdentifier: OperatorIdentity = OperatorIdentity("mlTrainingOp")
-      override def operatorExecutor(
+      override def getPhysicalOp(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
       ): PhysicalOp = ???
@@ -87,7 +87,7 @@ class SchemaPropagationSpec extends AnyFlatSpec with BeforeAndAfter {
 
     val mlInferOp = new LogicalOp() {
       override def operatorIdentifier: OperatorIdentity = OperatorIdentity("mlInferOp")
-      override def operatorExecutor(
+      override def getPhysicalOp(
           executionId: Long,
           operatorSchemaInfo: OperatorSchemaInfo
       ): PhysicalOp = ???

@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters.asScalaBuffer
 
 class MySQLSourceOpDesc extends SQLSourceOpDesc {
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =

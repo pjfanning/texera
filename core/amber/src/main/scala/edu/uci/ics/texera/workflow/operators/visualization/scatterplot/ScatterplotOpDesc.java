@@ -71,7 +71,7 @@ public class ScatterplotOpDesc extends VisualizationOperator {
     }
 
     @Override
-    public PhysicalOp operatorExecutor(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
+    public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         AttributeType xType = operatorSchemaInfo.inputSchemas()[0].getAttribute(xColumn).getType();
         AttributeType yType = operatorSchemaInfo.inputSchemas()[0].getAttribute(yColumn).getType();
         Set<AttributeType> allowedAttributeTypesNumbersOnly = EnumSet.of(DOUBLE, INTEGER); //currently, the frontend has limitation it doesn't accept axes of type long

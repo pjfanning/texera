@@ -51,7 +51,7 @@ class HashJoinOpDesc[K] extends LogicalOp {
   @JsonPropertyDescription("select the join type to execute")
   var joinType: JoinType = JoinType.INNER
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {

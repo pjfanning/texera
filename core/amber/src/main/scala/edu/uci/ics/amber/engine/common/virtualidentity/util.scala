@@ -10,10 +10,4 @@ object util {
   lazy val SOURCE_STARTER_OP: PhysicalOpIdentity =
     PhysicalOpIdentity(OperatorIdentity("SOURCE_STARTER"), "SOURCE_STARTER")
 
-  def makeLayer(operatorIdentity: OperatorIdentity, layerName: String): PhysicalOpIdentity = {
-    PhysicalOpIdentity(operatorIdentity, layerName)
-  }
-
-  def toOperatorIdentity(layerIdentity: PhysicalOpIdentity): OperatorIdentity =
-    layerIdentity.logicalOpId
 }

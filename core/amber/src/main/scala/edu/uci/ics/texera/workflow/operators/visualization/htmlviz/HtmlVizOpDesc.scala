@@ -36,7 +36,7 @@ class HtmlVizOpDesc extends VisualizationOperator {
 
   override def chartType: String = VisualizationConstants.HTML_VIZ
 
-  override def operatorExecutor(
+  override def getPhysicalOp(
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
