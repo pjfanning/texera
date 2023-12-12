@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.projection
 
 import com.google.common.base.Preconditions
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp.oneToOneLayer
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp.oneToOnePhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, OpExecInitInfo}
 import edu.uci.ics.texera.workflow.common.metadata._
 import edu.uci.ics.texera.workflow.common.operators.map.MapOpDesc
@@ -25,7 +25,7 @@ class ProjectionOpDesc extends MapOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    oneToOneLayer(
+    oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new ProjectionOpExec(attributes, operatorSchemaInfo))

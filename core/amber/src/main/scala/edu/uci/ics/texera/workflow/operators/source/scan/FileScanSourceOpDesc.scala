@@ -34,7 +34,7 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.sourceLayer(
+    PhysicalOp.sourcePhysicalOperator(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new FileScanSourceOpExec(this))

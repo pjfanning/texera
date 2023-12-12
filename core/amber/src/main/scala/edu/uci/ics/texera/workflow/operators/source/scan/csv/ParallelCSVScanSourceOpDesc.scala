@@ -49,7 +49,7 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
         val numWorkers: Int = AmberConfig.numWorkerPerOperatorByDefault
 
         PhysicalOp
-          .sourceLayer(
+          .sourcePhysicalOperator(
             executionId,
             operatorIdentifier,
             OpExecInitInfo(p => {

@@ -42,7 +42,7 @@ class UnnestStringOpDesc extends FlatMapOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new UnnestStringOpExec(this, operatorSchemaInfo))

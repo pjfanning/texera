@@ -83,7 +83,7 @@ class IntervalJoinOpDesc extends LogicalOp {
     )
 
     PhysicalOp
-      .oneToOneLayer(
+      .oneToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(_ => new IntervalJoinOpExec(operatorSchemaInfo, this))

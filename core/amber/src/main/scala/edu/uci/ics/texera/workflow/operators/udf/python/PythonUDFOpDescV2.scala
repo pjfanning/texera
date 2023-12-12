@@ -92,7 +92,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
 
     if (workers > 1)
       PhysicalOp
-        .oneToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
+        .oneToOnePhysicalOp(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           numWorkers = workers,
           derivePartition = _ => UnknownPartition(),
@@ -105,7 +105,7 @@ class PythonUDFOpDescV2 extends LogicalOp {
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     else
       PhysicalOp
-        .manyToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
+        .manyToOnePhysicalOp(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           derivePartition = _ => UnknownPartition(),
           isOneToManyOp = true,

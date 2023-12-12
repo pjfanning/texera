@@ -18,7 +18,7 @@ class SymmetricDifferenceOpDesc extends LogicalOp {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    PhysicalOp.hashLayer(
+    PhysicalOp.hashPhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new SymmetricDifferenceOpExec()),

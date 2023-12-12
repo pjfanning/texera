@@ -27,7 +27,7 @@ public class SpecializedFilterOpDesc extends FilterOpDesc {
 
     @Override
     public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
-        return PhysicalOp.oneToOneLayer(
+        return PhysicalOp.oneToOnePhysicalOp(
                 executionId,
                 operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) x -> new SpecializedFilterOpExec(this)));

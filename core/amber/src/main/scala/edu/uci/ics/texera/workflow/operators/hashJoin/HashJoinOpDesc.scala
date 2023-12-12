@@ -84,7 +84,7 @@ class HashJoinOpDesc[K] extends LogicalOp {
     }
 
     PhysicalOp
-      .oneToOneLayer(
+      .oneToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(_ =>

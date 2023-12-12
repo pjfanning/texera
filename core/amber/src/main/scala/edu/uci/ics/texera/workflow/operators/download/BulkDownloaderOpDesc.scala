@@ -43,7 +43,7 @@ class BulkDownloaderOpDesc extends LogicalOp {
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
     assert(getContext.userId.isDefined)
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ =>

@@ -8,9 +8,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
 import edu.uci.ics.amber.engine.common.IOperatorExecutor;
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink;
-import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink;
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity;
-import edu.uci.ics.amber.engine.common.virtualidentity.util;
 import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
@@ -74,7 +72,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
         }
 
         PhysicalOpIdentity partialId = new PhysicalOpIdentity(operatorIdentifier(), "partial");
-        PhysicalOp partialLayer = PhysicalOp.oneToOneLayer(executionId,
+        PhysicalOp partialLayer = PhysicalOp.oneToOnePhysicalOp(executionId,
                 this.operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new WordCloudOpPartialExec(textColumn))
         ).withId(partialId).withIsOneToManyOp(true).withNumWorkers(1).withOutputPorts(
@@ -82,7 +80,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
 
 
         PhysicalOpIdentity finalId = new PhysicalOpIdentity(operatorIdentifier(), "global");
-        PhysicalOp finalLayer = PhysicalOp.manyToOneLayer(executionId,
+        PhysicalOp finalLayer = PhysicalOp.manyToOnePhysicalOp(executionId,
                         this.operatorIdentifier(),
                         OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new WordCloudOpFinalExec(topN))
                 ).withId(finalId).withIsOneToManyOp(true)

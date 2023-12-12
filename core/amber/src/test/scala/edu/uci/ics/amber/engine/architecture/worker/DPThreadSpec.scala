@@ -41,7 +41,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
   private val mockLink = PhysicalLink(layerId1, 0, layerId2, 0)
   private val opExecConfig = PhysicalOp
-    .oneToOneLayer(1, operatorIdentity, OpExecInitInfo(_ => operator))
+    .oneToOnePhysicalOp(1, operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = ReplayLogStorage.getLogStorage("none", "log")

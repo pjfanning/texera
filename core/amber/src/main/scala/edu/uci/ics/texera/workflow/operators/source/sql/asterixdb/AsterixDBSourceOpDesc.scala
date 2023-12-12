@@ -102,7 +102,7 @@ class AsterixDBSourceOpDesc extends SQLSourceOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.sourceLayer(
+    PhysicalOp.sourcePhysicalOperator(
       executionId,
       this.operatorIdentifier,
       OpExecInitInfo(_ =>

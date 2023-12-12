@@ -44,7 +44,7 @@ class SentimentAnalysisOpDesc extends MapOpDesc {
   ): PhysicalOp = {
     if (attribute == null)
       throw new RuntimeException("sentiment analysis: attribute is null")
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new SentimentAnalysisOpExec(this, operatorSchemaInfo))

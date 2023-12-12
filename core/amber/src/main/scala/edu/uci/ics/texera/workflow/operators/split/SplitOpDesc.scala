@@ -31,7 +31,7 @@ class SplitOpDesc extends LogicalOp {
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
     PhysicalOp
-      .oneToOneLayer(
+      .oneToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(p => new SplitOpExec(p._1, this))

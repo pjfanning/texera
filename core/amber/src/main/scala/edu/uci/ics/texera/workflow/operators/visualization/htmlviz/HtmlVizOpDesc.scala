@@ -40,7 +40,7 @@ class HtmlVizOpDesc extends VisualizationOperator {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new HtmlVizOpExec(htmlContentAttrName, operatorSchemaInfo))

@@ -31,7 +31,7 @@ class KeywordSearchOpDesc extends FilterOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new KeywordSearchOpExec(this))

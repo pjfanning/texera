@@ -34,7 +34,7 @@ public class TypeCastingOpDesc extends MapOpDesc {
     @Override
     public PhysicalOp getPhysicalOp(long executionId, OperatorSchemaInfo operatorSchemaInfo) {
         Preconditions.checkArgument(!typeCastingUnits.isEmpty());
-        return PhysicalOp.oneToOneLayer(executionId, operatorIdentifier(),
+        return PhysicalOp.oneToOnePhysicalOp(executionId, operatorIdentifier(),
                 OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new TypeCastingOpExec(operatorSchemaInfo.outputSchemas()[0])));
     }
 

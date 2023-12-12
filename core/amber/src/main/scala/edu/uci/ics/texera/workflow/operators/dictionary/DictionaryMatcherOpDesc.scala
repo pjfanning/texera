@@ -36,7 +36,7 @@ class DictionaryMatcherOpDesc extends MapOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new DictionaryMatcherOpExec(this, operatorSchemaInfo))

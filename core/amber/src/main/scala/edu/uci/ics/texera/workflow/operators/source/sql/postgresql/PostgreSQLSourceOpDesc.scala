@@ -34,7 +34,7 @@ class PostgreSQLSourceOpDesc extends SQLSourceOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.sourceLayer(
+    PhysicalOp.sourcePhysicalOperator(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ =>

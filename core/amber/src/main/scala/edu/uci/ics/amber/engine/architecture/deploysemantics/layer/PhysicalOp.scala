@@ -31,101 +31,102 @@ import scala.collection.mutable.ArrayBuffer
 
 object PhysicalOp {
 
-  // all source operator should use source layer
+  // all source operator should use sourcePhysicalOp
   // 1) it initializes at the controller jvm.
   // 2) it only has 1 worker actor.
   // 3) it has no input ports.
-  def sourceLayer(
+  def sourcePhysicalOperator(
       executionId: Long,
-      opId: OperatorIdentity,
+      logicalOpId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    sourceLayer(executionId, layerId = PhysicalOpIdentity(opId, "main"), opExecInitInfo)
+    sourcePhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExecInitInfo)
 
-  def sourceLayer(
+  def sourcePhysicalOp(
       executionId: Long,
-      layerId: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
     PhysicalOp(
       executionId,
-      layerId,
-      opExecInitInfo = opExecInitInfo,
+      physicalOpId,
+      opExecInitInfo,
       numWorkers = 1,
       locationPreference = Option(new PreferController()),
       inputPorts = List.empty
     )
 
-  def oneToOneLayer(
+  def oneToOnePhysicalOp(
       executionId: Long,
-      opId: OperatorIdentity,
+      logicalOpId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    oneToOneLayer(executionId, layerId = PhysicalOpIdentity(opId, "main"), opExecInitInfo)
+    oneToOnePhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExecInitInfo)
 
-  def oneToOneLayer(
+  def oneToOnePhysicalOp(
       executionId: Long,
-      layerId: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    PhysicalOp(executionId, layerId, opExecInitInfo = opExecInitInfo)
+    PhysicalOp(executionId, physicalOpId, opExecInitInfo = opExecInitInfo)
 
-  def manyToOneLayer(
+  def manyToOnePhysicalOp(
       executionId: Long,
-      opId: OperatorIdentity,
+      logicalOpId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    manyToOneLayer(executionId, PhysicalOpIdentity(opId, "main"), opExecInitInfo)
+    manyToOnePhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExecInitInfo)
 
-  def manyToOneLayer(
+  def manyToOnePhysicalOp(
       executionId: Long,
-      layerId: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp = {
     PhysicalOp(
       executionId,
-      layerId,
-      opExecInitInfo = opExecInitInfo,
+      physicalOpId,
+      opExecInitInfo,
       numWorkers = 1,
       partitionRequirement = List(Option(SinglePartition())),
       derivePartition = _ => SinglePartition()
     )
   }
 
-  def localLayer(
+  def localPhysicalOp(
       executionId: Long,
-      opId: OperatorIdentity,
+      logicalOpId: OperatorIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp =
-    localLayer(executionId, PhysicalOpIdentity(opId, "main"), opExecInitInfo)
+    localPhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExecInitInfo)
 
-  def localLayer(
+  def localPhysicalOp(
       executionId: Long,
-      layerId: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp = {
-    manyToOneLayer(executionId, layerId, opExecInitInfo).copy(locationPreference =
+    manyToOnePhysicalOp(executionId, physicalOpId, opExecInitInfo)
+      .copy(locationPreference =
       Option(new PreferController())
     )
   }
 
-  def hashLayer(
+  def hashPhysicalOp(
       executionId: Long,
-      opId: OperatorIdentity,
+      logicalOpId: OperatorIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
-  ): PhysicalOp = hashLayer(executionId, PhysicalOpIdentity(opId, "main"), opExec, hashColumnIndices)
+  ): PhysicalOp = hashPhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExec, hashColumnIndices)
 
-  def hashLayer(
+  def hashPhysicalOp(
       executionId: Long,
-      layerId: PhysicalOpIdentity,
-      opExec: OpExecInitInfo,
+      physicalOpId: PhysicalOpIdentity,
+      opExecInitInfo: OpExecInitInfo,
       hashColumnIndices: Array[Int]
   ): PhysicalOp = {
     PhysicalOp(
       executionId,
-      id = layerId,
-      opExecInitInfo = opExec,
+      physicalOpId,
+      opExecInitInfo,
       partitionRequirement = List(Option(HashPartition(hashColumnIndices))),
       derivePartition = _ => HashPartition(hashColumnIndices)
     )

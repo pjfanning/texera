@@ -58,7 +58,7 @@ class SortPartitionsOpDesc extends LogicalOp {
     )
 
     PhysicalOp
-      .oneToOneLayer(
+      .oneToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(p =>

@@ -72,7 +72,7 @@ class DualInputPortsPythonUDFOpDescV2 extends LogicalOp {
     Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     if (workers > 1)
       PhysicalOp
-        .oneToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
+        .oneToOnePhysicalOp(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           numWorkers = workers,
           blockingInputs = List(0),
@@ -82,7 +82,7 @@ class DualInputPortsPythonUDFOpDescV2 extends LogicalOp {
         .withInputPorts(operatorInfo.inputPorts)
     else
       PhysicalOp
-        .manyToOneLayer(executionId, operatorIdentifier, OpExecInitInfo(code))
+        .manyToOnePhysicalOp(executionId, operatorIdentifier, OpExecInitInfo(code))
         .copy(
           blockingInputs = List(0),
           dependency = Map(1 -> 0),

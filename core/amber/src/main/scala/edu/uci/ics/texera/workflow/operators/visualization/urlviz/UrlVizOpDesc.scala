@@ -52,7 +52,7 @@ class UrlVizOpDesc extends VisualizationOperator {
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
     PhysicalOp
-      .manyToOneLayer(
+      .manyToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(_ => new UrlVizOpExec(urlContentAttrName, operatorSchemaInfo))

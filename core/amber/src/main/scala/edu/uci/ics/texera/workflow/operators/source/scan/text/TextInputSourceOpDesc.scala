@@ -23,7 +23,7 @@ class TextInputSourceOpDesc extends SourceOperatorDescriptor with TextSourceOpDe
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.sourceLayer(
+    PhysicalOp.sourcePhysicalOperator(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new TextInputSourceOpExec(this))

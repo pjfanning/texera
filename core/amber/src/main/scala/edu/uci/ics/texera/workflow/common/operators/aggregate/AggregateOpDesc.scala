@@ -19,7 +19,7 @@ object AggregateOpDesc {
   ): PhysicalPlan = {
     val partialLayer =
       PhysicalOp
-        .oneToOneLayer(
+        .oneToOnePhysicalOp(
           executionId,
           PhysicalOpIdentity(id, "localAgg"),
           OpExecInitInfo(_ => new PartialAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
@@ -29,7 +29,7 @@ object AggregateOpDesc {
 
     val finalLayer = if (groupByKeys == null || groupByKeys.isEmpty) {
       PhysicalOp
-        .localLayer(
+        .localPhysicalOp(
           executionId,
           PhysicalOpIdentity(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo))
@@ -42,7 +42,7 @@ object AggregateOpDesc {
         else groupByKeys.indices.toArray // group by columns are always placed in the beginning
 
       PhysicalOp
-        .hashLayer(
+        .hashPhysicalOp(
           executionId,
           PhysicalOpIdentity(id, "globalAgg"),
           OpExecInitInfo(_ => new FinalAggregateOpExec(aggFuncs, groupByKeys, schemaInfo)),

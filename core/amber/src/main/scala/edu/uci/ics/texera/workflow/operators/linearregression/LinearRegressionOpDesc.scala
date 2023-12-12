@@ -33,7 +33,7 @@ class LinearRegressionOpDesc extends MLModelOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp =
-    PhysicalOp.manyToOneLayer(
+    PhysicalOp.manyToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(_ => new LinearRegressionOpExec(xAttr, yAttr, learningRate))

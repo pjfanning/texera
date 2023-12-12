@@ -29,7 +29,7 @@ class LimitOpDesc extends LogicalOp {
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
     val limitPerWorker = equallyPartitionGoal(limit, AmberConfig.numWorkerPerOperatorByDefault)
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(p => new LimitOpExec(limitPerWorker(p._1)))

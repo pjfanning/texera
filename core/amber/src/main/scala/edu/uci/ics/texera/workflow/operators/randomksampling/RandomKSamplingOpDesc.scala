@@ -35,7 +35,7 @@ class RandomKSamplingOpDesc extends FilterOpDesc {
       executionId: Long,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
-    PhysicalOp.oneToOneLayer(
+    PhysicalOp.oneToOnePhysicalOp(
       executionId,
       operatorIdentifier,
       OpExecInitInfo(p => new RandomKSamplingOpExec(p._1, this))

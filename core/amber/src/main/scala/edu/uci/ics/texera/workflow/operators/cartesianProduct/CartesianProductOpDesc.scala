@@ -18,7 +18,7 @@ class CartesianProductOpDesc extends LogicalOp {
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
     PhysicalOp
-      .oneToOneLayer(
+      .oneToOnePhysicalOp(
         executionId,
         operatorIdentifier,
         OpExecInitInfo(_ => new CartesianProductOpExec(operatorSchemaInfo))

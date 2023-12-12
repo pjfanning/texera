@@ -16,7 +16,7 @@ trait PythonOperatorDescriptor extends LogicalOp {
     if (asSource()) {
 
       PhysicalOp
-        .sourceLayer(
+        .sourcePhysicalOperator(
           executionId,
           operatorIdentifier,
           OpExecInitInfo(generatedCode)
@@ -25,7 +25,7 @@ trait PythonOperatorDescriptor extends LogicalOp {
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     } else {
       PhysicalOp
-        .oneToOneLayer(
+        .oneToOnePhysicalOp(
           executionId,
           operatorIdentifier,
           OpExecInitInfo(generatedCode)

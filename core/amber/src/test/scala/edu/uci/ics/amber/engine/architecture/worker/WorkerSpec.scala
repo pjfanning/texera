@@ -69,7 +69,7 @@ class WorkerSpec
     PhysicalOpIdentity(operatorIdentity, "2nd-layer")
   private val mockLink = PhysicalLink(layerId1, 0, layerId2, 0)
   private val opExecConfig = PhysicalOp
-    .oneToOneLayer(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
+    .oneToOnePhysicalOp(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
   private val workerIndex = 0
   private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
