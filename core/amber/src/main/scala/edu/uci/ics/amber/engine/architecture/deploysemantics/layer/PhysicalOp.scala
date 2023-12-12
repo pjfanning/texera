@@ -134,7 +134,9 @@ object PhysicalOp {
 }
 
 case class PhysicalOp(
+    // the execution id number
     executionId: Long,
+    // the identifier of this PhysicalOp
     id: PhysicalOpIdentity,
     // information regarding initializing an operator executor instance
     opExecInitInfo: OpExecInitInfo,
@@ -164,9 +166,9 @@ case class PhysicalOp(
 ) {
 
   // all the "dependee" links are also blocking inputs
-  lazy val realBlockingInputs: List[Int] = (blockingInputs ++ dependency.values).distinct
+  private lazy val realBlockingInputs: List[Int] = (blockingInputs ++ dependency.values).distinct
 
-  lazy val isInitWithCode: Boolean = opExecInitInfo.isInstanceOf[OpExecInitInfoWithCode]
+  private lazy val isInitWithCode: Boolean = opExecInitInfo.isInstanceOf[OpExecInitInfoWithCode]
 
   /*
    * Helper functions related to compile-time operations
