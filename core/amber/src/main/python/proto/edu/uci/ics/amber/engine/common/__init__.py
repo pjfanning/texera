@@ -8,6 +8,13 @@ from betterproto.grpc.grpclib_server import ServiceBase
 
 
 @dataclass(eq=False, repr=False)
+class WorkflowIdentity(betterproto.Message):
+    """final case class WorkflowIdentity (    executionId: Long )"""
+
+    execution_id: int = betterproto.int64_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class ActorVirtualIdentity(betterproto.Message):
     """final case class ActorVirtualIdentity"""
 
@@ -15,45 +22,34 @@ class ActorVirtualIdentity(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class PhysicalLinkIdentity(betterproto.Message):
-    """
-    final case class PhysicalLinkIdentity (    workflow: String,    operator: String,
-    layerID: String )
-    """
-
-    workflow: str = betterproto.string_field(1)
-    operator: str = betterproto.string_field(2)
-    layer_id: str = betterproto.string_field(3)
-
-
-@dataclass(eq=False, repr=False)
-class PhysicalLinkIdentity(betterproto.Message):
-    """
-    final case class PhysicalLinkIdentity (    from: PhysicalLinkIdentity,    to:
-    PhysicalLinkIdentity )
-    """
-
-    from_: "PhysicalLinkIdentity" = betterproto.message_field(1)
-    from_port: int = betterproto.int32_field(2)
-    to: "PhysicalLinkIdentity" = betterproto.message_field(3)
-    to_port: int = betterproto.int32_field(4)
-
-
-@dataclass(eq=False, repr=False)
 class OperatorIdentity(betterproto.Message):
-    """
-    final case class PhysicalLinkIdentity (    workflow: String,    operator: String )
-    """
-
-    workflow: str = betterproto.string_field(1)
-    operator: str = betterproto.string_field(2)
-
-
-@dataclass(eq=False, repr=False)
-class WorkflowIdentity(betterproto.Message):
-    """final case class WorkflowIdentity (    id: String )"""
+    """final case class OperatorIdentity (    id: String )"""
 
     id: str = betterproto.string_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class PhysicalOpIdentity(betterproto.Message):
+    """
+    final case class PhysicalOpIdentity (    logicalOpId: String,    layerName:
+    String )
+    """
+
+    logical_op_id: "OperatorIdentity" = betterproto.message_field(1)
+    layer_name: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class PhysicalLinkIdentity(betterproto.Message):
+    """
+    final case class PhysicalLinkIdentity (    from: PhysicalLinkIdentity,
+    to: PhysicalLinkIdentity )
+    """
+
+    from_: "PhysicalOpIdentity" = betterproto.message_field(1)
+    from_port: int = betterproto.int32_field(2)
+    to: "PhysicalOpIdentity" = betterproto.message_field(3)
+    to_port: int = betterproto.int32_field(4)
 
 
 @dataclass(eq=False, repr=False)
