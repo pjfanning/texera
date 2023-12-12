@@ -2,7 +2,11 @@ package edu.uci.ics.texera.workflow.common.operators.aggregate
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
-import edu.uci.ics.amber.engine.common.virtualidentity.{OperatorIdentity, PhysicalLink, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  OperatorIdentity,
+  PhysicalLink,
+  PhysicalOpIdentity
+}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo

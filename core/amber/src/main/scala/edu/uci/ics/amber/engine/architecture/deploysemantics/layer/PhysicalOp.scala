@@ -105,9 +105,7 @@ object PhysicalOp {
       opExecInitInfo: OpExecInitInfo
   ): PhysicalOp = {
     manyToOnePhysicalOp(executionId, physicalOpId, opExecInitInfo)
-      .copy(locationPreference =
-      Option(new PreferController())
-    )
+      .copy(locationPreference = Option(new PreferController()))
   }
 
   def hashPhysicalOp(
@@ -115,7 +113,8 @@ object PhysicalOp {
       logicalOpId: OperatorIdentity,
       opExec: OpExecInitInfo,
       hashColumnIndices: Array[Int]
-  ): PhysicalOp = hashPhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExec, hashColumnIndices)
+  ): PhysicalOp =
+    hashPhysicalOp(executionId, PhysicalOpIdentity(logicalOpId, "main"), opExec, hashColumnIndices)
 
   def hashPhysicalOp(
       executionId: Long,
