@@ -17,7 +17,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       executionState: ExecutionState,
       opID: OperatorIdentity
   ): Unit = {
-    val layers = workflow.physicalPlan.layersOfLogicalOperator(opID)
+    val layers = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opID)
     layers.foreach { layer =>
       executionState.getOperatorExecution(layer.id).setAllWorkerState(COMPLETED)
     }
@@ -58,7 +58,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       null
     )
     val opIdentity = headerlessCsvOpDesc.operatorIdentifier
-    val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
+    val layerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
     val nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
         workflow,
@@ -123,7 +123,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       setOperatorCompleted(workflow, executionState, opID)
     )
     val opIdentity = buildCsv.operatorIdentifier
-    val layerId = workflow.physicalPlan.layersOfLogicalOperator(opIdentity).head.id
+    val layerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
     var nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
         workflow,
@@ -137,14 +137,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       executionState,
       PhysicalLink(
         workflow.physicalPlan
-          .layersOfLogicalOperator(
+          .getPhysicalOpsOfLogicalOp(
             buildCsv.operatorIdentifier
           )
           .last
           .id,
         0,
         workflow.physicalPlan
-          .layersOfLogicalOperator(
+          .getPhysicalOpsOfLogicalOp(
             hashJoin1.operatorIdentifier
           )
           .head
@@ -158,14 +158,14 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       executionState,
       PhysicalLink(
         workflow.physicalPlan
-          .layersOfLogicalOperator(
+          .getPhysicalOpsOfLogicalOp(
             buildCsv.operatorIdentifier
           )
           .last
           .id,
         0,
         workflow.physicalPlan
-          .layersOfLogicalOperator(
+          .getPhysicalOpsOfLogicalOp(
             hashJoin2.operatorIdentifier
           )
           .head
@@ -183,7 +183,7 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       sink.operatorIdentifier
     ).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
     val probeId = probeCsv.operatorIdentifier
-    val probeLayerId = workflow.physicalPlan.layersOfLogicalOperator(probeId).head.id
+    val probeLayerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(probeId).head.id
     nextRegions = scheduler.schedulingPolicy.onWorkerCompletion(
       workflow,
       executionState,

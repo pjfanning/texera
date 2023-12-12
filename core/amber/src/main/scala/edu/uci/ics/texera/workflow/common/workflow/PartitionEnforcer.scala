@@ -19,8 +19,8 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
       input: PhysicalOpIdentity,
       inputPort: Int
   ): (LinkStrategy, PartitionInfo) = {
-    val layer = physicalPlan.getLayer(current)
-    val inputLayer = physicalPlan.getLayer(input)
+    val layer = physicalPlan.getOperator(current)
+    val inputLayer = physicalPlan.getOperator(input)
 
     // make sure this input is connected to this port
     assert(layer.getInputOperators(inputPort).contains(input))
@@ -75,8 +75,8 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
     physicalPlan
       .topologicalIterator()
       .foreach(layerId => {
-        val layer = physicalPlan.getLayer(layerId)
-        if (physicalPlan.sourceOperators.contains(layerId)) {
+        val layer = physicalPlan.getOperator(layerId)
+        if (physicalPlan.sourceOperatorIds.contains(layerId)) {
           // get output partition info of the source operator
           val outPart = layer.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
           outputPartitionInfos.put(layerId, outPart)
@@ -90,7 +90,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
             // the output partition info of each link connected from each input layer
             val outputPartitionsOfLayer = new ArrayBuffer[PartitionInfo]()
 
-            val fromPort = physicalPlan.getUpstreamLinks(layerId).head.fromPort
+            val fromPort = physicalPlan.getUpstreamPhysicalLinks(layerId).head.fromPort
             // for each input layer connected on this port
             // check partition requirement to enforce corresponding LinkStrategy
             inputLayers.foreach(inputLayer => {

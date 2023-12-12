@@ -102,12 +102,12 @@ class WorkflowCompiler(
     val partitioningPlan = new PartitionEnforcer(physicalPlan).enforcePartition()
 
     // assert all source layers to have 0 input ports
-    physicalPlan.getSourceOperators.foreach { sourceLayer =>
-      assert(physicalPlan.getLayer(sourceLayer).inputPorts.isEmpty)
+    physicalPlan.getSourceOperatorIds.foreach { sourceLayer =>
+      assert(physicalPlan.getOperator(sourceLayer).inputPorts.isEmpty)
     }
     // assert all sink layers to have 0 output ports
-    physicalPlan.getSinkOperators.foreach { sinkLayer =>
-      assert(physicalPlan.getLayer(sinkLayer).outputPorts.isEmpty)
+    physicalPlan.getSinkOperatorIds.foreach { sinkLayer =>
+      assert(physicalPlan.getOperator(sinkLayer).outputPorts.isEmpty)
     }
 
     new Workflow(

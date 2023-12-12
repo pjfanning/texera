@@ -47,7 +47,8 @@ object FriesReconfigurationAlgorithm {
     // for each one-to-many operator, add it to M if its downstream has a reconfiguration operator
     val oneToManyOperators = getOneToManyOperators(physicalPlan)
     oneToManyOperators.foreach(oneToManyOp => {
-      val intersection = physicalPlan.getDescendants(oneToManyOp).toSet.intersect(reconfigOps)
+      val intersection =
+        physicalPlan.getDescendantPhysicalOpIds(oneToManyOp).toSet.intersect(reconfigOps)
       if (intersection.nonEmpty) {
         M += oneToManyOp
       }
@@ -61,7 +62,7 @@ object FriesReconfigurationAlgorithm {
     val reverseTopologicalOps = topologicalOps.reverse
 
     topologicalOps.foreach(op => {
-      val parents = physicalPlan.getUpstream(op)
+      val parents = physicalPlan.getUpstreamPhysicalOpIds(op)
       val fromParent: Boolean = parents.exists(p => forwardVertices.contains(p))
       if (M.contains(op) || fromParent) {
         forwardVertices += op
@@ -69,7 +70,7 @@ object FriesReconfigurationAlgorithm {
     })
 
     reverseTopologicalOps.foreach(op => {
-      val children = physicalPlan.getDownstream(op)
+      val children = physicalPlan.getDownstreamPhysicalOpIds(op)
       val fromChildren: Boolean = children.exists(p => backwardVertices.contains(p))
       if (M.contains(op) || fromChildren) {
         backwardVertices += op
@@ -96,7 +97,7 @@ object FriesReconfigurationAlgorithm {
       )
 
       // find the source operators of the component
-      val sources = componentSet.filter(op => mcsPlan.getSourceOperators.contains(op))
+      val sources = componentSet.filter(op => mcsPlan.getSourceOperatorIds.contains(op))
       sources.foreach(source => {
         epochMarkers += ((source, EpochMarker(epochMarkerId, componentPlan, Some(reconfigCommand))))
       })

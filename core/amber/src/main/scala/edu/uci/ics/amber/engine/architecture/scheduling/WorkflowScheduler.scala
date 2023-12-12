@@ -151,7 +151,7 @@ class WorkflowScheduler(
       frontier.foreach { (op: PhysicalOpIdentity) =>
         val prev: Array[(PhysicalOpIdentity, PhysicalOp)] =
           workflow.physicalPlan
-            .getUpstream(op)
+            .getUpstreamPhysicalOpIds(op)
             .filter(upStreamOp =>
               builtOperators.contains(upStreamOp) && region.getOperators.contains(upStreamOp)
             )
@@ -173,7 +173,7 @@ class WorkflowScheduler(
       frontier = (region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1))
         .filter(opId => {
           !builtOpsInRegion.contains(opId) && workflow.physicalPlan
-            .getUpstream(opId)
+            .getUpstreamPhysicalOpIds(opId)
             .filter(region.getOperators.contains)
             .forall(builtOperators.contains)
         })

@@ -23,7 +23,7 @@ class Workflow(
     region.blockingDownstreamOperatorsInOtherRegions.foreach {
       case (opId, toPort) =>
         physicalPlan
-          .getUpstream(opId)
+          .getUpstreamPhysicalOpIds(opId)
           .foreach(upstream => {
             if (region.operators.contains(upstream)) {
               outLinks.add(PhysicalLink(upstream, 0, opId, toPort))
@@ -40,7 +40,8 @@ class Workflow(
     val sources = new ArrayBuffer[PhysicalOpIdentity]()
     region.getOperators
       .foreach(opId => {
-        val isSource = physicalPlan.getUpstream(opId).forall(up => !region.containsOperator(up))
+        val isSource =
+          physicalPlan.getUpstreamPhysicalOpIds(opId).forall(up => !region.containsOperator(up))
         if (isSource) {
           sources.append(opId)
         }
@@ -59,7 +60,7 @@ class Workflow(
   ): mutable.HashMap[PhysicalOpIdentity, PhysicalOp] = {
     val upstreamOperatorToLayers = new mutable.HashMap[PhysicalOpIdentity, PhysicalOp]()
     physicalPlan
-      .getUpstream(opID)
+      .getUpstreamPhysicalOpIds(opID)
       .foreach(uOpID => upstreamOperatorToLayers(uOpID) = physicalPlan.operatorMap(opID))
     upstreamOperatorToLayers
   }

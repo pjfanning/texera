@@ -68,7 +68,7 @@ class WorkflowPipelinedRegionsBuilder(
     val edgesToRemove = new mutable.MutableList[PhysicalLink]()
 
     physicalPlan.allOperatorIds.foreach(opId => {
-      val upstreamOps = physicalPlan.getUpstream(opId)
+      val upstreamOps = physicalPlan.getUpstreamPhysicalOpIds(opId)
       upstreamOps.foreach(upOpId => {
         physicalPlan.links
           .filter(l => l.from == upOpId && l.to == opId)
@@ -111,14 +111,14 @@ class WorkflowPipelinedRegionsBuilder(
   private def addMaterializationOperatorIfNeeded(): Boolean = {
     // create regions
     val dagWithoutBlockingEdges = getBlockingEdgesRemovedDAG
-    val sourceOperators = dagWithoutBlockingEdges.sourceOperators
+    val sourceOperators = dagWithoutBlockingEdges.sourceOperatorIds
     pipelinedRegionsDAG = new DirectedAcyclicGraph[PipelinedRegion, DefaultEdge](
       classOf[DefaultEdge]
     )
     var regionCount = 1
     sourceOperators.foreach(sourceOp => {
       val operatorsInRegion =
-        dagWithoutBlockingEdges.getDescendants(sourceOp) :+ sourceOp
+        dagWithoutBlockingEdges.getDescendantPhysicalOpIds(sourceOp) :+ sourceOp
       val regionId = PipelinedRegionIdentity(workflowId, regionCount.toString)
       pipelinedRegionsDAG.addVertex(PipelinedRegion(regionId, operatorsInRegion.toSet.toArray))
       regionCount += 1
@@ -153,7 +153,7 @@ class WorkflowPipelinedRegionsBuilder(
         }
 
         // For operators that have only blocking input links. add materialization to all input links.
-        val upstreamOps = physicalPlan.getUpstream(opId)
+        val upstreamOps = physicalPlan.getUpstreamPhysicalOpIds(opId)
 
         val allInputBlocking = upstreamOps.nonEmpty && upstreamOps.forall(upstreamOp =>
           findAllLinks(upstreamOp, opId)
@@ -224,7 +224,7 @@ class WorkflowPipelinedRegionsBuilder(
     this.physicalPlan
       .topologicalIterator()
       .foreach(opId => {
-        val upstreamOps = this.physicalPlan.getUpstream(opId)
+        val upstreamOps = this.physicalPlan.getUpstreamPhysicalOpIds(opId)
         upstreamOps.foreach(upstreamOp => {
           findAllLinks(upstreamOp, opId).foreach(linkFromUpstreamOp => {
             if (physicalPlan.operatorMap(opId).isInputBlocking(linkFromUpstreamOp)) {
