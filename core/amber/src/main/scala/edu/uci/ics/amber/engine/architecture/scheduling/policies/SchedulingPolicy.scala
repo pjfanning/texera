@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.common.AkkaActorService
 import edu.uci.ics.amber.engine.architecture.controller.{ExecutionState, Workflow}
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 
 import scala.collection.mutable
@@ -36,8 +36,8 @@ abstract class SchedulingPolicy(
   // regions currently running
   protected val runningRegions = new mutable.HashSet[PipelinedRegion]()
   protected val completedLinksOfRegion =
-    new mutable.HashMap[PipelinedRegion, mutable.Set[PhysicalLinkIdentity]]
-      with mutable.MultiMap[PipelinedRegion, PhysicalLinkIdentity]
+    new mutable.HashMap[PipelinedRegion, mutable.Set[PhysicalLink]]
+      with mutable.MultiMap[PipelinedRegion, PhysicalLink]
 
   protected def isRegionCompleted(
       workflow: Workflow,
@@ -47,7 +47,7 @@ abstract class SchedulingPolicy(
     workflow
       .getBlockingOutLinksOfRegion(region)
       .subsetOf(
-        completedLinksOfRegion.getOrElse(region, new mutable.HashSet[PhysicalLinkIdentity]())
+        completedLinksOfRegion.getOrElse(region, new mutable.HashSet[PhysicalLink]())
       ) &&
     region.getOperators
       .forall(opId =>
@@ -77,7 +77,7 @@ abstract class SchedulingPolicy(
   /**
     * A link's region is the region of the source operator of the link.
     */
-  protected def getRegions(link: PhysicalLinkIdentity): Set[PipelinedRegion] = {
+  protected def getRegions(link: PhysicalLink): Set[PipelinedRegion] = {
     runningRegions.filter(r => r.getOperators.contains(link.from)).toSet
   }
 
@@ -107,7 +107,7 @@ abstract class SchedulingPolicy(
   def onLinkCompletion(
       workflow: Workflow,
       executionState: ExecutionState,
-      link: PhysicalLinkIdentity
+      link: PhysicalLink
   ): Set[PipelinedRegion] = {
     val regions = getRegions(link)
     regions.foreach(r => completedLinksOfRegion.addBinding(r, link))

@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.util.toOperatorIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity,
-  PhysicalLinkIdentity,
+  PhysicalLink,
   PhysicalOpIdentity
 }
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 
 object PhysicalPlan {
 
-  def apply(operatorList: Array[PhysicalOp], links: Array[PhysicalLinkIdentity]): PhysicalPlan = {
+  def apply(operatorList: Array[PhysicalOp], links: Array[PhysicalLink]): PhysicalPlan = {
     new PhysicalPlan(operatorList.toList, links.toList)
   }
 
@@ -63,7 +63,7 @@ object PhysicalPlan {
 
 case class PhysicalPlan(
     operators: List[PhysicalOp],
-    links: List[PhysicalLinkIdentity]
+    links: List[PhysicalLink]
 ) {
 
   @transient lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
@@ -146,7 +146,7 @@ case class PhysicalPlan(
     dag.incomingEdgesOf(opID).asScala.map(e => dag.getEdgeSource(e)).toList
   }
 
-  def getUpstreamLinks(opID: PhysicalOpIdentity): List[PhysicalLinkIdentity] = {
+  def getUpstreamLinks(opID: PhysicalOpIdentity): List[PhysicalLink] = {
     links.filter(l => l.to == opID)
   }
 
@@ -178,13 +178,13 @@ case class PhysicalPlan(
       (from -> operatorMap(from).addOutput(to, fromPort, toPort)) +
       (to -> operatorMap(to).addInput(from, fromPort, toPort))
 
-    val newLinks = links :+ PhysicalLinkIdentity(from, fromPort, to, toPort)
+    val newLinks = links :+ PhysicalLink(from, fromPort, to, toPort)
     this.copy(operators = newOperators.values.toList, links = newLinks)
   }
 
   // returns a new physical plan with the edges removed
   def removeEdge(
-      edge: PhysicalLinkIdentity
+      edge: PhysicalLink
   ): PhysicalPlan = {
     val from = edge.from
     val to = edge.to
@@ -205,7 +205,7 @@ case class PhysicalPlan(
     // add all physical operators to physical DAG
     subPlan.operators.foreach(op => resultPlan = resultPlan.addOperator(op))
     // connect intra-operator links
-    subPlan.links.foreach((l: PhysicalLinkIdentity) =>
+    subPlan.links.foreach((l: PhysicalLink) =>
       resultPlan = resultPlan.addEdge(l.from, l.fromPort, l.to, l.toPort)
     )
     resultPlan

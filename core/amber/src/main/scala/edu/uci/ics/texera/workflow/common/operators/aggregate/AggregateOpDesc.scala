@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.common.operators.aggregate
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.util.makeLayer
-import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLink, OperatorIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
@@ -54,7 +54,7 @@ object AggregateOpDesc {
 
     new PhysicalPlan(
       List(partialLayer, finalLayer),
-      List(PhysicalLinkIdentity(partialLayer.id, 0, finalLayer.id, 0))
+      List(PhysicalLink(partialLayer.id, 0, finalLayer.id, 0))
     )
   }
 

@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.common.{AmberLogging, VirtualIdentityUtils}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 
 import scala.collection.mutable
 
@@ -16,18 +16,18 @@ class UpstreamLinkStatus(val actorId: ActorVirtualIdentity) extends AmberLogging
     * links that a worker receives data from.
     */
   private val upstreamMap =
-    new mutable.HashMap[PhysicalLinkIdentity, Set[ActorVirtualIdentity]].withDefaultValue(Set())
+    new mutable.HashMap[PhysicalLink, Set[ActorVirtualIdentity]].withDefaultValue(Set())
   private val upstreamMapReverse =
-    new mutable.HashMap[ActorVirtualIdentity, PhysicalLinkIdentity]
+    new mutable.HashMap[ActorVirtualIdentity, PhysicalLink]
   private val endReceivedFromWorkers = new mutable.HashSet[ActorVirtualIdentity]
-  private val completedLinkIds = new mutable.HashSet[PhysicalLinkIdentity]()
-  private var allUpstreamLinkIds: Set[PhysicalLinkIdentity] = Set.empty
+  private val completedLinkIds = new mutable.HashSet[PhysicalLink]()
+  private var allUpstreamLinkIds: Set[PhysicalLink] = Set.empty
 
-  def setAllUpstreamLinkIds(newSet: Set[PhysicalLinkIdentity]): Unit = {
+  def setAllUpstreamLinkIds(newSet: Set[PhysicalLink]): Unit = {
     this.allUpstreamLinkIds = newSet
   }
 
-  def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLinkIdentity): Unit = {
+  def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLink): Unit = {
     assert(
       allUpstreamLinkIds.contains(input),
       "unexpected input link " + input + " for operator " + VirtualIdentityUtils.getOperator(
@@ -38,7 +38,7 @@ class UpstreamLinkStatus(val actorId: ActorVirtualIdentity) extends AmberLogging
     upstreamMapReverse.update(identifier, input)
   }
 
-  def getInputLink(identifier: ActorVirtualIdentity): PhysicalLinkIdentity =
+  def getInputLink(identifier: ActorVirtualIdentity): PhysicalLink =
     upstreamMapReverse(identifier)
 
   def markWorkerEOF(identifier: ActorVirtualIdentity): Unit = {
@@ -55,7 +55,7 @@ class UpstreamLinkStatus(val actorId: ActorVirtualIdentity) extends AmberLogging
     upstreamMap.filterKeys(k => !completedLinkIds.contains(k)).values.flatten.toSet
   }
 
-  def isLinkEOF(link: PhysicalLinkIdentity): Boolean = {
+  def isLinkEOF(link: PhysicalLink): Boolean = {
     if (link == null) {
       return true // special case for source operator
     }

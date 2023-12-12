@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, 
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  PhysicalLinkIdentity,
+  PhysicalLink,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
@@ -13,7 +13,7 @@ import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, Workfl
 
 class ExecutionState(workflow: Workflow) {
 
-  private val linkExecutions: Map[PhysicalLinkIdentity, LinkExecution] =
+  private val linkExecutions: Map[PhysicalLink, LinkExecution] =
     workflow.partitioningPlan.strategies.map { link =>
       link._1 -> new LinkExecution(link._2.totalReceiversCount)
     }
@@ -50,7 +50,7 @@ class ExecutionState(workflow: Workflow) {
     throw new NoSuchElementException(s"cannot find operator with worker = $worker")
   }
 
-  def getLinkExecution(link: PhysicalLinkIdentity): LinkExecution = linkExecutions(link)
+  def getLinkExecution(link: PhysicalLink): LinkExecution = linkExecutions(link)
 
   def getAllOperatorExecutions: Iterable[(PhysicalOpIdentity, OperatorExecution)] =
     operatorExecutions

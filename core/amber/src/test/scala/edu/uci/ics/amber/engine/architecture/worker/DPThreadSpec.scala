@@ -18,7 +18,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLinkIdentity,
+  PhysicalLink,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
@@ -39,7 +39,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
   private val layerId2 =
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val mockLink = PhysicalLinkIdentity(layerId1, 0, layerId2, 0)
+  private val mockLink = PhysicalLink(layerId1, 0, layerId2, 0)
   private val opExecConfig = PhysicalOp
     .oneToOneLayer(1, operatorIdentity, OpExecInitInfo(_ => operator))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))

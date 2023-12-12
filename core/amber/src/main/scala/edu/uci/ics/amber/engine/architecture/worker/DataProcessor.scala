@@ -38,7 +38,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  PhysicalLinkIdentity,
+  PhysicalLink,
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
@@ -57,7 +57,7 @@ object DataProcessor {
 
     override def inMemSize: Long = 0
   }
-  case class FinalizeLink(link: PhysicalLinkIdentity) extends SpecialDataTuple
+  case class FinalizeLink(link: PhysicalLink) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
 
   class DPOutputIterator extends Iterator[(ITuple, Option[Int])] {
@@ -114,7 +114,7 @@ class DataProcessor(
     this.upstreamLinkStatus.setAllUpstreamLinkIds(
       if (opConf.isSourceOperator)
         Set(
-          PhysicalLinkIdentity(SOURCE_STARTER_OP, 0, opConf.id, 0)
+          PhysicalLink(SOURCE_STARTER_OP, 0, opConf.id, 0)
         ) // special case for source operator
       else
         opConf.inputToOrdinalMapping.keySet
@@ -158,7 +158,7 @@ class DataProcessor(
   protected var inputTupleCount = 0L
   protected var outputTupleCount = 0L
 
-  def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLinkIdentity): Unit = {
+  def registerInput(identifier: ActorVirtualIdentity, input: PhysicalLink): Unit = {
     upstreamLinkStatus.registerInput(identifier, input)
   }
 
@@ -173,7 +173,7 @@ class DataProcessor(
     else opConf.inputToOrdinalMapping(inputLink)
   }
 
-  def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLinkIdentity] = {
+  def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLink] = {
     if (outputPort.isEmpty) {
       opConf.outputToOrdinalMapping.keySet.toList
     } else {

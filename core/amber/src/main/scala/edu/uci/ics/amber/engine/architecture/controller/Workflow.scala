@@ -18,15 +18,15 @@ class Workflow(
     val partitioningPlan: PartitioningPlan
 ) extends java.io.Serializable {
 
-  def getBlockingOutLinksOfRegion(region: PipelinedRegion): Set[PhysicalLinkIdentity] = {
-    val outLinks = new mutable.HashSet[PhysicalLinkIdentity]()
+  def getBlockingOutLinksOfRegion(region: PipelinedRegion): Set[PhysicalLink] = {
+    val outLinks = new mutable.HashSet[PhysicalLink]()
     region.blockingDownstreamOperatorsInOtherRegions.foreach {
       case (opId, toPort) =>
         physicalPlan
           .getUpstream(opId)
           .foreach(upstream => {
             if (region.operators.contains(upstream)) {
-              outLinks.add(PhysicalLinkIdentity(upstream, 0, opId, toPort))
+              outLinks.add(PhysicalLink(upstream, 0, opId, toPort))
             }
           })
     }

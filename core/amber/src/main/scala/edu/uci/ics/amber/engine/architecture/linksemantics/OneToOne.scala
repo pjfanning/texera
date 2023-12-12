@@ -5,12 +5,12 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
   OneToOnePartitioning,
   Partitioning
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 
 class OneToOne(from: PhysicalOp, fromPort: Int, to: PhysicalOp, toPort: Int, batchSize: Int)
     extends LinkStrategy(from, fromPort, to, toPort, batchSize) {
   override def getPartitioning: Iterable[
-    (ActorVirtualIdentity, PhysicalLinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
+    (ActorVirtualIdentity, PhysicalLink, Partitioning, Seq[ActorVirtualIdentity])
   ] = {
     assert(from.numWorkers == to.numWorkers)
     from.identifiers.indices.map(i =>

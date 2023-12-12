@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
   HashBasedShufflePartitioning,
   Partitioning
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 
 class HashBasedShuffle(
     from: PhysicalOp,
@@ -16,7 +16,7 @@ class HashBasedShuffle(
     hashColumnIndices: Seq[Int]
 ) extends LinkStrategy(from, fromPort, to, toPort, batchSize) {
   override def getPartitioning: Iterable[
-    (ActorVirtualIdentity, PhysicalLinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
+    (ActorVirtualIdentity, PhysicalLink, Partitioning, Seq[ActorVirtualIdentity])
   ] = {
     from.identifiers.map(x =>
       (

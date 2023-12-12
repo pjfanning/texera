@@ -4,13 +4,13 @@ import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInit
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 
 object UpdateInputLinkingHandler {
 
   final case class UpdateInputLinking(
       identifier: ActorVirtualIdentity,
-      inputLink: PhysicalLinkIdentity
+      inputLink: PhysicalLink
   ) extends ControlCommand[Unit]
 }
 

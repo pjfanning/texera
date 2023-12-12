@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder.replaceVertex
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  PhysicalLinkIdentity,
+  PhysicalLink,
   PhysicalOpIdentity,
   WorkflowIdentity
 }
@@ -65,7 +65,7 @@ class WorkflowPipelinedRegionsBuilder(
     * @return
     */
   private def getBlockingEdgesRemovedDAG: PhysicalPlan = {
-    val edgesToRemove = new mutable.MutableList[PhysicalLinkIdentity]()
+    val edgesToRemove = new mutable.MutableList[PhysicalLink]()
 
     physicalPlan.allOperatorIds.foreach(opId => {
       val upstreamOps = physicalPlan.getUpstream(opId)
@@ -194,7 +194,7 @@ class WorkflowPipelinedRegionsBuilder(
   private def findAllLinks(
       from: PhysicalOpIdentity,
       to: PhysicalOpIdentity
-  ): List[PhysicalLinkIdentity] = {
+  ): List[PhysicalLink] = {
     physicalPlan.links.filter(link => link.from == from && link.to == to)
 
   }

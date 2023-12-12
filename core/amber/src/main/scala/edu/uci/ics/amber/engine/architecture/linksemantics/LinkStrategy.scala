@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.linksemantics
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
 
 abstract class LinkStrategy(
     val from: PhysicalOp,
@@ -12,7 +12,7 @@ abstract class LinkStrategy(
     val batchSize: Int
 ) extends Serializable {
 
-  val id: PhysicalLinkIdentity = PhysicalLinkIdentity(from.id, fromPort, to.id, toPort)
+  val id: PhysicalLink = PhysicalLink(from.id, fromPort, to.id, toPort)
   private var currentCompletedCount = 0
 
   def incrementCompletedReceiversCount(): Unit = currentCompletedCount += 1
@@ -23,6 +23,6 @@ abstract class LinkStrategy(
 
   // returns Iterable of (sender, link id, sender's partitioning, set of receivers)
   def getPartitioning: Iterable[
-    (ActorVirtualIdentity, PhysicalLinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
+    (ActorVirtualIdentity, PhysicalLink, Partitioning, Seq[ActorVirtualIdentity])
   ]
 }
