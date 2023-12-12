@@ -102,34 +102,35 @@ class ExecutionState(workflow: Workflow) {
     }
   }
 
-  def getOperatorToWorkers: Iterable[(PhysicalOpIdentity, Seq[ActorVirtualIdentity])] = {
-    workflow.physicalPlan.allOperatorIds.map(opId => {
-      (opId, getAllWorkersForOperators(Array(opId)).toSeq)
+  def physicalOpToWorkersMapping: Iterable[(PhysicalOpIdentity, Seq[ActorVirtualIdentity])] = {
+    workflow.physicalPlan.operators.map(physicalOp=> physicalOp.id)
+      .map(physicalOpId => {
+      (physicalOpId, getAllWorkersForOperators(Array(physicalOpId)).toSeq)
     })
   }
 
   def getAllWorkersForOperators(
       operators: Array[PhysicalOpIdentity]
   ): Array[ActorVirtualIdentity] = {
-    operators.flatMap(opId => getOperatorExecution(opId).getBuiltWorkerIds)
+    operators.flatMap(physicalOpId => getOperatorExecution(physicalOpId).getBuiltWorkerIds)
   }
 
-  def getPythonOperators(
+  def filterPythonPhysicalOpIds(
       fromOperatorsList: Array[PhysicalOpIdentity]
   ): Array[PhysicalOpIdentity] = {
-    fromOperatorsList.filter(opId =>
-      getOperatorExecution(opId).getBuiltWorkerIds.nonEmpty &&
-        workflow.physicalPlan.operatorMap(opId).isPythonOperator
+    fromOperatorsList.filter(physicalOpId =>
+      getOperatorExecution(physicalOpId).getBuiltWorkerIds.nonEmpty &&
+        workflow.physicalPlan.getOperator(physicalOpId).isPythonOperator
     )
   }
 
   def getPythonWorkerToOperatorExec(
-      pythonOperators: Array[PhysicalOpIdentity]
+      pythonPhysicalOpIds: Array[PhysicalOpIdentity]
   ): Iterable[(ActorVirtualIdentity, PhysicalOp)] = {
-    pythonOperators
-      .map(opId => workflow.physicalPlan.operatorMap(opId))
-      .filter(op => op.isPythonOperator)
-      .flatMap(op => getOperatorExecution(op.id).getBuiltWorkerIds.map(worker => (worker, op)))
+    pythonPhysicalOpIds
+      .map(opId => workflow.physicalPlan.getOperator(opId))
+      .filter(physicalOp => physicalOp.isPythonOperator)
+      .flatMap(physicalOp => getOperatorExecution(physicalOp.id).getBuiltWorkerIds.map(worker => (worker, physicalOp)))
       .toList
   }
 

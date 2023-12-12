@@ -67,18 +67,18 @@ case class PhysicalPlan(
     links: List[PhysicalLink]
 ) {
 
-  @transient lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
+   @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
     operators.map(o => (o.id, o)).toMap
 
   // the dag will be re-computed again once it reaches the coordinator.
-  @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
+  @transient  lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
     links.foreach(l => jgraphtDag.addEdge(l.from, l.to))
     jgraphtDag
   }
 
-  @transient lazy val allOperatorIds: Iterable[PhysicalOpIdentity] = operatorMap.keys
+  @transient private lazy val allOperatorIds: Iterable[PhysicalOpIdentity] = operatorMap.keys
 
   @transient lazy val sourceOperatorIds: List[PhysicalOpIdentity] =
     operatorMap.keys.filter(op => dag.inDegreeOf(op) == 0).toList

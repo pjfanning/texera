@@ -191,7 +191,7 @@ class WorkflowScheduler(
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
       region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
-    val uninitializedPythonOperators = executionState.getPythonOperators(
+    val uninitializedPythonOperators = executionState.filterPythonPhysicalOpIds(
       allOperatorsInRegion.filter(opId => !initializedPythonOperators.contains(opId))
     )
     Future
@@ -306,7 +306,7 @@ class WorkflowScheduler(
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
-        executionState.getOperatorToWorkers
+        executionState.physicalOpToWorkersMapping
           .map({
             case (opId: PhysicalOpIdentity, workerIds: Seq[ActorVirtualIdentity]) =>
               opId.logicalOpId.id -> workerIds.map(_.name)

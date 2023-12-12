@@ -23,18 +23,18 @@ class MaterializationRewriter(
   def addMaterializationToLink(
       physicalPlan: PhysicalPlan,
       logicalPlan: LogicalPlan,
-      linkId: PhysicalLink,
+      physicalLink: PhysicalLink,
       writerReaderPairs: mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]
   ): PhysicalPlan = {
 
-    val fromOpId = linkId.from
-    val fromOp = physicalPlan.operatorMap(fromOpId)
-    val fromOutputPortIdx = fromOp.outputToOrdinalMapping(linkId)
-    val fromOutputPortName = fromOp.outputPorts(fromOutputPortIdx).displayName
-    val toOpId = linkId.to
-    val toOp = physicalPlan.operatorMap(toOpId)
-    val toInputPortIdx = physicalPlan.operatorMap(toOpId).inputToOrdinalMapping(linkId)
-    val toInputPortName = toOp.inputPorts(toInputPortIdx).displayName
+    val fromPhysicalOpId = physicalLink.from
+    val fromPhysicalOp = physicalPlan.getOperator(fromPhysicalOpId)
+    val fromOutputPortIdx = fromPhysicalOp.outputToOrdinalMapping(physicalLink)
+    val fromOutputPortName = fromPhysicalOp.outputPorts(fromOutputPortIdx).displayName
+    val toPhysicalOpId = physicalLink.to
+    val toPhysicalOp = physicalPlan.getOperator(toPhysicalOpId)
+    val toInputPortIdx = physicalPlan.getOperator(toPhysicalOpId).inputToOrdinalMapping(physicalLink)
+    val toInputPortName = toPhysicalOp.inputPorts(toInputPortIdx).displayName
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)
@@ -42,16 +42,16 @@ class MaterializationRewriter(
     val fromOpIdInputSchema: Array[Schema] =
       if (
         !logicalPlan
-          .getOperator(OperatorIdentity(fromOpId.logicalOpId.id))
+          .getOperator(OperatorIdentity(fromPhysicalOpId.logicalOpId.id))
           .isInstanceOf[SourceOperatorDescriptor]
       )
         logicalPlan
-          .inputSchemaMap(logicalPlan.getOperator(fromOpId.logicalOpId.id).operatorIdentifier)
+          .inputSchemaMap(logicalPlan.getOperator(fromPhysicalOpId.logicalOpId.id).operatorIdentifier)
           .map(s => s.get)
           .toArray
       else Array()
     val matWriterInputSchema = logicalPlan
-      .getOperator(fromOpId.logicalOpId.id)
+      .getOperator(fromPhysicalOpId.logicalOpId.id)
       .getOutputSchemas(
         fromOpIdInputSchema
       )(fromOutputPortIdx)
@@ -84,9 +84,9 @@ class MaterializationRewriter(
       )
 
     // create 2 links for materialization
-    val readerToDestLink = PhysicalLink(matReaderOpExecConfig.id, 0, toOpId, toInputPortIdx)
+    val readerToDestLink = PhysicalLink(matReaderOpExecConfig.id, 0, toPhysicalOpId, toInputPortIdx)
     val sourceToWriterLink =
-      PhysicalLink(fromOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
+      PhysicalLink(fromPhysicalOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
     // add the pair to the map for later adding edges between 2 regions.
     writerReaderPairs(matWriterOpExecConfig.id) = matReaderOpExecConfig.id
 
@@ -94,7 +94,7 @@ class MaterializationRewriter(
       .addOperator(matWriterOpExecConfig)
       .addOperator(matReaderOpExecConfig)
       .addEdge(
-        fromOpId,
+        fromPhysicalOpId,
         fromOutputPortIdx,
         matWriterOpExecConfig.id,
         0
@@ -102,24 +102,24 @@ class MaterializationRewriter(
       .addEdge(
         matReaderOpExecConfig.id,
         0,
-        toOpId,
+        toPhysicalOpId,
         toInputPortIdx
       )
-      .removeEdge(linkId)
+      .removeEdge(physicalLink)
       .setOperator(
-        toOp.copy(
+        toPhysicalOp.copy(
           // update the input mapping by replacing the original link with the new link from materialization.
           inputToOrdinalMapping =
-            toOp.inputToOrdinalMapping - linkId + (readerToDestLink -> toInputPortIdx),
+            toPhysicalOp.inputToOrdinalMapping - physicalLink + (readerToDestLink -> toInputPortIdx),
           // the dest operator's input port is not blocking anymore.
-          blockingInputs = toOp.blockingInputs.filter(e => e != toInputPortIdx)
+          blockingInputs = toPhysicalOp.blockingInputs.filter(e => e != toInputPortIdx)
         )
       )
       .setOperator(
-        fromOp.copy(
+        fromPhysicalOp.copy(
           // update the output mapping by replacing the original link with the new link to materialization.
           outputToOrdinalMapping =
-            fromOp.outputToOrdinalMapping - linkId + (sourceToWriterLink -> fromOutputPortIdx)
+            fromPhysicalOp.outputToOrdinalMapping - physicalLink + (sourceToWriterLink -> fromOutputPortIdx)
         )
       )
   }

@@ -67,7 +67,7 @@ class WorkflowPipelinedRegionsBuilder(
   private def getBlockingEdgesRemovedDAG: PhysicalPlan = {
     val edgesToRemove = new mutable.MutableList[PhysicalLink]()
 
-    physicalPlan.allOperatorIds.foreach(physicalOpId => {
+    physicalPlan.operators.map(physicalOp=> physicalOp.id).foreach(physicalOpId => {
       val upstreamPhysicalOpIds = physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
       upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
         physicalPlan.links
@@ -81,7 +81,7 @@ class WorkflowPipelinedRegionsBuilder(
     })
 
     val linksAfterRemoval = physicalPlan.links.filter(link => !edgesToRemove.contains(link))
-    new PhysicalPlan(physicalPlan.operatorMap.values.toList, linksAfterRemoval)
+    new PhysicalPlan(physicalPlan.operators, linksAfterRemoval)
   }
 
   /**
