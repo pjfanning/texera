@@ -14,25 +14,25 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
   val linkMapping = new mutable.HashMap[PhysicalLink, LinkStrategy]()
 
   def getOutputPartition(
-      current: PhysicalOpIdentity,
-      fromPort: Int,
-      input: PhysicalOpIdentity,
-      inputPort: Int
+                          currentPhysicalOpId: PhysicalOpIdentity,
+                          fromPort: Int,
+                          inputPhysicalOpId: PhysicalOpIdentity,
+                          inputPort: Int
   ): (LinkStrategy, PartitionInfo) = {
-    val layer = physicalPlan.getOperator(current)
-    val inputLayer = physicalPlan.getOperator(input)
+    val currentPhysicalOp = physicalPlan.getOperator(currentPhysicalOpId)
+    val inputPhysicalOp = physicalPlan.getOperator(inputPhysicalOpId)
 
     // make sure this input is connected to this port
-    assert(layer.getInputOperators(inputPort).contains(input))
+    assert(currentPhysicalOp.getInputOperators(inputPort).contains(inputPhysicalOpId))
 
-    // partition requirement of this layer on this input port
-    val part = layer.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
+    // partition requirement of this PhysicalOp on this input port
+    val part = currentPhysicalOp.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
     // output partition of the input
-    val inputPart = outputPartitionInfos(input)
+    val inputPart = outputPartitionInfos(inputPhysicalOpId)
 
     // input partition satisfies the requirement, and number of worker match
-    if (inputPart.satisfies(part) && inputLayer.numWorkers == layer.numWorkers) {
-      val linkStrategy = new OneToOne(inputLayer, fromPort, layer, inputPort, defaultBatchSize)
+    if (inputPart.satisfies(part) && inputPhysicalOp.numWorkers == currentPhysicalOp.numWorkers) {
+      val linkStrategy = new OneToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
       val outputPart = inputPart
       (linkStrategy, outputPart)
     } else {
@@ -40,18 +40,18 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
       val linkStrategy = part match {
         case HashPartition(hashColumnIndices) =>
           new HashBasedShuffle(
-            inputLayer,
+            inputPhysicalOp,
             fromPort,
-            layer,
+            currentPhysicalOp,
             inputPort,
             defaultBatchSize,
             hashColumnIndices
           )
         case RangePartition(rangeColumnIndices, rangeMin, rangeMax) =>
           new RangeBasedShuffle(
-            inputLayer,
+            inputPhysicalOp,
             fromPort,
-            layer,
+            currentPhysicalOp,
             inputPort,
             defaultBatchSize,
             rangeColumnIndices,
@@ -59,11 +59,11 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
             rangeMax
           )
         case SinglePartition() =>
-          new AllToOne(inputLayer, fromPort, layer, inputPort, defaultBatchSize)
+          new AllToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
         case BroadcastPartition() =>
-          new AllBroadcast(inputLayer, fromPort, layer, inputPort, defaultBatchSize)
+          new AllBroadcast(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
         case UnknownPartition() =>
-          new FullRoundRobin(inputLayer, fromPort, layer, inputPort, defaultBatchSize)
+          new FullRoundRobin(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
       }
       val outputPart = part
       (linkStrategy, outputPart)
@@ -74,43 +74,42 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
 
     physicalPlan
       .topologicalIterator()
-      .foreach(layerId => {
-        val layer = physicalPlan.getOperator(layerId)
-        if (physicalPlan.sourceOperatorIds.contains(layerId)) {
+      .foreach(physicalOpId => {
+        val physicalOp = physicalPlan.getOperator(physicalOpId)
+        if (physicalPlan.sourceOperatorIds.contains(physicalOpId)) {
           // get output partition info of the source operator
-          val outPart = layer.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
-          outputPartitionInfos.put(layerId, outPart)
+          val outPart = physicalOp.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
+          outputPartitionInfos.put(physicalOpId, outPart)
         } else {
           val inputPartitionsOnPort = new ArrayBuffer[PartitionInfo]()
 
           // for each input port, enforce partition requirement
-          layer.inputPorts.indices.foreach(port => {
-            // all input operators connected to this port
-            val inputLayers = layer.getInputOperators(port)
-            // the output partition info of each link connected from each input layer
-            val outputPartitionsOfLayer = new ArrayBuffer[PartitionInfo]()
+          physicalOp.inputPorts.indices.foreach(port => {
+            // all input PhysicalOpIds connected to this port
+            val inputPhysicalOpIds = physicalOp.getInputOperators(port)
 
-            val fromPort = physicalPlan.getUpstreamPhysicalLinks(layerId).head.fromPort
-            // for each input layer connected on this port
+            val fromPort = physicalPlan.getUpstreamPhysicalLinks(physicalOpId).head.fromPort
+
+            // the output partition info of each link connected from each input PhysicalOp
+            // for each input PhysicalOp connected on this port
             // check partition requirement to enforce corresponding LinkStrategy
-            inputLayers.foreach(inputLayer => {
-              val (linkStrategy, outputPart) =
-                getOutputPartition(layerId, fromPort, inputLayer, port)
+            val outputPartitions = inputPhysicalOpIds.map(inputPhysicalOpId => {
+              val (linkStrategy, outputPart) = getOutputPartition(physicalOpId, fromPort, inputPhysicalOpId, port)
               linkMapping.put(linkStrategy.id, linkStrategy)
-              outputPartitionsOfLayer.append(outputPart)
+              outputPart
             })
 
-            assert(outputPartitionsOfLayer.size == inputLayers.size)
+            assert(outputPartitions.size == inputPhysicalOpIds.size)
 
-            val inputPartitionOnPort = outputPartitionsOfLayer.reduce((a, b) => a.merge(b))
+            val inputPartitionOnPort = outputPartitions.reduce((a, b) => a.merge(b))
             inputPartitionsOnPort.append(inputPartitionOnPort)
           })
 
-          assert(inputPartitionsOnPort.size == layer.inputPorts.size)
+          assert(inputPartitionsOnPort.size == physicalOp.inputPorts.size)
 
           // derive the output partition info of this operator
-          val outputPartitionInfo = layer.derivePartition(inputPartitionsOnPort.toList)
-          outputPartitionInfos.put(layerId, outputPartitionInfo)
+          val outputPartitionInfo = physicalOp.derivePartition(inputPartitionsOnPort.toList)
+          outputPartitionInfos.put(physicalOpId, outputPartitionInfo)
         }
       })
 
