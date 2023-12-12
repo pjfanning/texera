@@ -15,11 +15,11 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
   def setOperatorCompleted(
       workflow: Workflow,
       executionState: ExecutionState,
-      opID: OperatorIdentity
+      logicalOpId: OperatorIdentity
   ): Unit = {
-    val layers = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opID)
-    layers.foreach { layer =>
-      executionState.getOperatorExecution(layer.id).setAllWorkerState(COMPLETED)
+    val physicalOps = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(logicalOpId)
+    physicalOps.foreach { physicalOp =>
+      executionState.getOperatorExecution(physicalOp.id).setAllWorkerState(COMPLETED)
     }
   }
 
@@ -52,18 +52,18 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       headerlessCsvOpDesc.operatorIdentifier,
       keywordOpDesc.operatorIdentifier,
       sink.operatorIdentifier
-    ).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
+    ).foreach(logicalOpId => setOperatorCompleted(workflow, executionState, logicalOpId))
     scheduler.schedulingPolicy.addToRunningRegions(
       scheduler.schedulingPolicy.startWorkflow(workflow),
       null
     )
     val opIdentity = headerlessCsvOpDesc.operatorIdentifier
-    val layerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
+    val physicalOpId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
     val nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
         workflow,
         executionState,
-        VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, layerId, 0)
+        VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, physicalOpId, 0)
       )
     assert(nextRegions.isEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions.size == 1)
@@ -119,16 +119,16 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       scheduler.schedulingPolicy.startWorkflow(workflow),
       null
     )
-    Set(buildCsv.operatorIdentifier).foreach(opID =>
-      setOperatorCompleted(workflow, executionState, opID)
+    Set(buildCsv.operatorIdentifier).foreach(logicalOpId =>
+      setOperatorCompleted(workflow, executionState, logicalOpId)
     )
     val opIdentity = buildCsv.operatorIdentifier
-    val layerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
+    val physicalOpId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(opIdentity).head.id
     var nextRegions =
       scheduler.schedulingPolicy.onWorkerCompletion(
         workflow,
         executionState,
-        VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, layerId, 0)
+        VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, physicalOpId, 0)
       )
     assert(nextRegions.isEmpty)
 
@@ -181,13 +181,13 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       hashJoin1.operatorIdentifier,
       hashJoin2.operatorIdentifier,
       sink.operatorIdentifier
-    ).foreach(opID => setOperatorCompleted(workflow, executionState, opID))
-    val probeId = probeCsv.operatorIdentifier
-    val probeLayerId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(probeId).head.id
+    ).foreach(logicalOpId => setOperatorCompleted(workflow, executionState, logicalOpId))
+    val probeLogicalOpId = probeCsv.operatorIdentifier
+    val probePhysicalOpId = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(probeLogicalOpId).head.id
     nextRegions = scheduler.schedulingPolicy.onWorkerCompletion(
       workflow,
       executionState,
-      VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, probeLayerId, 0)
+      VirtualIdentityUtils.createWorkerIdentity(workflow.workflowId.executionId, probePhysicalOpId, 0)
     )
     assert(nextRegions.isEmpty)
     assert(scheduler.schedulingPolicy.getCompletedRegions.size == 2)
