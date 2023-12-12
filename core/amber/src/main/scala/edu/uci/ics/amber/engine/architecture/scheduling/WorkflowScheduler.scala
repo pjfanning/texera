@@ -149,7 +149,7 @@ class WorkflowScheduler(
     var frontier: Iterable[PhysicalOpIdentity] = workflow.getSourcePhysicalOpsOfRegion(region)
     while (frontier.nonEmpty) {
       frontier.foreach { (op: PhysicalOpIdentity) =>
-        // Last layer of upstream operators in the same region.
+        // Last PhysicalOp of upstream operators in the same region.
         if (!builtOperators.contains(op)) {
           buildOperator(
             workflow,

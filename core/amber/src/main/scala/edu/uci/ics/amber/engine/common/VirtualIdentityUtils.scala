@@ -15,20 +15,18 @@ object VirtualIdentityUtils {
   def createWorkerIdentity(
       executionId: Long,
       operator: String,
-      layer: String,
+      layerName: String,
       workerId: Int
   ): ActorVirtualIdentity = {
-    ActorVirtualIdentity(s"Worker:WF$executionId-$operator-$layer-$workerId")
+    ActorVirtualIdentity(s"Worker:WF$executionId-$operator-$layerName-$workerId")
   }
 
   def createWorkerIdentity(
       executionId: Long,
-      layer: PhysicalOpIdentity,
+      physicalOpId: PhysicalOpIdentity,
       workerId: Int
   ): ActorVirtualIdentity = {
-    ActorVirtualIdentity(
-      s"Worker:WF$executionId-${layer.logicalOpId.id}-${layer.layerName}-$workerId"
-    )
+    createWorkerIdentity(executionId, physicalOpId.logicalOpId.id, physicalOpId.layerName, workerId)
   }
 
   def getPhysicalOpId(workerId: ActorVirtualIdentity): PhysicalOpIdentity = {
