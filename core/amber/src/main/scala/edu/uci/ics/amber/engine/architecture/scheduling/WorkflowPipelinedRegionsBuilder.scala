@@ -67,13 +67,13 @@ class WorkflowPipelinedRegionsBuilder(
   private def getBlockingEdgesRemovedDAG: PhysicalPlan = {
     val edgesToRemove = new mutable.MutableList[PhysicalLink]()
 
-    physicalPlan.allOperatorIds.foreach(opId => {
-      val upstreamOps = physicalPlan.getUpstreamPhysicalOpIds(opId)
-      upstreamOps.foreach(upOpId => {
+    physicalPlan.allOperatorIds.foreach(physicalOpId => {
+      val upstreamPhysicalOpIds = physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
+      upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
         physicalPlan.links
-          .filter(l => l.from == upOpId && l.to == opId)
+          .filter(l => l.from == upstreamPhysicalOpId && l.to == physicalOpId)
           .foreach(link => {
-            if (physicalPlan.operatorMap(opId).isInputBlocking(link)) {
+            if (physicalPlan.getOperator(physicalOpId).isInputBlocking(link)) {
               edgesToRemove += link
             }
           })
@@ -127,9 +127,10 @@ class WorkflowPipelinedRegionsBuilder(
     // add dependencies among regions
     physicalPlan
       .topologicalIterator()
-      .foreach(opId => {
+      .foreach(physicalOpId => {
         // For operators like HashJoin that have an order among their blocking and pipelined inputs
-        val inputProcessingOrderForOp = physicalPlan.operatorMap(opId).getInputProcessingOrder()
+        val inputProcessingOrderForOp =
+          physicalPlan.getOperator(physicalOpId).getInputProcessingOrder()
         if (inputProcessingOrderForOp != null && inputProcessingOrderForOp.length > 1) {
           for (i <- 1 until inputProcessingOrderForOp.length) {
             try {
@@ -153,15 +154,16 @@ class WorkflowPipelinedRegionsBuilder(
         }
 
         // For operators that have only blocking input links. add materialization to all input links.
-        val upstreamOps = physicalPlan.getUpstreamPhysicalOpIds(opId)
+        val upstreamPhysicalOpIds = physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
 
-        val allInputBlocking = upstreamOps.nonEmpty && upstreamOps.forall(upstreamOp =>
-          findAllLinks(upstreamOp, opId)
-            .forall(link => physicalPlan.operatorMap(opId).isInputBlocking(link))
-        )
+        val allInputBlocking =
+          upstreamPhysicalOpIds.nonEmpty && upstreamPhysicalOpIds.forall(upstreamPhysicalOpId =>
+            findAllLinks(upstreamPhysicalOpId, physicalOpId)
+              .forall(link => physicalPlan.getOperator(physicalOpId).isInputBlocking(link))
+          )
         if (allInputBlocking) {
-          upstreamOps.foreach(upstreamOp => {
-            findAllLinks(upstreamOp, opId).foreach { link =>
+          upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
+            findAllLinks(upstreamPhysicalOpId, physicalOpId).foreach { link =>
               this.physicalPlan = materializationRewriter
                 .addMaterializationToLink(
                   physicalPlan,
@@ -223,23 +225,24 @@ class WorkflowPipelinedRegionsBuilder(
       new mutable.HashMap[PipelinedRegion, ArrayBuffer[PhysicalOpIdentity]]()
     this.physicalPlan
       .topologicalIterator()
-      .foreach(opId => {
-        val upstreamOps = this.physicalPlan.getUpstreamPhysicalOpIds(opId)
-        upstreamOps.foreach(upstreamOp => {
-          findAllLinks(upstreamOp, opId).foreach(linkFromUpstreamOp => {
-            if (physicalPlan.operatorMap(opId).isInputBlocking(linkFromUpstreamOp)) {
-              val prevInOrderRegions = getPipelinedRegionsFromOperatorId(upstreamOp)
+      .foreach(physicalOpId => {
+        val upstreamPhysicalOpIds = this.physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
+        upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
+          findAllLinks(upstreamPhysicalOpId, physicalOpId).foreach(upstreamPhysicalLink => {
+            if (physicalPlan.getOperator(physicalOpId).isInputBlocking(upstreamPhysicalLink)) {
+              val prevInOrderRegions = getPipelinedRegionsFromOperatorId(upstreamPhysicalOpId)
               for (prevInOrderRegion <- prevInOrderRegions) {
                 if (
                   !regionTerminalOperatorInOtherRegions.contains(
                     prevInOrderRegion
-                  ) || !regionTerminalOperatorInOtherRegions(prevInOrderRegion).contains(opId)
+                  ) || !regionTerminalOperatorInOtherRegions(prevInOrderRegion)
+                    .contains(physicalOpId)
                 ) {
                   val terminalOps = regionTerminalOperatorInOtherRegions.getOrElseUpdate(
                     prevInOrderRegion,
                     new ArrayBuffer[PhysicalOpIdentity]()
                   )
-                  terminalOps.append(opId)
+                  terminalOps.append(physicalOpId)
                   regionTerminalOperatorInOtherRegions(prevInOrderRegion) = terminalOps
                 }
               }
