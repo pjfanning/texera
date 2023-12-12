@@ -42,7 +42,7 @@ object PhysicalPlan {
         .operatorInfo
         .outputPorts(fromPort)
         .displayName
-      val fromLayer = physicalPlan.findLayerForOutputPort(fromLogicalOp, fromPortName)
+      val fromLayer = physicalPlan.getPhysicalOpIdForOutputPort(fromLogicalOp, fromPortName)
 
       val toLogicalOp = logicalPlan.getOperator(link.destination.operatorId).operatorIdentifier
       val toPort = link.destination.portOrdinal
@@ -52,7 +52,7 @@ object PhysicalPlan {
         .operatorInfo
         .inputPorts(toPort)
         .displayName
-      val toLayer = physicalPlan.findLayerForInputPort(toLogicalOp, toPortName)
+      val toLayer = physicalPlan.getPhysicalOpIdForInputPort(toLogicalOp, toPortName)
 
       physicalPlan = physicalPlan.addEdge(fromLayer, fromPort, toLayer, toPort)
     })
@@ -67,23 +67,21 @@ case class PhysicalPlan(
     links: List[PhysicalLink]
 ) {
 
-   @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
+  @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
     operators.map(o => (o.id, o)).toMap
 
   // the dag will be re-computed again once it reaches the coordinator.
-  @transient  lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
+  @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
     links.foreach(l => jgraphtDag.addEdge(l.from, l.to))
     jgraphtDag
   }
 
-  @transient private lazy val allOperatorIds: Iterable[PhysicalOpIdentity] = operatorMap.keys
-
-  @transient lazy val sourceOperatorIds: List[PhysicalOpIdentity] =
+  @transient private lazy val sourceOperatorIds: List[PhysicalOpIdentity] =
     operatorMap.keys.filter(op => dag.inDegreeOf(op) == 0).toList
 
-  @transient lazy val sinkOperatorIds: List[PhysicalOpIdentity] =
+  @transient private lazy val sinkOperatorIds: List[PhysicalOpIdentity] =
     operatorMap.keys
       .filter(op => dag.outDegreeOf(op) == 0)
       .toList
@@ -92,7 +90,7 @@ case class PhysicalPlan(
 
   def getSinkOperatorIds: List[PhysicalOpIdentity] = this.sinkOperatorIds
 
-  private def findLayerForInputPort(
+  private def getPhysicalOpIdForInputPort(
       logicalOpId: OperatorIdentity,
       portName: String
   ): PhysicalOpIdentity = {
@@ -106,7 +104,7 @@ case class PhysicalPlan(
     candidateLayers.head.id
   }
 
-  private def findLayerForOutputPort(
+  private def getPhysicalOpIdForOutputPort(
       logicalOpId: OperatorIdentity,
       portName: String
   ): PhysicalOpIdentity = {
@@ -223,11 +221,10 @@ case class PhysicalPlan(
   def getPhysicalOpByWorkerId(workerId: ActorVirtualIdentity): PhysicalOp =
     getOperator(VirtualIdentityUtils.getPhysicalOpId(workerId))
 
-
   def getLinksBetween(
-                            from: PhysicalOpIdentity,
-                            to: PhysicalOpIdentity
-                          ): List[PhysicalLink] = {
+      from: PhysicalOpIdentity,
+      to: PhysicalOpIdentity
+  ): List[PhysicalLink] = {
     links.filter(link => link.from == from && link.to == to)
 
   }

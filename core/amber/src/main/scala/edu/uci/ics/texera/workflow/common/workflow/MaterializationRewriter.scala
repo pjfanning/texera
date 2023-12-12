@@ -33,7 +33,8 @@ class MaterializationRewriter(
     val fromOutputPortName = fromPhysicalOp.outputPorts(fromOutputPortIdx).displayName
     val toPhysicalOpId = physicalLink.to
     val toPhysicalOp = physicalPlan.getOperator(toPhysicalOpId)
-    val toInputPortIdx = physicalPlan.getOperator(toPhysicalOpId).inputToOrdinalMapping(physicalLink)
+    val toInputPortIdx =
+      physicalPlan.getOperator(toPhysicalOpId).inputToOrdinalMapping(physicalLink)
     val toInputPortName = toPhysicalOp.inputPorts(toInputPortIdx).displayName
 
     val materializationWriter = new ProgressiveSinkOpDesc()
@@ -46,7 +47,9 @@ class MaterializationRewriter(
           .isInstanceOf[SourceOperatorDescriptor]
       )
         logicalPlan
-          .inputSchemaMap(logicalPlan.getOperator(fromPhysicalOpId.logicalOpId.id).operatorIdentifier)
+          .inputSchemaMap(
+            logicalPlan.getOperator(fromPhysicalOpId.logicalOpId.id).operatorIdentifier
+          )
           .map(s => s.get)
           .toArray
       else Array()

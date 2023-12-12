@@ -103,10 +103,11 @@ class ExecutionState(workflow: Workflow) {
   }
 
   def physicalOpToWorkersMapping: Iterable[(PhysicalOpIdentity, Seq[ActorVirtualIdentity])] = {
-    workflow.physicalPlan.operators.map(physicalOp=> physicalOp.id)
+    workflow.physicalPlan.operators
+      .map(physicalOp => physicalOp.id)
       .map(physicalOpId => {
-      (physicalOpId, getAllWorkersForOperators(Array(physicalOpId)).toSeq)
-    })
+        (physicalOpId, getAllWorkersForOperators(Array(physicalOpId)).toSeq)
+      })
   }
 
   def getAllWorkersForOperators(
@@ -130,7 +131,9 @@ class ExecutionState(workflow: Workflow) {
     pythonPhysicalOpIds
       .map(opId => workflow.physicalPlan.getOperator(opId))
       .filter(physicalOp => physicalOp.isPythonOperator)
-      .flatMap(physicalOp => getOperatorExecution(physicalOp.id).getBuiltWorkerIds.map(worker => (worker, physicalOp)))
+      .flatMap(physicalOp =>
+        getOperatorExecution(physicalOp.id).getBuiltWorkerIds.map(worker => (worker, physicalOp))
+      )
       .toList
   }
 

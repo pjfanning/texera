@@ -44,7 +44,7 @@ class EpochManager {
       )
     }
     // if this operator is not the final destination of the marker, pass it downstream
-    if (!marker.scope.sinkOperatorIds.contains(dp.getOperatorId)) {
+    if (!marker.scope.getSinkOperatorIds.contains(dp.getOperatorId)) {
       dp.outputManager.emitEpochMarker(marker)
     }
     // unblock input channels

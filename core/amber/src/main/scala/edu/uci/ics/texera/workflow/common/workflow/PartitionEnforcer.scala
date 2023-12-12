@@ -90,7 +90,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
       .topologicalIterator()
       .foreach(physicalOpId => {
         val physicalOp = physicalPlan.getOperator(physicalOpId)
-        if (physicalPlan.sourceOperatorIds.contains(physicalOpId)) {
+        if (physicalPlan.getSourceOperatorIds.contains(physicalOpId)) {
           // get output partition info of the source operator
           val outPart =
             physicalOp.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
