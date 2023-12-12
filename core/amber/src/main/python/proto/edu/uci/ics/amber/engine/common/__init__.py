@@ -16,7 +16,7 @@ class WorkflowIdentity(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class ActorVirtualIdentity(betterproto.Message):
-    """final case class ActorVirtualIdentity"""
+    """final case class ActorVirtualIdentity (    name: String )"""
 
     name: str = betterproto.string_field(1)
 

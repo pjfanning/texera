@@ -17,8 +17,9 @@ message WorkflowIdentity {
   int64 executionId = 1;
 }
 
-
-// final case class ActorVirtualIdentity
+// final case class ActorVirtualIdentity (
+//    name: String
+// )
 message ActorVirtualIdentity {
   string name = 1;
 }
