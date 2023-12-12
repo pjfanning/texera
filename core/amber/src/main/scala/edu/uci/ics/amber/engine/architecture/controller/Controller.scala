@@ -121,7 +121,6 @@ class Controller(
       cp.inputGateway.tryPickChannel match {
         case Some(channel) =>
           val msg = channel.take
-          logger.info(s"$msg")
           logManager.withFaultTolerant(msg.channel, Some(msg)) {
             msg.payload match {
               case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
