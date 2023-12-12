@@ -223,4 +223,12 @@ case class PhysicalPlan(
   def getPhysicalOpByWorkerId(workerId: ActorVirtualIdentity): PhysicalOp =
     getOperator(VirtualIdentityUtils.getPhysicalOpId(workerId))
 
+
+  def getLinksBetween(
+                            from: PhysicalOpIdentity,
+                            to: PhysicalOpIdentity
+                          ): List[PhysicalLink] = {
+    links.filter(link => link.from == from && link.to == to)
+
+  }
 }

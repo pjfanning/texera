@@ -158,12 +158,12 @@ class WorkflowPipelinedRegionsBuilder(
 
         val allInputBlocking =
           upstreamPhysicalOpIds.nonEmpty && upstreamPhysicalOpIds.forall(upstreamPhysicalOpId =>
-            findAllLinks(upstreamPhysicalOpId, physicalOpId)
+            physicalPlan.getLinksBetween(upstreamPhysicalOpId, physicalOpId)
               .forall(link => physicalPlan.getOperator(physicalOpId).isInputBlocking(link))
           )
         if (allInputBlocking) {
           upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
-            findAllLinks(upstreamPhysicalOpId, physicalOpId).foreach { link =>
+            physicalPlan.getLinksBetween(upstreamPhysicalOpId, physicalOpId).foreach { link =>
               this.physicalPlan = materializationRewriter
                 .addMaterializationToLink(
                   physicalPlan,
@@ -193,13 +193,7 @@ class WorkflowPipelinedRegionsBuilder(
     true
   }
 
-  private def findAllLinks(
-      from: PhysicalOpIdentity,
-      to: PhysicalOpIdentity
-  ): List[PhysicalLink] = {
-    physicalPlan.links.filter(link => link.from == from && link.to == to)
 
-  }
 
   private def findAllPipelinedRegionsAndAddDependencies(): Unit = {
     var traversedAllOperators = addMaterializationOperatorIfNeeded()
@@ -228,7 +222,7 @@ class WorkflowPipelinedRegionsBuilder(
       .foreach(physicalOpId => {
         val upstreamPhysicalOpIds = this.physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
         upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
-          findAllLinks(upstreamPhysicalOpId, physicalOpId).foreach(upstreamPhysicalLink => {
+          physicalPlan.getLinksBetween(upstreamPhysicalOpId, physicalOpId).foreach(upstreamPhysicalLink => {
             if (physicalPlan.getOperator(physicalOpId).isInputBlocking(upstreamPhysicalLink)) {
               val prevInOrderRegions = getPipelinedRegionsFromOperatorId(upstreamPhysicalOpId)
               for (prevInOrderRegion <- prevInOrderRegions) {
