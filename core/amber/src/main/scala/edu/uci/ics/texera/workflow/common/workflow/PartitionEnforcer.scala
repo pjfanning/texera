@@ -14,10 +14,10 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
   val linkMapping = new mutable.HashMap[PhysicalLink, LinkStrategy]()
 
   def getOutputPartition(
-                          currentPhysicalOpId: PhysicalOpIdentity,
-                          fromPort: Int,
-                          inputPhysicalOpId: PhysicalOpIdentity,
-                          inputPort: Int
+      currentPhysicalOpId: PhysicalOpIdentity,
+      fromPort: Int,
+      inputPhysicalOpId: PhysicalOpIdentity,
+      inputPort: Int
   ): (LinkStrategy, PartitionInfo) = {
     val currentPhysicalOp = physicalPlan.getOperator(currentPhysicalOpId)
     val inputPhysicalOp = physicalPlan.getOperator(inputPhysicalOpId)
@@ -26,13 +26,15 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
     assert(currentPhysicalOp.getInputOperators(inputPort).contains(inputPhysicalOpId))
 
     // partition requirement of this PhysicalOp on this input port
-    val part = currentPhysicalOp.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
+    val part =
+      currentPhysicalOp.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
     // output partition of the input
     val inputPart = outputPartitionInfos(inputPhysicalOpId)
 
     // input partition satisfies the requirement, and number of worker match
     if (inputPart.satisfies(part) && inputPhysicalOp.numWorkers == currentPhysicalOp.numWorkers) {
-      val linkStrategy = new OneToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
+      val linkStrategy =
+        new OneToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
       val outputPart = inputPart
       (linkStrategy, outputPart)
     } else {
@@ -61,9 +63,21 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
         case SinglePartition() =>
           new AllToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
         case BroadcastPartition() =>
-          new AllBroadcast(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
+          new AllBroadcast(
+            inputPhysicalOp,
+            fromPort,
+            currentPhysicalOp,
+            inputPort,
+            defaultBatchSize
+          )
         case UnknownPartition() =>
-          new FullRoundRobin(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
+          new FullRoundRobin(
+            inputPhysicalOp,
+            fromPort,
+            currentPhysicalOp,
+            inputPort,
+            defaultBatchSize
+          )
       }
       val outputPart = part
       (linkStrategy, outputPart)
@@ -78,7 +92,8 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
         val physicalOp = physicalPlan.getOperator(physicalOpId)
         if (physicalPlan.sourceOperatorIds.contains(physicalOpId)) {
           // get output partition info of the source operator
-          val outPart = physicalOp.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
+          val outPart =
+            physicalOp.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
           outputPartitionInfos.put(physicalOpId, outPart)
         } else {
           val inputPartitionsOnPort = new ArrayBuffer[PartitionInfo]()
@@ -94,7 +109,8 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
             // for each input PhysicalOp connected on this port
             // check partition requirement to enforce corresponding LinkStrategy
             val outputPartitions = inputPhysicalOpIds.map(inputPhysicalOpId => {
-              val (linkStrategy, outputPart) = getOutputPartition(physicalOpId, fromPort, inputPhysicalOpId, port)
+              val (linkStrategy, outputPart) =
+                getOutputPartition(physicalOpId, fromPort, inputPhysicalOpId, port)
               linkMapping.put(linkStrategy.id, linkStrategy)
               outputPart
             })
