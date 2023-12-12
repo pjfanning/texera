@@ -28,7 +28,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
@@ -53,7 +53,7 @@ class WorkflowScheduler(
   private val builtOperators = new mutable.HashSet[PhysicalOpIdentity]()
   private val openedOperators = new mutable.HashSet[PhysicalOpIdentity]()
   private val initializedPythonOperators = new mutable.HashSet[PhysicalOpIdentity]()
-  private val activatedLink = new mutable.HashSet[PhysicalLink]()
+  private val activatedLink = new mutable.HashSet[PhysicalLinkIdentity]()
 
   private val constructingRegions = new mutable.HashSet[PipelinedRegionIdentity]()
   private val startedRegions = new mutable.HashSet[PipelinedRegionIdentity]()
@@ -82,7 +82,7 @@ class WorkflowScheduler(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
-      linkId: PhysicalLink
+      linkId: PhysicalLinkIdentity
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, linkId)
     doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorRefMappingService, akkaActorService)

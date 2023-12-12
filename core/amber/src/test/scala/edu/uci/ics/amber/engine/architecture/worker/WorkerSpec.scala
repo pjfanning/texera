@@ -18,7 +18,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
@@ -67,7 +67,7 @@ class WorkerSpec
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
   private val layerId2 =
     PhysicalOpIdentity(operatorIdentity, "2nd-layer")
-  private val mockLink = PhysicalLink(layerId1, 0, layerId2, 0)
+  private val mockLink = PhysicalLinkIdentity(layerId1, 0, layerId2, 0)
   private val opExecConfig = PhysicalOp
     .oneToOnePhysicalOp(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
     .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))

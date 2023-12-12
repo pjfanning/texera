@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from proto.edu.uci.ics.amber.engine.common import PhysicalLink
+from proto.edu.uci.ics.amber.engine.common import PhysicalLinkIdentity
 
 
 @dataclass
@@ -15,7 +15,7 @@ class Marker:
 
 @dataclass
 class SenderChangeMarker(Marker):
-    link: PhysicalLink
+    link: PhysicalLinkIdentity
 
 
 @dataclass

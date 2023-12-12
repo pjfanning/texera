@@ -13,13 +13,13 @@ class Workflow(
     val partitioningPlan: PartitioningPlan
 ) extends java.io.Serializable {
 
-  def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLink] = {
+  def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLinkIdentity] = {
     region.blockingDownstreamPhysicalOpIdsInOtherRegions.flatMap {
       case (physicalOpId, toPort) =>
         physicalPlan
           .getUpstreamPhysicalOpIds(physicalOpId)
           .filter(upstreamPhysicalOpId => region.operators.contains(upstreamPhysicalOpId))
-          .map(upstreamPhysicalOpId => PhysicalLink(upstreamPhysicalOpId, 0, physicalOpId, toPort))
+          .map(upstreamPhysicalOpId => PhysicalLinkIdentity(upstreamPhysicalOpId, 0, physicalOpId, toPort))
     }.toSet
   }
 

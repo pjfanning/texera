@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -23,7 +23,7 @@ class MaterializationRewriter(
   def addMaterializationToLink(
       physicalPlan: PhysicalPlan,
       logicalPlan: LogicalPlan,
-      physicalLink: PhysicalLink,
+      physicalLink: PhysicalLinkIdentity,
       writerReaderPairs: mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]
   ): PhysicalPlan = {
 
@@ -87,9 +87,9 @@ class MaterializationRewriter(
       )
 
     // create 2 links for materialization
-    val readerToDestLink = PhysicalLink(matReaderOpExecConfig.id, 0, toPhysicalOpId, toInputPortIdx)
+    val readerToDestLink = PhysicalLinkIdentity(matReaderOpExecConfig.id, 0, toPhysicalOpId, toInputPortIdx)
     val sourceToWriterLink =
-      PhysicalLink(fromPhysicalOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
+      PhysicalLinkIdentity(fromPhysicalOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
     // add the pair to the map for later adding edges between 2 regions.
     writerReaderPairs(matWriterOpExecConfig.id) = matReaderOpExecConfig.id
 

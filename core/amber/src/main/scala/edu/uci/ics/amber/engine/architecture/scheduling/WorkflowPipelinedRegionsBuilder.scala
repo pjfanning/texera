@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder.replaceVertex
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity,
   WorkflowIdentity
 }
@@ -65,7 +65,7 @@ class WorkflowPipelinedRegionsBuilder(
     * @return
     */
   private def getBlockingEdgesRemovedDAG: PhysicalPlan = {
-    val edgesToRemove = new mutable.MutableList[PhysicalLink]()
+    val edgesToRemove = new mutable.MutableList[PhysicalLinkIdentity]()
 
     physicalPlan.operators
       .map(physicalOp => physicalOp.id)

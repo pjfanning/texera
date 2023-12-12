@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
 
 object PhysicalPlan {
 
-  def apply(operatorList: Array[PhysicalOp], links: Array[PhysicalLink]): PhysicalPlan = {
+  def apply(operatorList: Array[PhysicalOp], links: Array[PhysicalLinkIdentity]): PhysicalPlan = {
     new PhysicalPlan(operatorList.toList, links.toList)
   }
 
@@ -64,7 +64,7 @@ object PhysicalPlan {
 
 case class PhysicalPlan(
     operators: List[PhysicalOp],
-    links: List[PhysicalLink]
+    links: List[PhysicalLinkIdentity]
 ) {
 
   @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
@@ -149,7 +149,7 @@ case class PhysicalPlan(
     dag.incomingEdgesOf(physicalOpId).asScala.map(e => dag.getEdgeSource(e)).toList
   }
 
-  def getUpstreamPhysicalLinks(physicalOpId: PhysicalOpIdentity): List[PhysicalLink] = {
+  def getUpstreamPhysicalLinks(physicalOpId: PhysicalOpIdentity): List[PhysicalLinkIdentity] = {
     links.filter(l => l.to == physicalOpId)
   }
 
@@ -170,7 +170,7 @@ case class PhysicalPlan(
     this.copy(operators = physicalOp :: operators)
   }
 
-  def addEdge(physicalLink: PhysicalLink): PhysicalPlan = {
+  def addEdge(physicalLink: PhysicalLinkIdentity): PhysicalPlan = {
     addEdge(physicalLink.from, physicalLink.fromPort, physicalLink.to, physicalLink.toPort)
   }
 
@@ -185,13 +185,13 @@ case class PhysicalPlan(
       (from -> operatorMap(from).addOutput(to, fromPort, toPort)) +
       (to -> operatorMap(to).addInput(from, fromPort, toPort))
 
-    val newLinks = links :+ PhysicalLink(from, fromPort, to, toPort)
+    val newLinks = links :+ PhysicalLinkIdentity(from, fromPort, to, toPort)
     this.copy(operators = newOperators.values.toList, links = newLinks)
   }
 
   // returns a new physical plan with the edges removed
   def removeEdge(
-      physicalLink: PhysicalLink
+      physicalLink: PhysicalLinkIdentity
   ): PhysicalPlan = {
     val from = physicalLink.from
     val to = physicalLink.to
@@ -212,7 +212,7 @@ case class PhysicalPlan(
     // add all physical operators to physical DAG
     subPlan.operators.foreach(op => resultPlan = resultPlan.addOperator(op))
     // connect intra-operator links
-    subPlan.links.foreach((physicalLink: PhysicalLink) =>
+    subPlan.links.foreach((physicalLink: PhysicalLinkIdentity) =>
       resultPlan = resultPlan.addEdge(physicalLink)
     )
     resultPlan
@@ -224,7 +224,7 @@ case class PhysicalPlan(
   def getLinksBetween(
       from: PhysicalOpIdentity,
       to: PhysicalOpIdentity
-  ): List[PhysicalLink] = {
+  ): List[PhysicalLinkIdentity] = {
     links.filter(link => link.from == from && link.to == to)
 
   }

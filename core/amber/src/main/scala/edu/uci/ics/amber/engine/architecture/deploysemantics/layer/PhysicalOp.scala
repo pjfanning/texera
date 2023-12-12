@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.WorkflowWorke
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.{AmberConfig, VirtualIdentityUtils}
@@ -157,8 +157,8 @@ case class PhysicalOp(
     inputPorts: List[InputPort] = List(InputPort()),
     outputPorts: List[OutputPort] = List(OutputPort()),
     // mapping of all input/output operators connected on a specific input/output port index
-    inputToOrdinalMapping: Map[PhysicalLink, Int] = Map(),
-    outputToOrdinalMapping: Map[PhysicalLink, Int] = Map(),
+    inputToOrdinalMapping: Map[PhysicalLinkIdentity, Int] = Map(),
+    outputToOrdinalMapping: Map[PhysicalLinkIdentity, Int] = Map(),
     // input ports that are blocking
     blockingInputs: List[Int] = List(),
     // execution dependency of ports
@@ -227,24 +227,24 @@ case class PhysicalOp(
   // creates a copy with an additional input operator specified on an input port
   def addInput(from: PhysicalOpIdentity, fromPort: Int, toPort: Int): PhysicalOp = {
     this.copy(inputToOrdinalMapping =
-      inputToOrdinalMapping + (PhysicalLink(from, fromPort, this.id, toPort) -> toPort)
+      inputToOrdinalMapping + (PhysicalLinkIdentity(from, fromPort, this.id, toPort) -> toPort)
     )
   }
 
   // creates a copy with an additional output operator specified on an output port
   def addOutput(to: PhysicalOpIdentity, fromPort: Int, toPort: Int): PhysicalOp = {
     this.copy(outputToOrdinalMapping =
-      outputToOrdinalMapping + (PhysicalLink(this.id, fromPort, to, toPort) -> fromPort)
+      outputToOrdinalMapping + (PhysicalLinkIdentity(this.id, fromPort, to, toPort) -> fromPort)
     )
   }
 
   // creates a copy with a removed input operator
-  def removeInput(link: PhysicalLink): PhysicalOp = {
+  def removeInput(link: PhysicalLinkIdentity): PhysicalOp = {
     this.copy(inputToOrdinalMapping = inputToOrdinalMapping - link)
   }
 
   // creates a copy with a removed output operator
-  def removeOutput(link: PhysicalLink): PhysicalOp = {
+  def removeOutput(link: PhysicalLinkIdentity): PhysicalOp = {
     this.copy(outputToOrdinalMapping = outputToOrdinalMapping - link)
   }
 
@@ -263,7 +263,7 @@ case class PhysicalOp(
     this.copy(schemaInfo = Some(schemaInfo))
 
   // returns all input links on a specific input port
-  def getInputLinks(portIndex: Int): List[PhysicalLink] = {
+  def getInputLinks(portIndex: Int): List[PhysicalLinkIdentity] = {
     inputToOrdinalMapping.filter(p => p._2 == portIndex).keys.toList
   }
 
@@ -284,7 +284,7 @@ case class PhysicalOp(
     * Tells whether the input on this link is blocking i.e. the operator doesn't output anything till this link
     * outputs all its tuples
     */
-  def isInputBlocking(input: PhysicalLink): Boolean = {
+  def isInputBlocking(input: PhysicalLinkIdentity): Boolean = {
     inputToOrdinalMapping.get(input).exists(port => realBlockingInputs.contains(port))
   }
 
@@ -292,9 +292,9 @@ case class PhysicalOp(
     * Some operators process their inputs in a particular order. Eg: 2 phase hash join first
     * processes the build input, then the probe input.
     */
-  def getInputProcessingOrder(): Array[PhysicalLink] = {
+  def getInputProcessingOrder(): Array[PhysicalLinkIdentity] = {
     val dependencyDag =
-      new DirectedAcyclicGraph[PhysicalLink, DefaultEdge](classOf[DefaultEdge])
+      new DirectedAcyclicGraph[PhysicalLinkIdentity, DefaultEdge](classOf[DefaultEdge])
     dependency.foreach(dep => {
       val prevInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._2).get._1
       val nextInOrder = inputToOrdinalMapping.find(pair => pair._2 == dep._1).get._1
@@ -307,8 +307,8 @@ case class PhysicalOp(
       dependencyDag.addEdge(prevInOrder, nextInOrder)
     })
     val topologicalIterator =
-      new TopologicalOrderIterator[PhysicalLink, DefaultEdge](dependencyDag)
-    val processingOrder = new ArrayBuffer[PhysicalLink]()
+      new TopologicalOrderIterator[PhysicalLinkIdentity, DefaultEdge](dependencyDag)
+    val processingOrder = new ArrayBuffer[PhysicalLinkIdentity]()
     while (topologicalIterator.hasNext) {
       processingOrder.append(topologicalIterator.next())
     }

@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
   Partitioning,
   RoundRobinPartitioning
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
 
 class FullRoundRobin(
     from: PhysicalOp,
@@ -15,7 +15,7 @@ class FullRoundRobin(
     batchSize: Int
 ) extends LinkStrategy(from, fromPort, to, toPort, batchSize) {
   override def getPartitioning: Iterable[
-    (ActorVirtualIdentity, PhysicalLink, Partitioning, Seq[ActorVirtualIdentity])
+    (ActorVirtualIdentity, PhysicalLinkIdentity, Partitioning, Seq[ActorVirtualIdentity])
   ] = {
     from.identifiers.map(x =>
       (x, id, RoundRobinPartitioning(batchSize, to.identifiers), to.identifiers.toSeq)

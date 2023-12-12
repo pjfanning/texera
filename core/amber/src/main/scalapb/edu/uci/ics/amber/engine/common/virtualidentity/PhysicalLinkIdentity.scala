@@ -5,7 +5,7 @@
 
 package edu.uci.ics.amber.engine.common.virtualidentity
 
-/** final case class PhysicalLink (
+/** final case class PhysicalLinkIdentity (
   *    from: PhysicalOpIdentity,
   *    fromPort: Int,
   *    to: PhysicalOpIdentity,
@@ -13,12 +13,12 @@ package edu.uci.ics.amber.engine.common.virtualidentity
   * )
   */
 @SerialVersionUID(0L)
-final case class PhysicalLink(
+final case class PhysicalLinkIdentity(
     from: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity,
     fromPort: _root_.scala.Int,
     to: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity,
     toPort: _root_.scala.Int
-    ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PhysicalLink] {
+    ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[PhysicalLinkIdentity] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
     private[this] def __computeSerializedValue(): _root_.scala.Int = {
@@ -91,10 +91,10 @@ final case class PhysicalLink(
         }
       };
     }
-    def withFrom(__v: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity): PhysicalLink = copy(from = __v)
-    def withFromPort(__v: _root_.scala.Int): PhysicalLink = copy(fromPort = __v)
-    def withTo(__v: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity): PhysicalLink = copy(to = __v)
-    def withToPort(__v: _root_.scala.Int): PhysicalLink = copy(toPort = __v)
+    def withFrom(__v: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity): PhysicalLinkIdentity = copy(from = __v)
+    def withFromPort(__v: _root_.scala.Int): PhysicalLinkIdentity = copy(fromPort = __v)
+    def withTo(__v: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity): PhysicalLinkIdentity = copy(to = __v)
+    def withToPort(__v: _root_.scala.Int): PhysicalLinkIdentity = copy(toPort = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -125,13 +125,13 @@ final case class PhysicalLink(
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
-    def companion = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink
-    // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.common.PhysicalLink])
+    def companion = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity
+    // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.common.PhysicalLinkIdentity])
 }
 
-object PhysicalLink extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink] {
-  implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink] = this
-  def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink = {
+object PhysicalLinkIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity] {
+  implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity] = this
+  def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity = {
     var __from: _root_.scala.Option[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity] = _root_.scala.None
     var __fromPort: _root_.scala.Int = 0
     var __to: _root_.scala.Option[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity] = _root_.scala.None
@@ -152,17 +152,17 @@ object PhysicalLink extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.
         case tag => _input__.skipField(tag)
       }
     }
-    edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink(
+    edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity(
         from = __from.getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance),
         fromPort = __fromPort,
         to = __to.getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance),
         toPort = __toPort
     )
   }
-  implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink] = _root_.scalapb.descriptors.Reads{
+  implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity] = _root_.scalapb.descriptors.Reads{
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
-      edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink(
+      edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity(
         from = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity]).getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance),
         fromPort = __fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[_root_.scala.Int]).getOrElse(0),
         to = __fieldsMap.get(scalaDescriptor.findFieldByNumber(3).get).map(_.as[edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity]).getOrElse(edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance),
@@ -182,13 +182,13 @@ object PhysicalLink extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.
   }
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-  lazy val defaultInstance = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink(
+  lazy val defaultInstance = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity(
     from = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance,
     fromPort = 0,
     to = edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity.defaultInstance,
     toPort = 0
   )
-  implicit class PhysicalLinkLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink](_l) {
+  implicit class PhysicalLinkIdentityLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity](_l) {
     def from: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity] = field(_.from)((c_, f_) => c_.copy(from = f_))
     def fromPort: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Int] = field(_.fromPort)((c_, f_) => c_.copy(fromPort = f_))
     def to: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity] = field(_.to)((c_, f_) => c_.copy(to = f_))
@@ -203,11 +203,11 @@ object PhysicalLink extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.
     fromPort: _root_.scala.Int,
     to: edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity,
     toPort: _root_.scala.Int
-  ): _root_.edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink = _root_.edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink(
+  ): _root_.edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity = _root_.edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity(
     from,
     fromPort,
     to,
     toPort
   )
-  // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.PhysicalLink])
+  // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.PhysicalLinkIdentity])
 }

@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLink}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
 
 import scala.collection.mutable
 
@@ -68,17 +68,17 @@ class OutputManager(
     dataOutputPort: NetworkOutputGateway
 ) {
 
-  val partitioners = mutable.HashMap[PhysicalLink, Partitioner]()
+  val partitioners = mutable.HashMap[PhysicalLinkIdentity, Partitioner]()
 
   val networkOutputBuffers =
-    mutable.HashMap[(PhysicalLink, ActorVirtualIdentity), NetworkOutputBuffer]()
+    mutable.HashMap[(PhysicalLinkIdentity, ActorVirtualIdentity), NetworkOutputBuffer]()
 
   /**
     * Add down stream operator and its corresponding Partitioner.
     * @param partitioning Partitioning, describes how and whom to send to.
     */
   def addPartitionerWithPartitioning(
-      link: PhysicalLink,
+      link: PhysicalLinkIdentity,
       partitioning: Partitioning
   ): Unit = {
     val partitioner = toPartitioner(partitioning)
@@ -96,7 +96,7 @@ class OutputManager(
     */
   def passTupleToDownstream(
       tuple: ITuple,
-      outputPort: PhysicalLink
+      outputPort: PhysicalLinkIdentity
   ): Unit = {
     val partitioner =
       partitioners.getOrElse(outputPort, throw new RuntimeException("output port not found"))

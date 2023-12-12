@@ -38,7 +38,7 @@ from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
     ControlInvocationV2,
     ControlPayloadV2,
-    PhysicalLink,
+    PhysicalLinkIdentity,
     ReturnInvocationV2,
     PhysicalOpIdentity,
     OperatorIdentity,
@@ -54,7 +54,7 @@ class TestMainLoop:
 
     @pytest.fixture
     def mock_link(self):
-        return PhysicalLink(
+        return PhysicalLinkIdentity(
             from_=PhysicalOpIdentity(OperatorIdentity("from"), "from"),
             to=PhysicalOpIdentity(OperatorIdentity("to"), "to"),
         )

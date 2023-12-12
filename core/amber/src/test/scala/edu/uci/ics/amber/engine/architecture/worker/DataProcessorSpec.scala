@@ -20,7 +20,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLink,
+  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
@@ -33,8 +33,8 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
   private val operatorIdentity: OperatorIdentity = OperatorIdentity("testOperator")
   private val operator = mock[OperatorExecutor]
-  private val linkID: PhysicalLink =
-    PhysicalLink(
+  private val linkID: PhysicalLinkIdentity =
+    PhysicalLinkIdentity(
       PhysicalOpIdentity(OperatorIdentity("testUpstream"), "main"),
       0,
       PhysicalOpIdentity(OperatorIdentity("testOperator"), "main"),

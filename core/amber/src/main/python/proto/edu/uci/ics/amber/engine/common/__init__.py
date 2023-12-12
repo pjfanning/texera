@@ -40,10 +40,10 @@ class PhysicalOpIdentity(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
-class PhysicalLink(betterproto.Message):
+class PhysicalLinkIdentity(betterproto.Message):
     """
-    final case class PhysicalLink (    from: PhysicalOpIdentity,    fromPort:
-    Int,    to: PhysicalOpIdentity,    toPort: Int )
+    final case class PhysicalLinkIdentity (    from: PhysicalOpIdentity,
+    fromPort: Int,    to: PhysicalOpIdentity,    toPort: Int )
     """
 
     from_: "PhysicalOpIdentity" = betterproto.message_field(1)

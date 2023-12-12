@@ -7,7 +7,7 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
 import edu.uci.ics.amber.engine.common.IOperatorExecutor;
-import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLink;
+import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity;
 import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.InputPort;
@@ -87,7 +87,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
                 .withInputPorts(asScalaBuffer(singletonList(new InputPort("internal-input", false))).toList());
 
         PhysicalOp[] layers = {partialLayer, finalLayer};
-        PhysicalLink[] links = {new PhysicalLink(partialLayer.id(), 0, finalLayer.id(), 0)};
+        PhysicalLinkIdentity[] links = {new PhysicalLinkIdentity(partialLayer.id(), 0, finalLayer.id(), 0)};
 
         return PhysicalPlan.apply(layers, links);
     }

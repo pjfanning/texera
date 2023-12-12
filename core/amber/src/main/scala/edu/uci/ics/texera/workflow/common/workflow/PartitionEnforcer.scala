@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.linksemantics._
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
-import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLink, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, PhysicalOpIdentity}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -11,7 +11,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
 
   // a map of an operator to its output partition info
   val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()
-  val linkMapping = new mutable.HashMap[PhysicalLink, LinkStrategy]()
+  val linkMapping = new mutable.HashMap[PhysicalLinkIdentity, LinkStrategy]()
 
   def getOutputPartition(
       currentPhysicalOpId: PhysicalOpIdentity,
