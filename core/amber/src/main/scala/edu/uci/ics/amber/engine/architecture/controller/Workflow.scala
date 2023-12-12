@@ -14,12 +14,12 @@ class Workflow(
 ) extends java.io.Serializable {
 
   def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLink] = {
-    region.blockingDownstreamOperatorsInOtherRegions.flatMap {
-      case (opId, toPort) =>
+    region.blockingDownstreamPhysicalOpIdsInOtherRegions.flatMap {
+      case (physicalOpId, toPort) =>
         physicalPlan
-          .getUpstreamPhysicalOpIds(opId)
-          .filter(upstream => region.operators.contains(upstream))
-          .map(upstream => PhysicalLink(upstream, 0, opId, toPort))
+          .getUpstreamPhysicalOpIds(physicalOpId)
+          .filter(upstreamPhysicalOpId => region.operators.contains(upstreamPhysicalOpId))
+          .map(upstreamPhysicalOpId => PhysicalLink(upstreamPhysicalOpId, 0, physicalOpId, toPort))
     }.toSet
   }
 

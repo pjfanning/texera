@@ -150,7 +150,7 @@ class WorkflowScheduler(
         builtOpsInRegion.add(op)
       }
 
-      frontier = (region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1))
+      frontier = (region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1))
         .filter(opId => {
           !builtOpsInRegion.contains(opId) && workflow.physicalPlan
             .getUpstreamPhysicalOpIds(opId)
@@ -177,7 +177,7 @@ class WorkflowScheduler(
   }
   private def initializePythonOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
+      region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
     val uninitializedPythonOperators = executionState.getPythonOperators(
       allOperatorsInRegion.filter(opId => !initializedPythonOperators.contains(opId))
     )
@@ -217,7 +217,7 @@ class WorkflowScheduler(
 
   private def activateAllLinks(workflow: Workflow, region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
+      region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
     Future.collect(
       // activate all links
       workflow.partitioningPlan.strategies.values
@@ -237,7 +237,7 @@ class WorkflowScheduler(
 
   private def openAllOperators(region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
+      region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
     val allNotOpenedOperators =
       allOperatorsInRegion.filter(opId => !openedOperators.contains(opId))
     Future
@@ -254,7 +254,7 @@ class WorkflowScheduler(
 
   private def startRegion(workflow: Workflow, region: PipelinedRegion): Future[Seq[Unit]] = {
     val allOperatorsInRegion =
-      region.getOperators ++ region.blockingDownstreamOperatorsInOtherRegions.map(_._1)
+      region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
 
     allOperatorsInRegion
       .filter(opId =>

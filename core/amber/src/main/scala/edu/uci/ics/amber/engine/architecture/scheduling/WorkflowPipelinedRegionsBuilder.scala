@@ -250,7 +250,7 @@ class WorkflowPipelinedRegionsBuilder(
       })
 
     for ((region, terminalOps) <- regionTerminalOperatorInOtherRegions) {
-      val newRegion = region.copy(blockingDownstreamOperatorsInOtherRegions =
+      val newRegion = region.copy(blockingDownstreamPhysicalOpIdsInOtherRegions =
         terminalOps.toArray.map(opId => (opId, 0))
       )
       replaceVertex(pipelinedRegionsDAG, region, newRegion)
