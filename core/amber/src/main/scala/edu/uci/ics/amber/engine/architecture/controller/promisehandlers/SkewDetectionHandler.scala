@@ -229,7 +229,10 @@ object SkewDetectionHandler {
     * Get the physical operator from the previous operator where the partitioning logic will be changed
     * by Reshape.
     */
-  private def getPreviousPhysicalOp(physicalOpId: PhysicalOpIdentity, workflow: Workflow): PhysicalOp = {
+  private def getPreviousPhysicalOp(
+      physicalOpId: PhysicalOpIdentity,
+      workflow: Workflow
+  ): PhysicalOp = {
     val upstreamPhysicalOps = workflow.physicalPlan
       .getUpstreamPhysicalOpIds(physicalOpId)
       .map(upstreamPhysicalOpId => workflow.physicalPlan.getOperator(upstreamPhysicalOpId))
@@ -237,7 +240,8 @@ object SkewDetectionHandler {
     if (workflow.physicalPlan.getOperator(physicalOpId).isHashJoinOperator) {
       upstreamPhysicalOps
         .find(physicalOp => {
-          val buildTableLinkId = physicalOp.inputToOrdinalMapping.find(input => input._2 == 0).get._1
+          val buildTableLinkId =
+            physicalOp.inputToOrdinalMapping.find(input => input._2 == 0).get._1
           physicalOp.id != buildTableLinkId.from
         })
         .get

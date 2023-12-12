@@ -4,9 +4,6 @@ import edu.uci.ics.amber.engine.architecture.scheduling.{ExecutionPlan, Pipeline
 import edu.uci.ics.amber.engine.common.virtualidentity._
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, PartitioningPlan, PhysicalPlan}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 class Workflow(
     val workflowId: WorkflowIdentity,
     val originalLogicalPlan: LogicalPlan,
@@ -16,35 +13,26 @@ class Workflow(
     val partitioningPlan: PartitioningPlan
 ) extends java.io.Serializable {
 
-  def getBlockingOutLinksOfRegion(region: PipelinedRegion): Set[PhysicalLink] = {
-    val outLinks = new mutable.HashSet[PhysicalLink]()
-    region.blockingDownstreamOperatorsInOtherRegions.foreach {
+  def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLink] = {
+    region.blockingDownstreamOperatorsInOtherRegions.flatMap {
       case (opId, toPort) =>
         physicalPlan
           .getUpstreamPhysicalOpIds(opId)
-          .foreach(upstream => {
-            if (region.operators.contains(upstream)) {
-              outLinks.add(PhysicalLink(upstream, 0, opId, toPort))
-            }
-          })
-    }
-    outLinks.toSet
+          .filter(upstream => region.operators.contains(upstream))
+          .map(upstream => PhysicalLink(upstream, 0, opId, toPort))
+    }.toSet
   }
 
   /**
     * Returns the operators in a region whose all inputs are from operators that are not in this region.
     */
-  def getSourcesOfRegion(region: PipelinedRegion): Array[PhysicalOpIdentity] = {
-    val sources = new ArrayBuffer[PhysicalOpIdentity]()
+  def getSourcePhysicalOpsOfRegion(region: PipelinedRegion): Array[PhysicalOpIdentity] = {
     region.getOperators
-      .foreach(opId => {
-        val isSource =
-          physicalPlan.getUpstreamPhysicalOpIds(opId).forall(up => !region.containsOperator(up))
-        if (isSource) {
-          sources.append(opId)
-        }
-      })
-    sources.toArray
+      .filter(physicalOpId =>
+        physicalPlan
+          .getUpstreamPhysicalOpIds(physicalOpId)
+          .forall(up => !region.containsOperator(up))
+      )
   }
 
 }

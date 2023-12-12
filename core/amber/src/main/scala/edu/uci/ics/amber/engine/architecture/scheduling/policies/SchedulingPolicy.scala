@@ -44,8 +44,9 @@ abstract class SchedulingPolicy(
       executionState: ExecutionState,
       region: PipelinedRegion
   ): Boolean = {
+
     workflow
-      .getBlockingOutLinksOfRegion(region)
+      .getBlockingOutPhysicalLinksOfRegion(region)
       .subsetOf(
         completedLinksOfRegion.getOrElse(region, new mutable.HashSet[PhysicalLink]())
       ) &&

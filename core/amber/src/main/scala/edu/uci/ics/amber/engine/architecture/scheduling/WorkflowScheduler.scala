@@ -146,7 +146,7 @@ class WorkflowScheduler(
       akkaActorService: AkkaActorService
   ): Unit = {
     val builtOpsInRegion = new mutable.HashSet[PhysicalOpIdentity]()
-    var frontier: Iterable[PhysicalOpIdentity] = workflow.getSourcesOfRegion(region)
+    var frontier: Iterable[PhysicalOpIdentity] = workflow.getSourcePhysicalOpsOfRegion(region)
     while (frontier.nonEmpty) {
       frontier.foreach { (op: PhysicalOpIdentity) =>
         // Last layer of upstream operators in the same region.
@@ -276,7 +276,7 @@ class WorkflowScheduler(
       .foreach(opId => executionState.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
 
-    val ops = workflow.getSourcesOfRegion(region)
+    val ops = workflow.getSourcePhysicalOpsOfRegion(region)
     if (!schedulingPolicy.getRunningRegions.contains(region)) {
       val futures = ops.flatMap { opId =>
         val opExecution = executionState.getOperatorExecution(opId)
