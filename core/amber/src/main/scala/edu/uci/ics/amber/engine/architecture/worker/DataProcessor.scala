@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
   OpExecInitInfoWithCode,
   OpExecInitInfoWithFunc
@@ -174,11 +174,10 @@ class DataProcessor(
     else opConf.getPortIdxForInputLinkId(inputLinkId)
   }
 
-  def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLinkIdentity] = {
-    if (outputPort.isEmpty) {
-      opConf.outputToOrdinalMapping.keySet.toList
-    } else {
-      opConf.outputToOrdinalMapping.filter(p => p._2._2 == outputPort.get).keys.toList
+  def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLink] = {
+    outputPort match {
+      case Some(port) => opConf.getLinksOnOutputPort(port)
+      case None       => opConf.getAllOutputLinks
     }
   }
 
@@ -269,7 +268,7 @@ class DataProcessor(
           outputTupleCount += 1
           // println(s"send output $outputTuple at step $totalValidStep")
           val outLinks = getOutputLinkByPort(outputPortOpt)
-          outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link))
+          outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link.id))
         }
     }
   }

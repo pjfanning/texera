@@ -349,8 +349,21 @@ case class PhysicalOp(
     inputPortToLinkMapping.values.flatten.toList
   }
 
+  def getAllOutputLinks: List[PhysicalLink] = {
+    outputPortToLinkMapping.values.flatten.toList
+  }
+
   def getPortIdxForInputLinkId(linkId: PhysicalLinkIdentity): Int = {
     inputPortToLinkMapping
+      .find {
+        case (_, links) => links.exists(link => link.id == linkId)
+      }
+      .map(_._1)
+      .get
+  }
+
+  def getPortIdxForOutputLinkId(linkId: PhysicalLinkIdentity): Int = {
+    outputPortToLinkMapping
       .find {
         case (_, links) => links.exists(link => link.id == linkId)
       }
