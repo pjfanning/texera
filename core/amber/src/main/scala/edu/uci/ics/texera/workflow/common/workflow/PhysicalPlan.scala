@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,

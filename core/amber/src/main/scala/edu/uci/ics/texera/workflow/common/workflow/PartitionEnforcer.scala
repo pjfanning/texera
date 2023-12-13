@@ -1,13 +1,8 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalLink
 import edu.uci.ics.amber.engine.architecture.linksemantics._
-import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
-  BroadcastPartitioning,
-  HashBasedShufflePartitioning,
-  OneToOnePartitioning,
-  RangeBasedShufflePartitioning,
-  RoundRobinPartitioning
-}
+import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{BroadcastPartitioning, HashBasedShufflePartitioning, OneToOnePartitioning, RangeBasedShufflePartitioning, RoundRobinPartitioning}
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
 import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, PhysicalOpIdentity}
 

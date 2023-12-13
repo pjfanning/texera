@@ -1,7 +1,8 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.Address
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{PhysicalOp, WorkerInfo}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerInfo
 import edu.uci.ics.amber.engine.architecture.scheduling.PipelinedRegion
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,

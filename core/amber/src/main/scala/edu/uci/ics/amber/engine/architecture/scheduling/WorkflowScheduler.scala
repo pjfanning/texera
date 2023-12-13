@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{
   OperatorExecution,
   Workflow
 }
-import edu.uci.ics.amber.engine.architecture.linksemantics.PhysicalLink
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalLink
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal

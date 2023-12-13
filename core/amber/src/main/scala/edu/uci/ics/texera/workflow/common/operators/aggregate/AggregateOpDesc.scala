@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity,
   PhysicalLinkIdentity,
