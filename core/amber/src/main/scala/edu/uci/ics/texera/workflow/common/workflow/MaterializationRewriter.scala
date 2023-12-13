@@ -25,7 +25,7 @@ class MaterializationRewriter(
   ): PhysicalPlan = {
 
     val fromOp = physicalLink.fromOp
-    val fromOutputPortIdx = fromOp.getPortIdxForInputLinkId(physicalLink.id)
+    val fromOutputPortIdx = fromOp.getPortIdxForOutputLinkId(physicalLink.id)
 
     val toOp = physicalLink.toOp
 
