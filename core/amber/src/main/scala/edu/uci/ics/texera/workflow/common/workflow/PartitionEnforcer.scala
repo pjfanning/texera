@@ -9,9 +9,10 @@ import scala.collection.mutable
 
 class PartitionEnforcer(physicalPlan: PhysicalPlan) {
 
-  val linkMapping = new mutable.HashMap[PhysicalLinkIdentity, PhysicalLink]()
+
 
   def enforcePartition(): PartitioningPlan = {
+    val createdLinks = new mutable.ArrayBuffer[PhysicalLink]()
     // a map of an operator to its output partition info
     val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()
     physicalPlan
@@ -23,7 +24,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
           physicalOp.partitionRequirement.headOption.flatten.getOrElse(UnknownPartition())
         } else {
           val inputPartitionings =
-            enforcePartitionRequirement(physicalOp, outputPartitionInfos.toMap)
+            enforcePartitionRequirement(physicalOp, outputPartitionInfos.toMap, createdLinks)
           assert(inputPartitionings.length == physicalOp.inputPorts.size)
           // derive the output partition info of this operator
           physicalOp.derivePartition(inputPartitionings.toList)
@@ -32,12 +33,13 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
       })
 
     // returns the complete physical plan with link strategies
-    new PartitioningPlan(linkMapping.toMap)
+    new PartitioningPlan(createdLinks.map(link => link.id->link).toMap)
   }
 
   private def enforcePartitionRequirement(
       physicalOp: PhysicalOp,
-      partitionInfos: Map[PhysicalOpIdentity, PartitionInfo]
+      partitionInfos: Map[PhysicalOpIdentity, PartitionInfo],
+      links: mutable.ArrayBuffer[PhysicalLink]
   ): Array[PartitionInfo] = {
     // for each input port, enforce partition requirement
     physicalOp.inputPorts.indices
@@ -60,7 +62,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
               port,
               inputPartitionInfo
             )
-          linkMapping.put(physicalLink.id, physicalLink)
+          links.append(physicalLink)
           outputPart
         })
 
