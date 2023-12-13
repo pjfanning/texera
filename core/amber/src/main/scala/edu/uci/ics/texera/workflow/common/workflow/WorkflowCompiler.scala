@@ -6,6 +6,7 @@ import edu.uci.ics.amber.engine.architecture.controller.Workflow
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder
 import edu.uci.ics.amber.engine.common.virtualidentity.{OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
+import edu.uci.ics.texera.web.service.JobResultService
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.COMPILATION_ERROR
@@ -33,11 +34,6 @@ class WorkflowCompiler(
     }
 
     var logicalPlan: LogicalPlan = LogicalPlan(logicalPlanPojo, workflowContext)
-    logicalPlan = SinkInjectionTransformer.transform(
-      logicalPlanPojo.opsToViewResult,
-      logicalPlan
-    )
-
     logicalPlan = logicalPlan.propagateWorkflowSchema(Some(errorList))
 
     // report compilation errors
@@ -61,10 +57,10 @@ class WorkflowCompiler(
   }
 
   def compile(
-      workflowId: WorkflowIdentity,
-      opResultStorage: OpResultStorage,
-      lastCompletedJob: Option[LogicalPlan] = Option.empty,
-      jobStateStore: JobStateStore
+               workflowId: WorkflowIdentity,
+               opResultStorage: OpResultStorage,
+               lastCompletedJob: Option[LogicalPlan] = Option.empty,
+               jobStateStore: JobStateStore
   ): Workflow = {
 
     // generate an original LogicalPlan. The logical plan is the injected with all necessary sinks
@@ -72,9 +68,15 @@ class WorkflowCompiler(
     //  by cache.
     val originalLogicalPlan = compileLogicalPlan(jobStateStore)
 
+    val logicalPlanAssignedStorage = AssignStorageTransform.transform(
+      logicalPlanPojo.opsToViewResult,
+      opResultStorage,
+      originalLogicalPlan
+    )
+
     // the cache-rewritten LogicalPlan. It is considered to be equivalent with the original plan.
     val rewrittenLogicalPlan = WorkflowCacheRewriter.transform(
-      originalLogicalPlan,
+      logicalPlanAssignedStorage,
       lastCompletedJob,
       opResultStorage,
       logicalPlanPojo.opsToReuseResult.map(idString => OperatorIdentity(idString)).toSet

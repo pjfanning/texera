@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.{SubscriptionManager, WorkflowLifecycleManager}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.resource.WorkflowWebsocketResource
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
-import edu.uci.ics.texera.web.storage.WorkflowStateStore
+import edu.uci.ics.texera.web.storage.JobResultMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
@@ -54,11 +54,8 @@ class WorkflowService(
   // state across execution:
   var opResultStorage: OpResultStorage = new OpResultStorage()
   private val errorSubject = BehaviorSubject.create[TexeraWebSocketEvent]().toSerialized
-  val stateStore = new WorkflowStateStore()
   var jobService: BehaviorSubject[WorkflowJobService] = BehaviorSubject.create()
 
-  val resultService: JobResultService =
-    new JobResultService(opResultStorage, stateStore)
   val exportService: ResultExportService =
     new ResultExportService(opResultStorage, UInteger.valueOf(wId))
   val lifeCycleManager: WorkflowLifecycleManager = new WorkflowLifecycleManager(
@@ -93,14 +90,7 @@ class WorkflowService(
 
   def connect(onNext: TexeraWebSocketEvent => Unit): Disposable = {
     lifeCycleManager.increaseUserCount()
-    val subscriptions = stateStore.getAllStores
-      .map(_.getWebsocketEventObservable)
-      .map(evtPub =>
-        evtPub.subscribe { evts: Iterable[TexeraWebSocketEvent] => evts.foreach(onNext) }
-      )
-      .toSeq
-    val errorSubscription = errorSubject.subscribe { evt: TexeraWebSocketEvent => onNext(evt) }
-    new CompositeDisposable(subscriptions :+ errorSubscription: _*)
+    errorSubject.subscribe { evt: TexeraWebSocketEvent => onNext(evt) }
   }
 
   def connectToJob(onNext: TexeraWebSocketEvent => Unit): Disposable = {
@@ -145,8 +135,8 @@ class WorkflowService(
     )
 
     val job = new WorkflowJobService(
+      opResultStorage,
       workflowContext,
-      resultService,
       req,
       lastCompletedLogicalPlan
     )
@@ -168,7 +158,6 @@ class WorkflowService(
   override def unsubscribeAll(): Unit = {
     super.unsubscribeAll()
     Option(jobService.getValue).foreach(_.unsubscribeAll())
-    resultService.unsubscribeAll()
   }
 
 }

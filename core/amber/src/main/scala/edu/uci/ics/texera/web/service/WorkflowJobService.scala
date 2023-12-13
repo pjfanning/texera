@@ -8,32 +8,24 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowStateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.JobStateStore
 import edu.uci.ics.texera.web.storage.JobStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
-  COMPLETED,
-  FAILED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 
 import java.time.Instant
 import scala.collection.mutable
 
 class WorkflowJobService(
+                        opResultStorage: OpResultStorage,
     workflowContext: WorkflowContext,
-    resultService: JobResultService,
     request: WorkflowExecuteRequest,
     lastCompletedLogicalPlan: Option[LogicalPlan]
 ) extends SubscriptionManager
@@ -94,7 +86,7 @@ class WorkflowJobService(
       workflowCompiler = new WorkflowCompiler(request.logicalPlan, workflowContext)
       workflow = workflowCompiler.compile(
         WorkflowIdentity(workflowContext.executionId),
-        resultService.opResultStorage,
+        opResultStorage,
         lastCompletedLogicalPlan,
         jobStateStore
       )
@@ -128,7 +120,7 @@ class WorkflowJobService(
   var jobStatsService: JobStatsService = _
   var jobRuntimeService: JobRuntimeService = _
   var jobConsoleService: JobConsoleService = _
-
+  var jobResultUpdateService: JobResultService = _
   def startWorkflow(): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
@@ -155,7 +147,6 @@ class WorkflowJobService(
         Duration.fromSeconds(10)
       )
     }
-    resultService.attachToJob(jobStateStore, workflow.logicalPlan, client)
     jobStateStore.jobMetadataStore.updateState(jobInfo =>
       updateWorkflowState(READY, jobInfo.withEid(workflowContext.executionId))
         .withFatalErrors(Seq.empty)
@@ -185,6 +176,7 @@ class WorkflowJobService(
       jobConsoleService.unsubscribeAll()
       jobStatsService.unsubscribeAll()
       jobReconfigurationService.unsubscribeAll()
+      jobResultUpdateService.unsubscribeAll()
     }
   }
 

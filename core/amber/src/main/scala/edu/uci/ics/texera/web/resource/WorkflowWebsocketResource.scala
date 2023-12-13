@@ -71,7 +71,7 @@ class WorkflowWebsocketResource extends LazyLogging {
           sessionState.send(HeartBeatResponse())
         case paginationRequest: ResultPaginationRequest =>
           workflowStateOpt.foreach(state =>
-            sessionState.send(state.resultService.handleResultPagination(paginationRequest))
+            sessionState.send(state.jobService.getValue.jobResultUpdateService.handleResultPagination(paginationRequest))
           )
         case resultExportRequest: ResultExportRequest =>
           workflowStateOpt.foreach(state =>

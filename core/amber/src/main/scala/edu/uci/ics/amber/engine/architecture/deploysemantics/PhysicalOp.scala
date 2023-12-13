@@ -29,6 +29,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, Out
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
 import edu.uci.ics.texera.workflow.common.workflow.{HashPartition, PartitionInfo, SinglePartition}
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpExec
+import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -175,6 +176,8 @@ case class PhysicalOp(
   private lazy val realBlockingInputs: List[Int] = (blockingInputs ++ dependency.values).distinct
 
   private lazy val isInitWithCode: Boolean = opExecInitInfo.isInstanceOf[OpExecInitInfoWithCode]
+
+  var resultStorage:Option[SinkStorageReader] = None
 
   /*
    * Helper functions related to compile-time operations

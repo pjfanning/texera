@@ -23,8 +23,8 @@ object OpResultStorage {
   */
 class OpResultStorage extends Serializable with LazyLogging {
 
-  val cache: ConcurrentHashMap[OperatorIdentity, SinkStorageReader] =
-    new ConcurrentHashMap[OperatorIdentity, SinkStorageReader]()
+  val cache: ConcurrentHashMap[String, SinkStorageReader] =
+    new ConcurrentHashMap[String, SinkStorageReader]()
 
   /**
     * Retrieve the result of an operator from OpResultStorage
@@ -32,15 +32,18 @@ class OpResultStorage extends Serializable with LazyLogging {
     *            Currently it is the uuid inside the cache source or cache sink operator.
     * @return The storage of this operator.
     */
-  def get(key: OperatorIdentity): SinkStorageReader = {
+  def get(key: String): SinkStorageReader = {
     cache.get(key)
   }
 
-  def create(
+  def getOrCreate(
       executionId: String = "",
-      key: OperatorIdentity,
+      key: String,
       mode: String
   ): SinkStorageReader = {
+    if(cache.contains(key)){
+      return cache.get(key)
+    }
     val storage: SinkStorageReader =
       if (mode == "memory") {
         new MemoryStorage
@@ -59,7 +62,7 @@ class OpResultStorage extends Serializable with LazyLogging {
     storage
   }
 
-  def contains(key: OperatorIdentity): Boolean = {
+  def contains(key: String): Boolean = {
     cache.containsKey(key)
   }
 
@@ -68,7 +71,7 @@ class OpResultStorage extends Serializable with LazyLogging {
     * @param key The key used for storage and retrieval.
     *            Currently it is the uuid inside the cache source or cache sink operator.
     */
-  def remove(key: OperatorIdentity): Unit = {
+  def remove(key: String): Unit = {
     if (cache.contains(key)) {
       cache.get(key).clear()
     }

@@ -118,16 +118,12 @@ class PythonUDFOpDescV2 extends LogicalOp {
   }
 
   override def operatorInfo: OperatorInfo = {
-    val inputPortInfo = if (inputPorts != null) {
+    val inputPortInfo = if (inputPorts.nonEmpty) {
       inputPorts.map(p => InputPort(p.displayName, p.allowMultiInputs))
     } else {
       List(InputPort("", allowMultiInputs = true))
     }
-    val outputPortInfo = if (outputPorts != null) {
-      outputPorts.map(p => OutputPort(p.displayName))
-    } else {
-      List(OutputPort(""))
-    }
+    val outputPortInfo = outputPorts.map(p => OutputPort(p.displayName))
 
     OperatorInfo(
       "Python UDF",

@@ -11,27 +11,19 @@ import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
-import edu.uci.ics.texera.web.model.websocket.event.{
-  PaginatedResultEvent,
-  TexeraWebSocketEvent,
-  WebResultUpdateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{PaginatedResultEvent, TexeraWebSocketEvent, WebResultUpdateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.ResultPaginationRequest
 import edu.uci.ics.texera.web.service.JobResultService.WebResultUpdate
-import edu.uci.ics.texera.web.storage.{
-  JobStateStore,
-  OperatorResultMetadata,
-  WorkflowResultStore,
-  WorkflowStateStore
-}
+import edu.uci.ics.texera.web.storage.{JobResultMetadataStore, JobStateStore, OperatorResultMetadata}
 import edu.uci.ics.texera.web.workflowruntimestate.JobMetadataStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode
+import edu.uci.ics.texera.workflow.common.operators.{LogicalOp, OutputDescriptor}
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
-import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageReader
 
 import java.util.UUID
 import scala.collection.mutable
@@ -72,12 +64,13 @@ object JobResultService {
     * Produces the WebResultUpdate to send to frontend from a result update from the engine.
     */
   def convertWebResultUpdate(
-      sink: ProgressiveSinkOpDesc,
-      oldTupleCount: Int,
-      newTupleCount: Int
+                              outputDescriptor: OutputDescriptor,
+                              operatorStorage:SinkStorageReader,
+                              oldTupleCount: Int,
+                              newTupleCount: Int
   ): WebResultUpdate = {
     val webOutputMode: WebOutputMode = {
-      (sink.getOutputMode, sink.getChartType) match {
+      (outputDescriptor.outputMode, outputDescriptor.chartType) match {
         // visualization sinks use its corresponding mode
         case (SET_SNAPSHOT, Some(_)) => SetSnapshotMode()
         case (SET_DELTA, Some(_))    => SetDeltaMode()
@@ -86,10 +79,9 @@ object JobResultService {
       }
     }
 
-    val storage = sink.getStorage
-    val webUpdate = (webOutputMode, sink.getOutputMode) match {
+    val webUpdate = (webOutputMode, outputDescriptor.outputMode) match {
       case (PaginationMode(), SET_SNAPSHOT) =>
-        val numTuples = storage.getCount
+        val numTuples = operatorStorage.getCount
         val maxPageIndex = Math.ceil(numTuples / JobResultService.defaultPageSize.toDouble).toInt
         WebPaginationUpdate(
           PaginationMode(),
@@ -97,16 +89,16 @@ object JobResultService {
           (1 to maxPageIndex).toList
         )
       case (SetSnapshotMode(), SET_SNAPSHOT) =>
-        tuplesToWebData(webOutputMode, storage.getAll.toList, sink.getChartType)
+        tuplesToWebData(webOutputMode, operatorStorage.getAll.toList, outputDescriptor.chartType)
       case (SetDeltaMode(), SET_DELTA) =>
-        val deltaList = storage.getAllAfter(oldTupleCount).toList
-        tuplesToWebData(webOutputMode, deltaList, sink.getChartType)
+        val deltaList = operatorStorage.getAllAfter(oldTupleCount).toList
+        tuplesToWebData(webOutputMode, deltaList, outputDescriptor.chartType)
 
       // currently not supported mode combinations
       // (PaginationMode, SET_DELTA) | (DataSnapshotMode, SET_DELTA) | (DataDeltaMode, SET_SNAPSHOT)
       case _ =>
         throw new RuntimeException(
-          "update mode combination not supported: " + (webOutputMode, sink.getOutputMode)
+          "update mode combination not supported: " + (webOutputMode, outputDescriptor.outputMode)
         )
     }
     webUpdate
@@ -158,29 +150,16 @@ object JobResultService {
   *  - send result update event to the frontend
   */
 class JobResultService(
-    val opResultStorage: OpResultStorage,
-    val workflowStateStore: WorkflowStateStore
+    logicalPlan: LogicalPlan,
+    jobStateStore: JobStateStore,
+    client: AmberClient
 ) extends SubscriptionManager
     with LazyLogging {
 
-  var sinkOperators: mutable.HashMap[OperatorIdentity, ProgressiveSinkOpDesc] =
-    mutable.HashMap[OperatorIdentity, ProgressiveSinkOpDesc]()
   private val resultPullingFrequency = AmberConfig.executionResultPollingInSecs
-  private var resultUpdateCancellable: Cancellable = _
+  private var resultUpdateCancellable: Cancellable = Cancellable.alreadyCancelled
 
-  def attachToJob(
-      stateStore: JobStateStore,
-      logicalPlan: LogicalPlan,
-      client: AmberClient
-  ): Unit = {
-
-    if (resultUpdateCancellable != null && !resultUpdateCancellable.isCancelled) {
-      resultUpdateCancellable.cancel()
-    }
-
-    unsubscribeAll()
-
-    addSubscription(stateStore.jobMetadataStore.getStateObservable.subscribe {
+    addSubscription(jobStateStore.jobMetadataStore.getStateObservable.subscribe {
       newState: JobMetadataStore =>
         {
           if (newState.state == RUNNING) {
@@ -219,13 +198,18 @@ class JobResultService(
     )
 
     addSubscription(
-      workflowStateStore.resultStore.registerDiffHandler((oldState, newState) => {
+      jobStateStore.resultMetadataStore.registerDiffHandler((oldState, newState) => {
         val buf = mutable.HashMap[String, WebResultUpdate]()
         newState.resultInfo.foreach {
           case (opId, info) =>
             val oldInfo = oldState.resultInfo.getOrElse(opId, OperatorResultMetadata())
+            val logicalOp = logicalPlan.getOperator(opId)
             buf(opId.id) = JobResultService.convertWebResultUpdate(
-              sinkOperators(opId),
+              // currently, we don't support operators to view its results for multiple
+              // output port. E.g. view result from a Split operator.
+              // TODO: send results for multiple output ports to the frontend.
+              logicalOp.outputPortsInfo.head.outputDescriptor,
+              logicalOp.outputPortsInfo.head.storage.get,
               oldInfo.tupleCount,
               info.tupleCount
             )
@@ -234,31 +218,14 @@ class JobResultService(
       })
     )
 
-    // first clear all the results
-    sinkOperators.clear()
-    workflowStateStore.resultStore.updateState { _ =>
-      WorkflowResultStore() // empty result store
-    }
-
-    // For operators connected to a sink and sinks,
-    // create result service so that the results can be displayed.
-    logicalPlan.getTerminalOperatorIds.map(sink => {
-      logicalPlan.getOperator(sink) match {
-        case sinkOp: ProgressiveSinkOpDesc =>
-          sinkOperators += ((sinkOp.getUpstreamId.get, sinkOp))
-          sinkOperators += ((sink, sinkOp))
-        case other => // skip other non-texera-managed sinks, if any
-      }
-    })
-  }
-
   def handleResultPagination(request: ResultPaginationRequest): TexeraWebSocketEvent = {
     // calculate from index (pageIndex starts from 1 instead of 0)
     val from = request.pageSize * (request.pageIndex - 1)
     val opId = OperatorIdentity(request.operatorID)
+    val logicalOp = logicalPlan.getOperator(opId)
     val paginationIterable =
-      if (sinkOperators.contains(opId)) {
-        sinkOperators(opId).getStorage.getRange(from, from + request.pageSize)
+      if (logicalOp.outputPortsInfo.nonEmpty && logicalOp.outputPortsInfo.head.storage.isDefined) {
+        logicalOp.outputPortsInfo.head.storage.get.getRange(from, from + request.pageSize)
       } else {
         Iterable.empty
       }
@@ -269,18 +236,23 @@ class JobResultService(
   }
 
   private def onResultUpdate(): Unit = {
-    workflowStateStore.resultStore.updateState { _ =>
-      val newInfo: Map[OperatorIdentity, OperatorResultMetadata] = sinkOperators.map {
-        case (id, sink) =>
-          val count = sink.getStorage.getCount.toInt
-          val mode = sink.getOutputMode
+    jobStateStore.resultMetadataStore.updateState { _ =>
+      val newInfo: Map[OperatorIdentity, OperatorResultMetadata] = logicalPlan.operators
+        // currently, we don't support operators to view its results for multiple
+        // output port. E.g. view result from a Split operator.
+        // TODO: send results for multiple output ports to the frontend.
+        .filter(op => op.outputPortsInfo.nonEmpty && op.outputPortsInfo.head.storage.isDefined)
+        .map {
+        logicalOp =>
+          val count = logicalOp.outputPortsInfo.head.storage.get.getCount.toInt
+          val mode = logicalOp.outputPortsInfo.head.outputDescriptor.outputMode
           val changeDetector =
             if (mode == IncrementalOutputMode.SET_SNAPSHOT) {
               UUID.randomUUID.toString
             } else ""
-          (id, OperatorResultMetadata(count, changeDetector))
+          (logicalOp.operatorIdentifier, OperatorResultMetadata(count, changeDetector))
       }.toMap
-      WorkflowResultStore(newInfo)
+      JobResultMetadataStore(newInfo)
     }
   }
 

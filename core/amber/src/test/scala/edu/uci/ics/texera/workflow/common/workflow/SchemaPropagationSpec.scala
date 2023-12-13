@@ -7,7 +7,6 @@ import edu.uci.ics.texera.workflow.common.metadata.{InputPort, OperatorInfo, Out
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, OperatorSchemaInfo, Schema}
-import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import org.apache.arrow.util.Preconditions
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
