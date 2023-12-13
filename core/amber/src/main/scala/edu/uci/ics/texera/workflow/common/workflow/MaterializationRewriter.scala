@@ -23,10 +23,13 @@ class MaterializationRewriter(
       physicalLink: PhysicalLink,
       writerReaderPairs: mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]
   ): PhysicalPlan = {
-
+    // get the actual Op from the physical plan. the operators on the link and that on the physical plan
+    // are different due to partial rewrite
     val fromOp = physicalPlan.getOperator(physicalLink.id.from)
     val fromOutputPortIdx = fromOp.getPortIdxForOutputLinkId(physicalLink.id)
 
+    // get the actual Op from the physical plan. the operators on the link and that on the physical plan
+    // are different due to partial rewrite
     val toOp = physicalPlan.getOperator(physicalLink.id.to)
     val toInputPortIdx = toOp.getPortIdxForInputLinkId(physicalLink.id)
 
