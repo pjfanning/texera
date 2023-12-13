@@ -125,7 +125,7 @@ class MaterializationRewriter(
           outputToOrdinalMapping =
             fromOp.outputToOrdinalMapping - physicalLink.id + (sourceToWriterLink.id -> (sourceToWriterLink, fromOutputPortIdx))
         )
-      ).enforcePartition()
+      ).populatePartitioningOnLinks()
   }
 
 }

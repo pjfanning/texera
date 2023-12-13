@@ -60,7 +60,7 @@ object PhysicalPlan {
       physicalPlan = physicalPlan.addEdge(fromOp, fromPort, toOp, toPort)
     })
 
-    physicalPlan.enforcePartition()
+    physicalPlan.populatePartitioningOnLinks()
   }
 
 }
@@ -240,7 +240,7 @@ case class PhysicalPlan(
 
   }
 
-  def enforcePartition(): PhysicalPlan = {
+  def populatePartitioningOnLinks(): PhysicalPlan = {
     val createdLinks = new mutable.ArrayBuffer[PhysicalLink]()
     // a map of an operator to its output partition info
     val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()

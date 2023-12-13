@@ -94,7 +94,7 @@ class WorkflowCompiler(
     val executionPlan = pipelinedRegionsBuilder.buildPipelinedRegions()
 
     // get the updated physical plan
-    physicalPlan = pipelinedRegionsBuilder.physicalPlan.enforcePartition()
+    physicalPlan = pipelinedRegionsBuilder.physicalPlan
 
     // assert all source layers to have 0 input ports
     physicalPlan.getSourceOperatorIds.foreach { sourceLayer =>
