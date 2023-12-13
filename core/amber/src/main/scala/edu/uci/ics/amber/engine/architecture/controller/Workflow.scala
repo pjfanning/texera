@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.architecture.scheduling.{ExecutionPlan, PipelinedRegion}
 import edu.uci.ics.amber.engine.common.virtualidentity._
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, PartitioningPlan, PhysicalPlan}
+import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, PhysicalPlan}
 
 class Workflow(
     val workflowId: WorkflowIdentity,
@@ -10,7 +10,6 @@ class Workflow(
     val logicalPlan: LogicalPlan,
     val physicalPlan: PhysicalPlan,
     val executionPlan: ExecutionPlan,
-    val partitioningPlan: PartitioningPlan
 ) extends java.io.Serializable {
 
   def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLinkIdentity] = {

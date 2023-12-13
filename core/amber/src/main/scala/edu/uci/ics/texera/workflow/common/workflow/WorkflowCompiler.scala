@@ -94,12 +94,11 @@ class WorkflowCompiler(
     val executionPlan = pipelinedRegionsBuilder.buildPipelinedRegions()
 
     // get the updated physical plan
-    physicalPlan = pipelinedRegionsBuilder.physicalPlan
+    physicalPlan = pipelinedRegionsBuilder.physicalPlan.enforcePartition()
 
     // TODO: add resource allocator to incorporate PartitioningPlan below
 
-    // generate a PartitioningPlan, describing partitions between physical operators
-    val partitioningPlan = new PartitionEnforcer(physicalPlan).enforcePartition()
+
 
     // assert all source layers to have 0 input ports
     physicalPlan.getSourceOperatorIds.foreach { sourceLayer =>
@@ -115,8 +114,7 @@ class WorkflowCompiler(
       originalLogicalPlan,
       rewrittenLogicalPlan,
       physicalPlan,
-      executionPlan,
-      partitioningPlan
+      executionPlan
     )
 
   }
