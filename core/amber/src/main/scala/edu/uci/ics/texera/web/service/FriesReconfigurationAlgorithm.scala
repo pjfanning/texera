@@ -14,7 +14,7 @@ import org.jgrapht.alg.connectivity.ConnectivityInspector
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.{asScalaIterator, asScalaSet}
+import scala.jdk.CollectionConverters.asScalaSet
 
 object FriesReconfigurationAlgorithm {
 

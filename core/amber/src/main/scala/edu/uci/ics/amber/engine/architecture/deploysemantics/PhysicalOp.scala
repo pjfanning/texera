@@ -220,13 +220,23 @@ case class PhysicalOp(
     this.copy(inputPorts = operatorInfo.inputPorts, outputPorts = operatorInfo.outputPorts)
   }
 
+  /**
+    * creates a copy with the location preference information
+    */
   def withLocationPreference(preference: Option[LocationPreference]): PhysicalOp = {
     this.copy(locationPreference = preference)
   }
 
+  /**
+    * creates a copy with the input ports
+    */
   def withInputPorts(inputs: List[InputPort]): PhysicalOp = {
     this.copy(inputPorts = inputs)
   }
+
+  /**
+    * creates a copy with the output ports
+    */
   def withOutputPorts(outputs: List[OutputPort]): PhysicalOp = {
     this.copy(outputPorts = outputs)
   }
@@ -272,32 +282,34 @@ case class PhysicalOp(
   }
 
   /**
-    * creates a copy with a removed input operator
+    * creates a copy with a removed input operator, we use the identity to do equality check.
     */
   def removeInput(linkToRemove: PhysicalLink): PhysicalOp = {
     val (portIdx, existingLinks) = inputPortToLinkMapping
       .find({
         case (_, links) => links.exists(_.id == linkToRemove.id)
       })
-      .get
-    val newLinks = existingLinks.filter(link => link.id != linkToRemove.id)
+      .getOrElse(throw new IllegalArgumentException(s"unexpected link to remove: $linkToRemove"))
     this.copy(
-      inputPortToLinkMapping = inputPortToLinkMapping + (portIdx -> newLinks)
+      inputPortToLinkMapping = inputPortToLinkMapping + (portIdx -> existingLinks.filter(link =>
+        link.id != linkToRemove.id
+      ))
     )
   }
 
   /**
-    * creates a copy with a removed output operator
+    * creates a copy with a removed output operator, we use the identity to do equality check.
     */
   def removeOutput(linkToRemove: PhysicalLink): PhysicalOp = {
     val (portIdx, existingLinks) = outputPortToLinkMapping
       .find({
         case (_, links) => links.exists(_.id == linkToRemove.id)
       })
-      .get
-    val newLinks = existingLinks.filter(link => link.id != linkToRemove.id)
+      .getOrElse(throw new IllegalArgumentException(s"unexpected link to remove: $linkToRemove"))
     this.copy(
-      outputPortToLinkMapping = outputPortToLinkMapping + (portIdx -> newLinks)
+      outputPortToLinkMapping = outputPortToLinkMapping + (portIdx -> existingLinks.filter(link =>
+        link.id != linkToRemove.id
+      ))
     )
   }
 
@@ -344,14 +356,6 @@ case class PhysicalOp(
     outputPortToLinkMapping(portIndex)
   }
 
-  def identifiers: Array[ActorVirtualIdentity] = {
-    (0 until numWorkers).map { i => identifier(i) }.toArray
-  }
-
-  def identifier(i: Int): ActorVirtualIdentity = {
-    VirtualIdentityUtils.createWorkerIdentity(executionId, id.logicalOpId.id, id.layerName, i)
-  }
-
   /**
     * Tells whether the input on this link is blocking i.e. the operator doesn't output anything till this link
     * outputs all its tuples
@@ -394,16 +398,17 @@ case class PhysicalOp(
   def getInputLinksInProcessingOrder: Array[PhysicalLink] = {
     val dependencyDag =
       new DirectedAcyclicGraph[PhysicalLink, DefaultEdge](classOf[DefaultEdge])
-    dependency.foreach(dep => {
-      val prevInOrder = inputPortToLinkMapping(dep._2).head
-      val nextInOrder = inputPortToLinkMapping(dep._1).head
-      if (!dependencyDag.containsVertex(prevInOrder)) {
-        dependencyDag.addVertex(prevInOrder)
-      }
-      if (!dependencyDag.containsVertex(nextInOrder)) {
-        dependencyDag.addVertex(nextInOrder)
-      }
-      dependencyDag.addEdge(prevInOrder, nextInOrder)
+    dependency.foreach({
+      case (successor: Int, predecessor: Int) =>
+        val prevInOrder = inputPortToLinkMapping(predecessor).head
+        val nextInOrder = inputPortToLinkMapping(successor).head
+        if (!dependencyDag.containsVertex(prevInOrder)) {
+          dependencyDag.addVertex(prevInOrder)
+        }
+        if (!dependencyDag.containsVertex(nextInOrder)) {
+          dependencyDag.addVertex(nextInOrder)
+        }
+        dependencyDag.addEdge(prevInOrder, nextInOrder)
     })
     val topologicalIterator =
       new TopologicalOrderIterator[PhysicalLink, DefaultEdge](dependencyDag)
@@ -412,6 +417,14 @@ case class PhysicalOp(
       processingOrder.append(topologicalIterator.next())
     }
     processingOrder.toArray
+  }
+
+  def identifiers: Array[ActorVirtualIdentity] = {
+    (0 until numWorkers).map { i => identifier(i) }.toArray
+  }
+
+  def identifier(i: Int): ActorVirtualIdentity = {
+    VirtualIdentityUtils.createWorkerIdentity(executionId, id.logicalOpId.id, id.layerName, i)
   }
 
   def build(
