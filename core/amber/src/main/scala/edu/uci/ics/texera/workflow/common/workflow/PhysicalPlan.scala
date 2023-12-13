@@ -196,7 +196,7 @@ case class PhysicalPlan(
       (fromOp.id -> operatorMap(fromOp.id).addOutput(toOp, fromPort, toPort)) +
       (toOp.id -> operatorMap(toOp.id).addInput(fromOp, fromPort, toPort))
 
-    val newLinks = links :+ PhysicalLink(fromOp, fromPort, toOp, toPort, part = null)
+    val newLinks = links :+ PhysicalLink(fromOp, fromPort, toOp, toPort)
     this.copy(operators = newOperators.values.toList, links = newLinks)
   }
 

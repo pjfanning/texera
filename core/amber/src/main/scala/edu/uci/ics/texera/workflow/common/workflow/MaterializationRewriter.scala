@@ -2,11 +2,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalLink
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  OperatorIdentity,
-  PhysicalLinkIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{OperatorIdentity, PhysicalOpIdentity}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
@@ -35,7 +31,6 @@ class MaterializationRewriter(
 
     val toInputPortIdx =
       physicalPlan.getOperator(toOp.id).inputToOrdinalMapping(physicalLink.id)._2
-
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)
@@ -87,9 +82,9 @@ class MaterializationRewriter(
       )
 
     // create 2 links for materialization
-    val readerToDestLink = PhysicalLink(matReaderOpExecConfig, 0, toOp, toInputPortIdx, part = null)
+    val readerToDestLink = PhysicalLink(matReaderOpExecConfig, 0, toOp, toInputPortIdx)
     val sourceToWriterLink =
-      PhysicalLink(fromOp, fromOutputPortIdx, matWriterOpExecConfig, 0, part = null)
+      PhysicalLink(fromOp, fromOutputPortIdx, matWriterOpExecConfig, 0)
 
     // add the pair to the map for later adding edges between 2 regions.
     writerReaderPairs(matWriterOpExecConfig.id) = matReaderOpExecConfig.id
@@ -125,7 +120,8 @@ class MaterializationRewriter(
           outputToOrdinalMapping =
             fromOp.outputToOrdinalMapping - physicalLink.id + (sourceToWriterLink.id -> (sourceToWriterLink, fromOutputPortIdx))
         )
-      ).populatePartitioningOnLinks()
+      )
+      .populatePartitioningOnLinks()
   }
 
 }

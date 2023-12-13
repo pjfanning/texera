@@ -24,100 +24,92 @@ object PhysicalLink {
       fromPhysicalOp: PhysicalOp,
       fromPort: Int,
       toPhysicalOp: PhysicalOp,
-      inputPort: Int,
-      part: PartitionInfo
+      inputPort: Int
   ): PhysicalLink = {
-    part match {
+    new PhysicalLink(
+      fromPhysicalOp,
+      fromPort,
+      toPhysicalOp,
+      inputPort,
+      Array()
+    )
+  }
+  def apply(
+      fromPhysicalOp: PhysicalOp,
+      fromPort: Int,
+      toPhysicalOp: PhysicalOp,
+      inputPort: Int,
+      partitionInfo: PartitionInfo
+  ): PhysicalLink = {
+    val partitionings: Array[(Partitioning, Array[ActorVirtualIdentity])] = partitionInfo match {
       case HashPartition(hashColumnIndices) =>
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = fromPhysicalOp.identifiers
-            .map(_ =>
-              (
-                HashBasedShufflePartitioning(
-                  defaultBatchSize,
-                  toPhysicalOp.identifiers,
-                  hashColumnIndices
-                ),
-                toPhysicalOp.identifiers
-              )
+        fromPhysicalOp.identifiers
+          .map(_ =>
+            (
+              HashBasedShufflePartitioning(
+                defaultBatchSize,
+                toPhysicalOp.identifiers,
+                hashColumnIndices
+              ),
+              toPhysicalOp.identifiers
             )
-        )
+          )
+
       case RangePartition(rangeColumnIndices, rangeMin, rangeMax) =>
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = fromPhysicalOp.identifiers
-            .map(_ =>
-              (
-                RangeBasedShufflePartitioning(
-                  defaultBatchSize,
-                  toPhysicalOp.identifiers,
-                  rangeColumnIndices,
-                  rangeMin,
-                  rangeMax
-                ),
-                toPhysicalOp.identifiers
-              )
+        fromPhysicalOp.identifiers
+          .map(_ =>
+            (
+              RangeBasedShufflePartitioning(
+                defaultBatchSize,
+                toPhysicalOp.identifiers,
+                rangeColumnIndices,
+                rangeMin,
+                rangeMax
+              ),
+              toPhysicalOp.identifiers
             )
-        )
+          )
+
       case SinglePartition() =>
         assert(toPhysicalOp.numWorkers == 1)
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = fromPhysicalOp.identifiers
-            .map(i =>
-              (
-                OneToOnePartitioning(defaultBatchSize, Array(toPhysicalOp.identifiers.head)),
-                toPhysicalOp.identifiers
-              )
+        fromPhysicalOp.identifiers
+          .map(_ =>
+            (
+              OneToOnePartitioning(defaultBatchSize, Array(toPhysicalOp.identifiers.head)),
+              toPhysicalOp.identifiers
             )
-        )
+          )
+
       case BroadcastPartition() =>
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = fromPhysicalOp.identifiers
-            .map(_ =>
-              (
-                BroadcastPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
-                toPhysicalOp.identifiers
-              )
+        fromPhysicalOp.identifiers
+          .map(_ =>
+            (
+              BroadcastPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
+              toPhysicalOp.identifiers
             )
-        )
+          )
+
       case UnknownPartition() =>
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = fromPhysicalOp.identifiers
-            .map(_ =>
-              (
-                RoundRobinPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
-                toPhysicalOp.identifiers
-              )
+        fromPhysicalOp.identifiers
+          .map(_ =>
+            (
+              RoundRobinPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
+              toPhysicalOp.identifiers
             )
-        )
+          )
+
       case _ =>
-        new PhysicalLink(
-          fromPhysicalOp,
-          fromPort,
-          toPhysicalOp,
-          inputPort,
-          partitionings = Array()
-        )
+        Array()
+
     }
+
+    new PhysicalLink(
+      fromPhysicalOp,
+      fromPort,
+      toPhysicalOp,
+      inputPort,
+      partitionings
+    )
   }
 }
 class PhysicalLink(

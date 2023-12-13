@@ -88,7 +88,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
                 .withInputPorts(asScalaBuffer(singletonList(new InputPort("internal-input", false))).toList());
 
         PhysicalOp[] layers = {partialLayer, finalLayer};
-        PhysicalLink[] links = {new PhysicalLink(partialLayer, 0, finalLayer, 0, null)};
+        PhysicalLink[] links = {PhysicalLink.apply(partialLayer, 0, finalLayer, 0)};
 
         return PhysicalPlan.apply(layers, links);
     }

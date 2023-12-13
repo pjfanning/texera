@@ -231,7 +231,7 @@ case class PhysicalOp(
 
   // creates a copy with an additional input operator specified on an input port
   def addInput(fromOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
-    val link = PhysicalLink(fromOp, fromPort, this, toPort, part = null)
+    val link = PhysicalLink(fromOp, fromPort, this, toPort)
     this.copy(inputToOrdinalMapping =
       inputToOrdinalMapping + (link.id -> (link, toPort))
     )
@@ -239,7 +239,7 @@ case class PhysicalOp(
 
   // creates a copy with an additional output operator specified on an output port
   def addOutput(toOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
-    val link = PhysicalLink(this, fromPort, toOp, toPort, part = null)
+    val link = PhysicalLink(this, fromPort, toOp, toPort)
     this.copy(outputToOrdinalMapping =
       outputToOrdinalMapping + (link.id -> (link, fromPort))
     )
