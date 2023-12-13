@@ -30,7 +30,7 @@ object FriesReconfigurationAlgorithm {
   ): List[(PhysicalOpIdentity, EpochMarker)] = {
     // independently schedule reconfigurations for each region:
     executionPlan.getAllRegions
-      .map(region => physicalPlan.subPlan(region.getOperators.toSet))
+      .map(region => physicalPlan.getSubPlan(region.getOperators.toSet))
       .flatMap(regionSubPlan => computeMCS(regionSubPlan, reconfigurations, epochMarkerId))
   }
 
@@ -78,7 +78,7 @@ object FriesReconfigurationAlgorithm {
     })
 
     val resultMCSOpIds = forwardVertices.intersect(backwardVertices)
-    val mcsPlan = physicalPlan.subPlan(resultMCSOpIds)
+    val mcsPlan = physicalPlan.getSubPlan(resultMCSOpIds)
 
     // find the MCS components,
     // for each component, send an epoch marker to each of its source operators
@@ -87,7 +87,7 @@ object FriesReconfigurationAlgorithm {
     val connectedSets = new ConnectivityInspector(mcsPlan.dag).connectedSets()
     connectedSets.forEach(component => {
       val componentSet = asScalaSet(component).toSet
-      val componentPlan = mcsPlan.subPlan(componentSet)
+      val componentPlan = mcsPlan.getSubPlan(componentSet)
 
       // generate the reconfiguration command for this component
       val reconfigCommand = WorkerModifyLogicMultiple(
