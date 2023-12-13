@@ -30,17 +30,20 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   private val identifier: ActorVirtualIdentity = ActorVirtualIdentity("DP mock")
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
-  private val dataChannelID = ChannelID(senderID, identifier, false)
-  private val controlChannelID = ChannelID(senderID, identifier, true)
+  private val dataChannelID = ChannelID(senderID, identifier, isControl = false)
+  private val controlChannelID = ChannelID(senderID, identifier, isControl = true)
   private val operator = mock[OperatorExecutor]
   private val operatorIdentity = OperatorIdentity("testOperator")
-  private val layerId1 =
-    PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val physicalOp1 = PhysicalOp(executionId = 1, id = layerId1, opExecInitInfo = null)
-
-  private val layerId2 =
-    PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val physicalOp2 = PhysicalOp(executionId = 1, id = layerId2, opExecInitInfo = null)
+  private val physicalOp1 = PhysicalOp(
+    executionId = 1,
+    id = PhysicalOpIdentity(operatorIdentity, "1st-physical-op"),
+    opExecInitInfo = null
+  )
+  private val physicalOp2 = PhysicalOp(
+    executionId = 1,
+    id = PhysicalOpIdentity(operatorIdentity, "1st-physical-op"),
+    opExecInitInfo = null
+  )
   private val mockLink = PhysicalLink(physicalOp1, 0, physicalOp2, 0)
 
   private val opExecConfig = PhysicalOp

@@ -63,13 +63,16 @@ class WorkerSpec
     }
   }
   private val operatorIdentity = OperatorIdentity("testOperator")
-  private val layerId1 =
-    PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val physicalOp1 = PhysicalOp(executionId = 1, id = layerId1, opExecInitInfo = null)
-
-  private val layerId2 =
-    PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val physicalOp2 = PhysicalOp(executionId = 1, id = layerId2, opExecInitInfo = null)
+  private val physicalOp1 = PhysicalOp(
+    executionId = 1,
+    id = PhysicalOpIdentity(operatorIdentity, "1st-physical-op"),
+    opExecInitInfo = null
+  )
+  private val physicalOp2 = PhysicalOp(
+    executionId = 1,
+    id = PhysicalOpIdentity(operatorIdentity, "1st-physical-op"),
+    opExecInitInfo = null
+  )
   private val mockLink = PhysicalLink(physicalOp1, 0, physicalOp2, 0)
   private val opExecConfig = PhysicalOp
     .oneToOnePhysicalOp(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))

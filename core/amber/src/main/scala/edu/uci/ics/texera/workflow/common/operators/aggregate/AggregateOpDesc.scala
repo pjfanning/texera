@@ -10,14 +10,14 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
 object AggregateOpDesc {
 
-  def opExecPhysicalPlan(
+  def getPhysicalPlan(
       executionId: Long,
       id: OperatorIdentity,
       aggFuncs: List[DistributedAggregation[Object]],
       groupByKeys: List[String],
       schemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {
-    val partialLayer =
+    val partialPhysicalOp =
       PhysicalOp
         .oneToOnePhysicalOp(
           executionId,
@@ -27,7 +27,7 @@ object AggregateOpDesc {
         // a hacky solution to have unique port names for reference purpose
         .copy(isOneToManyOp = true, inputPorts = List(InputPort("in")))
 
-    val finalLayer = if (groupByKeys == null || groupByKeys.isEmpty) {
+    val finalPhysicalOp = if (groupByKeys == null || groupByKeys.isEmpty) {
       PhysicalOp
         .localPhysicalOp(
           executionId,
@@ -52,8 +52,8 @@ object AggregateOpDesc {
     }
 
     new PhysicalPlan(
-      List(partialLayer, finalLayer),
-      List(PhysicalLink(partialLayer, 0, finalLayer, 0))
+      List(partialPhysicalOp, finalPhysicalOp),
+      List(PhysicalLink(partialPhysicalOp, 0, finalPhysicalOp, 0))
     )
   }
 

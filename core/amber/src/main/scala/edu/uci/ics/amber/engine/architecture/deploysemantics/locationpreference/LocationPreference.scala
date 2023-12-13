@@ -14,7 +14,7 @@ trait LocationPreference extends Serializable {
 
   def getPreferredLocation(
       addressInfo: AddressInfo,
-      workerLayer: PhysicalOp,
+      physicalOp: PhysicalOp,
       workerIndex: Int
   ): Address
 
@@ -23,7 +23,7 @@ trait LocationPreference extends Serializable {
 class PreferController extends LocationPreference {
   override def getPreferredLocation(
       addressInfo: AddressInfo,
-      workerLayer: PhysicalOp,
+      physicalOp: PhysicalOp,
       workerIndex: Int
   ): Address = {
     addressInfo.controllerAddress
@@ -33,7 +33,7 @@ class PreferController extends LocationPreference {
 class RoundRobinPreference extends LocationPreference {
   override def getPreferredLocation(
       addressInfo: AddressInfo,
-      workerLayer: PhysicalOp,
+      physicalOp: PhysicalOp,
       workerIndex: Int
   ): Address = {
     addressInfo.allAddresses(workerIndex % addressInfo.allAddresses.length)

@@ -272,19 +272,19 @@ trait SkewDetectionHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
   /**
-    * Sends `SharePartition` control message to each worker in `prevWorkerLayer` to start the first phase.
+    * Sends `SharePartition` control message to each worker in `prevPhysicalOp` to start the first phase.
     * The message means that data of the skewed worker partition will be shared with the free worker in
     * `skewedAndHelperWorkersList`.
     */
   private def implementFirstPhasePartitioning[T](
-      prevWorkerLayer: PhysicalOp,
+      prevPhysicalOp: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
 
     val futures = new ArrayBuffer[Future[Boolean]]()
     cp.executionState
-      .getOperatorExecution(prevWorkerLayer.id)
+      .getOperatorExecution(prevPhysicalOp.id)
       .getBuiltWorkerIds
       .foreach(id => {
         futures.append(
@@ -304,13 +304,13 @@ trait SkewDetectionHandler {
   }
 
   private def implementSecondPhasePartitioning[T](
-      prevWorkerLayer: PhysicalOp,
+      prevPhysicalOp: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
     val futures = new ArrayBuffer[Future[Boolean]]()
     cp.executionState
-      .getOperatorExecution(prevWorkerLayer.id)
+      .getOperatorExecution(prevPhysicalOp.id)
       .getBuiltWorkerIds
       .foreach(id => {
         if (
@@ -352,13 +352,13 @@ trait SkewDetectionHandler {
   }
 
   private def implementPauseMitigation[T](
-      prevWorkerLayer: PhysicalOp,
+      prevPhysicalOp: PhysicalOp,
       skewedWorker: ActorVirtualIdentity,
       helperWorker: ActorVirtualIdentity
   ): Future[Seq[Boolean]] = {
     val futuresArr = new ArrayBuffer[Future[Boolean]]()
     cp.executionState
-      .getOperatorExecution(prevWorkerLayer.id)
+      .getOperatorExecution(prevPhysicalOp.id)
       .getBuiltWorkerIds
       .foreach(id => {
         futuresArr.append(send(PauseSkewMitigation(skewedWorker, helperWorker), id))
@@ -395,7 +395,7 @@ trait SkewDetectionHandler {
           // 2: Do state transfer if needed and first phase
           workflowReshapeState.firstPhaseRequestsFinished = false
           var firstPhaseFinishedCount = 0
-          val prevWorkerLayer = getPreviousPhysicalOp(physicalOp.id, cp.workflow)
+          val prevPhysicalOp = getPreviousPhysicalOp(physicalOp.id, cp.workflow)
           if (skewedAndHelperPairsForFirstPhase.isEmpty) {
             workflowReshapeState.firstPhaseRequestsFinished = true
           }
@@ -413,7 +413,7 @@ trait SkewDetectionHandler {
                       s"Reshape ${cp.workflow.workflowId.executionId} #${workflowReshapeState.detectionCallCount}: State transfer/intimation completed - $currSkewedWorker to $currHelperWorker"
                     )
                     implementFirstPhasePartitioning(
-                      prevWorkerLayer,
+                      prevPhysicalOp,
                       currSkewedWorker,
                       currHelperWorker
                     ).onSuccess(resultsFromPrevWorker => {
@@ -446,7 +446,7 @@ trait SkewDetectionHandler {
             } else {
               Future(true).map(_ =>
                 implementFirstPhasePartitioning(
-                  prevWorkerLayer,
+                  prevPhysicalOp,
                   currSkewedWorker,
                   currHelperWorker
                 ).onSuccess(resultsFromPrevWorker => {
@@ -495,7 +495,7 @@ trait SkewDetectionHandler {
             val currSkewedWorker = sh._1
             val currHelperWorker = sh._2
             allPairsSecondPhaseFutures.append(
-              implementSecondPhasePartitioning(prevWorkerLayer, currSkewedWorker, currHelperWorker)
+              implementSecondPhasePartitioning(prevPhysicalOp, currSkewedWorker, currHelperWorker)
                 .onSuccess(resultsFromPrevWorker => {
                   if (!resultsFromPrevWorker.contains(false)) {
                     workflowReshapeState.skewedAndHelperInSecondPhase(currSkewedWorker) =
@@ -539,7 +539,7 @@ trait SkewDetectionHandler {
             val currSkewedWorker = sh._1
             val currHelperWorker = sh._2
             allPairsPauseMitigationFutures.append(
-              implementPauseMitigation(prevWorkerLayer, currSkewedWorker, currHelperWorker)
+              implementPauseMitigation(prevPhysicalOp, currSkewedWorker, currHelperWorker)
                 .onSuccess(resultsFromPrevWorker => {
                   if (!resultsFromPrevWorker.contains(false)) {
                     workflowReshapeState.skewedAndHelperInPauseMitigationPhase(currSkewedWorker) =

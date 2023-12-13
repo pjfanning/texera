@@ -28,14 +28,14 @@ object WorkflowWorker {
   def props(
       id: ActorVirtualIdentity,
       workerIndex: Int,
-      workerLayer: PhysicalOp,
+      physicalOp: PhysicalOp,
       workerConf: WorkflowWorkerConfig
   ): Props =
     Props(
       new WorkflowWorker(
         id,
         workerIndex: Int,
-        workerLayer: PhysicalOp,
+        physicalOp: PhysicalOp,
         workerConf
       )
     )
@@ -56,7 +56,7 @@ object WorkflowWorker {
 class WorkflowWorker(
     actorId: ActorVirtualIdentity,
     workerIndex: Int,
-    workerLayer: PhysicalOp,
+    physicalOp: PhysicalOp,
     workerConf: WorkflowWorkerConfig
 ) extends WorkflowActor(workerConf.logStorageType, actorId) {
   val inputQueue: LinkedBlockingQueue[DPInputQueueElement] =
@@ -104,7 +104,7 @@ class WorkflowWorker(
 
   override def initState(): Unit = {
     dp.initTimerService(timerService)
-    dp.initOperator(workerIndex, workerLayer, currentOutputIterator = Iterator.empty)
+    dp.initOperator(workerIndex, physicalOp, currentOutputIterator = Iterator.empty)
     setupReplay()
     dpThread.start()
   }
