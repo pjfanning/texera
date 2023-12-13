@@ -274,18 +274,18 @@ case class PhysicalPlan(
     physicalOp.inputPorts.indices
       .map(port => {
         // all input PhysicalOpIds connected to this port
-        val inputPhysicalOpIds = physicalOp.getInputOperators(port)
+        val inputPhysicalOps = physicalOp.getOpsOnInputPort(port)
 
         val fromPort = getUpstreamPhysicalLinks(physicalOp.id).head.fromPort
 
         // the output partition info of each link connected from each input PhysicalOp
         // for each input PhysicalOp connected on this port
         // check partition requirement to enforce corresponding LinkStrategy
-        val outputPartitions = inputPhysicalOpIds.map(inputPhysicalOpId => {
-          val inputPartitionInfo = partitionInfos(inputPhysicalOpId)
+        val outputPartitions = inputPhysicalOps.map(inputPhysicalOp => {
+          val inputPartitionInfo = partitionInfos(inputPhysicalOp.id)
           val (physicalLink, outputPart) =
             getOutputPartitionInfo(
-              inputPhysicalOpId,
+              inputPhysicalOp.id,
               fromPort,
               physicalOp.id,
               port,
@@ -295,7 +295,7 @@ case class PhysicalPlan(
           outputPart
         })
 
-        assert(outputPartitions.size == inputPhysicalOpIds.size)
+        assert(outputPartitions.size == inputPhysicalOps.size)
 
         outputPartitions.reduce((a, b) => a.merge(b))
       })
@@ -313,7 +313,7 @@ case class PhysicalPlan(
     val fromPhysicalOp = getOperator(fromPhysicalOpId)
 
     // make sure this input is connected to this port
-    assert(toPhysicalOp.getInputOperators(inputPort).contains(fromPhysicalOpId))
+    assert(toPhysicalOp.getOpsOnInputPort(inputPort).map(_.id).contains(fromPhysicalOpId))
 
     // partition requirement of this PhysicalOp on this input port
     val requiredPartitionInfo =

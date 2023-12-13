@@ -213,7 +213,10 @@ case class PhysicalOp(
     schemaInfo.get.outputSchemas.head
   }
 
-  // creates a copy with the specified port information
+
+  /**
+    * creates a copy with the specified port information
+    */
   def withPorts(operatorInfo: OperatorInfo): PhysicalOp = {
     this.copy(inputPorts = operatorInfo.inputPorts, outputPorts = operatorInfo.outputPorts)
   }
@@ -229,7 +232,9 @@ case class PhysicalOp(
     this.copy(outputPorts = outputs)
   }
 
-  // creates a copy with an additional input operator specified on an input port
+  /**
+    * creates a copy with an additional input operator specified on an input port
+    */
   def addInput(fromOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
     val link = PhysicalLink(fromOp, fromPort, this, toPort)
     this.copy(inputToOrdinalMapping =
@@ -237,7 +242,9 @@ case class PhysicalOp(
     )
   }
 
-  // creates a copy with an additional output operator specified on an output port
+  /**
+    * creates a copy with an additional output operator specified on an output port
+    */
   def addOutput(toOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
     val link = PhysicalLink(this, fromPort, toOp, toPort)
     this.copy(outputToOrdinalMapping =
@@ -245,38 +252,54 @@ case class PhysicalOp(
     )
   }
 
-  // creates a copy with a removed input operator
+  /**
+    * creates a copy with a removed input operator
+    */
   def removeInput(link: PhysicalLink): PhysicalOp = {
     this.copy(inputToOrdinalMapping = inputToOrdinalMapping - link.id)
   }
 
-  // creates a copy with a removed output operator
+  /**
+    * creates a copy with a removed output operator
+    */
   def removeOutput(link: PhysicalLink): PhysicalOp = {
     this.copy(outputToOrdinalMapping = outputToOrdinalMapping - link.id)
   }
 
-  // creates a copy with the new ID
+  /**
+    * creates a copy with the new id
+    */
   def withId(id: PhysicalOpIdentity): PhysicalOp = this.copy(id = id)
 
-  // creates a copy with the number of workers specified
+  /**
+    * creates a copy with the number of workers specified
+    */
   def withNumWorkers(numWorkers: Int): PhysicalOp = this.copy(numWorkers = numWorkers)
 
-  // creates a copy with the specified property that whether this operator is one-to-many
+  /**
+    * creates a copy with the specified property that whether this operator is one-to-many
+    */
   def withIsOneToManyOp(isOneToManyOp: Boolean): PhysicalOp =
     this.copy(isOneToManyOp = isOneToManyOp)
 
-  // creates a copy with the schema information
+  /**
+    * creates a copy with the schema information
+    */
   def withOperatorSchemaInfo(schemaInfo: OperatorSchemaInfo): PhysicalOp =
     this.copy(schemaInfo = Some(schemaInfo))
 
-  // returns all input links on a specific input port
-  def getInputLinks(portIndex: Int): List[PhysicalLinkIdentity] = {
-    inputToOrdinalMapping.filter(p => p._2._2 == portIndex).keys.toList
+  /**
+    * returns all input links on a specific input port
+    */
+  private def getLinksOnInputPort(portIndex: Int): List[PhysicalLink] = {
+    inputToOrdinalMapping.filter(p => p._2._2 == portIndex).values.map(_._1).toList
   }
 
-  // returns all the input operators on a specific input port
-  def getInputOperators(portIndex: Int): List[PhysicalOpIdentity] = {
-    getInputLinks(portIndex).map(link => link.from)
+  /**
+    * returns all the input operators on a specific input port
+    */
+  def getOpsOnInputPort(portIndex: Int): List[PhysicalOp] = {
+    getLinksOnInputPort(portIndex).map(link => link.fromOp)
   }
 
   def identifiers: Array[ActorVirtualIdentity] = {
@@ -291,9 +314,9 @@ case class PhysicalOp(
     * Tells whether the input on this link is blocking i.e. the operator doesn't output anything till this link
     * outputs all its tuples
     */
-  def isInputBlocking(input: PhysicalLinkIdentity): Boolean = {
+  def isInputLinkBlocking(input: PhysicalLink): Boolean = {
     inputToOrdinalMapping
-      .get(input)
+      .get(input.id)
       .exists({
         case (_, port) => realBlockingInputs.contains(port)
       })
@@ -303,7 +326,7 @@ case class PhysicalOp(
     * Some operators process their inputs in a particular order. Eg: 2 phase hash join first
     * processes the build input, then the probe input.
     */
-  def getInputProcessingOrder(): Array[PhysicalLink] = {
+  def getInputLinksInProcessingOrder: Array[PhysicalLink] = {
     val dependencyDag =
       new DirectedAcyclicGraph[PhysicalLink, DefaultEdge](classOf[DefaultEdge])
     dependency.foreach(dep => {

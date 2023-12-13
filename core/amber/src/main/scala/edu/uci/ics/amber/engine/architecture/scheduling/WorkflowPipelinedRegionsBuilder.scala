@@ -75,7 +75,7 @@ class WorkflowPipelinedRegionsBuilder(
           physicalPlan.links
             .filter(l => l.fromOp.id == upstreamPhysicalOpId && l.toOp.id == physicalOpId)
             .foreach(link => {
-              if (physicalPlan.getOperator(physicalOpId).isInputBlocking(link.id)) {
+              if (physicalPlan.getOperator(physicalOpId).isInputLinkBlocking(link)) {
                 edgesToRemove += link.id
               }
             })
@@ -133,7 +133,7 @@ class WorkflowPipelinedRegionsBuilder(
       .foreach(physicalOpId => {
         // For operators like HashJoin that have an order among their blocking and pipelined inputs
         val inputProcessingOrderForOp =
-          physicalPlan.getOperator(physicalOpId).getInputProcessingOrder()
+          physicalPlan.getOperator(physicalOpId).getInputLinksInProcessingOrder
         if (inputProcessingOrderForOp != null && inputProcessingOrderForOp.length > 1) {
           for (i <- 1 until inputProcessingOrderForOp.length) {
             try {
@@ -163,7 +163,7 @@ class WorkflowPipelinedRegionsBuilder(
           upstreamPhysicalOpIds.nonEmpty && upstreamPhysicalOpIds.forall(upstreamPhysicalOpId =>
             physicalPlan
               .getLinksBetween(upstreamPhysicalOpId, physicalOpId)
-              .forall(link => physicalPlan.getOperator(physicalOpId).isInputBlocking(link.id))
+              .forall(link => physicalPlan.getOperator(physicalOpId).isInputLinkBlocking(link))
           )
         if (allInputBlocking) {
           upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
@@ -227,7 +227,7 @@ class WorkflowPipelinedRegionsBuilder(
           physicalPlan
             .getLinksBetween(upstreamPhysicalOpId, physicalOpId)
             .foreach(upstreamPhysicalLink => {
-              if (physicalPlan.getOperator(physicalOpId).isInputBlocking(upstreamPhysicalLink.id)) {
+              if (physicalPlan.getOperator(physicalOpId).isInputLinkBlocking(upstreamPhysicalLink)) {
                 val prevInOrderRegions = getPipelinedRegionsFromOperatorId(upstreamPhysicalOpId)
                 for (prevInOrderRegion <- prevInOrderRegions) {
                   if (
