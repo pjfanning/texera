@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{
   OperatorExecution,
   Workflow
 }
-import edu.uci.ics.amber.engine.architecture.linksemantics.LinkStrategy
+import edu.uci.ics.amber.engine.architecture.linksemantics.PhysicalLink
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal
@@ -236,10 +236,10 @@ class WorkflowScheduler(
       workflow.partitioningPlan.strategies.values
         .filter(link => {
           !activatedLink.contains(link.id) &&
-            allOperatorsInRegion.contains(link.from.id) &&
-            allOperatorsInRegion.contains(link.to.id)
+            allOperatorsInRegion.contains(link.fromOp.id) &&
+            allOperatorsInRegion.contains(link.toOp.id)
         })
-        .map { link: LinkStrategy =>
+        .map { link: PhysicalLink =>
           asyncRPCClient
             .send(LinkWorkers(link.id), CONTROLLER)
             .onSuccess(_ => activatedLink.add(link.id))

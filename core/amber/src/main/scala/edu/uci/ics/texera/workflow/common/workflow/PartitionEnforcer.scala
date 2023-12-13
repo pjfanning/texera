@@ -1,6 +1,13 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
 import edu.uci.ics.amber.engine.architecture.linksemantics._
+import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.{
+  BroadcastPartitioning,
+  HashBasedShufflePartitioning,
+  OneToOnePartitioning,
+  RangeBasedShufflePartitioning,
+  RoundRobinPartitioning
+}
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
 import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, PhysicalOpIdentity}
 
@@ -11,72 +18,133 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
 
   // a map of an operator to its output partition info
   val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()
-  val linkMapping = new mutable.HashMap[PhysicalLinkIdentity, LinkStrategy]()
+  val linkMapping = new mutable.HashMap[PhysicalLinkIdentity, PhysicalLink]()
 
   def getOutputPartition(
-      currentPhysicalOpId: PhysicalOpIdentity,
+      fromPhysicalOpId: PhysicalOpIdentity,
       fromPort: Int,
-      inputPhysicalOpId: PhysicalOpIdentity,
+      toPhysicalOpId: PhysicalOpIdentity,
       inputPort: Int
-  ): (LinkStrategy, PartitionInfo) = {
-    val currentPhysicalOp = physicalPlan.getOperator(currentPhysicalOpId)
-    val inputPhysicalOp = physicalPlan.getOperator(inputPhysicalOpId)
+  ): (PhysicalLink, PartitionInfo) = {
+    val toPhysicalOp = physicalPlan.getOperator(toPhysicalOpId)
+    val fromPhysicalOp = physicalPlan.getOperator(fromPhysicalOpId)
 
     // make sure this input is connected to this port
-    assert(currentPhysicalOp.getInputOperators(inputPort).contains(inputPhysicalOpId))
+    assert(toPhysicalOp.getInputOperators(inputPort).contains(fromPhysicalOpId))
 
     // partition requirement of this PhysicalOp on this input port
     val part =
-      currentPhysicalOp.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
+      toPhysicalOp.partitionRequirement.lift(inputPort).flatten.getOrElse(UnknownPartition())
     // output partition of the input
-    val inputPart = outputPartitionInfos(inputPhysicalOpId)
+    val inputPart = outputPartitionInfos(fromPhysicalOpId)
 
     // input partition satisfies the requirement, and number of worker match
-    if (inputPart.satisfies(part) && inputPhysicalOp.numWorkers == currentPhysicalOp.numWorkers) {
-      val linkStrategy =
-        new OneToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
+    if (inputPart.satisfies(part) && fromPhysicalOp.numWorkers == toPhysicalOp.numWorkers) {
+      val linkStrategy = new PhysicalLink(
+        fromPhysicalOp,
+        fromPort,
+        toPhysicalOp,
+        inputPort,
+        partitionings = fromPhysicalOp.identifiers.indices
+          .map(i =>
+            (
+              OneToOnePartitioning(defaultBatchSize, Array(toPhysicalOp.identifiers(i))),
+              Array(toPhysicalOp.identifiers(i))
+            )
+          )
+          .toIterator
+      )
+
       val outputPart = inputPart
       (linkStrategy, outputPart)
     } else {
       // we must re-distribute the input partitions
       val linkStrategy = part match {
         case HashPartition(hashColumnIndices) =>
-          new HashBasedShuffle(
-            inputPhysicalOp,
+          new PhysicalLink(
+            fromPhysicalOp,
             fromPort,
-            currentPhysicalOp,
+            toPhysicalOp,
             inputPort,
-            defaultBatchSize,
-            hashColumnIndices
+            partitionings = fromPhysicalOp.identifiers.indices
+              .map(_ =>
+                (
+                  HashBasedShufflePartitioning(
+                    defaultBatchSize,
+                    toPhysicalOp.identifiers,
+                    hashColumnIndices
+                  ),
+                  toPhysicalOp.identifiers
+                )
+              )
+              .toIterator
           )
         case RangePartition(rangeColumnIndices, rangeMin, rangeMax) =>
-          new RangeBasedShuffle(
-            inputPhysicalOp,
+          new PhysicalLink(
+            fromPhysicalOp,
             fromPort,
-            currentPhysicalOp,
+            toPhysicalOp,
             inputPort,
-            defaultBatchSize,
-            rangeColumnIndices,
-            rangeMin,
-            rangeMax
+            partitionings = fromPhysicalOp.identifiers.indices
+              .map(i =>
+                (
+                  RangeBasedShufflePartitioning(
+                    defaultBatchSize,
+                    toPhysicalOp.identifiers,
+                    rangeColumnIndices,
+                    rangeMin,
+                    rangeMax
+                  ),
+                  toPhysicalOp.identifiers
+                )
+              )
+              .toIterator
           )
         case SinglePartition() =>
-          new AllToOne(inputPhysicalOp, fromPort, currentPhysicalOp, inputPort, defaultBatchSize)
-        case BroadcastPartition() =>
-          new AllBroadcast(
-            inputPhysicalOp,
+          assert(toPhysicalOp.numWorkers == 1)
+          new PhysicalLink(
+            fromPhysicalOp,
             fromPort,
-            currentPhysicalOp,
+            toPhysicalOp,
             inputPort,
-            defaultBatchSize
+            partitionings = fromPhysicalOp.identifiers.indices
+              .map(i =>
+                (
+                  OneToOnePartitioning(defaultBatchSize, Array(toPhysicalOp.identifiers.head)),
+                  toPhysicalOp.identifiers
+                )
+              )
+              .toIterator
+          )
+        case BroadcastPartition() =>
+          new PhysicalLink(
+            fromPhysicalOp,
+            fromPort,
+            toPhysicalOp,
+            inputPort,
+            partitionings = fromPhysicalOp.identifiers.indices
+              .map(i =>
+                (
+                  BroadcastPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
+                  toPhysicalOp.identifiers
+                )
+              )
+              .toIterator
           )
         case UnknownPartition() =>
-          new FullRoundRobin(
-            inputPhysicalOp,
+          new PhysicalLink(
+            fromPhysicalOp,
             fromPort,
-            currentPhysicalOp,
+            toPhysicalOp,
             inputPort,
-            defaultBatchSize
+            partitionings = fromPhysicalOp.identifiers.indices
+              .map(i =>
+                (
+                  RoundRobinPartitioning(defaultBatchSize, toPhysicalOp.identifiers),
+                  toPhysicalOp.identifiers
+                )
+              )
+              .toIterator
           )
       }
       val outputPart = part
@@ -110,7 +178,7 @@ class PartitionEnforcer(physicalPlan: PhysicalPlan) {
             // check partition requirement to enforce corresponding LinkStrategy
             val outputPartitions = inputPhysicalOpIds.map(inputPhysicalOpId => {
               val (linkStrategy, outputPart) =
-                getOutputPartition(physicalOpId, fromPort, inputPhysicalOpId, port)
+                getOutputPartition(inputPhysicalOpId, fromPort, physicalOpId, port)
               linkMapping.put(linkStrategy.id, linkStrategy)
               outputPart
             })

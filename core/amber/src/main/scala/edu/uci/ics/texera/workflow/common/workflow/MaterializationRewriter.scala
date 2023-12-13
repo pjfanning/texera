@@ -87,7 +87,8 @@ class MaterializationRewriter(
       )
 
     // create 2 links for materialization
-    val readerToDestLink = PhysicalLinkIdentity(matReaderOpExecConfig.id, 0, toPhysicalOpId, toInputPortIdx)
+    val readerToDestLink =
+      PhysicalLinkIdentity(matReaderOpExecConfig.id, 0, toPhysicalOpId, toInputPortIdx)
     val sourceToWriterLink =
       PhysicalLinkIdentity(fromPhysicalOpId, fromOutputPortIdx, matWriterOpExecConfig.id, 0)
     // add the pair to the map for later adding edges between 2 regions.

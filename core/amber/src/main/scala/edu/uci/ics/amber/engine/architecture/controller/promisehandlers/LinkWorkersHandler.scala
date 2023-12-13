@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity
 
 object LinkWorkersHandler {
-  final case class LinkWorkers(link: PhysicalLinkIdentity) extends ControlCommand[Unit]
+  final case class LinkWorkers(linkId: PhysicalLinkIdentity) extends ControlCommand[Unit]
 }
 
 /** add a data transfer partitioning to the sender workers and update input linking
@@ -22,14 +22,16 @@ trait LinkWorkersHandler {
 
   registerHandler { (msg: LinkWorkers, sender) =>
     {
-      // get the list of (sender id, partitioning, set of receiver ids) from the link
-      val futures = cp.workflow.partitioningPlan.strategies(msg.link).getPartitioning.flatMap {
-        case (from, link, partitioning, tos) =>
-          // send messages to sender worker and receiver workers
-          Seq(send(AddPartitioning(link, partitioning), from)) ++ tos.map(
-            send(UpdateInputLinking(from, msg.link), _)
-          )
-      }
+      val partitionings = cp.workflow.partitioningPlan.strategies(msg.linkId).partitionings
+      val senders = cp.workflow.physicalPlan.getOperator(msg.linkId.from).identifiers.toIterator
+      val futures = senders
+        .zip(partitionings)
+        .flatMap({
+          case (upstreamWorkerId, (partitioning, receivers)) =>
+            Seq(send(AddPartitioning(msg.linkId, partitioning), upstreamWorkerId)) ++ receivers.map(
+              send(UpdateInputLinking(upstreamWorkerId, msg.linkId), _)
+            )
+        })
 
       Future.collect(futures.toSeq).map { _ =>
         // returns when all has completed

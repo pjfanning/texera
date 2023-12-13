@@ -19,7 +19,9 @@ class Workflow(
         physicalPlan
           .getUpstreamPhysicalOpIds(physicalOpId)
           .filter(upstreamPhysicalOpId => region.operators.contains(upstreamPhysicalOpId))
-          .map(upstreamPhysicalOpId => PhysicalLinkIdentity(upstreamPhysicalOpId, 0, physicalOpId, toPort))
+          .map(upstreamPhysicalOpId =>
+            PhysicalLinkIdentity(upstreamPhysicalOpId, 0, physicalOpId, toPort)
+          )
     }.toSet
   }
 
