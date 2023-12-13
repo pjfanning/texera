@@ -8,7 +8,7 @@ class PhysicalLink(
     val fromPort: Int,
     val toOp: PhysicalOp,
     val toPort: Int,
-    val partitionings: Iterator[Tuple2[Partitioning, Array[ActorVirtualIdentity]]]
+    val partitionings: Array[(Partitioning, Array[ActorVirtualIdentity])]
 ) extends Serializable {
 
   val id: PhysicalLinkIdentity = PhysicalLinkIdentity(fromOp.id, fromPort, toOp.id, toPort)
