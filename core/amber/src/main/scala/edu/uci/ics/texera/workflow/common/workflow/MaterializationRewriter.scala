@@ -30,12 +30,12 @@ class MaterializationRewriter(
 
     val fromOp = physicalLink.fromOp
     val fromOutputPortIdx = fromOp.outputToOrdinalMapping(physicalLink.id)._2
-    val fromOutputPortName = fromOp.outputPorts(fromOutputPortIdx).displayName
+
     val toOp = physicalLink.toOp
 
     val toInputPortIdx =
       physicalPlan.getOperator(toOp.id).inputToOrdinalMapping(physicalLink.id)._2
-    val toInputPortName = toOp.inputPorts(toInputPortIdx).displayName
+
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)
@@ -125,7 +125,7 @@ class MaterializationRewriter(
           outputToOrdinalMapping =
             fromOp.outputToOrdinalMapping - physicalLink.id + (sourceToWriterLink.id -> (sourceToWriterLink, fromOutputPortIdx))
         )
-      )
+      ).enforcePartition()
   }
 
 }
