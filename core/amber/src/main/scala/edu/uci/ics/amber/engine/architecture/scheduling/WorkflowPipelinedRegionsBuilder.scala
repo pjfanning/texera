@@ -72,7 +72,7 @@ class WorkflowPipelinedRegionsBuilder(
       .foreach(physicalOpId => {
         val upstreamPhysicalOpIds = physicalPlan.getUpstreamPhysicalOpIds(physicalOpId)
         upstreamPhysicalOpIds.foreach(upstreamPhysicalOpId => {
-          physicalPlan.links
+          physicalPlan.linkIds
             .filter(l => l.from == upstreamPhysicalOpId && l.to == physicalOpId)
             .foreach(link => {
               if (physicalPlan.getOperator(physicalOpId).isInputBlocking(link)) {
@@ -82,7 +82,7 @@ class WorkflowPipelinedRegionsBuilder(
         })
       })
 
-    val linksAfterRemoval = physicalPlan.links.filter(link => !edgesToRemove.contains(link))
+    val linksAfterRemoval = physicalPlan.linkIds.filter(link => !edgesToRemove.contains(link))
     new PhysicalPlan(physicalPlan.operators, linksAfterRemoval)
   }
 

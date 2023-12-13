@@ -233,7 +233,7 @@ class WorkflowScheduler(
       region.getOperators ++ region.blockingDownstreamPhysicalOpIdsInOtherRegions.map(_._1)
     Future.collect(
       // activate all links
-      workflow.physicalPlan.abs
+      workflow.physicalPlan.links
         .filter(link => {
           !activatedLink.contains(link.id) &&
             allOperatorsInRegion.contains(link.fromOp.id) &&

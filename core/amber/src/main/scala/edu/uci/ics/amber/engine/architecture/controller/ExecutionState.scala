@@ -15,7 +15,7 @@ import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, Workfl
 class ExecutionState(workflow: Workflow) {
 
   private val linkExecutions: Map[PhysicalLinkIdentity, LinkExecution] =
-    workflow.physicalPlan.abs.map { link =>
+    workflow.physicalPlan.links.map { link =>
       link.id -> new LinkExecution(link.totalReceiversCount)
     }.toMap
   private val operatorExecutions: Map[PhysicalOpIdentity, OperatorExecution] =

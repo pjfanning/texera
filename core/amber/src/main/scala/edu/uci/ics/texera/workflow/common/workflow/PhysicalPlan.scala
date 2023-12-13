@@ -4,7 +4,12 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, Phys
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, OperatorIdentity, PhysicalLinkIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  OperatorIdentity,
+  PhysicalLinkIdentity,
+  PhysicalOpIdentity
+}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -62,8 +67,8 @@ object PhysicalPlan {
 
 case class PhysicalPlan(
     operators: List[PhysicalOp],
-    links: List[PhysicalLinkIdentity],
-    abs:List[PhysicalLink] = List.empty
+    linkIds: List[PhysicalLinkIdentity],
+    links: List[PhysicalLink] = List.empty
 ) {
 
   def getLink(linkId: PhysicalLinkIdentity): PhysicalLink = {
@@ -72,14 +77,14 @@ case class PhysicalPlan(
   @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
     operators.map(o => (o.id, o)).toMap
 
-  private lazy val linkMap: Map[PhysicalLinkIdentity, PhysicalLink] = abs.map(link=>link.id->link).toMap
-
+  private lazy val linkMap: Map[PhysicalLinkIdentity, PhysicalLink] =
+    links.map(link => link.id -> link).toMap
 
   // the dag will be re-computed again once it reaches the coordinator.
   @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
-    links.foreach(l => jgraphtDag.addEdge(l.from, l.to))
+    linkIds.foreach(l => jgraphtDag.addEdge(l.from, l.to))
     jgraphtDag
   }
 
@@ -144,7 +149,7 @@ case class PhysicalPlan(
   def subPlan(subOperators: Set[PhysicalOpIdentity]): PhysicalPlan = {
     val newOps = operators.filter(op => subOperators.contains(op.id))
     val newLinks =
-      links.filter(link => subOperators.contains(link.from) && subOperators.contains(link.to))
+      linkIds.filter(link => subOperators.contains(link.from) && subOperators.contains(link.to))
     PhysicalPlan(newOps, newLinks)
   }
 
@@ -155,7 +160,7 @@ case class PhysicalPlan(
   }
 
   def getUpstreamPhysicalLinks(physicalOpId: PhysicalOpIdentity): List[PhysicalLinkIdentity] = {
-    links.filter(l => l.to == physicalOpId)
+    linkIds.filter(l => l.to == physicalOpId)
   }
 
   def getDownstreamPhysicalOpIds(physicalOpId: PhysicalOpIdentity): List[PhysicalOpIdentity] = {
@@ -190,8 +195,8 @@ case class PhysicalPlan(
       (from -> operatorMap(from).addOutput(to, fromPort, toPort)) +
       (to -> operatorMap(to).addInput(from, fromPort, toPort))
 
-    val newLinks = links :+ PhysicalLinkIdentity(from, fromPort, to, toPort)
-    this.copy(operators = newOperators.values.toList, links = newLinks)
+    val newLinks = linkIds :+ PhysicalLinkIdentity(from, fromPort, to, toPort)
+    this.copy(operators = newOperators.values.toList, linkIds = newLinks)
   }
 
   // returns a new physical plan with the edges removed
@@ -204,8 +209,8 @@ case class PhysicalPlan(
       (from -> operatorMap(from).removeOutput(physicalLink)) +
       (to -> operatorMap(to).removeInput(physicalLink))
 
-    val newLinks = links.filter(l => l != physicalLink)
-    this.copy(operators = newOperators.values.toList, links = newLinks)
+    val newLinks = linkIds.filter(l => l != physicalLink)
+    this.copy(operators = newOperators.values.toList, linkIds = newLinks)
   }
 
   def setOperator(physicalOp: PhysicalOp): PhysicalPlan = {
@@ -213,11 +218,11 @@ case class PhysicalPlan(
   }
 
   private def addSubPlan(subPlan: PhysicalPlan): PhysicalPlan = {
-    var resultPlan = this.copy(operators, links)
+    var resultPlan = this.copy(operators, linkIds)
     // add all physical operators to physical DAG
     subPlan.operators.foreach(op => resultPlan = resultPlan.addOperator(op))
     // connect intra-operator links
-    subPlan.links.foreach((physicalLink: PhysicalLinkIdentity) =>
+    subPlan.linkIds.foreach((physicalLink: PhysicalLinkIdentity) =>
       resultPlan = resultPlan.addEdge(physicalLink)
     )
     resultPlan
@@ -230,17 +235,16 @@ case class PhysicalPlan(
       from: PhysicalOpIdentity,
       to: PhysicalOpIdentity
   ): List[PhysicalLinkIdentity] = {
-    links.filter(link => link.from == from && link.to == to)
+    linkIds.filter(link => link.from == from && link.to == to)
 
   }
-
 
   def enforcePartition(): PhysicalPlan = {
     val createdLinks = new mutable.ArrayBuffer[PhysicalLink]()
     // a map of an operator to its output partition info
     val outputPartitionInfos = new mutable.HashMap[PhysicalOpIdentity, PartitionInfo]()
 
-      topologicalIterator()
+    topologicalIterator()
       .foreach(physicalOpId => {
         val physicalOp = getOperator(physicalOpId)
         val outputPartitionInfo = if (getSourceOperatorIds.contains(physicalOpId)) {
@@ -257,14 +261,14 @@ case class PhysicalPlan(
       })
 
     // returns the complete physical plan with link strategies
-    this.copy(operators, links, abs =createdLinks.toList)
+    this.copy(operators, linkIds, links = createdLinks.toList)
   }
 
   private def enforcePartitionRequirement(
-                                           physicalOp: PhysicalOp,
-                                           partitionInfos: Map[PhysicalOpIdentity, PartitionInfo],
-                                           links: mutable.ArrayBuffer[PhysicalLink]
-                                         ): Array[PartitionInfo] = {
+      physicalOp: PhysicalOp,
+      partitionInfos: Map[PhysicalOpIdentity, PartitionInfo],
+      links: mutable.ArrayBuffer[PhysicalLink]
+  ): Array[PartitionInfo] = {
     // for each input port, enforce partition requirement
     physicalOp.inputPorts.indices
       .map(port => {
@@ -298,12 +302,12 @@ case class PhysicalPlan(
   }
 
   private def getOutputPartitionInfo(
-                                      fromPhysicalOpId: PhysicalOpIdentity,
-                                      fromPort: Int,
-                                      toPhysicalOpId: PhysicalOpIdentity,
-                                      inputPort: Int,
-                                      upstreamPartitionInfo: PartitionInfo
-                                    ): (PhysicalLink, PartitionInfo) = {
+      fromPhysicalOpId: PhysicalOpIdentity,
+      fromPort: Int,
+      toPhysicalOpId: PhysicalOpIdentity,
+      inputPort: Int,
+      upstreamPartitionInfo: PartitionInfo
+  ): (PhysicalLink, PartitionInfo) = {
     val toPhysicalOp = getOperator(toPhysicalOpId)
     val fromPhysicalOp = getOperator(fromPhysicalOpId)
 

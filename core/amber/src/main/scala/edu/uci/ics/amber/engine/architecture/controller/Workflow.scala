@@ -9,7 +9,7 @@ class Workflow(
     val originalLogicalPlan: LogicalPlan,
     val logicalPlan: LogicalPlan,
     val physicalPlan: PhysicalPlan,
-    val executionPlan: ExecutionPlan,
+    val executionPlan: ExecutionPlan
 ) extends java.io.Serializable {
 
   def getBlockingOutPhysicalLinksOfRegion(region: PipelinedRegion): Set[PhysicalLinkIdentity] = {
