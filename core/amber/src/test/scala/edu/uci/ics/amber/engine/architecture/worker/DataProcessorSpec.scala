@@ -38,7 +38,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val testOpId = PhysicalOpIdentity(OperatorIdentity("testOperator"), "main")
   private val testOp = PhysicalOp(executionId = 1, id = testOpId, opExecInitInfo = null)
   private val link = PhysicalLink(upstreamOp, 0, testOp, 0)
-  private val opExecConfig =
+  private val physicalOp =
     PhysicalOp
       .oneToOnePhysicalOp(1, operatorIdentity, OpExecInitInfo(_ => operator))
       .addInput(link.fromOp, 0, 0)
@@ -52,7 +52,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         override val outputManager: OutputManager = mock[OutputManager]
         override val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
       }
-    dp.initOperator(0, opExecConfig, Iterator.empty)
+    dp.initOperator(0, physicalOp, Iterator.empty)
     dp.initTimerService(adaptiveBatchingMonitor)
     dp
   }

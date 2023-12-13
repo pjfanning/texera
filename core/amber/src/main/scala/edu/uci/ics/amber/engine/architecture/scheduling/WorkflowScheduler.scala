@@ -199,28 +199,26 @@ class WorkflowScheduler(
         // initialize python operator code
         executionState
           .getPythonWorkerToOperatorExec(uninitializedPythonOperators)
-          .map(p => {
-            val workerID = p._1
-            val pythonUDFOpExecConfig = p._2
-
-            val inputMappingList = pythonUDFOpExecConfig.inputPortToLinkMapping.flatMap {
-              case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
-            }.toList
-            val outputMappingList = pythonUDFOpExecConfig.outputPortToLinkMapping.flatMap {
-              case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
-            }.toList
-            asyncRPCClient
-              .send(
-                InitializeOperatorLogic(
-                  pythonUDFOpExecConfig.getPythonCode,
-                  pythonUDFOpExecConfig.isSourceOperator,
-                  inputMappingList,
-                  outputMappingList,
-                  pythonUDFOpExecConfig.getOutputSchema
-                ),
-                workerID
-              )
-          })
+          .map {
+            case (workerId, pythonUDFPhysicalOp) =>
+              val inputMappingList = pythonUDFPhysicalOp.inputPortToLinkMapping.flatMap {
+                case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+              }.toList
+              val outputMappingList = pythonUDFPhysicalOp.outputPortToLinkMapping.flatMap {
+                case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+              }.toList
+              asyncRPCClient
+                .send(
+                  InitializeOperatorLogic(
+                    pythonUDFPhysicalOp.getPythonCode,
+                    pythonUDFPhysicalOp.isSourceOperator,
+                    inputMappingList,
+                    outputMappingList,
+                    pythonUDFPhysicalOp.getOutputSchema
+                  ),
+                  workerId
+                )
+          }
           .toSeq
       )
       .onSuccess(_ =>

@@ -60,8 +60,7 @@ class WorkflowPipelinedRegionsBuilder(
     new mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]()
 
   /**
-    * Uses the outLinks and operatorToOpExecConfig to create a DAG similar to the workflow but with all
-    * blocking links removed.
+    * create a DAG similar to the physical DAG but with all blocking links removed.
     *
     * @return
     */

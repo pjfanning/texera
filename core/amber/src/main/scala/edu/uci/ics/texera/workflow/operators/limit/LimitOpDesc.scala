@@ -50,15 +50,15 @@ class LimitOpDesc extends LogicalOp {
 
   override def runtimeReconfiguration(
       executionId: Long,
-      newOpDesc: LogicalOp,
+      newLogicalOp: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
-    val newOpExecConfig = newOpDesc.getPhysicalOp(executionId, operatorSchemaInfo)
+    val newPhysicalOp = newLogicalOp.getPhysicalOp(executionId, operatorSchemaInfo)
     val stateTransferFunc: StateTransferFunc = (oldOp, newOp) => {
       val oldLimitOp = oldOp.asInstanceOf[LimitOpExec]
       val newLimitOp = newOp.asInstanceOf[LimitOpExec]
       newLimitOp.count = oldLimitOp.count
     }
-    Success(newOpExecConfig, Some(stateTransferFunc))
+    Success(newPhysicalOp, Some(stateTransferFunc))
   }
 }

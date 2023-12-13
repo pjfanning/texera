@@ -74,7 +74,7 @@ class WorkerSpec
     opExecInitInfo = null
   )
   private val mockLink = PhysicalLink(physicalOp1, 0, physicalOp2, 0)
-  private val opExecConfig = PhysicalOp
+  private val physicalOp = PhysicalOp
     .oneToOnePhysicalOp(0, operatorIdentity, OpExecInitInfo(_ => mockOpExecutor))
     .copy(
       inputPortToLinkMapping = Map(0 -> List(mockLink)),
@@ -105,13 +105,13 @@ class WorkerSpec
       new WorkflowWorker(
         identifier1,
         workerIndex,
-        opExecConfig,
+        physicalOp,
         WorkflowWorkerConfig(logStorageType = "none", replayTo = None)
       ) {
         this.dp = new DataProcessor(identifier1, mockHandler) {
           override val outputManager: OutputManager = mockOutputManager
         }
-        this.dp.initOperator(0, opExecConfig, Iterator.empty)
+        this.dp.initOperator(0, physicalOp, Iterator.empty)
         this.dp.initTimerService(timerService)
         override val dpThread: DPThread =
           new DPThread(
