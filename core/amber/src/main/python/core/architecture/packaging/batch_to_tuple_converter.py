@@ -5,7 +5,10 @@ from core.models import Tuple, ArrowTableTupleProvider
 from core.models.marker import EndOfAllMarker, Marker, SenderChangeMarker
 from core.models.payload import InputDataFrame, DataPayload, EndOfUpstream
 from core.models.tuple import InputExhausted
-from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity, PhysicalLinkIdentity
+from proto.edu.uci.ics.amber.engine.common import (
+    ActorVirtualIdentity,
+    PhysicalLinkIdentity,
+)
 
 
 class BatchToTupleConverter:
