@@ -227,7 +227,9 @@ class WorkflowPipelinedRegionsBuilder(
           physicalPlan
             .getLinksBetween(upstreamPhysicalOpId, physicalOpId)
             .foreach(upstreamPhysicalLink => {
-              if (physicalPlan.getOperator(physicalOpId).isInputLinkBlocking(upstreamPhysicalLink)) {
+              if (
+                physicalPlan.getOperator(physicalOpId).isInputLinkBlocking(upstreamPhysicalLink)
+              ) {
                 val prevInOrderRegions = getPipelinedRegionsFromOperatorId(upstreamPhysicalOpId)
                 for (prevInOrderRegion <- prevInOrderRegions) {
                   if (

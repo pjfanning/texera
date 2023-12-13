@@ -29,8 +29,7 @@ class MaterializationRewriter(
 
     val toOp = physicalLink.toOp
 
-    val toInputPortIdx =
-      physicalPlan.getOperator(toOp.id).inputToOrdinalMapping(physicalLink.id)._2
+    val toInputPortIdx = toOp.getPortIdxForInputLinkId(physicalLink.id)
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)
@@ -108,8 +107,9 @@ class MaterializationRewriter(
       .setOperator(
         toOp.copy(
           // update the input mapping by replacing the original link with the new link from materialization.
-          inputToOrdinalMapping =
-            toOp.inputToOrdinalMapping - physicalLink.id + (readerToDestLink.id -> (readerToDestLink, toInputPortIdx)),
+          inputPortToLinkMapping = toOp.inputPortToLinkMapping + (toInputPortIdx -> (toOp
+            .getLinksOnInputPort(toInputPortIdx)
+            .filter(link => link.id == physicalLink.id) :+ readerToDestLink)),
           // the dest operator's input port is not blocking anymore.
           blockingInputs = toOp.blockingInputs.filter(e => e != toInputPortIdx)
         )
@@ -117,8 +117,10 @@ class MaterializationRewriter(
       .setOperator(
         fromOp.copy(
           // update the output mapping by replacing the original link with the new link to materialization.
-          outputToOrdinalMapping =
-            fromOp.outputToOrdinalMapping - physicalLink.id + (sourceToWriterLink.id -> (sourceToWriterLink, fromOutputPortIdx))
+          outputPortToLinkMapping =
+            fromOp.outputPortToLinkMapping + (fromOutputPortIdx -> (toOp
+              .getLinksOnOutputPort(fromOutputPortIdx)
+              .filter(link => link.id == physicalLink.id) :+ sourceToWriterLink))
         )
       )
       .populatePartitioningOnLinks()

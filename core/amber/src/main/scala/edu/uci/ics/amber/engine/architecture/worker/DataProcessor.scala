@@ -112,12 +112,13 @@ class DataProcessor(
     }
     this.opConf = opConf
     this.upstreamLinkStatus.setAllUpstreamLinkIds(
-      if (opConf.isSourceOperator)
+      if (opConf.isSourceOperator) {
         Set(
           PhysicalLinkIdentity(SOURCE_STARTER_OP, 0, opConf.id, 0)
         ) // special case for source operator
-      else
-        opConf.inputToOrdinalMapping.keySet
+      } else {
+        opConf.getAllInputLinks.map(_.id).toSet
+      }
     )
     this.outputIterator.setTupleOutput(currentOutputIterator)
   }
@@ -167,10 +168,10 @@ class DataProcessor(
   }
 
   def getInputPort(identifier: ActorVirtualIdentity): Int = {
-    val inputLink = upstreamLinkStatus.getInputLink(identifier)
-    if (inputLink.from == SOURCE_STARTER_OP) 0 // special case for source operator
-    else if (!opConf.inputToOrdinalMapping.contains(inputLink)) 0
-    else opConf.inputToOrdinalMapping(inputLink)._2
+    val inputLinkId = upstreamLinkStatus.getInputLinkId(identifier)
+    if (inputLinkId.from == SOURCE_STARTER_OP) 0 // special case for source operator
+    else if (!opConf.getAllInputLinks.map(_.id).contains(inputLinkId)) 0
+    else opConf.getPortIdxForInputLinkId(inputLinkId)
   }
 
   def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLinkIdentity] = {
@@ -321,7 +322,7 @@ class DataProcessor(
         initBatch(channel, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
-        val currentLink = upstreamLinkStatus.getInputLink(channel.from)
+        val currentLink = upstreamLinkStatus.getInputLinkId(channel.from)
         upstreamLinkStatus.markWorkerEOF(channel.from)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
           initBatch(channel, Array.empty)

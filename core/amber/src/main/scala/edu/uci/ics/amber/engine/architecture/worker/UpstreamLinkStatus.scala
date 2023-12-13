@@ -38,7 +38,7 @@ class UpstreamLinkStatus(val actorId: ActorVirtualIdentity) extends AmberLogging
     upstreamMapReverse.update(identifier, input)
   }
 
-  def getInputLink(identifier: ActorVirtualIdentity): PhysicalLinkIdentity =
+  def getInputLinkId(identifier: ActorVirtualIdentity): PhysicalLinkIdentity =
     upstreamMapReverse(identifier)
 
   def markWorkerEOF(identifier: ActorVirtualIdentity): Unit = {

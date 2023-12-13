@@ -203,12 +203,12 @@ class WorkflowScheduler(
             val workerID = p._1
             val pythonUDFOpExecConfig = p._2
 
-            val inputMappingList = pythonUDFOpExecConfig.inputToOrdinalMapping
-              .map(kv => LinkOrdinal(kv._1, kv._2._2))
-              .toList
-            val outputMappingList = pythonUDFOpExecConfig.outputToOrdinalMapping
-              .map(kv => LinkOrdinal(kv._1, kv._2._2))
-              .toList
+            val inputMappingList = pythonUDFOpExecConfig.inputPortToLinkMapping.flatMap {
+              case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+            }.toList
+            val outputMappingList = pythonUDFOpExecConfig.outputPortToLinkMapping.flatMap {
+              case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+            }.toList
             asyncRPCClient
               .send(
                 InitializeOperatorLogic(

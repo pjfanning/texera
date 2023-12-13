@@ -1,9 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   DPInputQueueElement,
@@ -18,7 +18,6 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
@@ -37,12 +36,19 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
   private val operatorIdentity = OperatorIdentity("testOperator")
   private val layerId1 =
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
+  private val physicalOp1 = PhysicalOp(executionId = 1, id = layerId1, opExecInitInfo = null)
+
   private val layerId2 =
     PhysicalOpIdentity(operatorIdentity, "1st-layer")
-  private val mockLink = PhysicalLinkIdentity(layerId1, 0, layerId2, 0)
+  private val physicalOp2 = PhysicalOp(executionId = 1, id = layerId2, opExecInitInfo = null)
+  private val mockLink = PhysicalLink(physicalOp1, 0, physicalOp2, 0)
+
   private val opExecConfig = PhysicalOp
     .oneToOnePhysicalOp(1, operatorIdentity, OpExecInitInfo(_ => operator))
-    .copy(inputToOrdinalMapping = Map(mockLink -> 0), outputToOrdinalMapping = Map(mockLink -> 0))
+    .copy(
+      inputPortToLinkMapping = Map(0 -> List(mockLink)),
+      outputPortToLinkMapping = Map(0 -> List(mockLink))
+    )
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = ReplayLogStorage.getLogStorage("none", "log")
   private val logManager: ReplayLogManager = ReplayLogManager.createLogManager(logStorage, x => {})
@@ -51,7 +57,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val dp = new DataProcessor(identifier, x => {})
     dp.initOperator(0, opExecConfig, Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
-    dp.registerInput(senderID, mockLink)
+    dp.registerInput(senderID, mockLink.id)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -77,7 +83,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     val dp = new DataProcessor(identifier, x => {})
     dp.initOperator(0, opExecConfig, Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
-    dp.registerInput(senderID, mockLink)
+    dp.registerInput(senderID, mockLink.id)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -107,8 +113,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.initOperator(0, opExecConfig, Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
-    dp.registerInput(senderID, mockLink)
-    dp.registerInput(anotherSender, mockLink)
+    dp.registerInput(senderID, mockLink.id)
+    dp.registerInput(anotherSender, mockLink.id)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -138,8 +144,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     dp.initOperator(0, opExecConfig, Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
-    dp.registerInput(senderID, mockLink)
-    dp.registerInput(anotherSender, mockLink)
+    dp.registerInput(senderID, mockLink.id)
+    dp.registerInput(anotherSender, mockLink.id)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val logStorage = ReplayLogStorage.getLogStorage("local", "DPSpecTemp")

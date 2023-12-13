@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
@@ -21,7 +21,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   OperatorIdentity,
-  PhysicalLinkIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
@@ -34,17 +33,15 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
   private val operatorIdentity: OperatorIdentity = OperatorIdentity("testOperator")
   private val operator = mock[OperatorExecutor]
-  private val linkID: PhysicalLinkIdentity =
-    PhysicalLinkIdentity(
-      PhysicalOpIdentity(OperatorIdentity("testUpstream"), "main"),
-      0,
-      PhysicalOpIdentity(OperatorIdentity("testOperator"), "main"),
-      0
-    )
+  private val upstreamOpId = PhysicalOpIdentity(OperatorIdentity("testUpstream"), "main")
+  private val upstreamOp = PhysicalOp(executionId = 1, id = upstreamOpId, opExecInitInfo = null)
+  private val testOpId = PhysicalOpIdentity(OperatorIdentity("testOperator"), "main")
+  private val testOp = PhysicalOp(executionId = 1, id = testOpId, opExecInitInfo = null)
+  private val link = PhysicalLink(upstreamOp, 0, testOp, 0)
   private val opExecConfig =
     PhysicalOp
       .oneToOnePhysicalOp(1, operatorIdentity, OpExecInitInfo(_ => operator))
-      .addInput(linkID.from, 0, 0)
+      .addInput(link.fromOp, 0, 0)
   private val outputHandler = mock[WorkflowFIFOMessage => Unit]
   private val adaptiveBatchingMonitor = mock[WorkerTimerService]
   private val tuples: Array[ITuple] = (0 until 400).map(ITuple(_)).toArray
@@ -81,7 +78,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (dp.outputManager.emitEndOfUpstream _).expects().once()
     (adaptiveBatchingMonitor.stopAdaptiveBatching _).expects().once()
     (operator.close _).expects().once()
-    dp.registerInput(senderID, linkID)
+    dp.registerInput(senderID, link.id)
     dp.processControlPayload(
       ChannelID(CONTROLLER, identifier, true),
       ControlInvocation(0, OpenOperator())
@@ -112,7 +109,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     )
     (adaptiveBatchingMonitor.startAdaptiveBatching _).expects().anyNumberOfTimes()
     (dp.asyncRPCClient.send[Unit] _).expects(*, *).anyNumberOfTimes()
-    dp.registerInput(senderID, linkID)
+    dp.registerInput(senderID, link.id)
     dp.processControlPayload(
       ChannelID(CONTROLLER, identifier, true),
       ControlInvocation(0, OpenOperator())
