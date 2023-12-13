@@ -236,10 +236,18 @@ case class PhysicalOp(
     */
   def addInput(fromOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
     val link = PhysicalLink(fromOp, fromPort, this, toPort)
-    val existingLinks = inputPortToLinkMapping.getOrElse(toPort, List())
+    addInput(link)
+  }
+
+  /**
+    * creates a copy with an additional input operator specified on an input port
+    */
+  def addInput(link: PhysicalLink): PhysicalOp = {
+    assert(link.toOp.id == id)
+    val existingLinks = inputPortToLinkMapping.getOrElse(link.toPort, List())
     val newLinks = existingLinks :+ link
     this.copy(
-      inputPortToLinkMapping = inputPortToLinkMapping + (toPort -> newLinks)
+      inputPortToLinkMapping = inputPortToLinkMapping + (link.toPort -> newLinks)
     )
   }
 
@@ -248,10 +256,18 @@ case class PhysicalOp(
     */
   def addOutput(toOp: PhysicalOp, fromPort: Int, toPort: Int): PhysicalOp = {
     val link = PhysicalLink(this, fromPort, toOp, toPort)
-    val existingLinks = outputPortToLinkMapping.getOrElse(fromPort, List())
+    addOutput(link)
+  }
+
+  /**
+    * creates a copy with an additional output operator specified on an output port
+    */
+  def addOutput(link: PhysicalLink): PhysicalOp = {
+    assert(link.fromOp.id == id)
+    val existingLinks = outputPortToLinkMapping.getOrElse(link.fromPort, List())
     val newLinks = existingLinks :+ link
     this.copy(
-      outputPortToLinkMapping = outputPortToLinkMapping + (fromPort -> newLinks)
+      outputPortToLinkMapping = outputPortToLinkMapping + (link.fromPort -> newLinks)
     )
   }
 
@@ -264,7 +280,7 @@ case class PhysicalOp(
         case (_, links) => links.exists(_.id == linkToRemove.id)
       })
       .get
-    val newLinks = existingLinks.filter(link => link.id == linkToRemove.id)
+    val newLinks = existingLinks.filter(link => link.id != linkToRemove.id)
     this.copy(
       inputPortToLinkMapping = inputPortToLinkMapping + (portIdx -> newLinks)
     )
@@ -279,7 +295,7 @@ case class PhysicalOp(
         case (_, links) => links.exists(_.id == linkToRemove.id)
       })
       .get
-    val newLinks = existingLinks.filter(link => link.id == linkToRemove.id)
+    val newLinks = existingLinks.filter(link => link.id != linkToRemove.id)
     this.copy(
       outputPortToLinkMapping = outputPortToLinkMapping + (portIdx -> newLinks)
     )

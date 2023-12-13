@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.workflow.common.workflow
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.common.AmberConfig.defaultBatchSize
@@ -68,7 +69,7 @@ object PhysicalPlan {
 case class PhysicalPlan(
     operators: List[PhysicalOp],
     links: List[PhysicalLink]
-) {
+) extends LazyLogging {
 
   @transient private lazy val operatorMap: Map[PhysicalOpIdentity, PhysicalOp] =
     operators.map(o => (o.id, o)).toMap
@@ -77,7 +78,7 @@ case class PhysicalPlan(
     links.map(link => link.id -> link).toMap
 
   // the dag will be re-computed again once it reaches the coordinator.
-  @transient private lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
+  @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
     links.foreach(l => jgraphtDag.addEdge(l.fromOp.id, l.toOp.id))
@@ -190,10 +191,10 @@ case class PhysicalPlan(
       toOp: PhysicalOp,
       toPort: Int
   ): PhysicalPlan = {
-
+//    logger.info("adding edge")
     val newOperators = operatorMap +
-      (fromOp.id -> operatorMap(fromOp.id).addOutput(toOp, fromPort, toPort)) +
-      (toOp.id -> operatorMap(toOp.id).addInput(fromOp, fromPort, toPort))
+      (fromOp.id -> getOperator(fromOp.id).addOutput(toOp, fromPort, toPort)) +
+      (toOp.id -> getOperator(toOp.id).addInput(fromOp, fromPort, toPort))
 
     this.copy(newOperators.values.toList, links :+ PhysicalLink(fromOp, fromPort, toOp, toPort))
   }
@@ -202,17 +203,27 @@ case class PhysicalPlan(
   def removeEdge(
       link: PhysicalLink
   ): PhysicalPlan = {
-    val from = link.fromOp.id
-    val to = link.toOp.id
+    val fromOpId = link.fromOp.id
+    val toOpId = link.toOp.id
+    val fromOp = getOperator(fromOpId)
+    val toOp = getOperator(toOpId)
+    val updatedFromOp = fromOp.removeOutput(link)
+    val updatedToOp = toOp.removeInput(link)
     val newOperators = operatorMap +
-      (from -> operatorMap(from).removeOutput(link)) +
-      (to -> operatorMap(to).removeInput(link))
-
+      (fromOpId -> updatedFromOp) +
+      (toOpId -> updatedToOp)
+//    logger.info("remove edge" + link.toString)
     this.copy(operators = newOperators.values.toList, links.filter(l => l.id != link.id))
   }
 
   def setOperator(physicalOp: PhysicalOp): PhysicalPlan = {
     this.copy(operators = (operatorMap + (physicalOp.id -> physicalOp)).values.toList)
+  }
+
+  def setOperatorUnblockPort(physicalOpId: PhysicalOpIdentity, portToRemove: Int): PhysicalPlan = {
+    val physicalOp = getOperator(physicalOpId)
+    physicalOp.copy(blockingInputs = physicalOp.blockingInputs.filter(port => port != portToRemove))
+    this.copy(operators = operators :+ physicalOp)
   }
 
   private def addSubPlan(subPlan: PhysicalPlan): PhysicalPlan = {

@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
+import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowPipelinedRegionsBuilder.replaceVertex
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.{
@@ -49,7 +50,7 @@ class WorkflowPipelinedRegionsBuilder(
     var logicalPlan: LogicalPlan,
     var physicalPlan: PhysicalPlan,
     val materializationRewriter: MaterializationRewriter
-) {
+) extends LazyLogging {
   private var pipelinedRegionsDAG: DirectedAcyclicGraph[PipelinedRegion, DefaultEdge] =
     new DirectedAcyclicGraph[PipelinedRegion, DefaultEdge](
       classOf[DefaultEdge]
@@ -143,6 +144,9 @@ class WorkflowPipelinedRegionsBuilder(
               )
             } catch {
               case _: java.lang.IllegalArgumentException =>
+                logger.info(
+                  "trying to add materialziations, current pairs" + materializationWriterReaderPairs.size
+                )
                 // edge causes a cycle
                 this.physicalPlan = materializationRewriter
                   .addMaterializationToLink(

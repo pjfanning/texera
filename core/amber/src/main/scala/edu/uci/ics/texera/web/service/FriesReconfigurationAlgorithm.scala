@@ -58,7 +58,7 @@ object FriesReconfigurationAlgorithm {
     var forwardVertices: Set[PhysicalOpIdentity] = Set()
     var backwardVertices: Set[PhysicalOpIdentity] = Set()
 
-    val topologicalOps = asScalaIterator(physicalPlan.dag.iterator()).toList
+    val topologicalOps = physicalPlan.topologicalIterator().toList
     val reverseTopologicalOps = topologicalOps.reverse
 
     topologicalOps.foreach(op => {
