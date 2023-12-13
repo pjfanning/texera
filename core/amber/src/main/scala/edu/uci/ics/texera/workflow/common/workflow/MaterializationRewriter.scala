@@ -28,7 +28,6 @@ class MaterializationRewriter(
     val fromOutputPortIdx = fromOp.getPortIdxForOutputLinkId(physicalLink.id)
 
     val toOp = physicalLink.toOp
-
     val toInputPortIdx = toOp.getPortIdxForInputLinkId(physicalLink.id)
 
     val materializationWriter = new ProgressiveSinkOpDesc()
