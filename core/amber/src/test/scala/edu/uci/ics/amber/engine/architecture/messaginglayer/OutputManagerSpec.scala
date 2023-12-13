@@ -27,7 +27,7 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
     new NetworkOutputGateway(identifier, mockHandler)
   var counter: Int = 0
 
-  def layerID(): PhysicalOpIdentity = {
+  def physicalOpId(): PhysicalOpIdentity = {
     counter += 1
     PhysicalOpIdentity(OperatorIdentity("" + counter), "" + counter)
   }
@@ -58,7 +58,7 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
       (mockHandler.apply _).expects(mkDataMessage(fakeID, identifier, 3, EndOfUpstream()))
     }
     val fakeLink =
-      PhysicalLinkIdentity(layerID(), 0, layerID(), 0)
+      PhysicalLinkIdentity(physicalOpId(), 0, physicalOpId(), 0)
     val fakeReceiver = Array[ActorVirtualIdentity](fakeID)
 
     outputManager.addPartitionerWithPartitioning(fakeLink, OneToOnePartitioning(10, fakeReceiver))
@@ -72,7 +72,7 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
     val outputManager = wire[OutputManager]
     val tuples = Array.fill(21)(ITuple(1, 2, 3, 4, "5", 9.8))
     (mockHandler.apply _).expects(*).never()
-    val fakeLink = PhysicalLinkIdentity(layerID(), 0, layerID(), 0)
+    val fakeLink = PhysicalLinkIdentity(physicalOpId(), 0, physicalOpId(), 0)
     assertThrows[Exception] {
       tuples.foreach { t =>
         outputManager.passTupleToDownstream(t, fakeLink)

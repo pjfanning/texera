@@ -27,10 +27,10 @@ class IntervalOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
   var opDesc: IntervalJoinOpDesc = _
   var counter: Int = 0
 
-  def linkID(): PhysicalLinkIdentity =
-    PhysicalLinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
+  def physicalLinkId(): PhysicalLinkIdentity =
+    PhysicalLinkIdentity(physicalOpId(), fromPort = 0, physicalOpId(), toPort = 0)
 
-  def layerID(): PhysicalOpIdentity = {
+  def physicalOpId(): PhysicalOpIdentity = {
     counter += 1
     PhysicalOpIdentity(OperatorIdentity("" + counter), "" + counter)
   }

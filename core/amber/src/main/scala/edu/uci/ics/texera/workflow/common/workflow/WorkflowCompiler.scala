@@ -97,12 +97,12 @@ class WorkflowCompiler(
     physicalPlan = pipelinedRegionsBuilder.physicalPlan
 
     // assert all source layers to have 0 input ports
-    physicalPlan.getSourceOperatorIds.foreach { sourceLayer =>
-      assert(physicalPlan.getOperator(sourceLayer).inputPorts.isEmpty)
+    physicalPlan.getSourceOperatorIds.foreach { sourcePhysicalOpId =>
+      assert(physicalPlan.getOperator(sourcePhysicalOpId).inputPorts.isEmpty)
     }
     // assert all sink layers to have 0 output ports
-    physicalPlan.getSinkOperatorIds.foreach { sinkLayer =>
-      assert(physicalPlan.getOperator(sinkLayer).outputPorts.isEmpty)
+    physicalPlan.getSinkOperatorIds.foreach { sinkPhysicalOpId =>
+      assert(physicalPlan.getOperator(sinkPhysicalOpId).outputPorts.isEmpty)
     }
 
     new Workflow(

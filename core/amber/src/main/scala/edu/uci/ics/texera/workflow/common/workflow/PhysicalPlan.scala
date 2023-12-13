@@ -103,28 +103,28 @@ case class PhysicalPlan(
       logicalOpId: OperatorIdentity,
       portName: String
   ): PhysicalOp = {
-    val candidateLayers = getPhysicalOpsOfLogicalOp(logicalOpId).filter(op =>
+    val candidatePhysicalOps = getPhysicalOpsOfLogicalOp(logicalOpId).filter(op =>
       op.inputPorts.map(_.displayName).contains(portName)
     )
     assert(
-      candidateLayers.size == 1,
+      candidatePhysicalOps.size == 1,
       s"find no or multiple input port with name = $portName for operator $logicalOpId"
     )
-    candidateLayers.head
+    candidatePhysicalOps.head
   }
 
   private def getPhysicalOpForOutputPort(
       logicalOpId: OperatorIdentity,
       portName: String
   ): PhysicalOp = {
-    val candidateLayers = getPhysicalOpsOfLogicalOp(logicalOpId).filter(op =>
+    val candidatePhysicalOps = getPhysicalOpsOfLogicalOp(logicalOpId).filter(op =>
       op.outputPorts.map(_.displayName).contains(portName)
     )
     assert(
-      candidateLayers.size == 1,
+      candidatePhysicalOps.size == 1,
       s"find no or multiple output port with name = $portName for operator $logicalOpId"
     )
-    candidateLayers.head
+    candidatePhysicalOps.head
   }
 
   def getPhysicalOpsOfLogicalOp(logicalOpId: OperatorIdentity): List[PhysicalOp] = {

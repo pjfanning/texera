@@ -421,7 +421,7 @@ case class PhysicalOp(
           WorkflowWorker.props(
             workerId,
             i,
-            workerLayer = this,
+            physicalOp = this,
             WorkflowWorkerConfig(
               logStorageType = AmberConfig.faultToleranceLogStorage,
               replayTo = None

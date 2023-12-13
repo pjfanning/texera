@@ -25,13 +25,13 @@ class IntersectOpExecSpec extends AnyFlatSpec with BeforeAndAfter {
     )
     .build()
 
-  def layerID(): PhysicalOpIdentity = {
+  def physicalOpId(): PhysicalOpIdentity = {
     counter += 1
     PhysicalOpIdentity(OperatorIdentity("" + counter), "" + counter)
   }
 
-  def linkID(): PhysicalLinkIdentity =
-    PhysicalLinkIdentity(layerID(), fromPort = 0, layerID(), toPort = 0)
+  def physicalLinkId(): PhysicalLinkIdentity =
+    PhysicalLinkIdentity(physicalOpId(), fromPort = 0, physicalOpId(), toPort = 0)
 
   def tuple(): Tuple = {
     counter += 1
