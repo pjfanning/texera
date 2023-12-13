@@ -109,6 +109,14 @@ object PhysicalLink {
               )
             )
         )
+      case _ =>
+        new PhysicalLink(
+          fromPhysicalOp,
+          fromPort,
+          toPhysicalOp,
+          inputPort,
+          partitionings = Array()
+        )
     }
   }
 }

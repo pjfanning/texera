@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity,
@@ -57,7 +57,7 @@ object AggregateOpDesc {
 
     new PhysicalPlan(
       List(partialLayer, finalLayer),
-      List(PhysicalLinkIdentity(partialLayer.id, 0, finalLayer.id, 0))
+      List(PhysicalLink(partialLayer, 0, finalLayer, 0, null))
     )
   }
 

@@ -96,8 +96,6 @@ class WorkflowCompiler(
     // get the updated physical plan
     physicalPlan = pipelinedRegionsBuilder.physicalPlan.enforcePartition()
 
-    // TODO: add resource allocator to incorporate PartitioningPlan below
-
     // assert all source layers to have 0 input ports
     physicalPlan.getSourceOperatorIds.foreach { sourceLayer =>
       assert(physicalPlan.getOperator(sourceLayer).inputPorts.isEmpty)

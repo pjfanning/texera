@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInt;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalLink;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
 import edu.uci.ics.amber.engine.common.IOperatorExecutor;
@@ -87,7 +88,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
                 .withInputPorts(asScalaBuffer(singletonList(new InputPort("internal-input", false))).toList());
 
         PhysicalOp[] layers = {partialLayer, finalLayer};
-        PhysicalLinkIdentity[] links = {new PhysicalLinkIdentity(partialLayer.id(), 0, finalLayer.id(), 0)};
+        PhysicalLink[] links = {new PhysicalLink(partialLayer, 0, finalLayer, 0, null)};
 
         return PhysicalPlan.apply(layers, links);
     }

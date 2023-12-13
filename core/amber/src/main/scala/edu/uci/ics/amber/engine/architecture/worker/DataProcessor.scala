@@ -170,14 +170,14 @@ class DataProcessor(
     val inputLink = upstreamLinkStatus.getInputLink(identifier)
     if (inputLink.from == SOURCE_STARTER_OP) 0 // special case for source operator
     else if (!opConf.inputToOrdinalMapping.contains(inputLink)) 0
-    else opConf.inputToOrdinalMapping(inputLink)
+    else opConf.inputToOrdinalMapping(inputLink)._2
   }
 
   def getOutputLinkByPort(outputPort: Option[Int]): List[PhysicalLinkIdentity] = {
     if (outputPort.isEmpty) {
       opConf.outputToOrdinalMapping.keySet.toList
     } else {
-      opConf.outputToOrdinalMapping.filter(p => p._2 == outputPort.get).keys.toList
+      opConf.outputToOrdinalMapping.filter(p => p._2._2 == outputPort.get).keys.toList
     }
   }
 

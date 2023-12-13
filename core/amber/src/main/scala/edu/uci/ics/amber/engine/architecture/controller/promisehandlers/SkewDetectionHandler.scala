@@ -242,7 +242,7 @@ object SkewDetectionHandler {
       upstreamPhysicalOps
         .find(physicalOp => {
           val buildTableLinkId =
-            physicalOp.inputToOrdinalMapping.find(input => input._2 == 0).get._1
+            physicalOp.inputToOrdinalMapping.find(input => input._2._2 == 0).get._1
           physicalOp.id != buildTableLinkId.from
         })
         .get
