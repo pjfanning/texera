@@ -97,7 +97,7 @@ object WorkflowCacheRewriter {
     val sinksPointers = objectMapper.createArrayNode()
     // assign storage to texera-managed sinks before generating exec config
     logicalPlan.operators.foreach {
-      case o @ (sink: ProgressiveSinkOpDesc) =>
+      case o@(sink: ProgressiveSinkOpDesc) =>
         val storageKey = sink.getUpstreamId.getOrElse(o.operatorIdentifier)
         // due to the size limit of single document in mongoDB (16MB)
         // for sinks visualizing HTMLs which could possibly be large in size, we always use the memory storage.
@@ -125,10 +125,9 @@ object WorkflowCacheRewriter {
     }
     // update execution entry in MySQL to have pointers to the mongo collections
     resultsJSON.set("results", sinksPointers)
-    ExecutionsMetadataPersistService.updateExistingExecutionVolumePointers(
-      logicalPlan.context.executionId,
-      resultsJSON.toString
-    )
+    ExecutionsMetadataPersistService.tryUpdateExistingExecution(logicalPlan.context.executionId) {
+      _.setResult(resultsJSON.toString)
+    }
   }
 
 }

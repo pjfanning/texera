@@ -130,23 +130,7 @@ class WorkflowJobService(
   var jobRuntimeService: JobRuntimeService = _
   var jobConsoleService: JobConsoleService = _
 
-  def startWorkflow(): Unit = {
-    var controllerConf = ControllerConfig.default
-    controllerConf = controllerConf.copy(workerLoggingConfMapping = { _ =>
-      AmberConfig.faultToleranceLogRootFolder.map(uri =>
-        WorkerReplayLoggingConfig(writeTo =
-          uri.resolve(workflowContext.wid + "/" + workflowContext.executionId)
-        )
-      )
-    })
-    controllerConf = controllerConf.copy(workerRestoreConfMapping = { _ =>
-      AmberConfig.faultToleranceLogRootFolder.map(uri =>
-        WorkerStateRestoreConfig(
-          readFrom = uri.resolve(workflowContext.wid + "/" + (workflowContext.executionId - 1)),
-          replayTo = Long.MaxValue
-        )
-      )
-    })
+  def startWorkflow(controllerConf:ControllerConfig): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
       controllerConf,
