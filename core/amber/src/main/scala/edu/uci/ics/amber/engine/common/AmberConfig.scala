@@ -92,7 +92,7 @@ object AmberConfig {
     getConfSource.getLong("fault-tolerance.log-flush-interval-ms")
   val faultToleranceLogRootFolder: Option[URI] = {
     val locationStr = getConfSource.getString("fault-tolerance.log-storage-root-folder-uri")
-    if (locationStr.isBlank) {
+    if (locationStr.trim.isEmpty) {
       None
     } else {
       Some(new URI(locationStr))
