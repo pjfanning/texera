@@ -38,11 +38,11 @@ class LoggingSpec
     with BeforeAndAfterAll {
 
   private val identifier2 = ActorVirtualIdentity("worker-2")
-  private val operatorIdentity = OperatorIdentity("testWorkflow", "testOperator")
+  private val operatorIdentity = OperatorIdentity("testOperator")
   private val layerId1 =
-    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "1st-layer")
+    LayerIdentity(operatorIdentity.id, "1st-layer")
   private val layerId2 =
-    LayerIdentity(operatorIdentity.workflow, operatorIdentity.operator, "2nd-layer")
+    LayerIdentity(operatorIdentity.id, "2nd-layer")
   private val mockLink = LinkIdentity(layerId1, 0, layerId2, 0)
 
   private val mockPolicy = OneToOnePartitioning(10, Array(identifier2))
@@ -58,7 +58,7 @@ class LoggingSpec
 
   "determinant logger" should "log processing steps in local storage" in {
     val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file:///recovery-logs/tmp")))
-    logStorage.deleteFolder()
+    logStorage.deleteStorage()
     val logManager = ReplayLogManager.createLogManager(logStorage, "tmpLog", x => {})
     payloadToLog.foreach { payload =>
       val channel = ChannelID(CONTROLLER, SELF, isControl = true)
@@ -70,7 +70,7 @@ class LoggingSpec
     logManager.sendCommitted(null)
     logManager.terminate()
     val logRecords = logStorage.getReader("tmpLog").mkLogRecordIterator().toArray
-    logStorage.deleteFolder()
+    logStorage.deleteStorage()
     assert(logRecords.length == 15)
   }
 

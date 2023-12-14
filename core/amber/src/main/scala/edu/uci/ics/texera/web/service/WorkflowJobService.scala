@@ -98,7 +98,7 @@ class WorkflowJobService(
     try {
       workflowCompiler = new WorkflowCompiler(request.logicalPlan, workflowContext)
       workflow = workflowCompiler.compile(
-        WorkflowIdentity(workflowContext.wid.toString),
+        WorkflowIdentity(workflowContext.wid.longValue()),
         resultService.opResultStorage,
         lastCompletedLogicalPlan,
         jobStateStore
