@@ -38,7 +38,7 @@ class MaterializationRewriter(
 
     val materializationWriter = new ProgressiveSinkOpDesc()
     materializationWriter.setContext(context)
-    materializationWriter.operatorID = "materialized - " + fromOpId.layerID
+    materializationWriter.setOperatorId("materialized - " + fromOpId.layerID)
     val fromOpIdInputSchema: Array[Schema] =
       if (
         !logicalPlan
@@ -74,7 +74,7 @@ class MaterializationRewriter(
       materializationWriter.operatorIdentifier,
       opResultStorage: OpResultStorage
     )
-    materializationReader.operatorID = "cacheSource - " + toOpId.layerID
+    materializationReader.setOperatorId("cacheSource - " + toOpId.layerID)
     materializationReader.setContext(context)
     materializationReader.schema = materializationWriter.getStorage.getSchema
     val matReaderOutputSchema = materializationReader.getOutputSchemas(Array())

@@ -24,7 +24,7 @@ object SinkInjectionTransformer {
       val op = logicalPlan.getOperator(opId)
       op.operatorInfo.outputPorts.indices.foreach(outPort => {
         val sink = new ProgressiveSinkOpDesc()
-        sink.operatorID = "sink - " + opId
+        sink.setOperatorId("sink - " + opId)
         logicalPlan = logicalPlan
           .addOperator(sink)
           .addEdge(op.operatorIdentifier, sink.operatorIdentifier, outPort)

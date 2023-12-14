@@ -164,11 +164,11 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   private var context: WorkflowContext = _
 
   @JsonProperty(PropertyNameConstants.OPERATOR_ID)
-  private val operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
+  private var operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
-  def operatorIdentifier: OperatorIdentity = OperatorIdentity(context.wid.toString, operatorId)
+  def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
   def operatorExecutor(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): OpExecConfig = {
     throw new UnsupportedOperationException(
@@ -208,6 +208,10 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   def getContext: WorkflowContext = this.context
   def setContext(workflowContext: WorkflowContext): Unit = {
     this.context = workflowContext
+  }
+
+  def setOperatorId(id: String): Unit = {
+    operatorId = id
   }
 
   def runtimeReconfiguration(
