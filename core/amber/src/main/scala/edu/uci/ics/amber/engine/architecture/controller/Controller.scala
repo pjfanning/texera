@@ -24,17 +24,17 @@ object ControllerConfig {
       monitoringIntervalMs = Option(AmberConfig.monitoringIntervalInMs),
       skewDetectionIntervalMs = Option(AmberConfig.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
-      logStorageType = AmberConfig.faultToleranceLogRootFolder,
+      logStorage = AmberConfig.faultToleranceLogStorage,
       replayTo = None
     )
 }
 
 final case class ControllerConfig(
-    monitoringIntervalMs: Option[Long],
-    skewDetectionIntervalMs: Option[Long],
-    statusUpdateIntervalMs: Option[Long],
-    logStorageType: String,
-    replayTo: Option[Long]
+                                   monitoringIntervalMs: Option[Long],
+                                   skewDetectionIntervalMs: Option[Long],
+                                   statusUpdateIntervalMs: Option[Long],
+                                   logStorage: String,
+                                   replayTo: Option[Long]
 )
 
 object Controller {
@@ -57,7 +57,7 @@ class Controller(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig
 ) extends WorkflowActor(
-      controllerConfig.logStorageType,
+      controllerConfig.logStorage,
       CONTROLLER
     ) {
 

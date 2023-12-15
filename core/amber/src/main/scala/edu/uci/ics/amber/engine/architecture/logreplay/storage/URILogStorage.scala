@@ -14,20 +14,20 @@ import java.net.URI
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.hadoop.conf.Configuration
 
-class URILogStorage(logFolderURI: URI) extends ReplayLogStorage with LazyLogging {
+class URILogStorage(logStorageURI: URI) extends ReplayLogStorage with LazyLogging {
   private var fileSystem: FileSystem = _
   private val fsConf = new Configuration()
   // configuration for HDFS
   fsConf.set("dfs.client.block.write.replace-datanode-on-failure.enable", "false")
   try {
-    fileSystem = FileSystem.get(logFolderURI, fsConf) // Supports various URI schemes
+    fileSystem = FileSystem.get(logStorageURI, fsConf) // Supports various URI schemes
   } catch {
     case e: Exception =>
       logger.warn("Caught error during creating file system", e)
   }
 
   private val folderPath =
-    Path.mergePaths(fileSystem.getWorkingDirectory, new Path(logFolderURI.getPath))
+    Path.mergePaths(fileSystem.getWorkingDirectory, new Path(logStorageURI.getPath))
 
   if (!fileSystem.exists(folderPath)) {
     fileSystem.mkdirs(folderPath)

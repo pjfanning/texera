@@ -88,9 +88,9 @@ object AmberConfig {
   // Fault tolerance configuration
   val faultToleranceLogFlushIntervalInMs: Long =
     getConfSource.getLong("fault-tolerance.log-flush-interval-ms")
-  val faultToleranceLogRootFolder: String =
+  val faultToleranceLogStorage: String =
     getConfSource.getString("fault-tolerance.log-storage-uri")
-  val isFaultToleranceEnabled: Boolean = faultToleranceLogRootFolder.nonEmpty
+  val isFaultToleranceEnabled: Boolean = faultToleranceLogStorage.nonEmpty
 
   // Storage configuration
   val sinkStorageMode: String = getConfSource.getString("storage.mode")
