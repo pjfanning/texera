@@ -452,8 +452,8 @@ case class PhysicalOp(
             i,
             physicalOp = this,
             WorkflowWorkerConfig(
-              logStorageType = AmberConfig.faultToleranceLogRootFolder,
-              replayTo = None
+              controllerConf.workerRestoreConfMapping(workerId),
+              controllerConf.workerLoggingConfMapping(workerId)
             )
           )
         }
