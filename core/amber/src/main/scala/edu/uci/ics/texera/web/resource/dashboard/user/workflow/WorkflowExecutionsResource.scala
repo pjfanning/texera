@@ -33,10 +33,12 @@ object WorkflowExecutionsResource {
     context
       .selectFrom(WORKFLOW_EXECUTIONS)
       .where(
-            WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME
-              .lt(new Timestamp(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(timeToLive)))
+        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME
+          .lt(new Timestamp(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(timeToLive)))
           .and(WORKFLOW_EXECUTIONS.RESULT.ne("").or(WORKFLOW_EXECUTIONS.LOG_LOCATION.ne("")))
-      ).fetchInto(classOf[WorkflowExecutions]).toList
+      )
+      .fetchInto(classOf[WorkflowExecutions])
+      .toList
   }
 
   /**

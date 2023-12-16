@@ -5,11 +5,6 @@ import com.twitter.util.{Await, Duration}
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  WorkerReplayLoggingConfig,
-  WorkerStateRestoreConfig
-}
-import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils
@@ -130,7 +125,7 @@ class WorkflowJobService(
   var jobRuntimeService: JobRuntimeService = _
   var jobConsoleService: JobConsoleService = _
 
-  def startWorkflow(controllerConf:ControllerConfig): Unit = {
+  def startWorkflow(controllerConf: ControllerConfig): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
       controllerConf,

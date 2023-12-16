@@ -2,7 +2,13 @@ package edu.uci.ics.texera.web.storage
 
 import edu.uci.ics.texera.Utils.maptoStatusCode
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
-import edu.uci.ics.texera.web.workflowruntimestate.{JobBreakpointStore, JobConsoleStore, JobMetadataStore, JobStatsStore, WorkflowAggregatedState}
+import edu.uci.ics.texera.web.workflowruntimestate.{
+  JobBreakpointStore,
+  JobConsoleStore,
+  JobMetadataStore,
+  JobStatsStore,
+  WorkflowAggregatedState
+}
 
 import java.sql.Timestamp
 
@@ -14,8 +20,7 @@ object JobStateStore {
       state: WorkflowAggregatedState,
       metadataStore: JobMetadataStore
   ): JobMetadataStore = {
-    ExecutionsMetadataPersistService.tryUpdateExistingExecution(metadataStore.eid){
-      execution =>
+    ExecutionsMetadataPersistService.tryUpdateExistingExecution(metadataStore.eid) { execution =>
       execution.setStatus(maptoStatusCode(state))
       execution.setLastUpdateTime(new Timestamp(System.currentTimeMillis()))
     }

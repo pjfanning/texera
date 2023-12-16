@@ -1,18 +1,15 @@
 package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.texera.Utils.maptoStatusCode
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowVersionResource._
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.workflow.common.WorkflowContext.DEFAULT_EXECUTION_ID
 import org.jooq.types.UInteger
 
 import java.sql.Timestamp
-import java.util.concurrent.atomic.AtomicLong
 
 /**
   * This global object handles inserting a new entry to the DB to store metadata information about every workflow execution
@@ -20,7 +17,6 @@ import java.util.concurrent.atomic.AtomicLong
   */
 object ExecutionsMetadataPersistService extends LazyLogging {
   final private lazy val context = SqlServer.createDSLContext()
-  private var localExecutionId = new AtomicLong(0L)
   private val workflowExecutionsDao = new WorkflowExecutionsDao(
     context.configuration
   )
@@ -54,7 +50,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     newExecution.getEid.longValue()
   }
 
-  def tryGetExistingExecution(eid:Long):Option[WorkflowExecutions] = {
+  def tryGetExistingExecution(eid: Long): Option[WorkflowExecutions] = {
     if (!AmberConfig.isUserSystemEnabled) return None
     try {
       Some(workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(eid)))
@@ -65,7 +61,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     }
   }
 
-  def tryUpdateExistingExecution(eid:Long)(updateFunc:WorkflowExecutions => Unit): Unit = {
+  def tryUpdateExistingExecution(eid: Long)(updateFunc: WorkflowExecutions => Unit): Unit = {
     if (!AmberConfig.isUserSystemEnabled) return
     try {
       val execution = workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(eid))
