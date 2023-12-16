@@ -15,6 +15,7 @@ import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
 import edu.uci.ics.texera.web.storage.WorkflowStateStore
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.COMPLETED
 import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.WorkflowContext.DEFAULT_EXECUTION_ID
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.LogicalPlan
 import io.reactivex.rxjava3.disposables.{CompositeDisposable, Disposable}
@@ -88,7 +89,6 @@ class WorkflowService(
           if (oldState.state != COMPLETED && newState.state == COMPLETED) {
             lastCompletedLogicalPlan = Option.apply(job.workflow.originalLogicalPlan)
           }
-
           Iterable.empty
         }
       }
@@ -152,7 +152,7 @@ class WorkflowService(
     if (AmberConfig.isUserSystemEnabled) {
       // enable only if we have mysql
       if (AmberConfig.faultToleranceLogRootFolder.isDefined) {
-        val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(workflowContext.wid + "/" + workflowContext.wid)
+        val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(workflowContext.wid + "/" + workflowContext.executionId)
         ExecutionsMetadataPersistService.tryUpdateExistingExecution(workflowContext.executionId) {
           execution => execution.setLogLocation(writeLocation.toString)
         }
@@ -160,8 +160,8 @@ class WorkflowService(
           Some(WorkerReplayLoggingConfig(writeTo = writeLocation))
         })
       }
-      if (req.replayFromExecution != -1) {
-        ExecutionsMetadataPersistService.tryGetExistingExecution(req.replayFromExecution).foreach {
+      if (req.replayFromExecution.isDefined) {
+        ExecutionsMetadataPersistService.tryGetExistingExecution(req.replayFromExecution.get).foreach {
           execution =>
             val readLocation = new URI(execution.getLogLocation)
             controllerConf = controllerConf.copy(workerRestoreConfMapping = { _ =>
