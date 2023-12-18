@@ -135,6 +135,7 @@ import { NzAlertModule } from "ng-zorro-antd/alert";
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
+import {TimeTravelComponent} from "./workspace/component/left-panel/time-travel/time-travel.component";
 
 registerLocaleData(en);
 
@@ -148,6 +149,7 @@ registerLocaleData(en);
     OperatorMenuComponent,
     PropertyEditorComponent,
     VersionsListComponent,
+    TimeTravelComponent,
     WorkflowEditorComponent,
     ResultPanelComponent,
     OperatorLabelComponent,

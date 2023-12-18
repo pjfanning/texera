@@ -1,25 +1,26 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayDestination
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
-  USER,
-  WORKFLOW_EXECUTIONS,
-  WORKFLOW_VERSION
-}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_VERSION}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
+import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL._
 import org.jooq.types.UInteger
 
+import java.net.URI
 import java.sql.Timestamp
 import java.util.concurrent.TimeUnit
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.{MediaType, Response}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.collection.mutable
 
 object WorkflowExecutionsResource {
   final private lazy val context = SqlServer.createDSLContext()
@@ -68,7 +69,8 @@ object WorkflowExecutionsResource {
       startingTime: Timestamp,
       completionTime: Timestamp,
       bookmarked: Boolean,
-      name: String
+      name: String,
+      logLocation:String
   )
 }
 
@@ -83,6 +85,39 @@ case class ExecutionRenameRequest(wid: UInteger, eId: UInteger, executionName: S
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/executions")
 class WorkflowExecutionsResource {
+
+  @GET
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/{wid}/{eid}")
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  def retrieveInteractionHistory(
+                                   @PathParam("wid") wid: UInteger,
+                                    @PathParam("eid") eid: UInteger,
+                                    @Auth sessionUser: SessionUser
+                                  ): List[String] = {
+    val user = sessionUser.getUser
+    if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
+      List()
+    } else {
+      ExecutionsMetadataPersistService.tryGetExistingExecution(eid.longValue()) match {
+        case Some(value) =>
+          val logLocation = value.getLogLocation
+          if(logLocation != null && logLocation.nonEmpty){
+            val storage = new URILogStorage(new URI(logLocation))
+            val result = new mutable.ArrayBuffer[String]()
+            storage.getReader("CONTROLLER").mkLogRecordIterator().foreach {
+              case destination: ReplayDestination =>
+                result.append(destination.id)
+              case _ =>
+            }
+            result.toList
+          }else{
+            List()
+          }
+        case None => List()
+      }
+    }
+  }
 
   /**
     * This method returns the executions of a workflow given by its ID
@@ -116,7 +151,8 @@ class WorkflowExecutionsResource {
           WORKFLOW_EXECUTIONS.STARTING_TIME,
           WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME,
           WORKFLOW_EXECUTIONS.BOOKMARKED,
-          WORKFLOW_EXECUTIONS.NAME
+          WORKFLOW_EXECUTIONS.NAME,
+          WORKFLOW_EXECUTIONS.LOG_LOCATION
         )
         .from(WORKFLOW_EXECUTIONS)
         .join(WORKFLOW_VERSION)

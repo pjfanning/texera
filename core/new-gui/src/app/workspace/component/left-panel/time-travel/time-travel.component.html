@@ -1,0 +1,48 @@
+<nz-table
+  id="execution-list"
+  nzSize="small"
+  [nzSimple]="true"
+  [nzFrontPagination]="false"
+  nzTableLayout="auto"
+  *ngIf="executionList"
+  [nzData]="executionList">
+  <thead>
+  <tr>
+    <!-- Adjust the headers according to executionList data -->
+    <th nzAlign="center">Execution ID</th>
+    <th nzAlign="center">Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+  <ng-container *ngFor="let execution of executionList">
+    <tr>
+      <td nzAlign="right">{{ execution.eId }}</td>
+      <td>
+        <button
+          nz-button
+          nzType="link"
+          (click)="getInteractionHistory(execution.eId)"
+          class="execution-link">
+          Toggle Interaction History
+        </button>
+      </td>
+    </tr>
+    <!-- Additional row or detail panel for displaying interaction history -->
+    <tr *ngIf="interactionHistories[execution.eId]">
+      <td colspan="2">
+        <ul>
+          <li *ngFor="let interaction of interactionHistories[execution.eId]">
+            {{ interaction }}
+          </li>
+        </ul>
+      </td>
+    </tr>
+  </ng-container>
+  </tbody>
+</nz-table>
+<button
+  id="close-time-travel"
+  nz-button
+  (click)="timetravelService.closeFrame()">
+  Close Time Travel
+</button>

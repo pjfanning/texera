@@ -8,6 +8,9 @@ import {
   WorkflowVersionService,
 } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
+import {TimeTravelComponent} from "./time-travel/time-travel.component";
+import {OPEN_TIMETRAVEL_FRAME_EVENT, TimeTravelService} from "../../service/time-travel/time-travel.service";
+import {merge} from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -16,7 +19,7 @@ import { NzResizeEvent } from "ng-zorro-antd/resizable";
   styleUrls: ["left-panel.component.scss"],
 })
 export class LeftPanelComponent implements OnInit {
-  currentComponent: ComponentType<OperatorMenuComponent | VersionsListComponent>;
+  currentComponent: ComponentType<OperatorMenuComponent | VersionsListComponent | TimeTravelComponent>;
   screenWidth = window.innerWidth;
   width = 200;
   id = -1;
@@ -29,7 +32,7 @@ export class LeftPanelComponent implements OnInit {
     });
   }
 
-  constructor(private workflowVersionService: WorkflowVersionService) {
+  constructor(private workflowVersionService: WorkflowVersionService, private timetravelService:TimeTravelService) {
     this.currentComponent = OperatorMenuComponent;
   }
 
@@ -38,12 +41,23 @@ export class LeftPanelComponent implements OnInit {
   }
 
   registerVersionDisplayEventsHandler(): void {
-    this.workflowVersionService
-      .workflowVersionsDisplayObservable()
+    merge(this.workflowVersionService
+      .workflowVersionsDisplayObservable(),
+      this.timetravelService.timetravelDisplayObservable())
       .pipe(untilDestroyed(this))
       .subscribe(
-        event =>
-          (this.currentComponent = event === OPEN_VERSIONS_FRAME_EVENT ? VersionsListComponent : OperatorMenuComponent)
+        evt =>{
+          switch (evt) {
+            case OPEN_VERSIONS_FRAME_EVENT:
+              this.currentComponent = VersionsListComponent;
+              break;
+            case OPEN_TIMETRAVEL_FRAME_EVENT:
+              this.currentComponent = TimeTravelComponent;
+              break;
+            default:
+              this.currentComponent = OperatorMenuComponent;
+          }
+        }
       );
   }
 }
