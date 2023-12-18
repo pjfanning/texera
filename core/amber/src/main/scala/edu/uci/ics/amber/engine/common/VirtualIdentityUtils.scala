@@ -33,6 +33,8 @@ object VirtualIdentityUtils {
     workerId.name match {
       case workerNamePattern(_, operator, layerName, _) =>
         PhysicalOpIdentity(OperatorIdentity(operator), layerName)
+      case other =>
+        PhysicalOpIdentity(OperatorIdentity("An Operator that does not exist"), "Not Ever Exist")
     }
   }
 

@@ -165,15 +165,16 @@ class WorkflowService(
         })
       }
       if (req.replayFromExecution.isDefined) {
+        val (eId, interaction) = req.replayFromExecution.get
         ExecutionsMetadataPersistService
-          .tryGetExistingExecution(req.replayFromExecution.get)
+          .tryGetExistingExecution(eId)
           .foreach { execution =>
             val readLocation = new URI(execution.getLogLocation)
             controllerConf = controllerConf.copy(workerRestoreConfMapping = { _ =>
               Some(
                 WorkerStateRestoreConfig(
                   readFrom = readLocation,
-                  replayTo = Long.MaxValue // TODO: support time-travel feature.
+                  replayDestination = interaction
                 )
               )
             })

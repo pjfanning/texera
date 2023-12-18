@@ -11,6 +11,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
   OpExecInitInfoWithCode,
   OpExecInitInfoWithFunc
 }
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
   DPOutputIterator,
@@ -29,7 +30,8 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   DataFrame,
   DataPayload,
   EndOfUpstream,
-  EpochMarker,
+  MarkerPayload,
+  RequireAlignment,
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
@@ -152,7 +154,7 @@ class DataProcessor(
   val outputManager: OutputManager =
     new OutputManager(actorId, outputGateway)
   // 6. epoch manager
-  val epochManager: EpochManager = new EpochManager()
+  val epochManager: EpochManager = new EpochManager(actorId)
 
   // dp thread stats:
   protected var inputTupleCount = 0L
@@ -336,8 +338,44 @@ class DataProcessor(
           )
           outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
         }
-      case marker: EpochMarker =>
-        epochManager.processEpochMarker(channel.from, marker, this)
+    }
+  }
+
+  def processEpochMarker(
+      channelId: ChannelID,
+      marker: MarkerPayload,
+      logManager: ReplayLogManager
+  ): Unit = {
+    val markerId = marker.id
+    logger.info(s"receive marker from $channelId, id = ${marker.id}, cmd = ${marker.command}")
+    if (marker.markerType == RequireAlignment) {
+      pauseManager.pauseInputChannel(EpochMarkerPause(markerId), List(channelId))
+    }
+    if (epochManager.isMarkerAligned(upstreamLinkStatus, channelId, marker)) {
+      logManager.markAsReplayDestination(markerId)
+      // invoke the control command carried with the epoch marker
+      logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${marker.command}")
+      asyncRPCServer.receive(marker.command, channelId.from)
+      // if this operator is not the final destination of the marker, pass it downstream
+      if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {
+        val physicalLinks = marker.scope.links.map(_.id).toSet
+        outputManager.flush(Some(physicalLinks))
+        outputGateway.getActiveChannels.foreach { activeChannelId =>
+          if (
+            physicalLinks
+              .exists(p => p.to == VirtualIdentityUtils.getPhysicalOpId(activeChannelId.to))
+          ) {
+            logger.info(
+              s"send marker to $activeChannelId, id = ${marker.id}, cmd = ${marker.command}"
+            )
+            outputGateway.sendTo(activeChannelId, marker)
+          }
+        }
+      }
+      // unblock input channels
+      if (marker.markerType == RequireAlignment) {
+        pauseManager.resume(EpochMarkerPause(markerId))
+      }
     }
   }
 

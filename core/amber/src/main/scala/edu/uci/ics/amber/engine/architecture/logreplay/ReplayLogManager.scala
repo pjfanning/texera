@@ -10,6 +10,7 @@ sealed trait ReplayLogRecord
 
 case class MessageContent(message: WorkflowFIFOMessage) extends ReplayLogRecord
 case class ProcessingStep(channelID: ChannelID, step: Long) extends ReplayLogRecord
+case class ReplayDestination(id: String) extends ReplayLogRecord
 case object TerminateSignal extends ReplayLogRecord
 
 object ReplayLogManager {
@@ -41,6 +42,8 @@ trait ReplayLogManager {
 
   def getStep: Long = cursor.getStep
 
+  def markAsReplayDestination(id: String): Unit
+
   def withFaultTolerant(
       channel: ChannelID,
       message: Option[WorkflowFIFOMessage]
@@ -65,6 +68,8 @@ class EmptyReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends Re
   }
 
   override def terminate(): Unit = {}
+
+  override def markAsReplayDestination(id: String): Unit = {}
 }
 
 class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
@@ -79,6 +84,10 @@ class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayL
   )(code: => Unit): Unit = {
     replayLogger.logCurrentStepWithMessage(cursor.getStep, channel, message)
     super.withFaultTolerant(channel, message)(code)
+  }
+
+  override def markAsReplayDestination(id: String): Unit = {
+    replayLogger.markAsReplayDestination(id)
   }
 
   override def setupWriter(logWriter: ReplayLogWriter): Unit = {

@@ -32,4 +32,5 @@ class ControllerAsyncRPCHandlerInitializer(
   val actorId: ActorVirtualIdentity = cp.actorId
 
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()
+
 }

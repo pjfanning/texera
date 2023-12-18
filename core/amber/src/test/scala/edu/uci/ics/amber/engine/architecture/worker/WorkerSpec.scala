@@ -140,7 +140,7 @@ class WorkerSpec
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink.id, mockPolicy).once()
     (mockOutputManager.passTupleToDownstream _).expects(ITuple(1), mockLink.id).once()
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
-    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    (mockOutputManager.flush _).expects(None).anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink.id, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink.id))
     sendControlToWorker(worker, Array(invocation, updateInputLinking))
@@ -172,7 +172,7 @@ class WorkerSpec
     val batch2 = mkBatch(400, 500)
     val batch3 = mkBatch(500, 800)
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
-    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    (mockOutputManager.flush _).expects(None).anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink.id, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink.id))
     sendControlToWorker(worker, Array(invocation, updateInputLinking))
@@ -200,7 +200,7 @@ class WorkerSpec
     val worker = mkWorker
     (mockOutputManager.addPartitionerWithPartitioning _).expects(mockLink.id, mockPolicy).once()
     (mockHandler.apply _).expects(*).anyNumberOfTimes()
-    (mockOutputManager.flushAll _).expects().anyNumberOfTimes()
+    (mockOutputManager.flush _).expects(None).anyNumberOfTimes()
     val invocation = ControlInvocation(0, AddPartitioning(mockLink.id, mockPolicy))
     val updateInputLinking = ControlInvocation(1, UpdateInputLinking(identifier2, mockLink.id))
     worker ! NetworkMessage(

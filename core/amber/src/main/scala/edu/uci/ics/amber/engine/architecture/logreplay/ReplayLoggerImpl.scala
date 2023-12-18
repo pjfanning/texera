@@ -56,4 +56,8 @@ class ReplayLoggerImpl extends ReplayLogger {
     tempLogs.clear()
     result
   }
+
+  def markAsReplayDestination(id: String): Unit = {
+    tempLogs.append(ReplayDestination(id))
+  }
 }

@@ -10,6 +10,8 @@ abstract class ReplayLogger {
       msg: Option[WorkflowFIFOMessage]
   ): Unit
 
+  def markAsReplayDestination(id: String): Unit
+
   def drainCurrentLogRecords(step: Long): Array[ReplayLogRecord]
 
 }

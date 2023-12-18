@@ -55,7 +55,7 @@ object WorkflowWorker {
       replayLogConfOpt: Option[WorkerReplayLoggingConfig]
   )
 
-  final case class WorkerStateRestoreConfig(readFrom: URI, replayTo: Long)
+  final case class WorkerStateRestoreConfig(readFrom: URI, replayDestination: String)
 
   final case class WorkerReplayLoggingConfig(writeTo: URI)
 }

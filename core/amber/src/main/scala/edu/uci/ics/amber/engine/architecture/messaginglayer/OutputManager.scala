@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.ambermessage.EpochMarker
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
@@ -86,6 +86,7 @@ class OutputManager(
     partitioner.allReceivers.foreach(receiver => {
       val buffer = new NetworkOutputBuffer(receiver, dataOutputPort, getBatchSize(partitioning))
       networkOutputBuffers.update((link, receiver), buffer)
+      dataOutputPort.addOutputChannel(ChannelID(selfID, receiver, isControl = false))
     })
   }
 
@@ -106,15 +107,12 @@ class OutputManager(
     )
   }
 
-  def emitEpochMarker(epochMarker: EpochMarker): Unit = {
-    // find the network output ports within the scope of the marker
-    val outputsWithinScope =
-      networkOutputBuffers.filter(out => epochMarker.scope.links.map(_.id).contains(out._1._1))
-    // flush all network buffers of this operator, emit epoch marker to network
-    outputsWithinScope.foreach(kv => {
-      kv._2.flush()
-      kv._2.addEpochMarker(epochMarker)
-    })
+  def flush(onlyFor: Option[Set[PhysicalLinkIdentity]] = None): Unit = {
+    val buffersToFlush = onlyFor match {
+      case Some(links) => networkOutputBuffers.filter(out => links.contains(out._1._1)).values
+      case None        => networkOutputBuffers.values
+    }
+    buffersToFlush.foreach(_.flush())
   }
 
   /**
@@ -126,10 +124,6 @@ class OutputManager(
       kv._2.flush()
       kv._2.noMore()
     })
-  }
-
-  def flushAll(): Unit = {
-    networkOutputBuffers.values.foreach(b => b.flush())
   }
 
 }

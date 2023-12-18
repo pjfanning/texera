@@ -7,6 +7,8 @@ class EmptyReplayLogger extends ReplayLogger {
     Array.empty
   }
 
+  def markAsReplayDestination(id: String): Unit = {}
+
   override def logCurrentStepWithMessage(
       step: Long,
       channel: ChannelID,
