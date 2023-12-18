@@ -6,10 +6,13 @@ import com.fasterxml.jackson.module.noctordeser.NoCtorDeserModule
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import org.jooq.DSLContext
+import org.jooq.impl.DSL
 
 import java.nio.file.{Files, Path, Paths}
 import java.text.SimpleDateFormat
 import java.util.concurrent.locks.Lock
+import javax.ws.rs.InternalServerErrorException
 import scala.annotation.tailrec
 
 object Utils extends LazyLogging {
@@ -144,5 +147,28 @@ object Utils extends LazyLogging {
     } finally {
       lock.unlock()
     }
+  }
+
+  def withExceptionHandling[T](block: () => T): T = {
+    try {
+      block()
+    } catch {
+      case e: Exception =>
+        // Optionally log the full exception here for debugging purposes
+        throw new InternalServerErrorException(
+          Option(e.getMessage).getOrElse("An unknown error occurred.")
+        )
+    }
+  }
+
+  def withTransaction[T](dsl: DSLContext)(block: DSLContext => T): T = {
+    var result: Option[T] = None
+
+    dsl.transaction(configuration => {
+      val ctx = DSL.using(configuration)
+      result = Some(block(ctx))
+    })
+
+    result.getOrElse(throw new RuntimeException("Transaction failed without result!"))
   }
 }

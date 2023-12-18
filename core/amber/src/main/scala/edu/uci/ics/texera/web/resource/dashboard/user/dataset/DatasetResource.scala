@@ -1,61 +1,32 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 
+import edu.uci.ics.texera.Utils.{withExceptionHandling, withTransaction}
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao, DatasetVersionDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DashboardDataset,
-  DatasetHierarchy,
-  DatasetIDs,
-  DatasetVersions,
-  OWN,
-  PUBLIC,
-  READ,
-  context,
-  getAccessLevel,
-  getDatasetByID,
-  getDatasetVersionDescByIDAndName,
-  getUserAccessLevelOfDataset,
-  userAllowedToReadDataset,
-  withExceptionHandling,
-  withTransaction
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DatasetHierarchy, DatasetIDs, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.UserHasNoAccessToDatasetException
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{
-  DatasetFileHierarchy,
-  LocalFileStorage,
-  PathUtils
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{
-  GitSharedRepoVersionControl,
-  VersionDescriptor
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
-import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
+import org.glassfish.jersey.media.multipart.{FormDataBodyPart, FormDataMultiPart, FormDataParam}
 import org.jooq.DSLContext
-import org.jooq.impl.DSL
 import org.jooq.types.UInteger
 
 import java.io.{InputStream, OutputStream}
 import java.util
 import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  Consumes,
-  GET,
-  InternalServerErrorException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters._
+
 
 object DatasetResource {
   val PUBLIC: Byte = 1;
@@ -65,6 +36,8 @@ object DatasetResource {
   val WRITE: Byte = 2;
   val READ: Byte = 3;
 
+  val FILE_OPERATION_UPLOAD_PREFIX = "file:upload:"
+  val FILE_OPERATION_REMOVE_PREFIX = "file:remove"
   def getAccessLevel(level: Byte): String = {
     if (level == OWN) {
       "Own"
@@ -82,15 +55,12 @@ object DatasetResource {
     datasetDao.fetchOneByDid(did)
   }
 
-  private def getDatasetVersionDescByIDAndName(
+  private def getDatasetVersionByID(
       ctx: DSLContext,
-      did: UInteger,
-      version: String
-  ): VersionDescriptor = {
-    val targetDataset = getDatasetByID(ctx, did)
-    val targetDatasetStoragePath = targetDataset.getStoragePath
-    val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-    datasetVersionControl.checkoutToVersion(version)
+      dvid: UInteger
+  ): DatasetVersion = {
+    val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
+    datasetVersionDao.fetchOneByDvid(dvid)
   }
 
   private def getUserAccessLevelOfDataset(
@@ -130,27 +100,55 @@ object DatasetResource {
     userAccessible.nonEmpty
   }
 
-  private def withExceptionHandling[T](block: () => T): T = {
-    try {
-      block()
-    } catch {
-      case e: Exception =>
-        // Optionally log the full exception here for debugging purposes
-        throw new InternalServerErrorException(
-          Option(e.getMessage).getOrElse("An unknown error occurred.")
-        )
+  private def persistNewVersion(
+      ctx: DSLContext,
+      did: UInteger,
+      versionName: String,
+      multiPart: FormDataMultiPart,
+                               ): DatasetVersion = {
+
+    // TODO: consider have a lock here
+    val datasetPath = PathUtils.getDatasetPath(did).toString
+
+    val gitVersionControl = new GitVersionControl(datasetPath)
+    val fileStorage = new LocalFileStorage(datasetPath)
+
+    // for multipart, each file-related operation's key starts with file:
+    // the operation is either upload or remove
+    // for file:upload, the file path will be suffixed to it, e.g. file:upload:a/b/c.csv The value will be the file content
+    // for file:remove, the value would be filepath1,filepath2
+    val fields = multiPart.getFields().keySet().iterator()
+    while (fields.hasNext) {
+      val fieldName = fields.next()
+      val bodyPart = multiPart.getField(fieldName)
+
+      if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
+        //        val contentDisposition = bodyPart.getContentDisposition
+        //        val contentType = bodyPart.getMediaType.toString
+        val filePath = fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length)
+        val value: InputStream = bodyPart.getValueAs(classOf[InputStream])
+        fileStorage.addFile(filePath, value)
+      } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
+        val filePathsValue = bodyPart.getValueAs(classOf[String])
+        val filePaths = filePathsValue.split(",")
+        filePaths.foreach { filePath =>
+          fileStorage.removeFile(filePath.trim)
+        }
+      }
     }
-  }
 
-  private def withTransaction[T](dsl: DSLContext)(block: DSLContext => T): T = {
-    var result: Option[T] = None
+    val commitHash = gitVersionControl.createVersion(versionName)
+    val datasetVersion = new DatasetVersion()
 
-    dsl.transaction(configuration => {
-      val ctx = DSL.using(configuration)
-      result = Some(block(ctx))
-    })
+    datasetVersion.setName(versionName)
+    datasetVersion.setDid(did)
+    datasetVersion.setVersionHash(commitHash)
 
-    result.getOrElse(throw new RuntimeException("Transaction failed without result!"))
+    ctx
+      .insertInto(DATASET_VERSION) // Assuming DATASET is the table reference
+      .set(ctx.newRecord(DATASET_VERSION, datasetVersion))
+      .returning() // Assuming ID is the primary key column
+      .fetchOne().into(classOf[DatasetVersion])
   }
 
   case class DashboardDataset(
@@ -161,7 +159,7 @@ object DatasetResource {
 
   case class DatasetHierarchy(hierarchy: util.Map[String, AnyRef])
 
-  case class DatasetVersions(versions: List[String])
+  case class DatasetVersions(versions: List[DatasetVersion])
 
   case class DatasetIDs(dids: List[UInteger])
 }
@@ -173,14 +171,31 @@ class DatasetResource {
 
   @POST
   @Path("/create")
-  def createDataset(@Auth user: SessionUser, dataset: Dataset): DashboardDataset = {
+  @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
+  def createDataset(@Auth user: SessionUser,
+                    @FormDataParam("datasetName") datasetName: String,
+                    @FormDataParam("datasetDescription") datasetDescription: String,
+                    @FormDataParam("isDatasetPublic") isDatasetPublic: String,
+                    @FormDataParam("initialVersionName") initialVersionName: String,
+                    files: FormDataMultiPart): DashboardDataset = {
+
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val uid = user.getUid
         val datasetDao: DatasetDao = new DatasetDao(ctx.configuration())
         val datasetOfUserDao: DatasetOfUserDao = new DatasetOfUserDao(ctx.configuration())
 
-        val datasetPath = PathUtils.getDatasetPath(dataset.getName).toString
+        val dataset: Dataset = new Dataset()
+        dataset.setName(datasetName)
+        dataset.setDescription(datasetDescription)
+        if (isDatasetPublic.toBoolean) {
+          dataset.setIsPublic(1.toByte)
+        } else {
+          dataset.setIsPublic(0.toByte)
+        }
+
+        val did = dataset.getDid
+        val datasetPath = PathUtils.getDatasetPath(did).toString
         // init the dataset dir
         val datasetFileStorage = new LocalFileStorage(datasetPath)
         datasetFileStorage.initDir()
@@ -196,6 +211,9 @@ class DatasetResource {
         datasetOfUser.setDid(createdDataset.getDid)
         datasetOfUser.setUid(uid)
         datasetOfUser.setAccessLevel(OWN)
+
+        // create the initial version of the dataset
+        persistNewVersion(ctx, did, initialVersionName, files)
 
         datasetOfUserDao.insert(datasetOfUser)
         DashboardDataset(
@@ -247,7 +265,6 @@ class DatasetResource {
   @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
   def createDatasetVersion(
       @PathParam("did") did: UInteger,
-      @FormDataParam("baseVersion") baseVersion: Optional[String],
       @FormDataParam("version") newVersion: String,
       @FormDataParam("remove") remove: Optional[String], // relative paths of files to be deleted
       @Auth user: SessionUser,
@@ -263,75 +280,12 @@ class DatasetResource {
             .entity(s"You do not have permission to create new version for dataset #{$did}.")
             .build()
         }
-
-        val targetDataset = getDatasetByID(ctx, did)
-        val targetDatasetStoragePath = targetDataset.getStoragePath
-
-        // then, initialize file storage and version control object
-        val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-
         // create the version
-        datasetVersionControl.createVersion(newVersion, baseVersion)
-        val versionDescriptor = datasetVersionControl.checkoutToVersion(newVersion)
-        val versionFileStorage = new LocalFileStorage(versionDescriptor.getVersionRepoPath)
-
-        if (remove.isPresent) {
-          val fileRemovals: List[String] = remove.get().split(",").toList
-          for (filePath <- fileRemovals) {
-            versionFileStorage.removeFile(filePath)
-          }
-        }
-
-        // then process the newly uploaded file
-        val fields = multiPart.getFields().keySet().iterator()
-        while (fields.hasNext) {
-          val fieldName = fields.next()
-          val bodyPart = multiPart.getField(fieldName)
-
-          if (fieldName != "remove" && fieldName != "version" && fieldName != "baseVersion") {
-            //        val contentDisposition = bodyPart.getContentDisposition
-            //        val contentType = bodyPart.getMediaType.toString
-            val value: InputStream = bodyPart.getValueAs(classOf[InputStream])
-            versionFileStorage.addFile(fieldName, value)
-          }
-        }
-
-        // then commit the changes
-        datasetVersionControl.commitVersion(newVersion)
+        persistNewVersion(ctx, did, newVersion, multiPart)
         Response.ok().build()
       }
     })
   }
-
-//  @GET
-//  @Path("/list")
-//  def getDatasetList(
-//      @Auth user: SessionUser
-//  ): List[DashboardDataset] = {
-//    val uid = user.getUid
-//    withExceptionHandling({ () =>
-//      withTransaction(context)(ctx => {
-//        // Fetch datasets either public or accessible to the user
-//        val datasets = ctx
-//          .select()
-//          .from(DATASET)
-//          .leftJoin(DATASET_OF_USER)
-//          .on(DATASET.DID.eq(DATASET_OF_USER.DID))
-//          .where(
-//            DATASET.IS_PUBLIC
-//              .eq(PUBLIC) // Assuming PUBLIC is a constant representing '1' or true
-//              .or(DATASET_OF_USER.UID.eq(uid))
-//          )
-//          .fetchInto(
-//            classOf[Dataset]
-//          ) // Assuming Dataset is the jOOQ generated class for your table
-//
-//        // Transform datasets into DashboardDataset objects
-//        val datasetList = datasets.map(d => DashboardDataset(d)).toList
-//        datasetList
-//      })
-//    })
-//  }
 
   @GET
   @Path("/{did}")
@@ -371,58 +325,21 @@ class DatasetResource {
         if (!userAllowedToReadDataset(ctx, did, uid)) {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
-        // first, query the db to get the storage path of the target dataset
-        val targetDataset = getDatasetByID(ctx, did)
-        val targetDatasetStoragePath = targetDataset.getStoragePath
+        val result: java.util.List[DatasetVersion] = ctx.selectFrom(DATASET_VERSION)
+          .where(DATASET_VERSION.DID.eq(did))
+          .orderBy(DATASET_VERSION.CREATION_TIME.desc()) // or .asc() for ascending
+          .fetchInto(classOf[DatasetVersion])
 
-        val datasetVersions = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-        val versionsIte = datasetVersions.listVersions().iterator()
-        val resultListBuffer: ListBuffer[String] = ListBuffer()
-
-        while (versionsIte.hasNext) {
-          resultListBuffer += versionsIte.next()
-        }
-
-        DatasetVersions(resultListBuffer.toList)
-      })
-    })
-  }
-
-  @POST
-  @Path("/{did}/version/delete")
-  def deleteDatasetVersions(
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser,
-      versions: DatasetVersions
-  ): Response = {
-    val uid = user.getUid
-    withExceptionHandling(() => {
-      withTransaction(context)(ctx => {
-        if (!userAllowedToReadDataset(ctx, did, uid)) {
-          throw new UserHasNoAccessToDatasetException(did.intValue())
-        }
-
-        val targetDataset = getDatasetByID(ctx, did)
-        val targetDatasetStoragePath = targetDataset.getStoragePath
-        val datasetVersions = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-
-        // TODO: how to keep the atomicity?
-        versions.versions.foreach((versionName) => {
-          val versionPath = datasetVersions.getDatasetVersionPath(versionName)
-          val versionFileStorage = new LocalFileStorage(versionPath)
-          versionFileStorage.remove()
-        })
-
-        Response.ok().build()
+        DatasetVersions(result.asScala.toList)
       })
     })
   }
 
   @GET
-  @Path("/{did}/version/{version}/hierarchy")
+  @Path("/{did}/version/{dvid}/hierarchy")
   def inspectDatasetFileHierarchy(
       @PathParam("did") did: UInteger,
-      @PathParam("version") version: String,
+      @PathParam("dvid") dvid: UInteger,
       @Auth user: SessionUser
   ): DatasetHierarchy = {
     val uid = user.getUid
@@ -434,20 +351,23 @@ class DatasetResource {
           }
           val targetDataset = getDatasetByID(ctx, did)
           val targetDatasetStoragePath = targetDataset.getStoragePath
-          val datasetVersionControl = new GitSharedRepoVersionControl(targetDatasetStoragePath)
-          val versionDesc = datasetVersionControl.checkoutToVersion(version)
 
-          DatasetHierarchy(new DatasetFileHierarchy(versionDesc.getVersionRepoPath).getHierarchy)
+          val targetDatasetVersion = getDatasetVersionByID(ctx, dvid)
+          val versionCommitHash = targetDatasetVersion.getVersionHash
+
+          val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
+
+          DatasetHierarchy(gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash))
         })
       }
     })
   }
 
   @GET
-  @Path("/{did}/version/{version}/file")
+  @Path("/{did}/version/{dvid}/file")
   def inspectDatasetSingleFile(
       @PathParam("did") did: UInteger,
-      @PathParam("version") version: String,
+      @PathParam("dvid") dvid: UInteger,
       @QueryParam("path") path: String,
       @Auth user: SessionUser
   ): Response = {
@@ -457,12 +377,17 @@ class DatasetResource {
         if (!userAllowedToReadDataset(ctx, did, uid)) {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
-        val versionDesc = getDatasetVersionDescByIDAndName(ctx, did, version)
-        val versionFileStorage = new LocalFileStorage(versionDesc.getVersionRepoPath)
+        val targetDataset = getDatasetByID(ctx, did)
+        val targetDatasetStoragePath = targetDataset.getStoragePath
+
+        val targetDatasetVersion = getDatasetVersionByID(ctx, dvid)
+        val versionCommitHash = targetDatasetVersion.getVersionHash
+
+        val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
         val streamingOutput = new StreamingOutput() {
           override def write(output: OutputStream): Unit = {
-            versionFileStorage.readFile(path, output)
+            gitVersionControl.retrieveFileContentOfVersion(versionCommitHash, path, output)
           }
         }
 

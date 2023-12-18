@@ -229,11 +229,24 @@ CREATE TABLE IF NOT EXISTS dataset_of_workflow
     PRIMARY KEY(`did`, `wid`)
     ) ENGINE = INNODB;
 
+CREATE TABLE IF NOT EXISTS dataset_version
+(
+    `dvid`            INT UNSIGNED AUTO_INCREMENT NOT NULL,
+    `did`             INT UNSIGNED NOT NULL,
+    `name`            VARCHAR(128) NOT NULL,
+    `version_hash`    VARCHAR(64) NOT NULL,
+    `creation_time`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY(`dvid`),
+    FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE
+    )  ENGINE = INNODB;
+
 -- create fulltext search indexes
 
 CREATE FULLTEXT INDEX `idx_workflow_name_description_content` ON `texera_db`.`workflow` (name, description, content);
 
 CREATE FULLTEXT INDEX `idx_dataset_name_description` ON `texera_db`.`dataset` (name, description);
+
+CREATE FULLTEXT INDEX `idx_dataset_version_name` ON `texera_db`.`dataset_version` (name);
 
 CREATE FULLTEXT INDEX `idx_user_name` ON `texera_db`.`user` (name);
 

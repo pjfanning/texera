@@ -1,9 +1,10 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset.version;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.Map;
 
 public class GitVersionControl {
   private final String baseRepoPath;
@@ -17,14 +18,16 @@ public class GitVersionControl {
   }
 
   // return the hashcode of this version
-  public void createVersion(String versionName, Optional<String> baseVersion) throws IOException, InterruptedException {
-//    if (GitSystemCall.branchExists(baseRepoPath, versionName)) {
-//      throw new IOException("Target version repository already exist: " + versionName);
-//    }
+  public String createVersion(String versionName) throws IOException, InterruptedException {
+    // Assuming versionName is used as the commit message
+    return GitSystemCall.addAndCommit(baseRepoPath, versionName);
+  }
 
-//    if (baseVersion.isPresent())
-//      GitSystemCall.checkoutBranch(baseRepoPath, baseVersion.get());
-//
-//    GitSystemCall.createBranch(baseRepoPath, versionName);
+  public Map<String, Object> retrieveFileTreeOfVersion(String versionCommitHashVal) throws IOException, InterruptedException {
+    return GitSystemCall.getFileTreeHierarchy(baseRepoPath, versionCommitHashVal);
+  }
+
+  public void retrieveFileContentOfVersion(String commitHash, String filePath, OutputStream outputStream) throws IOException, InterruptedException {
+    GitSystemCall.showFileContentOfCommit(baseRepoPath, commitHash, filePath, outputStream);
   }
 }

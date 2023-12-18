@@ -5,8 +5,11 @@ package edu.uci.ics.texera.web.model.jooq.generated;
 
 
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfWorkflow;
@@ -39,7 +42,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TexeraDb extends SchemaImpl {
 
-    private static final long serialVersionUID = 304546079;
+    private static final long serialVersionUID = 298441919;
 
     /**
      * The reference instance of <code>texera_db</code>
@@ -52,6 +55,11 @@ public class TexeraDb extends SchemaImpl {
     public final Dataset DATASET = edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET;
 
     /**
+     * The table <code>texera_db.dataset_of_environment</code>.
+     */
+    public final DatasetOfEnvironment DATASET_OF_ENVIRONMENT = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT;
+
+    /**
      * The table <code>texera_db.dataset_of_user</code>.
      */
     public final DatasetOfUser DATASET_OF_USER = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER;
@@ -60,6 +68,16 @@ public class TexeraDb extends SchemaImpl {
      * The table <code>texera_db.dataset_of_workflow</code>.
      */
     public final DatasetOfWorkflow DATASET_OF_WORKFLOW = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow.DATASET_OF_WORKFLOW;
+
+    /**
+     * The table <code>texera_db.dataset_version</code>.
+     */
+    public final DatasetVersion DATASET_VERSION = edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION;
+
+    /**
+     * The table <code>texera_db.environment</code>.
+     */
+    public final Environment ENVIRONMENT = edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT;
 
     /**
      * The table <code>texera_db.file</code>.
@@ -164,8 +182,11 @@ public class TexeraDb extends SchemaImpl {
     private final List<Table<?>> getTables0() {
         return Arrays.<Table<?>>asList(
             Dataset.DATASET,
+            DatasetOfEnvironment.DATASET_OF_ENVIRONMENT,
             DatasetOfUser.DATASET_OF_USER,
             DatasetOfWorkflow.DATASET_OF_WORKFLOW,
+            DatasetVersion.DATASET_VERSION,
+            Environment.ENVIRONMENT,
             File.FILE,
             FileOfProject.FILE_OF_PROJECT,
             FileOfWorkflow.FILE_OF_WORKFLOW,
