@@ -4,7 +4,11 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayDestination
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_VERSION}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
+  USER,
+  WORKFLOW_EXECUTIONS,
+  WORKFLOW_VERSION
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
@@ -35,8 +39,8 @@ object WorkflowExecutionsResource {
     context
       .selectFrom(WORKFLOW_EXECUTIONS)
       .where(
-        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME.isNull.and(
-            WORKFLOW_EXECUTIONS.STARTING_TIME.lt(deadline))
+        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME.isNull
+          .and(WORKFLOW_EXECUTIONS.STARTING_TIME.lt(deadline))
           .or(WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME.lt(deadline))
       )
       .and(
@@ -74,7 +78,7 @@ object WorkflowExecutionsResource {
       completionTime: Timestamp,
       bookmarked: Boolean,
       name: String,
-      logLocation:String
+      logLocation: String
   )
 }
 
@@ -95,10 +99,10 @@ class WorkflowExecutionsResource {
   @Path("/{wid}/{eid}")
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   def retrieveInteractionHistory(
-                                   @PathParam("wid") wid: UInteger,
-                                    @PathParam("eid") eid: UInteger,
-                                    @Auth sessionUser: SessionUser
-                                  ): List[String] = {
+      @PathParam("wid") wid: UInteger,
+      @PathParam("eid") eid: UInteger,
+      @Auth sessionUser: SessionUser
+  ): List[String] = {
     val user = sessionUser.getUser
     if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
       List()
@@ -106,7 +110,7 @@ class WorkflowExecutionsResource {
       ExecutionsMetadataPersistService.tryGetExistingExecution(eid.longValue()) match {
         case Some(value) =>
           val logLocation = value.getLogLocation
-          if(logLocation != null && logLocation.nonEmpty){
+          if (logLocation != null && logLocation.nonEmpty) {
             val storage = new URILogStorage(new URI(logLocation))
             val result = new mutable.ArrayBuffer[String]()
             storage.getReader("CONTROLLER").mkLogRecordIterator().foreach {
@@ -115,7 +119,7 @@ class WorkflowExecutionsResource {
               case _ =>
             }
             result.toList
-          }else{
+          } else {
             List()
           }
         case None => List()

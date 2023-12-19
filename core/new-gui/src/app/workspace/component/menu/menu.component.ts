@@ -28,7 +28,7 @@ import { CoeditorPresenceService } from "../../service/workflow-graph/model/coed
 import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
-import {TimeTravelService} from "../../service/time-travel/time-travel.service";
+import { TimeTravelService } from "../../service/time-travel/time-travel.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -97,7 +97,7 @@ export class MenuComponent implements OnInit {
     private notificationService: NotificationService,
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
-    private timetravelService:TimeTravelService
+    private timetravelService: TimeTravelService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -461,7 +461,7 @@ export class MenuComponent implements OnInit {
     this.workflowVersionService.displayWorkflowVersions();
   }
 
-  onClickOpenTimeTravel(){
+  onClickOpenTimeTravel() {
     this.timetravelService.displayTimeTravelFrame();
   }
 

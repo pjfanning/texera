@@ -16,7 +16,8 @@ import { Breakpoint, BreakpointRequest, BreakpointTriggerInfo } from "../../type
 import {
   WorkflowFatalError,
   OperatorCurrentTuples,
-  TexeraWebsocketEvent, ReplayExecutionInfo,
+  TexeraWebsocketEvent,
+  ReplayExecutionInfo,
 } from "../../types/workflow-websocket.interface";
 import { isEqual } from "lodash-es";
 import { PAGINATION_INFO_STORAGE_KEY, ResultPaginationInfo } from "../../types/result-table.interface";
@@ -194,19 +195,23 @@ export class ExecuteWorkflowService {
     this.sendExecutionRequest(executionName, logicalPlan);
   }
 
-  public executeWorkflowAmberTexeraWithReplay(replayInfo:ReplayExecutionInfo): void {
+  public executeWorkflowAmberTexeraWithReplay(replayInfo: ReplayExecutionInfo): void {
     // get the current workflow graph
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     console.log(logicalPlan);
     this.sendExecutionRequest(`Replay run of ${replayInfo.eid} to ${replayInfo.interaction}`, logicalPlan, replayInfo);
   }
 
-  public sendExecutionRequest(executionName: string, logicalPlan: LogicalPlan, replayInfo:ReplayExecutionInfo | undefined = undefined): void {
+  public sendExecutionRequest(
+    executionName: string,
+    logicalPlan: LogicalPlan,
+    replayInfo: ReplayExecutionInfo | undefined = undefined
+  ): void {
     const workflowExecuteRequest = {
       executionName: executionName,
       engineVersion: version.hash,
       logicalPlan: logicalPlan,
-      replayFromExecution: replayInfo
+      replayFromExecution: replayInfo,
     };
     // wait for the form debounce to complete, then send
     window.setTimeout(() => {

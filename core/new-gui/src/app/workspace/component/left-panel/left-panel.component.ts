@@ -8,9 +8,9 @@ import {
   WorkflowVersionService,
 } from "../../../dashboard/user/service/workflow-version/workflow-version.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
-import {TimeTravelComponent} from "./time-travel/time-travel.component";
-import {OPEN_TIMETRAVEL_FRAME_EVENT, TimeTravelService} from "../../service/time-travel/time-travel.service";
-import {merge} from "rxjs";
+import { TimeTravelComponent } from "./time-travel/time-travel.component";
+import { OPEN_TIMETRAVEL_FRAME_EVENT, TimeTravelService } from "../../service/time-travel/time-travel.service";
+import { merge } from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -32,7 +32,7 @@ export class LeftPanelComponent implements OnInit {
     });
   }
 
-  constructor(private workflowVersionService: WorkflowVersionService, private timetravelService:TimeTravelService) {
+  constructor(private workflowVersionService: WorkflowVersionService, private timetravelService: TimeTravelService) {
     this.currentComponent = OperatorMenuComponent;
   }
 
@@ -41,23 +41,22 @@ export class LeftPanelComponent implements OnInit {
   }
 
   registerVersionDisplayEventsHandler(): void {
-    merge(this.workflowVersionService
-      .workflowVersionsDisplayObservable(),
-      this.timetravelService.timetravelDisplayObservable())
+    merge(
+      this.workflowVersionService.workflowVersionsDisplayObservable(),
+      this.timetravelService.timetravelDisplayObservable()
+    )
       .pipe(untilDestroyed(this))
-      .subscribe(
-        evt =>{
-          switch (evt) {
-            case OPEN_VERSIONS_FRAME_EVENT:
-              this.currentComponent = VersionsListComponent;
-              break;
-            case OPEN_TIMETRAVEL_FRAME_EVENT:
-              this.currentComponent = TimeTravelComponent;
-              break;
-            default:
-              this.currentComponent = OperatorMenuComponent;
-          }
+      .subscribe(evt => {
+        switch (evt) {
+          case OPEN_VERSIONS_FRAME_EVENT:
+            this.currentComponent = VersionsListComponent;
+            break;
+          case OPEN_TIMETRAVEL_FRAME_EVENT:
+            this.currentComponent = TimeTravelComponent;
+            break;
+          default:
+            this.currentComponent = OperatorMenuComponent;
         }
-      );
+      });
   }
 }

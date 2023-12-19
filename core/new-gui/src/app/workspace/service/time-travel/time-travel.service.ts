@@ -2,11 +2,11 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, ReplaySubject, Subject } from "rxjs";
 import {
   WORKFLOW_EXECUTIONS_API_BASE_URL,
-  WorkflowExecutionsService
+  WorkflowExecutionsService,
 } from "../../../dashboard/user/service/workflow-executions/workflow-executions.service";
-import {WorkflowExecutionsEntry} from "../../../dashboard/user/type/workflow-executions-entry";
-import {filter, map} from "rxjs/operators";
-import {HttpClient} from "@angular/common/http";
+import { WorkflowExecutionsEntry } from "../../../dashboard/user/type/workflow-executions-entry";
+import { filter, map } from "rxjs/operators";
+import { HttpClient } from "@angular/common/http";
 
 export const OPEN_TIMETRAVEL_FRAME_EVENT = "open_time_travel_frame_event";
 export const CLOSE_TIMETRAVEL_FRAME_EVENT = "close_time_travel_frame_event";
@@ -16,33 +16,31 @@ export const CLOSE_TIMETRAVEL_FRAME_EVENT = "close_time_travel_frame_event";
 export class TimeTravelService {
   private timetravelFrameSubject: ReplaySubject<string> = new ReplaySubject<string>(1);
 
-  constructor(
-    private workflowExecutionsService:WorkflowExecutionsService,
-    private http: HttpClient
-  ) {}
-
+  constructor(private workflowExecutionsService: WorkflowExecutionsService, private http: HttpClient) {}
 
   public timetravelDisplayObservable(): Observable<string> {
     return this.timetravelFrameSubject.asObservable();
   }
 
-  public displayTimeTravelFrame(){
+  public displayTimeTravelFrame() {
     this.timetravelFrameSubject.next(OPEN_TIMETRAVEL_FRAME_EVENT);
   }
 
-  public closeFrame(){
+  public closeFrame() {
     this.timetravelFrameSubject.next(CLOSE_TIMETRAVEL_FRAME_EVENT);
   }
 
-  public retrieveInteractionHistory(wid: number, eid:number): Observable<string[]> {
+  public retrieveInteractionHistory(wid: number, eid: number): Observable<string[]> {
     return this.http.get<string[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${eid}`);
   }
 
   public retrieveLoggedExecutions(wid: number): Observable<WorkflowExecutionsEntry[]> {
     return this.workflowExecutionsService.retrieveWorkflowExecutions(wid).pipe(
-      map(executionList => executionList.filter(execution => {
-        return execution.logLocation ? execution.logLocation.length > 0: false
-      })))
+      map(executionList =>
+        executionList.filter(execution => {
+          return execution.logLocation ? execution.logLocation.length > 0 : false;
+        })
+      )
+    );
   }
-
 }

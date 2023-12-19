@@ -1,14 +1,13 @@
 import { Component, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
-import {WorkflowExecutionsEntry} from "../../../../dashboard/user/type/workflow-executions-entry";
-import {Observable, of, ReplaySubject} from "rxjs";
-import {TimeTravelService} from "../../../service/time-travel/time-travel.service";
-import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
-import {WorkflowVersionService} from "../../../../dashboard/user/service/workflow-version/workflow-version.service";
-import {WorkflowPersistService} from "../../../../common/service/workflow-persist/workflow-persist.service";
-import {UndoRedoService} from "../../../service/undo-redo/undo-redo.service";
-
+import { WorkflowExecutionsEntry } from "../../../../dashboard/user/type/workflow-executions-entry";
+import { Observable, of, ReplaySubject } from "rxjs";
+import { TimeTravelService } from "../../../service/time-travel/time-travel.service";
+import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
+import { WorkflowVersionService } from "../../../../dashboard/user/service/workflow-version/workflow-version.service";
+import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
+import { UndoRedoService } from "../../../service/undo-redo/undo-redo.service";
 
 const FULL_REPLAY_FLAG = "Full Replay";
 @UntilDestroy()
@@ -18,7 +17,6 @@ const FULL_REPLAY_FLAG = "Full Replay";
   styleUrls: ["time-travel.component.scss"],
 })
 export class TimeTravelComponent implements OnInit {
-
   interactionHistories: { [eid: number]: string[] } = {};
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
@@ -28,9 +26,9 @@ export class TimeTravelComponent implements OnInit {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    public timetravelService:TimeTravelService,
-    public executeWorkflowService:ExecuteWorkflowService,
-    private workflowVersionService:WorkflowVersionService
+    public timetravelService: TimeTravelService,
+    public executeWorkflowService: ExecuteWorkflowService,
+    private workflowVersionService: WorkflowVersionService
   ) {}
 
   ngOnInit(): void {
@@ -51,12 +49,14 @@ export class TimeTravelComponent implements OnInit {
     }
   }
 
-  getInteractionHistory(eid: number):void {
+  getInteractionHistory(eid: number): void {
     if (this.wid === undefined) {
       return;
     }
-    this.timetravelService.retrieveInteractionHistory(this.wid, eid).pipe(untilDestroyed(this)).subscribe(
-      data => {
+    this.timetravelService
+      .retrieveInteractionHistory(this.wid, eid)
+      .pipe(untilDestroyed(this))
+      .subscribe(data => {
         this.interactionHistories[eid] = data.concat(FULL_REPLAY_FLAG);
       });
   }
@@ -69,28 +69,30 @@ export class TimeTravelComponent implements OnInit {
       .retrieveLoggedExecutions(wid)
       .pipe(untilDestroyed(this))
       .subscribe(executions => {
-        this.executionList = executions
+        this.executionList = executions;
       });
   }
 
-  closeFrame(){
-    if(this.reverted){
+  closeFrame() {
+    if (this.reverted) {
       this.workflowVersionService.closeReadonlyWorkflowDisplay();
-      try{
+      try {
         this.executeWorkflowService.killWorkflow();
-      }catch (e) {
+      } catch (e) {
         // ignore exception.
       }
     }
     this.timetravelService.closeFrame();
   }
 
-  onInteractionClick(vid:number, eid: number, interaction: string){
-    this.workflowVersionService.retrieveWorkflowByVersion(this.wid!, vid).pipe(untilDestroyed(this)).subscribe(workflow =>{
-        this.workflowVersionService.displayReadonlyWorkflow(workflow)
+  onInteractionClick(vid: number, eid: number, interaction: string) {
+    this.workflowVersionService
+      .retrieveWorkflowByVersion(this.wid!, vid)
+      .pipe(untilDestroyed(this))
+      .subscribe(workflow => {
+        this.workflowVersionService.displayReadonlyWorkflow(workflow);
         this.reverted = true;
-        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay({eid:eid, interaction:interaction})
-      }
-    )
+        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay({ eid: eid, interaction: interaction });
+      });
   }
 }

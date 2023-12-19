@@ -70,7 +70,7 @@ export class WorkflowVersionService {
     return this.displayParticularWorkflowVersion.asObservable();
   }
 
-  public displayReadonlyWorkflow(workflow:Workflow){
+  public displayReadonlyWorkflow(workflow: Workflow) {
     this.modificationEnabledBeforeTempWorkflow = this.workflowActionService.checkWorkflowModificationEnabled();
     // we need to display the version on the paper but keep the original workflow in the background
     this.workflowActionService.setTempWorkflow(this.workflowActionService.getWorkflow());
@@ -220,7 +220,7 @@ export class WorkflowVersionService {
     if (!this.modificationEnabledBeforeTempWorkflow) this.workflowActionService.disableWorkflowModification();
   }
 
-  public closeReadonlyWorkflowDisplay(){
+  public closeReadonlyWorkflowDisplay() {
     // should enable modifications first to be able to make action of reloading old version on paper
     this.workflowActionService.enableWorkflowModification();
     // but still disable redo and undo service to not capture swapping the workflows, because enabling modifications

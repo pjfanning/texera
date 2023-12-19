@@ -19,7 +19,7 @@ trait StartWorkflowHandler {
 
   registerHandler { (msg: StartWorkflow, sender) =>
     {
-      if(cp.executionState.getState.isUninitialized){
+      if (cp.executionState.getState.isUninitialized) {
         cp.workflowScheduler
           .startWorkflow(cp.workflow, cp.actorRefService, cp.actorService)
           .map(_ => {
@@ -27,7 +27,7 @@ trait StartWorkflowHandler {
             cp.controllerTimerService.enableMonitoring()
             cp.controllerTimerService.enableSkewHandling()
           })
-      }else{
+      } else {
         Future.Unit
       }
     }

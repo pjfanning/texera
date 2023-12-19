@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalLink}
 
-
 case class ReplayExecutionInfo(
-                                @JsonDeserialize(contentAs = classOf[java.lang.Long])
-                                eid:Long,
-                                interaction:String)
+    @JsonDeserialize(contentAs = classOf[java.lang.Long])
+    eid: Long,
+    interaction: String
+)
 
 case class WorkflowExecuteRequest(
     executionName: String,
