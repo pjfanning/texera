@@ -160,16 +160,16 @@ class WorkflowJobService(
       stats.withStartTimeStamp(System.currentTimeMillis())
     )
     client.sendAsyncWithCallback[Unit](
-      StartWorkflow(),
-      _ =>
-        jobStateStore.jobMetadataStore.updateState(jobInfo =>
-          if (jobInfo.state != FAILED) {
-            updateWorkflowState(RUNNING, jobInfo)
-          } else {
-            jobInfo
-          }
-        )
-    )
+        StartWorkflow(),
+        _ =>
+          jobStateStore.jobMetadataStore.updateState(jobInfo =>
+            if (jobInfo.state != FAILED) {
+              updateWorkflowState(RUNNING, jobInfo)
+            } else {
+              jobInfo
+            }
+          )
+      )
   }
 
   override def unsubscribeAll(): Unit = {

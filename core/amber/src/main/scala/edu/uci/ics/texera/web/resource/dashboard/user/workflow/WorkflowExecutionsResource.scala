@@ -31,12 +31,16 @@ object WorkflowExecutionsResource {
   }
 
   def getExpiredExecutionsWithResultOrLog(timeToLive: Int): List[WorkflowExecutions] = {
+    val deadline = new Timestamp(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(timeToLive))
     context
       .selectFrom(WORKFLOW_EXECUTIONS)
       .where(
-        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME
-          .lt(new Timestamp(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(timeToLive)))
-          .and(WORKFLOW_EXECUTIONS.RESULT.ne("").or(WORKFLOW_EXECUTIONS.LOG_LOCATION.ne("")))
+        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME.isNull.and(
+            WORKFLOW_EXECUTIONS.STARTING_TIME.lt(deadline))
+          .or(WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME.lt(deadline))
+      )
+      .and(
+        WORKFLOW_EXECUTIONS.RESULT.ne("").or(WORKFLOW_EXECUTIONS.LOG_LOCATION.ne(""))
       )
       .fetchInto(classOf[WorkflowExecutions])
       .toList

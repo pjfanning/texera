@@ -35,6 +35,12 @@ export interface WorkflowExecuteRequest
     logicalPlan: LogicalPlan;
   }> {}
 
+export interface ReplayExecutionInfo
+  extends Readonly<{
+    eid: number;
+    interaction: string;
+  }> {}
+
 export interface RegisterWIdEvent
   extends Readonly<{
     message: string;

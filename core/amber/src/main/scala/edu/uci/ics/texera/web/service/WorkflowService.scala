@@ -165,16 +165,16 @@ class WorkflowService(
         })
       }
       if (req.replayFromExecution.isDefined) {
-        val (eId, interaction) = req.replayFromExecution.get
+        val replayInfo = req.replayFromExecution.get
         ExecutionsMetadataPersistService
-          .tryGetExistingExecution(eId)
+          .tryGetExistingExecution(replayInfo.eid)
           .foreach { execution =>
             val readLocation = new URI(execution.getLogLocation)
             controllerConf = controllerConf.copy(workerRestoreConfMapping = { _ =>
               Some(
                 WorkerStateRestoreConfig(
                   readFrom = readLocation,
-                  replayDestination = interaction
+                  replayDestination = replayInfo.interaction
                 )
               )
             })

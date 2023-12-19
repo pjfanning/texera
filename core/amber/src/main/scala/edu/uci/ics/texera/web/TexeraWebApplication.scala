@@ -252,7 +252,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
   }
 
   def dropCollections(result: String): Unit = {
-    if (result.isEmpty) {
+    if (result == null || result.isEmpty) {
       return
     }
     // parse the JSON

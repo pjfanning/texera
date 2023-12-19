@@ -4,7 +4,13 @@ import { WorkflowActionService } from "../../../service/workflow-graph/model/wor
 import {WorkflowExecutionsEntry} from "../../../../dashboard/user/type/workflow-executions-entry";
 import {Observable, of, ReplaySubject} from "rxjs";
 import {TimeTravelService} from "../../../service/time-travel/time-travel.service";
+import {ExecuteWorkflowService} from "../../../service/execute-workflow/execute-workflow.service";
+import {WorkflowVersionService} from "../../../../dashboard/user/service/workflow-version/workflow-version.service";
+import {WorkflowPersistService} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {UndoRedoService} from "../../../service/undo-redo/undo-redo.service";
 
+
+const FULL_REPLAY_FLAG = "Full Replay";
 @UntilDestroy()
 @Component({
   selector: "texera-time-travel",
@@ -13,18 +19,18 @@ import {TimeTravelService} from "../../../service/time-travel/time-travel.servic
 })
 export class TimeTravelComponent implements OnInit {
 
-
-  entries: number[] = [123, 456, 789]; // Example array of eids
-  interactionHistories: { [eid: number]: String[] } = {};
-
-
+  interactionHistories: { [eid: number]: string[] } = {};
   public executionList: WorkflowExecutionsEntry[] = [];
+  expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
+  private reverted = false;
 
   public wid: number | undefined;
 
   constructor(
     private workflowActionService: WorkflowActionService,
     public timetravelService:TimeTravelService,
+    public executeWorkflowService:ExecuteWorkflowService,
+    private workflowVersionService:WorkflowVersionService
   ) {}
 
   ngOnInit(): void {
@@ -36,13 +42,22 @@ export class TimeTravelComponent implements OnInit {
     this.displayExecutionWithLogs(this.wid);
   }
 
+  toggleRow(eId: number): void {
+    if (this.expandedRows.has(eId)) {
+      this.expandedRows.delete(eId);
+    } else {
+      this.expandedRows.add(eId);
+      this.getInteractionHistory(eId); // Call only if needed
+    }
+  }
+
   getInteractionHistory(eid: number):void {
     if (this.wid === undefined) {
       return;
     }
     this.timetravelService.retrieveInteractionHistory(this.wid, eid).pipe(untilDestroyed(this)).subscribe(
       data => {
-        this.interactionHistories[eid] = ["a","b","c"];
+        this.interactionHistories[eid] = data.concat(FULL_REPLAY_FLAG);
       });
   }
 
@@ -56,5 +71,26 @@ export class TimeTravelComponent implements OnInit {
       .subscribe(executions => {
         this.executionList = executions
       });
+  }
+
+  closeFrame(){
+    if(this.reverted){
+      this.workflowVersionService.closeReadonlyWorkflowDisplay();
+      try{
+        this.executeWorkflowService.killWorkflow();
+      }catch (e) {
+        // ignore exception.
+      }
+    }
+    this.timetravelService.closeFrame();
+  }
+
+  onInteractionClick(vid:number, eid: number, interaction: string){
+    this.workflowVersionService.retrieveWorkflowByVersion(this.wid!, vid).pipe(untilDestroyed(this)).subscribe(workflow =>{
+        this.workflowVersionService.displayReadonlyWorkflow(workflow)
+        this.reverted = true;
+        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay({eid:eid, interaction:interaction})
+      }
+    )
   }
 }

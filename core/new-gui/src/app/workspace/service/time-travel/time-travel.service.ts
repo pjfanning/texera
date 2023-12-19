@@ -34,14 +34,14 @@ export class TimeTravelService {
     this.timetravelFrameSubject.next(CLOSE_TIMETRAVEL_FRAME_EVENT);
   }
 
-  public retrieveInteractionHistory(wid: number, eid:number): Observable<String[]> {
-    return this.http.get<String[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${eid}`);
+  public retrieveInteractionHistory(wid: number, eid:number): Observable<string[]> {
+    return this.http.get<string[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/${eid}`);
   }
 
   public retrieveLoggedExecutions(wid: number): Observable<WorkflowExecutionsEntry[]> {
     return this.workflowExecutionsService.retrieveWorkflowExecutions(wid).pipe(
       map(executionList => executionList.filter(execution => {
-        return true //execution.logLocation ? execution.logLocation.length > 0: false
+        return execution.logLocation ? execution.logLocation.length > 0: false
       })))
   }
 
