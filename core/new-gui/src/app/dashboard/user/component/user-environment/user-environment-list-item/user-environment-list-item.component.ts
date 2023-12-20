@@ -61,7 +61,7 @@ export class UserEnvironmentListItemComponent {
 
 
 
-  public confirmUpdateDatasetCustomName(val: any) {
+  public confirmUpdateEnvironmentCustomName(val: any) {
 
   }
 
