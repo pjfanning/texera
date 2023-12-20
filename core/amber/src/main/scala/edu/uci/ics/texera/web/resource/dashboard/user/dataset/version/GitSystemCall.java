@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GitSystemCall {
 
@@ -25,14 +27,12 @@ public class GitSystemCall {
   }
 
   public static String addAndCommit(String repoPath, String commitMessage) throws IOException, InterruptedException {
-    // Adding all files
+    // Adding all files and committing
     executeGitCommand(repoPath, "add", ".");
+    executeGitCommand(repoPath, "commit", "-m", commitMessage);
 
-    // Committing the changes and capturing the output
-    String commitOutput = executeGitCommand(repoPath, "commit", "-m", commitMessage);
-
-    // Parsing the commit hash from the output
-    return parseCommitHash(commitOutput);
+    // Retrieving the full commit hash of the latest commit
+    return executeGitCommand(repoPath, "rev-parse", "HEAD");
   }
 
   public static void showFileContentOfCommit(String repoPath, String commitHash, String filePath, OutputStream outputStream) throws IOException, InterruptedException {
@@ -83,14 +83,16 @@ public class GitSystemCall {
   }
 
   private static String parseCommitHash(String commitOutput) {
-    // Assuming the commit hash is in the first line of the output
-    // You might need to adjust the parsing logic based on your actual commit output format
-    int hashEndIndex = commitOutput.indexOf(' ');
-    if (hashEndIndex > 0) {
-      return commitOutput.substring(0, hashEndIndex);
+    Pattern pattern = Pattern.compile("\\[.* ([0-9a-f]{5,40})\\]");
+    Matcher matcher = pattern.matcher(commitOutput);
+
+    if (matcher.find()) {
+      return matcher.group(1); // Group 1 is the commit hash
+    } else {
+      return null; // or throw an exception if the commit hash is not found
     }
-    return null; // or throw an exception if the commit hash is not found
   }
+
 
   private static String executeGitCommand(String workingDirectory, String... args) throws IOException, InterruptedException {
     List<String> commands = new ArrayList<>();

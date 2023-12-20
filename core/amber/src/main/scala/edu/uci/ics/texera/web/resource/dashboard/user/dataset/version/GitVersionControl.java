@@ -17,6 +17,10 @@ public class GitVersionControl {
     }
   }
 
+  public void initRepo() throws IOException, InterruptedException {
+    GitSystemCall.initRepo(baseRepoPath);
+  }
+
   // return the hashcode of this version
   public String createVersion(String versionName) throws IOException, InterruptedException {
     // Assuming versionName is used as the commit message
