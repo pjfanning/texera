@@ -11,12 +11,12 @@ import {WorkflowEnvironmentService} from "../../../../common/service/workflow-en
   templateUrl: './environment-property-edit-frame.component.html',
   styleUrls: ['./environment-property-edit-frame.component.scss']
 })
-export class EnvironmentPropertyEditFrameComponent implements OnInit{
+export class EnvironmentPropertyEditFrameComponent implements OnInit {
   @Input()
   eid: number = 0;
 
   @Input()
-  wid : number = 0;
+  wid: number = 0;
 
   @Input()
   isEnvSwitchable = true;
@@ -24,14 +24,18 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
   environment: DashboardEnvironment | undefined;
 
   environmentName: string = "";
-  environmentInputs: string[] = [];
-  environmentOutputs: string[] = [];
+  environmentDatasets: any[] = [{name: 'Dataset 1', files: ['file1.csv', 'file2.csv']},
+    {name: 'Dataset 2', files: ['file3.csv', 'file4.csv']},
+    {name: 'Dataset 3', files: ['file5.csv', 'file6.csv']},
+    {name: 'Dataset 4', files: ['file7.csv', 'file8.csv']},
+    {name: 'Dataset 5', files: ['file9.csv', 'file10.csv']}];
 
   constructor(
     private environmentService: EnvironmentService,
     private workflowEnvironmentService: WorkflowEnvironmentService,
     private modalService: NgbModal,
-  ) {}
+  ) {
+  }
 
   onClickSwitchEnvironment(): void {
     const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
@@ -117,6 +121,7 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
           console.log("retrieve the environment: ", env)
           this.environment = env;
           this.initEnvironmentDisplay();
+           console.log(this.environmentDatasets)
         }
       });
     } else {
@@ -128,11 +133,14 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit{
     if (this.environment) {
       this.environmentName = this.environment.environment.name;
 
-      if (this.environment.inputs)
-        this.environmentInputs = this.environment.inputs;
-
-      if (this.environment.outputs)
-        this.environmentOutputs = this.environment.outputs;
+      // if (this.environment.datasets)
+      //   this.environmentDatasets = this.environment.datasets;
+      // // dummy for development use
+      // this.environmentDatasets = [{name: 'Dataset 1', files: ['file1.csv', 'file2.csv']},
+      //   {name: 'Dataset 2', files: ['file3.csv', 'file4.csv']},
+      //   {name: 'Dataset 3', files: ['file5.csv', 'file6.csv']},
+      //   {name: 'Dataset 4', files: ['file7.csv', 'file8.csv']},
+      //   {name: 'Dataset 5', files: ['file9.csv', 'file10.csv']}];
     }
   }
 

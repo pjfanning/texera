@@ -1,50 +1,23 @@
+<!-- right-sidebar.component.html -->
+<div>
+  <nz-card class="right-sidebar-card">
+    <div class="frame-title">
+      <h2>{{ environmentName }}</h2>
+    </div>
 
-<div class="container">
-  <div class="frame-title">
-    <h4 class="frame-title"
-    >{{environmentName}}</h4>
-  </div>
-
-  <section class="data-section">
-    <button
-      (click)="onClickOpenAddDatasetWindow()"
-      nz-button
-      nzType="primary">
-      Add Data
-    </button>
-    <button
-      *ngIf="isEnvSwitchable"
-      (click)="onClickSwitchEnvironment()"
-      nz-button nzType="default">
-      Switch Environment
-    </button>
-  </section>
-
-  <section class="input-section">
-    <nz-collapse>
-      <nz-collapse-panel
-        [nzHeader]="'Input'" [nzActive]="true">
-        <!-- Content for Input here -->
-        <ul>
-          <li *ngFor="
-          let input of environmentInputs">
-            {{input}}
-          </li>
-        </ul>
-      </nz-collapse-panel>
-    </nz-collapse>
-  </section>
-
-  <section class="output-section">
-    <nz-collapse>
-      <nz-collapse-panel
-        [nzHeader]="'Output'"
-        [nzActive]="true">
-        <!-- Content for Output here -->
-        <ul>
-          <li *ngFor="let output of environmentOutputs">{{output}}</li>
-        </ul>
-      </nz-collapse-panel>
-    </nz-collapse>
-  </section>
+    <div class="data-section">
+      <button (click)="onClickOpenAddDatasetWindow()" nz-button nzType="primary">
+        Add Data
+      </button>
+      <button *ngIf="isEnvSwitchable" (click)="onClickSwitchEnvironment()" nz-button nzType="default">
+        Switch Environment
+      </button>
+    </div>
+  </nz-card>
+  <nz-card class="right-sidebar-card">
+    <h3>Datasets</h3>
+    <nz-list *ngFor="let dataset of environmentDatasets; let i = index;">
+      <texera-environment-dataset-item [dataset]="dataset"></texera-environment-dataset-item>
+    </nz-list>
+  </nz-card>
 </div>

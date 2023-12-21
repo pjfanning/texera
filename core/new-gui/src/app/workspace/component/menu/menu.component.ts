@@ -413,6 +413,7 @@ export class MenuComponent implements OnInit {
     this.workflowActionService.deleteOperatorsAndLinks(allOperatorIDs, []);
   }
 
+
   public onClickImportWorkflow = (file: NzUploadFile): boolean => {
     const reader = new FileReader();
     reader.readAsText(file as any);

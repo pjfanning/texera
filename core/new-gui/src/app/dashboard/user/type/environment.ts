@@ -1,7 +1,7 @@
 export interface DashboardEnvironment {
   environment: Environment,
   isOwner: boolean | undefined,
-  inputs: string[] | undefined,
+  datasets: string[] | undefined,
   outputs: string[] | undefined,
 }
 

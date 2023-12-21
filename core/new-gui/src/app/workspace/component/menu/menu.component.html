@@ -315,6 +315,15 @@
 
       <nz-button-group id="execution-buttons">
         <button
+          (click)="onClickOpenEnvironmentEditor()"
+          nz-button
+          nzDanger
+          nzType="primary">
+          <i
+            nz-icon
+            nzType="setting"></i>
+        </button>
+        <button
           (click)="handleKill()"
           [disabled]="
         executionState === ExecutionState.Uninitialized ||

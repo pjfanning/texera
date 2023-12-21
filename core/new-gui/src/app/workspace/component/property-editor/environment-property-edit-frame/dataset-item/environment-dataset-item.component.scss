@@ -1,0 +1,33 @@
+.dataset-item {
+  transition: background-color 0.3s;
+  cursor: pointer;
+  .dataset-info {
+    display: flex;
+    align-items: center;
+    .expand-icon {
+      margin-right: 8px;
+    }
+    .dataset-icon {
+      width: 20px;
+      margin-right: 8px;
+    }
+  }
+  .actions-container {
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  &:hover {
+    background-color: #f5f5f5;
+    .actions-container {
+      opacity: 1;
+    }
+  }
+  .nested-files {
+    list-style: none;
+    padding-left: 20px;
+    margin: 0;
+    li {
+      padding: 4px 0;
+    }
+  }
+}
