@@ -11,6 +11,7 @@ $fa-font-path: "~font-awesome/fonts";
 @import "material-custom-theme.scss";
 
 @import "~ng-zorro-antd/ng-zorro-antd.min.css";
+@import "~ng-zorro-antd/resizable/style/index.min.css";
 
 @import '~@circlon/angular-tree-component/css/angular-tree-component.css';
 
@@ -41,4 +42,8 @@ blockquote {
 
 .ant-table-pagination {
   justify-content: center;
+}
+
+.mat-expansion-panel-body {
+  padding: 0 !important;
 }

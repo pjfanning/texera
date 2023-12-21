@@ -20,6 +20,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.Workflow;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowExecutions;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
 
@@ -38,7 +39,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TexeraDb extends SchemaImpl {
 
-    private static final long serialVersionUID = -684916265;
+    private static final long serialVersionUID = 304546079;
 
     /**
      * The reference instance of <code>texera_db</code>
@@ -126,6 +127,11 @@ public class TexeraDb extends SchemaImpl {
     public final WorkflowOfUser WORKFLOW_OF_USER = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser.WORKFLOW_OF_USER;
 
     /**
+     * The table <code>texera_db.workflow_runtime_statistics</code>.
+     */
+    public final WorkflowRuntimeStatistics WORKFLOW_RUNTIME_STATISTICS = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics.WORKFLOW_RUNTIME_STATISTICS;
+
+    /**
      * The table <code>texera_db.workflow_user_access</code>.
      */
     public final WorkflowUserAccess WORKFLOW_USER_ACCESS = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess.WORKFLOW_USER_ACCESS;
@@ -173,6 +179,7 @@ public class TexeraDb extends SchemaImpl {
             WorkflowExecutions.WORKFLOW_EXECUTIONS,
             WorkflowOfProject.WORKFLOW_OF_PROJECT,
             WorkflowOfUser.WORKFLOW_OF_USER,
+            WorkflowRuntimeStatistics.WORKFLOW_RUNTIME_STATISTICS,
             WorkflowUserAccess.WORKFLOW_USER_ACCESS,
             WorkflowVersion.WORKFLOW_VERSION);
     }
