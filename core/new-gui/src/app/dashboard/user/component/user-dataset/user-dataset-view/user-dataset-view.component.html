@@ -84,7 +84,7 @@
           </div>
           <ng2-pdfjs-viewer
             *ngIf="pdfDisplay"
-            pdfSrc="{{fileURL}}">
+            [pdfSrc]="fileURL">
           </ng2-pdfjs-viewer>
           <table
             *ngIf="csvDisplay"

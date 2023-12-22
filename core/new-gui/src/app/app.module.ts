@@ -142,7 +142,6 @@ import { NgbdModelDatasetFileAddComponent } from "./dashboard/user/component/use
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
-import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
 
 registerLocaleData(en);

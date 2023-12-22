@@ -3,12 +3,37 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao, DatasetVersionDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetOfUserDao,
+  DatasetVersionDao
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetOfUser,
+  DatasetVersion
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetHierarchy, DatasetIDs, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DashboardDataset,
+  DashboardDatasetVersion,
+  DatasetHierarchy,
+  DatasetIDs,
+  DatasetVersions,
+  OWN,
+  PUBLIC,
+  READ,
+  context,
+  getAccessLevel,
+  getDatasetByID,
+  getDatasetVersionByID,
+  getUserAccessLevelOfDataset,
+  persistNewVersion,
+  userAllowedToReadDataset,
+  withExceptionHandling
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.UserHasNoAccessToDatasetException
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
@@ -19,9 +44,20 @@ import org.jooq.types.UInteger
 
 import java.io.{InputStream, OutputStream}
 import java.util
+import java.util.concurrent.locks.ReentrantLock
 import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  BadRequestException,
+  Consumes,
+  GET,
+  InternalServerErrorException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
@@ -37,6 +73,9 @@ object DatasetResource {
 
   val FILE_OPERATION_UPLOAD_PREFIX = "file:upload:"
   val FILE_OPERATION_REMOVE_PREFIX = "file:remove"
+
+  val datasetLocks: scala.collection.concurrent.Map[UInteger, ReentrantLock] =
+    new scala.collection.concurrent.TrieMap[UInteger, ReentrantLock]()
 
   def withExceptionHandling[T](block: () => T): T = {
     try {
@@ -121,58 +160,69 @@ object DatasetResource {
       multiPart: FormDataMultiPart
   ): Option[DatasetVersion] = {
 
-    // TODO: consider have a lock here
-    val datasetPath = PathUtils.getDatasetPath(did).toString
+    // Acquire the lock
+    val lock = DatasetResource.datasetLocks.getOrElseUpdate(did, new ReentrantLock())
 
-    val gitVersionControl = new GitVersionControl(datasetPath)
-    val fileStorage = new LocalFileStorage(datasetPath)
-
-    var fileOperationHappens = false
-    // for multipart, each file-related operation's key starts with file:
-    // the operation is either upload or remove
-    // for file:upload, the file path will be suffixed to it, e.g. file:upload:a/b/c.csv The value will be the file content
-    // for file:remove, the value would be filepath1,filepath2
-    val fields = multiPart.getFields().keySet().iterator()
-    while (fields.hasNext) {
-      val fieldName = fields.next()
-      val bodyPart = multiPart.getField(fieldName)
-
-      if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
-        //        val contentDisposition = bodyPart.getContentDisposition
-        //        val contentType = bodyPart.getMediaType.toString
-        val filePath = fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length)
-        val value: InputStream = bodyPart.getValueAs(classOf[InputStream])
-        fileStorage.addFile(filePath, value)
-        fileOperationHappens = true
-      } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
-        val filePathsValue = bodyPart.getValueAs(classOf[String])
-        val filePaths = filePathsValue.split(",")
-        filePaths.foreach { filePath =>
-          fileStorage.removeFile(filePath.trim)
-        }
-        fileOperationHappens = true
-      }
-    }
-
-    if (!fileOperationHappens) {
+    if (lock.isLocked) {
       return None
     }
+    lock.lock()
+    try {
+      val datasetPath = PathUtils.getDatasetPath(did).toString
 
-    val commitHash = gitVersionControl.createVersion(versionName)
-    val datasetVersion = new DatasetVersion()
+      val gitVersionControl = new GitVersionControl(datasetPath)
+      val fileStorage = new LocalFileStorage(datasetPath)
 
-    datasetVersion.setName(versionName)
-    datasetVersion.setDid(did)
-    datasetVersion.setVersionHash(commitHash)
+      var fileOperationHappens = false
+      // for multipart, each file-related operation's key starts with file:
+      // the operation is either upload or remove
+      // for file:upload, the file path will be suffixed to it, e.g. file:upload:a/b/c.csv The value will be the file content
+      // for file:remove, the value would be filepath1,filepath2
+      val fields = multiPart.getFields().keySet().iterator()
+      while (fields.hasNext) {
+        val fieldName = fields.next()
+        val bodyPart = multiPart.getField(fieldName)
 
-    Some(
-      ctx
-        .insertInto(DATASET_VERSION) // Assuming DATASET is the table reference
-        .set(ctx.newRecord(DATASET_VERSION, datasetVersion))
-        .returning() // Assuming ID is the primary key column
-        .fetchOne()
-        .into(classOf[DatasetVersion])
-    )
+        if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
+          //        val contentDisposition = bodyPart.getContentDisposition
+          //        val contentType = bodyPart.getMediaType.toString
+          val filePath = fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length)
+          val value: InputStream = bodyPart.getValueAs(classOf[InputStream])
+          fileStorage.addFile(filePath, value)
+          fileOperationHappens = true
+        } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
+          val filePathsValue = bodyPart.getValueAs(classOf[String])
+          val filePaths = filePathsValue.split(",")
+          filePaths.foreach { filePath =>
+            fileStorage.removeFile(filePath.trim)
+          }
+          fileOperationHappens = true
+        }
+      }
+
+      if (!fileOperationHappens) {
+        return None
+      }
+
+      val commitHash = gitVersionControl.createVersion(versionName)
+      val datasetVersion = new DatasetVersion()
+
+      datasetVersion.setName(versionName)
+      datasetVersion.setDid(did)
+      datasetVersion.setVersionHash(commitHash)
+
+      Some(
+        ctx
+          .insertInto(DATASET_VERSION) // Assuming DATASET is the table reference
+          .set(ctx.newRecord(DATASET_VERSION, datasetVersion))
+          .returning() // Assuming ID is the primary key column
+          .fetchOne()
+          .into(classOf[DatasetVersion])
+      )
+    } finally {
+      // Release the lock
+      lock.unlock()
+    }
   }
 
   case class DashboardDataset(
@@ -183,7 +233,7 @@ object DatasetResource {
 
   case class DashboardDatasetVersion(
       datasetVersion: DatasetVersion
-                                    )
+  )
 
   case class DatasetHierarchy(hierarchy: util.Map[String, AnyRef])
 
@@ -252,7 +302,7 @@ class DatasetResource {
 
         createdVersion match {
           case Some(_) =>
-          case None =>
+          case None    =>
             // none means creation failed
             throw new BadRequestException("User should do modifications to create a new version")
         }
@@ -320,7 +370,8 @@ class DatasetResource {
         val createdVersion = persistNewVersion(ctx, did, versionName, multiPart)
 
         createdVersion match {
-          case None => throw new BadRequestException("User should do modifications to create a new version")
+          case None =>
+            throw new BadRequestException("User should do modifications to create a new version")
           case Some(version) => DashboardDatasetVersion(version)
         }
       }

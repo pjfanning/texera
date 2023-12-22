@@ -121,5 +121,13 @@ public class GitSystemCall {
     return output.toString().trim(); // Return the output as a String
   }
 
+  public static void rollbackToLastCommit(String repoPath) throws IOException, InterruptedException {
+    executeGitCommand(repoPath, "reset", "--hard", "HEAD");
+  }
+
+  public static boolean hasUncommittedChanges(String repoPath) throws IOException, InterruptedException {
+    String statusOutput = executeGitCommand(repoPath, "status", "--porcelain");
+    return !statusOutput.isEmpty();
+  }
 }
 

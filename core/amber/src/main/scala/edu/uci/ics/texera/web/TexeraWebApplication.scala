@@ -18,17 +18,13 @@ import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
 import edu.uci.ics.texera.web.resource.dashboard.admin.execution.AdminExecutionResource
 import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
-import edu.uci.ics.texera.web.resource.dashboard.user.file.{
-  UserFileAccessResource,
-  UserFileResource
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.project.{
-  ProjectAccessResource,
-  ProjectResource,
-  PublicProjectResource
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils.getAllDatasetDirectories
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource.ExecutionResultEntry
@@ -90,10 +86,22 @@ object TexeraWebApplication {
     nextOption(Map(), args.toList)
   }
 
+  def recoverDatasetsToLatestVersions(): Unit = {
+    val datasetPaths = getAllDatasetDirectories()
+
+    datasetPaths.foreach(path => {
+      val versionControl = new GitVersionControl(path.toString)
+      versionControl.recoverToLatestVersion()
+    })
+  }
+
   def main(args: Array[String]): Unit = {
     val argMap = parseArgs(args)
 
     val clusterMode = argMap.get('cluster).asInstanceOf[Option[Boolean]].getOrElse(false)
+
+    // do the dataset recovery
+    recoverDatasetsToLatestVersions()
 
     // start actor system master node
     actorSystem = AmberUtils.startActorMaster(clusterMode)

@@ -34,4 +34,10 @@ public class GitVersionControl {
   public void retrieveFileContentOfVersion(String commitHash, String filePath, OutputStream outputStream) throws IOException, InterruptedException {
     GitSystemCall.showFileContentOfCommit(baseRepoPath, commitHash, filePath, outputStream);
   }
+
+  public void recoverToLatestVersion() throws IOException, InterruptedException {
+    if (GitSystemCall.hasUncommittedChanges(baseRepoPath)) {
+      GitSystemCall.rollbackToLastCommit(baseRepoPath);
+    }
+  }
 }
