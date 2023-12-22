@@ -17,7 +17,7 @@ export class UserFileUploadService {
 
   constructor(private userService: UserService, private userFileService: UserFileService, private http: HttpClient) {}
 
-  private static createFileUploadItem(file: File): FileUploadItem {
+  public static createFileUploadItem(file: File): FileUploadItem {
     return {
       file: file,
       name: file.name,

@@ -36,6 +36,42 @@ export class DatasetService {
     }).pipe()
   }
 
+  public getDataset(did: number): Observable<Dataset> {
+    return this.http.get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
+    .pipe(
+      map(datasetDashboard => datasetDashboard.dataset)
+    );
+  }
+
+  public inspectDatasetSingleFile(did: number, version: string, path: string): Observable<Blob> {
+    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${version}/file?path=${path}`, {responseType: 'blob'});
+  }
+
+  public createDatasetVersion(
+    did: number,
+    baseVersion: string,
+    newVersion: string,
+    remove: string,
+    files: File[]
+  ): Observable<any> {
+    const formData = new FormData();
+
+    if (baseVersion !== "") {
+      formData.append('baseVersion', baseVersion);
+    }
+    formData.append('version', newVersion);
+
+    if (remove !== "") {
+      formData.append('remove', remove);
+    }
+
+    files.forEach(file => {
+      const path = file['webkitRelativePath'] || file.name;
+      formData.append(path, file);
+    });
+    return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
+  }
+
   /**
    * retrieve a list of version name of a dataset. The list is sorted so that the latest versions are at front.
    * @param did

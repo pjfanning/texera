@@ -5,9 +5,11 @@ import { NgModule } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule } from "@angular/router";
+import { TreeModule } from '@circlon/angular-tree-component';
 import { NgbModule, NgbPopoverModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
@@ -131,13 +133,17 @@ import { SearchResultsComponent } from "./dashboard/user/component/search-result
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
-import { NzAlertModule } from "ng-zorro-antd/alert";
-import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
-import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
-import { NzResizableModule } from "ng-zorro-antd/resizable";
 import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
 import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
+import {userDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
+import { NzAlertModule } from "ng-zorro-antd/alert";
+import { NgbdModelDatasetFileAddComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
+import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
+import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
+import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
+import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
+import { NzResizableModule } from "ng-zorro-antd/resizable";
 
 registerLocaleData(en);
 
@@ -182,6 +188,7 @@ registerLocaleData(en);
     TypeCastingDisplayComponent,
     ShareAccessComponent,
     NgbdModalWorkflowExecutionsComponent,
+    NgbdModelDatasetFileAddComponent,
     ConsoleFrameComponent,
     ErrorFrameComponent,
     ResultTableFrameComponent,
@@ -207,6 +214,7 @@ registerLocaleData(en);
     HomeComponent,
     UserWorkflowListItemComponent,
     UserDatasetListItemComponent,
+    userDatasetViewComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
@@ -233,7 +241,9 @@ registerLocaleData(en);
     NgbModule,
     NgbPopoverModule,
     RouterModule.forRoot([]),
+    TreeModule,
     FileUploadModule,
+    PdfJsViewerModule,
     FormsModule,
     ReactiveFormsModule,
     FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),
@@ -265,6 +275,7 @@ registerLocaleData(en);
     NzNoAnimationModule,
     NgxJsonViewerModule,
     MatDialogModule,
+    MatProgressSpinnerModule,
     NzCardModule,
     NzStatisticModule,
     NzTagModule,

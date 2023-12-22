@@ -122,8 +122,13 @@ export class UserDatasetComponent implements AfterViewInit {
   public onClickOpenDatasetAddComponent(): void {
     const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
 
+    modalRef.componentInstance.datasetAdded.pipe(untilDestroyed(this))
+     .subscribe(() => {
+     this.reloadDashboardDatasetEntries(true); // Refresh the dataset list when a new dataset is added
+    });
+
     modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
-      this.reloadDashboardDatasetEntries(true)
+      this.reloadDashboardDatasetEntries(true) //maybe delete this two lines? did not work for refresh
     });
   }
 
@@ -134,7 +139,19 @@ export class UserDatasetComponent implements AfterViewInit {
       .subscribe(() => this.search(forced));
   }
 
-  public deleteDataset(event: DashboardEntry) {
-
+  public deleteDataset(entry: DashboardEntry) {
+    console.log("fdsa");
+    if (entry.dataset.dataset.did == undefined) {
+      console.log(1111);
+      return;
+    }
+    this.datasetService
+      .deleteDatasets([entry.dataset.dataset.did])
+      .pipe(untilDestroyed(this))
+      .subscribe(_ => {
+        this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+        );
+      });
   }
 }

@@ -1,0 +1,127 @@
+<div *ngIf="!isMaximized">
+  <nz-card>
+    <h2 class="dataset-title">Dataset: {{dName}}</h2>
+    <nz-card-meta style="padding-top: 10px" nzDescription="{{createdTime}}"></nz-card-meta>
+    <nz-card-meta style="padding-top: 20px" nzDescription="{{dDescription}}"></nz-card-meta>
+  </nz-card>
+</div>
+<nz-layout>
+    <nz-content style="background-color: white;">
+      <nz-card>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h5 class="file-title"><b>{{currentFile}}</b></h5>
+          </div>
+          <div style="display: flex;">
+            <button
+              nz-button
+              nz-tooltip="Download the file">
+              <i
+                nz-icon
+                nzTheme="outline"
+                nzType="download">
+              </i>
+            </button>
+            <button
+              nz-button
+              *ngIf="!isMaximized"
+              nz-tooltip="Maximize View"
+              (click)="clickToMaximizeMinimize()">
+              <i
+                nz-icon
+                nzTheme="outline"
+                nzType="expand">
+              </i>
+            </button>
+            <button
+              nz-button
+              *ngIf="isMaximized"
+              nz-tooltip="Minimize View"
+              (click)="clickToMaximizeMinimize()">
+              <i
+                nz-icon
+                nzTheme="outline"
+                nzType="compress">
+              </i>
+            </button>
+            <button
+              *ngIf="!isSiderCollapsed"
+              nz-button
+              nz-tooltip="Hide Tree"
+              (click)="clickToHideShowTree()">
+              <i
+                nz-icon
+                nzTheme="outline"
+                nzType="right">
+              </i>
+            </button>
+            <button
+              *ngIf="isSiderCollapsed"
+              nz-button
+              nz-tooltip="Show Tree"
+              (click)="clickToHideShowTree()">
+              <i
+                nz-icon
+                nzTheme="outline"
+                nzType="left">
+              </i>
+            </button>
+          </div>
+        </div>
+      </nz-card>
+      <div style="background-color: lightgray; padding-top: 15px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h6 style="margin-left: 30px; margin-bottom: 20px;">About this file</h6>
+            <p style="margin-left: 30px;">
+                File Description
+            </p>
+        </div>
+      </div>
+      <div [ngStyle]="!isMaximized ? {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '80%', 'overflow-y': 'scroll'}:
+                                    {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '100%', 'overflow-y': 'scroll'}">
+          <div *ngIf="isLoading">
+            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          </div>
+          <ng2-pdfjs-viewer
+            *ngIf="pdfDisplay"
+            pdfSrc="{{fileURL}}">
+          </ng2-pdfjs-viewer>
+          <table
+            *ngIf="csvDisplay"
+            class="csv-table">
+            <tr *ngFor="let row of csvContent">
+              <td *ngFor="let cell of row">
+                {{ cell }}
+              </td>
+            </tr>
+          </table>
+      </div>
+    </nz-content>
+  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
+      <div class="file-list-title">
+        <h5>Data Explorer</h5>
+      </div>
+      <div class="version-storage">
+        <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
+        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" ngModel="{{selectedVersion}}">
+          <nz-option *ngFor="let name of versionNames" [nzValue]="name" [nzLabel]="name"></nz-option>
+        </nz-select>
+      </div>
+      <div>
+        <tree-root [nodes]="dataNodeList" [options]="options">
+          <ng-template #treeNodeTemplate let-node>
+            <span>
+              <i *ngIf="node.data.children" class="fa fa-folder"></i>
+              <i *ngIf="!node.data.children" class="fa fa-file"></i>
+              {{ node.data.name }}
+            </span>
+          </ng-template>
+        </tree-root>
+      </div>
+      <button
+        class="rounded-button"
+        (click)="openFileAddComponent()">
+        + Version
+      </button>
+    </nz-sider>
+</nz-layout>
