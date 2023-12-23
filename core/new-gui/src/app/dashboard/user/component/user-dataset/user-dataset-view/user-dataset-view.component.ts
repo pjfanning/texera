@@ -5,9 +5,9 @@ import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { NgbdModelDatasetFileAddComponent } from "./ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
 import { DatasetVersionHierarchyNode } from "src/app/common/type/datasetVersion";
-import * as Papa from 'papaparse';
 import { TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode } from '@circlon/angular-tree-component';
 import { FileSizeLimits } from "src/app/common/type/datasetVersion";
+// import * as Papa from 'papaparse';
 
 
 @UntilDestroy()
@@ -131,13 +131,13 @@ export class userDatasetViewComponent implements OnInit {
             this.isLoading = false;
         }, 0);
         } else if (this.currentFile.endsWith(".csv")) {
-          Papa.parse(this.currentFileObject, {
-            complete: (results) => {
-                this.csvContent = results.data;
-                this.csvDisplay = true;
-                this.isLoading = false;
-            }
-        });
+        //   Papa.parse(this.currentFileObject, {
+        //     complete: (results) => {
+        //         this.csvContent = results.data;
+        //         this.csvDisplay = true;
+        //         this.isLoading = false;
+        //     }
+        // });
         } else {
           this.turnOffAllDisplay();
           this.isLoading = false;
