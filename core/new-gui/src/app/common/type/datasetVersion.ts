@@ -1,5 +1,8 @@
 export interface DatasetVersion {
+  dvid: number | undefined;
+  did: number;
   name: string;
+  versionHash: string | undefined;
   creationTime: number | undefined;
   versionHierarchyRoot: DatasetVersionHierarchyNode[] | undefined;
 }

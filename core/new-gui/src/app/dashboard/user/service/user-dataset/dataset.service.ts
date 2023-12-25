@@ -7,7 +7,7 @@ import {AppSettings} from "../../../../common/app-setting";
 import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
-import {DatasetVersionHierarchy, DatasetVersionHierarchyNode, parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
+import {DatasetVersion, DatasetVersionHierarchy, DatasetVersionHierarchyNode, parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
 
 
 export const DATASET_BASE_URL = "dataset";
@@ -17,8 +17,8 @@ export const DATASET_SEARCH_URL = DATASET_BASE_URL + "/search";
 export const DATASET_DELETE_URL = DATASET_BASE_URL + "/delete";
 
 export const DATASET_VERSION_BASE_URL = "version";
-export const DATASET_VERSION_LIST_URL = DATASET_VERSION_BASE_URL + "/list";
-
+export const DATASET_VERSION_RETRIEVE_LIST_URL = DATASET_VERSION_BASE_URL + "/list";
+export const DATASET_VERSION_LATEST_URL = DATASET_VERSION_BASE_URL + "/latest"
 
 
 @Injectable({
@@ -43,69 +43,71 @@ export class DatasetService {
     );
   }
 
-  public inspectDatasetSingleFile(did: number, version: string, path: string): Observable<Blob> {
-    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${version}/file?path=${path}`, {responseType: 'blob'});
+  public inspectDatasetSingleFile(did: number, dvid: number, path: string): Observable<Blob> {
+    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${dvid}/file?path=${path}`, {responseType: 'blob'});
   }
 
   public createDatasetVersion(
     did: number,
-    baseVersion: string,
     newVersion: string,
-    remove: string,
+    removedFilePaths: string[],
     files: File[]
   ): Observable<any> {
     const formData = new FormData();
+    formData.append('versionName', newVersion);
 
-    if (baseVersion !== "") {
-      formData.append('baseVersion', baseVersion);
-    }
-    formData.append('version', newVersion);
-
-    if (remove !== "") {
-      formData.append('remove', remove);
+    if (removedFilePaths.length > 0) {
+      const removedFilesString = removedFilePaths.join(',');
+      formData.append('file:remove', removedFilesString);
     }
 
     files.forEach(file => {
       const path = file['webkitRelativePath'] || file.name;
-      formData.append(path, file);
+
+      formData.append(`file:upload:${path}`, file);
     });
     return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
   }
 
   /**
-   * retrieve a list of version name of a dataset. The list is sorted so that the latest versions are at front.
+   * retrieve a list of versions of a dataset. The list is sorted so that the latest versions are at front.
    * @param did
    */
-  public retrieveDatasetVersionList(did: number): Observable<string[]> {
+  public retrieveDatasetVersionList(did: number): Observable<DatasetVersion[]> {
     return this.http
-      .get<{ versions: string[]}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_LIST_URL}`)
+      .get<{ versions: DatasetVersion[]}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_RETRIEVE_LIST_URL}`)
       .pipe(
         map(response => response.versions)
       )
   }
 
+    /**
+     * retrieve the latest version of a dataset.
+     * @param did
+     */
+    public retrieveDatasetLatestVersion(did: number): Observable<DatasetVersion> {
+        return this.http
+            .get<{datasetVersion: DatasetVersion, hierarchy: DatasetVersionHierarchy}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_LATEST_URL}`)
+            .pipe(
+                map(response => {
+                  response.datasetVersion.versionHierarchyRoot = parseHierarchyToNodes(response.hierarchy);
+                  return response.datasetVersion;
+                })
+            )
+    }
+
   /**
    * retrieve a list of nodes that represent the files in the version
    * @param did
-   * @param version
+   * @param dvid
    */
-  public retrieveDatasetVersionFileHierarchy(did: number, version: string = ""): Observable<DatasetVersionHierarchyNode[]> {
+  public retrieveDatasetVersionFileHierarchy(did: number, dvid: number): Observable<DatasetVersionHierarchyNode[]> {
     return this.http
-      .get<{ hierarchy: DatasetVersionHierarchy }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${version}/hierarchy`)
+      .get<{ hierarchy: DatasetVersionHierarchy }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${dvid}/hierarchy`)
       .pipe(
         map(response => response.hierarchy),
         map(parseHierarchyToNodes)  // Convert the DatasetVersionHierarchy to DatasetVersionHierarchyNode[]
       );
-  }
-
-
-  public retrieveDatasetsBySessionUser(): Observable<DashboardDataset[]> {
-    return this.http
-      .get<DashboardDataset[]>(`${AppSettings.getApiEndpoint()}/${DATASET_LIST_URL}`)
-  }
-
-  public searchDatasets(keywords: string[], params: SearchFilterParameters): Observable<DashboardDataset[]> {
-    return this.http.get<DashboardDataset[]>(`${AppSettings.getApiEndpoint()}/${DATASET_SEARCH_URL}?${toQueryStrings(keywords, params)}`)
   }
 
   public deleteDatasets(dids: number[]): Observable<Response> {

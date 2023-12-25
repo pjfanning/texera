@@ -9,10 +9,6 @@
     </nz-card>
 
     <div class="version-notes-container">
-        <h6 class="notes-title1">Base Version Name</h6>
-        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a Base Version" (ngModelChange)="onBaseVersionSelected($event)" nzBorderless ngModel="{{baseVersion}}" style="width: 100%">
-            <nz-option *ngFor="let name of existedVersions" [nzValue]="name" [nzLabel]="name"></nz-option>
-        </nz-select>
         <h6 class="notes-title2">New Version Name</h6>
         <input nz-input placeholder="" [(ngModel)]="versionName" class="version-input" />
     </div>
@@ -21,36 +17,36 @@
         <div class="modal-body">
             <div class="drag-file-area"
                 type="file"
-                (fileOver)="haveFileOver($event)" 
+                (fileOver)="haveFileOver($event)"
                 (onFileDrop)="getFileDropped($event)"
-                [ngClass]="{ 'have-file-over': haveDropZoneOver }" 
-                [uploader]="uploader" 
+                [ngClass]="{ 'have-file-over': haveDropZoneOver }"
+                [uploader]="uploader"
                 ng2FileDrop>
                 <i class="fa fa-cloud-upload-alt upload-icon"></i>
                 <!-- <span>
                     Drop Files Here or Click to Upload
                 </span> -->
-                <input 
-                    #clickUpload 
-                    (change)="handleClickUploadFile($event)" 
-                    multiple 
+                <input
+                    #clickUpload
+                    (change)="handleClickUploadFile($event)"
+                    multiple
                     type="file"
                     id="directory-upload"
                     webkitdirectory
                     directory/>
                 <label for="directory-upload">Choose directory</label>
-                <input 
-                    #clickUpload 
-                    (change)="handleClickUploadFile($event)" 
-                    multiple 
+                <input
+                    #clickUpload
+                    (change)="handleClickUploadFile($event)"
+                    multiple
                     type="file"
                     id="file-upload"/>
                 <label for="file-upload">Choose file</label>
             </div>
-            <div *ngIf="baseVersionFiles.length">
+            <div *ngIf="baseVersion?.versionHierarchyRoot?.length">
                 <h6 class="prev-upload-title">Previous Uploads</h6>
                 <ul class="file-list">
-                    <li *ngFor="let file of baseVersionFiles" class="file-queue-item">
+                    <li *ngFor="let file of baseVersion?.versionHierarchyRoot" class="file-queue-item">
                         <span>{{file.type}}: {{ file.name }}</span>
                         <button (click)="deleteOldFile(file)" class="queue-delete-button">
                             <i class="fa fa-trash"></i>
@@ -72,6 +68,6 @@
         </div>
         <div class="modal-footer align-right">
             <button (click)="createVersion()" [disabled]="isCreateButtonDisabled()" class="upload-btn">Create</button>
-        </div>      
-    </div>      
+        </div>
+    </div>
 </div>

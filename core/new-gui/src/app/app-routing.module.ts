@@ -16,7 +16,7 @@ import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
-import { userDatasetViewComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
+import { UserDatasetViewComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path
@@ -65,7 +65,7 @@ if (environment.userSystemEnabled) {
       },
       {
         path: "dataset/:did",
-        component: userDatasetViewComponent,
+        component: UserDatasetViewComponent,
       },
       {
         path: "user-file",

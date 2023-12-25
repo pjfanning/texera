@@ -104,7 +104,7 @@
       <div class="version-storage">
         <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
         <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" ngModel="{{selectedVersion}}">
-          <nz-option *ngFor="let name of versionNames" [nzValue]="name" [nzLabel]="name"></nz-option>
+          <nz-option *ngFor="let version of versions" [nzValue]="version.name" [nzLabel]="version.name"></nz-option>
         </nz-select>
       </div>
       <div>
@@ -120,7 +120,7 @@
       </div>
       <button
         class="rounded-button"
-        (click)="openFileAddComponent()">
+        (click)="onClickOpenVersionCreationWindow()">
         + Version
       </button>
     </nz-sider>

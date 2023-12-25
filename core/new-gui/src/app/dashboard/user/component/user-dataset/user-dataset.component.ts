@@ -12,7 +12,6 @@ import {firstValueFrom} from "rxjs";
 import {DashboardEntry} from "../../type/dashboard-entry";
 import {SortMethod} from "../../type/sort-method";
 import {NgbdModalDatasetAddComponent} from "./ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
-import {parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
 
 export const ROUTER_DATASET_VIEW_URL = "/"
 @UntilDestroy()

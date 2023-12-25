@@ -136,9 +136,9 @@ import { PublicProjectComponent } from "./dashboard/user/component/user-project/
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
 import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
-import {userDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
+import {UserDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
-import { NgbdModelDatasetFileAddComponent } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-dataset-file-add.component";
+import { NgbdModelCreateNewVersion } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-create-new-version.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
@@ -187,7 +187,7 @@ registerLocaleData(en);
     TypeCastingDisplayComponent,
     ShareAccessComponent,
     NgbdModalWorkflowExecutionsComponent,
-    NgbdModelDatasetFileAddComponent,
+    NgbdModelCreateNewVersion,
     ConsoleFrameComponent,
     ErrorFrameComponent,
     ResultTableFrameComponent,
@@ -213,7 +213,7 @@ registerLocaleData(en);
     HomeComponent,
     UserWorkflowListItemComponent,
     UserDatasetListItemComponent,
-    userDatasetViewComponent,
+    UserDatasetViewComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
