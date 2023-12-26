@@ -95,7 +95,7 @@ export class UserDatasetViewComponent implements OnInit {
     this.csvDisplay = false;
   }
 
-  loadContent(file: string, prefix: string) {
+  loadFileContent(file: string, prefix: string) {
     this.currentFile = file;
     let path = file;
 
@@ -170,7 +170,8 @@ export class UserDatasetViewComponent implements OnInit {
           while (currentNode.type === "directory" && currentNode.children) {
             currentNode = currentNode.children[0];
           }
-          this.loadContent(currentNode.name, currentNode.dir);
+          console.log(currentNode)
+          this.loadFileContent(currentNode.name, currentNode.dir);
         })
   }
 
@@ -198,7 +199,7 @@ export class UserDatasetViewComponent implements OnInit {
           if (node.hasChildren) {
             TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event);
           } else {
-            this.loadContent(node.data.name, node.data.dir);
+            this.loadFileContent(node.data.name, node.data.dir);
           }
         }
       }

@@ -9,51 +9,52 @@
     <div class="form-group">
 
         <nz-form-item>
-          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="name">Name</nz-form-label>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="datasetName">Name</nz-form-label>
           <nz-form-control [nzSm]="14" [nzXs]="24">
-            <input nz-input id="name" type="text" formControlName="name">
+            <input nz-input id="datasetName" type="text" formControlName="datasetName">
           </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="baseVersion">Base Version</nz-form-label>
-          <nz-form-control [nzSm]="14" [nzXs]="24">
-            <input nz-input id="baseVersion" type="text" formControlName="baseVersion">
-          </nz-form-control>
+            <nz-form-label [nzSm]="6" [nzXs]="24" nzFor="datasetDescription">Description</nz-form-label>
+            <nz-form-control [nzSm]="14" [nzXs]="24">
+                <input nz-input id="datasetDescription" type="text" formControlName="datasetDescription">
+            </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label [nzSm]="6" [nzXs]="24" nzFor="description">Description</nz-form-label>
+          <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="initialVersionName">Version Name</nz-form-label>
           <nz-form-control [nzSm]="14" [nzXs]="24">
-            <input nz-input id="description" type="text" formControlName="description">
+            <input nz-input id="initialVersionName" type="text" formControlName="initialVersionName">
           </nz-form-control>
         </nz-form-item>
+
         <div class="modal-section">
           <div class="modal-body">
             <div class="drag-file-area"
                 type="file"
-                (fileOver)="haveFileOver($event)" 
+                (fileOver)="haveFileOver($event)"
                 (onFileDrop)="getFileDropped($event)"
-                [ngClass]="{ 'have-file-over': haveDropZoneOver }" 
-                [uploader]="uploader" 
+                [ngClass]="{ 'have-file-over': haveDropZoneOver }"
+                [uploader]="uploader"
                 ng2FileDrop>
                 <i class="fa fa-cloud-upload-alt upload-icon"></i>
                 <!-- <span>
                     Drop Files Here or Click to Upload
                 </span> -->
-                <input 
-                    #clickUpload 
-                    (change)="handleClickUploadFile($event)" 
-                    multiple 
+                <input
+                    #clickUpload
+                    (change)="handleClickUploadFile($event)"
+                    multiple
                     type="file"
                     id="directory-upload"
                     webkitdirectory
                     directory/>
                 <label for="directory-upload">Choose directory</label>
-                <input 
-                    #clickUpload 
-                    (change)="handleClickUploadFile($event)" 
-                    multiple 
+                <input
+                    #clickUpload
+                    (change)="handleClickUploadFile($event)"
+                    multiple
                     type="file"
                     id="file-upload"/>
                 <label for="file-upload">Choose file</label>
@@ -74,8 +75,8 @@
 
       <nz-form-item>
         <div>
-          Access Level:
-          <select formControlName="isPublic">
+          Dataset Access Level:
+          <select formControlName="isDatasetPublic">
             <option value=1>public</option>
             <option value=0>private</option>
           </select>

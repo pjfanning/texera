@@ -32,10 +32,10 @@ export class NgbdModalDatasetAddComponent implements OnInit {
     private userService: UserService
   ) {
     this.validateForm = this.formBuilder.group({
-      name: ["Untitled Dataset"],
-      baseVersion: ["baseVersion"],
-      description: [""],
-      isPublic: [0],
+      datasetName: ["Untitled Dataset"],
+      datasetDescription: [""],
+      initialVersionName: ["Version 1"],
+      isDatasetPublic: [0],
     });
   }
 
@@ -47,16 +47,25 @@ export class NgbdModalDatasetAddComponent implements OnInit {
 
   onSubmitAddDataset(): void {
     const ds: Dataset = {
-      name: this.validateForm.get('name')?.value,
-      description: this.validateForm.get('description')?.value,
-      isPublic: this.validateForm.get('isPublic')?.value,
+      name: this.validateForm.get('datasetName')?.value,
+      description: this.validateForm.get('datasetDescription')?.value,
+      isPublic: this.validateForm.get('isDatasetPublic')?.value,
       did: undefined,
       storagePath: undefined,
       creationTime: undefined,
       versionHierarchy: undefined,
     }
 
-    this.datasetService.createDataset(ds)
+    const initialVersionName = this.validateForm.get('initialVersionName')?.value;
+
+    const files: File[] = new Array(this.filesToBeUploaded.length);
+
+    for (let i = 0; i < this.filesToBeUploaded.length; i++) {
+      this.filesToBeUploaded[i].isUploadingFlag = true;
+      files[i] = this.filesToBeUploaded[i].file
+    }
+
+    this.datasetService.createDataset(ds, initialVersionName, files)
       .pipe(untilDestroyed(this))
       .subscribe({
         next: value => {

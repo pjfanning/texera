@@ -14,10 +14,15 @@ object PathUtils {
   }
 
   def getAllDatasetDirectories(): List[Path] = {
-    Files.list(DATASETS_ROOT)
-      .filter(Files.isDirectory(_))
-      .iterator()
-      .asScala
-      .toList
+    if (Files.exists(DATASETS_ROOT)) {
+      Files
+        .list(DATASETS_ROOT)
+        .filter(Files.isDirectory(_))
+        .iterator()
+        .asScala
+        .toList
+    } else {
+      List.empty[Path]
+    }
   }
 }

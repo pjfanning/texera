@@ -1,7 +1,7 @@
 <div *ngIf="!isMaximized">
   <nz-card>
     <h2 class="dataset-title">Dataset: {{dName}}</h2>
-    <nz-card-meta style="padding-top: 10px" nzDescription="{{createdTime}}"></nz-card-meta>
+    <nz-card-meta style="padding-top: 10px" nzDescription="Created at: {{createdTime}}"></nz-card-meta>
     <nz-card-meta style="padding-top: 20px" nzDescription="{{dDescription}}"></nz-card-meta>
   </nz-card>
 </div>
@@ -69,14 +69,6 @@
           </div>
         </div>
       </nz-card>
-      <div style="background-color: lightgray; padding-top: 15px; padding-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <h6 style="margin-left: 30px; margin-bottom: 20px;">About this file</h6>
-            <p style="margin-left: 30px;">
-                File Description
-            </p>
-        </div>
-      </div>
       <div [ngStyle]="!isMaximized ? {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '80%', 'overflow-y': 'scroll'}:
                                     {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '100%', 'overflow-y': 'scroll'}">
           <div *ngIf="isLoading">

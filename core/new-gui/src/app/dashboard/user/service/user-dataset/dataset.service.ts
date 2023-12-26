@@ -8,6 +8,7 @@ import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
 import {DatasetVersion, DatasetVersionHierarchy, DatasetVersionHierarchyNode, parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
+import {FileUploadItem} from "../../type/dashboard-file.interface";
 
 
 export const DATASET_BASE_URL = "dataset";
@@ -27,13 +28,21 @@ export const DATASET_VERSION_LATEST_URL = DATASET_VERSION_BASE_URL + "/latest"
 export class DatasetService {
   constructor(private http: HttpClient, private notificationService: NotificationService) {}
 
-  public createDataset(dataset: Dataset): Observable<DashboardDataset> {
+  public createDataset(dataset: Dataset, initialVersionName: string, filesToBeUploaded: File []): Observable<DashboardDataset> {
+    const formData = new FormData();
+    formData.append('datasetName', dataset.name);
+    formData.append('datasetDescription', dataset.description);
+    formData.append('isDatasetPublic', dataset.isPublic.toString())
+    formData.append('initialVersionName', initialVersionName);
+
+    filesToBeUploaded.forEach(file => {
+      const path = file['webkitRelativePath'] || file.name;
+
+      formData.append(`file:upload:${path}`, file);
+    });
+
     return this.http
-      .post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, {
-        name: dataset.name,
-        isPublic: dataset.isPublic,
-        description: dataset.description,
-    }).pipe()
+      .post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData).pipe()
   }
 
   public getDataset(did: number): Observable<Dataset> {

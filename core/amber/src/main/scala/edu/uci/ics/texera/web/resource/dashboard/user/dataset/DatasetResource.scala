@@ -228,17 +228,13 @@ class DatasetResource {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val uid = user.getUid
-        val datasetDao: DatasetDao = new DatasetDao(ctx.configuration())
         val datasetOfUserDao: DatasetOfUserDao = new DatasetOfUserDao(ctx.configuration())
 
         val dataset: Dataset = new Dataset()
         dataset.setName(datasetName)
         dataset.setDescription(datasetDescription)
-        if (isDatasetPublic.toBoolean) {
-          dataset.setIsPublic(1.toByte)
-        } else {
-          dataset.setIsPublic(0.toByte)
-        }
+        dataset.setIsPublic(isDatasetPublic.toByte)
+
 
         val createdDataset = ctx
           .insertInto(DATASET) // Assuming DATASET is the table reference
@@ -424,7 +420,7 @@ class DatasetResource {
 
   @GET
   @Path("/{did}/version/{dvid}/hierarchy")
-  def inspectDatasetFileHierarchy(
+  def retrieveDatasetVersionFileHierarchy(
       @PathParam("did") did: UInteger,
       @PathParam("dvid") dvid: UInteger,
       @Auth user: SessionUser
@@ -444,7 +440,8 @@ class DatasetResource {
 
           val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
-          DatasetVersionHierarchy(gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash))
+          val hierarchy = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
+          DatasetVersionHierarchy(hierarchy)
         })
       }
     })
