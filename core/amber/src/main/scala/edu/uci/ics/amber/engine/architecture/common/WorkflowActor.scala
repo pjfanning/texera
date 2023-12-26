@@ -201,6 +201,7 @@ abstract class WorkflowActor(
     try {
       transferService.initialize()
       initState()
+      context.parent ! RegisterActorRef(actorId, context.self)
     } catch {
       case t: Throwable =>
         logger.warn("actor initialization failed due to exception", t)

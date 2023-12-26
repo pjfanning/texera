@@ -27,7 +27,7 @@ object SinkInjectionTransformer {
         sink.setOperatorId("sink - " + opId)
         logicalPlan = logicalPlan
           .addOperator(sink)
-          .addEdge(op.operatorIdentifier, sink.operatorIdentifier, outPort)
+          .addLink(op.operatorIdentifier, outPort, sink.operatorIdentifier, toPort = 0)
       })
     })
 

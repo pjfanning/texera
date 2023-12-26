@@ -3,6 +3,7 @@ package edu.uci.ics.texera.workflow.common.workflow
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.service.{ExecutionsMetadataPersistService, WorkflowCacheChecker}
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
@@ -12,6 +13,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstant
 object WorkflowCacheRewriter {
 
   def transform(
+      context: WorkflowContext,
       logicalPlan: LogicalPlan,
       lastCompletedPlan: Option[LogicalPlan],
       storage: OpResultStorage,
@@ -37,22 +39,18 @@ object WorkflowCacheRewriter {
     opsCanUseCache.foreach(opId => {
       val materializationReader = new CacheSourceOpDesc(opId, storage)
       resultPlan = resultPlan.addOperator(materializationReader)
-      // replace the connection of all outgoing edges of opId with the cache
-      val edgesToReplace = resultPlan.getDownstreamEdges(opId)
-      edgesToReplace.foreach(e => {
-        resultPlan = resultPlan.removeEdge(
-          e.origin.operatorId,
-          e.destination.operatorId,
-          e.origin.portOrdinal,
-          e.destination.portOrdinal
-        )
-        resultPlan = resultPlan.addEdge(
-          materializationReader.operatorIdentifier,
-          e.destination.operatorId,
-          0,
-          e.destination.portOrdinal
-        )
+      // replace all outgoing links of the original operator with the new links from cache
+      val linksToReplace = resultPlan.getDownstreamLinks(opId)
+      linksToReplace.foreach(link => {
+        resultPlan = resultPlan
+          .removeLink(link)
+          .addLink(
+            from = materializationReader.operatorIdentifier,
+            to = link.destination.operatorId,
+            toPort = link.destination.portOrdinal
+          )
       })
+      resultPlan = resultPlan.removeOperator(opId)
     })
 
     // after an operator is replaced with reading from cached result
@@ -74,20 +72,21 @@ object WorkflowCacheRewriter {
       )
     )
 
-    resultPlan.propagateWorkflowSchema(None)
+    resultPlan.propagateWorkflowSchema(context, None)
 
     // assign sink storage to the logical plan after cache rewrite
     // as it will be converted to the actual physical plan
-    assignSinkStorage(resultPlan, storage, opsCanUseCache)
+    assignSinkStorage(resultPlan, context, storage, opsCanUseCache)
     // also assign sink storage to the original logical plan, as the original logical plan
     // will be used to be compared to the subsequent runs
-    assignSinkStorage(logicalPlan, storage, opsCanUseCache)
+    assignSinkStorage(logicalPlan, context, storage, opsCanUseCache)
     resultPlan
 
   }
 
   private def assignSinkStorage(
       logicalPlan: LogicalPlan,
+      context: WorkflowContext,
       storage: OpResultStorage,
       reuseStorageSet: Set[OperatorIdentity] = Set()
   ): Unit = {
