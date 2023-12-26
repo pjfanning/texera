@@ -124,7 +124,7 @@ object WorkflowCacheRewriter {
     }
     // update execution entry in MySQL to have pointers to the mongo collections
     resultsJSON.set("results", sinksPointers)
-    ExecutionsMetadataPersistService.tryUpdateExistingExecution(logicalPlan.context.executionId) {
+    ExecutionsMetadataPersistService.tryUpdateExistingExecution(context.executionId) {
       _.setResult(resultsJSON.toString)
     }
   }

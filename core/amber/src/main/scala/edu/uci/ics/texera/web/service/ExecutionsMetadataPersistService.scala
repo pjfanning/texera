@@ -51,7 +51,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     ExecutionIdentity(newExecution.getEid.longValue())
   }
 
-  def tryGetExistingExecution(eid: Long): Option[WorkflowExecutions] = {
+  def tryGetExistingExecution(executionId: ExecutionIdentity): Option[WorkflowExecutions] = {
     if (!AmberConfig.isUserSystemEnabled) return None
     try {
       Some(workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(executionId.id)))
@@ -62,10 +62,12 @@ object ExecutionsMetadataPersistService extends LazyLogging {
     }
   }
 
-  def tryUpdateExistingExecution(eid: Long)(updateFunc: WorkflowExecutions => Unit): Unit = {
+  def tryUpdateExistingExecution(
+      executionId: ExecutionIdentity
+  )(updateFunc: WorkflowExecutions => Unit): Unit = {
     if (!AmberConfig.isUserSystemEnabled) return
     try {
-      val execution = workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(eid))
+      val execution = workflowExecutionsDao.fetchOneByEid(UInteger.valueOf(executionId.id))
       updateFunc(execution)
       workflowExecutionsDao.update(execution)
     } catch {

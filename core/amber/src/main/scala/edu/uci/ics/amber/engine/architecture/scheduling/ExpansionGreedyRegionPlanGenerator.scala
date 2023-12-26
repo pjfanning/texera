@@ -347,6 +347,7 @@ class ExpansionGreedyRegionPlanGenerator(
       opResultStorage: OpResultStorage
     )
     materializationReader.setContext(context)
+    materializationReader.setOperatorId("cacheSource-" + matWriterLogicalOp.operatorIdentifier.id)
     materializationReader.schema = matWriterLogicalOp.getStorage.getSchema
     val matReaderOutputSchema = materializationReader.getOutputSchemas(Array())
     val matReaderOp = materializationReader.getPhysicalOp(
@@ -363,6 +364,7 @@ class ExpansionGreedyRegionPlanGenerator(
   ): (ProgressiveSinkOpDesc, PhysicalOp) = {
     val matWriterLogicalOp = new ProgressiveSinkOpDesc()
     matWriterLogicalOp.setContext(context)
+    matWriterLogicalOp.setOperatorId("materialized-" + fromOp.id.logicalOpId.id)
     val fromLogicalOp = logicalPlan.getOperator(fromOp.id.logicalOpId)
     val fromOpInputSchema: Array[Schema] =
       if (!fromLogicalOp.isInstanceOf[SourceOperatorDescriptor]) {
