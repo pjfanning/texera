@@ -123,7 +123,7 @@ object DatasetResource {
       did: UInteger,
       versionName: String,
       multiPart: FormDataMultiPart
-  ): Option[DatasetVersion] = {
+  ): Option[DashboardDatasetVersion] = {
 
     // Acquire the lock
     val lock = DatasetResource.datasetLocks.getOrElseUpdate(did, new ReentrantLock())
@@ -177,12 +177,15 @@ object DatasetResource {
       datasetVersion.setVersionHash(commitHash)
 
       Some(
-        ctx
-          .insertInto(DATASET_VERSION) // Assuming DATASET is the table reference
-          .set(ctx.newRecord(DATASET_VERSION, datasetVersion))
-          .returning() // Assuming ID is the primary key column
-          .fetchOne()
-          .into(classOf[DatasetVersion])
+        DashboardDatasetVersion(
+          ctx
+            .insertInto(DATASET_VERSION) // Assuming DATASET is the table reference
+            .set(ctx.newRecord(DATASET_VERSION, datasetVersion))
+            .returning() // Assuming ID is the primary key column
+            .fetchOne()
+            .into(classOf[DatasetVersion]),
+          gitVersionControl.retrieveFileTreeOfVersion(commitHash)
+        )
       )
     } finally {
       // Release the lock
@@ -194,10 +197,6 @@ object DatasetResource {
       dataset: Dataset,
       accessLevel: String,
       isOwner: Boolean
-  )
-
-  case class DashboardDatasetVersion(
-      datasetVersion: DatasetVersion
   )
 
   case class DatasetVersionHierarchy(hierarchy: util.Map[String, AnyRef])
@@ -339,7 +338,7 @@ class DatasetResource {
         createdVersion match {
           case None =>
             throw new BadRequestException("User should do modifications to create a new version")
-          case Some(version) => DashboardDatasetVersion(version)
+          case Some(version) => version
         }
       }
     })
