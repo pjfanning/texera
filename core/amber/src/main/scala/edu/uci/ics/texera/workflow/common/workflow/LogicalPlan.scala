@@ -38,16 +38,14 @@ object LogicalPlan {
   }
 
   def apply(
-      pojo: LogicalPlanPojo,
-      ctx: WorkflowContext
+      pojo: LogicalPlanPojo
   ): LogicalPlan = {
-    LogicalPlan(ctx, pojo.operators, pojo.links, pojo.breakpoints)
+    LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints)
   }
 
 }
 
 case class LogicalPlan(
-    context: WorkflowContext,
     operators: List[LogicalOp],
     links: List[LogicalLink],
     breakpoints: List[BreakpointInfo],
@@ -96,15 +94,13 @@ case class LogicalPlan(
       .toList
   }
 
-  // returns a new logical plan with the given operator added
   def addOperator(op: LogicalOp): LogicalPlan = {
     // TODO: fix schema for the new operator
-    this.copy(context, operators :+ op, links, breakpoints)
+    this.copy(operators :+ op, links, breakpoints)
   }
 
   def removeOperator(opId: OperatorIdentity): LogicalPlan = {
     this.copy(
-      context,
       operators.filter(o => o.operatorIdentifier != opId),
       links.filter(l => l.origin.operatorId != opId && l.destination.operatorId != opId),
       breakpoints.filter(b => OperatorIdentity(b.operatorID) != opId),
@@ -114,28 +110,20 @@ case class LogicalPlan(
     )
   }
 
-  // returns a new logical plan with the given edge added
-  def addEdge(
+  def addLink(
       from: OperatorIdentity,
+      fromPort: Int =
+        0, // by default, we have only one output port, thus giving a default port index 0
       to: OperatorIdentity,
-      fromPort: Int = 0,
-      toPort: Int = 0
+      toPort: Int
   ): LogicalPlan = {
     val newLink = LogicalLink(LogicalPort(from, fromPort), LogicalPort(to, toPort))
     val newLinks = links :+ newLink
-    this.copy(context, operators, newLinks, breakpoints)
+    this.copy(operators, newLinks, breakpoints)
   }
 
-  // returns a new logical plan with the given edge removed
-  def removeEdge(
-      from: OperatorIdentity,
-      to: OperatorIdentity,
-      fromPort: Int = 0,
-      toPort: Int = 0
-  ): LogicalPlan = {
-    val linkToRemove = LogicalLink(LogicalPort(from, fromPort), LogicalPort(to, toPort))
-    val newLinks = links.filter(l => l != linkToRemove)
-    this.copy(context, operators, newLinks, breakpoints)
+  def removeLink(linkToRemove: LogicalLink): LogicalPlan = {
+    this.copy(operators, links.filter(l => l != linkToRemove), breakpoints)
   }
 
   def getDownstreamOps(opId: OperatorIdentity): List[LogicalOp] = {
@@ -146,7 +134,7 @@ case class LogicalPlan(
     downstream.toList
   }
 
-  def getDownstreamEdges(opId: OperatorIdentity): List[LogicalLink] = {
+  def getDownstreamLinks(opId: OperatorIdentity): List[LogicalLink] = {
     links.filter(l => l.origin.operatorId == opId)
   }
 
@@ -168,6 +156,7 @@ case class LogicalPlan(
   }
 
   def propagateWorkflowSchema(
+      context: WorkflowContext,
       errorList: Option[ArrayBuffer[(OperatorIdentity, Throwable)]]
   ): LogicalPlan = {
 
@@ -248,7 +237,6 @@ case class LogicalPlan(
     })
 
     this.copy(
-      context,
       operators,
       links,
       breakpoints,

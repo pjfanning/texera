@@ -8,6 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workf
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
 import edu.uci.ics.amber.engine.common.{AmberConfig, AmberUtils}
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.Utils.{maptoStatusCode, objectMapper}
 import edu.uci.ics.texera.web.TexeraWebApplication.scheduleRecurringCallThroughActorSystem
@@ -233,7 +234,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     * MongoDB doesn't have an API of drop collection where collection name in (from a subquery), so the implementation is to retrieve
     * the entire list of those documents that have expired, then loop the list to drop them one by one
     */
-  def cleanExecutions(
+  private def cleanExecutions(
       executions: List[WorkflowExecutions],
       statusChangeFunc: Byte => Byte
   ): Unit = {
@@ -242,11 +243,11 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
       dropCollections(execEntry.getResult)
       deleteReplayLog(execEntry.getLogLocation)
       // then delete the pointer from mySQL
-      ExecutionsMetadataPersistService.tryUpdateExistingExecution(execEntry.getEid.longValue()) {
-        execution =>
-          execution.setResult("")
-          execution.setLogLocation(null)
-          execution.setStatus(statusChangeFunc(execution.getStatus))
+      val executionIdentity = ExecutionIdentity(execEntry.getEid.longValue())
+      ExecutionsMetadataPersistService.tryUpdateExistingExecution(executionIdentity) { execution =>
+        execution.setResult("")
+        execution.setLogLocation(null)
+        execution.setStatus(statusChangeFunc(execution.getStatus))
       }
     })
   }
