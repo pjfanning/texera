@@ -9,7 +9,7 @@ import {FileSizeLimits} from "../../../../../../common/type/datasetVersion";
     templateUrl: './user-dataset-file-renderer.component.html',
     styleUrls: ['./user-dataset-file-renderer.component.scss']
 })
-export class UserDatasetFileRendererComponent implements OnInit, OnChanges{
+export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     private FILE_SIZE_LIMITS: FileSizeLimits = {
         ".pdf": 15 * 1024 * 1024, // 15 MB
         ".csv": 2 * 1024 * 1024,    // 2 MB
@@ -46,23 +46,29 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges{
     }
 
     ngOnInit(): void {
+        console.log("init")
         this.reloadFileContent()
     }
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes.did || changes.dvid || changes.filePath) {
+            console.log("on change")
             this.reloadFileContent();
         }
     }
 
     reloadFileContent() {
-        if (this.did && this.dvid && this.filePath != "")
+        console.log(this.did, this.dvid, this.filePath)
+        if (this.did && this.dvid && this.filePath != "") {
+            console.log("enter the block")
             this.datasetService
                 .inspectDatasetSingleFile(this.did, this.dvid, this.filePath)
-                .pipe(untilDestroyed(this))
+                .pipe()
                 .subscribe(blob => {
+                    this.isLoading = true;
                     this.currentFileBlob = new File([blob], this.filePath, {type: blob.type});
                     this.fileURL = URL.createObjectURL(blob);
+                    console.log("file receive: ", this.fileURL)
 
                     const lastDotIndex = this.filePath.lastIndexOf('.');
                     const fileExtension = lastDotIndex !== -1 ? this.filePath.slice(lastDotIndex) : '';
@@ -76,6 +82,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges{
                     }
 
                     if (this.filePath.endsWith(".pdf")) {
+                        this.pdfDisplay = false;
                         setTimeout(() => {
                             this.pdfDisplay = true;
                             this.isLoading = false;
@@ -93,6 +100,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges{
                         this.isLoading = false;
                     }
                 })
+        }
     }
 
     turnOffAllDisplay() {

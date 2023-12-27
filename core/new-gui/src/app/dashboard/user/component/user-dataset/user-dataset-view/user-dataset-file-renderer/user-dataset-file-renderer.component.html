@@ -3,7 +3,10 @@
     <div *ngIf="isLoading">
         <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
     </div>
-    <ng2-pdfjs-viewer *ngIf="pdfDisplay" [pdfSrc]="fileURL"></ng2-pdfjs-viewer>
+    <ng2-pdfjs-viewer
+            *ngIf="pdfDisplay"
+            [pdfSrc]="fileURL"
+    ></ng2-pdfjs-viewer>
     <table *ngIf="csvDisplay" class="csv-table">
         <tr *ngFor="let row of csvContent">
             <td *ngFor="let cell of row">{{ cell }}</td>
