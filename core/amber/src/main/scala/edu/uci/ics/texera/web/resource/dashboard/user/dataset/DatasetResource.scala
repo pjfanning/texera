@@ -450,11 +450,11 @@ class DatasetResource {
   @GET
   @Path("/{did}/version/{dvid}/file")
   def inspectDatasetSingleFile(
-      @PathParam("did") did: UInteger,
-      @PathParam("dvid") dvid: UInteger,
-      @QueryParam("path") path: String,
-      @Auth user: SessionUser
-  ): Response = {
+                                @PathParam("did") did: UInteger,
+                                @PathParam("dvid") dvid: UInteger,
+                                @QueryParam("path") path: String,
+                                @Auth user: SessionUser
+                              ): Response = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
@@ -477,13 +477,23 @@ class DatasetResource {
 
         val contentType = path.split("\\.").lastOption match {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
-          case Some("png")                => "image/png"
-          case Some("csv")                => "text/csv"
-          case _                          => "application/octet-stream"
+          case Some("png") => "image/png"
+          case Some("csv") => "text/csv"
+          case Some("txt") => "text/plain"
+          case Some("html") | Some("htm") => "text/html"
+          case Some("json") => "application/json"
+          case Some("pdf") => "application/pdf"
+          case Some("doc") | Some("docx") => "application/msword"
+          case Some("xls") | Some("xlsx") => "application/vnd.ms-excel"
+          case Some("ppt") | Some("pptx") => "application/vnd.ms-powerpoint"
+          case Some("mp4") => "video/mp4"
+          case Some("mp3") => "audio/mpeg"
+          case _ => "application/octet-stream" // default binary format
         }
 
         Response.ok(streamingOutput).`type`(contentType).build()
       })
     })
   }
+
 }

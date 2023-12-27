@@ -1,12 +1,15 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset.version;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class GitSystemCall {
+
+  public static Charset BYTE_2_STRING_CHARSET = StandardCharsets.UTF_8;
 
   public static void initRepo(String path) throws IOException, InterruptedException {
     executeGitCommand(path, "init", path);
@@ -32,20 +37,18 @@ public class GitSystemCall {
     executeGitCommand(repoPath, "commit", "-m", commitMessage);
 
     // Retrieving the full commit hash of the latest commit
-    return executeGitCommand(repoPath, "rev-parse", "HEAD");
+    byte[] commitHashOutput = executeGitCommand(repoPath, "rev-parse", "HEAD");
+    return new String(commitHashOutput, StandardCharsets.UTF_8).trim();
   }
 
   public static void showFileContentOfCommit(String repoPath, String commitHash, String filePath, OutputStream outputStream) throws IOException, InterruptedException {
-    // Use the commit hash instead of the branch name in the git command
-    String fileContent = executeGitCommand(repoPath, "show", commitHash + ":" + filePath);
-    try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream))) {
-      writer.print(fileContent);
-    }
+    byte[] fileContent = executeGitCommand(repoPath, "show", commitHash + ":" + filePath);
+    outputStream.write(fileContent);
   }
 
 
   public static Map<String, Object> getFileTreeHierarchy(String repoPath, String commitHash) throws IOException, InterruptedException {
-    String treeOutput = executeGitCommand(repoPath, "ls-tree", "-r", commitHash);
+    String treeOutput = new String(executeGitCommand(repoPath, "ls-tree", "-r", commitHash), BYTE_2_STRING_CHARSET);
     return parseFileTree(treeOutput);
   }
 
@@ -82,43 +85,30 @@ public class GitSystemCall {
     }
   }
 
-  private static String parseCommitHash(String commitOutput) {
-    Pattern pattern = Pattern.compile("\\[.* ([0-9a-f]{5,40})\\]");
-    Matcher matcher = pattern.matcher(commitOutput);
-
-    if (matcher.find()) {
-      return matcher.group(1); // Group 1 is the commit hash
-    } else {
-      return null; // or throw an exception if the commit hash is not found
-    }
-  }
-
-
-  private static String executeGitCommand(String workingDirectory, String... args) throws IOException, InterruptedException {
+  private static byte[] executeGitCommand(String workingDirectory, String... args) throws IOException, InterruptedException {
     List<String> commands = new ArrayList<>();
-    commands.add("git"); // Add the "git" prefix
-    Collections.addAll(commands, args); // Add the rest of the arguments
+    commands.add("git");
+    Collections.addAll(commands, args);
 
     ProcessBuilder builder = new ProcessBuilder(commands);
-    builder.directory(new File(workingDirectory));  // Set the working directory
-    builder.redirectErrorStream(true); // Redirect error stream to standard output
+    builder.directory(new File(workingDirectory));
+    builder.redirectErrorStream(true);
     Process process = builder.start();
 
-    // Reading the output of the command
-    StringBuilder output = new StringBuilder();
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-      String line;
-      while ((line = reader.readLine()) != null) {
-        output.append(line).append("\n");
+    try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+      byte[] buffer = new byte[1024];
+      int length;
+      while ((length = process.getInputStream().read(buffer)) != -1) {
+        outputStream.write(buffer, 0, length);
       }
-    }
 
-    int exitCode = process.waitFor();
-    if (exitCode != 0) {
-      throw new IOException("Failed to execute Git command: " + String.join(" ", commands));
-    }
+      int exitCode = process.waitFor();
+      if (exitCode != 0) {
+        throw new IOException("Failed to execute Git command: " + String.join(" ", commands));
+      }
 
-    return output.toString().trim(); // Return the output as a String
+      return outputStream.toByteArray();
+    }
   }
 
   public static void rollbackToLastCommit(String repoPath) throws IOException, InterruptedException {
@@ -126,7 +116,7 @@ public class GitSystemCall {
   }
 
   public static boolean hasUncommittedChanges(String repoPath) throws IOException, InterruptedException {
-    String statusOutput = executeGitCommand(repoPath, "status", "--porcelain");
+    String statusOutput = new String(executeGitCommand(repoPath, "status", "--porcelain"), BYTE_2_STRING_CHARSET);
     return !statusOutput.isEmpty();
   }
 }

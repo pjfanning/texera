@@ -143,6 +143,7 @@ import { ErrorFrameComponent } from "./workspace/component/result-panel/error-fr
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
+import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-file-renderer/user-dataset-file-renderer.component";
 
 registerLocaleData(en);
 
@@ -214,6 +215,7 @@ registerLocaleData(en);
     UserWorkflowListItemComponent,
     UserDatasetListItemComponent,
     UserDatasetViewComponent,
+    UserDatasetFileRendererComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,

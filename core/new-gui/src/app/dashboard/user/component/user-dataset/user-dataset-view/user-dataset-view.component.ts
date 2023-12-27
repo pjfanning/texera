@@ -26,7 +26,6 @@ export class UserDatasetViewComponent implements OnInit {
   public currentFile: string = "";
   public currentFileObject: File | undefined = undefined;
   public fileURL: string = "";
-  public blobFile: Blob = new Blob();
   public csvContent: any[] = [];
   public pdfDisplay: boolean = false;
   public csvDisplay: boolean = false;
@@ -112,7 +111,6 @@ export class UserDatasetViewComponent implements OnInit {
         .inspectDatasetSingleFile(this.did, this.selectedVersion.dvid, path)
         .pipe(untilDestroyed(this))
         .subscribe(blob => {
-          this.blobFile = blob;
           this.currentFileObject = new File([blob], this.currentFile, {type: blob.type});
           this.fileURL = URL.createObjectURL(blob);
 
