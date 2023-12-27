@@ -1,8 +1,8 @@
 <div *ngIf="!isMaximized">
   <nz-card>
-    <h2 class="dataset-title">Dataset: {{dName}}</h2>
-    <nz-card-meta style="padding-top: 10px" nzDescription="Created at: {{createdTime}}"></nz-card-meta>
-    <nz-card-meta style="padding-top: 20px" nzDescription="{{dDescription}}"></nz-card-meta>
+    <h2 class="dataset-title">Dataset: {{datasetName}}</h2>
+    <nz-card-meta style="padding-top: 10px" nzDescription="Created at: {{datasetCreationTime}}"></nz-card-meta>
+    <nz-card-meta style="padding-top: 20px" nzDescription="{{datasetDescription}}"></nz-card-meta>
   </nz-card>
 </div>
 <nz-layout>
@@ -10,7 +10,7 @@
       <nz-card>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h5 class="file-title"><b>{{currentFile}}</b></h5>
+            <h5 class="file-title"><b>{{currentDisplayedFileName}}</b></h5>
           </div>
           <div style="display: flex;">
             <button
@@ -69,25 +69,13 @@
           </div>
         </div>
       </nz-card>
-      <div [ngStyle]="!isMaximized ? {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '80%', 'overflow-y': 'scroll'}:
-                                    {'padding-top': '15px', 'margin-left': '30px', 'width': '98.6%', 'height': '100%', 'overflow-y': 'scroll'}">
-          <div *ngIf="isLoading">
-            <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-          </div>
-          <ng2-pdfjs-viewer
-            *ngIf="pdfDisplay"
-            [pdfSrc]="fileURL">
-          </ng2-pdfjs-viewer>
-          <table
-            *ngIf="csvDisplay"
-            class="csv-table">
-            <tr *ngFor="let row of csvContent">
-              <td *ngFor="let cell of row">
-                {{ cell }}
-              </td>
-            </tr>
-          </table>
-      </div>
+      <texera-user-dataset-file-renderer
+        [isMaximized]="isMaximized"
+        [did]="did"
+        [dvid]="selectedVersion?.dvid"
+        [filePath]="currentDisplayedFileName"
+      >
+      </texera-user-dataset-file-renderer>
     </nz-content>
   <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
       <div class="file-list-title">

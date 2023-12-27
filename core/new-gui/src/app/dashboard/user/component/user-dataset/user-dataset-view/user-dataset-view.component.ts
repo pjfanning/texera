@@ -19,16 +19,11 @@ import {FileSizeLimits} from "src/app/common/type/datasetVersion";
 export class UserDatasetViewComponent implements OnInit {
 
   public did: number = 0;
-  public dName: string = "";
-  public dDescription: string = "";
-  public createdTime: string = "";
+  public datasetName: string = "";
+  public datasetDescription: string = "";
+  public datasetCreationTime: string = "";
 
-  public currentFile: string = "";
-  public currentFileObject: File | undefined = undefined;
-  public fileURL: string = "";
-  public csvContent: any[] = [];
-  public pdfDisplay: boolean = false;
-  public csvDisplay: boolean = false;
+  public currentDisplayedFileName: string = "";
 
   public isSiderCollapsed = false;
   public isMaximized = false;
@@ -36,14 +31,6 @@ export class UserDatasetViewComponent implements OnInit {
   public versions: ReadonlyArray<DatasetVersion> = [];
   public selectedVersion: DatasetVersion | undefined;
   public dataNodeList: DatasetVersionHierarchyNode[] = [];
-
-  public isLoading: boolean = false;
-
-  private FILE_SIZE_LIMITS: FileSizeLimits = {
-    ".pdf": 15 * 1024 * 1024, // 15 MB
-    ".csv": 2 * 1024 * 1024,    // 2 MB
-  };
-  private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
   constructor(
     private route: ActivatedRoute,
@@ -61,10 +48,10 @@ export class UserDatasetViewComponent implements OnInit {
       .getDataset(this.did)
       .pipe(untilDestroyed(this))
       .subscribe(dataset => {
-        this.dName = dataset.name;
-        this.dDescription = dataset.description;
+        this.datasetName = dataset.name;
+        this.datasetDescription = dataset.description;
         if (typeof dataset.creationTime === 'number') {
-          this.createdTime = new Date(dataset.creationTime).toString();
+          this.datasetCreationTime = new Date(dataset.creationTime).toString();
         }
       });
 
@@ -89,62 +76,12 @@ export class UserDatasetViewComponent implements OnInit {
       });
   }
 
-  turnOffAllDisplay() {
-    this.pdfDisplay = false;
-    this.csvDisplay = false;
-  }
-
   loadFileContent(file: string, prefix: string) {
-    this.currentFile = file;
     let path = file;
-
-    this.turnOffAllDisplay();
-
     if (prefix !== "") {
       path = prefix + "/" + file;
     }
-
-    this.isLoading = true;
-
-    if (this.selectedVersion && this.selectedVersion.dvid) {
-      this.datasetService
-        .inspectDatasetSingleFile(this.did, this.selectedVersion.dvid, path)
-        .pipe(untilDestroyed(this))
-        .subscribe(blob => {
-          this.currentFileObject = new File([blob], this.currentFile, {type: blob.type});
-          this.fileURL = URL.createObjectURL(blob);
-
-          const lastDotIndex = this.currentFile.lastIndexOf('.');
-          const fileExtension = lastDotIndex !== -1 ? this.currentFile.slice(lastDotIndex) : '';
-          const MaxSize = this.FILE_SIZE_LIMITS[fileExtension] || this.DEFAULT_MAX_SIZE;
-
-          const fileSize = blob.size
-
-          if (fileSize > MaxSize) {
-            this.modalService.open('The file is too large to load.');
-            this.isLoading = false;
-            return;
-          }
-
-          if (this.currentFile.endsWith(".pdf")) {
-            setTimeout(() => {
-              this.pdfDisplay = true;
-              this.isLoading = false;
-            }, 0);
-          } else if (this.currentFile.endsWith(".csv")) {
-            //   Papa.parse(this.currentFileObject, {
-            //     complete: (results) => {
-            //         this.csvContent = results.data;
-            //         this.csvDisplay = true;
-            //         this.isLoading = false;
-            //     }
-            // });
-          } else {
-            this.turnOffAllDisplay();
-            this.isLoading = false;
-          }
-        })
-    }
+    this.currentDisplayedFileName = path;
   }
 
   clickToMaximizeMinimize() {
