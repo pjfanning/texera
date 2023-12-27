@@ -11,10 +11,10 @@ import {DatasetVersion, DatasetVersionHierarchyNode} from "../../../../../common
 
 @UntilDestroy()
 @Component({
-    templateUrl: "./ngbd-model-create-new-version.component.html",
-    styleUrls: ["./ngbd-model-create-new-version.component.scss"]
+    templateUrl: "./ngbd-model-dataset-version-add.component.html",
+    styleUrls: ["./ngbd-model-dataset-version-add.component.scss"]
 })
-export class NgbdModelCreateNewVersion implements OnInit {
+export class NgbdModelDatasetVersionAddComponent implements OnInit {
     public versionName: string = '';
     public haveDropZoneOver: boolean = false;
     public uploader: FileUploader = new FileUploader({url: ""});
