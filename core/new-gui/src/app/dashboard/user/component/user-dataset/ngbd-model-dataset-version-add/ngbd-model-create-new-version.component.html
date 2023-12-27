@@ -15,59 +15,12 @@
 
     <div class="modal-section">
         <div class="modal-body">
-            <div class="drag-file-area"
-                type="file"
-                (fileOver)="haveFileOver($event)"
-                (onFileDrop)="getFileDropped($event)"
-                [ngClass]="{ 'have-file-over': haveDropZoneOver }"
-                [uploader]="uploader"
-                ng2FileDrop>
-                <i class="fa fa-cloud-upload-alt upload-icon"></i>
-                <!-- <span>
-                    Drop Files Here or Click to Upload
-                </span> -->
-                <input
-                    #clickUpload
-                    (change)="handleClickUploadFile($event)"
-                    multiple
-                    type="file"
-                    id="directory-upload"
-                    webkitdirectory
-                    directory/>
-                <label for="directory-upload">Choose directory</label>
-                <input
-                    #clickUpload
-                    (change)="handleClickUploadFile($event)"
-                    multiple
-                    type="file"
-                    id="file-upload"/>
-                <label for="file-upload">Choose file</label>
-            </div>
-            <div *ngIf="baseVersion?.versionHierarchyRoot?.length">
-                <h6 class="prev-upload-title">Previous Uploads</h6>
-                <ul class="file-list">
-                    <li *ngFor="let file of baseVersion?.versionHierarchyRoot" class="file-queue-item">
-                        <span>{{file.type}}: {{ file.name }}</span>
-                        <button (click)="deleteOldFile(file)" class="queue-delete-button">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </li>
-                </ul>
-            </div>
-            <div *ngIf="getFileArrayLength()">
-                <h6 class="new-upload-title">New Uploads</h6>
-                <ul class="file-list">
-                    <li *ngFor="let file of getFileArray()" class="file-queue-item">
-                        <span>{{ file.name }}</span>
-                        <button (click)="deleteNewFile(file)" [disabled]="file.isUploadingFlag" class="queue-delete-button">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </li>
-                </ul>
-            </div>
+            <texera-user-files-uploader
+                    (filesChanged)="onFilesChanged($event)"
+            ></texera-user-files-uploader>
         </div>
         <div class="modal-footer align-right">
-            <button (click)="createVersion()" [disabled]="isCreateButtonDisabled()" class="upload-btn">Create</button>
+            <button (click)="onClickCreateVersion()" [disabled]="isCreateButtonDisabled()" class="upload-btn">Create</button>
         </div>
     </div>
 </div>

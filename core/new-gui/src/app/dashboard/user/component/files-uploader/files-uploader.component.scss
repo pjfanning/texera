@@ -39,3 +39,29 @@
   background: #f7f7f7;
   border-style: solid;
 }
+.file-list {
+  list-style: none;
+  padding: 0;
+  .file-queue-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+    span {
+      flex-grow: 1;
+      padding-right: 10px;
+    }
+    .queue-delete-button {
+      background-color: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      &:hover {
+        background-color: darken(#d9534f, 10%);
+      }
+    }
+  }
+}
