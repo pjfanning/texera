@@ -45,6 +45,11 @@ export class NgbdModalDatasetAddComponent implements OnInit {
     this.activeModal.close();
   }
 
+  onFilesChanged(files: FileUploadItem[]) {
+    // Handle the changed files
+    this.filesToBeUploaded = files
+  }
+
   onSubmitAddDataset(): void {
     const ds: Dataset = {
       name: this.validateForm.get('datasetName')?.value,
@@ -75,43 +80,5 @@ export class NgbdModalDatasetAddComponent implements OnInit {
         error: (err) => alert(JSON.stringify(err.error)),
         complete: () => this.activeModal.close()
       });
-  }
-
-  public haveFileOver(fileOverEvent: boolean): void {
-    this.haveDropZoneOver = fileOverEvent;
-  }
-
-  public getFileDropped(fileDropEvent: File[]): void {
-    for (let i = 0; i < fileDropEvent.length; i++) {
-      const file: File | null = fileDropEvent[i];
-      if (file !== null) {
-        this.filesToBeUploaded.push(UserFileUploadService.createFileUploadItem(file));
-      }
-    }
-
-    this.uploader.clearQueue();
-  }
-
-  public handleClickUploadFile(clickUploadEvent: Event): void {
-    const fileList: FileList | null = (clickUploadEvent as any).target.files;
-    if (fileList === null) {
-      throw new Error("browser upload does not work as intended");
-    }
-
-    for (let i = 0; i < fileList.length; i++) {
-      this.filesToBeUploaded.push(UserFileUploadService.createFileUploadItem(fileList[i]));
-    }
-  }
-
-  public getFileArrayLength(): number {
-    return this.filesToBeUploaded.length;
-  }
-
-  public getFileArray(): FileUploadItem[] {
-    return this.filesToBeUploaded;
-  }
-
-  public deleteNewFile(removedFile: FileUploadItem): void {
-    this.filesToBeUploaded = this.filesToBeUploaded.filter(file => file !== removedFile);
   }
 }

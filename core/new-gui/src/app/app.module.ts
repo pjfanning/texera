@@ -138,12 +138,13 @@ import {UserDatasetListItemComponent} from "./dashboard/user/component/user-data
 import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 import {UserDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
-import { NgbdModelCreateNewVersion } from "./dashboard/user/component/user-dataset/user-dataset-view/ngbd-model-dataset-file-add/ngbd-model-create-new-version.component";
+import { NgbdModelCreateNewVersion } from "./dashboard/user/component/user-dataset/ngbd-model-dataset-version-add/ngbd-model-create-new-version.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
 import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-file-renderer/user-dataset-file-renderer.component";
+import {FilesUploaderComponent} from "./dashboard/user/component/files-uploader/files-uploader.component";
 
 registerLocaleData(en);
 
@@ -195,6 +196,7 @@ registerLocaleData(en);
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
     NotificationComponent,
+    FilesUploaderComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,

@@ -3,7 +3,7 @@ import {ActivatedRoute} from "@angular/router";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {NgbdModelCreateNewVersion} from "./ngbd-model-dataset-file-add/ngbd-model-create-new-version.component";
+import {NgbdModelCreateNewVersion} from "../ngbd-model-dataset-version-add/ngbd-model-create-new-version.component";
 import {DatasetVersion, DatasetVersionHierarchyNode} from "src/app/common/type/datasetVersion";
 import {TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode} from '@circlon/angular-tree-component';
 import {FileSizeLimits} from "src/app/common/type/datasetVersion";

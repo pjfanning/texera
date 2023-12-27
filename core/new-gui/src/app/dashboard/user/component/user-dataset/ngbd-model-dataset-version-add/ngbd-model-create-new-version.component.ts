@@ -1,12 +1,12 @@
 import {OnInit, Component, Output, EventEmitter} from '@angular/core';
 import {ActivatedRoute} from "@angular/router";
 import {FileUploader} from "ng2-file-upload";
-import {FileUploadItem} from "../../../../type/dashboard-file.interface";
-import {UserFileUploadService} from "../../../../service/user-file/user-file-upload.service";
+import {FileUploadItem} from "../../../type/dashboard-file.interface";
+import {UserFileUploadService} from "../../../service/user-file/user-file-upload.service";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {DatasetService} from "../../../../service/user-dataset/dataset.service";
+import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbActiveModal, NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {DatasetVersion, DatasetVersionHierarchyNode} from "src/app/common/type/datasetVersion";
+import {DatasetVersion, DatasetVersionHierarchyNode} from "../../../../../common/type/datasetVersion";
 
 
 @UntilDestroy()
