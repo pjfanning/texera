@@ -145,6 +145,7 @@ import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.
 import { NzResizableModule } from "ng-zorro-antd/resizable";
 import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-file-renderer/user-dataset-file-renderer.component";
 import {FilesUploaderComponent} from "./dashboard/user/component/files-uploader/files-uploader.component";
+import { NgxFileDropModule } from 'ngx-file-drop';
 
 registerLocaleData(en);
 
@@ -298,6 +299,7 @@ registerLocaleData(en);
     DragDropModule,
     NzAlertModule,
     NzResizableModule,
+    NgxFileDropModule,
   ],
   providers: [
     AuthGuardService,

@@ -55,15 +55,8 @@ export class NgbdModelDatasetVersionAddComponent implements OnInit {
 
     public onClickCreateVersion(): void {
       if (this.did) {
-        let files = new Array(this.filesToBeUploaded.length);
-
-        for (let i = 0; i < this.filesToBeUploaded.length; i++) {
-          this.filesToBeUploaded[i].isUploadingFlag = true;
-          files[i] = this.filesToBeUploaded[i].file
-        }
-
         this.datasetService
-            .createDatasetVersion(this.did, this.versionName, this.removedOldFiles, files)
+            .createDatasetVersion(this.did, this.versionName, this.removedOldFiles, this.filesToBeUploaded)
             .pipe(untilDestroyed(this))
             .subscribe(() => {
               this.filesToBeUploaded = [];

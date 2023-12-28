@@ -5,7 +5,7 @@
   </button>
 </div>
 <div class="modal-body">
-  <form [formGroup]="validateForm" (ngSubmit)="onSubmitAddDataset()">
+  <form [formGroup]="validateForm">
     <div class="form-group">
 
         <nz-form-item>
@@ -32,7 +32,7 @@
         <div class="modal-section">
           <div class="modal-body">
             <texera-user-files-uploader
-                    (filesChanged)="onFilesChanged($event)"
+                    (uploadedFiles)="onFilesChanged($event)"
             ></texera-user-files-uploader>
           </div>
         </div>
@@ -47,6 +47,7 @@
         </div>
         <button
           nz-button
+          (click)="onSubmitAddDataset()"
           nzType="primary"
           type="submit">
           Submit

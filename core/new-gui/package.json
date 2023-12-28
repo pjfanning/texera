@@ -82,6 +82,7 @@
     "ngx-markdown": "13.1.0",
     "ngx-monaco-editor": "9.0.0",
     "ngx-popper": "7.0.0",
+    "ngx-file-drop": "13.0.0",
     "papaparse": "5.4.1",
     "ng2-pdfjs-viewer": "13.2.2",
     "path-browserify": "^1.0.1",

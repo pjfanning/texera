@@ -27,6 +27,16 @@ export class UserFileUploadService {
     };
   }
 
+  public static createFileUploadItemWithPath(file: File, relativePath: string): FileUploadItem {
+    return {
+      file: file,
+      name: relativePath,
+      description: "",
+      uploadProgress: 0,
+      isUploadingFlag: false
+    }
+  }
+
   /**
    * returns all pending files to be uploaded.
    */

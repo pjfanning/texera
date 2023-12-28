@@ -1,39 +1,35 @@
-<div class="drag-file-area"
-     type="file"
-     (fileOver)="haveFileOver($event)"
-     (onFileDrop)="getFileDropped($event)"
-     [ngClass]="{ 'have-file-over': haveDropZoneOver }"
-     [uploader]="uploader"
-     ng2FileDrop>
-    <i class="fa fa-cloud-upload-alt upload-icon"></i>
-    <!-- <span>
-        Drop Files Here or Click to Upload
-    </span> -->
-    <input
-        #clickUpload
-        (change)="handleClickUploadFile($event)"
-        multiple
-        type="file"
-        id="directory-upload"
-        webkitdirectory
-        directory/>
-    <label for="directory-upload">Choose directory</label>
-    <input
-        #clickUpload
-        (change)="handleClickUploadFile($event)"
-        multiple
-        type="file"
-        id="file-upload"/>
-    <label for="file-upload">Choose file</label>
-</div>
-<div *ngIf="getFileArrayLength()">
-    <h6 class="new-upload-title">Uploads</h6>
-    <ul class="file-list">
-        <li *ngFor="let file of getFileArray()" class="file-queue-item">
-            <span>{{ file.name }}</span>
-            <button (click)="deleteNewFile(file)" [disabled]="file.isUploadingFlag" class="queue-delete-button">
-                <i class="fa fa-trash"></i>
-            </button>
-        </li>
-    </ul>
+<div class="file-uploader">
+    <ngx-file-drop
+            dropZoneLabel="Drop files here"
+            (onFileDrop)="fileDropped($event)"
+            (onFileOver)="fileOver($event)"
+            (onFileLeave)="fileLeave($event)">
+        <ng-template
+                class="ngx-drop-box"
+                ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+            <div class="file-drop-description">
+                <p>Drag & drop additional files to upload</p>
+<!--                <p class="file-drop-hint">Consider zipping large directories for faster uploads</p>-->
+                <p>or</p>
+                <button
+                        mat-stroked-button color="primary"
+                        class="upload-file-button"
+                        (click)="openFileSelector()">Browser & Upload Files</button>
+            </div>
+        </ng-template>
+    </ngx-file-drop>
+    <div *ngIf="getNumberOfPreviouslyUploadFiles()" class="uploaded-files-list">
+        <h6 class="new-upload-title">Previous Uploads</h6>
+    </div>
+    <div *ngIf="getNumberOfNewUploadFiles()" class="uploaded-files-list">
+        <h6 class="new-upload-title">New Uploads</h6>
+        <ul class="file-list">
+            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">
+                <span>{{ file.name }}</span>
+                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">
+                    <mat-icon>delete</mat-icon>
+                </button>
+            </li>
+        </ul>
+    </div>
 </div>

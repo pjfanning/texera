@@ -28,7 +28,7 @@ export const DATASET_VERSION_LATEST_URL = DATASET_VERSION_BASE_URL + "/latest"
 export class DatasetService {
   constructor(private http: HttpClient, private notificationService: NotificationService) {}
 
-  public createDataset(dataset: Dataset, initialVersionName: string, filesToBeUploaded: File []): Observable<DashboardDataset> {
+  public createDataset(dataset: Dataset, initialVersionName: string, filesToBeUploaded: FileUploadItem []): Observable<DashboardDataset> {
     const formData = new FormData();
     formData.append('datasetName', dataset.name);
     formData.append('datasetDescription', dataset.description);
@@ -36,9 +36,7 @@ export class DatasetService {
     formData.append('initialVersionName', initialVersionName);
 
     filesToBeUploaded.forEach(file => {
-      const path = file['webkitRelativePath'] || file.name;
-
-      formData.append(`file:upload:${path}`, file);
+      formData.append(`file:upload:${file.name}`, file.file);
     });
 
     return this.http
@@ -60,7 +58,7 @@ export class DatasetService {
     did: number,
     newVersion: string,
     removedFilePaths: string[],
-    files: File[]
+    files: FileUploadItem[]
   ): Observable<any> {
     const formData = new FormData();
     formData.append('versionName', newVersion);
@@ -71,9 +69,7 @@ export class DatasetService {
     }
 
     files.forEach(file => {
-      const path = file['webkitRelativePath'] || file.name;
-
-      formData.append(`file:upload:${path}`, file);
+      formData.append(`file:upload:${file.name}`, file.file);
     });
     return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
   }

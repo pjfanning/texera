@@ -51,6 +51,7 @@ export class NgbdModalDatasetAddComponent implements OnInit {
   }
 
   onSubmitAddDataset(): void {
+    console.log("onSubmit trigger")
     const ds: Dataset = {
       name: this.validateForm.get('datasetName')?.value,
       description: this.validateForm.get('datasetDescription')?.value,
@@ -63,14 +64,7 @@ export class NgbdModalDatasetAddComponent implements OnInit {
 
     const initialVersionName = this.validateForm.get('initialVersionName')?.value;
 
-    const files: File[] = new Array(this.filesToBeUploaded.length);
-
-    for (let i = 0; i < this.filesToBeUploaded.length; i++) {
-      this.filesToBeUploaded[i].isUploadingFlag = true;
-      files[i] = this.filesToBeUploaded[i].file
-    }
-
-    this.datasetService.createDataset(ds, initialVersionName, files)
+    this.datasetService.createDataset(ds, initialVersionName, this.filesToBeUploaded)
       .pipe(untilDestroyed(this))
       .subscribe({
         next: value => {
