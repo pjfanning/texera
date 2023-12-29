@@ -110,8 +110,7 @@ export class DatasetService {
     return this.http
       .get<{ hierarchy: DatasetVersionFileTree }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${dvid}/hierarchy`)
       .pipe(
-        map(response => response.hierarchy),
-        map(parseFileTreeToNodes)  // Convert the DatasetVersionHierarchy to DatasetVersionHierarchyNode[]
+        map(response => parseFileTreeToNodes(response.hierarchy))
       );
   }
 

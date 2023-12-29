@@ -15,7 +15,7 @@ export interface DatasetVersionFileTreeNode {
   name: string;
   type: 'file' | 'directory';
   children?: DatasetVersionFileTreeNode[]; // Only populated if 'type' is 'directory'
-  dir: string;
+  parentDir: string;
 }
 
 export interface FileSizeLimits {
@@ -23,25 +23,25 @@ export interface FileSizeLimits {
 }
 
 
-export function parseFileTreeToNodes(hierarchy: DatasetVersionFileTree): DatasetVersionFileTreeNode[] {
+export function parseFileTreeToNodes(hierarchy: DatasetVersionFileTree, parentDir: string = "/"): DatasetVersionFileTreeNode[] {
   const isDirectory = (node: DatasetVersionFileTree | string): node is DatasetVersionFileTree => {
     return typeof node === 'object' && node !== null && !(node instanceof Array);
   };
 
-  const parseHierarchyToNode = (h: DatasetVersionFileTree | string, nodeName: string, dir: string): DatasetVersionFileTreeNode => {
-    if (isDirectory(h)) {
-      let path = dir + "/" + nodeName;
+  const parseHierarchyToNode = (node: DatasetVersionFileTree | string, nodeName: string, currentDir: string): DatasetVersionFileTreeNode => {
+    if (isDirectory(node)) {
+      let dir = currentDir === "/" ? `/${nodeName}` : `${currentDir}/${nodeName}`;
       return {
         name: nodeName,
         type: "directory",
-        children: Object.keys(h).map(key => parseHierarchyToNode(h[key], key, path)),
-        dir: ""
+        children: Object.keys(node).map(key => parseHierarchyToNode(node[key], key, dir)),
+        parentDir: currentDir
       };
     } else {
       return {
         name: nodeName,
         type: "file",
-        dir: dir
+        parentDir: currentDir
       };
     }
   };
@@ -50,6 +50,7 @@ export function parseFileTreeToNodes(hierarchy: DatasetVersionFileTree): Dataset
     throw new Error('The provided hierarchy is not a valid directory structure.');
   }
 
-  return Object.keys(hierarchy).map(key => parseHierarchyToNode(hierarchy[key], key, ""));
+  return Object.keys(hierarchy).map(key => parseHierarchyToNode(hierarchy[key], key, parentDir));
 }
+
 

@@ -78,10 +78,10 @@ export class UserDatasetViewComponent implements OnInit {
       });
   }
 
-  loadFileContent(file: string, prefix: string) {
-    let path = file;
-    if (prefix !== "") {
-      path = prefix + "/" + file;
+  loadFileContent(fileName: string, parentDir: string) {
+    let path = fileName;
+    if (parentDir !== "") {
+      path = parentDir + "/" + fileName;
     }
     this.currentDisplayedFileName = path;
   }
@@ -109,7 +109,7 @@ export class UserDatasetViewComponent implements OnInit {
             currentNode = currentNode.children[0];
           }
           console.log(currentNode)
-          this.loadFileContent(currentNode.name, currentNode.dir);
+          this.loadFileContent(currentNode.name, currentNode.parentDir);
         })
   }
 
