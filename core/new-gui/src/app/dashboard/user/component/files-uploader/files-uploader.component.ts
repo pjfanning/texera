@@ -1,7 +1,7 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {FileUploadItem} from "../../type/dashboard-file.interface";
 import {NgxFileDropEntry} from "ngx-file-drop";
-import {DatasetVersionHierarchyNode} from "../../../../common/type/datasetVersion";
+import {DatasetVersionFileTreeNode} from "../../../../common/type/datasetVersion";
 import {UserFileUploadService} from "../../service/user-file/user-file-upload.service";
 
 @Component({
@@ -11,7 +11,7 @@ import {UserFileUploadService} from "../../service/user-file/user-file-upload.se
 })
 export class FilesUploaderComponent {
     @Input()
-    public previouslyUploadFiles: DatasetVersionHierarchyNode[] = [];
+    public previouslyUploadFiles: DatasetVersionFileTreeNode[] = [];
 
     @Output()
     uploadedFiles = new EventEmitter<FileUploadItem[]>();

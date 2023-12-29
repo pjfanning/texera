@@ -26,7 +26,7 @@
               nz-button
               *ngIf="!isMaximized"
               nz-tooltip="Maximize View"
-              (click)="clickToMaximizeMinimize()">
+              (click)="onClickScaleTheView()">
               <i
                 nz-icon
                 nzTheme="outline"
@@ -37,7 +37,7 @@
               nz-button
               *ngIf="isMaximized"
               nz-tooltip="Minimize View"
-              (click)="clickToMaximizeMinimize()">
+              (click)="onClickScaleTheView()">
               <i
                 nz-icon
                 nzTheme="outline"
@@ -45,10 +45,10 @@
               </i>
             </button>
             <button
-              *ngIf="!isSiderCollapsed"
+              *ngIf="!isRightBarCollapsed"
               nz-button
               nz-tooltip="Hide Tree"
-              (click)="clickToHideShowTree()">
+              (click)="onClickHideRightBar()">
               <i
                 nz-icon
                 nzTheme="outline"
@@ -56,10 +56,10 @@
               </i>
             </button>
             <button
-              *ngIf="isSiderCollapsed"
+              *ngIf="isRightBarCollapsed"
               nz-button
               nz-tooltip="Show Tree"
-              (click)="clickToHideShowTree()">
+              (click)="onClickHideRightBar()">
               <i
                 nz-icon
                 nzTheme="outline"
@@ -77,14 +77,14 @@
       >
       </texera-user-dataset-file-renderer>
     </nz-content>
-  <nz-sider *ngIf="!isSiderCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
+  <nz-sider *ngIf="!isRightBarCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
       <div class="file-list-title">
         <h5>Data Explorer</h5>
       </div>
       <div class="version-storage">
         <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
-        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" ngModel="{{selectedVersion}}">
-          <nz-option *ngFor="let version of versions" [nzValue]="version.name" [nzLabel]="version.name"></nz-option>
+        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" [(ngModel)]="selectedVersion">
+          <nz-option *ngFor="let version of versions" [nzValue]="version" [nzLabel]="version.name"></nz-option>
         </nz-select>
       </div>
       <div>

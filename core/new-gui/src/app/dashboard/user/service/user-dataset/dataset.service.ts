@@ -7,7 +7,7 @@ import {AppSettings} from "../../../../common/app-setting";
 import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
-import {DatasetVersion, DatasetVersionHierarchy, DatasetVersionHierarchyNode, parseHierarchyToNodes} from "../../../../common/type/datasetVersion";
+import {DatasetVersion, DatasetVersionFileTree, DatasetVersionFileTreeNode, parseFileTreeToNodes} from "../../../../common/type/datasetVersion";
 import {FileUploadItem} from "../../type/dashboard-file.interface";
 
 
@@ -92,10 +92,10 @@ export class DatasetService {
      */
     public retrieveDatasetLatestVersion(did: number): Observable<DatasetVersion> {
         return this.http
-            .get<{datasetVersion: DatasetVersion, hierarchy: DatasetVersionHierarchy}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_LATEST_URL}`)
+            .get<{datasetVersion: DatasetVersion, hierarchy: DatasetVersionFileTree}>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_LATEST_URL}`)
             .pipe(
                 map(response => {
-                  response.datasetVersion.versionHierarchyRoot = parseHierarchyToNodes(response.hierarchy);
+                  response.datasetVersion.versionFileTreeNodes = parseFileTreeToNodes(response.hierarchy);
                   return response.datasetVersion;
                 })
             )
@@ -106,12 +106,12 @@ export class DatasetService {
    * @param did
    * @param dvid
    */
-  public retrieveDatasetVersionFileHierarchy(did: number, dvid: number): Observable<DatasetVersionHierarchyNode[]> {
+  public retrieveDatasetVersionFileHierarchy(did: number, dvid: number): Observable<DatasetVersionFileTreeNode[]> {
     return this.http
-      .get<{ hierarchy: DatasetVersionHierarchy }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${dvid}/hierarchy`)
+      .get<{ hierarchy: DatasetVersionFileTree }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${dvid}/hierarchy`)
       .pipe(
         map(response => response.hierarchy),
-        map(parseHierarchyToNodes)  // Convert the DatasetVersionHierarchy to DatasetVersionHierarchyNode[]
+        map(parseFileTreeToNodes)  // Convert the DatasetVersionHierarchy to DatasetVersionHierarchyNode[]
       );
   }
 

@@ -4,17 +4,17 @@ export interface DatasetVersion {
   name: string;
   versionHash: string | undefined;
   creationTime: number | undefined;
-  versionHierarchyRoot: DatasetVersionHierarchyNode[] | undefined;
+  versionFileTreeNodes: DatasetVersionFileTreeNode[] | undefined;
 }
 
-export interface DatasetVersionHierarchy {
-  [key: string] : DatasetVersionHierarchy | string
+export interface DatasetVersionFileTree {
+  [key: string] : DatasetVersionFileTree | string
 }
 
-export interface DatasetVersionHierarchyNode {
+export interface DatasetVersionFileTreeNode {
   name: string;
   type: 'file' | 'directory';
-  children?: DatasetVersionHierarchyNode[]; // Only populated if 'type' is 'directory'
+  children?: DatasetVersionFileTreeNode[]; // Only populated if 'type' is 'directory'
   dir: string;
 }
 
@@ -23,12 +23,12 @@ export interface FileSizeLimits {
 }
 
 
-export function parseHierarchyToNodes(hierarchy: DatasetVersionHierarchy): DatasetVersionHierarchyNode[] {
-  const isDirectory = (node: DatasetVersionHierarchy | string): node is DatasetVersionHierarchy => {
+export function parseFileTreeToNodes(hierarchy: DatasetVersionFileTree): DatasetVersionFileTreeNode[] {
+  const isDirectory = (node: DatasetVersionFileTree | string): node is DatasetVersionFileTree => {
     return typeof node === 'object' && node !== null && !(node instanceof Array);
   };
 
-  const parseHierarchyToNode = (h: DatasetVersionHierarchy | string, nodeName: string, dir: string): DatasetVersionHierarchyNode => {
+  const parseHierarchyToNode = (h: DatasetVersionFileTree | string, nodeName: string, dir: string): DatasetVersionFileTreeNode => {
     if (isDirectory(h)) {
       let path = dir + "/" + nodeName;
       return {

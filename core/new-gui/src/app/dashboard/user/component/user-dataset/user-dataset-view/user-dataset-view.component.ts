@@ -4,7 +4,7 @@ import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {NgbdModelDatasetVersionAddComponent} from "../ngbd-model-dataset-version-add/ngbd-model-dataset-version-add.component";
-import {DatasetVersion, DatasetVersionHierarchyNode} from "src/app/common/type/datasetVersion";
+import {DatasetVersion, DatasetVersionFileTreeNode} from "src/app/common/type/datasetVersion";
 import {TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode} from '@circlon/angular-tree-component';
 import {FileSizeLimits} from "src/app/common/type/datasetVersion";
 
@@ -25,12 +25,12 @@ export class UserDatasetViewComponent implements OnInit {
 
   public currentDisplayedFileName: string = "";
 
-  public isSiderCollapsed = false;
+  public isRightBarCollapsed = false;
   public isMaximized = false;
 
   public versions: ReadonlyArray<DatasetVersion> = [];
   public selectedVersion: DatasetVersion | undefined;
-  public dataNodeList: DatasetVersionHierarchyNode[] = [];
+  public dataNodeList: DatasetVersionFileTreeNode[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -71,6 +71,8 @@ export class UserDatasetViewComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(versionNames => {
         this.versions = versionNames;
+        // by default, the selected version is the 1st element in the retrieved list
+        // which is guaranteed(by the backend) to be the latest created version.
         this.selectedVersion = this.versions[0];
         this.onVersionSelected(this.selectedVersion);
       });
@@ -84,23 +86,24 @@ export class UserDatasetViewComponent implements OnInit {
     this.currentDisplayedFileName = path;
   }
 
-  clickToMaximizeMinimize() {
+  onClickScaleTheView() {
     this.isMaximized = !this.isMaximized;
   }
 
-  clickToHideShowTree() {
-    this.isSiderCollapsed = !this.isSiderCollapsed;
+  onClickHideRightBar() {
+    this.isRightBarCollapsed = !this.isRightBarCollapsed;
   }
 
   onVersionSelected(version: DatasetVersion): void {
     this.selectedVersion = version;
-
+    console.log(this.selectedVersion.dvid)
     if (this.selectedVersion.dvid)
       this.datasetService
         .retrieveDatasetVersionFileHierarchy(this.did, this.selectedVersion.dvid)
         .pipe(untilDestroyed(this))
         .subscribe(dataNodeList => {
           this.dataNodeList = dataNodeList;
+          console.log(this.dataNodeList)
           let currentNode = this.dataNodeList[0];
           while (currentNode.type === "directory" && currentNode.children) {
             currentNode = currentNode.children[0];

@@ -3,13 +3,41 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao, DatasetVersionDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetOfUserDao,
+  DatasetVersionDao
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetOfUser,
+  DatasetVersion
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetVersionHierarchy, DatasetIDs, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, UserHasNoAccessToDatasetException}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DashboardDataset,
+  DashboardDatasetVersion,
+  DatasetVersionHierarchy,
+  DatasetIDs,
+  DatasetVersions,
+  OWN,
+  PUBLIC,
+  READ,
+  context,
+  getAccessLevel,
+  getDatasetByID,
+  getDatasetVersionByID,
+  getUserAccessLevelOfDataset,
+  persistNewVersion,
+  userAllowedToReadDataset,
+  withExceptionHandling
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
+  DatasetVersionNotFoundException,
+  UserHasNoAccessToDatasetException
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -22,7 +50,17 @@ import java.util
 import java.util.concurrent.locks.ReentrantLock
 import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  BadRequestException,
+  Consumes,
+  GET,
+  InternalServerErrorException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
@@ -203,7 +241,10 @@ object DatasetResource {
 
   case class DatasetVersions(versions: List[DatasetVersion])
 
-  case class DashboardDatasetVersion(datasetVersion: DatasetVersion, hierarchy: util.Map[String, AnyRef])
+  case class DashboardDatasetVersion(
+      datasetVersion: DatasetVersion,
+      hierarchy: util.Map[String, AnyRef]
+  )
 
   case class DatasetIDs(dids: List[UInteger])
 }
@@ -234,7 +275,6 @@ class DatasetResource {
         dataset.setName(datasetName)
         dataset.setDescription(datasetDescription)
         dataset.setIsPublic(isDatasetPublic.toByte)
-
 
         val createdDataset = ctx
           .insertInto(DATASET) // Assuming DATASET is the table reference
@@ -405,7 +445,9 @@ class DatasetResource {
         val latestVersion: DatasetVersion = ctx
           .selectFrom(DATASET_VERSION)
           .where(DATASET_VERSION.DID.eq(did))
-          .orderBy(DATASET_VERSION.CREATION_TIME.desc()) // Assuming latest version is the one with the most recent creation time
+          .orderBy(
+            DATASET_VERSION.CREATION_TIME.desc()
+          ) // Assuming latest version is the one with the most recent creation time
           .limit(1) // Limit to only one result
           .fetchOneInto(classOf[DatasetVersion])
 
@@ -449,12 +491,12 @@ class DatasetResource {
 
   @GET
   @Path("/{did}/version/{dvid}/file")
-  def inspectDatasetSingleFile(
-                                @PathParam("did") did: UInteger,
-                                @PathParam("dvid") dvid: UInteger,
-                                @QueryParam("path") path: String,
-                                @Auth user: SessionUser
-                              ): Response = {
+  def retrieveDatasetSingleFile(
+      @PathParam("did") did: UInteger,
+      @PathParam("dvid") dvid: UInteger,
+      @QueryParam("path") path: String,
+      @Auth user: SessionUser
+  ): Response = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
@@ -477,18 +519,18 @@ class DatasetResource {
 
         val contentType = path.split("\\.").lastOption match {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
-          case Some("png") => "image/png"
-          case Some("csv") => "text/csv"
-          case Some("txt") => "text/plain"
+          case Some("png")                => "image/png"
+          case Some("csv")                => "text/csv"
+          case Some("txt")                => "text/plain"
           case Some("html") | Some("htm") => "text/html"
-          case Some("json") => "application/json"
-          case Some("pdf") => "application/pdf"
+          case Some("json")               => "application/json"
+          case Some("pdf")                => "application/pdf"
           case Some("doc") | Some("docx") => "application/msword"
           case Some("xls") | Some("xlsx") => "application/vnd.ms-excel"
           case Some("ppt") | Some("pptx") => "application/vnd.ms-powerpoint"
-          case Some("mp4") => "video/mp4"
-          case Some("mp3") => "audio/mpeg"
-          case _ => "application/octet-stream" // default binary format
+          case Some("mp4")                => "video/mp4"
+          case Some("mp3")                => "audio/mpeg"
+          case _                          => "application/octet-stream" // default binary format
         }
 
         Response.ok(streamingOutput).`type`(contentType).build()
