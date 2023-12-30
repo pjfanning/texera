@@ -3,41 +3,13 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  DatasetDao,
-  DatasetOfUserDao,
-  DatasetVersionDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
-  Dataset,
-  DatasetOfUser,
-  DatasetVersion
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao, DatasetVersionDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DashboardDataset,
-  DashboardDatasetVersion,
-  DatasetVersionHierarchy,
-  DatasetIDs,
-  DatasetVersions,
-  OWN,
-  PUBLIC,
-  READ,
-  context,
-  getAccessLevel,
-  getDatasetByID,
-  getDatasetVersionByID,
-  getUserAccessLevelOfDataset,
-  persistNewVersion,
-  userAllowedToReadDataset,
-  withExceptionHandling
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
-  DatasetVersionNotFoundException,
-  UserHasNoAccessToDatasetException
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionHierarchy, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -46,21 +18,13 @@ import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
 import java.io.{InputStream, OutputStream}
+import java.net.{URLDecoder, URLEncoder}
+import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  BadRequestException,
-  Consumes,
-  GET,
-  InternalServerErrorException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
@@ -462,7 +426,7 @@ class DatasetResource {
 
   @GET
   @Path("/{did}/version/{dvid}/hierarchy")
-  def retrieveDatasetVersionFileHierarchy(
+  def retrieveDatasetVersionFileTree(
       @PathParam("did") did: UInteger,
       @PathParam("dvid") dvid: UInteger,
       @Auth user: SessionUser
@@ -503,6 +467,8 @@ class DatasetResource {
         if (!userAllowedToReadDataset(ctx, did, uid)) {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
+        val decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8.name()).stripPrefix("/")
+
         val targetDataset = getDatasetByID(ctx, did)
         val targetDatasetStoragePath = targetDataset.getStoragePath
 
@@ -513,11 +479,11 @@ class DatasetResource {
 
         val streamingOutput = new StreamingOutput() {
           override def write(output: OutputStream): Unit = {
-            gitVersionControl.retrieveFileContentOfVersion(versionCommitHash, path, output)
+            gitVersionControl.retrieveFileContentOfVersion(versionCommitHash, decodedPath, output)
           }
         }
 
-        val contentType = path.split("\\.").lastOption match {
+        val contentType = decodedPath.split("\\.").lastOption match {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
           case Some("png")                => "image/png"
           case Some("csv")                => "text/csv"

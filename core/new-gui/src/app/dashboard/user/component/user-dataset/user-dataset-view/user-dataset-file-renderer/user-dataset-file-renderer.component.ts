@@ -62,7 +62,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
         if (this.did && this.dvid && this.filePath != "") {
             console.log("enter the block")
             this.datasetService
-                .inspectDatasetSingleFile(this.did, this.dvid, this.filePath)
+                .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
                 .pipe()
                 .subscribe(blob => {
                     this.isLoading = true;

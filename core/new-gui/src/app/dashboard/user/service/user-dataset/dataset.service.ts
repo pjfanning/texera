@@ -9,6 +9,7 @@ import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-p
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
 import {DatasetVersion, DatasetVersionFileTree, DatasetVersionFileTreeNode, parseFileTreeToNodes} from "../../../../common/type/datasetVersion";
 import {FileUploadItem} from "../../type/dashboard-file.interface";
+import {UserFileUploadService} from "../user-file/user-file-upload.service";
 
 
 export const DATASET_BASE_URL = "dataset";
@@ -36,7 +37,8 @@ export class DatasetService {
     formData.append('initialVersionName', initialVersionName);
 
     filesToBeUploaded.forEach(file => {
-      formData.append(`file:upload:${file.name}`, file.file);
+      const sanitizedFilePath = UserFileUploadService.sanitizeFilePath(file.name)
+      formData.append(`file:upload:${sanitizedFilePath}`, file.file);
     });
 
     return this.http
@@ -50,15 +52,17 @@ export class DatasetService {
     );
   }
 
-  public inspectDatasetSingleFile(did: number, dvid: number, path: string): Observable<Blob> {
-    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${dvid}/file?path=${path}`, {responseType: 'blob'});
+  public retrieveDatasetVersionSingleFile(did: number, dvid: number, path: string): Observable<Blob> {
+    const encodedPath = encodeURIComponent(path);
+    return this.http.get(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/${dvid}/file?path=${encodedPath}`, { responseType: 'blob' });
   }
+
 
   public createDatasetVersion(
     did: number,
     newVersion: string,
     removedFilePaths: string[],
-    files: FileUploadItem[]
+    filesToBeUploaded: FileUploadItem[]
   ): Observable<any> {
     const formData = new FormData();
     formData.append('versionName', newVersion);
@@ -68,9 +72,11 @@ export class DatasetService {
       formData.append('file:remove', removedFilesString);
     }
 
-    files.forEach(file => {
-      formData.append(`file:upload:${file.name}`, file.file);
+    filesToBeUploaded.forEach(file => {
+      const sanitizedFilePath = UserFileUploadService.sanitizeFilePath(file.name)
+      formData.append(`file:upload:${sanitizedFilePath}`, file.file);
     });
+
     return this.http.post(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/version/create`, formData);
   }
 
@@ -106,7 +112,7 @@ export class DatasetService {
    * @param did
    * @param dvid
    */
-  public retrieveDatasetVersionFileHierarchy(did: number, dvid: number): Observable<DatasetVersionFileTreeNode[]> {
+  public retrieveDatasetVersionFileTree(did: number, dvid: number): Observable<DatasetVersionFileTreeNode[]> {
     return this.http
       .get<{ hierarchy: DatasetVersionFileTree }>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}/${DATASET_VERSION_BASE_URL}/${dvid}/hierarchy`)
       .pipe(

@@ -79,10 +79,7 @@ export class UserDatasetViewComponent implements OnInit {
   }
 
   loadFileContent(fileName: string, parentDir: string) {
-    let path = fileName;
-    if (parentDir !== "") {
-      path = parentDir + "/" + fileName;
-    }
+    let path = parentDir + fileName;
     this.currentDisplayedFileName = path;
   }
 
@@ -99,7 +96,7 @@ export class UserDatasetViewComponent implements OnInit {
     console.log(this.selectedVersion.dvid)
     if (this.selectedVersion.dvid)
       this.datasetService
-        .retrieveDatasetVersionFileHierarchy(this.did, this.selectedVersion.dvid)
+        .retrieveDatasetVersionFileTree(this.did, this.selectedVersion.dvid)
         .pipe(untilDestroyed(this))
         .subscribe(dataNodeList => {
           this.dataNodeList = dataNodeList;
@@ -137,7 +134,7 @@ export class UserDatasetViewComponent implements OnInit {
           if (node.hasChildren) {
             TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event);
           } else {
-            this.loadFileContent(node.data.name, node.data.dir);
+            this.loadFileContent(node.data.name, node.data.parentDir);
           }
         }
       }

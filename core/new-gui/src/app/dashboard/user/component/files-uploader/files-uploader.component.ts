@@ -35,7 +35,6 @@ export class FilesUploaderComponent {
                 // It was a directory (empty directories are added, otherwise only files)
                 const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
                 console.log(droppedFile.relativePath, fileEntry);
-                console.log("empty directory found")
             }
         }
     }
