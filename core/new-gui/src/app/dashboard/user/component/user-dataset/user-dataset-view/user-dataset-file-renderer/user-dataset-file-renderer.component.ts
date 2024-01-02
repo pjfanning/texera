@@ -3,6 +3,7 @@ import {DatasetService} from "../../../../service/user-dataset/dataset.service";
 import {untilDestroyed} from "@ngneat/until-destroy";
 import * as Papa from 'papaparse';
 import {ParseResult} from "papaparse";
+import {DomSanitizer, SafeUrl} from "@angular/platform-browser";
 
 export const MIME_TYPES = {
   JPEG: 'image/jpeg',
@@ -44,18 +45,23 @@ export const MIME_TYPE_SIZE_LIMITS_MB = {
 export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
-  public fileURL: string = "";
+  public fileURL: string | undefined;
 
   // pdf related control
   public displayPdf: boolean = false;
 
   // csv related control
   public displayCSV: boolean = false;
-  public csvTitle: any[] = [];
-  public csvContent: any[] = [];
+  public csvHeader: any[] = [];
+  public csvContent: any[][] = [];
 
   // image related control
   public displayImage: boolean = false;
+  public imageFileURL: SafeUrl | undefined;
+
+  // plain text & octet stream related control
+  public displayPlainText: boolean = false;
+  public textContent: string = "";
 
   public isLoading: boolean = false;
   public isFileSizeLoadable = true;
@@ -80,6 +86,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
 
   constructor(
     private datasetService: DatasetService,
+    private sanitizer: DomSanitizer
   ) {
   }
 
@@ -101,9 +108,9 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     }
   }
 
-
   reloadFileContent() {
-    console.log(this.did, this.dvid, this.filePath);
+    this.turnOffAllDisplay();
+
     if (this.did && this.dvid && this.filePath != "") {
       this.datasetService
         .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
@@ -117,39 +124,71 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
               return;
             }
             this.currentFile = new File([blob], this.filePath, {type: blob.type});
-            this.turnOffAllDisplay();
-
             // Handle different file types
+            console.log(blob.type)
             switch (blob.type) {
               case MIME_TYPES.PNG:
               case MIME_TYPES.JPEG:
                 // Handle image display
-                this.fileURL = URL.createObjectURL(blob);
+                console.log("display image")
+                this.imageFileURL = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
                 this.displayImage = true;
                 break;
               case MIME_TYPES.CSV:
                 this.displayCSV = true;
                 // Handle CSV display
                 Papa.parse(this.currentFile, {
-                  complete: (results) => {
+                  complete: (results: ParseResult<any>) => {
                     console.log('File Parsed: ', results.data);
+
+                    if (results.data.length > 0) {
+                      // Extract the header (first row)
+                      this.csvHeader = results.data[0];
+
+                      // Process the rest of the rows
+                      this.csvContent = results.data.slice(1).map(row => {
+                        // Normalize the row length to match the header length
+                        while (row.length < this.csvHeader.length) {
+                          row.push('');
+                        }
+                        return row;
+                      }).filter(row => {
+                        // filter out all empty row
+                        let areCellAllEmpty = true;
+                        for (const cell in row) {
+                          if (cell != '') {
+                            areCellAllEmpty = false;
+                            break;
+                          }
+                        }
+                        return !areCellAllEmpty
+                      });
+                    }
                   },
                   error: (error) => {
                     console.error('Error parsing file:', error);
+                    this.onFileLoadingError();
                   }
                 });
                 break;
               case MIME_TYPES.PDF:
                 // Handle PDF display
                 console.log("display pdf")
+                this.fileURL = URL.createObjectURL(blob);
                 setTimeout(() => {
                   this.displayPdf = true;
                   this.isLoading = false;
                 }, 0);
                 break;
-              // Add more cases as needed for different file types
+              case MIME_TYPES.OCTET_STREAM:
+              case MIME_TYPES.TXT:
               default:
-                // Handle unknown file type or default behavior
+                this.displayPlainText = true;
+                const reader = new FileReader();
+                reader.onload = (event: any) => {
+                  this.textContent = event.target.result;
+                };
+                reader.readAsText(blob);
                 break;
             }
 
@@ -157,9 +196,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
           }
           , error => {
             console.error("Error fetching file:", error);
-            this.isLoading = false;
             this.onFileLoadingError()
-            // Handle error
           }
         );
     }
@@ -169,6 +206,15 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   turnOffAllDisplay() {
     this.displayPdf = false;
     this.displayCSV = false;
+    this.displayImage = false;
+    this.displayPlainText = false;
+    // garbage collection
+    if (this.fileURL) {
+      URL.revokeObjectURL(this.fileURL)
+    }
+    if (this.imageFileURL) {
+      URL.revokeObjectURL(this.imageFileURL.toString())
+    }
   }
 
   onFileLoadingError() {

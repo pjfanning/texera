@@ -75,8 +75,11 @@ export class UserDatasetViewComponent implements OnInit {
   }
 
   loadFileContent(fileName: string, parentDir: string) {
-    let path = parentDir + "/" +fileName;
-    this.currentDisplayedFileName = path;
+    if (parentDir == "/") {
+      this.currentDisplayedFileName = parentDir + fileName;
+    } else {
+      this.currentDisplayedFileName = parentDir + "/" +fileName;
+    }
   }
 
   onClickScaleTheView() {

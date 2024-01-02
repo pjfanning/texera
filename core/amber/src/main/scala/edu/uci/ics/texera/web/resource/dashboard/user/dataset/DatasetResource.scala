@@ -483,7 +483,7 @@ class DatasetResource {
           }
         }
 
-        val contentType = decodedPath.split("\\.").lastOption match {
+        val contentType = decodedPath.split("\\.").lastOption.map(_.toLowerCase) match {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
           case Some("png")                => "image/png"
           case Some("csv")                => "text/csv"

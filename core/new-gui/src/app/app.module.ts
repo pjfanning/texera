@@ -146,6 +146,7 @@ import { NzResizableModule } from "ng-zorro-antd/resizable";
 import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-file-renderer/user-dataset-file-renderer.component";
 import {FilesUploaderComponent} from "./dashboard/user/component/files-uploader/files-uploader.component";
 import { NgxFileDropModule } from 'ngx-file-drop';
+import {NzDividerModule} from "ng-zorro-antd/divider";
 
 registerLocaleData(en);
 
@@ -287,6 +288,7 @@ registerLocaleData(en);
     NzAvatarModule,
     DynamicModule,
     MonacoEditorModule.forRoot(),
+    NzDividerModule,
     NzTabsModule,
     NzTreeViewModule,
     NzPaginationModule,
