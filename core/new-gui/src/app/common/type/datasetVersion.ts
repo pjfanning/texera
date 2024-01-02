@@ -17,12 +17,6 @@ export interface DatasetVersionFileTreeNode {
   children?: DatasetVersionFileTreeNode[]; // Only populated if 'type' is 'directory'
   parentDir: string;
 }
-
-export interface FileSizeLimits {
- [key: string]: number;
-}
-
-
 export function parseFileTreeToNodes(hierarchy: DatasetVersionFileTree, parentDir: string = "/"): DatasetVersionFileTreeNode[] {
   const isDirectory = (node: DatasetVersionFileTree | string): node is DatasetVersionFileTree => {
     return typeof node === 'object' && node !== null && !(node instanceof Array);

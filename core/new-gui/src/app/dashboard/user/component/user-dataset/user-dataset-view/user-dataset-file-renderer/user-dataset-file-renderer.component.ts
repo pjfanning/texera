@@ -1,110 +1,183 @@
 import {Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges} from '@angular/core';
 import {DatasetService} from "../../../../service/user-dataset/dataset.service";
 import {untilDestroyed} from "@ngneat/until-destroy";
-import {FileSizeLimits} from "../../../../../../common/type/datasetVersion";
+import * as Papa from 'papaparse';
+import {ParseResult} from "papaparse";
 
+export const MIME_TYPES = {
+  JPEG: 'image/jpeg',
+  PNG: 'image/png',
+  CSV: 'text/csv',
+  TXT: 'text/plain',
+  HTML: 'text/html',
+  JSON: 'application/json',
+  PDF: 'application/pdf',
+  MSWORD: 'application/msword',
+  MSEXCEL: 'application/vnd.ms-excel',
+  MSPOWERPOINT: 'application/vnd.ms-powerpoint',
+  MP4: 'video/mp4',
+  MP3: 'audio/mpeg',
+  OCTET_STREAM: 'application/octet-stream' // Default binary format
+};
+
+export const MIME_TYPE_SIZE_LIMITS_MB = {
+  [MIME_TYPES.JPEG]: 5 * 1024 * 1024,  // 5 MB
+  [MIME_TYPES.PNG]: 5 * 1024 * 1024,   // 5 MB
+  [MIME_TYPES.CSV]: 2 * 1024 * 1024,   // 2 MB for text-based data files
+  [MIME_TYPES.TXT]: 1 * 1024 * 1024,   // 1 MB for plain text files
+  [MIME_TYPES.HTML]: 1 * 1024 * 1024,  // 1 MB for HTML files
+  [MIME_TYPES.JSON]: 1 * 1024 * 1024,  // 1 MB for JSON files
+  [MIME_TYPES.PDF]: 10 * 1024 * 1024,  // 10 MB for PDF documents
+  [MIME_TYPES.MSWORD]: 10 * 1024 * 1024,  // 10 MB for Word documents
+  [MIME_TYPES.MSEXCEL]: 10 * 1024 * 1024,  // 10 MB for Excel spreadsheets
+  [MIME_TYPES.MSPOWERPOINT]: 10 * 1024 * 1024,  // 10 MB for PowerPoint presentations
+  [MIME_TYPES.MP4]: 50 * 1024 * 1024,  // 50 MB for MP4 videos
+  [MIME_TYPES.MP3]: 10 * 1024 * 1024,  // 10 MB for MP3 audio files
+  [MIME_TYPES.OCTET_STREAM]: 5 * 1024 * 1024  // Default size for other binary formats
+};
 
 @Component({
-    selector: 'texera-user-dataset-file-renderer',
-    templateUrl: './user-dataset-file-renderer.component.html',
-    styleUrls: ['./user-dataset-file-renderer.component.scss']
+  selector: 'texera-user-dataset-file-renderer',
+  templateUrl: './user-dataset-file-renderer.component.html',
+  styleUrls: ['./user-dataset-file-renderer.component.scss']
 })
 export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
-    private FILE_SIZE_LIMITS: FileSizeLimits = {
-        ".pdf": 15 * 1024 * 1024, // 15 MB
-        ".csv": 2 * 1024 * 1024,    // 2 MB
-    };
-    private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+  private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
-    public fileURL: string = "";
-    public csvContent: any[] = [];
-    public pdfDisplay: boolean = false;
-    public csvDisplay: boolean = false;
-    public isLoading: boolean = false;
-    public isFileSizeLoadable = true;
-    public currentFileBlob: Blob | undefined = undefined;
-    public currentFileName: string = "";
+  public fileURL: string = "";
 
-    @Input()
-    isMaximized: boolean = false;
+  // pdf related control
+  public displayPdf: boolean = false;
 
-    @Input()
-    did: number | undefined;
+  // csv related control
+  public displayCSV: boolean = false;
+  public csvTitle: any[] = [];
+  public csvContent: any[] = [];
 
-    @Input()
-    dvid: number | undefined;
+  // image related control
+  public displayImage: boolean = false;
 
-    @Input()
-    filePath: string = "";
+  public isLoading: boolean = false;
+  public isFileSizeLoadable = true;
+  public currentFile: File | undefined = undefined;
 
-    @Output()
-    loadFile = new EventEmitter<{ file: string, prefix: string }>();
+  public isFileLoadingError: boolean = false;
 
-    constructor(
-        private datasetService: DatasetService,
-    ) {
+  @Input()
+  isMaximized: boolean = false;
+
+  @Input()
+  did: number | undefined;
+
+  @Input()
+  dvid: number | undefined;
+
+  @Input()
+  filePath: string = "";
+
+  @Output()
+  loadFile = new EventEmitter<{ file: string, prefix: string }>();
+
+  constructor(
+    private datasetService: DatasetService,
+  ) {
+  }
+
+  ngOnInit(): void {
+    console.log("init")
+    this.reloadFileContent()
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.did || changes.dvid || changes.filePath) {
+      console.log("on change")
+      this.reloadFileContent();
     }
+  }
 
-    ngOnInit(): void {
-        console.log("init")
-        this.reloadFileContent()
+  ngOnDestroy(): void {
+    if (this.fileURL) {
+      URL.revokeObjectURL(this.fileURL);
     }
+  }
 
-    ngOnChanges(changes: SimpleChanges): void {
-        if (changes.did || changes.dvid || changes.filePath) {
-            console.log("on change")
-            this.reloadFileContent();
-        }
+
+  reloadFileContent() {
+    console.log(this.did, this.dvid, this.filePath);
+    if (this.did && this.dvid && this.filePath != "") {
+      this.datasetService
+        .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
+        .pipe()
+        .subscribe(blob => {
+            this.isLoading = true;
+            const MaxSize = MIME_TYPE_SIZE_LIMITS_MB[blob.type] || this.DEFAULT_MAX_SIZE;
+            const fileSize = blob.size;
+            if (fileSize > MaxSize) {
+              this.onFileSizeNotLoadable()
+              return;
+            }
+            this.currentFile = new File([blob], this.filePath, {type: blob.type});
+            this.turnOffAllDisplay();
+
+            // Handle different file types
+            switch (blob.type) {
+              case MIME_TYPES.PNG:
+              case MIME_TYPES.JPEG:
+                // Handle image display
+                this.fileURL = URL.createObjectURL(blob);
+                this.displayImage = true;
+                break;
+              case MIME_TYPES.CSV:
+                this.displayCSV = true;
+                // Handle CSV display
+                Papa.parse(this.currentFile, {
+                  complete: (results) => {
+                    console.log('File Parsed: ', results.data);
+                  },
+                  error: (error) => {
+                    console.error('Error parsing file:', error);
+                  }
+                });
+                break;
+              case MIME_TYPES.PDF:
+                // Handle PDF display
+                console.log("display pdf")
+                setTimeout(() => {
+                  this.displayPdf = true;
+                  this.isLoading = false;
+                }, 0);
+                break;
+              // Add more cases as needed for different file types
+              default:
+                // Handle unknown file type or default behavior
+                break;
+            }
+
+            this.isLoading = false;
+          }
+          , error => {
+            console.error("Error fetching file:", error);
+            this.isLoading = false;
+            this.onFileLoadingError()
+            // Handle error
+          }
+        );
     }
+  }
 
-    reloadFileContent() {
-        console.log(this.did, this.dvid, this.filePath)
-        if (this.did && this.dvid && this.filePath != "") {
-            console.log("enter the block")
-            this.datasetService
-                .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
-                .pipe()
-                .subscribe(blob => {
-                    this.isLoading = true;
-                    this.currentFileBlob = new File([blob], this.filePath, {type: blob.type});
-                    this.fileURL = URL.createObjectURL(blob);
-                    console.log("file receive: ", this.fileURL)
 
-                    const lastDotIndex = this.filePath.lastIndexOf('.');
-                    const fileExtension = lastDotIndex !== -1 ? this.filePath.slice(lastDotIndex) : '';
-                    const MaxSize = this.FILE_SIZE_LIMITS[fileExtension] || this.DEFAULT_MAX_SIZE;
+  turnOffAllDisplay() {
+    this.displayPdf = false;
+    this.displayCSV = false;
+  }
 
-                    const fileSize = blob.size
+  onFileLoadingError() {
+    this.isLoading = false;
+    this.isFileLoadingError = true
+  }
 
-                    if (fileSize > MaxSize) {
-                        this.isFileSizeLoadable = false;
-                        return;
-                    }
-
-                    if (this.filePath.endsWith(".pdf")) {
-                        this.pdfDisplay = false;
-                        setTimeout(() => {
-                            this.pdfDisplay = true;
-                            this.isLoading = false;
-                        }, 0);
-                    } else if (this.filePath.endsWith(".csv")) {
-                        //   Papa.parse(this.currentFileObject, {
-                        //     complete: (results) => {
-                        //         this.csvContent = results.data;
-                        //         this.csvDisplay = true;
-                        //         this.isLoading = false;
-                        //     }
-                        // });
-                    } else {
-                        this.turnOffAllDisplay();
-                        this.isLoading = false;
-                    }
-                })
-        }
-    }
-
-    turnOffAllDisplay() {
-        this.pdfDisplay = false;
-        this.csvDisplay = false;
-    }
+  onFileSizeNotLoadable() {
+    this.isLoading = false;
+    this.isFileSizeLoadable = false;
+  }
 }

@@ -6,10 +6,6 @@ import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {NgbdModelDatasetVersionAddComponent} from "../ngbd-model-dataset-version-add/ngbd-model-dataset-version-add.component";
 import {DatasetVersion, DatasetVersionFileTreeNode} from "src/app/common/type/datasetVersion";
 import {TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode} from '@circlon/angular-tree-component';
-import {FileSizeLimits} from "src/app/common/type/datasetVersion";
-
-// import * as Papa from 'papaparse';
-
 
 @UntilDestroy()
 @Component({
@@ -79,7 +75,7 @@ export class UserDatasetViewComponent implements OnInit {
   }
 
   loadFileContent(fileName: string, parentDir: string) {
-    let path = parentDir + fileName;
+    let path = parentDir + "/" +fileName;
     this.currentDisplayedFileName = path;
   }
 

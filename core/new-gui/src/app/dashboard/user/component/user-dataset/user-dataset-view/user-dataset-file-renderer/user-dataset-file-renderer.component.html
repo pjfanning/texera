@@ -4,12 +4,18 @@
         <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
     </div>
     <ng2-pdfjs-viewer
-            *ngIf="pdfDisplay"
+            *ngIf="displayPdf"
             [pdfSrc]="fileURL"
     ></ng2-pdfjs-viewer>
-    <table *ngIf="csvDisplay" class="csv-table">
+    <table *ngIf="displayCSV" class="csv-table">
         <tr *ngFor="let row of csvContent">
             <td *ngFor="let cell of row">{{ cell }}</td>
         </tr>
     </table>
+    <div *ngIf="displayImage">
+      <img [src]="fileURL" alt="{{filePath}}" />
+    </div>
+    <div *ngIf="isFileLoadingError">
+      <h3>File loading encouters error</h3>
+    </div>
 </div>
