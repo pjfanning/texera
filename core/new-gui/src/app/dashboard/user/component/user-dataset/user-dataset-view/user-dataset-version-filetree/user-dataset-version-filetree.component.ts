@@ -17,7 +17,7 @@ export class UserDatasetVersionFiletreeComponent implements OnInit {
     public selectedTreeNode = new EventEmitter<DatasetVersionFileTreeNode>();
 
     public fileTreeDisplayOptions: ITreeOptions = {
-        displayField: 'name',
+        displayField: 'displayableName',
         hasChildrenField: 'children',
         actionMapping: {
             mouse: {

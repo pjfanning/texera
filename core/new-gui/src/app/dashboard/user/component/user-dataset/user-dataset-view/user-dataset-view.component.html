@@ -1,102 +1,117 @@
 <div *ngIf="!isMaximized">
-  <nz-card>
-    <h2 class="dataset-title">Dataset: {{datasetName}}</h2>
-    <nz-card-meta style="padding-top: 10px" nzDescription="Created at: {{datasetCreationTime}}"></nz-card-meta>
-    <nz-card-meta style="padding-top: 20px" nzDescription="{{datasetDescription}}"></nz-card-meta>
-  </nz-card>
+    <nz-card>
+        <h2 class="dataset-title">Dataset: {{datasetName}}</h2>
+        <nz-card-meta style="padding-top: 10px" nzDescription="Created at: {{datasetCreationTime}}"></nz-card-meta>
+        <nz-card-meta style="padding-top: 20px" nzDescription="{{datasetDescription}}"></nz-card-meta>
+    </nz-card>
 </div>
 <nz-layout>
     <nz-content style="background-color: white;">
-      <nz-card>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <h5 class="file-title"><b>{{currentDisplayedFileName}}</b></h5>
-          </div>
-          <div style="display: flex;">
-            <button
-              nz-button
-              nz-tooltip="Download the file">
-              <i
-                nz-icon
-                nzTheme="outline"
-                nzType="download">
-              </i>
-            </button>
-            <button
-              nz-button
-              *ngIf="!isMaximized"
-              nz-tooltip="Maximize View"
-              (click)="onClickScaleTheView()">
-              <i
-                nz-icon
-                nzTheme="outline"
-                nzType="expand">
-              </i>
-            </button>
-            <button
-              nz-button
-              *ngIf="isMaximized"
-              nz-tooltip="Minimize View"
-              (click)="onClickScaleTheView()">
-              <i
-                nz-icon
-                nzTheme="outline"
-                nzType="compress">
-              </i>
-            </button>
-            <button
-              *ngIf="!isRightBarCollapsed"
-              nz-button
-              nz-tooltip="Hide Tree"
-              (click)="onClickHideRightBar()">
-              <i
-                nz-icon
-                nzTheme="outline"
-                nzType="right">
-              </i>
-            </button>
-            <button
-              *ngIf="isRightBarCollapsed"
-              nz-button
-              nz-tooltip="Show Tree"
-              (click)="onClickHideRightBar()">
-              <i
-                nz-icon
-                nzTheme="outline"
-                nzType="left">
-              </i>
-            </button>
-          </div>
-        </div>
-      </nz-card>
-      <texera-user-dataset-file-renderer
-        [isMaximized]="isMaximized"
-        [did]="did"
-        [dvid]="selectedVersion?.dvid"
-        [filePath]="currentDisplayedFileName"
-      >
-      </texera-user-dataset-file-renderer>
-    </nz-content>
-  <nz-sider *ngIf="!isRightBarCollapsed" nzTheme="light" style="float: right;" [nzWidth]="300">
-      <div class="file-list-title">
-        <h5>Data Explorer</h5>
-      </div>
-      <div class="version-storage">
-        <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
-        <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" [(ngModel)]="selectedVersion">
-          <nz-option *ngFor="let version of versions" [nzValue]="version" [nzLabel]="version.name"></nz-option>
-        </nz-select>
-      </div>
 
-    <texera-user-dataset-version-filetree
-      [fileTreeNodeList]="fileTreeNodeList"
-      (selectedTreeNode)="onVersionFileTreeNodeSelected($event)">
-    >
-    </texera-user-dataset-version-filetree>
-      <button
-        class="rounded-button"
-        (click)="onClickOpenVersionCreationWindow()">
-        + Version
-      </button>
+            <nz-card>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h5 class="file-title"><b>{{currentDisplayedFileName}}</b></h5>
+                    </div>
+                    <div style="display: flex;">
+                        <button
+                                nz-button
+                                nz-tooltip="Download the file">
+                            <i
+                                    nz-icon
+                                    nzTheme="outline"
+                                    nzType="download">
+                            </i>
+                        </button>
+                        <button
+                                nz-button
+                                *ngIf="!isMaximized"
+                                nz-tooltip="Maximize View"
+                                (click)="onClickScaleTheView()">
+                            <i
+                                    nz-icon
+                                    nzTheme="outline"
+                                    nzType="expand">
+                            </i>
+                        </button>
+                        <button
+                                nz-button
+                                *ngIf="isMaximized"
+                                nz-tooltip="Minimize View"
+                                (click)="onClickScaleTheView()">
+                            <i
+                                    nz-icon
+                                    nzTheme="outline"
+                                    nzType="compress">
+                            </i>
+                        </button>
+                        <button
+                                *ngIf="!isRightBarCollapsed"
+                                nz-button
+                                nz-tooltip="Hide Tree"
+                                (click)="onClickHideRightBar()">
+                            <i
+                                    nz-icon
+                                    nzTheme="outline"
+                                    nzType="right">
+                            </i>
+                        </button>
+                        <button
+                                *ngIf="isRightBarCollapsed"
+                                nz-button
+                                nz-tooltip="Show Tree"
+                                (click)="onClickHideRightBar()">
+                            <i
+                                    nz-icon
+                                    nzTheme="outline"
+                                    nzType="left">
+                            </i>
+                        </button>
+                    </div>
+                </div>
+            </nz-card>
+            <texera-user-dataset-file-renderer
+                    [isMaximized]="isMaximized"
+                    [did]="did"
+                    [dvid]="selectedVersion?.dvid"
+                    [filePath]="currentDisplayedFileName"
+            >
+            </texera-user-dataset-file-renderer>
+
+    </nz-content>
+    <nz-sider
+            *ngIf="!isRightBarCollapsed"
+            nzTheme="light"
+            style="float: right;"
+            [nzWidth]="siderWidth"
+            nz-resizable
+            [nzMinWidth]="100"
+            [nzMaxWidth]="400"
+            (nzResize)="onSideResize($event)">
+        <nz-resize-handle nzDirection="left">
+            <div class="sider-resize-line">
+                <i class="sider-resize-handle" nz-icon nzType="more" nzTheme="outline"></i>
+            </div>
+        </nz-resize-handle>
+        <div class="file-list-title">
+            <h5>Data Explorer</h5>
+        </div>
+        <div class="version-storage">
+            <h6 style="font-weight: lighter; font-size: 0.9em;">Choose a Version:</h6>
+            <nz-select nzShowSearch nzAllowClear nzPlaceHolder="Select a version" (ngModelChange)="onVersionSelected($event)" [(ngModel)]="selectedVersion">
+                <nz-option *ngFor="let version of versions" [nzValue]="version" [nzLabel]="version.name"></nz-option>
+            </nz-select>
+        </div>
+
+        <texera-user-dataset-version-filetree
+                [fileTreeNodeList]="fileTreeNodeList"
+                (selectedTreeNode)="onVersionFileTreeNodeSelected($event)">
+            >
+        </texera-user-dataset-version-filetree>
+        <button
+                class="rounded-button"
+                (click)="onClickOpenVersionCreationWindow()">
+            + Version
+        </button>
     </nz-sider>
 </nz-layout>

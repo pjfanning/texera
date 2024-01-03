@@ -1,3 +1,4 @@
+
 .rounded-button {
     background-color: black;
     color: white;
@@ -36,22 +37,39 @@ html, body {
     border-collapse: collapse;
     margin-top: 20px;
   }
-  
+
   .csv-table th, .csv-table td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
   }
-  
+
   .csv-table th {
     background-color: #f4f4f4;
     color: #333;
   }
-  
+
   .even-row {
     background-color: #f9f9f9;
   }
-  
+
   .csv-table tr:hover {
     background-color: #f1f1f1;
   }
+
+.sider-resize-line {
+  height: 100%;
+  width: 5px;
+  border-right: 1px solid #e8e8e8;
+}
+
+.sider-resize-handle {
+  background: #fff;
+  border: 1px solid #ddd;
+  text-align: center;
+  font-size: 12px;
+  height: 20px;
+  line-height: 20px;
+  margin-top: 400px;
+}
+
