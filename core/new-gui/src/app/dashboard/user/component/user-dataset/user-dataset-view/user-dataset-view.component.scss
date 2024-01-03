@@ -32,33 +32,8 @@ html, body {
     padding: 0;
 }
 
-.csv-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-  }
-
-  .csv-table th, .csv-table td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
-  }
-
-  .csv-table th {
-    background-color: #f4f4f4;
-    color: #333;
-  }
-
-  .even-row {
-    background-color: #f9f9f9;
-  }
-
-  .csv-table tr:hover {
-    background-color: #f1f1f1;
-  }
-
 .sider-resize-line {
-  height: 100%;
+  height: 200%;
   width: 5px;
   border-right: 1px solid #e8e8e8;
 }

@@ -7,7 +7,6 @@
 </div>
 <nz-layout>
     <nz-content style="background-color: white;">
-
             <nz-card>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -82,12 +81,14 @@
     <nz-sider
             *ngIf="!isRightBarCollapsed"
             nzTheme="light"
-            style="float: right;"
+            style="float: right; height: 100%"
             [nzWidth]="siderWidth"
+
             nz-resizable
             [nzMinWidth]="100"
             [nzMaxWidth]="400"
-            (nzResize)="onSideResize($event)">
+            (nzResize)="onSideResize($event)"
+            >
         <nz-resize-handle nzDirection="left">
             <div class="sider-resize-line">
                 <i class="sider-resize-handle" nz-icon nzType="more" nzTheme="outline"></i>
