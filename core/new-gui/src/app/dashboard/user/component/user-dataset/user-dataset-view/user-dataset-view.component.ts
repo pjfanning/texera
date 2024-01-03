@@ -26,7 +26,7 @@ export class UserDatasetViewComponent implements OnInit {
 
   public versions: ReadonlyArray<DatasetVersion> = [];
   public selectedVersion: DatasetVersion | undefined;
-  public dataNodeList: DatasetVersionFileTreeNode[] = [];
+  public fileTreeNodeList: DatasetVersionFileTreeNode[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -98,15 +98,20 @@ export class UserDatasetViewComponent implements OnInit {
         .retrieveDatasetVersionFileTree(this.did, this.selectedVersion.dvid)
         .pipe(untilDestroyed(this))
         .subscribe(dataNodeList => {
-          this.dataNodeList = dataNodeList;
-          console.log(this.dataNodeList)
-          let currentNode = this.dataNodeList[0];
+          this.fileTreeNodeList = dataNodeList;
+          console.log(this.fileTreeNodeList)
+          let currentNode = this.fileTreeNodeList[0];
           while (currentNode.type === "directory" && currentNode.children) {
             currentNode = currentNode.children[0];
           }
           console.log(currentNode)
           this.loadFileContent(currentNode.name, currentNode.parentDir);
         })
+  }
+
+  onVersionFileTreeNodeSelected(node: DatasetVersionFileTreeNode) {
+    console.log('Selected Tree Node:', node);
+    this.loadFileContent(node.name, node.parentDir)
   }
 
   public onClickOpenVersionCreationWindow() {
@@ -122,21 +127,4 @@ export class UserDatasetViewComponent implements OnInit {
     modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
     });
   }
-
-
-  options: ITreeOptions = {
-    displayField: 'name',
-    hasChildrenField: 'children',
-    actionMapping: {
-      mouse: {
-        click: (tree: any, node: any, $event: any) => {
-          if (node.hasChildren) {
-            TREE_ACTIONS.TOGGLE_EXPANDED(tree, node, $event);
-          } else {
-            this.loadFileContent(node.data.name, node.data.parentDir);
-          }
-        }
-      }
-    }
-  };
 }

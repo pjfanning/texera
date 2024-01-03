@@ -1,0 +1,11 @@
+<div>
+    <tree-root [nodes]="fileTreeNodeList" [options]="fileTreeDisplayOptions">
+        <ng-template #treeNodeTemplate let-node>
+            <span>
+              <i *ngIf="node.data.children" class="fa fa-folder"></i>
+              <i *ngIf="!node.data.children" class="fa fa-file"></i>
+                {{ node.data.name }}
+            </span>
+        </ng-template>
+    </tree-root>
+</div>

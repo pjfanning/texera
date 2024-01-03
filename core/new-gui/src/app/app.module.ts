@@ -147,6 +147,7 @@ import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-
 import {FilesUploaderComponent} from "./dashboard/user/component/files-uploader/files-uploader.component";
 import { NgxFileDropModule } from 'ngx-file-drop';
 import {NzDividerModule} from "ng-zorro-antd/divider";
+import {UserDatasetVersionFiletreeComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-version-filetree/user-dataset-version-filetree.component";
 
 registerLocaleData(en);
 
@@ -220,6 +221,7 @@ registerLocaleData(en);
     UserDatasetListItemComponent,
     UserDatasetViewComponent,
     UserDatasetFileRendererComponent,
+    UserDatasetVersionFiletreeComponent,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
