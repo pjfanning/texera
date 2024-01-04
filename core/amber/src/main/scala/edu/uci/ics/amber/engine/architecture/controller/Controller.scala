@@ -24,6 +24,7 @@ object ControllerConfig {
       monitoringIntervalMs = Option(AmberConfig.monitoringIntervalInMs),
       skewDetectionIntervalMs = Option(AmberConfig.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
+      statusStoreIntervalMs = Option(AmberConfig.getStatusStoreIntervalInMs),
       logStorageType = AmberConfig.faultToleranceLogRootFolder,
       replayTo = None
     )
@@ -33,6 +34,7 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
+    statusStoreIntervalMs: Option[Long],
     logStorageType: String,
     replayTo: Option[Long]
 )

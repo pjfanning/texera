@@ -27,6 +27,7 @@ import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.{
+  ExecutionStatsStore,
   OperatorRuntimeStats,
   OperatorWorkerMapping,
   WorkflowFatalError
@@ -50,18 +51,35 @@ class ExecutionStatsService(
 
   registerCallbacks()
 
+  // Variables for Storing Runtime Statistics +
+  private var counter = 0
+  private var prevStoredState = None: Option[ExecutionStatsStore]
+
   addSubscription(
     stateStore.statsStore.registerDiffHandler((oldState, newState) => {
       if (AmberConfig.isUserSystemEnabled) {
-        storeRuntimeStatistics(newState.operatorInfo.zip(oldState.operatorInfo).collect {
-          case ((newId, newStats), (oldId, oldStats)) =>
-            val res = OperatorRuntimeStats(
-              newStats.state,
-              newStats.inputCount - oldStats.inputCount,
-              newStats.outputCount - oldStats.outputCount
-            )
-            (newId, res)
-        })
+        if (
+          counter % (AmberConfig.getStatusStoreIntervalInMs / AmberConfig.getStatusUpdateIntervalInMs) == 0
+        ) {
+          if (prevStoredState.isEmpty) {
+            prevStoredState = Some(oldState)
+          }
+          storeRuntimeStatistics(
+            newState.operatorInfo.zip(prevStoredState.get.operatorInfo).collect {
+              case ((newId, newStats), (oldId, oldStats)) =>
+                val res = OperatorRuntimeStats(
+                  newStats.state,
+                  newStats.inputCount - oldStats.inputCount,
+                  newStats.outputCount - oldStats.outputCount
+                )
+                (newId, res)
+            }
+          )
+          counter = 0
+          prevStoredState = Some(newState)
+
+        }
+        counter += 1
       }
       // Update operator stats if any operator updates its stat
       if (newState.operatorInfo.toSet != oldState.operatorInfo.toSet) {
