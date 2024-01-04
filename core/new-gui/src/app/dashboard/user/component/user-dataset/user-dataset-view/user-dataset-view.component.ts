@@ -4,9 +4,9 @@ import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {NgbdModelDatasetVersionAddComponent} from "../ngbd-model-dataset-version-add/ngbd-model-dataset-version-add.component";
-import {DatasetVersion, DatasetVersionFileTreeNode} from "src/app/common/type/datasetVersion";
 import {TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode} from '@circlon/angular-tree-component';
 import {NzResizeEvent} from "ng-zorro-antd/resizable";
+import {DatasetVersion, DatasetVersionFileTreeNode, getFullPathFromFileTreeNode} from "../../../../../common/type/datasetVersionFileTree";
 
 @UntilDestroy()
 @Component({
@@ -87,12 +87,8 @@ export class UserDatasetViewComponent implements OnInit {
             });
     }
 
-    loadFileContent(fileName: string, parentDir: string) {
-        if (parentDir == "/") {
-            this.currentDisplayedFileName = parentDir + fileName;
-        } else {
-            this.currentDisplayedFileName = parentDir + "/" + fileName;
-        }
+    loadFileContent(node: DatasetVersionFileTreeNode) {
+        this.currentDisplayedFileName = getFullPathFromFileTreeNode(node)
     }
 
     onClickScaleTheView() {
@@ -117,14 +113,12 @@ export class UserDatasetViewComponent implements OnInit {
                     while (currentNode.type === "directory" && currentNode.children) {
                         currentNode = currentNode.children[0];
                     }
-                    console.log(currentNode)
-                    this.loadFileContent(currentNode.name, currentNode.parentDir);
+                    this.loadFileContent(currentNode);
                 })
     }
 
     onVersionFileTreeNodeSelected(node: DatasetVersionFileTreeNode) {
-        console.log('Selected Tree Node:', node);
-        this.loadFileContent(node.name, node.parentDir)
+        this.loadFileContent(node)
     }
 
     public onClickOpenVersionCreationWindow() {

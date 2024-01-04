@@ -7,9 +7,9 @@ import {AppSettings} from "../../../../common/app-setting";
 import {Observable} from "rxjs";
 import {SearchFilterParameters, toQueryStrings} from "../../type/search-filter-parameters";
 import {DashboardDataset} from "../../type/dashboard-dataset.interface";
-import {DatasetVersion, DatasetVersionFileTree, DatasetVersionFileTreeNode, parseFileTreeToNodes} from "../../../../common/type/datasetVersion";
 import {FileUploadItem} from "../../type/dashboard-file.interface";
 import {UserFileUploadService} from "../user-file/user-file-upload.service";
+import {DatasetVersion, DatasetVersionFileTree, DatasetVersionFileTreeNode, parseFileTreeToNodes} from "../../../../common/type/datasetVersionFileTree";
 
 
 export const DATASET_BASE_URL = "dataset";

@@ -1,9 +1,7 @@
 <div class="file-uploader">
     <ngx-file-drop
             dropZoneLabel="Drop files here"
-            (onFileDrop)="fileDropped($event)"
-            (onFileOver)="fileOver($event)"
-            (onFileLeave)="fileLeave($event)">
+            (onFileDrop)="fileDropped($event)">
         <ng-template
                 class="ngx-drop-box"
                 ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
@@ -23,17 +21,23 @@
         <texera-user-dataset-version-filetree
                 [fileTreeNodeList]="previouslyUploadFiles"
                 [isFileTreeNodeDeletable]="true"
+                (deletedTreeNode)="onPreviouslyUploadedFileDeleted($event)"
         ></texera-user-dataset-version-filetree>
     </div>
-    <div *ngIf="getNumberOfNewUploadFiles()" class="uploaded-files-list">
+    <div *ngIf="newUploadFiles && newUploadFiles.size > 0" class="uploaded-files-list">
         <h6 class="new-upload-title">New Uploads</h6>
-        <ul class="file-list">
-            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">
-                <span>{{ file.name }}</span>
-                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">
-                    <mat-icon>delete</mat-icon>
-                </button>
-            </li>
-        </ul>
+        <texera-user-dataset-version-filetree
+                [fileTreeNodeList]="newUploadFileTreeManager.getRootNodes()"
+                [isFileTreeNodeDeletable]="true"
+                (deletedTreeNode)="onNewUploadsFileDeleted($event)"
+        ></texera-user-dataset-version-filetree>
+<!--        <ul class="file-list">-->
+<!--            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">-->
+<!--                <span>{{ file.name }}</span>-->
+<!--                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">-->
+<!--                    <mat-icon>delete</mat-icon>-->
+<!--                </button>-->
+<!--            </li>-->
+<!--        </ul>-->
     </div>
 </div>

@@ -1,7 +1,7 @@
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
-import {DatasetVersionFileTreeNode} from "../../../../../../common/type/datasetVersion";
 import {ITreeOptions, TREE_ACTIONS} from "@circlon/angular-tree-component";
+import {DatasetVersionFileTreeNode} from "../../../../../../common/type/datasetVersionFileTree";
 
 @UntilDestroy()
 @Component({

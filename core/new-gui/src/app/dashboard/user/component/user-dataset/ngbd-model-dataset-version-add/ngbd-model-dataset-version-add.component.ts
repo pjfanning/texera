@@ -6,7 +6,8 @@ import {UserFileUploadService} from "../../../service/user-file/user-file-upload
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {DatasetService} from "../../../service/user-dataset/dataset.service";
 import {NgbActiveModal, NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {DatasetVersion, DatasetVersionFileTreeNode} from "../../../../../common/type/datasetVersion";
+
+import {DatasetVersion, DatasetVersionFileTreeNode} from "../../../../../common/type/datasetVersionFileTree";
 
 
 @UntilDestroy()

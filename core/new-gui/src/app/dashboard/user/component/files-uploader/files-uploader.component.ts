@@ -1,8 +1,8 @@
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {FileUploadItem} from "../../type/dashboard-file.interface";
 import {NgxFileDropEntry} from "ngx-file-drop";
-import {DatasetVersionFileTreeNode} from "../../../../common/type/datasetVersion";
 import {UserFileUploadService} from "../../service/user-file/user-file-upload.service";
+import {DatasetVersionFileTreeManager, DatasetVersionFileTreeNode, getFullPathFromFileTreeNode, parseFileUploadItemToVersionFileTreeNodes} from "../../../../common/type/datasetVersionFileTree";
 
 @Component({
     selector: 'texera-user-files-uploader',
@@ -19,7 +19,9 @@ export class FilesUploaderComponent {
     @Output()
     removingFilePaths = new EventEmitter<string[]>();
 
-    newUploadFiles: FileUploadItem[] = [];
+    newUploadFiles: Map<string, FileUploadItem> = new Map<string, FileUploadItem>();
+
+    newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
 
     public fileDropped(files: NgxFileDropEntry[]) {
         for (const droppedFile of files) {
@@ -27,38 +29,27 @@ export class FilesUploaderComponent {
                 const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
                 fileEntry.file(file => {
                     const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath)
-                    this.newUploadFiles.push(fileUploadItem);
-                    this.uploadedFiles.emit(this.newUploadFiles)
+                    this.newUploadFiles.set(fileUploadItem.name, fileUploadItem);
+                    this.newUploadFileTreeManager.createNodeWithPath(fileUploadItem.name);
+                    this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
                 })
             } else {
                 // It was a directory (empty directories are added, otherwise only files)
                 const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
+                // TODO: add a prompt to notify user
                 console.log(droppedFile.relativePath, fileEntry);
             }
         }
     }
 
-    public fileOver(event: any){
+    onPreviouslyUploadedFileDeleted(node: DatasetVersionFileTreeNode) {
+
     }
 
-    public fileLeave(event: any){
-    }
-
-    public getNumberOfPreviouslyUploadFiles(): number {
-        // TODO: finish this
-        return 0;
-    }
-
-    public getNumberOfNewUploadFiles(): number {
-        return this.newUploadFiles.length
-    }
-
-    public getNewUploadFileEntries(): FileUploadItem[] {
-        return this.newUploadFiles
-    }
-
-    public removeNewUploadFile(file: FileUploadItem) {
-        this.newUploadFiles = this.newUploadFiles.filter(f => f != file)
-        this.uploadedFiles.emit(this.newUploadFiles)
+    onNewUploadsFileDeleted(node: DatasetVersionFileTreeNode) {
+        const filePath = getFullPathFromFileTreeNode(node);
+        this.newUploadFileTreeManager.removeNodeWithPath(filePath);
+        this.newUploadFiles.delete(filePath);
+        this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
     }
 }

@@ -1,4 +1,4 @@
-import {DatasetVersion} from "./datasetVersion";
+import {DatasetVersion} from "./datasetVersionFileTree";
 
 export interface Dataset {
   did: number | undefined;
