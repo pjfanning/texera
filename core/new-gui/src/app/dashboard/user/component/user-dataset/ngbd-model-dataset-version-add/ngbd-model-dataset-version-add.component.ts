@@ -35,11 +35,15 @@ export class NgbdModelDatasetVersionAddComponent implements OnInit {
     }
 
     ngOnInit(): void {
+        console.log("init dataset version creation")
         if (this.did) {
+            console.log("did is, ", this.did)
             this.datasetService.retrieveDatasetLatestVersion(this.did)
                 .pipe(untilDestroyed(this))
                 .subscribe(version => {
+                    console.log("acquire the version: ", version)
                     this.baseVersion = version;
+                    console.log(this.baseVersion.versionFileTreeNodes)
                 })
         }
     }

@@ -18,8 +18,12 @@
             </div>
         </ng-template>
     </ngx-file-drop>
-    <div *ngIf="getNumberOfPreviouslyUploadFiles()" class="uploaded-files-list">
+    <div *ngIf="previouslyUploadFiles" class="uploaded-files-list">
         <h6 class="new-upload-title">Previous Uploads</h6>
+        <texera-user-dataset-version-filetree
+                [fileTreeNodeList]="previouslyUploadFiles"
+                [isFileTreeNodeDeletable]="true"
+        ></texera-user-dataset-version-filetree>
     </div>
     <div *ngIf="getNumberOfNewUploadFiles()" class="uploaded-files-list">
         <h6 class="new-upload-title">New Uploads</h6>

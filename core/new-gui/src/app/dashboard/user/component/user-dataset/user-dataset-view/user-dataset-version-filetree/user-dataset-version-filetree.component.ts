@@ -13,8 +13,14 @@ export class UserDatasetVersionFiletreeComponent implements OnInit {
     @Input()
     public fileTreeNodeList: DatasetVersionFileTreeNode[] = [];
 
+    @Input()
+    public isFileTreeNodeDeletable: boolean = false;
+
     @Output()
     public selectedTreeNode = new EventEmitter<DatasetVersionFileTreeNode>();
+
+    @Output()
+    public deletedTreeNode = new EventEmitter<DatasetVersionFileTreeNode>();
 
     public fileTreeDisplayOptions: ITreeOptions = {
         displayField: 'displayableName',
@@ -33,5 +39,9 @@ export class UserDatasetVersionFiletreeComponent implements OnInit {
     };
 
     ngOnInit(): void {
+    }
+
+    deleteFileTreeNode(node: DatasetVersionFileTreeNode) {
+        this.deletedTreeNode.emit(node)
     }
 }

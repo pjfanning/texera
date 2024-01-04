@@ -17,6 +17,7 @@
         <div class="modal-body">
             <texera-user-files-uploader
                     (uploadedFiles)="onFilesChanged($event)"
+                    [previouslyUploadFiles]="baseVersion?.versionFileTreeNodes"
             ></texera-user-files-uploader>
         </div>
         <div class="modal-footer align-right">

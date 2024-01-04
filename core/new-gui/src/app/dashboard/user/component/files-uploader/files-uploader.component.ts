@@ -11,7 +11,7 @@ import {UserFileUploadService} from "../../service/user-file/user-file-upload.se
 })
 export class FilesUploaderComponent {
     @Input()
-    public previouslyUploadFiles: DatasetVersionFileTreeNode[] = [];
+    public previouslyUploadFiles: DatasetVersionFileTreeNode[] | undefined;
 
     @Output()
     uploadedFiles = new EventEmitter<FileUploadItem[]>();
@@ -26,7 +26,6 @@ export class FilesUploaderComponent {
             if (droppedFile.fileEntry.isFile) {
                 const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
                 fileEntry.file(file => {
-                    console.log(droppedFile.relativePath + " upload successfully")
                     const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath)
                     this.newUploadFiles.push(fileUploadItem);
                     this.uploadedFiles.emit(this.newUploadFiles)
@@ -40,11 +39,9 @@ export class FilesUploaderComponent {
     }
 
     public fileOver(event: any){
-        console.log(event);
     }
 
     public fileLeave(event: any){
-        console.log(event);
     }
 
     public getNumberOfPreviouslyUploadFiles(): number {

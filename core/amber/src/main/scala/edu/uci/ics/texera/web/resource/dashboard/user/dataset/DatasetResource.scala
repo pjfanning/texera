@@ -8,7 +8,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, Datase
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionHierarchy, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionFileTree, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
@@ -201,13 +201,13 @@ object DatasetResource {
       isOwner: Boolean
   )
 
-  case class DatasetVersionHierarchy(hierarchy: util.Map[String, AnyRef])
+  case class DatasetVersionFileTree(fileTree: util.Map[String, AnyRef])
 
   case class DatasetVersions(versions: List[DatasetVersion])
 
   case class DashboardDatasetVersion(
       datasetVersion: DatasetVersion,
-      hierarchy: util.Map[String, AnyRef]
+      fileTree: util.Map[String, AnyRef]
   )
 
   case class DatasetIDs(dids: List[UInteger])
@@ -398,7 +398,7 @@ class DatasetResource {
   def getLatestDatasetVersion(
       @PathParam("did") did: UInteger,
       @Auth user: SessionUser
-  ): DatasetVersion = {
+  ): DashboardDatasetVersion = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
@@ -419,18 +419,22 @@ class DatasetResource {
           throw new DatasetVersionNotFoundException(did.intValue())
         }
 
-        latestVersion
+        val gitVersionControl = new GitVersionControl(PathUtils.getDatasetPath(latestVersion.getDid).toString)
+        DashboardDatasetVersion(
+          latestVersion,
+          gitVersionControl.retrieveFileTreeOfVersion(latestVersion.getVersionHash)
+        )
       })
     })
   }
 
   @GET
-  @Path("/{did}/version/{dvid}/hierarchy")
+  @Path("/{did}/version/{dvid}/fileTree")
   def retrieveDatasetVersionFileTree(
       @PathParam("did") did: UInteger,
       @PathParam("dvid") dvid: UInteger,
       @Auth user: SessionUser
-  ): DatasetVersionHierarchy = {
+  ): DatasetVersionFileTree = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       {
@@ -446,8 +450,8 @@ class DatasetResource {
 
           val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
-          val hierarchy = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
-          DatasetVersionHierarchy(hierarchy)
+          val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
+          DatasetVersionFileTree(fileTree)
         })
       }
     })
