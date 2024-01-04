@@ -136,18 +136,19 @@ import { PublicProjectComponent } from "./dashboard/user/component/user-project/
 import {UserDatasetComponent} from "./dashboard/user/component/user-dataset/user-dataset.component";
 import {UserDatasetListItemComponent} from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
 import {NgbdModalDatasetAddComponent} from "./dashboard/user/component/user-dataset/ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
-import {UserDatasetViewComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-view.component";
+import {UserDatasetExplorerComponent} from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
 import { NgbdModelDatasetVersionAddComponent } from "./dashboard/user/component/user-dataset/ngbd-model-dataset-version-add/ngbd-model-dataset-version-add.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
 import { PdfJsViewerModule } from 'ng2-pdfjs-viewer';
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
-import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-file-renderer/user-dataset-file-renderer.component";
+import {UserDatasetFileRendererComponent} from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-file-renderer/user-dataset-file-renderer.component";
 import {FilesUploaderComponent} from "./dashboard/user/component/files-uploader/files-uploader.component";
 import { NgxFileDropModule } from 'ngx-file-drop';
 import {NzDividerModule} from "ng-zorro-antd/divider";
-import {UserDatasetVersionFiletreeComponent} from "./dashboard/user/component/user-dataset/user-dataset-view/user-dataset-version-filetree/user-dataset-version-filetree.component";
+import {UserDatasetVersionFiletreeComponent} from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-filetree/user-dataset-version-filetree.component";
+import {UserDatasetVersionCreator} from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
 
 registerLocaleData(en);
 
@@ -219,9 +220,10 @@ registerLocaleData(en);
     HomeComponent,
     UserWorkflowListItemComponent,
     UserDatasetListItemComponent,
-    UserDatasetViewComponent,
+    UserDatasetExplorerComponent,
     UserDatasetFileRendererComponent,
     UserDatasetVersionFiletreeComponent,
+    UserDatasetVersionCreator,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,

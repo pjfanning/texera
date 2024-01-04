@@ -10,10 +10,10 @@ import {DatasetVersion, DatasetVersionFileTreeNode, getFullPathFromFileTreeNode}
 
 @UntilDestroy()
 @Component({
-    templateUrl: "./user-dataset-view.component.html",
-    styleUrls: ['./user-dataset-view.component.scss']
+    templateUrl: "./user-dataset-explorer.component.html",
+    styleUrls: ['./user-dataset-explorer.component.scss']
 })
-export class UserDatasetViewComponent implements OnInit {
+export class UserDatasetExplorerComponent implements OnInit {
 
     public did: number = 0;
     public datasetName: string = "";
@@ -29,6 +29,9 @@ export class UserDatasetViewComponent implements OnInit {
     public selectedVersion: DatasetVersion | undefined;
     public fileTreeNodeList: DatasetVersionFileTreeNode[] = [];
 
+    public isCreatingVersion: boolean = false;
+    public isCreatingDataset: boolean = false;
+
     constructor(
         private route: ActivatedRoute,
         private datasetService: DatasetService,
@@ -40,8 +43,6 @@ export class UserDatasetViewComponent implements OnInit {
     siderWidth = 200;
     id = -1;
     onSideResize({width}: NzResizeEvent): void {
-        console.log("sider: ", width)
-
         cancelAnimationFrame(this.id);
         this.id = requestAnimationFrame(() => {
             this.siderWidth = width!;
@@ -119,6 +120,10 @@ export class UserDatasetViewComponent implements OnInit {
 
     onVersionFileTreeNodeSelected(node: DatasetVersionFileTreeNode) {
         this.loadFileContent(node)
+    }
+
+    isDisplayingDataset(): boolean {
+        return !this.isCreatingDataset && !this.isCreatingVersion;
     }
 
     public onClickOpenVersionCreationWindow() {
