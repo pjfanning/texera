@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
+import {ActivatedRoute, NavigationEnd, Router} from "@angular/router";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
@@ -11,6 +11,7 @@ import {
   getFullPathFromFileTreeNode,
 } from "../../../../../common/type/datasetVersionFileTree";
 import { DatasetVersion } from "../../../../../common/type/dataset";
+import {filter, switchMap} from "rxjs/operators";
 
 @UntilDestroy()
 @Component({
@@ -51,20 +52,41 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      console.log("enter init");
+    // this.router.events.pipe(
+    //     filter(event => event instanceof NavigationEnd)
+    // ).subscribe(() => {
+    //   const param = this.route.snapshot.params['did'];
+    //   console.log("param: ", param)
+    //   if (param !== 'create') {
+    //     this.did = param;
+    //     this.retrieveDatasetInfo();
+    //     this.retrieveDatasetVersionList();
+    //   } else {
+    //     this.renderDatasetCreatorSider();
+    //   }
+    // });
 
-      const param = params["did"];
-      if (param != "create") {
-        this.did = param;
-        this.retrieveDatasetInfo();
-        this.retrieveDatasetVersionList();
-      } else {
-        this.renderDatasetCreatorSider();
-      }
-    });
+    this.route.params.pipe(
+        switchMap(params => {
+          const param = params['did'];
+          console.log("param: ", param);
+          this.renderDatasetViewSider();
+          if (param !== 'create') {
+            this.did = param;
+            this.retrieveDatasetInfo();
+            this.retrieveDatasetVersionList();
+          } else {
+            this.renderDatasetCreatorSider();
+          }
+          return this.route.data; // or some other observable
+        })
+    ).subscribe();
   }
 
+  renderDatasetViewSider() {
+    this.isCreatingVersion = false;
+    this.isCreatingDataset = false;
+  }
   renderDatasetCreatorSider() {
     this.isCreatingVersion = false;
     this.isCreatingDataset = true;
