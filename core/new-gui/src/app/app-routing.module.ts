@@ -68,6 +68,10 @@ if (environment.userSystemEnabled) {
         component: UserDatasetExplorerComponent,
       },
       {
+        path: "dataset/create",
+        component: UserDatasetExplorerComponent,
+      },
+      {
         path: "user-file",
         component: UserFileComponent,
       },

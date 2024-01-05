@@ -1,7 +1,7 @@
 import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
-import {DashboardDataset} from "./dashboard-dataset.interface";
+import { DashboardDataset } from "./dashboard-dataset.interface";
 
 export class DashboardEntry {
   checked = false;
@@ -82,7 +82,7 @@ export class DashboardEntry {
       throw new Error("Value is not of type Dataset");
     }
 
-    return this.value
+    return this.value;
   }
 
   constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset) {}

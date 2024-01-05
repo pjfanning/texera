@@ -33,8 +33,8 @@ export class UserFileUploadService {
       name: relativePath,
       description: "",
       uploadProgress: 0,
-      isUploadingFlag: false
-    }
+      isUploadingFlag: false,
+    };
   }
 
   /**
@@ -85,8 +85,8 @@ export class UserFileUploadService {
    * @param path
    */
   public static sanitizeFilePath(path: string): string {
-    const pathParts = path.split('/').map(part => this.sanitizePathComponent(part));
-    return pathParts.join('/');
+    const pathParts = path.split("/").map(part => this.sanitizePathComponent(part));
+    return pathParts.join("/");
   }
 
   /**
@@ -96,7 +96,7 @@ export class UserFileUploadService {
   private static sanitizePathComponent(pathComponent: string): string {
     // Example: Replace spaces with underscores, remove special characters
     // Adjust this regex according to your requirements
-    return pathComponent.replace(/[^a-zA-Z0-9._-]/g, '_');
+    return pathComponent.replace(/[^a-zA-Z0-9._-]/g, "_");
   }
 
   /**

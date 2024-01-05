@@ -1,27 +1,25 @@
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {AfterViewInit, Component, ViewChild} from "@angular/core";
-import {SearchResultsComponent} from "../search-results/search-results.component";
-import {FiltersComponent} from "../filters/filters.component";
-import {UserService} from "../../../../common/service/user/user.service";
-import {NotificationService} from "../../../../common/service/notification/notification.service";
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {Router} from "@angular/router";
-import {SearchService} from "../../service/search.service";
-import {DatasetService} from "../../service/user-dataset/dataset.service";
-import {firstValueFrom} from "rxjs";
-import {DashboardEntry} from "../../type/dashboard-entry";
-import {SortMethod} from "../../type/sort-method";
-import {NgbdModalDatasetAddComponent} from "./ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { AfterViewInit, Component, ViewChild } from "@angular/core";
+import { SearchResultsComponent } from "../search-results/search-results.component";
+import { FiltersComponent } from "../filters/filters.component";
+import { UserService } from "../../../../common/service/user/user.service";
+import { NotificationService } from "../../../../common/service/notification/notification.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { Router } from "@angular/router";
+import { SearchService } from "../../service/search.service";
+import { DatasetService } from "../../service/user-dataset/dataset.service";
+import { firstValueFrom } from "rxjs";
+import { DashboardEntry } from "../../type/dashboard-entry";
+import { SortMethod } from "../../type/sort-method";
+import { NgbdModalDatasetAddComponent } from "./ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 
-export const ROUTER_DATASET_VIEW_URL = "/"
 @UntilDestroy()
 @Component({
   selector: "texera-dataset-section",
   templateUrl: "user-dataset.component.html",
-  styleUrls: ["user-dataset.component.scss"]
+  styleUrls: ["user-dataset.component.scss"],
 })
 export class UserDatasetComponent implements AfterViewInit {
-
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -51,23 +49,13 @@ export class UserDatasetComponent implements AfterViewInit {
 
   constructor(
     private userService: UserService,
-    private notificationService: NotificationService,
-    private modalService: NgbModal,
     private router: Router,
     private datasetService: DatasetService,
     private searchService: SearchService
   ) {}
 
-  public multiWorkflowsOperationButtonEnabled(): boolean {
-    if (this._searchResultsComponent) {
-      return this.searchResultsComponent?.entries.filter(i => i.checked).length > 0;
-    } else {
-      return false;
-    }
-  }
-
   ngAfterViewInit() {
-    this.reloadDashboardDatasetEntries()
+    this.reloadDashboardDatasetEntries();
   }
 
   /**
@@ -119,16 +107,17 @@ export class UserDatasetComponent implements AfterViewInit {
   }
 
   public onClickOpenDatasetAddComponent(): void {
-    const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
-
-    modalRef.componentInstance.datasetAdded.pipe(untilDestroyed(this))
-     .subscribe(() => {
-     this.reloadDashboardDatasetEntries(true); // Refresh the dataset list when a new dataset is added
-    });
-
-    modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
-      this.reloadDashboardDatasetEntries(true) //maybe delete this two lines? did not work for refresh
-    });
+    // const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
+    //
+    // modalRef.componentInstance.datasetAdded.pipe(untilDestroyed(this))
+    //  .subscribe(() => {
+    //  this.reloadDashboardDatasetEntries(true); // Refresh the dataset list when a new dataset is added
+    // });
+    //
+    // modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
+    //   this.reloadDashboardDatasetEntries(true) //maybe delete this two lines? did not work for refresh
+    // });
+    this.router.navigate(["/dashboard/dataset/create"]);
   }
 
   private reloadDashboardDatasetEntries(forced: boolean = false): void {

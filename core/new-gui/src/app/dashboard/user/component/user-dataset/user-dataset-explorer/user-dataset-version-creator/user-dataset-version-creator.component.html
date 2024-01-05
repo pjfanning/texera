@@ -1,16 +1,35 @@
 <div>
-    <form class="texera-user-dataset-creator-form" [formGroup]="form">
-        <formly-form [form]="form" [fields]="fields" [model]="model">
-        </formly-form>
-    </form>
-    <div class="file-uploader">
-        <texera-user-files-uploader
-                (uploadedFiles)="onFilesChanged($event)"
-                [previouslyUploadFiles]="baseVersion?.versionFileTreeNodes"
-        ></texera-user-files-uploader>
-    </div>
-    <button
-            (click)="onClickCreate()"
-            [disabled]="isCreateButtonDisabled"
-            class="upload-btn">Create</button>
+  <form
+    class="texera-user-dataset-creator-form"
+    [formGroup]="form">
+    <formly-form
+      [form]="form"
+      [fields]="fields"
+      [model]="model">
+    </formly-form>
+    <nz-switch
+      *ngIf="!isCreatingVersion"
+      [ngModel]="isDatasetPublic"
+      nzCheckedChildren="public"
+      nzUnCheckedChildren="private"></nz-switch>
+  </form>
+  <div class="file-uploader">
+    <texera-user-files-uploader
+      (uploadedFiles)="onNewUploadFilesChanged($event)"
+      (removingFilePaths)="onRemovingFilePathsChanged($event)"
+      [previouslyUploadFiles]="baseVersion?.versionFileTreeNodes"></texera-user-files-uploader>
+  </div>
+
+  <button
+    (click)="onClickCreate()"
+    [disabled]="isCreateButtonDisabled"
+    class="upload-btn">
+    Create
+  </button>
+
+  <button
+    (click)="onClickCancel()"
+    class="upload-btn">
+    Cancel
+  </button>
 </div>

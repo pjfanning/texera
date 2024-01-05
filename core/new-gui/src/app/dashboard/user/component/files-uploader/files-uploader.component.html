@@ -1,43 +1,49 @@
 <div class="file-uploader">
-    <ngx-file-drop
-            dropZoneLabel="Drop files here"
-            (onFileDrop)="fileDropped($event)">
-        <ng-template
-                class="ngx-drop-box"
-                ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
-            <div class="file-drop-description">
-                <p>Drag & drop additional files to upload</p>
-<!--                <p class="file-drop-hint">Consider zipping large directories for faster uploads</p>-->
-                <p>or</p>
-                <button
-                        mat-stroked-button color="primary"
-                        class="upload-file-button"
-                        (click)="openFileSelector()">Browser & Upload Files</button>
-            </div>
-        </ng-template>
-    </ngx-file-drop>
-    <div *ngIf="previouslyUploadFiles" class="uploaded-files-list">
-        <h6 class="new-upload-title">Previous Uploads</h6>
-        <texera-user-dataset-version-filetree
-                [fileTreeNodeList]="previouslyUploadFiles"
-                [isFileTreeNodeDeletable]="true"
-                (deletedTreeNode)="onPreviouslyUploadedFileDeleted($event)"
-        ></texera-user-dataset-version-filetree>
-    </div>
-    <div *ngIf="newUploadFiles && newUploadFiles.size > 0" class="uploaded-files-list">
-        <h6 class="new-upload-title">New Uploads</h6>
-        <texera-user-dataset-version-filetree
-                [fileTreeNodeList]="newUploadFileTreeManager.getRootNodes()"
-                [isFileTreeNodeDeletable]="true"
-                (deletedTreeNode)="onNewUploadsFileDeleted($event)"
-        ></texera-user-dataset-version-filetree>
-<!--        <ul class="file-list">-->
-<!--            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">-->
-<!--                <span>{{ file.name }}</span>-->
-<!--                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">-->
-<!--                    <mat-icon>delete</mat-icon>-->
-<!--                </button>-->
-<!--            </li>-->
-<!--        </ul>-->
-    </div>
+  <ngx-file-drop
+    dropZoneLabel="Drop files here"
+    (onFileDrop)="fileDropped($event)">
+    <ng-template
+      class="ngx-drop-box"
+      ngx-file-drop-content-tmp
+      let-openFileSelector="openFileSelector">
+      <div class="file-drop-description">
+        <p>Drag & drop additional files to upload</p>
+        <!--                <p class="file-drop-hint">Consider zipping large directories for faster uploads</p>-->
+        <p>or</p>
+        <button
+          mat-stroked-button
+          color="primary"
+          class="upload-file-button"
+          (click)="openFileSelector()">
+          Browser & Upload Files
+        </button>
+      </div>
+    </ng-template>
+  </ngx-file-drop>
+  <div
+    *ngIf="previouslyUploadFiles"
+    class="uploaded-files-list">
+    <h6 class="new-upload-title">Previous Uploads</h6>
+    <texera-user-dataset-version-filetree
+      [fileTreeNodeList]="previouslyUploadFiles"
+      [isFileTreeNodeDeletable]="true"
+      (deletedTreeNode)="onPreviouslyUploadedFileDeleted($event)"></texera-user-dataset-version-filetree>
+  </div>
+  <div
+    *ngIf="newUploadFiles && newUploadFiles.size > 0"
+    class="uploaded-files-list">
+    <h6 class="new-upload-title">New Uploads</h6>
+    <texera-user-dataset-version-filetree
+      [fileTreeNodeList]="newUploadFileTreeManager.getRootNodes()"
+      [isFileTreeNodeDeletable]="true"
+      (deletedTreeNode)="onNewUploadsFileDeleted($event)"></texera-user-dataset-version-filetree>
+    <!--        <ul class="file-list">-->
+    <!--            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">-->
+    <!--                <span>{{ file.name }}</span>-->
+    <!--                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">-->
+    <!--                    <mat-icon>delete</mat-icon>-->
+    <!--                </button>-->
+    <!--            </li>-->
+    <!--        </ul>-->
+  </div>
 </div>

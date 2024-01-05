@@ -1,18 +1,17 @@
-
 .rounded-button {
-    background-color: black;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-top: 50px;
-    margin-left: 20px;
+  background-color: black;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 50px;
+  margin-left: 20px;
 }
 
 .rounded-button:hover {
-    background-color: gray;
+  background-color: gray;
 }
 
 .version-storage {
@@ -24,12 +23,13 @@
 }
 
 nz-layout {
-    height: calc(100vh - 300px); // Adjust 200px based on the actual height of the upper div.
+  height: calc(100vh - 300px); // Adjust 200px based on the actual height of the upper div.
 }
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .sider-resize-line {
@@ -56,5 +56,3 @@ html, body {
 .disabled-click {
   pointer-events: none;
 }
-
-

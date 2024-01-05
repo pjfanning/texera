@@ -1,19 +1,22 @@
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {Component, EventEmitter, Input, Output} from "@angular/core";
-import {DashboardEntry} from "../../../type/dashboard-entry";
-import {Workflow} from "../../../../../common/type/workflow";
-import {Dataset} from "../../../../../common/type/dataset";
-import {DashboardProject} from "../../../type/dashboard-project.interface";
-import {environment} from "../../../../../../environments/environment";
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {DEFAULT_WORKFLOW_NAME, WorkflowPersistService} from "../../../../../common/service/workflow-persist/workflow-persist.service";
-import {FileSaverService} from "../../../service/user-file/file-saver.service";
-import {UserProjectService} from "../../../service/user-project/user-project.service";
-import {DatasetService} from "../../../service/user-dataset/dataset.service";
-import {NgbdModalWorkflowExecutionsComponent} from "../../user-workflow/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
-import {firstValueFrom} from "rxjs";
-import {ShareAccessComponent} from "../../share-access/share-access.component";
-import {DashboardDataset} from "../../../type/dashboard-dataset.interface";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { DashboardEntry } from "../../../type/dashboard-entry";
+import { Workflow } from "../../../../../common/type/workflow";
+import { Dataset } from "../../../../../common/type/dataset";
+import { DashboardProject } from "../../../type/dashboard-project.interface";
+import { environment } from "../../../../../../environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import {
+  DEFAULT_WORKFLOW_NAME,
+  WorkflowPersistService,
+} from "../../../../../common/service/workflow-persist/workflow-persist.service";
+import { FileSaverService } from "../../../service/user-file/file-saver.service";
+import { UserProjectService } from "../../../service/user-project/user-project.service";
+import { DatasetService } from "../../../service/user-dataset/dataset.service";
+import { NgbdModalWorkflowExecutionsComponent } from "../../user-workflow/ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
+import { firstValueFrom } from "rxjs";
+import { ShareAccessComponent } from "../../share-access/share-access.component";
+import { DashboardDataset } from "../../../type/dashboard-dataset.interface";
 
 @UntilDestroy()
 @Component({
@@ -57,28 +60,15 @@ export class UserDatasetListItemComponent {
   datasetVersionsTrackingEnabled: boolean = true;
   datasetVersionTrackingEnabled: boolean = true;
 
-  constructor(
-    private modalService: NgbModal,
-    private datasetService: DatasetService,
-  ) {}
+  constructor(private modalService: NgbModal, private datasetService: DatasetService) {}
 
-  public confirmUpdateDatasetCustomName(val: any) {
+  public confirmUpdateDatasetCustomName(val: any) {}
 
-  }
+  public confirmUpdateDatasetCustomDescription(val: any) {}
 
-  public confirmUpdateDatasetCustomDescription(val: any) {
+  public onClickDownloadDataset() {}
 
-  }
+  public onClickGetDatasetVersions() {}
 
-  public onClickDownloadDataset() {
-
-  }
-
-  public onClickGetDatasetVersions() {
-
-  }
-
-  public onClickOpenShareAccess() {
-
-  }
+  public onClickOpenShareAccess() {}
 }
