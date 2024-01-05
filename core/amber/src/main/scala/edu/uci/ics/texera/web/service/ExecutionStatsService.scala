@@ -53,7 +53,7 @@ class ExecutionStatsService(
 
   // Variables for Storing Runtime Statistics +
   private var counter = 0
-  private var prevStoredState = None: Option[ExecutionStatsStore]
+  private var prevStoredState: Option[ExecutionStatsStore] = None
 
   addSubscription(
     stateStore.statsStore.registerDiffHandler((oldState, newState) => {
@@ -63,7 +63,7 @@ class ExecutionStatsService(
         }
 
         if (prevStoredState.get.operatorInfo.nonEmpty) {
-          if (counter % (AmberConfig.getStatusStoreIntervalInMs / AmberConfig.getStatusUpdateIntervalInMs) == 0) {
+          if (counter % AmberConfig.getStatusStoreIntervalRatio == 0) {
             storeRuntimeStatistics(
               newState.operatorInfo.zip(prevStoredState.get.operatorInfo).collect {
                 case ((newId, newStats), (oldId, oldStats)) =>
