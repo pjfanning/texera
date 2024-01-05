@@ -89,7 +89,7 @@ export class DatasetVersionFileTreeManager {
     node.children = [];
   }
 
-  createNodeWithPath(path: string): void {
+  addNodeWithPath(path: string): void {
     this.updateTreeMapWithPath(path);
   }
 

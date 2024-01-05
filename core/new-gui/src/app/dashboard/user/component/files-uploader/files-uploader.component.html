@@ -34,16 +34,8 @@
     class="uploaded-files-list">
     <h6 class="new-upload-title">New Uploads</h6>
     <texera-user-dataset-version-filetree
-      [fileTreeNodeList]="newUploadFileTreeManager.getRootNodes()"
+      [fileTreeNodeList]="newUploadFileTreeNodes"
       [isFileTreeNodeDeletable]="true"
       (deletedTreeNode)="onNewUploadsFileDeleted($event)"></texera-user-dataset-version-filetree>
-    <!--        <ul class="file-list">-->
-    <!--            <li *ngFor="let file of getNewUploadFileEntries()" class="file-queue-item">-->
-    <!--                <span>{{ file.name }}</span>-->
-    <!--                <button mat-mini-fab color="warn" (click)="removeNewUploadFile(file)" aria-label="Delete file">-->
-    <!--                    <mat-icon>delete</mat-icon>-->
-    <!--                </button>-->
-    <!--            </li>-->
-    <!--        </ul>-->
   </div>
 </div>

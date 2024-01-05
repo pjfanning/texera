@@ -28,6 +28,7 @@ export class FilesUploaderComponent {
   newUploadFiles: Map<string, FileUploadItem> = new Map<string, FileUploadItem>();
 
   newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
+  newUploadFileTreeNodes: DatasetVersionFileTreeNode[] = [];
 
   public fileDropped(files: NgxFileDropEntry[]) {
     for (const droppedFile of files) {
@@ -36,7 +37,8 @@ export class FilesUploaderComponent {
         fileEntry.file(file => {
           const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath);
           this.newUploadFiles.set(fileUploadItem.name, fileUploadItem);
-          this.newUploadFileTreeManager.createNodeWithPath(fileUploadItem.name);
+          this.newUploadFileTreeManager.addNodeWithPath(fileUploadItem.name);
+          this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
           this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
         });
       } else {

@@ -64,16 +64,16 @@ export class NgbdModalDatasetAddComponent implements OnInit {
 
     const initialVersionName = this.validateForm.get("initialVersionName")?.value;
 
-    this.datasetService
-      .createDataset(ds, initialVersionName, this.filesToBeUploaded)
-      .pipe(untilDestroyed(this))
-      .subscribe({
-        next: value => {
-          console.log("Dataset Creation succeeded");
-          this.datasetAdded.emit(); // Emit the event after successful addition
-        },
-        error: (err: unknown) => alert(JSON.stringify(err.error)),
-        complete: () => this.activeModal.close(),
-      });
+    // this.datasetService
+    //   .createDataset(ds, initialVersionName, this.filesToBeUploaded)
+    //   .pipe(untilDestroyed(this))
+    //   .subscribe({
+    //     next: value => {
+    //       console.log("Dataset Creation succeeded");
+    //       this.datasetAdded.emit(); // Emit the event after successful addition
+    //     },
+    //     error: (err: unknown) => alert(JSON.stringify(err.error)),
+    //     complete: () => this.activeModal.close(),
+    //   });
   }
 }
