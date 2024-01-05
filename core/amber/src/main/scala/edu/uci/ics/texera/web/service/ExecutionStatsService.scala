@@ -58,28 +58,28 @@ class ExecutionStatsService(
   addSubscription(
     stateStore.statsStore.registerDiffHandler((oldState, newState) => {
       if (AmberConfig.isUserSystemEnabled) {
-        if (
-          counter % (AmberConfig.getStatusStoreIntervalInMs / AmberConfig.getStatusUpdateIntervalInMs) == 0
-        ) {
-          if (prevStoredState.isEmpty) {
-            prevStoredState = Some(oldState)
-          }
-          storeRuntimeStatistics(
-            newState.operatorInfo.zip(prevStoredState.get.operatorInfo).collect {
-              case ((newId, newStats), (oldId, oldStats)) =>
-                val res = OperatorRuntimeStats(
-                  newStats.state,
-                  newStats.inputCount - oldStats.inputCount,
-                  newStats.outputCount - oldStats.outputCount
-                )
-                (newId, res)
-            }
-          )
-          counter = 0
-          prevStoredState = Some(newState)
-
+        if (prevStoredState.isEmpty || prevStoredState.get.operatorInfo.isEmpty) {
+          prevStoredState = Some(oldState);
         }
-        counter += 1
+
+        if (prevStoredState.get.operatorInfo.nonEmpty) {
+          if (counter % (AmberConfig.getStatusStoreIntervalInMs / AmberConfig.getStatusUpdateIntervalInMs) == 0) {
+            storeRuntimeStatistics(
+              newState.operatorInfo.zip(prevStoredState.get.operatorInfo).collect {
+                case ((newId, newStats), (oldId, oldStats)) =>
+                  val res = OperatorRuntimeStats(
+                    newStats.state,
+                    newStats.inputCount - oldStats.inputCount,
+                    newStats.outputCount - oldStats.outputCount
+                  )
+                  (newId, res)
+              }
+            )
+            counter = 0
+            prevStoredState = Some(newState)
+          }
+          counter += 1
+        }
       }
       // Update operator stats if any operator updates its stat
       if (newState.operatorInfo.toSet != oldState.operatorInfo.toSet) {
