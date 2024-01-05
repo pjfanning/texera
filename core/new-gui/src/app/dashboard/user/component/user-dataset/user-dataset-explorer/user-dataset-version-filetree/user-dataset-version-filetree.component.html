@@ -17,7 +17,7 @@
           nz-button
           nzType="link"
           *ngIf="isFileTreeNodeDeletable"
-          (click)="deleteFileTreeNode(node)">
+          (click)="deleteFileTreeNode(node.data)">
           <i
             nz-icon
             nzType="delete"
