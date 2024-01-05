@@ -27,6 +27,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils.
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.discussion.UserDiscussionResource
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource.ExecutionResultEntry
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowExecutionsResource, WorkflowResource, WorkflowVersionResource}
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
@@ -219,6 +220,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     environment.jersey.register(classOf[GmailResource])
     environment.jersey.register(classOf[AdminExecutionResource])
     environment.jersey.register(classOf[UserQuotaResource])
+    environment.jersey.register(classOf[UserDiscussionResource])
   }
 
   /**
