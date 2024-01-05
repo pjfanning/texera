@@ -90,7 +90,9 @@ export class UserDatasetVersionCreator implements OnInit {
   }
 
   onClickCreate() {
+    console.log("create clicked");
     if (this.isCreatingVersion && this.baseVersion) {
+      console.log("creating a version")
       const versionName = this.form.get("name")?.value;
       this.datasetService
         .createDatasetVersion(this.baseVersion?.did, versionName, this.removedFilePaths, this.newUploadFiles)
@@ -114,7 +116,6 @@ export class UserDatasetVersionCreator implements OnInit {
         .createDataset(ds, initialVersionName, this.newUploadFiles)
         .pipe()
         .subscribe(res => {
-          console.log("dataset creation succeed");
           this.datasetOrVersionCreationID.emit(res.dataset.did);
         });
     }

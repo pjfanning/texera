@@ -52,27 +52,12 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // this.router.events.pipe(
-    //     filter(event => event instanceof NavigationEnd)
-    // ).subscribe(() => {
-    //   const param = this.route.snapshot.params['did'];
-    //   console.log("param: ", param)
-    //   if (param !== 'create') {
-    //     this.did = param;
-    //     this.retrieveDatasetInfo();
-    //     this.retrieveDatasetVersionList();
-    //   } else {
-    //     this.renderDatasetCreatorSider();
-    //   }
-    // });
-
     this.route.params.pipe(
         switchMap(params => {
           const param = params['did'];
-          console.log("param: ", param);
-          this.renderDatasetViewSider();
           if (param !== 'create') {
             this.did = param;
+            this.renderDatasetViewSider();
             this.retrieveDatasetInfo();
             this.retrieveDatasetVersionList();
           } else {
@@ -94,9 +79,16 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   renderVersionCreatorSider() {
-    this.isCreatingDataset = false;
-    this.isCreatingVersion = true;
-    this.siderWidth = this.MAX_SIDER_WIDTH;
+    if (this.did) {
+      this.datasetService.retrieveDatasetLatestVersion(this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe( latestVersion => {
+          this.versionCreatorBaseVersion = latestVersion;
+          this.isCreatingDataset = false;
+          this.isCreatingVersion = true;
+          this.siderWidth = this.MAX_SIDER_WIDTH;
+        })
+    }
   }
 
   public onCreationFinished(creationID: number) {
@@ -104,6 +96,7 @@ export class UserDatasetExplorerComponent implements OnInit {
       // creation succeed
       if (this.isCreatingVersion) {
         this.retrieveDatasetVersionList();
+        this.renderDatasetViewSider();
       } else {
         this.router.navigate([`/dashboard/dataset/${creationID}`]);
       }
