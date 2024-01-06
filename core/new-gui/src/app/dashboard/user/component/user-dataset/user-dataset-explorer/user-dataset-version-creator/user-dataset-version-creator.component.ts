@@ -37,6 +37,14 @@ export class UserDatasetVersionCreator implements OnInit {
 
   ngOnInit() {
     this.setFormFields();
+    this.subscribeToFormChanges();
+  }
+
+  private subscribeToFormChanges() {
+    this.form.statusChanges.pipe(untilDestroyed(this)).subscribe(status => {
+      // If the form is valid, enable the create button, otherwise disable it
+      this.isCreateButtonDisabled = status !== 'VALID';
+    });
   }
 
   ngOnChanges() {
@@ -78,11 +86,19 @@ export class UserDatasetVersionCreator implements OnInit {
             key: "versionName",
             type: "input",
             templateOptions: {
-              label: "Version Name",
+              label: "Initial Version Name",
               required: true,
             },
           },
         ];
+  }
+
+
+  private triggerValidation() {
+    Object.keys(this.form.controls).forEach(field => {
+      const control = this.form.get(field);
+      control?.markAsTouched({ onlySelf: true });
+    });
   }
 
   onClickCancel() {
@@ -90,7 +106,13 @@ export class UserDatasetVersionCreator implements OnInit {
   }
 
   onClickCreate() {
-    console.log("create clicked");
+    // check if the form is valid
+    this.triggerValidation();
+
+    if (!this.form.valid) {
+      return; // Stop further execution if the form is not valid
+    }
+
     if (this.isCreatingVersion && this.baseVersion) {
       console.log("creating a version")
       const versionName = this.form.get("name")?.value;

@@ -1,7 +1,7 @@
 <div>
-  <form
+  <div
     class="texera-user-dataset-creator-form"
-    [formGroup]="form">
+  >
     <formly-form
       [form]="form"
       [fields]="fields"
@@ -12,7 +12,7 @@
       [ngModel]="isDatasetPublic"
       nzCheckedChildren="public"
       nzUnCheckedChildren="private"></nz-switch>
-  </form>
+  </div>
   <div class="file-uploader">
     <texera-user-files-uploader
       (uploadedFiles)="onNewUploadFilesChanged($event)"
