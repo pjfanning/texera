@@ -38,6 +38,7 @@ trait PauseHandler {
           "Pause_" + Instant.now().toString,
           NoAlignment,
           cp.workflow.physicalPlan,
+          cp.workflow.physicalPlan.operators.map(_.id),
           PauseWorker()
         ),
         sender

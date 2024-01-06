@@ -105,6 +105,7 @@ object FriesReconfigurationAlgorithm {
         epochMarkerId,
         RequireAlignment,
         componentPlan,
+        reconfigurations.map(_._1.id).toSet,
         reconfigCommand
       )
     })

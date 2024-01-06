@@ -347,15 +347,18 @@ class DataProcessor(
       logManager: ReplayLogManager
   ): Unit = {
     val markerId = marker.id
-    logger.info(s"receive marker from $channelId, id = ${marker.id}, cmd = ${marker.command}")
+    val command = marker.commandMapping.getOrElse(actorId, null)
+    logger.info(s"receive marker from $channelId, id = ${marker.id}, cmd = ${command}")
     if (marker.markerType == RequireAlignment) {
       pauseManager.pauseInputChannel(EpochMarkerPause(markerId), List(channelId))
     }
     if (epochManager.isMarkerAligned(upstreamLinkStatus, channelId, marker)) {
       logManager.markAsReplayDestination(markerId)
       // invoke the control command carried with the epoch marker
-      logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${marker.command}")
-      asyncRPCServer.receive(marker.command, channelId.from)
+      logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")
+      if (command != null) {
+        asyncRPCServer.receive(command, channelId.from)
+      }
       // if this operator is not the final destination of the marker, pass it downstream
       if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {
         val physicalLinks = marker.scope.links.map(_.id).toSet
@@ -366,7 +369,7 @@ class DataProcessor(
               .exists(p => p.to == VirtualIdentityUtils.getPhysicalOpId(activeChannelId.to))
           ) {
             logger.info(
-              s"send marker to $activeChannelId, id = ${marker.id}, cmd = ${marker.command}"
+              s"send marker to $activeChannelId, id = ${marker.id}, cmd = ${command}"
             )
             outputGateway.sendTo(activeChannelId, marker)
           }

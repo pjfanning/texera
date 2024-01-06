@@ -72,20 +72,23 @@ class AsyncRPCClient(
     p
   }
 
-  def sendAsMarker[T](
+  def sendMarker(
       markerId: String,
       markerType: MarkerType,
       scope: PhysicalPlan,
-      cmd: ControlCommand[T],
+      cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
       channelID: ChannelID
-  ): Future[T] = {
-    val (p, id) = createPromise[T]()
-    logger.debug(s"send marker: $markerId with command $cmd to $channelID (controlID: $id)")
+  ): Unit = {
+    logger.debug(s"send marker: $markerId to $channelID")
     outputGateway.sendTo(
       channelID,
-      MarkerPayload(markerId, markerType, scope, ControlInvocation(id, cmd))
+      MarkerPayload(markerId, markerType, scope, cmdMapping)
     )
-    p
+  }
+
+  def createInvocation[T](cmd: ControlCommand[T]): (ControlInvocation, Future[T]) = {
+    val (p, id) = createPromise[T]()
+    (ControlInvocation(id, cmd), p)
   }
 
   def sendToClient(cmd: ControlCommand[_]): Unit = {
