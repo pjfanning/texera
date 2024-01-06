@@ -45,8 +45,10 @@ export class DatasetVersionFileTreeManager {
   private root: DatasetVersionFileTreeNode = { name: "/", type: "directory", children: [], parentDir: "" };
   private treeNodesMap: Map<string, DatasetVersionFileTreeNode> = new Map<string, DatasetVersionFileTreeNode>();
 
-  constructor() {
+  constructor(nodes: DatasetVersionFileTreeNode[] = []) {
     this.treeNodesMap.set("/", this.root);
+    if (nodes.length > 0)
+      this.initializeWithRootNodes(nodes);
   }
 
   private updateTreeMapWithPath(path: string): DatasetVersionFileTreeNode {
@@ -91,6 +93,66 @@ export class DatasetVersionFileTreeManager {
 
   addNodeWithPath(path: string): void {
     this.updateTreeMapWithPath(path);
+  }
+
+  initializeWithRootNodes(rootNodes: DatasetVersionFileTreeNode[]) {
+    // Clear existing nodes in map except the root
+    this.treeNodesMap.clear();
+    this.treeNodesMap.set("/", this.root);
+
+    // Helper function to add nodes recursively
+    const addNodeRecursively = (node: DatasetVersionFileTreeNode, parentDir: string) => {
+      const nodePath = parentDir === '/' ? `/${node.name}` : `${parentDir}/${node.name}`;
+      this.treeNodesMap.set(nodePath, node);
+
+      // If the node is a directory, recursively add its children
+      if (node.type === 'directory' && node.children) {
+        node.children.forEach(child => addNodeRecursively(child, nodePath));
+      }
+    };
+
+    // Add each root node and their children to the tree and map
+    rootNodes.forEach(node => {
+      if (!this.root.children) {
+        this.root.children = [];
+      }
+      this.root.children.push(node);
+      addNodeRecursively(node, '/');
+    });
+  }
+
+  removeNode(targetNode: DatasetVersionFileTreeNode): void {
+    if (targetNode.parentDir === '' && targetNode.name === '/') {
+      // Can't remove root
+      return;
+    }
+
+    // Queue for BFS
+    const queue: DatasetVersionFileTreeNode[] = [this.root];
+
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+
+      // Check if the current node is the parent of the target node
+      if (node.children && node.children.some(child => child === targetNode)) {
+        // Remove the target node and its descendants
+        this.removeNodeAndDescendants(targetNode);
+
+        // Remove the target node from the current node's children
+        node.children = node.children.filter(child => child !== targetNode);
+
+        // Construct the full path of the target node to remove it from the map
+        const pathToRemove = getFullPathFromFileTreeNode(targetNode);
+        this.treeNodesMap.delete(pathToRemove);
+
+        return; // Node found and removed, exit the function
+      }
+
+      // If not found, add the children of the current node to the queue
+      if (node.children) {
+        queue.push(...node.children);
+      }
+    }
   }
 
   removeNodeWithPath(path: string): void {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from "@angular/core";
+import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
 import { FileUploadItem } from "../../type/dashboard-file.interface";
 import { NgxFileDropEntry } from "ngx-file-drop";
 import { UserFileUploadService } from "../../service/user-file/user-file-upload.service";
@@ -17,7 +17,8 @@ import {
 })
 export class FilesUploaderComponent {
   @Input()
-  public previouslyUploadFiles: DatasetVersionFileTreeNode[] | undefined;
+  previouslyUploadFiles: DatasetVersionFileTreeNode[] | undefined;
+  previouslyUploadFilesManager: DatasetVersionFileTreeManager | undefined;
 
   @Output()
   uploadedFiles = new EventEmitter<FileUploadItem[]>();
@@ -29,6 +30,7 @@ export class FilesUploaderComponent {
 
   newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
   newUploadFileTreeNodes: DatasetVersionFileTreeNode[] = [];
+
 
   public fileDropped(files: NgxFileDropEntry[]) {
     for (const droppedFile of files) {
@@ -51,15 +53,38 @@ export class FilesUploaderComponent {
   }
 
   onPreviouslyUploadedFileDeleted(node: DatasetVersionFileTreeNode) {
-    this.previouslyUploadFiles = this.previouslyUploadFiles?.filter(fileNode => fileNode != node);
+    this.removeFileTreeNode(node, true);
     const paths = getPathsFromNode(node);
     this.removingFilePaths.emit(paths);
   }
 
   onNewUploadsFileDeleted(node: DatasetVersionFileTreeNode) {
-    const filePath = getFullPathFromFileTreeNode(node);
-    this.newUploadFileTreeManager.removeNodeWithPath(filePath);
-    this.newUploadFiles.delete(filePath);
+    this.removeFileTreeNode(node, false);
     this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
+  }
+
+  private removeFileTreeNode(node: DatasetVersionFileTreeNode, fromPreviouslyUploads: boolean) {
+    if (fromPreviouslyUploads) {
+      if (!this.previouslyUploadFilesManager) {
+        this.previouslyUploadFilesManager = new DatasetVersionFileTreeManager(this.previouslyUploadFiles);
+      }
+      if (this.previouslyUploadFilesManager) {
+        this.previouslyUploadFilesManager.removeNode(node);
+        console.log("before delete previous uploads", this.previouslyUploadFilesManager.getRootNodes())
+        this.previouslyUploadFiles = [...this.previouslyUploadFilesManager.getRootNodes()]
+        console.log("after delete previous uploads", this.previouslyUploadFiles)
+      }
+    } else {
+      // from new uploads
+      const filePath = getFullPathFromFileTreeNode(node);
+      this.newUploadFileTreeManager.removeNode(node);
+      this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
+      this.newUploadFiles.delete(filePath);
+    }
+  }
+
+  private addFileToNewUploadsFileTree(path: string) {
+    this.newUploadFileTreeManager.addNodeWithPath(path);
+    this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
   }
 }
