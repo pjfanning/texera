@@ -4,29 +4,33 @@
 }
 
 .create-btn {
-  background-color: #000000;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
+  background-color: #ffffff;
+  color: #007bff;
+  border: 1px solid lightgray;
+  padding: 5px 20px;
   cursor: pointer;
   margin-left: 15%;
-  margin-right: 10px;
+  margin-right: 5%;
+  width: 30%;
+  text-align: center;
   &:hover {
-    background-color: #808080;
+    background-color: darken(#007bff, 10%);
+    color: #ffffff;
   }
 }
 
 .cancel-btn {
-  background-color: #ff0000;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
+  background-color: #ffffff;
+  color: #ff0000;
+  border: 1px solid lightgray;
+  padding: 5px 20px;
   cursor: pointer;
-  margin-left: 10px;
   margin-right: 15%;
+  margin-left: 5%;
+  width: 30%;
+  text-align: center;
   &:hover {
     background-color: darken(#ff0000, 10%);
+    color: #ffffff
   }
 }
