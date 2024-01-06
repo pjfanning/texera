@@ -2,9 +2,6 @@ import { Component, OnInit } from "@angular/core";
 import {ActivatedRoute, NavigationEnd, Router} from "@angular/router";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
-import { NgbdModelDatasetVersionAddComponent } from "../ngbd-model-dataset-version-add/ngbd-model-dataset-version-add.component";
-import { TREE_ACTIONS, KEYS, IActionMapping, ITreeOptions, TreeModel, TreeNode } from "@circlon/angular-tree-component";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import {
   DatasetVersionFileTreeNode,

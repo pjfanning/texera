@@ -3,15 +3,12 @@ import { AfterViewInit, Component, ViewChild } from "@angular/core";
 import { SearchResultsComponent } from "../search-results/search-results.component";
 import { FiltersComponent } from "../filters/filters.component";
 import { UserService } from "../../../../common/service/user/user.service";
-import { NotificationService } from "../../../../common/service/notification/notification.service";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { Router } from "@angular/router";
 import { SearchService } from "../../service/search.service";
 import { DatasetService } from "../../service/user-dataset/dataset.service";
 import { firstValueFrom } from "rxjs";
 import { DashboardEntry } from "../../type/dashboard-entry";
 import { SortMethod } from "../../type/sort-method";
-import { NgbdModalDatasetAddComponent } from "./ngbd-modal-dataset-add/ngbd-modal-dataset-add.component";
 
 @UntilDestroy()
 @Component({
