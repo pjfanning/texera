@@ -31,6 +31,7 @@ import java.time.Instant
 import scala.collection.mutable
 
 class WorkflowExecutionService(
+    controllerConfig: ControllerConfig,
     workflowContext: WorkflowContext,
     resultService: ExecutionResultService,
     request: WorkflowExecuteRequest,
@@ -95,7 +96,8 @@ class WorkflowExecutionService(
         request.logicalPlan,
         resultService.opResultStorage,
         lastCompletedLogicalPlan,
-        executionStateStore
+        executionStateStore,
+        controllerConfig
       )
     } catch {
       case e: Throwable =>
@@ -124,10 +126,10 @@ class WorkflowExecutionService(
   var executionRuntimeService: ExecutionRuntimeService = _
   var executionConsoleService: ExecutionConsoleService = _
 
-  def startWorkflow(controllerConf: ControllerConfig): Unit = {
+  def startWorkflow(): Unit = {
     client = TexeraWebApplication.createAmberRuntime(
       workflow,
-      controllerConf,
+      controllerConfig,
       errorHandler
     )
 

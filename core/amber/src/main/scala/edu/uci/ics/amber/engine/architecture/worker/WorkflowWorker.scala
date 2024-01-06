@@ -22,7 +22,6 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
-import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
 
 object WorkflowWorker {
