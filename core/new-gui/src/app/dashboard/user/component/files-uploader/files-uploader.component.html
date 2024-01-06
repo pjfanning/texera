@@ -30,7 +30,7 @@
       (deletedTreeNode)="onPreviouslyUploadedFileDeleted($event)"></texera-user-dataset-version-filetree>
   </div>
   <div
-    *ngIf="newUploadFiles && newUploadFiles.size > 0"
+    *ngIf="newUploadNodeToFileItems && newUploadNodeToFileItems.size > 0"
     class="uploaded-files-list">
     <h6 class="new-upload-title">New Uploads</h6>
     <texera-user-dataset-version-filetree

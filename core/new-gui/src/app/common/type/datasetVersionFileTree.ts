@@ -91,8 +91,8 @@ export class DatasetVersionFileTreeManager {
     node.children = [];
   }
 
-  addNodeWithPath(path: string): void {
-    this.updateTreeMapWithPath(path);
+  addNodeWithPath(path: string): DatasetVersionFileTreeNode {
+    return this.updateTreeMapWithPath(path);
   }
 
   initializeWithRootNodes(rootNodes: DatasetVersionFileTreeNode[]) {

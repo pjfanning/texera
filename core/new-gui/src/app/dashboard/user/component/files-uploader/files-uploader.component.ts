@@ -26,7 +26,7 @@ export class FilesUploaderComponent {
   @Output()
   removingFilePaths = new EventEmitter<string[]>();
 
-  newUploadFiles: Map<string, FileUploadItem> = new Map<string, FileUploadItem>();
+  newUploadNodeToFileItems: Map<DatasetVersionFileTreeNode, FileUploadItem> = new Map<DatasetVersionFileTreeNode, FileUploadItem>();
 
   newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
   newUploadFileTreeNodes: DatasetVersionFileTreeNode[] = [];
@@ -38,10 +38,8 @@ export class FilesUploaderComponent {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
         fileEntry.file(file => {
           const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath);
-          this.newUploadFiles.set(fileUploadItem.name, fileUploadItem);
-          this.newUploadFileTreeManager.addNodeWithPath(fileUploadItem.name);
-          this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
-          this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
+          this.addFileToNewUploadsFileTree(droppedFile.relativePath, fileUploadItem);
+          this.uploadedFiles.emit(Array.from(this.newUploadNodeToFileItems.values()));
         });
       } else {
         // It was a directory (empty directories are added, otherwise only files)
@@ -60,7 +58,7 @@ export class FilesUploaderComponent {
 
   onNewUploadsFileDeleted(node: DatasetVersionFileTreeNode) {
     this.removeFileTreeNode(node, false);
-    this.uploadedFiles.emit(Array.from(this.newUploadFiles.values()));
+    this.uploadedFiles.emit(Array.from(this.newUploadNodeToFileItems.values()));
   }
 
   private removeFileTreeNode(node: DatasetVersionFileTreeNode, fromPreviouslyUploads: boolean) {
@@ -76,15 +74,24 @@ export class FilesUploaderComponent {
       }
     } else {
       // from new uploads
-      const filePath = getFullPathFromFileTreeNode(node);
       this.newUploadFileTreeManager.removeNode(node);
       this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
-      this.newUploadFiles.delete(filePath);
+      this.removeNodeAndChildrenFromFileItemsMap(node);
     }
   }
 
-  private addFileToNewUploadsFileTree(path: string) {
-    this.newUploadFileTreeManager.addNodeWithPath(path);
+  private removeNodeAndChildrenFromFileItemsMap(node: DatasetVersionFileTreeNode) {
+    this.newUploadNodeToFileItems.delete(node);
+
+    // Recursively remove children if it's a directory
+    if (node.type === "directory" && node.children) {
+      node.children.forEach(child => this.removeNodeAndChildrenFromFileItemsMap(child));
+    }
+  }
+
+  private addFileToNewUploadsFileTree(path: string, fileUploadItem: FileUploadItem) {
+    const newNode = this.newUploadFileTreeManager.addNodeWithPath(path);
     this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
+    this.newUploadNodeToFileItems.set(newNode, fileUploadItem);
   }
 }
