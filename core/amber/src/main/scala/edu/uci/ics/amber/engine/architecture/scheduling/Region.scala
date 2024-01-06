@@ -13,7 +13,7 @@ case class WorkerConfig(
     replayLogConfOpt: Option[WorkerReplayLoggingConfig] = None
 )
 
-final case class WorkerStateRestoreConfig(readFrom: URI, replayTo: Long)
+final case class WorkerStateRestoreConfig(readFrom: URI, replayDestination: String)
 
 final case class WorkerReplayLoggingConfig(writeTo: URI)
 
