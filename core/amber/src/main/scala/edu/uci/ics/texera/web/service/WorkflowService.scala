@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+import edu.uci.ics.amber.engine.architecture.scheduling.{
   WorkerReplayLoggingConfig,
   WorkerStateRestoreConfig
 }
@@ -182,6 +182,7 @@ class WorkflowService(
     }
 
     val execution = new WorkflowExecutionService(
+      controllerConf,
       workflowContext,
       resultService,
       req,
@@ -191,7 +192,7 @@ class WorkflowService(
     lifeCycleManager.registerCleanUpOnStateChange(execution.executionStateStore)
     executionService.onNext(execution)
     if (execution.executionStateStore.metadataStore.getState.fatalErrors.isEmpty) {
-      execution.startWorkflow(controllerConf)
+      execution.startWorkflow()
     }
   }
 
