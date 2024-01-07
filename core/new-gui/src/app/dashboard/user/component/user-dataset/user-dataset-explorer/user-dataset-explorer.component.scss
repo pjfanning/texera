@@ -25,10 +25,10 @@
 }
 
 nz-layout {
-  height: calc(100vh - 300px); // Adjust 200px based on the actual height of the upper div.
+  height: 100%;
 }
-html,
-body {
+
+html,body{
   height: 100%;
   margin: 0;
   padding: 0;
@@ -48,6 +48,12 @@ body {
   height: 20px;
   line-height: 20px;
   margin-top: 400px;
+}
+
+.file-renderer {
+  width: 95%;
+  height: 80%;
+  margin: auto;
 }
 
 .grayed-out {

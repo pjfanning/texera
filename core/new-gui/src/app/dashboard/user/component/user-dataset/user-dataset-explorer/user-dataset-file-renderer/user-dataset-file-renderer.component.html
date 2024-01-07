@@ -1,34 +1,38 @@
 <div
   [ngStyle]="!isMaximized ? {'padding-top': '15px', 'margin-left': '30px', 'width': '100%', 'height': '80%', 'overflow-y': 'scroll'}:
                                 {'padding-top': '15px', 'margin-left': '30px', 'width': '100%', 'height': '100%', 'overflow-y': 'scroll'}">
-  <div *ngIf="isLoading">
-    <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
-  </div>
-  <ng2-pdfjs-viewer
-    *ngIf="displayPdf && fileURL"
-    [pdfSrc]="fileURL"></ng2-pdfjs-viewer>
-  <nz-table
-    *ngIf="displayCSV"
-    #basicTable>
-    <thead>
+  <div
+    class="file-display-area"
+  >
+    <div *ngIf="isLoading">
+      <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+    </div>
+    <ng2-pdfjs-viewer
+      *ngIf="displayPdf && fileURL"
+      [pdfSrc]="fileURL"></ng2-pdfjs-viewer>
+    <nz-table
+      *ngIf="displayCSV"
+      #basicTable>
+      <thead>
       <tr>
         <th *ngFor="let column of csvHeader">{{ column }}</th>
       </tr>
-    </thead>
-    <tbody>
+      </thead>
+      <tbody>
       <tr *ngFor="let row of csvContent">
         <td *ngFor="let cell of row">{{ cell }}</td>
       </tr>
-    </tbody>
-  </nz-table>
+      </tbody>
+    </nz-table>
 
-  <div *ngIf="displayImage && imageFileURL">
-    <img
-      [src]="imageFileURL"
-      alt="{{filePath}}" />
+    <div *ngIf="displayImage && imageFileURL">
+      <img
+        [src]="imageFileURL"
+        alt="{{filePath}}"/>
+    </div>
+    <div *ngIf="isFileLoadingError">
+      <h3>File loading encounters error</h3>
+    </div>
+    <div *ngIf="displayPlainText">{{ textContent }}</div>
   </div>
-  <div *ngIf="isFileLoadingError">
-    <h3>File loading encounters error</h3>
-  </div>
-  <div *ngIf="displayPlainText">{{ textContent }}</div>
 </div>
