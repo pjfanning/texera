@@ -117,14 +117,14 @@ public interface IWorkflowExecutions extends Serializable {
     public String getEnvironmentVersion();
 
     /**
-     * Setter for <code>texera_db.workflow_executions.environment_eid</code>.
+     * Setter for <code>texera_db.workflow_executions.log_location</code>.
      */
-    public void setEnvironmentEid(UInteger value);
+    public void setLogLocation(String value);
 
     /**
-     * Getter for <code>texera_db.workflow_executions.environment_eid</code>.
+     * Getter for <code>texera_db.workflow_executions.log_location</code>.
      */
-    public UInteger getEnvironmentEid();
+    public String getLogLocation();
 
     // -------------------------------------------------------------------------
     // FROM and INTO

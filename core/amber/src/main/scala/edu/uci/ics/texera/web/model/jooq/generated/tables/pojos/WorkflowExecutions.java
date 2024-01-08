@@ -17,7 +17,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class WorkflowExecutions implements IWorkflowExecutions {
 
-    private static final long serialVersionUID = 1433714944;
+    private static final long serialVersionUID = -379967912;
 
     private UInteger  eid;
     private UInteger  vid;
@@ -29,7 +29,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
     private Byte      bookmarked;
     private String    name;
     private String    environmentVersion;
-    private UInteger  environmentEid;
+    private String    logLocation;
 
     public WorkflowExecutions() {}
 
@@ -44,7 +44,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
         this.bookmarked = value.getBookmarked();
         this.name = value.getName();
         this.environmentVersion = value.getEnvironmentVersion();
-        this.environmentEid = value.getEnvironmentEid();
+        this.logLocation = value.getLogLocation();
     }
 
     public WorkflowExecutions(
@@ -58,7 +58,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
         Byte      bookmarked,
         String    name,
         String    environmentVersion,
-        UInteger  environmentEid
+        String    logLocation
     ) {
         this.eid = eid;
         this.vid = vid;
@@ -70,7 +70,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
         this.bookmarked = bookmarked;
         this.name = name;
         this.environmentVersion = environmentVersion;
-        this.environmentEid = environmentEid;
+        this.logLocation = logLocation;
     }
 
     @Override
@@ -174,13 +174,13 @@ public class WorkflowExecutions implements IWorkflowExecutions {
     }
 
     @Override
-    public UInteger getEnvironmentEid() {
-        return this.environmentEid;
+    public String getLogLocation() {
+        return this.logLocation;
     }
 
     @Override
-    public void setEnvironmentEid(UInteger environmentEid) {
-        this.environmentEid = environmentEid;
+    public void setLogLocation(String logLocation) {
+        this.logLocation = logLocation;
     }
 
     @Override
@@ -197,7 +197,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
         sb.append(", ").append(bookmarked);
         sb.append(", ").append(name);
         sb.append(", ").append(environmentVersion);
-        sb.append(", ").append(environmentEid);
+        sb.append(", ").append(logLocation);
 
         sb.append(")");
         return sb.toString();
@@ -219,7 +219,7 @@ public class WorkflowExecutions implements IWorkflowExecutions {
         setBookmarked(from.getBookmarked());
         setName(from.getName());
         setEnvironmentVersion(from.getEnvironmentVersion());
-        setEnvironmentEid(from.getEnvironmentEid());
+        setLogLocation(from.getLogLocation());
     }
 
     @Override
