@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
+import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
   WorkflowPaused,
   WorkflowStatusUpdate
@@ -32,17 +33,27 @@ trait PauseHandler {
       cp.controllerTimerService.disableStatusUpdate() // to be enabled in resume
       cp.controllerTimerService.disableMonitoring()
       cp.controllerTimerService.disableSkewHandling()
-      execute(
-        PropagateEpochMarker(
-          cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
-          "Pause_" + Instant.now().toString,
-          NoAlignment,
-          cp.workflow.physicalPlan,
-          cp.workflow.physicalPlan.operators.map(_.id),
-          PauseWorker()
-        ),
-        sender
-      ).map { ret =>
+      val interactionSupported = cp.workflow.physicalPlan.operators.forall(!_.isPythonOperator)
+      (if (interactionSupported) {
+         execute(
+           PropagateEpochMarker(
+             cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
+             "Pause_" + Instant.now().toString,
+             NoAlignment,
+             cp.workflow.physicalPlan,
+             cp.workflow.physicalPlan.operators.map(_.id),
+             PauseWorker()
+           ),
+           sender
+         )
+       } else {
+         Future
+           .collect(
+             cp.executionState.getAllBuiltWorkers
+               .map(workerId => send(PauseWorker(), workerId).map(ret => (workerId, ret)))
+               .toSeq
+           )
+       }).map { ret =>
         ret.foreach {
           case (worker, value) =>
             val info = cp.executionState.getOperatorExecution(worker).getWorkerInfo(worker)
@@ -57,5 +68,4 @@ trait PauseHandler {
       }.unit
     }
   }
-
 }
