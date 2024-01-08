@@ -1,8 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
 import edu.uci.ics.amber.engine.architecture.scheduling.ExpansionGreedyRegionPlanGenerator.replaceVertex
+import edu.uci.ics.amber.engine.common.{AmberConfig, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -15,7 +17,10 @@ import edu.uci.ics.texera.workflow.operators.source.cache.CacheSourceOpDesc
 import org.jgrapht.graph.DirectedAcyclicGraph
 
 import scala.annotation.tailrec
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.collection.convert.ImplicitConversions.{
+  `collection AsScalaIterable`,
+  `iterable AsScalaIterable`
+}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
@@ -54,7 +59,8 @@ object ExpansionGreedyRegionPlanGenerator {
 class ExpansionGreedyRegionPlanGenerator(
     logicalPlan: LogicalPlan,
     var physicalPlan: PhysicalPlan,
-    opResultStorage: OpResultStorage
+    opResultStorage: OpResultStorage,
+    controllerConfig: ControllerConfig
 ) extends RegionPlanGenerator(
       logicalPlan,
       physicalPlan,
@@ -231,6 +237,8 @@ class ExpansionGreedyRegionPlanGenerator(
     // mark links that go to downstream regions
     populateDownstreamLinks(regionDAG)
 
+    // generate the region configs
+    populateRegionConfigs(regionDAG)
   }
 
   private def populateSourceOperators(
@@ -288,9 +296,59 @@ class ExpansionGreedyRegionPlanGenerator(
     regionDAG
   }
 
+  private def populateRegionConfigs(
+      regionDAG: DirectedAcyclicGraph[Region, RegionLink]
+  ): DirectedAcyclicGraph[Region, RegionLink] = {
+    regionDAG
+      .vertexSet()
+      .toList
+      .foreach(region => {
+        val config = RegionConfig(
+          region.getEffectiveOperators
+            .map(physicalOpId => physicalPlan.getOperator(physicalOpId))
+            .map { physicalOp =>
+              {
+                val workerCount =
+                  if (physicalOp.suggestedWorkerNum.isDefined) {
+                    physicalOp.suggestedWorkerNum.get
+                  } else if (physicalOp.parallelizable) {
+                    AmberConfig.numWorkerPerOperatorByDefault
+                  } else {
+                    1
+                  }
+
+                physicalOp.id -> (0 until workerCount)
+                  .map(idx => {
+                    val workerId = VirtualIdentityUtils
+                      .createWorkerIdentity(physicalOp.executionId, physicalOp.id, idx)
+                    WorkerConfig(
+                      controllerConfig.workerRestoreConfMapping(workerId),
+                      controllerConfig.workerLoggingConfMapping(workerId)
+                    )
+                  })
+                  .toList
+              }
+            }
+            .toMap
+        )
+        val newRegion = region.copy(config = Some(config))
+        replaceVertex(regionDAG, region, newRegion)
+      })
+    regionDAG
+  }
+
   def generate(context: WorkflowContext): (RegionPlan, PhysicalPlan) = {
 
     val regionDAG = createRegionDAG(context)
+
+    regionDAG.toList.foreach(region =>
+      region.config.get.workerConfigs.foreach {
+        case (physicalOpId, workerConfigs) =>
+          physicalPlan.getOperator(physicalOpId).assignWorkers(workerConfigs.length)
+      }
+    )
+    physicalPlan = physicalPlan.populatePartitioningOnLinks()
+
     (
       RegionPlan(
         regions = regionDAG.iterator().asScala.toList,
@@ -334,8 +392,6 @@ class ExpansionGreedyRegionPlanGenerator(
       .addLink(readerToDestLink)
       .addLink(sourceToWriterLink)
       .setOperatorUnblockPort(toOp.id, toInputPort)
-      .populatePartitioningOnLinks()
-
   }
 
   private def createMatReader(

@@ -13,22 +13,23 @@ class ReplayOrderEnforcer(
   private var currentChannelID: ChannelID = _
 
   private def triggerOnComplete(): Unit = {
+    if (!isCompleted) {
+      return
+    }
     if (onComplete != null) {
       onComplete()
       onComplete = null // make sure the onComplete is called only once.
     }
   }
 
-  var isCompleted: Boolean = channelStepOrder.isEmpty
-
-  if (isCompleted) {
-    triggerOnComplete()
-  }
-
   // restore replay progress by dropping some of the entries
   while (channelStepOrder.nonEmpty && channelStepOrder.head.step <= startStep) {
     forwardNext()
   }
+
+  var isCompleted: Boolean = channelStepOrder.isEmpty
+
+  triggerOnComplete()
 
   private def forwardNext(): Unit = {
     if (channelStepOrder.nonEmpty) {
