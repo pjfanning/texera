@@ -1,17 +1,9 @@
 <div class="file-tree-container">
-  <tree-root
-    [nodes]="fileTreeNodeList"
-    [options]="fileTreeDisplayOptions">
-    <ng-template
-      #treeNodeTemplate
-      let-node>
-      <span>
-        <i
-          *ngIf="node.data.children"
-          class="fa fa-folder"></i>
-        <i
-          *ngIf="!node.data.children"
-          class="fa fa-file"></i>
+  <tree-root [nodes]="fileTreeNodeList" [options]="fileTreeDisplayOptions">
+    <ng-template #treeNodeTemplate let-node>
+      <span title="{{ node.data.name }}">
+        <i *ngIf="node.data.children" class="fa fa-folder"></i>
+        <i *ngIf="!node.data.children" class="fa fa-file"></i>
         {{ node.data.name }}
         <button
           nz-button
@@ -19,10 +11,7 @@
           *ngIf="isFileTreeNodeDeletable"
           class="delete-button"
           (click)="deleteFileTreeNode(node.data)">
-          <i
-            nz-icon
-            nzType="delete"
-            nzTheme="outline"></i>
+          <i nz-icon nzType="delete" nzTheme="outline"></i>
         </button>
       </span>
     </ng-template>

@@ -24,15 +24,14 @@
       </tr>
       </tbody>
     </nz-table>
-
     <div *ngIf="displayImage && imageFileURL">
       <img
         [src]="imageFileURL"
         alt="{{filePath}}"/>
     </div>
+    <div *ngIf="displayPlainText">{{ textContent }}</div>
     <div *ngIf="isFileLoadingError">
       <h3>File loading encounters error</h3>
     </div>
-    <div *ngIf="displayPlainText">{{ textContent }}</div>
   </div>
 </div>
