@@ -1,6 +1,4 @@
 .file-uploader {
-  //border: 2px dashed #D3D3D3;
-  //border-radius: 8px;
   text-align: center;
   padding: 20px;
   transition: border-color 0.3s ease-in-out;
@@ -17,50 +15,21 @@
 }
 
 .file-drop-description p {
-  font-size: small;
+  font-size: 15px;
   margin: 10px 0;
 }
 
-.file-drop-hint {
-  font-size: smaller;
-  color: #757575;
-}
-
 .uploaded-files-list {
-  margin-top: 20px;
-}
-
-.file-list {
-  list-style-type: none;
-  padding-left: 0;
+  font-size: 15px;
   margin-top: 10px;
-}
-
-.file-queue-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 10px;
-}
-
-.file-queue-item span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-queue-item button {
-  margin-left: 15px;
-}
-
-/* Optional: Add animations for the file items */
-.file-queue-item {
-  transition: background-color 0.3s ease-in-out;
-}
-
-.file-queue-item:hover {
-  background-color: #f9f9f9;
+  height: 25%;
+  max-height: 25%;
+  width: 90%;
+  max-width: 90%;
+  margin-left: 5%;
+  margin-right: 5%;
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .upload-file-button {

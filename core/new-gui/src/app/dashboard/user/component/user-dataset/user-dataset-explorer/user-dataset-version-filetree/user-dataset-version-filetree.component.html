@@ -1,4 +1,4 @@
-<div>
+<div class="file-tree-container">
   <tree-root
     [nodes]="fileTreeNodeList"
     [options]="fileTreeDisplayOptions">
@@ -17,6 +17,7 @@
           nz-button
           nzType="link"
           *ngIf="isFileTreeNodeDeletable"
+          class="delete-button"
           (click)="deleteFileTreeNode(node.data)">
           <i
             nz-icon

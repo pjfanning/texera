@@ -37,14 +37,6 @@ export class UserDatasetVersionCreator implements OnInit {
 
   ngOnInit() {
     this.setFormFields();
-    this.subscribeToFormChanges();
-  }
-
-  private subscribeToFormChanges() {
-    this.form.statusChanges.pipe(untilDestroyed(this)).subscribe(status => {
-      // If the form is valid, enable the create button, otherwise disable it
-      this.isCreateButtonDisabled = status !== 'VALID';
-    });
   }
 
   ngOnChanges() {

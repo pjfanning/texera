@@ -1,0 +1,18 @@
+/* Target the span element for each tree node */
+tree-root .fa {
+  padding: 5px; /* Example padding */
+  font-size: 15px; /* Set font size for the icons */
+}
+
+/* Styles for the delete button */
+.delete-button {
+  width: 15px;
+  margin-left: 5px;
+}
+
+/* Styles for the file tree container */
+.file-tree-container {
+  max-height: 400px; /* Adjust the max-height as needed */
+  overflow-y: auto; /* Enables vertical scrolling when content exceeds max-height */
+  overflow-x: auto; /* Prevents horizontal scrolling */
+}
