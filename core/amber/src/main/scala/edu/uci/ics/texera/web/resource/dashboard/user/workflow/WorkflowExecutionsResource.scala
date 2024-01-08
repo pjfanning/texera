@@ -2,6 +2,7 @@ package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayDestination
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
+import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
@@ -107,7 +108,9 @@ class WorkflowExecutionsResource {
     if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
       List()
     } else {
-      ExecutionsMetadataPersistService.tryGetExistingExecution(eid.longValue()) match {
+      ExecutionsMetadataPersistService.tryGetExistingExecution(
+        ExecutionIdentity(eid.longValue())
+      ) match {
         case Some(value) =>
           val logLocation = value.getLogLocation
           if (logLocation != null && logLocation.nonEmpty) {
