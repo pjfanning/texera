@@ -5,13 +5,21 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle
 import com.github.toastshaman.dropwizard.auth.jwt.JwtAuthFilter
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
+import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
 import edu.uci.ics.amber.engine.common.{AmberConfig, AmberUtils}
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.Utils.objectMapper
+import edu.uci.ics.texera.Utils.{maptoStatusCode, objectMapper}
 import edu.uci.ics.texera.web.TexeraWebApplication.scheduleRecurringCallThroughActorSystem
 import edu.uci.ics.texera.web.auth.JwtAuth.jwtConsumer
-import edu.uci.ics.texera.web.auth.{GuestAuthFilter, SessionUser, UserAuthenticator, UserRoleAuthorizer}
+import edu.uci.ics.texera.web.auth.{
+  GuestAuthFilter,
+  SessionUser,
+  UserAuthenticator,
+  UserRoleAuthorizer
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.resource.auth.{AuthResource, GoogleAuthResource}
 import edu.uci.ics.texera.web.resource._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
@@ -20,12 +28,26 @@ import edu.uci.ics.texera.web.resource.dashboard.admin.user.AdminUserResource
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
 import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource.ExecutionResultEntry
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{WorkflowAccessResource, WorkflowExecutionsResource, WorkflowResource, WorkflowVersionResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils.getAllDatasetDirectories
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
+import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.discussion.UserDiscussionResource
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
+  WorkflowAccessResource,
+  WorkflowExecutionsResource,
+  WorkflowResource,
+  WorkflowVersionResource
+}
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
 import io.dropwizard.auth.{AuthDynamicFeature, AuthValueFactoryProvider}
 import io.dropwizard.setup.{Bootstrap, Environment}
 import io.dropwizard.websockets.WebsocketBundle
@@ -40,6 +62,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import org.apache.commons.jcs3.access.exception.InvalidArgumentException
 
+import java.net.URI
 import scala.annotation.tailrec
 
 object TexeraWebApplication {
@@ -80,10 +103,22 @@ object TexeraWebApplication {
     nextOption(Map(), args.toList)
   }
 
+  def recoverDatasetsToLatestVersions(): Unit = {
+    val datasetPaths = getAllDatasetDirectories()
+
+    datasetPaths.foreach(path => {
+      val versionControl = new GitVersionControl(path.toString)
+      versionControl.recoverToLatestVersion()
+    })
+  }
+
   def main(args: Array[String]): Unit = {
     val argMap = parseArgs(args)
 
     val clusterMode = argMap.get('cluster).asInstanceOf[Option[Boolean]].getOrElse(false)
+
+    // do the dataset recovery
+    recoverDatasetsToLatestVersions()
 
     // start actor system master node
     actorSystem = AmberUtils.startActorMaster(clusterMode)
@@ -111,14 +146,22 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     bootstrap.addBundle(new WebsocketBundle(classOf[CollaborationResource]))
     // register scala module to dropwizard default object mapper
     bootstrap.getObjectMapper.registerModule(DefaultScalaModule)
-
-    if (AmberConfig.sinkStorageMode.equalsIgnoreCase("mongodb")) {
+    if (AmberConfig.isUserSystemEnabled) {
       val timeToLive: Int = AmberConfig.sinkStorageTTLInSecs
       // do one time cleanup of collections that were not closed gracefully before restart/crash
-      // retrieve all executions that are not completed
-      val incompleteExecutions: List[ExecutionResultEntry] =
-        WorkflowExecutionsResource.getAllIncompleteResults()
-      cleanOldCollections(incompleteExecutions, WorkflowAggregatedState.FAILED)
+      // retrieve all executions that were executing before the reboot.
+      val allExecutionsBeforeRestart: List[WorkflowExecutions] =
+        WorkflowExecutionsResource.getExpiredExecutionsWithResultOrLog(-1)
+      cleanExecutions(
+        allExecutionsBeforeRestart,
+        statusByte => {
+          if (statusByte != maptoStatusCode(COMPLETED)) {
+            maptoStatusCode(FAILED) // for incomplete executions, mark them as failed.
+          } else {
+            statusByte
+          }
+        }
+      )
       scheduleRecurringCallThroughActorSystem(
         2.seconds,
         AmberConfig.sinkStorageCleanUpCheckIntervalInSecs.seconds
@@ -188,6 +231,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     environment.jersey.register(classOf[UserConfigResource])
     environment.jersey.register(classOf[UserFileAccessResource])
     environment.jersey.register(classOf[UserFileResource])
+    environment.jersey.register(classOf[DatasetResource])
     environment.jersey.register(classOf[AdminUserResource])
     environment.jersey.register(classOf[PublicProjectResource])
     environment.jersey.register(classOf[WorkflowAccessResource])
@@ -201,6 +245,7 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     environment.jersey.register(classOf[GmailResource])
     environment.jersey.register(classOf[AdminExecutionResource])
     environment.jersey.register(classOf[UserQuotaResource])
+    environment.jersey.register(classOf[UserDiscussionResource])
   }
 
   /**
@@ -208,27 +253,42 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
     * MongoDB doesn't have an API of drop collection where collection name in (from a subquery), so the implementation is to retrieve
     * the entire list of those documents that have expired, then loop the list to drop them one by one
     */
-  def cleanOldCollections(
-      executions: List[ExecutionResultEntry],
-      status: WorkflowAggregatedState
+  private def cleanExecutions(
+      executions: List[WorkflowExecutions],
+      statusChangeFunc: Byte => Byte
   ): Unit = {
     // drop the collection and update the status to ABORTED
     executions.foreach(execEntry => {
-      dropCollections(execEntry.result)
+      dropCollections(execEntry.getResult)
+      deleteReplayLog(execEntry.getLogLocation)
       // then delete the pointer from mySQL
-      ExecutionsMetadataPersistService.tryUpdateExecutionStatusAndPointers(
-        execEntry.eId.longValue(),
-        status
-      )
+      val executionIdentity = ExecutionIdentity(execEntry.getEid.longValue())
+      ExecutionsMetadataPersistService.tryUpdateExistingExecution(executionIdentity) { execution =>
+        execution.setResult("")
+        execution.setLogLocation(null)
+        execution.setStatus(statusChangeFunc(execution.getStatus))
+      }
     })
   }
 
   def dropCollections(result: String): Unit = {
+    if (result.isEmpty) {
+      return
+    }
     // parse the JSON
     val node = objectMapper.readTree(result)
     val collections = node.get("results")
     // loop every collection and drop it
     collections.forEach(collection => MongoDatabaseManager.dropCollection(collection.asText()))
+  }
+
+  def deleteReplayLog(logLocation: String): Unit = {
+    if (logLocation == null || logLocation.isEmpty) {
+      return
+    }
+    val uri = new URI(logLocation)
+    val storage = new URILogStorage(uri)
+    storage.deleteStorage()
   }
 
   /**
@@ -238,9 +298,9 @@ class TexeraWebApplication extends io.dropwizard.Application[TexeraWebConfigurat
       timeToLive: Int
   ): Unit = {
     // retrieve all executions that are completed and their last update time goes beyond the ttl
-    val expiredResults: List[ExecutionResultEntry] =
-      WorkflowExecutionsResource.getExpiredResults(timeToLive)
-    // drop the collection and update the status to COMPLETED
-    cleanOldCollections(expiredResults, WorkflowAggregatedState.COMPLETED)
+    val expiredResults: List[WorkflowExecutions] =
+      WorkflowExecutionsResource.getExpiredExecutionsWithResultOrLog(timeToLive)
+    // drop the collections and clean the logs
+    cleanExecutions(expiredResults, statusByte => statusByte)
   }
 }

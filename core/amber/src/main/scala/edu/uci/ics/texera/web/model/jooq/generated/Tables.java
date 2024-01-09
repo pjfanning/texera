@@ -4,7 +4,11 @@
 package edu.uci.ics.texera.web.model.jooq.generated;
 
 
+import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfWorkflow;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.File;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.FileOfProject;
@@ -31,9 +35,29 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
 public class Tables {
 
     /**
+     * The table <code>texera_db.dataset</code>.
+     */
+    public static final Dataset DATASET = Dataset.DATASET;
+
+    /**
      * The table <code>texera_db.dataset_of_environment</code>.
      */
     public static final DatasetOfEnvironment DATASET_OF_ENVIRONMENT = DatasetOfEnvironment.DATASET_OF_ENVIRONMENT;
+
+    /**
+     * The table <code>texera_db.dataset_of_user</code>.
+     */
+    public static final DatasetOfUser DATASET_OF_USER = DatasetOfUser.DATASET_OF_USER;
+
+    /**
+     * The table <code>texera_db.dataset_of_workflow</code>.
+     */
+    public static final DatasetOfWorkflow DATASET_OF_WORKFLOW = DatasetOfWorkflow.DATASET_OF_WORKFLOW;
+
+    /**
+     * The table <code>texera_db.dataset_version</code>.
+     */
+    public static final DatasetVersion DATASET_VERSION = DatasetVersion.DATASET_VERSION;
 
     /**
      * The table <code>texera_db.environment</code>.

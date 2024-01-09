@@ -2,26 +2,24 @@ package edu.uci.ics.texera.workflow.common.operators
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo
-
-import scala.collection.mutable
 
 trait PythonOperatorDescriptor extends LogicalOp {
   override def getPhysicalOp(
-      executionId: Long,
+      executionId: ExecutionIdentity,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalOp = {
     val generatedCode = generatePythonCode(operatorSchemaInfo)
     if (asSource()) {
-
       PhysicalOp
         .sourcePhysicalOp(
           executionId,
           operatorIdentifier,
           OpExecInitInfo(generatedCode)
         )
-        .copy(numWorkers = numWorkers(), dependency = dependency().toMap)
+        .withParallelizable(parallelizable())
+        .withDependencies(dependencies())
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     } else {
       PhysicalOp
@@ -30,14 +28,14 @@ trait PythonOperatorDescriptor extends LogicalOp {
           operatorIdentifier,
           OpExecInitInfo(generatedCode)
         )
-        .copy(numWorkers = numWorkers(), dependency = dependency().toMap)
+        .withParallelizable(parallelizable())
+        .withDependencies(dependencies())
         .withOperatorSchemaInfo(schemaInfo = operatorSchemaInfo)
     }
   }
 
-  def numWorkers(): Int = AmberConfig.numWorkerPerOperatorByDefault
-
-  def dependency(): mutable.Map[Int, Int] = mutable.Map()
+  def parallelizable(): Boolean = false
+  def dependencies(): Map[Int, Int] = Map()
 
   def asSource(): Boolean = false
 

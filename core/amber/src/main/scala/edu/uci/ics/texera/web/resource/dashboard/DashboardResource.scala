@@ -3,12 +3,11 @@ package edu.uci.ics.texera.web.resource.dashboard
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.{
-  UserFileAccessPrivilege,
-  WorkflowUserAccessPrivilege
-}
+import edu.uci.ics.texera.web.model.jooq.generated.enums.{UserFileAccessPrivilege, WorkflowUserAccessPrivilege}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.DashboardEnvironment
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFile
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
@@ -33,6 +32,7 @@ object DashboardResource {
       workflow: DashboardWorkflow,
       project: Project,
       file: DashboardFile,
+      dataset: DashboardDataset,
       environment: DashboardEnvironment
   )
 
@@ -96,6 +96,7 @@ class DashboardResource {
     var workflowMatchQuery: Condition = noCondition()
     var projectMatchQuery: Condition = noCondition()
     var fileMatchQuery: Condition = noCondition()
+    var datasetMatchQuery: Condition = noCondition()
     var environmentMatchQuery: Condition = noCondition()
     for (key: String <- splitKeywords) {
       if (key != "") {
@@ -123,6 +124,12 @@ class DashboardResource {
         )
         fileMatchQuery = fileMatchQuery.and(
           getSearchQuery(subStringSearchEnabled, "texera_db.file.name, texera_db.file.description"),
+          key
+        )
+        datasetMatchQuery = datasetMatchQuery.and(
+          getSearchQuery(
+            subStringSearchEnabled,
+            "texera_db.dataset.name, texera_db.dataset.description"),
           key
         )
         environmentMatchQuery = environmentMatchQuery.and(
@@ -251,6 +258,28 @@ class DashboardResource {
         .and(workflowMatchQuery)
         .and(workflowOptionalFilters)
         .groupBy(WORKFLOW.WID)
+
+    val datasetQuery = context
+      .select(
+        DSL.inline("dataset").as("resourceType"),
+        DATASET.NAME,
+        DATASET.DESCRIPTION,
+        DATASET.DID,
+        DATASET_OF_USER.ACCESS_LEVEL,
+        DATASET_OF_USER.UID,
+        USER.NAME
+      )
+      .from(DATASET)
+      .leftJoin(DATASET_OF_USER)
+      .on(DATASET_OF_USER.DID.eq(DATASET.DID))
+      .leftJoin(USER)
+      .on(USER.UID.eq(DATASET_OF_USER.UID))
+      .where(
+          USER.UID.eq(user.getUid)
+            .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
+      )
+      .and(datasetMatchQuery)
+
 
     // Retrieve project resource
     val projectQuery = context
@@ -539,6 +568,17 @@ class DashboardResource {
             .limit(count + 1)
             .offset(offset)
             .fetch()
+        case "dataset" =>
+          val orderedQuery = orderBy match {
+            case "NameAsc"        => datasetQuery.orderBy(DATASET.NAME.asc())
+            case "NameDesc"       => datasetQuery.orderBy(DATASET.NAME.desc())
+            case _ =>
+              datasetQuery.orderBy(DATASET.NAME.asc())
+              throw new BadRequestException(
+                "Unknown orderBy. Only 'NameAsc', 'NameDesc' are allowed"
+              )
+          }
+          orderedQuery.limit(count + 1).offset(offset).fetch()
         case "project" =>
           val orderedQuery = orderBy match {
             case "NameAsc"        => projectQuery.orderBy(PROJECT.NAME.asc())
@@ -683,6 +723,20 @@ class DashboardResource {
             } else {
               null
             },
+            if (resourceType == "dataset") {
+              val datasetOfUserUid = record.into(DATASET_OF_USER).getUid
+              var accessLevel = record.into(DATASET_OF_USER).getAccessLevel
+              if (datasetOfUserUid != user.getUid) {
+                accessLevel = DatasetResource.READ
+              }
+              DashboardDataset(
+                record.into(DATASET).into(classOf[Dataset]),
+                DatasetResource.getAccessLevel(accessLevel),
+                accessLevel == DatasetResource.OWN
+              )
+            } else {
+              null
+            },
             if (resourceType == "environment") {
               val environmentRecord = record.into(ENVIRONMENT).into(classOf[Environment])
               val isOwner = environmentRecord.getUid == user.getUid
@@ -700,7 +754,6 @@ class DashboardResource {
         .toList,
       more = moreRecords
     )
-
   }
 
 }

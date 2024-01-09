@@ -5,9 +5,11 @@ import { NgModule } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule } from "@angular/router";
+import { TreeModule } from "@circlon/angular-tree-component";
 import { NgbModule, NgbPopoverModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
@@ -119,7 +121,6 @@ import { LocalLoginComponent } from "./home/component/login/local-login/local-lo
 import { MarkdownModule } from "ngx-markdown";
 import { FileSaverService } from "./dashboard/user/service/user-file/file-saver.service";
 import { DragDropModule } from "@angular/cdk/drag-drop";
-import { AuthInterceptor } from "./common/service/user/auth.interceptor";
 import { UserWorkflowListItemComponent } from "./dashboard/user/component/user-workflow/user-workflow-list-item/user-workflow-list-item.component";
 import { UserProjectListItemComponent } from "./dashboard/user/component/user-project/user-project-list-item/user-project-list-item.component";
 import { SortButtonComponent } from "./dashboard/user/component/sort-button/sort-button.component";
@@ -131,10 +132,22 @@ import { SearchResultsComponent } from "./dashboard/user/component/search-result
 import { PortPropertyEditFrameComponent } from "./workspace/component/property-editor/port-property-edit-frame/port-property-edit-frame.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import { PublicProjectComponent } from "./dashboard/user/component/user-project/public-project/public-project.component";
+import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.component";
+import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
+import { UserDatasetListItemComponent } from "./dashboard/user/component/user-dataset/user-dataset-list-item/user-dataset-list-item.component";
+import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
-import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
+import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
+import { UserDatasetFileRendererComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-file-renderer/user-dataset-file-renderer.component";
+import { FilesUploaderComponent } from "./dashboard/user/component/files-uploader/files-uploader.component";
+import { NgxFileDropModule } from "ngx-file-drop";
+import { NzDividerModule } from "ng-zorro-antd/divider";
+import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-filetree/user-dataset-version-filetree.component";
+import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
+import {PdfViewerModule} from "ng2-pdf-viewer";
+import {ImageViewerModule} from "ngx-image-viewer";
 import {EnvironmentPropertyEditFrameComponent} from "./workspace/component/property-editor/environment-property-edit-frame/environment-property-edit-frame.component";
 import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
@@ -142,7 +155,6 @@ import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/componen
 import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
-import {NzDividerModule} from "ng-zorro-antd/divider";
 import {EnvironmentDatasetItemComponent} from "./workspace/component/property-editor/environment-property-edit-frame/dataset-item/environment-dataset-item.component";
 
 registerLocaleData(en);
@@ -169,6 +181,7 @@ registerLocaleData(en);
     UserAvatarComponent,
     LocalLoginComponent,
     UserWorkflowComponent,
+    UserDatasetComponent,
     UserFileComponent,
     UserQuotaComponent,
     UserEnvironmentComponent,
@@ -199,6 +212,7 @@ registerLocaleData(en);
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
     NotificationComponent,
+    FilesUploaderComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
@@ -217,6 +231,11 @@ registerLocaleData(en);
     CollabWrapperComponent,
     HomeComponent,
     UserWorkflowListItemComponent,
+    UserDatasetListItemComponent,
+    UserDatasetExplorerComponent,
+    UserDatasetFileRendererComponent,
+    UserDatasetVersionFiletreeComponent,
+    UserDatasetVersionCreator,
     UserProjectListItemComponent,
     SortButtonComponent,
     FiltersComponent,
@@ -226,77 +245,83 @@ registerLocaleData(en);
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
+    FlarumComponent,
   ],
-    imports: [
-        BrowserModule,
-        AppRoutingModule,
-        HttpClientModule,
-        JwtModule.forRoot({
-            config: {
-                tokenGetter: AuthService.getAccessToken,
-                skipWhenExpired: false,
-                throwNoTokenError: false,
-            },
-        }),
-        MatTooltipModule,
-        CustomNgMaterialModule,
-        BrowserAnimationsModule,
-        NgbModule,
-        NgbPopoverModule,
-        RouterModule.forRoot([]),
-        FileUploadModule,
-        FormsModule,
-        ReactiveFormsModule,
-        FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),
-        FormlyMaterialModule,
-        FormlyMatDatepickerModule,
-        NzDatePickerModule,
-        NzDropDownModule,
-        NzButtonModule,
-        NzAutocompleteModule,
-        NzIconModule,
-        NzFormModule,
-        NzImageModule,
-        NzListModule,
-        NzInputModule,
-        NzPopoverModule,
-        NzCalendarModule,
-        NzMenuModule,
-        NzMessageModule,
-        NzCollapseModule,
-        NzToolTipModule,
-        NzCheckboxModule,
-        NzTableModule,
-        NzModalModule,
-        NzSelectModule,
-        NzSliderModule,
-        NzSpaceModule,
-        NzBadgeModule,
-        NzUploadModule,
-        NzNoAnimationModule,
-        NgxJsonViewerModule,
-        MatDialogModule,
-        NzCardModule,
-        NzStatisticModule,
-        NzTagModule,
-        NzPopconfirmModule,
-        NzAvatarModule,
-        DynamicModule,
-        MonacoEditorModule.forRoot(),
-        NzTabsModule,
-        NzTreeViewModule,
-        NzPaginationModule,
-        NzCommentModule,
-        ColorPickerModule,
-        NgPipesModule,
-        NzSwitchModule,
-        NzLayoutModule,
-        MarkdownModule.forRoot(),
-        DragDropModule,
-        NzAlertModule,
-        NzResizableModule,
-        NzDividerModule,
-    ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    HttpClientModule,
+    JwtModule.forRoot({
+      config: {
+        tokenGetter: AuthService.getAccessToken,
+        skipWhenExpired: false,
+        throwNoTokenError: false,
+      },
+    }),
+    MatTooltipModule,
+    CustomNgMaterialModule,
+    BrowserAnimationsModule,
+    NgbModule,
+    NgbPopoverModule,
+    RouterModule.forRoot([]),
+    TreeModule,
+    FileUploadModule,
+    PdfViewerModule,
+    FormsModule,
+    ReactiveFormsModule,
+    FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),
+    FormlyMaterialModule,
+    FormlyMatDatepickerModule,
+    NzDatePickerModule,
+    NzDropDownModule,
+    NzButtonModule,
+    NzAutocompleteModule,
+    NzIconModule,
+    NzFormModule,
+    NzImageModule,
+    NzListModule,
+    NzInputModule,
+    NzPopoverModule,
+    NzCalendarModule,
+    NzMenuModule,
+    NzMessageModule,
+    NzCollapseModule,
+    NzToolTipModule,
+    NzCheckboxModule,
+    NzTableModule,
+    NzModalModule,
+    NzSelectModule,
+    NzSliderModule,
+    NzSpaceModule,
+    NzBadgeModule,
+    NzUploadModule,
+    NzNoAnimationModule,
+    NgxJsonViewerModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
+    NzCardModule,
+    NzStatisticModule,
+    NzTagModule,
+    NzPopconfirmModule,
+    NzAvatarModule,
+    DynamicModule,
+    MonacoEditorModule.forRoot(),
+    NzDividerModule,
+    NzTabsModule,
+    NzTreeViewModule,
+    NzPaginationModule,
+    NzCommentModule,
+    ColorPickerModule,
+    NgPipesModule,
+    NzSwitchModule,
+    NzLayoutModule,
+    MarkdownModule.forRoot(),
+    DragDropModule,
+    NzAlertModule,
+    NzResizableModule,
+    NgxFileDropModule,
+    ImageViewerModule.forRoot(),
+  ],
   providers: [
     AuthGuardService,
     AdminGuardService,
@@ -309,11 +334,6 @@ registerLocaleData(en);
     {
       provide: HTTP_INTERCEPTORS,
       useClass: BlobErrorHttpInterceptor,
-      multi: true,
-    },
-    {
-      provide: HTTP_INTERCEPTORS,
-      useClass: AuthInterceptor,
       multi: true,
     },
   ],

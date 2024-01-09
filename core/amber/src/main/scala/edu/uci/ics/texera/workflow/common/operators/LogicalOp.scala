@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
-import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity}
 import edu.uci.ics.texera.web.OPversion
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{OperatorSchemaInfo, Schema}
@@ -165,22 +165,28 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   private var context: WorkflowContext = _
 
   @JsonProperty(PropertyNameConstants.OPERATOR_ID)
-  private val operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
+  private var operatorId: String = getClass.getSimpleName + "-" + UUID.randomUUID.toString
 
   @JsonProperty(PropertyNameConstants.OPERATOR_VERSION)
   var operatorVersion: String = getOperatorVersion()
   def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
-  def getPhysicalOp(executionId: Long, operatorSchemaInfo: OperatorSchemaInfo): PhysicalOp = {
+  def getPhysicalOp(
+      executionId: ExecutionIdentity,
+      operatorSchemaInfo: OperatorSchemaInfo
+  ): PhysicalOp = {
     throw new UnimplementedException()
   }
 
   // a logical operator corresponds multiple physical operators (a small DAG)
   def getPhysicalPlan(
-      executionId: Long,
+      executionId: ExecutionIdentity,
       operatorSchemaInfo: OperatorSchemaInfo
   ): PhysicalPlan = {
-    new PhysicalPlan(List(getPhysicalOp(executionId, operatorSchemaInfo)), List())
+    new PhysicalPlan(
+      operators = Set(getPhysicalOp(executionId, operatorSchemaInfo)),
+      links = Set.empty
+    )
   }
 
   def operatorInfo: OperatorInfo
@@ -209,8 +215,12 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
     this.context = workflowContext
   }
 
+  def setOperatorId(id: String): Unit = {
+    operatorId = id
+  }
+
   def runtimeReconfiguration(
-      executionId: Long,
+      executionId: ExecutionIdentity,
       newOpDesc: LogicalOp,
       operatorSchemaInfo: OperatorSchemaInfo
   ): Try[(PhysicalOp, Option[StateTransferFunc])] = {

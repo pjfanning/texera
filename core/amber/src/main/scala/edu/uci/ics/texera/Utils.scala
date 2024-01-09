@@ -12,6 +12,7 @@ import org.jooq.impl.DSL
 import java.nio.file.{Files, Path, Paths}
 import java.text.SimpleDateFormat
 import java.util.concurrent.locks.Lock
+import javax.ws.rs.InternalServerErrorException
 import scala.annotation.tailrec
 
 object Utils extends LazyLogging {

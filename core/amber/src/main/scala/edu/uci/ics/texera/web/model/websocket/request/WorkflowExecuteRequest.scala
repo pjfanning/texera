@@ -7,8 +7,9 @@ import org.jooq.types.UInteger
 case class WorkflowExecuteRequest(
     executionName: String,
     engineVersion: String,
+    logicalPlan: LogicalPlanPojo,
+    replayFromExecution: Option[Long],
     environmentEid: UInteger,
-    logicalPlan: LogicalPlanPojo
 ) extends TexeraWebSocketRequest
 
 case class LogicalPlanPojo(

@@ -14,7 +14,10 @@ import { AdminUserComponent } from "./dashboard/admin/component/user/admin-user.
 import { AdminExecutionComponent } from "./dashboard/admin/component/execution/admin-execution.component";
 import { AdminGuardService } from "./dashboard/admin/service/admin-guard.service";
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
+import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.component";
+import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
+import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 /*
@@ -60,6 +63,18 @@ if (environment.userSystemEnabled) {
         component: UserWorkflowComponent,
       },
       {
+        path: "dataset",
+        component: UserDatasetComponent,
+      },
+      {
+        path: "dataset/:did",
+        component: UserDatasetExplorerComponent,
+      },
+      {
+        path: "dataset/create",
+        component: UserDatasetExplorerComponent,
+      },
+      {
         path: "user-file",
         component: UserFileComponent,
       },
@@ -78,6 +93,10 @@ if (environment.userSystemEnabled) {
       {
         path: "search",
         component: SearchComponent,
+      },
+      {
+        path: "discussion",
+        component: FlarumComponent,
       },
       {
         path: "admin/user",

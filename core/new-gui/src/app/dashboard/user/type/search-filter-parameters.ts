@@ -18,7 +18,7 @@ export const toQueryStrings = (
   params: SearchFilterParameters,
   start?: number,
   count?: number,
-  type?: "workflow" | "project" | "file" | "environment" | null,
+  type?: "workflow" | "project" | "file" | "environment" | "dataset" | null,
   orderBy?: SortMethod
 ): string => {
   function* getQueryParameters(): Iterable<[name: string, value: string]> {
@@ -67,7 +67,7 @@ export const searchTestEntries = (
   keywords: string[],
   params: SearchFilterParameters,
   testEntries: DashboardEntry[],
-  type: "workflow" | "project" | "file" | "environment" | null
+  type: "workflow" | "project" | "file" | "environment" | "dataset" | null
 ): DashboardEntry[] => {
   const endOfDay = (date: Date) => {
     date.setHours(23);
