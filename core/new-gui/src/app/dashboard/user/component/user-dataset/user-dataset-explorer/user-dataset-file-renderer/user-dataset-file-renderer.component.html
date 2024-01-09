@@ -7,9 +7,14 @@
     <div *ngIf="isLoading">
       <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
     </div>
-    <ng2-pdfjs-viewer
+    <pdf-viewer
       *ngIf="displayPdf && fileURL"
-      [pdfSrc]="fileURL"></ng2-pdfjs-viewer>
+      [src]="fileURL"
+      [render-text]="true"
+      [original-size]="false"
+      style="width: 90%; height: 90%; margin: auto"
+    >
+    </pdf-viewer>
     <nz-table
       *ngIf="displayCSV"
       #basicTable>

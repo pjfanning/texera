@@ -37,7 +37,7 @@ export class UserDatasetExplorerComponent implements OnInit {
   constructor(private route: ActivatedRoute, private router: Router, private datasetService: DatasetService) {}
 
   // item for control the resizeable sider
-  MAX_SIDER_WIDTH = 400;
+  MAX_SIDER_WIDTH = 600;
   MIN_SIDER_WIDTH = 150;
   siderWidth = 200;
   id = -1;

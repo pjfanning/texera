@@ -138,7 +138,6 @@ import { UserDatasetListItemComponent } from "./dashboard/user/component/user-da
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { NzAlertModule } from "ng-zorro-antd/alert";
 import { ErrorFrameComponent } from "./workspace/component/result-panel/error-frame/error-frame.component";
-import { PdfJsViewerModule } from "ng2-pdfjs-viewer";
 import { LeftPanelComponent } from "./workspace/component/left-panel/left-panel.component";
 import { NzResizableModule } from "ng-zorro-antd/resizable";
 import { UserDatasetFileRendererComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-file-renderer/user-dataset-file-renderer.component";
@@ -147,6 +146,7 @@ import { NgxFileDropModule } from "ngx-file-drop";
 import { NzDividerModule } from "ng-zorro-antd/divider";
 import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-filetree/user-dataset-version-filetree.component";
 import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
+import {PdfViewerModule} from "ng2-pdf-viewer";
 
 registerLocaleData(en);
 
@@ -249,7 +249,7 @@ registerLocaleData(en);
     RouterModule.forRoot([]),
     TreeModule,
     FileUploadModule,
-    PdfJsViewerModule,
+    PdfViewerModule,
     FormsModule,
     ReactiveFormsModule,
     FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),

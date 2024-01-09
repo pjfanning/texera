@@ -27,25 +27,31 @@ export class FilesUploaderComponent {
   removingFilePaths = new EventEmitter<string[]>();
 
   newUploadNodeToFileItems: Map<DatasetVersionFileTreeNode, FileUploadItem> = new Map<DatasetVersionFileTreeNode, FileUploadItem>();
-
   newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
   newUploadFileTreeNodes: DatasetVersionFileTreeNode[] = [];
 
+  fileUploadingFinished: boolean = false;
+  // four types: "success", "info", "warning" and "error"
+  fileUploadBannerType: "error" | "success" | "info" | "warning" = "success";
+  fileUploadBannerMessage: string = "";
 
   public fileDropped(files: NgxFileDropEntry[]) {
     for (const droppedFile of files) {
       if (droppedFile.fileEntry.isFile) {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
         fileEntry.file(file => {
+          this.showFileUploadBanner("success", "Files are uploaded successfully!")
+
           const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath);
           this.addFileToNewUploadsFileTree(droppedFile.relativePath, fileUploadItem);
           this.uploadedFiles.emit(Array.from(this.newUploadNodeToFileItems.values()));
+        }, err => {
+          this.showFileUploadBanner("error", `Encounter error: ${err.message}`);
         });
       } else {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
-        // TODO: add a prompt to notify user
-        console.log(droppedFile.relativePath, fileEntry);
+        this.showFileUploadBanner("warning", "Do not upload empty folder");
       }
     }
   }
@@ -94,4 +100,15 @@ export class FilesUploaderComponent {
     this.newUploadFileTreeNodes = [...this.newUploadFileTreeManager.getRootNodes()];
     this.newUploadNodeToFileItems.set(newNode, fileUploadItem);
   }
+
+  showFileUploadBanner(bannerType: "error" | "success" | "info" | "warning", bannerMessage: string) {
+    this.fileUploadingFinished = true;
+    this.fileUploadBannerType = bannerType;
+    this.fileUploadBannerMessage = bannerMessage;
+  }
+
+  hideBanner() {
+    this.fileUploadingFinished = false;
+  }
+
 }

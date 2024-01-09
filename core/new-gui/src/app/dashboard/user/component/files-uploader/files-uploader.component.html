@@ -1,4 +1,14 @@
 <div class="file-uploader">
+  <nz-alert
+    *ngIf="fileUploadingFinished"
+    class="file-uploader-banner"
+    [nzType]="fileUploadBannerType"
+    nzMessage="{{fileUploadBannerMessage}}"
+    nzShowIcon
+    nzCloseable
+    (nzOnClose)="hideBanner()"
+  >
+  </nz-alert>
   <ngx-file-drop
     dropZoneLabel="Drop files here"
     (onFileDrop)="fileDropped($event)">
@@ -7,7 +17,7 @@
       ngx-file-drop-content-tmp
       let-openFileSelector="openFileSelector">
       <div class="file-drop-description">
-        <p>Drag & drop additional files to upload</p>
+        <p>Drag & drop file/folder to upload</p>
         <!--                <p class="file-drop-hint">Consider zipping large directories for faster uploads</p>-->
         <p>or</p>
         <button
@@ -21,7 +31,7 @@
     </ng-template>
   </ngx-file-drop>
   <div
-    *ngIf="previouslyUploadFiles"
+    *ngIf="previouslyUploadFiles && previouslyUploadFiles.length > 0"
     class="uploaded-files-list">
     <h6 class="new-upload-title">Previous Uploads</h6>
     <texera-user-dataset-version-filetree
