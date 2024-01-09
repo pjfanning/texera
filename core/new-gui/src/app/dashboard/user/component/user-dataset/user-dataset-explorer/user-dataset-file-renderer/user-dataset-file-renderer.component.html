@@ -29,10 +29,28 @@
       </tr>
       </tbody>
     </nz-table>
-    <div *ngIf="displayImage && imageFileURL">
+
+    <div
+      *ngIf="displayImage && fileURL && imageFileURL"
+    >
+
       <img
         [src]="imageFileURL"
-        alt="{{filePath}}"/>
+        alt="{{filePath}}"
+        (click)="toggleImageModal()"
+        style="width: 50%; height: 70%; margin: auto;"
+      />
+    </div>
+
+    <!-- Full-size image modal -->
+    <div
+      *ngIf="showImageModal"
+      class="image-modal"
+      (click)="toggleImageModal()">
+      <img
+        [src]="imageFileURL"
+        alt="{{filePath}}"
+        class="full-size-image" />
     </div>
     <div *ngIf="displayPlainText">{{ textContent }}</div>
     <div *ngIf="isFileLoadingError">

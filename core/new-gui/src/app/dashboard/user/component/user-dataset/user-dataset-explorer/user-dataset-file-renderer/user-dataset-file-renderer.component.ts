@@ -58,6 +58,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   // image related control
   public displayImage: boolean = false;
   public imageFileURL: SafeUrl | undefined;
+  public imageURL: string = "";
 
   // plain text & octet stream related control
   public displayPlainText: boolean = false;
@@ -98,10 +99,17 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     }
   }
 
+
   ngOnDestroy(): void {
     if (this.fileURL) {
       URL.revokeObjectURL(this.fileURL);
     }
+  }
+
+  // In your component
+  showImageModal = false;
+  toggleImageModal() {
+    this.showImageModal = !this.showImageModal;
   }
 
   reloadFileContent() {
@@ -207,6 +215,8 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     this.displayCSV = false;
     this.displayImage = false;
     this.displayPlainText = false;
+    this.isFileLoadingError = false;
+    this.isLoading = false;
     // garbage collection
     if (this.fileURL) {
       URL.revokeObjectURL(this.fileURL);
@@ -217,12 +227,12 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   }
 
   onFileLoadingError() {
-    this.isLoading = false;
+    this.turnOffAllDisplay();
     this.isFileLoadingError = true;
   }
 
   onFileSizeNotLoadable() {
-    this.isLoading = false;
+    this.turnOffAllDisplay();
     this.isFileSizeLoadable = false;
   }
 }
