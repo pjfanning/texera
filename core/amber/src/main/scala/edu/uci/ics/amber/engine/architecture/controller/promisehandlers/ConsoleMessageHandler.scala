@@ -4,6 +4,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandle
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ConsoleMessageHandler.ConsoleMessageTriggered
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ConsoleMessage
+import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
@@ -17,7 +18,7 @@ trait ConsoleMessageHandler {
     {
       if (msg.consoleMessage.msgType.isError) {
         // if its an error message, pause the workflow
-        execute(PauseWorkflow(), CONTROLLER)
+        execute(PauseWorkflow(), ChannelID(CONTROLLER, CONTROLLER, isControl = true))
       }
 
       // forward message to frontend

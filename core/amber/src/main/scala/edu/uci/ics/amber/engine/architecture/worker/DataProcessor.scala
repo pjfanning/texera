@@ -357,7 +357,7 @@ class DataProcessor(
       // invoke the control command carried with the epoch marker
       logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")
       if (command != null) {
-        asyncRPCServer.receive(command, channelId.from)
+        asyncRPCServer.receive(command, channelId)
       }
       // if this operator is not the final destination of the marker, pass it downstream
       if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {
@@ -389,7 +389,7 @@ class DataProcessor(
     )
     logger.warn(e.getLocalizedMessage + "\n" + e.getStackTrace.mkString("\n"))
     // invoke a pause in-place
-    asyncRPCServer.execute(PauseWorker(), SELF)
+    asyncRPCServer.execute(PauseWorker(), ChannelID(actorId, actorId, isControl = true))
   }
 
   /**
