@@ -71,7 +71,7 @@ class LoggingSpec
     }
     logManager.sendCommitted(null)
     logManager.terminate()
-    val logRecords = logStorage.getReader("tmpLog").mkLogRecordIterator().toArray
+    val logRecords = logStorage.getReader("tmpLog").mkRecordIterator().toArray
     logStorage.deleteStorage()
     assert(logRecords.length == 15)
   }

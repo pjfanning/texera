@@ -193,7 +193,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     }
     logManager.sendCommitted(null) // drain in-mem records to flush
     logManager.terminate()
-    val logs = logStorage.getReader("tmpLog").mkLogRecordIterator().toArray
+    val logs = logStorage.getReader("tmpLog").mkRecordIterator().toArray
     logStorage.deleteStorage()
     assert(logs.length > 1)
   }

@@ -10,7 +10,7 @@ import org.apache.hadoop.io.IOUtils.NullOutputStream
 import java.io.{DataInputStream, DataOutputStream}
 
 class EmptyRecordStorage[T >: Null <: AnyRef] extends SequentialRecordStorage[T] {
-  override def getWriter(logFileName: String): SequentialRecordWriter[T] = {
+  override def getWriter(fileName: String): SequentialRecordWriter[T] = {
     new SequentialRecordWriter(
       new DataOutputStream(
         new NullOutputStream()
@@ -18,7 +18,7 @@ class EmptyRecordStorage[T >: Null <: AnyRef] extends SequentialRecordStorage[T]
     )
   }
 
-  override def getReader(logFileName: String): SequentialRecordReader[T] = {
+  override def getReader(fileName: String): SequentialRecordReader[T] = {
     new SequentialRecordReader(() =>
       new DataInputStream(
         new NullInputStream()

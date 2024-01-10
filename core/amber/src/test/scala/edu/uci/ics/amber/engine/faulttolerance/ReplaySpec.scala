@@ -30,14 +30,14 @@ class ReplaySpec
   class IterableReadOnlyLogStore(iter: Iterable[ReplayLogRecord])
       extends SequentialRecordStorage[ReplayLogRecord] {
     override def getWriter(
-        logFileName: String
+        fileName: String
     ): SequentialRecordStorage.SequentialRecordWriter[ReplayLogRecord] = ???
 
     override def getReader(
-        logFileName: String
+        fileName: String
     ): SequentialRecordStorage.SequentialRecordReader[ReplayLogRecord] =
       new SequentialRecordReader[ReplayLogRecord](null) {
-        override def mkLogRecordIterator(): Iterator[ReplayLogRecord] = iter.toIterator
+        override def mkRecordIterator(): Iterator[ReplayLogRecord] = iter.toIterator
       }
 
     override def deleteStorage(): Unit = ???

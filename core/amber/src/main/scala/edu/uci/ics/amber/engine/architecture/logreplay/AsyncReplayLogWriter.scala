@@ -64,7 +64,7 @@ class AsyncReplayLogWriter(
     drainedScala
       .filter(_.isLeft)
       .map(_.left.get)
-      .foreach(x => writer.writeLogRecord(x))
+      .foreach(x => writer.writeRecord(x))
     writer.flush()
     drainedScala.filter(_.isRight).foreach(x => handler(x.right.get))
     drained.clear()
