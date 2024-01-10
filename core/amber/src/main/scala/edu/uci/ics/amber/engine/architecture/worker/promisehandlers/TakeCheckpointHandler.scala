@@ -13,7 +13,7 @@ import java.net.URI
 
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(id:String, writeTo:URI) extends ControlCommand[Unit]
+  final case class TakeCheckpoint(writeTo:URI) extends ControlCommand[Unit]
 }
 
 trait TakeCheckpointHandler {
@@ -41,7 +41,9 @@ trait TakeCheckpointHandler {
     }
     // 3. record inflight messages
     logger.info("Begin collecting inflight messages for all channels in the score except the current sender")
-    val collectorFutures = dp.inputGateway.getAllChannels.filter(_.channelId!=sender).map(_.collectMessagesUntilMarker(msg.id))
+    val channelsWithinScope = dp.epochManager.getChannelsWithinScope
+    val channelsToCollect = channelsWithinScope - dp.epochManager.getContext.fromChannel
+    val collectorFutures = dp.inputGateway.getAllChannels.filter(c => channelsToCollect.contains(c.channelId)).map(_.collectMessagesUntilMarker(dp.epochManager.getContext.marker.id))
     Future.collect(collectorFutures.toSeq).map{
       iterables =>
         chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)

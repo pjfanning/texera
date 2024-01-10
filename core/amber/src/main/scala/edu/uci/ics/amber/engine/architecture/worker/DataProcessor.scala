@@ -154,7 +154,7 @@ class DataProcessor(
   val outputManager: OutputManager =
     new OutputManager(actorId, outputGateway)
   // 6. epoch manager
-  val epochManager: EpochManager = new EpochManager(actorId)
+  val epochManager: EpochManager = new EpochManager(inputGateway, actorId)
 
   // dp thread stats:
   protected var inputTupleCount = 0L
@@ -348,11 +348,12 @@ class DataProcessor(
   ): Unit = {
     val markerId = marker.id
     val command = marker.commandMapping.getOrElse(actorId, null)
+    epochManager.setContext(marker, channelId)
     logger.info(s"receive marker from $channelId, id = ${marker.id}, cmd = ${command}")
     if (marker.markerType == RequireAlignment) {
       pauseManager.pauseInputChannel(EpochMarkerPause(markerId), List(channelId))
     }
-    if (epochManager.isMarkerAligned(upstreamLinkStatus, channelId, marker)) {
+    if (epochManager.isMarkerAligned) {
       logManager.markAsReplayDestination(markerId)
       // invoke the control command carried with the epoch marker
       logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")
@@ -360,13 +361,12 @@ class DataProcessor(
         asyncRPCServer.receive(command, channelId.from)
       }
       // if this operator is not the final destination of the marker, pass it downstream
-      if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {
-        val physicalLinks = marker.scope.links.map(_.id).toSet
-        outputManager.flush(Some(physicalLinks))
+      val downstreamLinksInScope = marker.scope.filter(_.from == actorId)
+      if (downstreamLinksInScope.nonEmpty) {
+        outputManager.flush(Some(downstreamLinksInScope))
         outputGateway.getActiveChannels.foreach { activeChannelId =>
           if (
-            physicalLinks
-              .exists(p => p.to == VirtualIdentityUtils.getPhysicalOpId(activeChannelId.to))
+            downstreamLinksInScope.contains(activeChannelId)
           ) {
             logger.info(
               s"send marker to $activeChannelId, id = ${marker.id}, cmd = ${command}"

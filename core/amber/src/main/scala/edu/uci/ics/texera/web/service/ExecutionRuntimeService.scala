@@ -39,7 +39,7 @@ class ExecutionRuntimeService(
     stateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(PAUSING, metadataStore)
     )
-    client.sendAsync(TakeGlobalCheckpoint())
+    client.sendAsync(PauseWorkflow())
   }))
 
   // Receive Resume
