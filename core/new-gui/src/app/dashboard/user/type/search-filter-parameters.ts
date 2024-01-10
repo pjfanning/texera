@@ -54,7 +54,7 @@ export const toQueryStrings = (
       ...(start ? [["start", start.toString()]] : []),
       ...(count ? [["count", count.toString()]] : []),
       ["resourceType", type ? type.toString() : ""],
-      ...(orderBy ? [["orderBy", SortMethod[orderBy]]] : []),
+      ...(orderBy != null ? [["orderBy", SortMethod[orderBy]]] : []),
     ]
       .filter(q => q[1])
       .map(([name, value]) => name + "=" + encodeURIComponent(value))

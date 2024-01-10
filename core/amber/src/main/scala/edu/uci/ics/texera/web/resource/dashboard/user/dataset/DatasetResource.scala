@@ -394,7 +394,7 @@ class DatasetResource {
         withTransaction(context)(ctx => {
           val targetDataset = getDatasetByID(ctx, did, uid)
           val targetDatasetStoragePath = targetDataset.getStoragePath
-          val versionCommitHash = getDatasetVersionHashByID(ctx, dvid, did, uid)
+          val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
           val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
           val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
@@ -420,7 +420,7 @@ class DatasetResource {
         val targetDataset = getDatasetByID(ctx, did, uid)
         val targetDatasetStoragePath = targetDataset.getStoragePath
 
-        val versionCommitHash = getDatasetVersionHashByID(ctx, dvid, did, uid)
+        val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
         val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
         val streamingOutput = new StreamingOutput() {
