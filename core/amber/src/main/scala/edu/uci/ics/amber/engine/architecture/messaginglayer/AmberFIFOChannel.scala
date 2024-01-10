@@ -1,15 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
+import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, MarkerPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /* The abstracted FIFO/exactly-once logic */
 class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
+
+  private final case class MessageCollector(promise:Promise[Iterable[WorkflowFIFOMessage]], collectedMessages:mutable.ArrayBuffer[WorkflowFIFOMessage])
 
   override def actorId: ActorVirtualIdentity = channelId.to
 
@@ -18,6 +22,7 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
   private val holdCredit = new AtomicLong()
+  private val messageCollectors = new mutable.HashMap[String, MessageCollector]
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber
@@ -34,6 +39,12 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     }
   }
 
+  def collectMessagesUntilMarker(markerId:String):Future[Iterable[WorkflowFIFOMessage]] = {
+    val promise = Promise[Iterable[WorkflowFIFOMessage]]()
+    messageCollectors(markerId) = MessageCollector(promise, new ArrayBuffer[WorkflowFIFOMessage]())
+    promise
+  }
+
   def getCurrentSeq: Long = current
 
   private def isDuplicated(sequenceNumber: Long): Boolean =
@@ -47,15 +58,31 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
   private def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
     fifoQueue.enqueue(data)
-    holdCredit.getAndAdd(getInMemSize(data))
-    current += 1
+    afterEnqueueMessage(data)
     while (ofoMap.contains(current)) {
       val msg = ofoMap(current)
       fifoQueue.enqueue(msg)
-      holdCredit.getAndAdd(getInMemSize(msg))
       ofoMap.remove(current)
-      current += 1
+      afterEnqueueMessage(msg)
     }
+  }
+
+  inline private def afterEnqueueMessage(msg:WorkflowFIFOMessage): Unit = {
+    holdCredit.getAndAdd(getInMemSize(msg))
+    messageCollectors.values.foreach{
+      collector: MessageCollector =>
+        collector.collectedMessages.append(msg)
+    }
+    msg.payload match {
+      case payload: MarkerPayload =>
+        if(messageCollectors.contains(payload.id)){
+          val collector = messageCollectors(payload.id)
+          collector.promise.setValue(collector.collectedMessages)
+          messageCollectors.remove(payload.id)
+        }
+      case _ => // skip
+    }
+    current += 1
   }
 
   def take: WorkflowFIFOMessage = {
