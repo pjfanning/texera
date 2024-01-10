@@ -5,7 +5,6 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandle
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
@@ -34,7 +33,7 @@ trait WorkerExecutionCompletedHandler {
       // because the worker might be killed before the next query statistics interval
       // and the user sees the last update before completion
       val statsRequests = new mutable.MutableList[Future[Unit]]()
-      statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender.from))), ChannelID(CONTROLLER, CONTROLLER, isControl = true))
+      statsRequests += execute(ControllerInitiateQueryStatistics(Option(List(sender))), CONTROLLER)
 
       Future
         .collect(statsRequests)
@@ -49,7 +48,7 @@ trait WorkerExecutionCompletedHandler {
             Future.Done
           } else {
             cp.workflowScheduler
-              .onWorkerCompletion(cp.workflow, cp.actorRefService, cp.actorService, sender.from)
+              .onWorkerCompletion(cp.workflow, cp.actorRefService, cp.actorService, sender)
               .flatMap(_ => Future.Unit)
           }
         })

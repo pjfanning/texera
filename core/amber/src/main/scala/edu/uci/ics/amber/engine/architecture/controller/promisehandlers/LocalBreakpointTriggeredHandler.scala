@@ -9,7 +9,6 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHan
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryAndRemoveBreakpointsHandler.QueryAndRemoveBreakpoints
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
@@ -34,8 +33,8 @@ trait LocalBreakpointTriggeredHandler {
   registerHandler { (msg: LocalBreakpointTriggered, sender) =>
     {
       // get the operator where the worker triggers breakpoint
-      val targetOp = cp.executionState.getOperatorExecution(sender.from)
-      val physicalOpId = cp.workflow.physicalPlan.getPhysicalOpByWorkerId(sender.from).id
+      val targetOp = cp.executionState.getOperatorExecution(sender)
+      val physicalOpId = cp.workflow.physicalPlan.getPhysicalOpByWorkerId(sender).id
       // get global breakpoints given local breakpoints
       val unResolved = msg.localBreakpoints
         .filter {
@@ -83,7 +82,7 @@ trait LocalBreakpointTriggeredHandler {
                     // attach new version if not resolved
                     execute(
                       AssignGlobalBreakpoint(gbp, physicalOpId.logicalOpId.id),
-                      ChannelID(CONTROLLER, CONTROLLER, isControl = true)
+                      CONTROLLER
                     )
                   }
                   .toSeq
@@ -106,7 +105,7 @@ trait LocalBreakpointTriggeredHandler {
                   sendToClient(
                     BreakpointTriggered(mutable.HashMap.empty, physicalOpId.logicalOpId.id)
                   )
-                  execute(PauseWorkflow(), ChannelID(CONTROLLER, CONTROLLER, isControl = true))
+                  execute(PauseWorkflow(), CONTROLLER)
                 }
               }
           }

@@ -41,7 +41,7 @@ class AmberProcessor(
   ): Unit = {
     payload match {
       case invocation: ControlInvocation =>
-        asyncRPCServer.receive(invocation, channel)
+        asyncRPCServer.receive(invocation, channel.from)
       case ret: ReturnInvocation =>
         asyncRPCClient.logControlReply(ret, channel)
         asyncRPCClient.fulfillPromise(ret)
