@@ -6,12 +6,13 @@ import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerIniti
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 
 import java.net.URI
 
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(id:String, writeTo:URI) extends ControlCommand[String] // return destination URI of the checkpoint
+  final case class TakeCheckpoint(id:String, writeTo:URI) extends ControlCommand[Unit]
 }
 
 trait TakeCheckpointHandler {
@@ -37,8 +38,10 @@ trait TakeCheckpointHandler {
     Future.collect((dataMessagesInflight ++ controlMessagesInflight).toSeq).map{
       iterables =>
         chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
-
-        "Success" // return the URI
+        val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
+        val writer = storage.getWriter(msg.id)
+        writer.writeRecord(chkpt)
+        writer.flush()
     }
   }
 }
