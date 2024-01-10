@@ -433,6 +433,7 @@ class DatasetResource {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
           case Some("png")                => "image/png"
           case Some("csv")                => "text/csv"
+          case Some("md")                 => "text/markdown"
           case Some("txt")                => "text/plain"
           case Some("html") | Some("htm") => "text/html"
           case Some("json")               => "application/json"

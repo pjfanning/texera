@@ -10,6 +10,7 @@ export const MIME_TYPES = {
   PNG: "image/png",
   CSV: "text/csv",
   TXT: "text/plain",
+  MD: "text/markdown",
   HTML: "text/html",
   JSON: "application/json",
   PDF: "application/pdf",
@@ -58,7 +59,9 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   // image related control
   public displayImage: boolean = false;
   public imageFileURL: SafeUrl | undefined;
-  public imageURL: string = "";
+
+  // markdown control
+  public displayMarkdown: boolean = false;
 
   // plain text & octet stream related control
   public displayPlainText: boolean = false;
@@ -188,15 +191,15 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
                   this.isLoading = false;
                 }, 0);
                 break;
+              case MIME_TYPES.MD:
+                this.displayMarkdown = true;
+                this.readFileAsText(blob);
+                break;
               case MIME_TYPES.OCTET_STREAM:
               case MIME_TYPES.TXT:
               default:
                 this.displayPlainText = true;
-                const reader = new FileReader();
-                reader.onload = (event: any) => {
-                  this.textContent = event.target.result;
-                };
-                reader.readAsText(blob);
+                this.readFileAsText(blob);
                 break;
             }
 
@@ -216,6 +219,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     this.displayImage = false;
     this.displayPlainText = false;
     this.isFileLoadingError = false;
+    this.displayMarkdown = false;
     this.isLoading = false;
     // garbage collection
     if (this.fileURL) {
@@ -234,5 +238,13 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   onFileSizeNotLoadable() {
     this.turnOffAllDisplay();
     this.isFileSizeLoadable = false;
+  }
+
+  private readFileAsText(blob: Blob) {
+    const txtReader = new FileReader();
+    txtReader.onload = (event: any) => {
+      this.textContent = event.target.result;
+    };
+    txtReader.readAsText(blob);
   }
 }

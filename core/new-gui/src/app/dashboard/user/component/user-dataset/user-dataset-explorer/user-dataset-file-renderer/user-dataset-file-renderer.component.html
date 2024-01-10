@@ -52,6 +52,9 @@
         alt="{{filePath}}"
         class="full-size-image" />
     </div>
+    <div *ngIf="displayMarkdown">
+      <markdown [data]="textContent"></markdown>
+    </div>
     <div *ngIf="displayPlainText">{{ textContent }}</div>
     <div *ngIf="isFileLoadingError">
       <h3>File loading encounters error</h3>
