@@ -82,7 +82,10 @@ case class PhysicalPlan(
   @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     operatorMap.foreach(op => jgraphtDag.addVertex(op._1))
-    links.foreach(l => jgraphtDag.addEdge(l.fromOp.id, l.toOp.id))
+    links.foreach(l => {
+      val linkId = l.id
+      jgraphtDag.addEdge(linkId.from, linkId.to)
+    })
     jgraphtDag
   }
 

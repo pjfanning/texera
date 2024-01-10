@@ -18,7 +18,7 @@ object EpochMarkerHandler {
       scope: PhysicalPlan,
       targetOps: Set[PhysicalOpIdentity],
       markerCommand: ControlCommand[_]
-  ) extends ControlCommand[Seq[(ActorVirtualIdentity, Any)]]
+  ) extends ControlCommand[Seq[(ActorVirtualIdentity, _)]]
 
 }
 
@@ -37,7 +37,7 @@ trait EpochMarkerHandler {
       val cmdMapping: Map[ActorVirtualIdentity, ControlInvocation] = inputSet.map {
         case (workerId, (control, _)) => (workerId, control)
       }.toMap
-      val futures: Set[Future[(ActorVirtualIdentity, Any)]] = inputSet.map {
+      val futures: Set[Future[(ActorVirtualIdentity, _)]] = inputSet.map {
         case (workerId, (_, future)) => future.map(ret => (workerId, ret))
       }
 
