@@ -48,13 +48,13 @@ class AsyncRPCHandlerInitializer(
     * @tparam C control command type
     */
   def registerHandler[B, C: ClassTag](
-      handler: (C, ActorVirtualIdentity) => B
+      handler: (C, ChannelID) => B
   )(implicit ev: C <:< ControlCommand[B]): Unit = {
     registerImpl({ case (c: C, s) => Future { handler(c, s) } })
   }
 
   private def registerImpl(
-      newHandler: PartialFunction[(ControlCommand[_], ActorVirtualIdentity), Future[_]]
+      newHandler: PartialFunction[(ControlCommand[_], ChannelID), Future[_]]
   ): Unit = {
     ctrlReceiver.registerHandler(newHandler)
   }
@@ -69,7 +69,7 @@ class AsyncRPCHandlerInitializer(
     * @tparam C control command type
     */
   def registerHandler[B, C: ClassTag](
-      handler: (C, ActorVirtualIdentity) => Future[B]
+      handler: (C, ChannelID) => Future[B]
   )(implicit ev: C <:< ControlCommand[B], d: DummyImplicit): Unit = {
     registerImpl({ case (c: C, s) => handler(c, s) })
   }
@@ -91,7 +91,7 @@ class AsyncRPCHandlerInitializer(
   def createInvocation[T](cmd: ControlCommand[T]): (ControlInvocation, Future[T]) =
     ctrlSource.createInvocation(cmd)
 
-  def execute[T](cmd: ControlCommand[T], sender: ActorVirtualIdentity): Future[T] = {
+  def execute[T](cmd: ControlCommand[T], sender: ChannelID): Future[T] = {
     ctrlReceiver.execute((cmd, sender)).asInstanceOf[Future[T]]
   }
 
