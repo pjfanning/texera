@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row6;
+import org.jooq.Row7;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -35,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset extends TableImpl<DatasetRecord> {
 
-    private static final long serialVersionUID = -1191240548;
+    private static final long serialVersionUID = -362211921;
 
     /**
      * The reference instance of <code>texera_db.dataset</code>
@@ -81,6 +81,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
     public final TableField<DatasetRecord, Timestamp> CREATION_TIME = createField(DSL.name("creation_time"), org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.field("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
 
     /**
+     * The column <code>texera_db.dataset.owner_uid</code>.
+     */
+    public final TableField<DatasetRecord, UInteger> OWNER_UID = createField(DSL.name("owner_uid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
+
+    /**
      * Create a <code>texera_db.dataset</code> table reference
      */
     public Dataset() {
@@ -120,7 +125,7 @@ public class Dataset extends TableImpl<DatasetRecord> {
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.DATASET_PRIMARY);
+        return Arrays.<Index>asList(Indexes.DATASET_OWNER_UID, Indexes.DATASET_PRIMARY);
     }
 
     @Override
@@ -136,6 +141,15 @@ public class Dataset extends TableImpl<DatasetRecord> {
     @Override
     public List<UniqueKey<DatasetRecord>> getKeys() {
         return Arrays.<UniqueKey<DatasetRecord>>asList(Keys.KEY_DATASET_PRIMARY);
+    }
+
+    @Override
+    public List<ForeignKey<DatasetRecord, ?>> getReferences() {
+        return Arrays.<ForeignKey<DatasetRecord, ?>>asList(Keys.DATASET_IBFK_1);
+    }
+
+    public User user() {
+        return new User(this, Keys.DATASET_IBFK_1);
     }
 
     @Override
@@ -165,11 +179,11 @@ public class Dataset extends TableImpl<DatasetRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row6 type methods
+    // Row7 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row6<UInteger, String, Byte, String, String, Timestamp> fieldsRow() {
-        return (Row6) super.fieldsRow();
+    public Row7<UInteger, String, Byte, String, String, Timestamp, UInteger> fieldsRow() {
+        return (Row7) super.fieldsRow();
     }
 }

@@ -256,6 +256,9 @@ class DashboardResource {
         DATASET.NAME,
         DATASET.DESCRIPTION,
         DATASET.DID,
+        DATASET.OWNER_UID,
+        DATASET.IS_PUBLIC,
+        DATASET.CREATION_TIME,
         DATASET_USER_ACCESS.PRIVILEGE,
         DATASET_USER_ACCESS.UID,
         USER.NAME
@@ -691,14 +694,19 @@ class DashboardResource {
               null
             },
             if (resourceType == "dataset") {
+              val dataset =  record.into(DATASET).into(classOf[Dataset])
               val datasetOfUserUid = record.into(DATASET_USER_ACCESS).getUid
               var accessLevel = record.into(DATASET_USER_ACCESS).getPrivilege
               if (datasetOfUserUid != user.getUid) {
                 accessLevel = DatasetUserAccessPrivilege.READ
               }
+              if (dataset.getOwnerUid == user.getUid) {
+                accessLevel = DatasetUserAccessPrivilege.WRITE
+              }
               DashboardDataset(
-                record.into(DATASET).into(classOf[Dataset]),
-                accessLevel
+                dataset,
+                accessLevel,
+                dataset.getOwnerUid == user.getUid
               )
             } else {
               null

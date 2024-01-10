@@ -25,8 +25,8 @@ object DatasetAccessResource {
         DATASET.DID
           .eq(did)
           .and(
-            DATASET.IS_PUBLIC
-              .eq(PUBLIC)
+            DATASET.IS_PUBLIC.eq(PUBLIC)
+              .or(DATASET.OWNER_UID.eq(uid))
               .or(DATASET_USER_ACCESS.UID.eq(uid))
           )
       )
@@ -35,21 +35,30 @@ object DatasetAccessResource {
     userAccessible.nonEmpty
   }
 
-  def userHasWriteAccess(ctx: DSLContext, did: UInteger, uid: UInteger): Boolean = {
-    getDatasetUserAccessPrivilege(ctx, did, uid).eq(DatasetUserAccessPrivilege.WRITE)
+  def userOwnDataset(ctx: DSLContext, did: UInteger, uid: UInteger): Boolean = {
+    val record = ctx
+      .selectFrom(DATASET)
+      .where(DATASET.DID.eq(did))
+      .and(DATASET.OWNER_UID.eq(uid))
+      .fetchOne()
+
+    record != null
   }
 
+  def userHasWriteAccess(ctx: DSLContext, did: UInteger, uid: UInteger): Boolean = {
+    getDatasetUserAccessPrivilege(ctx, did, uid).eq(DatasetUserAccessPrivilege.WRITE) || userOwnDataset(ctx, did, uid)
+  }
   def getDatasetUserAccessPrivilege(ctx: DSLContext, did: UInteger, uid: UInteger): DatasetUserAccessPrivilege = {
-    val ownerRecord = ctx
+    val record = ctx
       .selectFrom(DATASET_USER_ACCESS)
       .where(DATASET_USER_ACCESS.DID.eq(did))
       .and(DATASET_USER_ACCESS.UID.eq(uid))
       .fetchOne()
 
-    if (ownerRecord == null)
+    if (record == null)
       DatasetUserAccessPrivilege.NONE
     else
-      ownerRecord.getPrivilege
+      record.getPrivilege
   }
 
   def withExceptionHandling[T](block: () => T): T = {

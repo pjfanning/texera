@@ -8,7 +8,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, Data
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess, userOwnDataset}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
@@ -161,7 +161,8 @@ object DatasetResource {
 
   case class DashboardDataset(
       dataset: Dataset,
-      accessPrivilege: EnumType
+      accessPrivilege: EnumType,
+      isOwner: Boolean
   )
 
   case class DatasetVersionFileTree(fileTree: util.Map[String, AnyRef])
@@ -202,11 +203,12 @@ class DatasetResource {
         dataset.setName(datasetName)
         dataset.setDescription(datasetDescription)
         dataset.setIsPublic(isDatasetPublic.toByte)
+        dataset.setOwnerUid(uid)
 
         val createdDataset = ctx
-          .insertInto(DATASET) // Assuming DATASET is the table reference
+          .insertInto(DATASET)
           .set(ctx.newRecord(DATASET, dataset))
-          .returning() // Assuming ID is the primary key column
+          .returning()
           .fetchOne()
 
         val did = createdDataset.getDid
@@ -242,9 +244,11 @@ class DatasetResource {
             createdDataset.getIsPublic,
             createdDataset.getStoragePath,
             createdDataset.getDescription,
-            createdDataset.getCreationTime
+            createdDataset.getCreationTime,
+            createdDataset.getOwnerUid
           ),
-          DatasetUserAccessPrivilege.WRITE
+          DatasetUserAccessPrivilege.WRITE,
+          isOwner = true
         )
       }
     }
@@ -258,7 +262,7 @@ class DatasetResource {
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
         for (did <- datasetIDs.dids) {
-          if (!userHasWriteAccess(ctx, did, uid)) {
+          if (!userOwnDataset(ctx, did, uid)) {
             // throw the exception that user has no access to certain dataset
             throw new UserHasNoAccessToDatasetException(did.intValue())
           }
@@ -315,7 +319,8 @@ class DatasetResource {
 
         DashboardDataset(
           targetDataset,
-          userAccessPrivilege
+          userAccessPrivilege,
+          targetDataset.getOwnerUid == uid
         )
       })
     })
