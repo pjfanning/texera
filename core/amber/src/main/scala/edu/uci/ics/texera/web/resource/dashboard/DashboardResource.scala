@@ -3,7 +3,7 @@ package edu.uci.ics.texera.web.resource.dashboard
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.{UserFileAccessPrivilege, WorkflowUserAccessPrivilege}
+import edu.uci.ics.texera.web.model.jooq.generated.enums.{DatasetUserAccessPrivilege, UserFileAccessPrivilege, WorkflowUserAccessPrivilege}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
@@ -265,15 +265,15 @@ class DashboardResource {
         DATASET.NAME,
         DATASET.DESCRIPTION,
         DATASET.DID,
-        DATASET_OF_USER.ACCESS_LEVEL,
-        DATASET_OF_USER.UID,
+        DATASET_USER_ACCESS.PRIVILEGE,
+        DATASET_USER_ACCESS.UID,
         USER.NAME
       )
       .from(DATASET)
-      .leftJoin(DATASET_OF_USER)
-      .on(DATASET_OF_USER.DID.eq(DATASET.DID))
+      .leftJoin(DATASET_USER_ACCESS)
+      .on(DATASET_USER_ACCESS.DID.eq(DATASET.DID))
       .leftJoin(USER)
-      .on(USER.UID.eq(DATASET_OF_USER.UID))
+      .on(USER.UID.eq(DATASET_USER_ACCESS.UID))
       .where(
           USER.UID.eq(user.getUid)
             .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
@@ -724,15 +724,14 @@ class DashboardResource {
               null
             },
             if (resourceType == "dataset") {
-              val datasetOfUserUid = record.into(DATASET_OF_USER).getUid
-              var accessLevel = record.into(DATASET_OF_USER).getAccessLevel
+              val datasetOfUserUid = record.into(DATASET_USER_ACCESS).getUid
+              var accessLevel = record.into(DATASET_USER_ACCESS).getPrivilege
               if (datasetOfUserUid != user.getUid) {
-                accessLevel = DatasetResource.READ
+                accessLevel = DatasetUserAccessPrivilege.READ
               }
               DashboardDataset(
                 record.into(DATASET).into(classOf[Dataset]),
-                DatasetResource.getAccessLevel(accessLevel),
-                accessLevel == DatasetResource.OWN
+                accessLevel
               )
             } else {
               null
@@ -748,7 +747,7 @@ class DashboardResource {
               )
             } else {
               null
-            }
+            },
           )
         })
         .toList,

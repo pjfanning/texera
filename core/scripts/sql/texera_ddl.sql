@@ -219,12 +219,14 @@ CREATE TABLE IF NOT EXISTS dataset
     PRIMARY KEY(`did`)
     ) ENGINE = INNODB;
 
-CREATE TABLE IF NOT EXISTS dataset_of_user
+CREATE TABLE IF NOT EXISTS dataset_user_access
 (
     `did`             INT UNSIGNED NOT NULL,
     `uid`             INT UNSIGNED NOT NULL,
-    `access_level`    TINYINT,
-    PRIMARY KEY(`did`, `uid`)
+    `access_level`    ENUM('NONE', 'READ', 'WRITE') NOT NULL DEFAULT 'NONE',
+    PRIMARY KEY(`did`, `uid`),
+    FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE,
+    FOREIGN KEY (`uid`) REFERENCES `user` (`uid`) ON DELETE CASCADE
     ) ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS dataset_of_workflow
@@ -242,7 +244,7 @@ CREATE TABLE IF NOT EXISTS dataset_version
     `version_hash`    VARCHAR(64) NOT NULL,
     `creation_time`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(`dvid`),
-    FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE
+    FOREIGN KEY (`did`) REFERENCES `dataset` (`did`) ON DELETE CASCADE,
     )  ENGINE = INNODB;
 
 CREATE TABLE IF NOT EXISTS environment

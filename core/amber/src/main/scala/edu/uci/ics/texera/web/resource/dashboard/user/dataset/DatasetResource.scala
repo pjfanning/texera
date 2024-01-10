@@ -3,18 +3,19 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfUserDao, DatasetVersionDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfUser, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
-import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfUser.DATASET_OF_USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionFileTree, DatasetVersions, OWN, PUBLIC, READ, context, getAccessLevel, getDatasetByID, getDatasetVersionByID, getUserAccessLevelOfDataset, persistNewVersion, userAllowedToReadDataset, withExceptionHandling}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, UserHasNoAccessToDatasetException}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
-import org.glassfish.jersey.media.multipart.{FormDataBodyPart, FormDataMultiPart, FormDataParam}
-import org.jooq.DSLContext
+import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
+import org.jooq.{DSLContext, EnumType}
 import org.jooq.types.UInteger
 
 import java.io.{InputStream, OutputStream}
@@ -22,21 +23,14 @@ import java.net.{URLDecoder, URLEncoder}
 import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
-import java.util.{Map, Optional}
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
 object DatasetResource {
   val PUBLIC: Byte = 1;
   val PRIVATE: Byte = 0;
-
-  val OWN: Byte = 1;
-  val WRITE: Byte = 2;
-  val READ: Byte = 3;
 
   val FILE_OPERATION_UPLOAD_PREFIX = "file:upload:"
   val FILE_OPERATION_REMOVE_PREFIX = "file:remove"
@@ -58,66 +52,36 @@ object DatasetResource {
         )
     }
   }
-  def getAccessLevel(level: Byte): String = {
-    if (level == OWN) {
-      "Own"
-    } else if (level == WRITE) {
-      "Write"
-    } else {
-      "Read"
-    }
-  }
 
   private val context = SqlServer.createDSLContext()
 
-  private def getDatasetByID(ctx: DSLContext, did: UInteger): Dataset = {
+  private def getDatasetByID(ctx: DSLContext, did: UInteger, uid: UInteger): Dataset = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
     val datasetDao = new DatasetDao(ctx.configuration())
-    datasetDao.fetchOneByDid(did)
+    val dataset = datasetDao.fetchOneByDid(did)
+    if (dataset == null) {
+      throw new ResourceNotExistsException("dataset")
+    }
+    dataset
   }
 
-  private def getDatasetVersionByID(
-      ctx: DSLContext,
-      dvid: UInteger
-  ): DatasetVersion = {
-    val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
-    datasetVersionDao.fetchOneByDvid(dvid)
-  }
-
-  private def getUserAccessLevelOfDataset(
+  private def getDatasetVersionHashByID(
       ctx: DSLContext,
       did: UInteger,
+      dvid: UInteger,
       uid: UInteger
-  ): Option[Byte] = {
-    val ownerRecord = ctx
-      .selectFrom(DATASET_OF_USER)
-      .where(DATASET_OF_USER.DID.eq(did))
-      .and(DATASET_OF_USER.UID.eq(uid))
-      .fetchOne()
-
-    if (ownerRecord == null)
-      None
-    else
-      Some(ownerRecord.getAccessLevel)
-  }
-
-  private def userAllowedToReadDataset(ctx: DSLContext, did: UInteger, uid: UInteger): Boolean = {
-    val userAccessible = ctx
-      .select()
-      .from(DATASET)
-      .leftJoin(DATASET_OF_USER)
-      .on(DATASET.DID.eq(DATASET_OF_USER.DID))
-      .where(
-        DATASET.DID
-          .eq(did)
-          .and(
-            DATASET.IS_PUBLIC
-              .eq(PUBLIC)
-              .or(DATASET_OF_USER.UID.eq(uid))
-          )
-      )
-      .fetchInto(classOf[Dataset])
-
-    userAccessible.nonEmpty
+  ): String = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
+    val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
+    val version = datasetVersionDao.fetchOneByDvid(dvid)
+    if (version == null) {
+      throw new ResourceNotExistsException("dataset version")
+    }
+    version.getVersionHash
   }
 
   private def persistNewVersion(
@@ -197,8 +161,7 @@ object DatasetResource {
 
   case class DashboardDataset(
       dataset: Dataset,
-      accessLevel: String,
-      isOwner: Boolean
+      accessPrivilege: EnumType
   )
 
   case class DatasetVersionFileTree(fileTree: util.Map[String, AnyRef])
@@ -233,7 +196,7 @@ class DatasetResource {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val uid = user.getUid
-        val datasetOfUserDao: DatasetOfUserDao = new DatasetOfUserDao(ctx.configuration())
+        val datasetOfUserDao: DatasetUserAccessDao = new DatasetUserAccessDao(ctx.configuration())
 
         val dataset: Dataset = new Dataset()
         dataset.setName(datasetName)
@@ -251,11 +214,11 @@ class DatasetResource {
         createdDataset.setStoragePath(datasetPath)
         createdDataset.update()
 
-        val datasetOfUser = new DatasetOfUser()
-        datasetOfUser.setDid(createdDataset.getDid)
-        datasetOfUser.setUid(uid)
-        datasetOfUser.setAccessLevel(OWN)
-        datasetOfUserDao.insert(datasetOfUser)
+        val datasetUserAccess = new DatasetUserAccess()
+        datasetUserAccess.setDid(createdDataset.getDid)
+        datasetUserAccess.setUid(uid)
+        datasetUserAccess.setPrivilege(DatasetUserAccessPrivilege.WRITE)
+        datasetOfUserDao.insert(datasetUserAccess)
 
         // create the initial version of the dataset
         // init the dataset dir
@@ -281,8 +244,7 @@ class DatasetResource {
             createdDataset.getDescription,
             createdDataset.getCreationTime
           ),
-          getAccessLevel(OWN),
-          isOwner = true
+          DatasetUserAccessPrivilege.WRITE
         )
       }
     }
@@ -296,16 +258,11 @@ class DatasetResource {
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
         for (did <- datasetIDs.dids) {
-          val accessLevel = getUserAccessLevelOfDataset(ctx, did, uid)
-
-          if (accessLevel.isEmpty || accessLevel.get != OWN) {
+          if (!userHasWriteAccess(ctx, did, uid)) {
             // throw the exception that user has no access to certain dataset
-            return Response
-              .status(Response.Status.FORBIDDEN)
-              .entity(s"You do not have permission to delete dataset #{$did}.")
-              .build()
+            throw new UserHasNoAccessToDatasetException(did.intValue())
           }
-          val dataset = getDatasetByID(ctx, did)
+          val dataset = getDatasetByID(ctx, did, uid)
           val datasetStorage = new LocalFileStorage(dataset.getStoragePath)
           datasetStorage.remove()
           datasetDao.deleteById(did)
@@ -328,8 +285,8 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context) { ctx =>
-        val accessLevel = getUserAccessLevelOfDataset(ctx, did, uid)
-        if (accessLevel.isEmpty || accessLevel.get == READ) {
+        if (!userHasWriteAccess(ctx, did, uid)) {
+          // throw the exception that user has no access to certain dataset
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
         // create the version
@@ -353,17 +310,12 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        if (!userAllowedToReadDataset(ctx, did, uid)) {
-          throw new UserHasNoAccessToDatasetException(did.intValue())
-        }
-
-        val targetDataset = getDatasetByID(ctx, did)
-        val userAccessLevel = getUserAccessLevelOfDataset(ctx, did, uid)
+        val targetDataset = getDatasetByID(ctx, did, uid)
+        val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
 
         DashboardDataset(
           targetDataset,
-          getAccessLevel(userAccessLevel.get),
-          userAccessLevel.get == OWN
+          userAccessPrivilege
         )
       })
     })
@@ -379,7 +331,7 @@ class DatasetResource {
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
 
-        if (!userAllowedToReadDataset(ctx, did, uid)) {
+        if (!userHasReadAccess(ctx, did, uid)) {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
         val result: java.util.List[DatasetVersion] = ctx
@@ -402,7 +354,7 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        if (!userAllowedToReadDataset(ctx, did, uid)) {
+        if (!userHasReadAccess(ctx, did, uid)) {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
 
@@ -419,7 +371,8 @@ class DatasetResource {
           throw new DatasetVersionNotFoundException(did.intValue())
         }
 
-        val gitVersionControl = new GitVersionControl(PathUtils.getDatasetPath(latestVersion.getDid).toString)
+        val gitVersionControl =
+          new GitVersionControl(PathUtils.getDatasetPath(latestVersion.getDid).toString)
         DashboardDatasetVersion(
           latestVersion,
           gitVersionControl.retrieveFileTreeOfVersion(latestVersion.getVersionHash)
@@ -439,15 +392,9 @@ class DatasetResource {
     withExceptionHandling({ () =>
       {
         withTransaction(context)(ctx => {
-          if (!userAllowedToReadDataset(ctx, did, uid)) {
-            throw new UserHasNoAccessToDatasetException(did.intValue())
-          }
-          val targetDataset = getDatasetByID(ctx, did)
+          val targetDataset = getDatasetByID(ctx, did, uid)
           val targetDatasetStoragePath = targetDataset.getStoragePath
-
-          val targetDatasetVersion = getDatasetVersionByID(ctx, dvid)
-          val versionCommitHash = targetDatasetVersion.getVersionHash
-
+          val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
           val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
           val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
@@ -468,17 +415,12 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        if (!userAllowedToReadDataset(ctx, did, uid)) {
-          throw new UserHasNoAccessToDatasetException(did.intValue())
-        }
         val decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8.name()).stripPrefix("/")
 
-        val targetDataset = getDatasetByID(ctx, did)
+        val targetDataset = getDatasetByID(ctx, did, uid)
         val targetDatasetStoragePath = targetDataset.getStoragePath
 
-        val targetDatasetVersion = getDatasetVersionByID(ctx, dvid)
-        val versionCommitHash = targetDatasetVersion.getVersionHash
-
+        val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
         val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
         val streamingOutput = new StreamingOutput() {
@@ -491,6 +433,7 @@ class DatasetResource {
           case Some("jpg") | Some("jpeg") => "image/jpeg"
           case Some("png")                => "image/png"
           case Some("csv")                => "text/csv"
+          case Some("md")                 => "text/markdown"
           case Some("txt")                => "text/plain"
           case Some("html") | Some("htm") => "text/html"
           case Some("json")               => "application/json"

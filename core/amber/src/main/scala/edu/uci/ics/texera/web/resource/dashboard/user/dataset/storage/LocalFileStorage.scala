@@ -23,7 +23,6 @@ class LocalFileStorage(baseDir: String) {
   def addFile(path: String, contentStream: InputStream): Boolean = {
     try {
       val file = new File(getFullPath(path))
-      println("FilePath: ", file.getPath)
 
       // Create any missing directories
       file.getParentFile.mkdirs()
