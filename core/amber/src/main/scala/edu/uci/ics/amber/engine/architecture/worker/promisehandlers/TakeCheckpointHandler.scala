@@ -4,9 +4,10 @@ import akka.serialization.Serialization
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
+import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.net.URI
 
@@ -47,7 +48,7 @@ trait TakeCheckpointHandler {
         chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
         logger.info(s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes")
         val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
-        val writer = storage.getWriter(msg.id)
+        val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
         writer.writeRecord(chkpt)
         writer.flush()
         logger.info(s"Checkpoint finalized")

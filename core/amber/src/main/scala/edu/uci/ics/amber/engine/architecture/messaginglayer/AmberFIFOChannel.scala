@@ -67,7 +67,7 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     }
   }
 
-  inline private def afterEnqueueMessage(msg:WorkflowFIFOMessage): Unit = {
+   @inline private def afterEnqueueMessage(msg:WorkflowFIFOMessage): Unit = {
     holdCredit.getAndAdd(getInMemSize(msg))
     messageCollectors.values.foreach{
       collector: MessageCollector =>

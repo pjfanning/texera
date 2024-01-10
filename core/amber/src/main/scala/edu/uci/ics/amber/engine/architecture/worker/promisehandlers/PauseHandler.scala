@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUS
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object PauseHandler {
-
   case class PauseWorker() extends ControlCommand[WorkerState]
 }
 

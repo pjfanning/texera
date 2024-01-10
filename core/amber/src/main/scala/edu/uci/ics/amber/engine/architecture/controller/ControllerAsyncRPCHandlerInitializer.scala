@@ -29,6 +29,7 @@ class ControllerAsyncRPCHandlerInitializer(
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler
     with EpochMarkerHandler
+    with TakeGlobalCheckpointHandler
     with RetrieveWorkflowStateHandler {
   val actorId: ActorVirtualIdentity = cp.actorId
 

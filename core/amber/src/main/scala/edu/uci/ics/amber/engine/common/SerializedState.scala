@@ -4,6 +4,7 @@ import akka.serialization.{Serialization, Serializers}
 
 object SerializedState {
 
+  val CP_STATE_KEY = "Amber_CPState"
   val DP_STATE_KEY = "Amber_DPState"
   val IN_FLIGHT_MSG_KEY = "Amber_InflightMessages"
 
