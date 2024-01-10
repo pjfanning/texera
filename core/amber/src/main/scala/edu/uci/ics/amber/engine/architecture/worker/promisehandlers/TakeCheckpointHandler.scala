@@ -40,10 +40,9 @@ trait TakeCheckpointHandler {
       logger.info("Operator does not open, nothing to serialize")
     }
     // 3. record inflight messages
-    logger.info("Begin collecting inflight messages for all channels")
-    val dataMessagesInflight = dp.inputGateway.getAllDataChannels.map(_.collectMessagesUntilMarker(msg.id))
-    val controlMessagesInflight = dp.inputGateway.getAllDataChannels.map(_.collectMessagesUntilMarker(msg.id))
-    Future.collect((dataMessagesInflight ++ controlMessagesInflight).toSeq).map{
+    logger.info("Begin collecting inflight messages for all channels in the score except the current sender")
+    val collectorFutures = dp.inputGateway.getAllChannels.filter(_.channelId!=sender).map(_.collectMessagesUntilMarker(msg.id))
+    Future.collect(collectorFutures.toSeq).map{
       iterables =>
         chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
         logger.info(s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes")

@@ -41,6 +41,17 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
   def collectMessagesUntilMarker(markerId:String):Future[Iterable[WorkflowFIFOMessage]] = {
     val promise = Promise[Iterable[WorkflowFIFOMessage]]()
+    fifoQueue.foreach{
+      msg =>
+        msg.payload match {
+          case MarkerPayload(id, markerType, scope, commandMapping) =>
+            if(id == markerId){
+              promise.setValue(Iterable.empty)
+              return promise // early return since we already received the marker.
+            }
+          case _ => //skip
+        }
+    }
     messageCollectors(markerId) = MessageCollector(promise, new ArrayBuffer[WorkflowFIFOMessage]())
     promise
   }
