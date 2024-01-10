@@ -36,16 +36,16 @@ class URIRecordStorage[T >: Null <: AnyRef](logFolderURI: URI)
     fileSystem.mkdirs(folderPath)
   }
 
-  override def getWriter(logFileName: String): SequentialRecordWriter[T] = {
-    new SequentialRecordWriter(fileSystem.create(folderPath.suffix("/" + logFileName)))
+  override def getWriter(fileName: String): SequentialRecordWriter[T] = {
+    new SequentialRecordWriter(fileSystem.create(folderPath.suffix("/" + fileName)))
   }
 
-  override def getReader(logFileName: String): SequentialRecordReader[T] = {
-    val path = folderPath.suffix("/" + logFileName)
+  override def getReader(fileName: String): SequentialRecordReader[T] = {
+    val path = folderPath.suffix("/" + fileName)
     if (fileSystem.exists(path)) {
       new SequentialRecordReader(() => fileSystem.open(path))
     } else {
-      new EmptyRecordStorage[T]().getReader(logFileName)
+      new EmptyRecordStorage[T]().getReader(fileName)
     }
   }
 

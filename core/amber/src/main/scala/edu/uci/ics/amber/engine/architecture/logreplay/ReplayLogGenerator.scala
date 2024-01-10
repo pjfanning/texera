@@ -11,7 +11,7 @@ object ReplayLogGenerator {
       logFileName: String,
       replayTo: String
   ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
-    val logs = logStorage.getReader(logFileName).mkLogRecordIterator()
+    val logs = logStorage.getReader(logFileName).mkRecordIterator()
     val steps = mutable.Queue[ProcessingStep]()
     val messages = mutable.Queue[WorkflowFIFOMessage]()
     logs.foreach {

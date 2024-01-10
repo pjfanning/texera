@@ -41,7 +41,7 @@ object SequentialRecordStorage {
       logFileName: String
   ): Iterable[T] = {
     val reader = storage.getReader(logFileName)
-    val recordIter = reader.mkLogRecordIterator()
+    val recordIter = reader.mkRecordIterator()
     val buffer = new ArrayBuffer[T]()
     while (recordIter.hasNext) {
       buffer.append(recordIter.next())
@@ -51,7 +51,7 @@ object SequentialRecordStorage {
 
   class SequentialRecordWriter[T >: Null <: AnyRef](outputStream: DataOutputStream) {
     lazy val output = new Output(outputStream)
-    def writeLogRecord(obj: T): Unit = {
+    def writeRecord(obj: T): Unit = {
       val bytes = kryoPool.toBytesWithClass(obj)
       output.writeInt(bytes.length)
       output.write(bytes)
@@ -65,7 +65,7 @@ object SequentialRecordStorage {
   }
 
   class SequentialRecordReader[T >: Null <: AnyRef](inputStreamGen: () => DataInputStream) {
-    def mkLogRecordIterator(): Iterator[T] = {
+    def mkRecordIterator(): Iterator[T] = {
       lazy val input = new Input(inputStreamGen())
       new Iterator[T] {
         var record: T = internalNext()
@@ -100,9 +100,9 @@ object SequentialRecordStorage {
 
 abstract class SequentialRecordStorage[T >: Null <: AnyRef] {
 
-  def getWriter(logFileName: String): SequentialRecordWriter[T]
+  def getWriter(fileName: String): SequentialRecordWriter[T]
 
-  def getReader(logFileName: String): SequentialRecordReader[T]
+  def getReader(fileName: String): SequentialRecordReader[T]
 
   def deleteStorage(): Unit
 }
