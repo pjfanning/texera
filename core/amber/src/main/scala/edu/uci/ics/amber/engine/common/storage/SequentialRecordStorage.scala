@@ -1,4 +1,4 @@
-package edu.uci.ics.amber.engine.architecture.logreplay.storage
+package edu.uci.ics.amber.engine.common.storage
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.twitter.chill.{KryoBase, KryoPool, KryoSerializer, ScalaKryoInstantiator}
@@ -7,10 +7,7 @@ import edu.uci.ics.amber.engine.architecture.logreplay.{
   ProcessingStep,
   ReplayLogRecord
 }
-import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage.{
-  ReplayLogReader,
-  ReplayLogWriter
-}
+import SequentialRecordStorage.{SequentialRecordReader, SequentialRecordWriter}
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2Message.SealedValue.QueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -19,7 +16,7 @@ import java.io.{DataInputStream, DataOutputStream}
 import java.net.URI
 import scala.collection.mutable.ArrayBuffer
 
-object ReplayLogStorage {
+object SequentialRecordStorage {
   private val kryoPool = {
     val r = KryoSerializer.registerAll
     val ki = new ScalaKryoInstantiator {
@@ -39,22 +36,22 @@ object ReplayLogStorage {
   }
 
   // For debugging purpose only
-  def fetchAllLogRecords(
-      storage: ReplayLogStorage,
+  def fetchAllRecords[T >: Null <: AnyRef](
+      storage: SequentialRecordStorage[T],
       logFileName: String
-  ): Iterable[ReplayLogRecord] = {
+  ): Iterable[T] = {
     val reader = storage.getReader(logFileName)
     val recordIter = reader.mkLogRecordIterator()
-    val buffer = new ArrayBuffer[ReplayLogRecord]()
+    val buffer = new ArrayBuffer[T]()
     while (recordIter.hasNext) {
       buffer.append(recordIter.next())
     }
     buffer
   }
 
-  class ReplayLogWriter(outputStream: DataOutputStream) {
+  class SequentialRecordWriter[T >: Null <: AnyRef](outputStream: DataOutputStream) {
     lazy val output = new Output(outputStream)
-    def writeLogRecord(obj: ReplayLogRecord): Unit = {
+    def writeLogRecord(obj: T): Unit = {
       val bytes = kryoPool.toBytesWithClass(obj)
       output.writeInt(bytes.length)
       output.write(bytes)
@@ -67,23 +64,23 @@ object ReplayLogStorage {
     }
   }
 
-  class ReplayLogReader(inputStreamGen: () => DataInputStream) {
-    def mkLogRecordIterator(): Iterator[ReplayLogRecord] = {
+  class SequentialRecordReader[T >: Null <: AnyRef](inputStreamGen: () => DataInputStream) {
+    def mkLogRecordIterator(): Iterator[T] = {
       lazy val input = new Input(inputStreamGen())
-      new Iterator[ReplayLogRecord] {
-        var record: ReplayLogRecord = internalNext()
-        private def internalNext(): ReplayLogRecord = {
+      new Iterator[T] {
+        var record: T = internalNext()
+        private def internalNext(): T = {
           try {
             val len = input.readInt()
             val bytes = input.readBytes(len)
-            kryoPool.fromBytes(bytes).asInstanceOf[ReplayLogRecord]
+            kryoPool.fromBytes(bytes).asInstanceOf[T]
           } catch {
             case e: Throwable =>
               input.close()
               null
           }
         }
-        override def next(): ReplayLogRecord = {
+        override def next(): T = {
           val currentRecord = record
           record = internalNext()
           currentRecord
@@ -93,19 +90,19 @@ object ReplayLogStorage {
     }
   }
 
-  def getLogStorage(storageLocation: Option[URI]): ReplayLogStorage = {
+  def getStorage[T >: Null <: AnyRef](storageLocation: Option[URI]): SequentialRecordStorage[T] = {
     storageLocation match {
-      case Some(location) => new URILogStorage(location)
-      case None           => new EmptyLogStorage()
+      case Some(location) => new URIRecordStorage(location)
+      case None           => new EmptyRecordStorage()
     }
   }
 }
 
-abstract class ReplayLogStorage {
+abstract class SequentialRecordStorage[T >: Null <: AnyRef] {
 
-  def getWriter(logFileName: String): ReplayLogWriter
+  def getWriter(logFileName: String): SequentialRecordWriter[T]
 
-  def getReader(logFileName: String): ReplayLogReader
+  def getReader(logFileName: String): SequentialRecordReader[T]
 
   def deleteStorage(): Unit
 }

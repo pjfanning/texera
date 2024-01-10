@@ -1,13 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.logreplay
 
-import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
+import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 
 import scala.collection.mutable
 
 object ReplayLogGenerator {
   def generate(
-      logStorage: ReplayLogStorage,
+      logStorage: SequentialRecordStorage[ReplayLogRecord],
       logFileName: String,
       replayTo: String
   ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
