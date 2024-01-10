@@ -29,12 +29,8 @@ import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
 import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.PathUtils.getAllDatasetDirectories
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
-import edu.uci.ics.texera.web.resource.dashboard.user.file.{UserFileAccessResource, UserFileResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.project.{ProjectAccessResource, ProjectResource, PublicProjectResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.discussion.UserDiscussionResource
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowAccessResource,
