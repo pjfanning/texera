@@ -5,15 +5,11 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetrieveWorkflowStateHandler.RetrieveWorkflowState
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.request.{
-  SkipTupleRequest,
- WorkflowInteractionRequest, WorkflowKillRequest,
-  WorkflowPauseRequest,
-  WorkflowResumeRequest
-}
+import edu.uci.ics.texera.web.model.websocket.request.{SkipTupleRequest,WorkflowInteractionRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
@@ -44,7 +40,10 @@ class ExecutionRuntimeService(
     stateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(PAUSING, metadataStore)
     )
-    client.sendAsync(PauseWorkflow())
+    client.sendAsync(PauseWorkflow()).foreach{
+      ret =>
+        client.sendAsync(TakeGlobalCheckpoint(true))
+    }
   }))
 
   // Receive Resume

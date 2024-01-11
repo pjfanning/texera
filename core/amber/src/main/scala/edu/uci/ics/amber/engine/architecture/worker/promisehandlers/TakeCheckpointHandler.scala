@@ -10,7 +10,7 @@ import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import java.net.URI
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(writeTo: URI) extends ControlCommand[Unit]
+  final case class TakeCheckpoint(writeTo: URI, estimationOnly:Boolean) extends ControlCommand[Long] // return checkpoint size
 }
 
 trait TakeCheckpointHandler {
@@ -19,22 +19,31 @@ trait TakeCheckpointHandler {
   registerHandler { (msg: TakeCheckpoint, sender) =>
     logger.info("Start to take checkpoint")
     val chkpt = new CheckpointState()
-    // 1. serialize DP state
-    chkpt.save(SerializedState.DP_STATE_KEY, this.dp)
-    logger.info("Serialized DP state")
-    // 2. serialize operator state
-    if (dp.operatorOpened) {
-      dp.operator match {
-        case support: CheckpointSupport =>
-          dp.outputIterator.setTupleOutput(
-            support.serializeState(dp.outputIterator.outputIter, chkpt)
-          )
-          logger.info("Serialized operator state")
-        case _ =>
-          logger.info("Operator does not support checkpoint, skip")
+    var totalSize = 0L
+    if(!msg.estimationOnly){
+      // 1. serialize DP state
+      chkpt.save(SerializedState.DP_STATE_KEY, this.dp)
+      logger.info("Serialized DP state")
+      // 2. serialize operator state
+      if (dp.operatorOpened) {
+        dp.operator match {
+          case support: CheckpointSupport =>
+            dp.outputIterator.setTupleOutput(
+              support.serializeState(dp.outputIterator.outputIter, chkpt)
+            )
+            logger.info("Serialized operator state")
+          case _ =>
+            logger.info("Operator does not support checkpoint, skip")
+        }
+      } else {
+        logger.info("Operator does not open, nothing to serialize")
       }
-    } else {
-      logger.info("Operator does not open, nothing to serialize")
+    }else{
+      totalSize += (dp.operator match {
+        case support: CheckpointSupport =>
+          support.getEstimatedCheckpointCost
+        case _ => 0L
+      })
     }
     // 3. record inflight messages
     logger.info(
@@ -46,15 +55,19 @@ trait TakeCheckpointHandler {
       .filter(c => channelsToCollect.contains(c.channelId))
       .map(_.collectMessagesUntilMarker(dp.epochManager.getContext.marker.id))
     Future.collect(collectorFutures.toSeq).map { iterables =>
-      chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
-      logger.info(
-        s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes"
-      )
-      val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
-      val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
-      writer.writeRecord(chkpt)
-      writer.flush()
+      if(!msg.estimationOnly){
+        chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
+        logger.info(
+          s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes"
+        )
+        val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
+        val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
+        writer.writeRecord(chkpt)
+        writer.flush()
+        totalSize = chkpt.size()
+      }
       logger.info(s"Checkpoint finalized")
+      totalSize
     }
   }
 }

@@ -12,6 +12,6 @@ trait CheckpointSupport {
       checkpoint: CheckpointState
   ): Iterator[(ITuple, Option[Int])]
 
-  def getEstimatedCheckpointTime: Int
+  def getEstimatedCheckpointCost: Long
 
 }
