@@ -19,6 +19,7 @@ export class SearchResultsComponent {
   @Input() editable = false;
   @Output() deleted = new EventEmitter<DashboardEntry>();
   @Output() duplicated = new EventEmitter<DashboardEntry>();
+  @Output() modified = new EventEmitter<DashboardEntry>();
 
   reset(loadMoreFunction: LoadMoreFunction): void {
     this.entries = [];

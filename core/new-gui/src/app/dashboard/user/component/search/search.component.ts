@@ -33,6 +33,8 @@ export class SearchComponent {
 
   constructor(private searchService: SearchService) {}
 
+
+
   async search(): Promise<void> {
     if (this.filters.masterFilterList.length === 0) {
       return;
@@ -68,6 +70,8 @@ export class SearchComponent {
             return new DashboardEntry(i.project);
           } else if (i.file) {
             return new DashboardEntry(i.file);
+          } else if (i.dataset) {
+            return new DashboardEntry(i.dataset);
           } else {
             throw new Error("Unexpected type in SearchResult.");
           }
