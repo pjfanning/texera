@@ -30,14 +30,16 @@ trait LinkWorkersHandler {
         .zip(partitionings)
         .flatMap({
           case (senderWorkerId, (partitioning, receiverWorkerIds)) =>
-            cp.executionState.builtChannels.add(ChannelID(CONTROLLER, senderWorkerId, isControl = true))
+            cp.executionState.builtChannels
+              .add(ChannelID(CONTROLLER, senderWorkerId, isControl = true))
             Seq(
               send(AddPartitioning(msg.linkId, partitioning), senderWorkerId)
-            ) ++ receiverWorkerIds.map{
-              receiverId =>
-                cp.executionState.builtChannels.add(ChannelID(CONTROLLER, receiverId, isControl = true))
-                cp.executionState.builtChannels.add(ChannelID(senderWorkerId, receiverId, isControl = false))
-                send(UpdateInputLinking(senderWorkerId, msg.linkId), receiverId)
+            ) ++ receiverWorkerIds.map { receiverId =>
+              cp.executionState.builtChannels
+                .add(ChannelID(CONTROLLER, receiverId, isControl = true))
+              cp.executionState.builtChannels
+                .add(ChannelID(senderWorkerId, receiverId, isControl = false))
+              send(UpdateInputLinking(senderWorkerId, msg.linkId), receiverId)
             }
         })
 

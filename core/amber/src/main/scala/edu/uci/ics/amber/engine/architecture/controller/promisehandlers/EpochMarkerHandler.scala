@@ -44,15 +44,19 @@ trait EpochMarkerHandler {
       }
 
       // step 3: convert scope DAG to channels.
-      val channelScope = cp.executionState.builtChannels.filter(channelId =>{
-        msg.scope.operators.map(_.id).contains(VirtualIdentityUtils.getPhysicalOpId(channelId.from)) &&
+      val channelScope = cp.executionState.builtChannels.filter(channelId => {
+        msg.scope.operators
+          .map(_.id)
+          .contains(VirtualIdentityUtils.getPhysicalOpId(channelId.from)) &&
           msg.scope.operators.map(_.id).contains(VirtualIdentityUtils.getPhysicalOpId(channelId.to))
       })
-      val controlChannels = msg.sourceOpToStartProp.flatMap{
-        source =>
-          cp.executionState.getOperatorExecution(source).getBuiltWorkerIds.flatMap { worker =>
-            Array(ChannelID(CONTROLLER, worker, isControl = true), ChannelID(worker, CONTROLLER,  isControl = true))
-          }
+      val controlChannels = msg.sourceOpToStartProp.flatMap { source =>
+        cp.executionState.getOperatorExecution(source).getBuiltWorkerIds.flatMap { worker =>
+          Array(
+            ChannelID(CONTROLLER, worker, isControl = true),
+            ChannelID(worker, CONTROLLER, isControl = true)
+          )
+        }
       }
 
       val finalScope = channelScope ++ controlChannels

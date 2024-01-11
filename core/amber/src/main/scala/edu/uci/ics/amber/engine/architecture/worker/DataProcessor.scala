@@ -365,9 +365,7 @@ class DataProcessor(
       if (downstreamLinksInScope.nonEmpty) {
         outputManager.flush(Some(downstreamLinksInScope))
         outputGateway.getActiveChannels.foreach { activeChannelId =>
-          if (
-            downstreamLinksInScope.contains(activeChannelId)
-          ) {
+          if (downstreamLinksInScope.contains(activeChannelId)) {
             logger.info(
               s"send marker to $activeChannelId, id = ${marker.id}, cmd = ${command}"
             )

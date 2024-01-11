@@ -13,7 +13,10 @@ import scala.collection.mutable.ArrayBuffer
 /* The abstracted FIFO/exactly-once logic */
 class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
-  private final case class MessageCollector(promise:Promise[Iterable[WorkflowFIFOMessage]], collectedMessages:mutable.ArrayBuffer[WorkflowFIFOMessage])
+  private final case class MessageCollector(
+      promise: Promise[Iterable[WorkflowFIFOMessage]],
+      collectedMessages: mutable.ArrayBuffer[WorkflowFIFOMessage]
+  )
 
   override def actorId: ActorVirtualIdentity = channelId.to
 
@@ -39,18 +42,17 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     }
   }
 
-  def collectMessagesUntilMarker(markerId:String):Future[Iterable[WorkflowFIFOMessage]] = {
+  def collectMessagesUntilMarker(markerId: String): Future[Iterable[WorkflowFIFOMessage]] = {
     val promise = Promise[Iterable[WorkflowFIFOMessage]]()
-    fifoQueue.foreach{
-      msg =>
-        msg.payload match {
-          case MarkerPayload(id, markerType, scope, commandMapping) =>
-            if(id == markerId){
-              promise.setValue(Iterable.empty)
-              return promise // early return since we already received the marker.
-            }
-          case _ => //skip
-        }
+    fifoQueue.foreach { msg =>
+      msg.payload match {
+        case MarkerPayload(id, markerType, scope, commandMapping) =>
+          if (id == markerId) {
+            promise.setValue(Iterable.empty)
+            return promise // early return since we already received the marker.
+          }
+        case _ => //skip
+      }
     }
     messageCollectors(markerId) = MessageCollector(promise, new ArrayBuffer[WorkflowFIFOMessage]())
     promise
@@ -78,15 +80,14 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     }
   }
 
-   @inline private def afterEnqueueMessage(msg:WorkflowFIFOMessage): Unit = {
+  @inline private def afterEnqueueMessage(msg: WorkflowFIFOMessage): Unit = {
     holdCredit.getAndAdd(getInMemSize(msg))
-    messageCollectors.values.foreach{
-      collector: MessageCollector =>
-        collector.collectedMessages.append(msg)
+    messageCollectors.values.foreach { collector: MessageCollector =>
+      collector.collectedMessages.append(msg)
     }
     msg.payload match {
       case payload: MarkerPayload =>
-        if(messageCollectors.contains(payload.id)){
+        if (messageCollectors.contains(payload.id)) {
           val collector = messageCollectors(payload.id)
           collector.promise.setValue(collector.collectedMessages)
           messageCollectors.remove(payload.id)

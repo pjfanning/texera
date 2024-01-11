@@ -26,4 +26,3 @@ case class SerializedState(bytes: Array[Byte], serializerId: Int, manifest: Stri
     bytes.length
   }
 }
-

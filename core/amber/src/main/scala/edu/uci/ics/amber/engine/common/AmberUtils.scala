@@ -12,7 +12,7 @@ import java.net.URL
 
 object AmberUtils {
 
-  var serde:Serialization = _
+  var serde: Serialization = _
 
   def reverseMultimap[T1, T2](map: Map[T1, Set[T2]]): Map[T2, Set[T1]] =
     map.toSeq

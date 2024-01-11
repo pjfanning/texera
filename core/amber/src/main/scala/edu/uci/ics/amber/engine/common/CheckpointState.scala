@@ -1,9 +1,8 @@
 package edu.uci.ics.amber.engine.common
 
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.serialization.Serialization
 
 import scala.collection.mutable
-
 
 class CheckpointState {
 
