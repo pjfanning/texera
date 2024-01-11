@@ -112,6 +112,7 @@ public class Keys {
     // FOREIGN KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final ForeignKey<DatasetRecord, UserRecord> DATASET_IBFK_1 = ForeignKeys0.DATASET_IBFK_1;
     public static final ForeignKey<DatasetOfEnvironmentRecord, EnvironmentRecord> DATASET_OF_ENVIRONMENT_IBFK_1 = ForeignKeys0.DATASET_OF_ENVIRONMENT_IBFK_1;
     public static final ForeignKey<DatasetUserAccessRecord, DatasetRecord> DATASET_USER_ACCESS_IBFK_1 = ForeignKeys0.DATASET_USER_ACCESS_IBFK_1;
     public static final ForeignKey<DatasetUserAccessRecord, UserRecord> DATASET_USER_ACCESS_IBFK_2 = ForeignKeys0.DATASET_USER_ACCESS_IBFK_2;
@@ -188,6 +189,7 @@ public class Keys {
     }
 
     private static class ForeignKeys0 {
+        public static final ForeignKey<DatasetRecord, UserRecord> DATASET_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, Dataset.DATASET, "dataset_ibfk_1", Dataset.DATASET.OWNER_UID);
         public static final ForeignKey<DatasetOfEnvironmentRecord, EnvironmentRecord> DATASET_OF_ENVIRONMENT_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_ENVIRONMENT_PRIMARY, DatasetOfEnvironment.DATASET_OF_ENVIRONMENT, "dataset_of_environment_ibfk_1", DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.EID);
         public static final ForeignKey<DatasetUserAccessRecord, DatasetRecord> DATASET_USER_ACCESS_IBFK_1 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_DATASET_PRIMARY, DatasetUserAccess.DATASET_USER_ACCESS, "dataset_user_access_ibfk_1", DatasetUserAccess.DATASET_USER_ACCESS.DID);
         public static final ForeignKey<DatasetUserAccessRecord, UserRecord> DATASET_USER_ACCESS_IBFK_2 = Internal.createForeignKey(edu.uci.ics.texera.web.model.jooq.generated.Keys.KEY_USER_PRIMARY, DatasetUserAccess.DATASET_USER_ACCESS, "dataset_user_access_ibfk_2", DatasetUserAccess.DATASET_USER_ACCESS.UID);

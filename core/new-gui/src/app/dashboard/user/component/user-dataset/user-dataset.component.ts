@@ -96,24 +96,7 @@ export class UserDatasetComponent implements AfterViewInit {
     await this.searchResultsComponent.loadMore();
   }
 
-  /**
-   * open a new dataset. will redirect to a pre-emptied dataset view space
-   */
-  public onClickOpenDatasetFromDashboard(): void {
-    // this.router.navigate([`${ROUTER_DATASET_VIEW_URL}`], { queryParams: { pid: this.pid } }).then(null);
-  }
-
   public onClickOpenDatasetAddComponent(): void {
-    // const modalRef = this.modalService.open(NgbdModalDatasetAddComponent)
-    //
-    // modalRef.componentInstance.datasetAdded.pipe(untilDestroyed(this))
-    //  .subscribe(() => {
-    //  this.reloadDashboardDatasetEntries(true); // Refresh the dataset list when a new dataset is added
-    // });
-    //
-    // modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
-    //   this.reloadDashboardDatasetEntries(true) //maybe delete this two lines? did not work for refresh
-    // });
     this.router.navigate(["/dashboard/dataset/create"]);
   }
 
@@ -125,18 +108,19 @@ export class UserDatasetComponent implements AfterViewInit {
   }
 
   public deleteDataset(entry: DashboardEntry) {
-    console.log("fdsa");
-    if (entry.dataset.dataset.did == undefined) {
-      console.log(1111);
-      return;
+    if (entry.dataset.dataset.did) {
+      this.datasetService
+        .deleteDatasets([entry.dataset.dataset.did])
+        .pipe(untilDestroyed(this))
+        .subscribe(_ => {
+          this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+            datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+          );
+        });
     }
-    this.datasetService
-      .deleteDatasets([entry.dataset.dataset.did])
-      .pipe(untilDestroyed(this))
-      .subscribe(_ => {
-        this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
-        );
-      });
+  }
+
+  public refreshDatasetItems(entry: DashboardEntry) {
+    this.reloadDashboardDatasetEntries(true);
   }
 }

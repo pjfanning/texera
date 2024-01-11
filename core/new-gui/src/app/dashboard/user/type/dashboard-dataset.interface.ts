@@ -2,7 +2,7 @@ import { Dataset } from "../../../common/type/dataset";
 
 export interface DashboardDataset {
   isOwner: boolean;
-  ownerName: string | undefined;
+  ownerName: string;
   dataset: Dataset;
-  accessLevel: string;
+  accessPrivilege: "READ" | "WRITE" | "NONE";
 }

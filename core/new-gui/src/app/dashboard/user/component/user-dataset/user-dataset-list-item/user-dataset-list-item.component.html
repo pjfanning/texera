@@ -33,7 +33,7 @@
             value="{{ dataset.name }}" />
         </ng-template>
         <button
-          *ngIf="editable"
+          *ngIf="editable && entry.dataset.accessPrivilege == 'WRITE'"
           (click)="editingName = true"
           nz-button
           mat-card-title="Customize Dataset Name"
@@ -47,7 +47,7 @@
             nzType="edit"></i>
         </button>
         <button
-          *ngIf="editable"
+          *ngIf="editable && entry.dataset.accessPrivilege == 'WRITE'"
           (click)="editingDescription = true"
           nz-button
           nz-tooltip="Add Description"
@@ -68,15 +68,15 @@
           nz-icon
           nzTheme="outline"
           nzType="user"></i>
-        <!--        <i-->
-        <!--          *ngIf="!entry.dataset.isOwner"-->
-        <!--          nz-tooltip="{{-->
-        <!--                          entry.dataset.accessLevel-->
-        <!--                      }} access shared by {{ entry.dataset.ownerName }}"-->
-        <!--          nzTooltipPlacement="bottom"-->
-        <!--          nz-icon-->
-        <!--          nzTheme="outline"-->
-        <!--          nzType="team"></i>-->
+                <i
+                  *ngIf="!entry.dataset.isOwner"
+                  nz-tooltip="{{
+                                  entry.dataset.accessPrivilege
+                              }} access shared by {{ entry.dataset.ownerName }}"
+                  nzTooltipPlacement="bottom"
+                  nz-icon
+                  nzTheme="outline"
+                  nzType="team"></i>
       </div>
     </nz-list-item-meta-title>
 
@@ -85,7 +85,7 @@
       <div class="dataset-item-meta-description">
         <label
           *ngIf="!editingDescription; else customDatasetDescription "
-          (click)="editingDescription = editable"
+          (click)="editingDescription = editable && entry.dataset.accessPrivilege == 'WRITE'"
           class="dataset-description">
           {{ dataset.description }}
         </label>
@@ -102,15 +102,9 @@
       </div>
     </nz-list-item-meta-description>
 
-    <!-- last access and created date of saved dataset -->
-    <!--    <nz-list-item-meta-description class="metadata-container">-->
-    <!--      <span>Last Modified: {{ dataset.lastModifiedTime | date: "yyyy-MM-dd HH:mm" }}</span>-->
-    <!--      <span>Created: {{ dataset.creationTime | date: "yyyy-MM-dd HH:mm" }}</span>-->
-    <!--    </nz-list-item-meta-description>-->
   </nz-list-item-meta>
 
   <ul nz-list-item-actions>
-    <!-- TODO: finish the share access-->
     <nz-list-item-action>
       <button
         (click)="onClickOpenShareAccess()"
@@ -119,26 +113,12 @@
                       dataset.name
                   }} to others"
         nzTooltipPlacement="bottom"
+        [disabled]="entry.dataset.accessPrivilege != 'WRITE'"
         type="button">
         <i
           nz-icon
           nzTheme="outline"
           nzType="share-alt"></i>
-      </button>
-    </nz-list-item-action>
-    <nz-list-item-action>
-      <button
-        (click)="onClickDownloadDataset()"
-        nz-button
-        nz-tooltip="Download the dataset {{
-                      dataset.name
-                  }}"
-        nzTooltipPlacement="bottom"
-        type="button">
-        <i
-          nz-icon
-          nzType="cloud-download"
-          nzTheme="outline"></i>
       </button>
     </nz-list-item-action>
     <nz-list-item-action *ngIf="editable">

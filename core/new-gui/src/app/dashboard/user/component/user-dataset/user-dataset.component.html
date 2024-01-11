@@ -36,5 +36,6 @@
 
   <texera-search-results
     [editable]="true"
-    (deleted)="deleteDataset($event)"></texera-search-results>
+    (deleted)="deleteDataset($event)"
+    (modified)="refreshDatasetItems($event)"></texera-search-results>
 </div>

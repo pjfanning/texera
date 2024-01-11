@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import {ActivatedRoute, NavigationEnd, Router} from "@angular/router";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DatasetService } from "../../../service/user-dataset/dataset.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
@@ -8,7 +8,7 @@ import {
   getFullPathFromFileTreeNode,
 } from "../../../../../common/type/datasetVersionFileTree";
 import { DatasetVersion } from "../../../../../common/type/dataset";
-import {filter, switchMap} from "rxjs/operators";
+import { filter, switchMap } from "rxjs/operators";
 
 @UntilDestroy()
 @Component({
@@ -20,6 +20,7 @@ export class UserDatasetExplorerComponent implements OnInit {
   public datasetName: string = "";
   public datasetDescription: string = "";
   public datasetCreationTime: string = "";
+  public userDatasetAccessLevel: "READ" | "WRITE" | "NONE" = "NONE";
 
   public currentDisplayedFileName: string = "";
 
@@ -49,10 +50,11 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.pipe(
+    this.route.params
+      .pipe(
         switchMap(params => {
-          const param = params['did'];
-          if (param !== 'create') {
+          const param = params["did"];
+          if (param !== "create") {
             this.did = param;
             this.renderDatasetViewSider();
             this.retrieveDatasetInfo();
@@ -62,7 +64,8 @@ export class UserDatasetExplorerComponent implements OnInit {
           }
           return this.route.data; // or some other observable
         })
-    ).subscribe();
+      )
+      .subscribe();
   }
 
   renderDatasetViewSider() {
@@ -77,14 +80,15 @@ export class UserDatasetExplorerComponent implements OnInit {
 
   renderVersionCreatorSider() {
     if (this.did) {
-      this.datasetService.retrieveDatasetLatestVersion(this.did)
+      this.datasetService
+        .retrieveDatasetLatestVersion(this.did)
         .pipe(untilDestroyed(this))
-        .subscribe( latestVersion => {
+        .subscribe(latestVersion => {
           this.versionCreatorBaseVersion = latestVersion;
           this.isCreatingDataset = false;
           this.isCreatingVersion = true;
           this.siderWidth = this.MAX_SIDER_WIDTH;
-        })
+        });
     }
   }
 
@@ -118,9 +122,11 @@ export class UserDatasetExplorerComponent implements OnInit {
       this.datasetService
         .getDataset(this.did)
         .pipe(untilDestroyed(this))
-        .subscribe(dataset => {
+        .subscribe(dashboardDataset => {
+          const dataset = dashboardDataset.dataset;
           this.datasetName = dataset.name;
           this.datasetDescription = dataset.description;
+          this.userDatasetAccessLevel = dashboardDataset.accessPrivilege;
           if (typeof dataset.creationTime === "number") {
             this.datasetCreationTime = new Date(dataset.creationTime).toString();
           }
@@ -178,5 +184,9 @@ export class UserDatasetExplorerComponent implements OnInit {
 
   isDisplayingDataset(): boolean {
     return !this.isCreatingDataset && !this.isCreatingVersion;
+  }
+
+  userHasWriteAccess(): boolean {
+    return this.userDatasetAccessLevel == "WRITE";
   }
 }

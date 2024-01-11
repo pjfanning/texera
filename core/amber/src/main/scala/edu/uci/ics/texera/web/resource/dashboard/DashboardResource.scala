@@ -3,7 +3,11 @@ package edu.uci.ics.texera.web.resource.dashboard
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.{DatasetUserAccessPrivilege, UserFileAccessPrivilege, WorkflowUserAccessPrivilege}
+import edu.uci.ics.texera.web.model.jooq.generated.enums.{
+  DatasetUserAccessPrivilege,
+  UserFileAccessPrivilege,
+  WorkflowUserAccessPrivilege
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
@@ -129,7 +133,8 @@ class DashboardResource {
         datasetMatchQuery = datasetMatchQuery.and(
           getSearchQuery(
             subStringSearchEnabled,
-            "texera_db.dataset.name, texera_db.dataset.description"),
+            "texera_db.dataset.name, texera_db.dataset.description"
+          ),
           key
         )
         environmentMatchQuery = environmentMatchQuery.and(
@@ -265,6 +270,9 @@ class DashboardResource {
         DATASET.NAME,
         DATASET.DESCRIPTION,
         DATASET.DID,
+        DATASET.OWNER_UID,
+        DATASET.IS_PUBLIC,
+        DATASET.CREATION_TIME,
         DATASET_USER_ACCESS.PRIVILEGE,
         DATASET_USER_ACCESS.UID,
         USER.NAME
@@ -275,8 +283,9 @@ class DashboardResource {
       .leftJoin(USER)
       .on(USER.UID.eq(DATASET_USER_ACCESS.UID))
       .where(
-          USER.UID.eq(user.getUid)
-            .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
+        USER.UID
+          .eq(user.getUid)
+          .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
       )
       .and(datasetMatchQuery)
 
@@ -570,8 +579,8 @@ class DashboardResource {
             .fetch()
         case "dataset" =>
           val orderedQuery = orderBy match {
-            case "NameAsc"        => datasetQuery.orderBy(DATASET.NAME.asc())
-            case "NameDesc"       => datasetQuery.orderBy(DATASET.NAME.desc())
+            case "NameAsc"  => datasetQuery.orderBy(DATASET.NAME.asc())
+            case "NameDesc" => datasetQuery.orderBy(DATASET.NAME.desc())
             case _ =>
               datasetQuery.orderBy(DATASET.NAME.asc())
               throw new BadRequestException(
@@ -724,14 +733,21 @@ class DashboardResource {
               null
             },
             if (resourceType == "dataset") {
+              val dataset = record.into(DATASET).into(classOf[Dataset])
               val datasetOfUserUid = record.into(DATASET_USER_ACCESS).getUid
               var accessLevel = record.into(DATASET_USER_ACCESS).getPrivilege
+              val ownerName = record.into(USER).getName
               if (datasetOfUserUid != user.getUid) {
                 accessLevel = DatasetUserAccessPrivilege.READ
               }
+              if (dataset.getOwnerUid == user.getUid) {
+                accessLevel = DatasetUserAccessPrivilege.WRITE
+              }
               DashboardDataset(
-                record.into(DATASET).into(classOf[Dataset]),
-                accessLevel
+                dataset,
+                accessLevel,
+                ownerName,
+                dataset.getOwnerUid == user.getUid
               )
             } else {
               null
@@ -747,7 +763,7 @@ class DashboardResource {
               )
             } else {
               null
-            },
+            }
           )
         })
         .toList,

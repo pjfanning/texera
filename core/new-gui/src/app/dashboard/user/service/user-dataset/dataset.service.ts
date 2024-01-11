@@ -17,6 +17,9 @@ import {
 
 export const DATASET_BASE_URL = "dataset";
 export const DATASET_CREATE_URL = DATASET_BASE_URL + "/create";
+export const DATASET_UPDATE_BASE_URL = DATASET_BASE_URL + "/update";
+export const DATASET_UPDATE_NAME_URL = DATASET_UPDATE_BASE_URL + "/name";
+export const DATASET_UPDATE_DESCRIPTION_URL = DATASET_UPDATE_BASE_URL + "/description";
 export const DATASET_LIST_URL = DATASET_BASE_URL + "/list";
 export const DATASET_SEARCH_URL = DATASET_BASE_URL + "/search";
 export const DATASET_DELETE_URL = DATASET_BASE_URL + "/delete";
@@ -50,10 +53,8 @@ export class DatasetService {
     return this.http.post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData).pipe();
   }
 
-  public getDataset(did: number): Observable<Dataset> {
-    return this.http
-      .get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
-      .pipe(map(datasetDashboard => datasetDashboard.dataset));
+  public getDataset(did: number): Observable<DashboardDataset> {
+    return this.http.get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`).pipe();
   }
 
   public retrieveDatasetVersionSingleFile(did: number, dvid: number, path: string): Observable<Blob> {
@@ -141,6 +142,20 @@ export class DatasetService {
   public deleteDatasets(dids: number[]): Observable<Response> {
     return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${DATASET_DELETE_URL}`, {
       dids: dids,
+    });
+  }
+
+  public updateDatasetName(did: number, name: string): Observable<Response> {
+    return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${DATASET_UPDATE_NAME_URL}`, {
+      did: did,
+        name: name,
+    });
+  }
+
+  public updateDatasetDescription(did: number, description: string): Observable<Response> {
+    return this.http.post<Response>(`${AppSettings.getApiEndpoint()}/${DATASET_UPDATE_DESCRIPTION_URL}`, {
+      did: did,
+        description: description,
     });
   }
 }

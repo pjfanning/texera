@@ -42,6 +42,7 @@ public class Indexes {
     // INDEX definitions
     // -------------------------------------------------------------------------
 
+    public static final Index DATASET_OWNER_UID = Indexes0.DATASET_OWNER_UID;
     public static final Index DATASET_PRIMARY = Indexes0.DATASET_PRIMARY;
     public static final Index DATASET_OF_ENVIRONMENT_EID = Indexes0.DATASET_OF_ENVIRONMENT_EID;
     public static final Index DATASET_OF_ENVIRONMENT_PRIMARY = Indexes0.DATASET_OF_ENVIRONMENT_PRIMARY;
@@ -95,6 +96,7 @@ public class Indexes {
     // -------------------------------------------------------------------------
 
     private static class Indexes0 {
+        public static Index DATASET_OWNER_UID = Internal.createIndex("owner_uid", Dataset.DATASET, new OrderField[] { Dataset.DATASET.OWNER_UID }, false);
         public static Index DATASET_PRIMARY = Internal.createIndex("PRIMARY", Dataset.DATASET, new OrderField[] { Dataset.DATASET.DID }, true);
         public static Index DATASET_OF_ENVIRONMENT_EID = Internal.createIndex("eid", DatasetOfEnvironment.DATASET_OF_ENVIRONMENT, new OrderField[] { DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.EID }, false);
         public static Index DATASET_OF_ENVIRONMENT_PRIMARY = Internal.createIndex("PRIMARY", DatasetOfEnvironment.DATASET_OF_ENVIRONMENT, new OrderField[] { DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.DID, DatasetOfEnvironment.DATASET_OF_ENVIRONMENT.EID }, true);

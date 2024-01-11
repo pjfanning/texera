@@ -17,7 +17,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Dataset implements IDataset {
 
-    private static final long serialVersionUID = -667286698;
+    private static final long serialVersionUID = -422317927;
 
     private UInteger  did;
     private String    name;
@@ -25,6 +25,7 @@ public class Dataset implements IDataset {
     private String    storagePath;
     private String    description;
     private Timestamp creationTime;
+    private UInteger  ownerUid;
 
     public Dataset() {}
 
@@ -35,6 +36,7 @@ public class Dataset implements IDataset {
         this.storagePath = value.getStoragePath();
         this.description = value.getDescription();
         this.creationTime = value.getCreationTime();
+        this.ownerUid = value.getOwnerUid();
     }
 
     public Dataset(
@@ -43,7 +45,8 @@ public class Dataset implements IDataset {
         Byte      isPublic,
         String    storagePath,
         String    description,
-        Timestamp creationTime
+        Timestamp creationTime,
+        UInteger  ownerUid
     ) {
         this.did = did;
         this.name = name;
@@ -51,6 +54,7 @@ public class Dataset implements IDataset {
         this.storagePath = storagePath;
         this.description = description;
         this.creationTime = creationTime;
+        this.ownerUid = ownerUid;
     }
 
     @Override
@@ -114,6 +118,16 @@ public class Dataset implements IDataset {
     }
 
     @Override
+    public UInteger getOwnerUid() {
+        return this.ownerUid;
+    }
+
+    @Override
+    public void setOwnerUid(UInteger ownerUid) {
+        this.ownerUid = ownerUid;
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Dataset (");
 
@@ -123,6 +137,7 @@ public class Dataset implements IDataset {
         sb.append(", ").append(storagePath);
         sb.append(", ").append(description);
         sb.append(", ").append(creationTime);
+        sb.append(", ").append(ownerUid);
 
         sb.append(")");
         return sb.toString();
@@ -140,6 +155,7 @@ public class Dataset implements IDataset {
         setStoragePath(from.getStoragePath());
         setDescription(from.getDescription());
         setCreationTime(from.getCreationTime());
+        setOwnerUid(from.getOwnerUid());
     }
 
     @Override

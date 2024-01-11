@@ -130,4 +130,18 @@ public class DatasetDao extends DAOImpl<DatasetRecord, edu.uci.ics.texera.web.mo
     public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchByCreationTime(Timestamp... values) {
         return fetch(Dataset.DATASET.CREATION_TIME, values);
     }
+
+    /**
+     * Fetch records that have <code>owner_uid BETWEEN lowerInclusive AND upperInclusive</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchRangeOfOwnerUid(UInteger lowerInclusive, UInteger upperInclusive) {
+        return fetchRange(Dataset.DATASET.OWNER_UID, lowerInclusive, upperInclusive);
+    }
+
+    /**
+     * Fetch records that have <code>owner_uid IN (values)</code>
+     */
+    public List<edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Dataset> fetchByOwnerUid(UInteger... values) {
+        return fetch(Dataset.DATASET.OWNER_UID, values);
+    }
 }

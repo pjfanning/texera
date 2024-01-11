@@ -47,8 +47,7 @@ export class DatasetVersionFileTreeManager {
 
   constructor(nodes: DatasetVersionFileTreeNode[] = []) {
     this.treeNodesMap.set("/", this.root);
-    if (nodes.length > 0)
-      this.initializeWithRootNodes(nodes);
+    if (nodes.length > 0) this.initializeWithRootNodes(nodes);
   }
 
   private updateTreeMapWithPath(path: string): DatasetVersionFileTreeNode {
@@ -102,11 +101,11 @@ export class DatasetVersionFileTreeManager {
 
     // Helper function to add nodes recursively
     const addNodeRecursively = (node: DatasetVersionFileTreeNode, parentDir: string) => {
-      const nodePath = parentDir === '/' ? `/${node.name}` : `${parentDir}/${node.name}`;
+      const nodePath = parentDir === "/" ? `/${node.name}` : `${parentDir}/${node.name}`;
       this.treeNodesMap.set(nodePath, node);
 
       // If the node is a directory, recursively add its children
-      if (node.type === 'directory' && node.children) {
+      if (node.type === "directory" && node.children) {
         node.children.forEach(child => addNodeRecursively(child, nodePath));
       }
     };
@@ -117,12 +116,12 @@ export class DatasetVersionFileTreeManager {
         this.root.children = [];
       }
       this.root.children.push(node);
-      addNodeRecursively(node, '/');
+      addNodeRecursively(node, "/");
     });
   }
 
   removeNode(targetNode: DatasetVersionFileTreeNode): void {
-    if (targetNode.parentDir === '' && targetNode.name === '/') {
+    if (targetNode.parentDir === "" && targetNode.name === "/") {
       // Can't remove root
       return;
     }

@@ -76,6 +76,16 @@ public interface IDataset extends Serializable {
      */
     public Timestamp getCreationTime();
 
+    /**
+     * Setter for <code>texera_db.dataset.owner_uid</code>.
+     */
+    public void setOwnerUid(UInteger value);
+
+    /**
+     * Getter for <code>texera_db.dataset.owner_uid</code>.
+     */
+    public UInteger getOwnerUid();
+
     // -------------------------------------------------------------------------
     // FROM and INTO
     // -------------------------------------------------------------------------
