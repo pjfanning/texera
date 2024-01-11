@@ -50,10 +50,8 @@ export class DatasetService {
     return this.http.post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData).pipe();
   }
 
-  public getDataset(did: number): Observable<Dataset> {
-    return this.http
-      .get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`)
-      .pipe(map(datasetDashboard => datasetDashboard.dataset));
+  public getDataset(did: number): Observable<DashboardDataset> {
+    return this.http.get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`).pipe();
   }
 
   public retrieveDatasetVersionSingleFile(did: number, dvid: number, path: string): Observable<Blob> {

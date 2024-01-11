@@ -16,10 +16,10 @@
 
 .version-storage {
   padding-left: 25px;
-  width: 90%;        /* Set the width to 90% */
+  width: 90%; /* Set the width to 90% */
   margin-left: auto; /* Center align the element by setting auto margins */
   margin-right: auto;
- }
+}
 
 .version-storage nz-select {
   width: 100%; /* Make the select element take the full width of its parent */
@@ -35,7 +35,8 @@ nz-layout {
   height: 100%;
 }
 
-html,body{
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;

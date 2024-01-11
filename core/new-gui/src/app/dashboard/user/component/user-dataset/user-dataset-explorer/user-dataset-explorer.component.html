@@ -1,12 +1,12 @@
 <div *ngIf="!isMaximized && !isCreatingDataset">
   <nz-card>
-      <h2 class="dataset-title">Dataset: {{datasetName}}</h2>
-      <nz-card-meta
-        style="padding-top: 10px"
-        nzDescription="Created at: {{datasetCreationTime}}"></nz-card-meta>
-      <nz-card-meta
-        style="padding-top: 20px"
-        nzDescription="{{datasetDescription}}"></nz-card-meta>
+    <h2 class="dataset-title">Dataset: {{datasetName}}</h2>
+    <nz-card-meta
+      style="padding-top: 10px"
+      nzDescription="Created at: {{datasetCreationTime}}"></nz-card-meta>
+    <nz-card-meta
+      style="padding-top: 20px"
+      nzDescription="{{datasetDescription}}"></nz-card-meta>
   </nz-card>
 </div>
 <nz-layout>
@@ -81,8 +81,7 @@
       [did]="did"
       [dvid]="selectedVersion?.dvid"
       [filePath]="currentDisplayedFileName"
-      class="file-renderer"
-    >
+      class="file-renderer">
     </texera-user-dataset-file-renderer>
   </nz-content>
   <nz-sider
@@ -140,6 +139,7 @@
         >
       </texera-user-dataset-version-filetree>
       <button
+        *ngIf="userHasWriteAccess()"
         class="rounded-button"
         (click)="onClickOpenVersionCreator()">
         + Version

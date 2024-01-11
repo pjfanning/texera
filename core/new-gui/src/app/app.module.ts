@@ -146,8 +146,8 @@ import { NgxFileDropModule } from "ngx-file-drop";
 import { NzDividerModule } from "ng-zorro-antd/divider";
 import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-filetree/user-dataset-version-filetree.component";
 import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
-import {PdfViewerModule} from "ng2-pdf-viewer";
-import {ImageViewerModule} from "ngx-image-viewer";
+import { PdfViewerModule } from "ng2-pdf-viewer";
+import { ImageViewerModule } from "ngx-image-viewer";
 
 registerLocaleData(en);
 

@@ -185,12 +185,11 @@ class DatasetAccessResource {
         val userDao = new UserDao(ctx.configuration())
         datasetUserAccessDao.merge(
           new DatasetUserAccess(
-            userDao.fetchOneByEmail(email).getUid,
             did,
+            userDao.fetchOneByEmail(email).getUid,
             DatasetUserAccessPrivilege.valueOf(privilege)
           )
         )
-
         Response.ok().build()
       }
     }

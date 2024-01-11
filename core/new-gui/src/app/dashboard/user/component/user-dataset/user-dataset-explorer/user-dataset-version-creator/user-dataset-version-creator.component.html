@@ -1,7 +1,5 @@
 <div>
-  <div
-    class="texera-user-dataset-creator-form"
-  >
+  <div class="texera-user-dataset-creator-form">
     <formly-form
       [form]="form"
       [fields]="fields"
@@ -10,6 +8,7 @@
     <nz-switch
       *ngIf="!isCreatingVersion"
       [ngModel]="isDatasetPublic"
+      (ngModelChange)="onPublicStatusChange($event)"
       nzCheckedChildren="public"
       nzUnCheckedChildren="private"></nz-switch>
   </div>

@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
+import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { FileUploadItem } from "../../type/dashboard-file.interface";
 import { NgxFileDropEntry } from "ngx-file-drop";
 import { UserFileUploadService } from "../../service/user-file/user-file-upload.service";
@@ -26,7 +26,10 @@ export class FilesUploaderComponent {
   @Output()
   removingFilePaths = new EventEmitter<string[]>();
 
-  newUploadNodeToFileItems: Map<DatasetVersionFileTreeNode, FileUploadItem> = new Map<DatasetVersionFileTreeNode, FileUploadItem>();
+  newUploadNodeToFileItems: Map<DatasetVersionFileTreeNode, FileUploadItem> = new Map<
+    DatasetVersionFileTreeNode,
+    FileUploadItem
+  >();
   newUploadFileTreeManager: DatasetVersionFileTreeManager = new DatasetVersionFileTreeManager();
   newUploadFileTreeNodes: DatasetVersionFileTreeNode[] = [];
 
@@ -39,15 +42,18 @@ export class FilesUploaderComponent {
     for (const droppedFile of files) {
       if (droppedFile.fileEntry.isFile) {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
-        fileEntry.file(file => {
-          this.showFileUploadBanner("success", "Files are uploaded successfully!")
+        fileEntry.file(
+          file => {
+            this.showFileUploadBanner("success", "Files are uploaded successfully!");
 
-          const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath);
-          this.addFileToNewUploadsFileTree(droppedFile.relativePath, fileUploadItem);
-          this.uploadedFiles.emit(Array.from(this.newUploadNodeToFileItems.values()));
-        }, err => {
-          this.showFileUploadBanner("error", `Encounter error: ${err.message}`);
-        });
+            const fileUploadItem = UserFileUploadService.createFileUploadItemWithPath(file, droppedFile.relativePath);
+            this.addFileToNewUploadsFileTree(droppedFile.relativePath, fileUploadItem);
+            this.uploadedFiles.emit(Array.from(this.newUploadNodeToFileItems.values()));
+          },
+          err => {
+            this.showFileUploadBanner("error", `Encounter error: ${err.message}`);
+          }
+        );
       } else {
         // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
@@ -74,9 +80,9 @@ export class FilesUploaderComponent {
       }
       if (this.previouslyUploadFilesManager) {
         this.previouslyUploadFilesManager.removeNode(node);
-        console.log("before delete previous uploads", this.previouslyUploadFilesManager.getRootNodes())
-        this.previouslyUploadFiles = [...this.previouslyUploadFilesManager.getRootNodes()]
-        console.log("after delete previous uploads", this.previouslyUploadFiles)
+        console.log("before delete previous uploads", this.previouslyUploadFilesManager.getRootNodes());
+        this.previouslyUploadFiles = [...this.previouslyUploadFilesManager.getRootNodes()];
+        console.log("after delete previous uploads", this.previouslyUploadFiles);
       }
     } else {
       // from new uploads
@@ -110,5 +116,4 @@ export class FilesUploaderComponent {
   hideBanner() {
     this.fileUploadingFinished = false;
   }
-
 }

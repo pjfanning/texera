@@ -33,8 +33,6 @@ export class SearchComponent {
 
   constructor(private searchService: SearchService) {}
 
-
-
   async search(): Promise<void> {
     if (this.filters.masterFilterList.length === 0) {
       return;

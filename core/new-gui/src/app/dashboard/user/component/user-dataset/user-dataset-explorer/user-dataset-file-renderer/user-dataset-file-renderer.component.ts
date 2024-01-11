@@ -102,7 +102,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     }
   }
 
-
   ngOnDestroy(): void {
     if (this.fileURL) {
       URL.revokeObjectURL(this.fileURL);

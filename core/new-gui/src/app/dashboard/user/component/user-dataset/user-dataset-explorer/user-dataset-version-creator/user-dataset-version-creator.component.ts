@@ -85,7 +85,6 @@ export class UserDatasetVersionCreator implements OnInit {
         ];
   }
 
-
   private triggerValidation() {
     Object.keys(this.form.controls).forEach(field => {
       const control = this.form.get(field);
@@ -106,7 +105,7 @@ export class UserDatasetVersionCreator implements OnInit {
     }
 
     if (this.isCreatingVersion && this.baseVersion) {
-      console.log("creating a version")
+      console.log("creating a version");
       const versionName = this.form.get("name")?.value;
       this.datasetService
         .createDatasetVersion(this.baseVersion?.did, versionName, this.removedFilePaths, this.newUploadFiles)
@@ -133,6 +132,12 @@ export class UserDatasetVersionCreator implements OnInit {
           this.datasetOrVersionCreationID.emit(res.dataset.did);
         });
     }
+  }
+
+  onPublicStatusChange(newValue: boolean): void {
+    // Handle the change in dataset public status
+    console.log("Dataset is now:", newValue ? "Public" : "Private");
+    this.isDatasetPublic = newValue;
   }
 
   onNewUploadFilesChanged(files: FileUploadItem[]) {

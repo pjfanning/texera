@@ -110,13 +110,13 @@ export class UserDatasetComponent implements AfterViewInit {
   public deleteDataset(entry: DashboardEntry) {
     if (entry.dataset.dataset.did) {
       this.datasetService
-          .deleteDatasets([entry.dataset.dataset.did])
-          .pipe(untilDestroyed(this))
-          .subscribe(_ => {
-            this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-                datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
-            );
-          });
+        .deleteDatasets([entry.dataset.dataset.did])
+        .pipe(untilDestroyed(this))
+        .subscribe(_ => {
+          this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+            datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+          );
+        });
     }
   }
 
