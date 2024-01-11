@@ -4,12 +4,12 @@ import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess, userOwnDataset}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetIDs, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
@@ -162,6 +162,7 @@ object DatasetResource {
   case class DashboardDataset(
       dataset: Dataset,
       accessPrivilege: EnumType,
+      ownerName: String,
       isOwner: Boolean
   )
 
@@ -175,6 +176,10 @@ object DatasetResource {
   )
 
   case class DatasetIDs(dids: List[UInteger])
+
+  case class DatasetNameModification(did: UInteger, name: String)
+
+  case class DatasetDescriptionModification(did: UInteger, description: String)
 }
 
 @Produces(Array(MediaType.APPLICATION_JSON, "image/jpeg", "application/pdf"))
@@ -237,6 +242,7 @@ class DatasetResource {
             // none means creation failed
             throw new BadRequestException("User should do modifications to create a new version")
         }
+
         DashboardDataset(
           new Dataset(
             createdDataset.getDid,
@@ -248,7 +254,8 @@ class DatasetResource {
             createdDataset.getOwnerUid
           ),
           DatasetUserAccessPrivilege.WRITE,
-          isOwner = true
+          isOwner = true,
+          ownerName = user.getName,
         )
       }
     }
@@ -272,6 +279,59 @@ class DatasetResource {
           datasetDao.deleteById(did)
         }
 
+        Response.ok().build()
+      }
+    }
+  }
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/update/name")
+  def updateDatasetName(
+                         modificator: DatasetNameModification,
+                         @Auth sessionUser: SessionUser
+                       ): Response = {
+    withExceptionHandling { () =>
+      withTransaction(context) { ctx =>
+        val datasetDao = new DatasetDao(ctx.configuration())
+        val uid = sessionUser.getUid
+        val did = modificator.did
+        val name = modificator.name
+        if (!userHasWriteAccess(ctx, did, uid)) {
+          throw new UserHasNoAccessToDatasetException(did.intValue())
+        }
+
+        val existedDataset = getDatasetByID(ctx, did, uid)
+        existedDataset.setName(name)
+        datasetDao.update(existedDataset)
+        Response.ok().build()
+      }
+    }
+  }
+
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/update/description")
+  def updateDatasetDescription(
+                                modificator: DatasetDescriptionModification,
+                                @Auth sessionUser: SessionUser
+                       ): Response = {
+    withExceptionHandling { () =>
+      withTransaction(context) { ctx =>
+        val datasetDao = new DatasetDao(ctx.configuration())
+        val uid = sessionUser.getUid
+        val did = modificator.did
+        val description = modificator.description
+
+        if (!userHasWriteAccess(ctx, did, uid)) {
+          throw new UserHasNoAccessToDatasetException(did.intValue())
+        }
+
+        val existedDataset = getDatasetByID(ctx, did, uid)
+        existedDataset.setDescription(description)
+        datasetDao.update(existedDataset)
         Response.ok().build()
       }
     }
@@ -316,11 +376,13 @@ class DatasetResource {
       withTransaction(context)(ctx => {
         val targetDataset = getDatasetByID(ctx, did, uid)
         val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
+        val ownerEmail = getOwner(ctx, did).getEmail
 
         DashboardDataset(
           targetDataset,
           userAccessPrivilege,
-          targetDataset.getOwnerUid == uid
+          ownerEmail,
+          targetDataset.getOwnerUid == uid,
         )
       })
     })

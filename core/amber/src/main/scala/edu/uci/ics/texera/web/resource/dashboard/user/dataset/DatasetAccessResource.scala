@@ -7,32 +7,16 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  DatasetDao,
-  DatasetUserAccessDao,
-  UserDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.context
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  PUBLIC,
-  withExceptionHandling
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, UserDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, User}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{context, getOwner}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{PUBLIC, withExceptionHandling}
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
 import java.util
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  BadRequestException,
-  DELETE,
-  GET,
-  InternalServerErrorException,
-  PUT,
-  Path,
-  PathParam,
-  Produces
-}
+import javax.ws.rs.{BadRequestException, DELETE, GET, InternalServerErrorException, PUT, Path, PathParam, Produces}
 import javax.ws.rs.core.{MediaType, Response}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
@@ -92,6 +76,12 @@ object DatasetAccessResource {
       record.getPrivilege
   }
 
+  def getOwner(ctx: DSLContext, did: UInteger): User = {
+    val datasetDao = new DatasetDao(ctx.configuration())
+    val userDao = new UserDao(ctx.configuration())
+    userDao.fetchOneByUid(datasetDao.fetchOneByDid(did).getOwnerUid)
+  }
+
   def withExceptionHandling[T](block: () => T): T = {
     try {
       block()
@@ -121,12 +111,15 @@ class DatasetAccessResource {
     */
   @GET
   @Path("/owner/{did}")
-  def getOwner(@PathParam("did") did: UInteger): String = {
+  def getOwnerEmailOfDataset(@PathParam("did") did: UInteger): String = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
-        val datasetDao = new DatasetDao(ctx.configuration())
-        val userDao = new UserDao(ctx.configuration())
-        userDao.fetchOneByUid(datasetDao.fetchOneByDid(did).getOwnerUid).getEmail
+        val owner = getOwner(ctx, did)
+        if (owner != null) {
+          return owner.getEmail
+        }
+        // this should not happen based on the foreign key constrains
+        return ""
       }
     }
   }
