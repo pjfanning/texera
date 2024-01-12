@@ -2,6 +2,12 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
+object ChannelID{
+  val InternalDelayedClosureChannelID: ChannelID = ChannelID(
+    ActorVirtualIdentity("__InternalDelayedClosureChannel"),
+    ActorVirtualIdentity("__InternalDelayedClosureChannel"),
+    isControl = true)
+}
 case class ChannelID(
     from: ActorVirtualIdentity,
     to: ActorVirtualIdentity,
@@ -11,11 +17,6 @@ case class ChannelID(
     s"Channel(${from.name},${to.name},${if (isControl) "control" else "data"})"
   }
 }
-
-case object InternalDelayedClosureChannelID extends ChannelID(
-  ActorVirtualIdentity("__InternalDelayedClosureChannel"),
-  ActorVirtualIdentity("__InternalDelayedClosureChannel"),
-  true)
 
 case object WorkflowMessage {
   def getInMemSize(msg: WorkflowMessage): Long = {

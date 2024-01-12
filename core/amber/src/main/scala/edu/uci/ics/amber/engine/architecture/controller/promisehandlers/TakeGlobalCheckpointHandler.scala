@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMar
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
 import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState, VirtualIdentityUtils}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DelayedCallPayload, InternalDelayedClosureChannelID, NoAlignment, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DelayedCallPayload, NoAlignment, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 
@@ -75,8 +75,8 @@ trait TakeGlobalCheckpointHandler {
           }
           promise.setValue()
         }
-        val channel = cp.inputGateway.getChannel(InternalDelayedClosureChannelID)
-        channel.acceptMessage(WorkflowFIFOMessage(InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
+        val channel = cp.inputGateway.getChannel(ChannelID.InternalDelayedClosureChannelID)
+        channel.acceptMessage(WorkflowFIFOMessage(ChannelID.InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
         promise
       }
       Future.collect(Seq(workerCheckpointFuture, inflightMsgCollectionFuture)).map{

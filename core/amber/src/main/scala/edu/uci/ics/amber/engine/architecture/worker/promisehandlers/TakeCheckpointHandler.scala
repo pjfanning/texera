@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.common.ambermessage.{DelayedCallPayload, InternalDelayedClosureChannelID, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DelayedCallPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
@@ -73,8 +73,8 @@ trait TakeCheckpointHandler {
         }
         promise.setValue(totalSize)
       }
-      val channel = dp.inputGateway.getChannel(InternalDelayedClosureChannelID)
-      channel.acceptMessage(WorkflowFIFOMessage(InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
+      val channel = dp.inputGateway.getChannel(ChannelID.InternalDelayedClosureChannelID)
+      channel.acceptMessage(WorkflowFIFOMessage(ChannelID.InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
       promise
     }
   }
