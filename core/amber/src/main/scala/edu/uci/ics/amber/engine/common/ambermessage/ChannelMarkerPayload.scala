@@ -1,5 +1,6 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
+import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -13,3 +14,8 @@ final case class ChannelMarkerPayload(
     scope: Set[ChannelID],
     commandMapping: Map[ActorVirtualIdentity, ControlInvocation]
 ) extends WorkflowFIFOMessagePayload
+
+
+
+// for checkpoint use only
+final case class DelayedCallPayload(closure:() => Unit) extends WorkflowFIFOMessagePayload

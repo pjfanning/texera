@@ -1,8 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import com.twitter.util.Future
+import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
+import edu.uci.ics.amber.engine.common.ambermessage.{DelayedCallPayload, InternalDelayedClosureChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
@@ -54,20 +55,27 @@ trait TakeCheckpointHandler {
     val collectorFutures = dp.inputGateway.getAllChannels
       .filter(c => channelsToCollect.contains(c.channelId))
       .map(_.collectMessagesUntilMarker(dp.epochManager.getContext.marker.id))
-    Future.collect(collectorFutures.toSeq).map { iterables =>
-      if(!msg.estimationOnly){
-        chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
-        logger.info(
-          s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes"
-        )
-        val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
-        val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
-        writer.writeRecord(chkpt)
-        writer.flush()
-        totalSize = chkpt.size()
+    Future.collect(collectorFutures.toSeq).flatMap { iterables =>
+      val promise = Promise[Long]()
+      val closure = () => {
+        if (!msg.estimationOnly) {
+          chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
+          logger.info(
+            s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes"
+          )
+          val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
+          val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
+          writer.writeRecord(chkpt)
+          writer.flush()
+          totalSize = chkpt.size()
+          logger.info(s"Checkpoint finalized")
+
+        }
+        promise.setValue(totalSize)
       }
-      logger.info(s"Checkpoint finalized")
-      totalSize
+      val channel = dp.inputGateway.getChannel(InternalDelayedClosureChannelID)
+      channel.acceptMessage(WorkflowFIFOMessage(InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
+      promise
     }
   }
 }

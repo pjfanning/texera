@@ -12,6 +12,11 @@ case class ChannelID(
   }
 }
 
+case object InternalDelayedClosureChannelID extends ChannelID(
+  ActorVirtualIdentity("__InternalDelayedClosureChannel"),
+  ActorVirtualIdentity("__InternalDelayedClosureChannel"),
+  true)
+
 case object WorkflowMessage {
   def getInMemSize(msg: WorkflowMessage): Long = {
     msg match {
