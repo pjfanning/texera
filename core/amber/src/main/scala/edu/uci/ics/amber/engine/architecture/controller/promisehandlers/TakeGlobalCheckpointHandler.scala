@@ -33,7 +33,11 @@ trait TakeGlobalCheckpointHandler {
       val chkpt = new CheckpointState()
       if(!msg.estimationOnly){
         // serialize CP state
-        chkpt.save(SerializedState.CP_STATE_KEY, this.cp)
+        try{
+          chkpt.save(SerializedState.CP_STATE_KEY, this.cp)
+        } catch{
+          case e:Throwable => logger.error("???", e)
+        }
         logger.info("Serialized CP state")
       }
       val checkpointId = s"Checkpoint_${UUID.randomUUID().toString}"
