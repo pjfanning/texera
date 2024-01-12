@@ -17,19 +17,19 @@
       #basicTable>
       <thead>
         <tr>
-          <th *ngFor="let column of csvHeader">{{ column }}</th>
+          <th *ngFor="let column of tableDataHeader">{{ column }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of csvContent">
+        <tr *ngFor="let row of tableContent">
           <td *ngFor="let cell of row">{{ cell }}</td>
         </tr>
       </tbody>
     </nz-table>
 
-    <div *ngIf="displayImage && fileURL && imageFileURL">
+    <div *ngIf="displayImage && safeFileURL">
       <img
-        [src]="imageFileURL"
+        [src]="safeFileURL"
         alt="{{filePath}}"
         (click)="toggleImageModal()"
         style="width: 50%; height: 70%; margin: auto" />
@@ -41,16 +41,32 @@
       class="image-modal"
       (click)="toggleImageModal()">
       <img
-        [src]="imageFileURL"
+        [src]="safeFileURL"
         alt="{{filePath}}"
         class="full-size-image" />
     </div>
     <div *ngIf="displayMarkdown">
       <markdown [data]="textContent"></markdown>
     </div>
+    <div *ngIf="displayJson">
+      <ngx-json-viewer [json]="textContent"></ngx-json-viewer>
+    </div>
+    <div *ngIf="displayMP4 && safeFileURL">
+      <video controls [src]="safeFileURL">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <div *ngIf="displayMP3 && safeFileURL">
+      <audio controls [src]="safeFileURL">
+        Your browser does not support the audio element.
+      </audio>
+    </div>
     <div *ngIf="displayPlainText">{{ textContent }}</div>
     <div *ngIf="isFileLoadingError">
       <h3>File loading encounters error</h3>
+    </div>
+    <div *ngIf="!isFileSizeLoadable">
+      <h3>File is too large to be loaded</h3>
     </div>
   </div>
 </div>

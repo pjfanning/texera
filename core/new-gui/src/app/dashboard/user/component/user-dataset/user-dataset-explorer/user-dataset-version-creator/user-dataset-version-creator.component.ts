@@ -5,6 +5,7 @@ import { DatasetService } from "../../../../service/user-dataset/dataset.service
 import { FileUploadItem } from "../../../../type/dashboard-file.interface";
 import { Dataset, DatasetVersion } from "../../../../../../common/type/dataset";
 import { untilDestroyed } from "@ngneat/until-destroy";
+import { NotificationService } from "../../../../../../common/service/notification/notification.service";
 
 @Component({
   selector: "texera-user-dataset-version-creator",
@@ -33,7 +34,7 @@ export class UserDatasetVersionCreator implements OnInit {
   fields: FormlyFieldConfig[] = [];
   isDatasetPublic: boolean = true;
 
-  constructor(private datasetService: DatasetService) {}
+  constructor(private datasetService: DatasetService, private notificationService: NotificationService) {}
 
   ngOnInit() {
     this.setFormFields();
@@ -104,15 +105,27 @@ export class UserDatasetVersionCreator implements OnInit {
       return; // Stop further execution if the form is not valid
     }
 
+    if (this.newUploadFiles.length == 0 && this.removedFilePaths.length == 0) {
+      this.notificationService.error(
+        `Please make file-related changes when creating a new ${this.isCreatingVersion ? "Version" : "Dataset"}`
+      );
+      return;
+    }
+
     if (this.isCreatingVersion && this.baseVersion) {
       console.log("creating a version");
       const versionName = this.form.get("name")?.value;
       this.datasetService
         .createDatasetVersion(this.baseVersion?.did, versionName, this.removedFilePaths, this.newUploadFiles)
         .pipe()
-        .subscribe(res => {
-          console.log("version creation succeed");
-          this.datasetOrVersionCreationID.emit(res.dvid);
+        .subscribe({
+          next: res => {
+            this.notificationService.success(`Version '${versionName}' Created`);
+            this.datasetOrVersionCreationID.emit(res.dvid);
+          },
+          error: (res: unknown) => {
+            this.notificationService.error("Version creation failed");
+          },
         });
     } else {
       const ds: Dataset = {
@@ -128,8 +141,14 @@ export class UserDatasetVersionCreator implements OnInit {
       this.datasetService
         .createDataset(ds, initialVersionName, this.newUploadFiles)
         .pipe()
-        .subscribe(res => {
-          this.datasetOrVersionCreationID.emit(res.dataset.did);
+        .subscribe({
+          next: res => {
+            this.notificationService.success(`Dataset '${ds.name}' Created`);
+            this.datasetOrVersionCreationID.emit(res.dataset.did);
+          },
+          error: (res: unknown) => {
+            this.notificationService.error(`Dataset ${ds.name} creation failed`);
+          },
         });
     }
   }

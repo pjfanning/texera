@@ -4,6 +4,8 @@ import { untilDestroyed } from "@ngneat/until-destroy";
 import * as Papa from "papaparse";
 import { ParseResult } from "papaparse";
 import { DomSanitizer, SafeUrl } from "@angular/platform-browser";
+import readXlsxFile from "read-excel-file";
+import { NotificationService } from "../../../../../../common/service/notification/notification.service";
 
 export const MIME_TYPES = {
   JPEG: "image/jpeg",
@@ -47,21 +49,33 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   private DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
   public fileURL: string | undefined;
+  public safeFileURL: SafeUrl | undefined;
 
   // pdf related control
   public displayPdf: boolean = false;
 
   // csv related control
   public displayCSV: boolean = false;
-  public csvHeader: any[] = [];
-  public csvContent: any[][] = [];
+  public tableDataHeader: any[] = [];
+  public tableContent: any[][] = [];
+
+  // xlsx related control
+  public displayXlsx: boolean = false;
 
   // image related control
   public displayImage: boolean = false;
-  public imageFileURL: SafeUrl | undefined;
 
   // markdown control
   public displayMarkdown: boolean = false;
+
+  // json control
+  public displayJson: boolean = false;
+
+  // video
+  public displayMP4: boolean = false;
+
+  // audio
+  public displayMP3: boolean = false;
 
   // plain text & octet stream related control
   public displayPlainText: boolean = false;
@@ -88,7 +102,11 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   @Output()
   loadFile = new EventEmitter<{ file: string; prefix: string }>();
 
-  constructor(private datasetService: DatasetService, private sanitizer: DomSanitizer) {}
+  constructor(
+    private datasetService: DatasetService,
+    private sanitizer: DomSanitizer,
+    private notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
     console.log("init");
@@ -110,6 +128,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
 
   // In your component
   showImageModal = false;
+
   toggleImageModal() {
     this.showImageModal = !this.showImageModal;
   }
@@ -121,13 +140,14 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
       this.datasetService
         .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
         .pipe()
-        .subscribe(
-          blob => {
+        .subscribe({
+          next: blob => {
             this.isLoading = true;
             const MaxSize = MIME_TYPE_SIZE_LIMITS_MB[blob.type] || this.DEFAULT_MAX_SIZE;
             const fileSize = blob.size;
             if (fileSize > MaxSize) {
               this.onFileSizeNotLoadable();
+              this.notificationService.warning(`File ${this.filePath} is too large to be previewed`)
               return;
             }
             this.currentFile = new File([blob], this.filePath, { type: blob.type });
@@ -136,43 +156,40 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
             switch (blob.type) {
               case MIME_TYPES.PNG:
               case MIME_TYPES.JPEG:
-                // Handle image display
-                console.log("display image");
-                this.imageFileURL = this.sanitizer.bypassSecurityTrustUrl(URL.createObjectURL(blob));
                 this.displayImage = true;
+                this.loadSafeURL(blob);
+                break;
+              case MIME_TYPES.MP4:
+                this.displayMP4 = true;
+                this.loadSafeURL(blob);
+                break;
+
+              case MIME_TYPES.MP3:
+                this.displayMP3 = true;
+                this.loadSafeURL(blob);
+                break;
+
+              case MIME_TYPES.MSEXCEL:
+                let parsedData: string[][] = [];
+                readXlsxFile(blob).then(rows => {
+                  rows.forEach(row => {
+                    // Convert each cell in the row to a string
+                    let stringRow = row.map(cell => (cell ? cell.toString() : ""));
+                    // Add the string array to the main array
+                    parsedData.push(stringRow);
+                  });
+                  if (parsedData.length > 0)
+                    this.loadTabularFile(parsedData);
+                });
+
                 break;
               case MIME_TYPES.CSV:
                 this.displayCSV = true;
                 // Handle CSV display
                 Papa.parse(this.currentFile, {
                   complete: (results: ParseResult<any>) => {
-                    console.log("File Parsed: ", results.data);
-
                     if (results.data.length > 0) {
-                      // Extract the header (first row)
-                      this.csvHeader = results.data[0];
-
-                      // Process the rest of the rows
-                      this.csvContent = results.data
-                        .slice(1)
-                        .map(row => {
-                          // Normalize the row length to match the header length
-                          while (row.length < this.csvHeader.length) {
-                            row.push("");
-                          }
-                          return row;
-                        })
-                        .filter(row => {
-                          // filter out all empty row
-                          let areCellAllEmpty = true;
-                          for (const cell in row) {
-                            if (cell != "") {
-                              areCellAllEmpty = false;
-                              break;
-                            }
-                          }
-                          return !areCellAllEmpty;
-                        });
+                      this.loadTabularFile(results.data);
                     }
                   },
                   error: error => {
@@ -194,38 +211,49 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
                 this.displayMarkdown = true;
                 this.readFileAsText(blob);
                 break;
+              case MIME_TYPES.JSON:
+                this.displayJson = true;
+                this.readFileAsText(blob);
+                break;
               case MIME_TYPES.OCTET_STREAM:
               case MIME_TYPES.TXT:
               default:
                 this.displayPlainText = true;
                 this.readFileAsText(blob);
+                if (blob.type != MIME_TYPES.TXT)
+                  this.notificationService.warning(`File Type is currently not supported in preview`)
                 break;
             }
 
             this.isLoading = false;
           },
-          (error: unknown) => {
-            console.error("Error fetching file:", error);
+          error: (error: unknown) => {
+            this.notificationService.error(`Error rendering file '${this.filePath}'`);
             this.onFileLoadingError();
-          }
-        );
+          },
+        });
     }
   }
 
   turnOffAllDisplay() {
     this.displayPdf = false;
     this.displayCSV = false;
+    this.displayXlsx = false;
     this.displayImage = false;
     this.displayPlainText = false;
-    this.isFileLoadingError = false;
     this.displayMarkdown = false;
+    this.displayJson = false;
+    this.displayMP4 = false;
+    this.displayMP3 = false;
     this.isLoading = false;
+    this.isFileLoadingError = false;
+    this.isFileSizeLoadable = true;
     // garbage collection
     if (this.fileURL) {
       URL.revokeObjectURL(this.fileURL);
     }
-    if (this.imageFileURL) {
-      URL.revokeObjectURL(this.imageFileURL.toString());
+    if (this.safeFileURL) {
+      URL.revokeObjectURL(this.safeFileURL.toString());
     }
   }
 
@@ -245,5 +273,39 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
       this.textContent = event.target.result;
     };
     txtReader.readAsText(blob);
+  }
+
+  private loadSafeURL(blob: Blob) {
+    this.fileURL = URL.createObjectURL(blob);
+    this.safeFileURL = this.sanitizer.bypassSecurityTrustUrl(this.fileURL);
+  }
+
+  private loadTabularFile(data: any[][]) {
+    if (data.length > 0) {
+      // Extract the header (first row)
+      this.tableDataHeader = data[0];
+
+      // Process the rest of the rows
+      this.tableContent = data
+        .slice(1)
+        .map(row => {
+          // Normalize the row length to match the header length
+          while (row.length < this.tableDataHeader.length) {
+            row.push("");
+          }
+          return row;
+        })
+        .filter(row => {
+          // filter out all empty row
+          let areCellAllEmpty = true;
+          for (const cell in row) {
+            if (cell != "") {
+              areCellAllEmpty = false;
+              break;
+            }
+          }
+          return !areCellAllEmpty;
+        });
+    }
   }
 }
