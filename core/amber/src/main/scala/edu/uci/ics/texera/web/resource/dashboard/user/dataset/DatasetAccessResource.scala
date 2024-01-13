@@ -116,7 +116,8 @@ class DatasetAccessResource {
       withTransaction(context) { ctx =>
         val owner = getOwner(ctx, did)
         if (owner != null) {
-          return owner.getEmail
+          val email = owner.getEmail
+          return email
         }
         // this should not happen based on the foreign key constrains
         return ""

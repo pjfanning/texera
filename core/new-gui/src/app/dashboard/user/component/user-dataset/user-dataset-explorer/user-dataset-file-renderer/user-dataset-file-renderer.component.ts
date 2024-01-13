@@ -115,7 +115,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes.did || changes.dvid || changes.filePath) {
-      console.log("on change");
       this.reloadFileContent();
     }
   }
@@ -162,26 +161,30 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
               case MIME_TYPES.MP4:
                 this.displayMP4 = true;
                 this.loadSafeURL(blob);
+                this.notificationService.info("Video display might not be supported by some browsers.")
                 break;
 
               case MIME_TYPES.MP3:
                 this.displayMP3 = true;
                 this.loadSafeURL(blob);
+                this.notificationService.info("Audio display might not be supported by some browsers.")
+
                 break;
 
               case MIME_TYPES.MSEXCEL:
-                let parsedData: string[][] = [];
                 readXlsxFile(blob).then(rows => {
+                  let parsedData: string[][] = [];
                   rows.forEach(row => {
                     // Convert each cell in the row to a string
                     let stringRow = row.map(cell => (cell ? cell.toString() : ""));
                     // Add the string array to the main array
                     parsedData.push(stringRow);
                   });
-                  if (parsedData.length > 0)
+                  if (parsedData.length > 0) {
                     this.loadTabularFile(parsedData);
+                    this.displayXlsx = true;
+                  }
                 });
-
                 break;
               case MIME_TYPES.CSV:
                 this.displayCSV = true;
@@ -224,7 +227,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
                   this.notificationService.warning(`File Type is currently not supported in preview`)
                 break;
             }
-
             this.isLoading = false;
           },
           error: (error: unknown) => {

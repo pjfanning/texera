@@ -46,7 +46,6 @@ object DatasetResource {
         throw e
       case e: Exception =>
         // Optionally log the full exception here for debugging purposes
-        println(e)
         throw new InternalServerErrorException(
           Option(e.getMessage).getOrElse("An unknown error occurred.")
         )
@@ -87,6 +86,7 @@ object DatasetResource {
   private def persistNewVersion(
       ctx: DSLContext,
       did: UInteger,
+      uid: UInteger,
       versionName: String,
       multiPart: FormDataMultiPart
   ): Option[DashboardDatasetVersion] = {
@@ -140,6 +140,7 @@ object DatasetResource {
 
       datasetVersion.setName(versionName)
       datasetVersion.setDid(did)
+      datasetVersion.setCreatorUid(uid)
       datasetVersion.setVersionHash(commitHash)
 
       Some(
@@ -234,7 +235,7 @@ class DatasetResource {
         val datasetVersionControl = new GitVersionControl(datasetPath)
         datasetVersionControl.initRepo()
 
-        val createdVersion = persistNewVersion(ctx, did, initialVersionName, files)
+        val createdVersion = persistNewVersion(ctx, did, uid, initialVersionName, files)
 
         createdVersion match {
           case Some(_) =>
@@ -354,7 +355,7 @@ class DatasetResource {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
         // create the version
-        val createdVersion = persistNewVersion(ctx, did, versionName, multiPart)
+        val createdVersion = persistNewVersion(ctx, did, uid, versionName, multiPart)
 
         createdVersion match {
           case None =>

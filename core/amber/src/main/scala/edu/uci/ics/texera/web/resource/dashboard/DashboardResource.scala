@@ -264,9 +264,12 @@ class DashboardResource {
         DATASET.OWNER_UID,
         DATASET.IS_PUBLIC,
         DATASET.CREATION_TIME,
-        DATASET_USER_ACCESS.PRIVILEGE,
-        DATASET_USER_ACCESS.UID,
-        USER.NAME
+//        DATASET_USER_ACCESS.PRIVILEGE,
+//        DATASET_USER_ACCESS.UID,
+//        USER.NAME,
+        DSL.max(DATASET_USER_ACCESS.PRIVILEGE).as("privilege"),
+        DSL.max(DATASET_USER_ACCESS.UID).as("uid"),
+        DSL.max(USER.NAME).as("name")
       )
       .from(DATASET)
       .leftJoin(DATASET_USER_ACCESS)
@@ -279,6 +282,8 @@ class DashboardResource {
           .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
       )
       .and(datasetMatchQuery)
+      .groupBy(DATASET.DID)
+
 
     // Retrieve project resource
     val projectQuery = context
