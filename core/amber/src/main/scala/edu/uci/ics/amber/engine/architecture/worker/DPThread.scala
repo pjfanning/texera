@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
   DataPayload,
-  MarkerPayload,
+  ChannelMarkerPayload,
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -184,7 +184,7 @@ class DPThread(
                   dp.processControlPayload(msg.channel, payload)
                 case payload: DataPayload =>
                   dp.processDataPayload(msg.channel, payload)
-                case payload: MarkerPayload =>
+                case payload: ChannelMarkerPayload =>
                   dp.processEpochMarker(msg.channel, payload, logManager)
               }
           }

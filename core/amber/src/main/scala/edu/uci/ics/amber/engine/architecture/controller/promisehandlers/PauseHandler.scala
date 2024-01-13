@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateChannelMarker
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
@@ -36,7 +36,7 @@ trait PauseHandler {
       val interactionSupported = cp.workflow.physicalPlan.operators.forall(!_.isPythonOperator)
       (if (interactionSupported) {
          execute(
-           PropagateEpochMarker(
+           PropagateChannelMarker(
              cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
              "Pause_" + Instant.now().toString,
              NoAlignment,
