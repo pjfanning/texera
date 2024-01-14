@@ -79,11 +79,11 @@ class AsyncRPCHandlerInitializer(
   }
 
   def sendChannelMarker(
-                  markerId: String,
-                  markerType: ChannelMarkerType,
-                  scope: PhysicalPlan,
-                  cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
-                  to: ChannelID
+      markerId: String,
+      markerType: ChannelMarkerType,
+      scope: PhysicalPlan,
+      cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
+      to: ChannelID
   ): Unit = {
     ctrlSource.sendChannelMarker(markerId, markerType, scope, cmdMapping, to)
   }

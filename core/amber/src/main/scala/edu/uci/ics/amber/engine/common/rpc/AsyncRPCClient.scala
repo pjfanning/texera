@@ -73,11 +73,11 @@ class AsyncRPCClient(
   }
 
   def sendChannelMarker(
-                  markerId: String,
-                  markerType: ChannelMarkerType,
-                  scope: PhysicalPlan,
-                  cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
-                  channelID: ChannelID
+      markerId: String,
+      markerType: ChannelMarkerType,
+      scope: PhysicalPlan,
+      cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
+      channelID: ChannelID
   ): Unit = {
     logger.debug(s"send marker: $markerId to $channelID")
     outputGateway.sendTo(

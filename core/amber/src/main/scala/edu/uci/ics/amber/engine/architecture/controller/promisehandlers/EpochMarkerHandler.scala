@@ -12,12 +12,12 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 object EpochMarkerHandler {
 
   final case class PropagateChannelMarker(
-                                         sourceOpToStartProp: Set[PhysicalOpIdentity],
-                                         id: String,
-                                         markerType: ChannelMarkerType,
-                                         scope: PhysicalPlan,
-                                         targetOps: Set[PhysicalOpIdentity],
-                                         markerCommand: ControlCommand[_]
+      sourceOpToStartProp: Set[PhysicalOpIdentity],
+      id: String,
+      markerType: ChannelMarkerType,
+      scope: PhysicalPlan,
+      targetOps: Set[PhysicalOpIdentity],
+      markerCommand: ControlCommand[_]
   ) extends ControlCommand[Seq[(ActorVirtualIdentity, _)]]
 
 }

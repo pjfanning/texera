@@ -28,7 +28,8 @@ class ControllerAsyncRPCHandlerInitializer(
     with SkewDetectionHandler
     with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler
-    with EpochMarkerHandler {
+    with EpochMarkerHandler
+    with RetrieveWorkflowStateHandler {
   val actorId: ActorVirtualIdentity = cp.actorId
 
   var workflowReshapeState: WorkflowReshapeState = new WorkflowReshapeState()

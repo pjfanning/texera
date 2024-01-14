@@ -118,9 +118,6 @@ class DPThread(
         elem match {
           case WorkflowWorker.FIFOMessageElement(msg) =>
             val channel = dp.inputGateway.getChannel(msg.channel)
-            if (msg.channel.from == CONTROLLER) {
-              logger.info(s"received $msg")
-            }
             channel.acceptMessage(msg)
           case WorkflowWorker.TimerBasedControlElement(control) =>
             // establish order according to receiving order.

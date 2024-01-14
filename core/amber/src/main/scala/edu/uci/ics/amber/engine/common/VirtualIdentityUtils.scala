@@ -43,7 +43,8 @@ object VirtualIdentityUtils {
       case workerNamePattern(_, operator, layerName, _) =>
         PhysicalOpIdentity(OperatorIdentity(operator), layerName)
       case other =>
-        PhysicalOpIdentity(OperatorIdentity("An Operator that does not exist"), "Not Ever Exist")
+        // for special actorId such as SELF, CONTROLLER
+        PhysicalOpIdentity(OperatorIdentity("__DummyOperator"), "__DummyLayer")
     }
   }
 

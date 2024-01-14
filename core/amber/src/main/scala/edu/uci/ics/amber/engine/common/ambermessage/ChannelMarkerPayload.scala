@@ -9,8 +9,8 @@ case object RequireAlignment extends ChannelMarkerType
 case object NoAlignment extends ChannelMarkerType
 
 final case class ChannelMarkerPayload(
-                                       id: String,
-                                       markerType: ChannelMarkerType,
-                                       scope: PhysicalPlan,
-                                       commandMapping: Map[ActorVirtualIdentity, ControlInvocation]
+    id: String,
+    markerType: ChannelMarkerType,
+    scope: PhysicalPlan,
+    commandMapping: Map[ActorVirtualIdentity, ControlInvocation]
 ) extends WorkflowFIFOMessagePayload

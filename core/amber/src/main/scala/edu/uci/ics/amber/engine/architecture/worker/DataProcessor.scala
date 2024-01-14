@@ -342,9 +342,9 @@ class DataProcessor(
   }
 
   def processEpochMarker(
-                          channelId: ChannelID,
-                          marker: ChannelMarkerPayload,
-                          logManager: ReplayLogManager
+      channelId: ChannelID,
+      marker: ChannelMarkerPayload,
+      logManager: ReplayLogManager
   ): Unit = {
     val markerId = marker.id
     val command = marker.commandMapping.getOrElse(actorId, null)
