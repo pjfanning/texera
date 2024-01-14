@@ -2,19 +2,20 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  ReportCurrentProcessingTuple,
   WorkflowPaused,
   WorkflowStatusUpdate
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.QueryWorkerStatisticsHandler.ControllerInitiateQueryStatistics
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState
-import edu.uci.ics.amber.engine.common.ambermessage.NoAlignment
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryCurrentInputTupleHandler.QueryCurrentInputTuple
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.QueryStatisticsHandler.QueryStatistics
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-import java.time.Instant
+import scala.collection.mutable
 
 object PauseHandler {
 
@@ -33,39 +34,47 @@ trait PauseHandler {
       cp.controllerTimerService.disableStatusUpdate() // to be enabled in resume
       cp.controllerTimerService.disableMonitoring()
       cp.controllerTimerService.disableSkewHandling()
-      val interactionSupported = cp.workflow.physicalPlan.operators.forall(!_.isPythonOperator)
-      (if (interactionSupported) {
-         execute(
-           PropagateEpochMarker(
-             cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
-             "Pause_" + Instant.now().toString,
-             NoAlignment,
-             cp.workflow.physicalPlan,
-             cp.workflow.physicalPlan.operators.map(_.id),
-             PauseWorker()
-           ),
-           sender
-         )
-       } else {
-         Future
-           .collect(
-             cp.executionState.getAllBuiltWorkers
-               .map(workerId => send(PauseWorker(), workerId).map(ret => (workerId, ret)))
-               .toSeq
-           )
-       }).map { ret =>
-        ret.foreach {
-          case (worker, value) =>
-            val info = cp.executionState.getOperatorExecution(worker).getWorkerInfo(worker)
-            info.state = value.asInstanceOf[WorkerState]
-        }
-        execute(ControllerInitiateQueryStatistics(), sender).map { ret =>
+      Future
+        .collect(cp.executionState.getAllOperatorExecutions.map {
+          case (physicalOpId, opExecution) =>
+            // create a buffer for the current input tuple
+            // since we need to show them on the frontend
+            val buffer = mutable.ArrayBuffer[(ITuple, ActorVirtualIdentity)]()
+            Future
+              .collect(
+                opExecution.getBuiltWorkerIds
+                  // send pause to all workers
+                  // pause message has no effect on completed or paused workers
+                  .map { worker =>
+                    val info = opExecution.getWorkerInfo(worker)
+                    // send a pause message
+                    send(PauseWorker(), worker).flatMap { ret =>
+                      info.state = ret
+                      send(QueryStatistics(), worker)
+                        .join(send(QueryCurrentInputTuple(), worker))
+                        // get the stats and current input tuple from the worker
+                        .map {
+                          case (stats, tuple) =>
+                            info.stats = stats
+                            buffer.append((tuple, worker))
+                        }
+                    }
+                  }.toSeq
+              )
+              .map { ret =>
+                // for each paused operator, send the input tuple
+                sendToClient(
+                  ReportCurrentProcessingTuple(physicalOpId.logicalOpId.id, buffer.toArray)
+                )
+              }
+        }.toSeq)
+        .map { ret =>
           // update frontend workflow status
           sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
           sendToClient(WorkflowPaused())
           logger.info(s"workflow paused")
         }
-      }.unit
+        .unit
     }
   }
 }

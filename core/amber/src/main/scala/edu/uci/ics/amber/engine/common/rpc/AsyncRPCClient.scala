@@ -9,8 +9,8 @@ import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
-  MarkerPayload,
-  MarkerType
+  ChannelMarkerPayload,
+  ChannelMarkerType
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -72,9 +72,9 @@ class AsyncRPCClient(
     p
   }
 
-  def sendMarker(
+  def sendChannelMarker(
       markerId: String,
-      markerType: MarkerType,
+      markerType: ChannelMarkerType,
       scope: PhysicalPlan,
       cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
       channelID: ChannelID
@@ -82,7 +82,7 @@ class AsyncRPCClient(
     logger.debug(s"send marker: $markerId to $channelID")
     outputGateway.sendTo(
       channelID,
-      MarkerPayload(markerId, markerType, scope, cmdMapping)
+      ChannelMarkerPayload(markerId, markerType, scope, cmdMapping)
     )
   }
 

@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
-  MarkerPayload,
+  ChannelMarkerPayload,
   NoAlignment,
   RequireAlignment
 }
@@ -21,7 +21,7 @@ class EpochManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
   def isMarkerAligned(
       upstreamLinkStatus: UpstreamLinkStatus,
       from: ChannelID,
-      marker: MarkerPayload
+      marker: ChannelMarkerPayload
   ): Boolean = {
     val markerId = marker.id
     epochMarkerReceived.update(markerId, epochMarkerReceived(markerId) + from)

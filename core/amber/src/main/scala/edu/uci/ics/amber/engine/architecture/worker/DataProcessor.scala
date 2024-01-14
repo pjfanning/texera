@@ -30,7 +30,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   DataFrame,
   DataPayload,
   EndOfUpstream,
-  MarkerPayload,
+  ChannelMarkerPayload,
   RequireAlignment,
   WorkflowFIFOMessage
 }
@@ -343,7 +343,7 @@ class DataProcessor(
 
   def processEpochMarker(
       channelId: ChannelID,
-      marker: MarkerPayload,
+      marker: ChannelMarkerPayload,
       logManager: ReplayLogManager
   ): Unit = {
     val markerId = marker.id

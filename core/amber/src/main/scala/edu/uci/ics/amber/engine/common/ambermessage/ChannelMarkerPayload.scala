@@ -4,13 +4,13 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-sealed trait MarkerType
-case object RequireAlignment extends MarkerType
-case object NoAlignment extends MarkerType
+sealed trait ChannelMarkerType
+case object RequireAlignment extends ChannelMarkerType
+case object NoAlignment extends ChannelMarkerType
 
-final case class MarkerPayload(
+final case class ChannelMarkerPayload(
     id: String,
-    markerType: MarkerType,
+    markerType: ChannelMarkerType,
     scope: PhysicalPlan,
     commandMapping: Map[ActorVirtualIdentity, ControlInvocation]
 ) extends WorkflowFIFOMessagePayload

@@ -2,8 +2,8 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateEpochMarker
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, MarkerType}
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerType}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
@@ -11,10 +11,10 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
 object EpochMarkerHandler {
 
-  final case class PropagateEpochMarker(
+  final case class PropagateChannelMarker(
       sourceOpToStartProp: Set[PhysicalOpIdentity],
       id: String,
-      markerType: MarkerType,
+      markerType: ChannelMarkerType,
       scope: PhysicalPlan,
       targetOps: Set[PhysicalOpIdentity],
       markerCommand: ControlCommand[_]
@@ -25,7 +25,7 @@ object EpochMarkerHandler {
 trait EpochMarkerHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
-  registerHandler { (msg: PropagateEpochMarker, sender) =>
+  registerHandler { (msg: PropagateChannelMarker, sender) =>
     {
       // step1: create separate control commands for each target actor.
       val inputSet = msg.targetOps.flatMap { target =>
@@ -44,7 +44,7 @@ trait EpochMarkerHandler {
       // step 3: start prop, send marker through control channel with the compound command from sources.
       msg.sourceOpToStartProp.foreach { source =>
         cp.executionState.getOperatorExecution(source).getBuiltWorkerIds.foreach { worker =>
-          sendMarker(
+          sendChannelMarker(
             msg.id,
             msg.markerType,
             msg.scope,
