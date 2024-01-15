@@ -146,7 +146,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
             const fileSize = blob.size;
             if (fileSize > MaxSize) {
               this.onFileSizeNotLoadable();
-              this.notificationService.warning(`File ${this.filePath} is too large to be previewed`)
+              this.notificationService.warning(`File ${this.filePath} is too large to be previewed`);
               return;
             }
             this.currentFile = new File([blob], this.filePath, { type: blob.type });
@@ -161,13 +161,13 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
               case MIME_TYPES.MP4:
                 this.displayMP4 = true;
                 this.loadSafeURL(blob);
-                this.notificationService.info("Video display might not be supported by some browsers.")
+                this.notificationService.info("Video display might not be supported by some browsers.");
                 break;
 
               case MIME_TYPES.MP3:
                 this.displayMP3 = true;
                 this.loadSafeURL(blob);
-                this.notificationService.info("Audio display might not be supported by some browsers.")
+                this.notificationService.info("Audio display might not be supported by some browsers.");
 
                 break;
 
@@ -224,7 +224,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
                 this.displayPlainText = true;
                 this.readFileAsText(blob);
                 if (blob.type != MIME_TYPES.TXT)
-                  this.notificationService.warning(`File Type is currently not supported in preview`)
+                  this.notificationService.warning("File Type is currently not supported in preview");
                 break;
             }
             this.isLoading = false;

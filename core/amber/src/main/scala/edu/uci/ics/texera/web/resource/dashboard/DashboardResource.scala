@@ -269,7 +269,7 @@ class DashboardResource {
 //        DATASET_USER_ACCESS.UID,
 //        USER.NAME,
         DSL.max(DATASET_USER_ACCESS.PRIVILEGE).as("privilege"),
-        DSL.max(DATASET_USER_ACCESS.UID).as("uid"),
+        DSL.max(DATASET_USER_ACCESS.UID).as("uid")
       )
       .from(DATASET)
       .leftJoin(DATASET_USER_ACCESS)
@@ -283,7 +283,6 @@ class DashboardResource {
       )
       .and(datasetMatchQuery)
       .groupBy(DATASET.DID)
-
 
     // Retrieve project resource
     val projectQuery = context

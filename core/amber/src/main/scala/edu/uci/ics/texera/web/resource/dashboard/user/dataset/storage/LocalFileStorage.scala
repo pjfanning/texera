@@ -10,13 +10,12 @@ import java.nio.file.FileVisitResult
 
 class LocalFileStorage(baseDir: String) {
 
-
-
   private def getFullPath(path: String): String = s"$baseDir/$path"
 
   def remove(): Unit = {
-    Files.walk(Paths.get(baseDir))
-      .sorted(Comparator.reverseOrder[Path]())  // Provide a more explicit type here
+    Files
+      .walk(Paths.get(baseDir))
+      .sorted(Comparator.reverseOrder[Path]()) // Provide a more explicit type here
       .forEach(Files.delete(_))
   }
 
@@ -50,21 +49,27 @@ class LocalFileStorage(baseDir: String) {
       val fullPath = Paths.get(getFullPath(path))
 
       if (Files.isDirectory(fullPath)) {
-        Files.walkFileTree(fullPath, new SimpleFileVisitor[Path] {
-          override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-            Files.delete(file)
-            FileVisitResult.CONTINUE
-          }
-
-          override def postVisitDirectory(dir: Path, ioException: IOException): FileVisitResult = {
-            if (ioException == null) {
-              Files.delete(dir)
+        Files.walkFileTree(
+          fullPath,
+          new SimpleFileVisitor[Path] {
+            override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+              Files.delete(file)
               FileVisitResult.CONTINUE
-            } else {
-              throw ioException
+            }
+
+            override def postVisitDirectory(
+                dir: Path,
+                ioException: IOException
+            ): FileVisitResult = {
+              if (ioException == null) {
+                Files.delete(dir)
+                FileVisitResult.CONTINUE
+              } else {
+                throw ioException
+              }
             }
           }
-        })
+        )
       } else {
         Files.deleteIfExists(fullPath)
       }
@@ -89,7 +94,6 @@ class LocalFileStorage(baseDir: String) {
     }
   }
 
-
   def initDir(): Unit = {
     val dirPath = Paths.get(baseDir)
 
@@ -104,6 +108,3 @@ class LocalFileStorage(baseDir: String) {
     }
   }
 }
-
-
-

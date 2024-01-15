@@ -4,13 +4,45 @@ import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetUserAccessDao,
+  DatasetVersionDao,
+  UserDao
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetUserAccess,
+  DatasetVersion
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
+  getDatasetUserAccessPrivilege,
+  getOwner,
+  userHasReadAccess,
+  userHasWriteAccess,
+  userOwnDataset
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DashboardDataset,
+  DashboardDatasetVersion,
+  DatasetDescriptionModification,
+  DatasetIDs,
+  DatasetNameModification,
+  DatasetVersionFileTree,
+  DatasetVersions,
+  context,
+  getDatasetByID,
+  getDatasetVersionHashByID,
+  persistNewVersion,
+  withExceptionHandling
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
+  DatasetVersionNotFoundException,
+  ResourceNotExistsException,
+  UserHasNoAccessToDatasetException
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -24,7 +56,17 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  BadRequestException,
+  Consumes,
+  GET,
+  InternalServerErrorException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -256,7 +298,7 @@ class DatasetResource {
           ),
           DatasetUserAccessPrivilege.WRITE,
           isOwner = true,
-          ownerName = user.getName,
+          ownerName = user.getName
         )
       }
     }
@@ -290,9 +332,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/name")
   def updateDatasetName(
-                         modificator: DatasetNameModification,
-                         @Auth sessionUser: SessionUser
-                       ): Response = {
+      modificator: DatasetNameModification,
+      @Auth sessionUser: SessionUser
+  ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -316,9 +358,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/description")
   def updateDatasetDescription(
-                                modificator: DatasetDescriptionModification,
-                                @Auth sessionUser: SessionUser
-                       ): Response = {
+      modificator: DatasetDescriptionModification,
+      @Auth sessionUser: SessionUser
+  ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -383,7 +425,7 @@ class DatasetResource {
           targetDataset,
           userAccessPrivilege,
           ownerEmail,
-          targetDataset.getOwnerUid == uid,
+          targetDataset.getOwnerUid == uid
         )
       })
     })

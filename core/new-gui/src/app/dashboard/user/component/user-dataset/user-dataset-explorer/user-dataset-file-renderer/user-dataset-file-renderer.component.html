@@ -52,12 +52,16 @@
       <ngx-json-viewer [json]="textContent"></ngx-json-viewer>
     </div>
     <div *ngIf="displayMP4 && safeFileURL">
-      <video controls [src]="safeFileURL">
+      <video
+        controls
+        [src]="safeFileURL">
         Your browser does not support the video tag.
       </video>
     </div>
     <div *ngIf="displayMP3 && safeFileURL">
-      <audio controls [src]="safeFileURL">
+      <audio
+        controls
+        [src]="safeFileURL">
         Your browser does not support the audio element.
       </audio>
     </div>
