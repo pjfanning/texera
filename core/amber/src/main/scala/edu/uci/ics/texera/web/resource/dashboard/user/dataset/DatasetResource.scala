@@ -205,7 +205,6 @@ object DatasetResource {
   case class DashboardDataset(
       dataset: Dataset,
       accessPrivilege: EnumType,
-      ownerName: String,
       isOwner: Boolean
   )
 
@@ -298,7 +297,6 @@ class DatasetResource {
           ),
           DatasetUserAccessPrivilege.WRITE,
           isOwner = true,
-          ownerName = user.getName
         )
       }
     }
@@ -419,12 +417,10 @@ class DatasetResource {
       withTransaction(context)(ctx => {
         val targetDataset = getDatasetByID(ctx, did, uid)
         val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
-        val ownerEmail = getOwner(ctx, did).getEmail
 
         DashboardDataset(
           targetDataset,
           userAccessPrivilege,
-          ownerEmail,
           targetDataset.getOwnerUid == uid
         )
       })

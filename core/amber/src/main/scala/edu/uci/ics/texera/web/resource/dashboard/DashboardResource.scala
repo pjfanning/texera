@@ -264,10 +264,8 @@ class DashboardResource {
         DATASET.OWNER_UID,
         DATASET.IS_PUBLIC,
         DATASET.CREATION_TIME,
-        USER.NAME.as("ownerName"),
-//        DATASET_USER_ACCESS.PRIVILEGE,
-//        DATASET_USER_ACCESS.UID,
-//        USER.NAME,
+        USER.NAME.as("userName"),
+        // use aggregation and groupby to remove duplicated item
         DSL.max(DATASET_USER_ACCESS.PRIVILEGE).as("privilege"),
         DSL.max(DATASET_USER_ACCESS.UID).as("uid")
       )
@@ -706,7 +704,6 @@ class DashboardResource {
               val dataset = record.into(DATASET).into(classOf[Dataset])
               val datasetOfUserUid = record.into(DATASET_USER_ACCESS).getUid
               var accessLevel = record.into(DATASET_USER_ACCESS).getPrivilege
-              val ownerName = record.getValue("ownerName", classOf[String])
               if (datasetOfUserUid != user.getUid) {
                 accessLevel = DatasetUserAccessPrivilege.READ
               }
@@ -716,7 +713,6 @@ class DashboardResource {
               DashboardDataset(
                 dataset,
                 accessLevel,
-                ownerName,
                 dataset.getOwnerUid == user.getUid
               )
             } else {
