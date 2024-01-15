@@ -80,9 +80,7 @@ export class FilesUploaderComponent {
       }
       if (this.previouslyUploadFilesManager) {
         this.previouslyUploadFilesManager.removeNode(node);
-        console.log("before delete previous uploads", this.previouslyUploadFilesManager.getRootNodes());
         this.previouslyUploadFiles = [...this.previouslyUploadFilesManager.getRootNodes()];
-        console.log("after delete previous uploads", this.previouslyUploadFiles);
       }
     } else {
       // from new uploads

@@ -113,7 +113,6 @@ export class UserDatasetVersionCreator implements OnInit {
     }
 
     if (this.isCreatingVersion && this.baseVersion) {
-      console.log("creating a version");
       const versionName = this.form.get("name")?.value;
       this.datasetService
         .createDatasetVersion(this.baseVersion?.did, versionName, this.removedFilePaths, this.newUploadFiles)
@@ -155,7 +154,6 @@ export class UserDatasetVersionCreator implements OnInit {
 
   onPublicStatusChange(newValue: boolean): void {
     // Handle the change in dataset public status
-    console.log("Dataset is now:", newValue ? "Public" : "Private");
     this.isDatasetPublic = newValue;
   }
 

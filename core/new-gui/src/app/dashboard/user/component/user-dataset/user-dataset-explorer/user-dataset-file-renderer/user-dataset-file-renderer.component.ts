@@ -109,7 +109,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    console.log("init");
     this.reloadFileContent();
   }
 
@@ -151,7 +150,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
             }
             this.currentFile = new File([blob], this.filePath, { type: blob.type });
             // Handle different file types
-            console.log(blob.type);
             switch (blob.type) {
               case MIME_TYPES.PNG:
               case MIME_TYPES.JPEG:
@@ -203,7 +201,6 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
                 break;
               case MIME_TYPES.PDF:
                 // Handle PDF display
-                console.log("display pdf");
                 this.fileURL = URL.createObjectURL(blob);
                 setTimeout(() => {
                   this.displayPdf = true;

@@ -169,7 +169,6 @@ export class UserDatasetExplorerComponent implements OnInit {
         .pipe(untilDestroyed(this))
         .subscribe(dataNodeList => {
           this.fileTreeNodeList = dataNodeList;
-          console.log(this.fileTreeNodeList);
           let currentNode = this.fileTreeNodeList[0];
           while (currentNode.type === "directory" && currentNode.children) {
             currentNode = currentNode.children[0];

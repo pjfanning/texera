@@ -116,7 +116,6 @@ export class UserDatasetListItemComponent {
 
   public onClickOpenShareAccess() {
     const modalRef = this.modalService.open(ShareAccessComponent);
-    console.log(this.entry.dataset);
     modalRef.componentInstance.writeAccess = this.entry.dataset.accessPrivilege === "WRITE";
     modalRef.componentInstance.type = "dataset";
     modalRef.componentInstance.id = this.dataset.did;
