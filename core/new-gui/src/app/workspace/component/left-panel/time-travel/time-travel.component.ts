@@ -2,12 +2,9 @@ import { Component, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 import { WorkflowExecutionsEntry } from "../../../../dashboard/user/type/workflow-executions-entry";
-import { Observable, of, ReplaySubject } from "rxjs";
 import { TimeTravelService } from "../../../service/time-travel/time-travel.service";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
 import { WorkflowVersionService } from "../../../../dashboard/user/service/workflow-version/workflow-version.service";
-import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
-import { UndoRedoService } from "../../../service/undo-redo/undo-redo.service";
 
 const FULL_REPLAY_FLAG = "Full Replay";
 @UntilDestroy()
@@ -57,7 +54,7 @@ export class TimeTravelComponent implements OnInit {
       .retrieveInteractionHistory(this.wid, eid)
       .pipe(untilDestroyed(this))
       .subscribe(data => {
-        this.interactionHistories[eid] = data.concat(FULL_REPLAY_FLAG);
+        this.interactionHistories[eid] = data; // TODO:add FULL_REPLAY here to support fault tolerance.
       });
   }
 

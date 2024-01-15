@@ -1,6 +1,5 @@
 .interaction-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
 }
 
 .interaction-item {
@@ -10,9 +9,16 @@
   border-radius: 5px;
   background-color: #f9f9f9;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .interaction-item:hover {
   background-color: #e6e6e6;
   cursor: pointer;
+}
+
+#close-time-travel {
+  width: 100%;
 }

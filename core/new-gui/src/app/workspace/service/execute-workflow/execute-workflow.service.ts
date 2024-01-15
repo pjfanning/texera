@@ -253,6 +253,19 @@ export class ExecuteWorkflowService {
     this.workflowWebsocketService.send("WorkflowKillRequest", {});
   }
 
+  public addExecutionInteraction(): void {
+    if (!environment.pauseResumeEnabled || !environment.amberEngineEnabled) {
+      return;
+    }
+    if (
+      this.currentState.state === ExecutionState.Uninitialized ||
+      this.currentState.state === ExecutionState.Completed
+    ) {
+      throw new Error("cannot add interaction to workflow, the current execution state is " + this.currentState.state);
+    }
+    this.workflowWebsocketService.send("WorkflowInteractionRequest", {});
+  }
+
   public resumeWorkflow(): void {
     if (!environment.pauseResumeEnabled || !environment.amberEngineEnabled) {
       return;
