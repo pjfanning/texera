@@ -3,7 +3,11 @@ package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DelayedCallPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  DelayedCallPayload,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
@@ -11,7 +15,8 @@ import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import java.net.URI
 
 object TakeCheckpointHandler {
-  final case class TakeCheckpoint(writeTo: URI, estimationOnly:Boolean) extends ControlCommand[Long] // return checkpoint size
+  final case class TakeCheckpoint(writeTo: URI, estimationOnly: Boolean)
+      extends ControlCommand[Long] // return checkpoint size
 }
 
 trait TakeCheckpointHandler {
@@ -21,7 +26,7 @@ trait TakeCheckpointHandler {
     logger.info("Start to take checkpoint")
     val chkpt = new CheckpointState()
     var totalSize = 0L
-    if(!msg.estimationOnly){
+    if (!msg.estimationOnly) {
       // 1. serialize DP state
       chkpt.save(SerializedState.DP_STATE_KEY, this.dp)
       logger.info("Serialized DP state")
@@ -39,7 +44,7 @@ trait TakeCheckpointHandler {
       } else {
         logger.info("Operator does not open, nothing to serialize")
       }
-    }else{
+    } else {
       totalSize += (dp.operator match {
         case support: CheckpointSupport =>
           support.getEstimatedCheckpointCost
@@ -74,7 +79,13 @@ trait TakeCheckpointHandler {
         promise.setValue(totalSize)
       }
       val channel = dp.inputGateway.getChannel(ChannelID.InternalDelayedClosureChannelID)
-      channel.acceptMessage(WorkflowFIFOMessage(ChannelID.InternalDelayedClosureChannelID, channel.getCurrentSeq, DelayedCallPayload(closure)))
+      channel.acceptMessage(
+        WorkflowFIFOMessage(
+          ChannelID.InternalDelayedClosureChannelID,
+          channel.getCurrentSeq,
+          DelayedCallPayload(closure)
+        )
+      )
       promise
     }
   }

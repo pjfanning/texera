@@ -2,11 +2,12 @@ package edu.uci.ics.amber.engine.common.ambermessage
 
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
-object ChannelID{
+object ChannelID {
   val InternalDelayedClosureChannelID: ChannelID = ChannelID(
     ActorVirtualIdentity("__InternalDelayedClosureChannel"),
     ActorVirtualIdentity("__InternalDelayedClosureChannel"),
-    isControl = true)
+    isControl = true
+  )
 }
 case class ChannelID(
     from: ActorVirtualIdentity,

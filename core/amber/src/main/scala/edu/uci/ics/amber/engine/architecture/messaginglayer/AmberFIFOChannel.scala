@@ -2,7 +2,11 @@ package edu.uci.ics.amber.engine.architecture.messaginglayer
 
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, MarkerPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ChannelMarkerPayload,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -46,7 +50,7 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     val promise = Promise[Iterable[WorkflowFIFOMessage]]()
     fifoQueue.foreach { msg =>
       msg.payload match {
-        case MarkerPayload(id, markerType, scope, commandMapping) =>
+        case ChannelMarkerPayload(id, markerType, scope, commandMapping) =>
           if (id == markerId) {
             promise.setValue(Iterable.empty)
             return promise // early return since we already received the marker.
@@ -86,7 +90,7 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
       collector.collectedMessages.append(msg)
     }
     msg.payload match {
-      case payload: MarkerPayload =>
+      case payload: ChannelMarkerPayload =>
         if (messageCollectors.contains(payload.id)) {
           val collector = messageCollectors(payload.id)
           collector.promise.setValue(collector.collectedMessages)

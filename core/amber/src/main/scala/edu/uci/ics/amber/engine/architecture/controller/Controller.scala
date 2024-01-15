@@ -4,11 +4,23 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{
+  ReplayStatusUpdate,
+  WorkflowRecoveryStatus
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{WorkerReplayLoggingConfig, WorkerStateRestoreConfig}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  WorkerReplayLoggingConfig,
+  WorkerStateRestoreConfig
+}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ControlPayload, DelayedCallPayload, MarkerPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ControlPayload,
+  DelayedCallPayload,
+  ChannelMarkerPayload,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.AmberConfig
@@ -118,10 +130,10 @@ class Controller(
           val msgToLog = Some(msg).filter(_.payload.isInstanceOf[ControlPayload])
           logManager.withFaultTolerant(msg.channel, msgToLog) {
             msg.payload match {
-              case payload: ControlPayload => cp.processControlPayload(msg.channel, payload)
-              case marker: MarkerPayload   => // skip marker
-              case payload:DelayedCallPayload => payload.closure()
-              case p                       => throw new RuntimeException(s"controller cannot handle $p")
+              case payload: ControlPayload      => cp.processControlPayload(msg.channel, payload)
+              case marker: ChannelMarkerPayload => // skip marker
+              case payload: DelayedCallPayload  => payload.closure()
+              case p                            => throw new RuntimeException(s"controller cannot handle $p")
             }
           }
         case None =>

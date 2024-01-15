@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import scala.collection.mutable
 
 object EpochManager {
-  final case class MarkerContext(marker: MarkerPayload, fromChannel: ChannelID)
+  final case class MarkerContext(marker: ChannelMarkerPayload, fromChannel: ChannelID)
 }
 
 class EpochManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity)
@@ -25,7 +25,7 @@ class EpochManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity
 
   private var markerContext: MarkerContext = _
 
-  def setContext(marker: MarkerPayload, from: ChannelID): Unit = {
+  def setContext(marker: ChannelMarkerPayload, from: ChannelID): Unit = {
     markerContext = MarkerContext(marker, from)
   }
 
