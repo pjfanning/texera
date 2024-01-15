@@ -112,17 +112,16 @@ class DatasetAccessResource {
   @GET
   @Path("/owner/{did}")
   def getOwnerEmailOfDataset(@PathParam("did") did: UInteger): String = {
+    var email = "";
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val owner = getOwner(ctx, did)
         if (owner != null) {
-          val email = owner.getEmail
-          return email
+          email = owner.getEmail
         }
-        // this should not happen based on the foreign key constrains
-        return ""
       }
     }
+    email
   }
 
   /**

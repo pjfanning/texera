@@ -82,6 +82,8 @@ export class DashboardEntry {
       throw new Error("Value is not of type Dataset");
     }
 
+    console.log("Dashboard dataset: ", this.value);
+
     return this.value;
   }
 
