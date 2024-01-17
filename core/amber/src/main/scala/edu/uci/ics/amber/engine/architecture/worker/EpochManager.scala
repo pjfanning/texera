@@ -29,7 +29,7 @@ class EpochManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
     // TODO: rework the following logic to support control channels between workers
     val sendersWithinScope = upstreamLinkStatus.allUncompletedSenders
       .filter(sender =>
-        marker.scope.links.map(_.id).contains(upstreamLinkStatus.getInputLinkId(sender))
+        marker.scope.links.contains(upstreamLinkStatus.getInputLink(sender))
       )
       .map(senderId => ChannelID(senderId, actorId, isControl = false))
     val markerReceivedFromAllChannels = sendersWithinScope.subsetOf(epochMarkerReceived(markerId))
