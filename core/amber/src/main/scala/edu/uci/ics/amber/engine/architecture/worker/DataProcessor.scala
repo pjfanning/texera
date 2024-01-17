@@ -13,6 +13,7 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
 }
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
+import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
   DPOutputIterator,
   FinalizeLink,
@@ -90,19 +91,22 @@ class DataProcessor(
 
   @transient var workerIdx: Int = 0
   @transient var physicalOp: PhysicalOp = _
+  @transient var operatorConfig: OperatorConfig = _
   @transient var operator: IOperatorExecutor = _
 
   def initOperator(
       workerIdx: Int,
       physicalOp: PhysicalOp,
+      operatorConfig: OperatorConfig,
       currentOutputIterator: Iterator[(ITuple, Option[Int])]
   ): Unit = {
     this.workerIdx = workerIdx
     this.operator = physicalOp.opExecInitInfo match {
       case OpExecInitInfoWithCode(codeGen) => ??? // TODO: compile and load java/scala operator here
       case OpExecInitInfoWithFunc(opGen) =>
-        opGen((workerIdx, physicalOp))
+        opGen(workerIdx, physicalOp, operatorConfig)
     }
+    this.operatorConfig = operatorConfig
     this.physicalOp = physicalOp
     this.upstreamLinkStatus.setAllUpstreamLinkIds(
       if (physicalOp.isSourceOperator) {
