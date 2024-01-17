@@ -78,14 +78,6 @@ trait TakeCheckpointHandler {
         }
         promise.setValue(totalSize)
       }
-      val channel = dp.inputGateway.getChannel(ChannelID.InternalDelayedClosureChannelID)
-      channel.acceptMessage(
-        WorkflowFIFOMessage(
-          ChannelID.InternalDelayedClosureChannelID,
-          channel.getCurrentSeq,
-          DelayedCallPayload(closure)
-        )
-      )
       promise
     }
   }

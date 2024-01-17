@@ -11,7 +11,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
   DataPayload,
-  DelayedCallPayload,
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelMarkerPayload
@@ -184,8 +183,6 @@ class DPThread(
                   dp.processDataPayload(msg.channel, payload)
                 case payload: ChannelMarkerPayload =>
                   dp.processEpochMarker(msg.channel, payload, logManager)
-                case payload: DelayedCallPayload =>
-                  payload.closure()
               }
           }
         }

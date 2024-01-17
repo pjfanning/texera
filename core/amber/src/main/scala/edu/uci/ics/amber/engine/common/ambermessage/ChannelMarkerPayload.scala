@@ -13,6 +13,3 @@ final case class ChannelMarkerPayload(
     scope: Set[ChannelID],
     commandMapping: Map[ActorVirtualIdentity, ControlInvocation]
 ) extends WorkflowFIFOMessagePayload
-
-// for checkpoint use only
-final case class DelayedCallPayload(closure: () => Unit) extends WorkflowFIFOMessagePayload

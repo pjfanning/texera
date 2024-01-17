@@ -46,6 +46,8 @@ object WorkflowWorker {
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
 
+  final case class TriggerClosure(closure: () => Unit)
+
   sealed trait DPInputQueueElement
 
   final case class FIFOMessageElement(msg: WorkflowFIFOMessage) extends DPInputQueueElement
@@ -102,6 +104,11 @@ class WorkflowWorker(
   def handleDirectInvocation: Receive = {
     case c: ControlInvocation =>
       inputQueue.put(TimerBasedControlElement(c))
+  }
+
+  def handleActorCommand:Receive ={
+    case c: ActorCommand =>
+      println(c)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
