@@ -7,41 +7,18 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
-  OpExecInitInfoWithCode,
-  OpExecInitInfoWithFunc
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfoWithCode, OpExecInitInfoWithFunc}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  DPOutputIterator,
-  FinalizeLink,
-  FinalizeOperator
-}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{DPOutputIterator, FinalizeLink, FinalizeOperator}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegate
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING
-}
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  ChannelMarkerPayload,
-  RequireAlignment,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerPayload, DataFrame, DataPayload, EndOfUpstream, RequireAlignment, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  PhysicalLinkIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
 
@@ -92,7 +69,7 @@ object DataProcessor {
 
 class DataProcessor(
     actorId: ActorVirtualIdentity,
-    outputHandler: WorkflowFIFOMessage => Unit
+    outputHandler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit
 ) extends AmberProcessor(actorId, outputHandler)
     with Serializable {
 

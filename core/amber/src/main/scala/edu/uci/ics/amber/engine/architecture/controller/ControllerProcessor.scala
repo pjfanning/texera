@@ -1,12 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.common.{
-  AkkaActorRefMappingService,
-  AkkaActorService,
-  AmberProcessor
-}
+import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService, AmberProcessor}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegate
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
@@ -14,7 +11,7 @@ class ControllerProcessor(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig,
     actorId: ActorVirtualIdentity,
-    outputHandler: WorkflowFIFOMessage => Unit
+    outputHandler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit
 ) extends AmberProcessor(actorId, outputHandler) {
 
   val executionState = new ExecutionState(workflow)

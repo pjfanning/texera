@@ -2,13 +2,8 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.InputGateway
 import edu.uci.ics.amber.engine.architecture.worker.EpochManager.MarkerContext
-import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  ChannelMarkerPayload,
-  NoAlignment,
-  RequireAlignment
-}
+import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerPayload, NoAlignment, RequireAlignment}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import scala.collection.mutable
@@ -24,6 +19,8 @@ class EpochManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity
     new mutable.HashMap[String, Set[ChannelID]]().withDefaultValue(Set())
 
   private var markerContext: MarkerContext = _
+
+  val checkpoints = new mutable.HashMap[String, CheckpointState]()
 
   def setContext(marker: ChannelMarkerPayload, from: ChannelID): Unit = {
     markerContext = MarkerContext(marker, from)

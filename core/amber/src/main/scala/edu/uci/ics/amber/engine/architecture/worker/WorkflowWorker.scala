@@ -10,13 +10,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkerConfig
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  ActorCommandElement,
-  DPInputQueueElement,
-  FIFOMessageElement,
-  TimerBasedControlElement,
-  WorkerReplayInitialization
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, MainThreadDelegate, TimerBasedControlElement, WorkerReplayInitialization}
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -25,6 +19,8 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object WorkflowWorker {
   def props(
@@ -46,7 +42,7 @@ object WorkflowWorker {
 
   final case class TriggerSend(msg: WorkflowFIFOMessage)
 
-  final case class TriggerClosure(closure: () => Unit)
+  final case class MainThreadDelegate(closure: WorkflowWorker => Unit)
 
   sealed trait DPInputQueueElement
 
@@ -80,6 +76,8 @@ class WorkflowWorker(
   val dpThread =
     new DPThread(workerId, dp, logManager, inputQueue)
 
+  val inputRecordings = new mutable.HashMap[String, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
+
   override def initState(): Unit = {
     dp.initTimerService(timerService)
     dp.initOperator(
@@ -106,6 +104,11 @@ class WorkflowWorker(
       inputQueue.put(TimerBasedControlElement(c))
   }
 
+  def handleTriggerClosure: Receive = {
+    case t: MainThreadDelegate =>
+      t.closure(this)
+  }
+
   def handleActorCommand:Receive ={
     case c: ActorCommand =>
       println(c)
@@ -122,11 +125,14 @@ class WorkflowWorker(
   }
 
   override def receive: Receive = {
-    super.receive orElse handleDirectInvocation
+    super.receive orElse handleDirectInvocation orElse handleTriggerClosure
   }
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     inputQueue.put(FIFOMessageElement(workflowMsg))
+    inputRecordings.values.foreach{
+      buffer => buffer.append(workflowMsg)
+    }
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channel))
   }
 

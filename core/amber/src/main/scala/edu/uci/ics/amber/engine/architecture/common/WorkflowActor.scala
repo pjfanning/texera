@@ -4,26 +4,9 @@ import akka.actor.{Actor, ActorRef, Address, Stash}
 import akka.pattern.ask
 import akka.util.Timeout
 import edu.uci.ics.amber.clustering.ClusterListener.GetAvailableNodeAddresses
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
-  CreditRequest,
-  CreditResponse,
-  GetActorRef,
-  MessageBecomesDeadLetter,
-  NetworkAck,
-  NetworkMessage,
-  RegisterActorRef
-}
-import edu.uci.ics.amber.engine.architecture.logreplay.{
-  ReplayLogGenerator,
-  ReplayLogManager,
-  ReplayLogRecord,
-  ReplayOrderEnforcer
-}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  TriggerSend,
-  WorkerReplayLoggingConfig,
-  WorkerStateRestoreConfig
-}
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CreditRequest, CreditResponse, GetActorRef, MessageBecomesDeadLetter, NetworkAck, NetworkMessage, RegisterActorRef}
+import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogGenerator, ReplayLogManager, ReplayLogRecord, ReplayOrderEnforcer}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{MainThreadDelegate, TriggerSend, WorkerReplayLoggingConfig, WorkerStateRestoreConfig}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
@@ -100,9 +83,12 @@ abstract class WorkflowActor(
 
   def getLogName: String = actorId.name.replace("Worker:", "")
 
-  def sendMessageFromLogWriterToActor(msg: WorkflowFIFOMessage): Unit = {
+  def sendMessageFromLogWriterToActor(msg: Either[MainThreadDelegate, WorkflowFIFOMessage]): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
-    self ! TriggerSend(msg)
+    msg match {
+      case Left(value) => self ! value
+      case Right(value) => self ! TriggerSend(value)
+    }
   }
 
   def handleTriggerSend: Receive = {

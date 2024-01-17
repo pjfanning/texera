@@ -17,7 +17,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
-  DelayedCallPayload,
   ChannelMarkerPayload,
   WorkflowFIFOMessage
 }
@@ -132,7 +131,6 @@ class Controller(
             msg.payload match {
               case payload: ControlPayload      => cp.processControlPayload(msg.channel, payload)
               case marker: ChannelMarkerPayload => // skip marker
-              case payload: DelayedCallPayload  => payload.closure()
               case p                            => throw new RuntimeException(s"controller cannot handle $p")
             }
           }

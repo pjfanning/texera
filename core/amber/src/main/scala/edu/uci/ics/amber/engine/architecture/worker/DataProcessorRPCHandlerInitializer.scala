@@ -28,7 +28,8 @@ class DataProcessorRPCHandlerInitializer(val dp: DataProcessor)
     with FlushNetworkBufferHandler
     with ModifyOperatorLogicHandler
     with RetrieveStateHandler
-    with TakeCheckpointHandler {
+    with TakeCheckpointHandler
+    with FinalizeCheckpointHandler {
   val actorId: ActorVirtualIdentity = dp.actorId
   var lastReportTime = 0L
 }
