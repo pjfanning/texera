@@ -10,7 +10,8 @@ import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalLinkIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import org.jooq.exception.MappingException
 
 import scala.collection.mutable
@@ -69,17 +70,17 @@ class OutputManager(
     dataOutputPort: NetworkOutputGateway
 ) {
 
-  val partitioners = mutable.HashMap[PhysicalLinkIdentity, Partitioner]()
+  val partitioners = mutable.HashMap[PhysicalLink, Partitioner]()
 
   val networkOutputBuffers =
-    mutable.HashMap[(PhysicalLinkIdentity, ActorVirtualIdentity), NetworkOutputBuffer]()
+    mutable.HashMap[(PhysicalLink, ActorVirtualIdentity), NetworkOutputBuffer]()
 
   /**
     * Add down stream operator and its corresponding Partitioner.
     * @param partitioning Partitioning, describes how and whom to send to.
     */
   def addPartitionerWithPartitioning(
-      link: PhysicalLinkIdentity,
+      link: PhysicalLink,
       partitioning: Partitioning
   ): Unit = {
     val partitioner = toPartitioner(partitioning)
@@ -98,7 +99,7 @@ class OutputManager(
     */
   def passTupleToDownstream(
       tuple: ITuple,
-      outputPort: PhysicalLinkIdentity
+      outputPort: PhysicalLink
   ): Unit = {
     val partitioner =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
@@ -108,7 +109,7 @@ class OutputManager(
     )
   }
 
-  def flush(onlyFor: Option[Set[PhysicalLinkIdentity]] = None): Unit = {
+  def flush(onlyFor: Option[Set[PhysicalLink]] = None): Unit = {
     val buffersToFlush = onlyFor match {
       case Some(links) => networkOutputBuffers.filter(out => links.contains(out._1._1)).values
       case None        => networkOutputBuffers.values

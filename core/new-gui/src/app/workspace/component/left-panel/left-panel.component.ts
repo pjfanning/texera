@@ -1,12 +1,8 @@
-import { Component, OnInit } from "@angular/core";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { Component } from "@angular/core";
+import { UntilDestroy } from "@ngneat/until-destroy";
 import { OperatorMenuComponent } from "./operator-menu/operator-menu.component";
 import { VersionsListComponent } from "./versions-list/versions-list.component";
 import { ComponentType } from "@angular/cdk/overlay";
-import {
-  OPEN_VERSIONS_FRAME_EVENT,
-  WorkflowVersionService,
-} from "../../../dashboard/user/service/workflow-version/workflow-version.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
 import { OPEN_TIMETRAVEL_FRAME_EVENT, TimeTravelService } from "../../service/time-travel/time-travel.service";
@@ -18,10 +14,11 @@ import { merge } from "rxjs";
   templateUrl: "left-panel.component.html",
   styleUrls: ["left-panel.component.scss"],
 })
-export class LeftPanelComponent implements OnInit {
+export class LeftPanelComponent {
   currentComponent: ComponentType<OperatorMenuComponent | VersionsListComponent | TimeTravelComponent>;
+  title = "Operators";
   screenWidth = window.innerWidth;
-  width = 200;
+  width = 240;
   id = -1;
   disabled = false;
 
@@ -32,31 +29,17 @@ export class LeftPanelComponent implements OnInit {
     });
   }
 
-  constructor(private workflowVersionService: WorkflowVersionService, private timetravelService: TimeTravelService) {
+  constructor() {
     this.currentComponent = OperatorMenuComponent;
   }
 
-  ngOnInit(): void {
-    this.registerVersionDisplayEventsHandler();
+  openVersionsFrame(): void {
+    this.currentComponent = VersionsListComponent;
+    this.title = "Versions";
   }
 
-  registerVersionDisplayEventsHandler(): void {
-    merge(
-      this.workflowVersionService.workflowVersionsDisplayObservable(),
-      this.timetravelService.timetravelDisplayObservable()
-    )
-      .pipe(untilDestroyed(this))
-      .subscribe(evt => {
-        switch (evt) {
-          case OPEN_VERSIONS_FRAME_EVENT:
-            this.currentComponent = VersionsListComponent;
-            break;
-          case OPEN_TIMETRAVEL_FRAME_EVENT:
-            this.currentComponent = TimeTravelComponent;
-            break;
-          default:
-            this.currentComponent = OperatorMenuComponent;
-        }
-      });
+  openOperatorMenu(): void {
+    this.currentComponent = OperatorMenuComponent;
+    this.title = "Operators";
   }
 }
