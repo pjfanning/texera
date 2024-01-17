@@ -28,9 +28,7 @@ class EpochManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
     // check if the epoch marker is completed
     // TODO: rework the following logic to support control channels between workers
     val sendersWithinScope = upstreamLinkStatus.allUncompletedSenders
-      .filter(sender =>
-        marker.scope.links.contains(upstreamLinkStatus.getInputLink(sender))
-      )
+      .filter(sender => marker.scope.links.contains(upstreamLinkStatus.getInputLink(sender)))
       .map(senderId => ChannelID(senderId, actorId, isControl = false))
     val markerReceivedFromAllChannels = sendersWithinScope.subsetOf(epochMarkerReceived(markerId))
     val epochMarkerCompleted = marker.markerType match {

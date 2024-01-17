@@ -354,7 +354,7 @@ class DataProcessor(
       }
       // if this operator is not the final destination of the marker, pass it downstream
       if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {
-        val physicalLinks = marker.scope.links.map(_.id).toSet
+        val physicalLinks = marker.scope.links
         outputManager.flush(Some(physicalLinks))
         outputGateway.getActiveChannels.foreach { activeChannelId =>
           if (

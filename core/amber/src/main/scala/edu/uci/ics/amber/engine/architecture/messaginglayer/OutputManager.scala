@@ -109,7 +109,7 @@ class OutputManager(
     )
   }
 
-  def flush(onlyFor: Option[Set[PhysicalLinkIdentity]] = None): Unit = {
+  def flush(onlyFor: Option[Set[PhysicalLink]] = None): Unit = {
     val buffersToFlush = onlyFor match {
       case Some(links) => networkOutputBuffers.filter(out => links.contains(out._1._1)).values
       case None        => networkOutputBuffers.values
