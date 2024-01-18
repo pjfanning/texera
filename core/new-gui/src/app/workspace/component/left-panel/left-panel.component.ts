@@ -5,8 +5,7 @@ import { VersionsListComponent } from "./versions-list/versions-list.component";
 import { ComponentType } from "@angular/cdk/overlay";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
-import { OPEN_TIMETRAVEL_FRAME_EVENT, TimeTravelService } from "../../service/time-travel/time-travel.service";
-import { merge } from "rxjs";
+import { environment } from "../../../../environments/environment";
 
 @UntilDestroy()
 @Component({
@@ -22,6 +21,9 @@ export class LeftPanelComponent {
   id = -1;
   disabled = false;
 
+  // whether user dashboard is enabled and accessible from the workspace
+  public userSystemEnabled: boolean = environment.userSystemEnabled;
+
   onResize({ width }: NzResizeEvent): void {
     cancelAnimationFrame(this.id);
     this.id = requestAnimationFrame(() => {
@@ -36,6 +38,11 @@ export class LeftPanelComponent {
   openVersionsFrame(): void {
     this.currentComponent = VersionsListComponent;
     this.title = "Versions";
+  }
+
+  openTimeTravelFrame(): void {
+    this.currentComponent = TimeTravelComponent;
+    this.title = "TimeTravel";
   }
 
   openOperatorMenu(): void {

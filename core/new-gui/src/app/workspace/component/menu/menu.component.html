@@ -277,15 +277,6 @@
               nzTheme="twotone"></i>
           </button>
           <button
-            nz-button
-            title="Open time travel"
-            (click)="onClickOpenTimeTravel()">
-            <i
-              nz-icon
-              nzType="clock-circle"
-              nzTheme="outline"></i>
-          </button>
-          <button
             (click)="undoRedoService.undoAction()"
             [disabled]="displayParticularWorkflowVersion || !undoRedoService.canUndo()"
             nz-button>

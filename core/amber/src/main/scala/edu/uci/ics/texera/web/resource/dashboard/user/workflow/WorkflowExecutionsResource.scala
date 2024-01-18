@@ -110,7 +110,7 @@ class WorkflowExecutionsResource {
 
   @GET
   @Produces(Array(MediaType.APPLICATION_JSON))
-  @Path("/{wid}/{eid}")
+  @Path("/{wid}/interactions/{eid}")
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   def retrieveInteractionHistory(
       @PathParam("wid") wid: UInteger,
