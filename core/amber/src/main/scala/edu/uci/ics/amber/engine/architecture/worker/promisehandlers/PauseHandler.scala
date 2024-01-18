@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 
 object PauseHandler {
 
-  case class PauseWorker() extends ControlCommand[WorkerState]
+  final case class PauseWorker() extends ControlCommand[WorkerState]
 }
 
 trait PauseHandler {

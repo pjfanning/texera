@@ -2,14 +2,14 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerType}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-object EpochMarkerHandler {
+object ChannelMarkerHandler {
 
   final case class PropagateChannelMarker(
       sourceOpToStartProp: Set[PhysicalOpIdentity],
@@ -22,7 +22,7 @@ object EpochMarkerHandler {
 
 }
 
-trait EpochMarkerHandler {
+trait ChannelMarkerHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: PropagateChannelMarker, sender) =>
