@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayDestination
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.URILogStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
@@ -128,13 +128,13 @@ class WorkflowExecutionsResource {
           val logLocation = value.getLogLocation
           if (logLocation != null && logLocation.nonEmpty) {
             val storage = new URILogStorage(new URI(logLocation))
-            val result = new mutable.ArrayBuffer[String]()
+            val result = new mutable.ArrayBuffer[ChannelMarkerIdentity]()
             storage.getReader("CONTROLLER").mkLogRecordIterator().foreach {
               case destination: ReplayDestination =>
                 result.append(destination.id)
               case _ =>
             }
-            result.toList
+            result.map(_.id).toList
           } else {
             List()
           }
