@@ -7,14 +7,14 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   NoAlignment,
   RequireAlignment
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
 
 import scala.collection.mutable
 
 class ChannelMarkerManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
 
   private val markerReceived =
-    new mutable.HashMap[String, Set[ChannelID]]().withDefaultValue(Set())
+    new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelID]]().withDefaultValue(Set())
 
   /**
     * Checks if a channel marker is aligned, indicating if an epoch marker has been completely received

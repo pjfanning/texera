@@ -6,14 +6,18 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelM
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerType}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  ChannelMarkerIdentity,
+  PhysicalOpIdentity
+}
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
 object ChannelMarkerHandler {
 
   final case class PropagateChannelMarker(
       sourceOpToStartProp: Set[PhysicalOpIdentity],
-      id: String,
+      id: ChannelMarkerIdentity,
       markerType: ChannelMarkerType,
       scope: PhysicalPlan,
       targetOps: Set[PhysicalOpIdentity],

@@ -7,7 +7,11 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   WorkerStateRestoreConfig
 }
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ChannelMarkerIdentity,
+  ExecutionIdentity,
+  WorkflowIdentity
+}
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
@@ -173,7 +177,7 @@ class WorkflowService(
               Some(
                 WorkerStateRestoreConfig(
                   readFrom = readLocation,
-                  replayDestination = interaction
+                  replayDestination = ChannelMarkerIdentity(interaction)
                 )
               )
             })
