@@ -182,7 +182,7 @@ class DPThread(
                 case payload: DataPayload =>
                   dp.processDataPayload(msg.channel, payload)
                 case payload: ChannelMarkerPayload =>
-                  dp.processEpochMarker(msg.channel, payload, logManager)
+                  dp.processChannelMarker(msg.channel, payload, logManager)
               }
           }
         }

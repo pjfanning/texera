@@ -147,7 +147,7 @@ class DataProcessor(
   val outputManager: OutputManager =
     new OutputManager(actorId, outputGateway)
   // 6. epoch manager
-  val epochManager: EpochManager = new EpochManager(actorId)
+  val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(actorId)
 
   // dp thread stats:
   protected var inputTupleCount = 0L
@@ -334,23 +334,23 @@ class DataProcessor(
     }
   }
 
-  def processEpochMarker(
+  def processChannelMarker(
       channelId: ChannelID,
       marker: ChannelMarkerPayload,
       logManager: ReplayLogManager
   ): Unit = {
     val markerId = marker.id
-    val command = marker.commandMapping.getOrElse(actorId, null)
+    val command = marker.commandMapping.get(actorId)
     logger.info(s"receive marker from $channelId, id = ${marker.id}, cmd = ${command}")
     if (marker.markerType == RequireAlignment) {
       pauseManager.pauseInputChannel(EpochMarkerPause(markerId), List(channelId))
     }
-    if (epochManager.isMarkerAligned(upstreamLinkStatus, channelId, marker)) {
+    if (channelMarkerManager.isMarkerAligned(upstreamLinkStatus, channelId, marker)) {
       logManager.markAsReplayDestination(markerId)
       // invoke the control command carried with the epoch marker
       logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")
-      if (command != null) {
-        asyncRPCServer.receive(command, channelId.from)
+      if (command.isDefined) {
+        asyncRPCServer.receive(command.get, channelId.from)
       }
       // if this operator is not the final destination of the marker, pass it downstream
       if (!marker.scope.getSinkOperatorIds.contains(getOperatorId)) {

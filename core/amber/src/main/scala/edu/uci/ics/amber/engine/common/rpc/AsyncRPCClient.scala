@@ -8,13 +8,13 @@ import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
-  ControlPayload,
   ChannelMarkerPayload,
-  ChannelMarkerType
+  ChannelMarkerType,
+  ControlPayload
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
@@ -73,7 +73,7 @@ class AsyncRPCClient(
   }
 
   def sendChannelMarker(
-      markerId: String,
+      markerId: ChannelMarkerIdentity,
       markerType: ChannelMarkerType,
       scope: PhysicalPlan,
       cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
