@@ -104,6 +104,7 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(executions => {
         this.executionList = executions;
+        this.expandedRows.forEach(this.getInteractionHistory);
       });
   }
 
