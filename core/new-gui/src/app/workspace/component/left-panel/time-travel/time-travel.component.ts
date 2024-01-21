@@ -23,9 +23,9 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   interactionHistories: { [eid: number]: string[] } = {};
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
-  private reverted = false;
-
+  public reverted = false;
   public wid: number | undefined;
+  private timer: NodeJS.Timer | undefined;
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -41,10 +41,17 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
       return;
     }
     // gets the versions result and updates the workflow versions table displayed on the form
-    this.displayExecutionWithLogs(this.wid);
+    let localWid = this.wid;
+    this.displayExecutionWithLogs(localWid);
+    this.timer = setInterval(() => {
+      this.displayExecutionWithLogs(localWid);
+    }, 5000); // trigger per 5 secs
   }
 
   ngOnDestroy() {
+    if (this.timer !== undefined) {
+      clearInterval(this.timer);
+    }
     if (this.reverted) {
       this.workflowVersionService.closeReadonlyWorkflowDisplay();
       try {

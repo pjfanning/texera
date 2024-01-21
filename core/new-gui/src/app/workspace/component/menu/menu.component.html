@@ -347,6 +347,7 @@
         </button>
         <button
           (click)="handleInteraction()"
+          title="add interaction"
           [disabled]="!userSystemEnabled || executionState !== ExecutionState.Paused"
           id="interaction-button"
           nz-button
