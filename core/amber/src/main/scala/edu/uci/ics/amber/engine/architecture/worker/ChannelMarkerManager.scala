@@ -2,12 +2,18 @@ package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.InputGateway
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, ChannelMarkerPayload, NoAlignment, RequireAlignment}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelID,
+  ChannelMarkerPayload,
+  NoAlignment,
+  RequireAlignment
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
 
 import scala.collection.mutable
 
-class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity) extends AmberLogging {
+class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity)
+    extends AmberLogging {
 
   private val markerReceived =
     new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelID]]().withDefaultValue(Set())
