@@ -195,23 +195,26 @@ export class ExecuteWorkflowService {
     this.sendExecutionRequest(executionName, logicalPlan);
   }
 
-  public executeWorkflowAmberTexeraWithReplay(replayInfo: ReplayExecutionInfo): void {
+  public executeWorkflowAmberTexeraWithReplay(replayExecutionInfo: ReplayExecutionInfo): void {
     // get the current workflow graph
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
-    console.log(logicalPlan);
-    this.sendExecutionRequest(`Replay run of ${replayInfo.eid} to ${replayInfo.interaction}`, logicalPlan, replayInfo);
+    this.sendExecutionRequest(
+      `Replay run of ${replayExecutionInfo.eid} to ${replayExecutionInfo.interaction}`,
+      logicalPlan,
+      replayExecutionInfo
+    );
   }
 
   public sendExecutionRequest(
     executionName: string,
     logicalPlan: LogicalPlan,
-    replayInfo: ReplayExecutionInfo | undefined = undefined
+    replayExecutionInfo: ReplayExecutionInfo | undefined = undefined
   ): void {
     const workflowExecuteRequest = {
       executionName: executionName,
       engineVersion: version.hash,
       logicalPlan: logicalPlan,
-      replayFromExecution: replayInfo,
+      replayFromExecution: replayExecutionInfo,
     };
     // wait for the form debounce to complete, then send
     window.setTimeout(() => {
