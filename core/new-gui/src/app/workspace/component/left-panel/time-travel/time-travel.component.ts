@@ -9,8 +9,11 @@ import {
   WorkflowExecutionsService,
 } from "../../../../dashboard/user/service/workflow-executions/workflow-executions.service";
 import { HttpClient } from "@angular/common/http";
-import { Observable, timer } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, take, timer } from "rxjs";
+import { filter, map } from "rxjs/operators";
+import { ReplayExecutionInfo } from "../../../types/workflow-websocket.interface";
+import { NotificationService } from "../../../../common/service/notification/notification.service";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
 
 const FULL_REPLAY_FLAG = "Full Replay";
 @UntilDestroy()
@@ -23,13 +26,14 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   interactionHistories: { [eid: number]: string[] } = {};
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
-  public reverted = false;
+  public revertedToInteraction: ReplayExecutionInfo | undefined = undefined;
 
   constructor(
     private workflowActionService: WorkflowActionService,
     public executeWorkflowService: ExecuteWorkflowService,
     private workflowVersionService: WorkflowVersionService,
     private workflowExecutionsService: WorkflowExecutionsService,
+    private notificationService: NotificationService,
     private http: HttpClient
   ) {}
 
@@ -47,7 +51,7 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.reverted) {
+    if (this.revertedToInteraction !== undefined) {
       this.workflowVersionService.closeReadonlyWorkflowDisplay();
       try {
         this.executeWorkflowService.killWorkflow();
@@ -118,8 +122,10 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(workflow => {
         this.workflowVersionService.displayReadonlyWorkflow(workflow);
-        this.reverted = true;
-        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay({ eid: eid, interaction: interaction });
+        let replayExecutionInfo = { eid: eid, interaction: interaction };
+        this.revertedToInteraction = replayExecutionInfo;
+        this.notificationService.info(`start replay to interaction ${interaction} at execution ${eid}`);
+        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay(replayExecutionInfo);
       });
   }
 }
