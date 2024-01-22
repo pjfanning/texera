@@ -9,7 +9,7 @@ import {
   WorkflowExecutionsService,
 } from "../../../../dashboard/user/service/workflow-executions/workflow-executions.service";
 import { HttpClient } from "@angular/common/http";
-import { Observable } from "rxjs";
+import { Observable, timer } from "rxjs";
 import { map } from "rxjs/operators";
 
 const FULL_REPLAY_FLAG = "Full Replay";
@@ -24,8 +24,6 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
   public reverted = false;
-  public wid: number | undefined;
-  private timer: NodeJS.Timer | undefined;
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -36,22 +34,19 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.wid = this.workflowActionService.getWorkflowMetadata()?.wid;
-    if (this.wid === undefined) {
-      return;
-    }
     // gets the versions result and updates the workflow versions table displayed on the form
-    let localWid = this.wid;
-    this.displayExecutionWithLogs(localWid);
-    this.timer = setInterval(() => {
-      this.displayExecutionWithLogs(localWid);
-    }, 5000); // trigger per 5 secs
+    timer(0, 5000) // trigger per 5 secs
+      .pipe(untilDestroyed(this))
+      .subscribe(e => {
+        let wid = this.getWid();
+        if (wid === undefined) {
+          return;
+        }
+        this.displayExecutionWithLogs(wid);
+      });
   }
 
   ngOnDestroy() {
-    if (this.timer !== undefined) {
-      clearInterval(this.timer);
-    }
     if (this.reverted) {
       this.workflowVersionService.closeReadonlyWorkflowDisplay();
       try {
@@ -60,6 +55,10 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
         // ignore exception.
       }
     }
+  }
+
+  public getWid(): number | undefined {
+    return this.workflowActionService.getWorkflowMetadata()?.wid;
   }
 
   toggleRow(eId: number): void {
@@ -86,10 +85,11 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   }
 
   getInteractionHistory(eid: number): void {
-    if (this.wid === undefined) {
+    let wid = this.getWid();
+    if (wid === undefined) {
       return;
     }
-    this.retrieveInteractionHistory(this.wid, eid)
+    this.retrieveInteractionHistory(wid, eid)
       .pipe(untilDestroyed(this))
       .subscribe(data => {
         this.interactionHistories[eid] = data; // TODO:add FULL_REPLAY here to support fault tolerance.
@@ -109,8 +109,12 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   }
 
   onInteractionClick(vid: number, eid: number, interaction: string) {
+    let wid = this.getWid();
+    if (wid === undefined) {
+      return;
+    }
     this.workflowVersionService
-      .retrieveWorkflowByVersion(this.wid!, vid)
+      .retrieveWorkflowByVersion(wid, vid)
       .pipe(untilDestroyed(this))
       .subscribe(workflow => {
         this.workflowVersionService.displayReadonlyWorkflow(workflow);
