@@ -2,12 +2,13 @@ package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
 import edu.uci.ics.amber.engine.common.storage.URIRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
   USER,
   WORKFLOW_EXECUTIONS,
+  WORKFLOW_RUNTIME_STATISTICS,
   WORKFLOW_VERSION
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
@@ -81,6 +82,18 @@ object WorkflowExecutionsResource {
       name: String,
       logLocation: String
   )
+
+  case class ExecutionResultEntry(
+      eId: UInteger,
+      result: String
+  )
+
+  case class WorkflowRuntimeStatistics(
+      operatorId: String,
+      inputTupleCount: UInteger,
+      outputTupleCount: UInteger,
+      timestamp: Timestamp
+  )
 }
 
 case class ExecutionGroupBookmarkRequest(
@@ -97,7 +110,7 @@ class WorkflowExecutionsResource {
 
   @GET
   @Produces(Array(MediaType.APPLICATION_JSON))
-  @Path("/{wid}/{eid}")
+  @Path("/{wid}/interactions/{eid}")
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   def retrieveInteractionHistory(
       @PathParam("wid") wid: UInteger,
@@ -115,13 +128,13 @@ class WorkflowExecutionsResource {
           val logLocation = value.getLogLocation
           if (logLocation != null && logLocation.nonEmpty) {
             val storage = new URIRecordStorage[ReplayLogRecord](new URI(logLocation))
-            val result = new mutable.ArrayBuffer[String]()
+            val result = new mutable.ArrayBuffer[ChannelMarkerIdentity]()
             storage.getReader("CONTROLLER").mkRecordIterator().foreach {
               case destination: ReplayDestination =>
                 result.append(destination.id)
               case _ =>
             }
-            result.toList
+            result.map(_.id).toList
           } else {
             List()
           }
@@ -173,6 +186,31 @@ class WorkflowExecutionsResource {
         .toList
         .reverse
     }
+  }
+
+  @GET
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/{wid}/{eid}")
+  def retrieveWorkflowRuntimeStatistics(
+      @PathParam("wid") wid: UInteger,
+      @PathParam("eid") eid: UInteger
+  ): List[WorkflowRuntimeStatistics] = {
+    context
+      .select(
+        WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID,
+        WORKFLOW_RUNTIME_STATISTICS.INPUT_TUPLE_CNT,
+        WORKFLOW_RUNTIME_STATISTICS.OUTPUT_TUPLE_CNT,
+        WORKFLOW_RUNTIME_STATISTICS.TIME
+      )
+      .from(WORKFLOW_RUNTIME_STATISTICS)
+      .where(
+        WORKFLOW_RUNTIME_STATISTICS.WORKFLOW_ID
+          .eq(wid)
+          .and(WORKFLOW_RUNTIME_STATISTICS.EXECUTION_ID.eq(eid))
+      )
+      .orderBy(WORKFLOW_RUNTIME_STATISTICS.TIME, WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID)
+      .fetchInto(classOf[WorkflowRuntimeStatistics])
+      .toList
   }
 
   /** Sets a group of executions' bookmarks to the payload passed in the body. */

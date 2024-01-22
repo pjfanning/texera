@@ -2,29 +2,46 @@ package edu.uci.ics.amber.engine.architecture.controller
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.Region
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  PhysicalLinkIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
+import scala.collection.mutable
+
 class ExecutionState(workflow: Workflow) {
 
-  private val linkExecutions: Map[PhysicalLinkIdentity, LinkExecution] =
+  private val linkExecutions: Map[PhysicalLink, LinkExecution] =
     workflow.physicalPlan.links.map { link =>
-      link.id -> new LinkExecution(link.totalReceiversCount)
-    }.toMap
-  private val operatorExecutions: Map[PhysicalOpIdentity, OperatorExecution] =
-    workflow.physicalPlan.operators.map { physicalOp =>
-      physicalOp.id -> new OperatorExecution(
-        workflow.context.workflowId,
-        workflow.context.executionId,
-        physicalOp.id,
-        physicalOp.getWorkerIds.length
+      link -> new LinkExecution(
+        workflow.regionPlan.regions
+          .find(region => region.getEffectiveLinks.contains(link))
+          .get
+          .config
+          .get
+          .linkConfigs(link)
+          .channelConfigs
+          .map(_.toWorkerId)
+          .toSet
+          .size
       )
     }.toMap
+  private val operatorExecutions: mutable.Map[PhysicalOpIdentity, OperatorExecution] =
+    mutable.HashMap()
+
+  def initOperatorState(
+      physicalOpId: PhysicalOpIdentity,
+      operatorConfig: OperatorConfig
+  ): OperatorExecution = {
+    operatorExecutions += physicalOpId -> new OperatorExecution(
+      workflow.context.workflowId,
+      workflow.context.executionId,
+      physicalOpId,
+      operatorConfig.workerConfigs.length
+    )
+    operatorExecutions(physicalOpId)
+  }
 
   def getAllBuiltWorkers: Iterable[ActorVirtualIdentity] =
     operatorExecutions.values
@@ -50,7 +67,7 @@ class ExecutionState(workflow: Workflow) {
     throw new NoSuchElementException(s"cannot find operator with worker = $worker")
   }
 
-  def getLinkExecution(link: PhysicalLinkIdentity): LinkExecution = linkExecutions(link)
+  def getLinkExecution(link: PhysicalLink): LinkExecution = linkExecutions(link)
 
   def getAllOperatorExecutions: Iterable[(PhysicalOpIdentity, OperatorExecution)] =
     operatorExecutions

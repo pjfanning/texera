@@ -4,13 +4,14 @@ import edu.uci.ics.amber.engine.architecture.common.ProcessingStepCursor
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage.SequentialRecordWriter
 import edu.uci.ics.amber.engine.common.storage.{EmptyRecordStorage, SequentialRecordStorage}
+import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 
 //In-mem formats:
 sealed trait ReplayLogRecord
 
 case class MessageContent(message: WorkflowFIFOMessage) extends ReplayLogRecord
 case class ProcessingStep(channelID: ChannelID, step: Long) extends ReplayLogRecord
-case class ReplayDestination(id: String) extends ReplayLogRecord
+case class ReplayDestination(id: ChannelMarkerIdentity) extends ReplayLogRecord
 case object TerminateSignal extends ReplayLogRecord
 
 object ReplayLogManager {
@@ -42,7 +43,7 @@ trait ReplayLogManager {
 
   def getStep: Long = cursor.getStep
 
-  def markAsReplayDestination(id: String): Unit
+  def markAsReplayDestination(id: ChannelMarkerIdentity): Unit
 
   def withFaultTolerant(
       channel: ChannelID,
@@ -71,7 +72,7 @@ class EmptyReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends Re
 
   override def terminate(): Unit = {}
 
-  override def markAsReplayDestination(id: String): Unit = {}
+  override def markAsReplayDestination(id: ChannelMarkerIdentity): Unit = {}
 }
 
 class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayLogManager {
@@ -88,7 +89,7 @@ class ReplayLogManagerImpl(handler: WorkflowFIFOMessage => Unit) extends ReplayL
     super.withFaultTolerant(channel, message)(code)
   }
 
-  override def markAsReplayDestination(id: String): Unit = {
+  override def markAsReplayDestination(id: ChannelMarkerIdentity): Unit = {
     replayLogger.markAsReplayDestination(id)
   }
 

@@ -9,14 +9,9 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
-import edu.uci.ics.amber.engine.architecture.controller.{
-  ControllerConfig,
-  ExecutionState,
-  OperatorExecution,
-  Workflow
-}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalLink
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
+import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
 import edu.uci.ics.amber.engine.architecture.worker.controlcommands.LinkOrdinal
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
@@ -27,11 +22,8 @@ import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  PhysicalLinkIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 
 import scala.collection.mutable
@@ -54,7 +46,7 @@ class WorkflowScheduler(
   private val builtPhysicalOpIds = new mutable.HashSet[PhysicalOpIdentity]()
   private val openedOperators = new mutable.HashSet[PhysicalOpIdentity]()
   private val initializedPythonOperators = new mutable.HashSet[PhysicalOpIdentity]()
-  private val activatedLink = new mutable.HashSet[PhysicalLinkIdentity]()
+  private val activatedLink = new mutable.HashSet[PhysicalLink]()
 
   private val constructingRegions = new mutable.HashSet[RegionIdentity]()
   private val startedRegions = new mutable.HashSet[RegionIdentity]()
@@ -83,9 +75,9 @@ class WorkflowScheduler(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
-      linkId: PhysicalLinkIdentity
+      link: PhysicalLink
   ): Future[Seq[Unit]] = {
-    val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, linkId)
+    val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, link)
     doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
   }
 
@@ -148,9 +140,8 @@ class WorkflowScheduler(
         if (!builtPhysicalOpIds.contains(physicalOpId)) {
           buildOperator(
             workflow,
-            region.id,
             physicalOpId,
-            executionState.getOperatorExecution(physicalOpId),
+            region.config.get.operatorConfigs(physicalOpId),
             akkaActorService
           )
           builtPhysicalOpIds.add(physicalOpId)
@@ -171,19 +162,16 @@ class WorkflowScheduler(
 
   private def buildOperator(
       workflow: Workflow,
-      regionId: RegionIdentity,
       physicalOpId: PhysicalOpIdentity,
-      opExecution: OperatorExecution,
+      operatorConfig: OperatorConfig,
       controllerActorService: AkkaActorService
   ): Unit = {
     val physicalOp = workflow.physicalPlan.getOperator(physicalOpId)
+    val opExecution = executionState.initOperatorState(physicalOpId, operatorConfig)
     physicalOp.build(
       controllerActorService,
       opExecution,
-      workflow.regionPlan.regions
-        .find(region => region.id == regionId)
-        .map(region => region.config.get.workerConfigs(physicalOp.id))
-        .get,
+      operatorConfig,
       controllerConfig.workerRestoreConfMapping,
       controllerConfig.workerLoggingConfMapping
     )
@@ -200,11 +188,11 @@ class WorkflowScheduler(
           .getPythonWorkerToOperatorExec(uninitializedPythonOperators)
           .map {
             case (workerId, pythonUDFPhysicalOp) =>
-              val inputMappingList = pythonUDFPhysicalOp.inputPortToLinkMapping.flatMap {
-                case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+              val inputMappingList = pythonUDFPhysicalOp.inputPorts.values.flatMap {
+                case (inputPort, links) => links.map(link => LinkOrdinal(link, inputPort.id.id))
               }.toList
-              val outputMappingList = pythonUDFPhysicalOp.outputPortToLinkMapping.flatMap {
-                case (portIdx, links) => links.map(link => LinkOrdinal(link.id, portIdx))
+              val outputMappingList = pythonUDFPhysicalOp.outputPorts.values.flatMap {
+                case (outputPort, links) => links.map(link => LinkOrdinal(link, outputPort.id.id))
               }.toList
               asyncRPCClient
                 .send(
@@ -231,14 +219,14 @@ class WorkflowScheduler(
       // activate all links
       workflow.physicalPlan.links
         .filter(link => {
-          !activatedLink.contains(link.id) &&
-            allOperatorsInRegion.contains(link.fromOp.id) &&
-            allOperatorsInRegion.contains(link.toOp.id)
+          !activatedLink.contains(link) &&
+            allOperatorsInRegion.contains(link.fromOpId) &&
+            allOperatorsInRegion.contains(link.toOpId)
         })
         .map { link: PhysicalLink =>
           asyncRPCClient
-            .send(LinkWorkers(link.id), CONTROLLER)
-            .onSuccess(_ => activatedLink.add(link.id))
+            .send(LinkWorkers(link), CONTROLLER)
+            .onSuccess(_ => activatedLink.add(link))
         }
         .toSeq
     )
@@ -300,10 +288,13 @@ class WorkflowScheduler(
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
-        executionState.physicalOpToWorkersMapping
-          .map({
-            case (opId: PhysicalOpIdentity, workerIds: Seq[ActorVirtualIdentity]) =>
-              opId.logicalOpId.id -> workerIds.map(_.name)
+        region.getEffectiveOperators
+          .map(physicalOpId => {
+            physicalOpId.logicalOpId.id -> executionState
+              .getOperatorExecution(physicalOpId)
+              .getBuiltWorkerIds
+              .map(_.name)
+              .toList
           })
           .toMap
       )
@@ -356,6 +347,7 @@ class WorkflowScheduler(
     }
     if (!startedRegions.contains(region.id)) {
       constructingRegions.add(region.id)
+
       constructRegion(workflow, region, actorService)
       prepareAndStartRegion(workflow, region, actorService).rescue {
         case err: Throwable =>
