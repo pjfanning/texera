@@ -20,7 +20,7 @@ object EpochManager {
 class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity)
     extends AmberLogging {
 
-  private val epochMarkerReceived =
+  private val markerReceived =
     new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelID]]().withDefaultValue(Set())
 
   private var markerContext: MarkerContext = _
@@ -33,21 +33,27 @@ class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtual
 
   def getContext: MarkerContext = markerContext
 
-  // markers the arrival of an epoch marker,
-  // returns a boolean indicating if the epoch marker is completely received from all senders within scope
+  /**
+   * Determines if an epoch marker is fully received from all relevant senders within its scope.
+   * This method checks if the epoch marker, based on its type, has been received from all necessary channels.
+   * For markers requiring alignment, it verifies receipt from all senders in the scope. For non-aligned markers,
+   * it checks if it's the first received marker. Post verification, it cleans up the markers.
+   *
+   * @return true if the epoch marker is fully received from all senders in the scope, false otherwise.
+   */
   def isMarkerAligned: Boolean = {
     assert(markerContext != null)
     val markerId = markerContext.marker.id
-    epochMarkerReceived.update(markerId, epochMarkerReceived(markerId) + markerContext.fromChannel)
+    markerReceived.update(markerId, markerReceived(markerId) + markerContext.fromChannel)
     // check if the epoch marker is completed
     val markerReceivedFromAllChannels =
-      getChannelsWithinScope.subsetOf(epochMarkerReceived(markerId))
+      getChannelsWithinScope.subsetOf(markerReceived(markerId))
     val epochMarkerCompleted = markerContext.marker.markerType match {
       case RequireAlignment => markerReceivedFromAllChannels
-      case NoAlignment      => epochMarkerReceived(markerId).size == 1 // only the first marker triggers
+      case NoAlignment      => markerReceived(markerId).size == 1 // only the first marker triggers
     }
     if (markerReceivedFromAllChannels) {
-      epochMarkerReceived.remove(markerId) // clean up if all markers are received
+      markerReceived.remove(markerId) // clean up if all markers are received
     }
     epochMarkerCompleted
   }
