@@ -48,8 +48,6 @@ class ExecutionState(workflow: Workflow) {
     operatorExecutions(physicalOpId)
   }
 
-  val builtChannels: mutable.Set[ChannelID] = mutable.HashSet[ChannelID]()
-
   def getAllBuiltWorkers: Iterable[ActorVirtualIdentity] =
     operatorExecutions.values
       .flatMap(operator => operator.getBuiltWorkerIds.map(worker => operator.getWorkerInfo(worker)))

@@ -14,8 +14,6 @@ trait InputGateway {
 
   def getChannel(channelId: ChannelID): AmberFIFOChannel
 
-  def getAllChannels: Iterable[AmberFIFOChannel]
-
   def getAllControlChannels: Iterable[AmberFIFOChannel]
 
   def addEnforcer(enforcer: OrderEnforcer): Unit

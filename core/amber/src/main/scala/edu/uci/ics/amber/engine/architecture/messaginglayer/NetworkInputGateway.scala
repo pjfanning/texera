@@ -67,6 +67,4 @@ class NetworkInputGateway(val actorId: ActorVirtualIdentity)
   override def addEnforcer(enforcer: OrderEnforcer): Unit = {
     enforcers += enforcer
   }
-
-  override def getAllChannels: Iterable[AmberFIFOChannel] = inputChannels.values
 }
