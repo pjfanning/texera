@@ -11,12 +11,15 @@ import java.util.concurrent.CompletableFuture
 import scala.collection.JavaConverters._
 
 class AsyncReplayLogWriter(
-                            handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit,
-                            writer: SequentialRecordWriter[ReplayLogRecord]
+    handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit,
+    writer: SequentialRecordWriter[ReplayLogRecord]
 ) extends Thread {
-  private val drained = new util.ArrayList[Either[ReplayLogRecord, Either[MainThreadDelegate, WorkflowFIFOMessage]]]()
+  private val drained =
+    new util.ArrayList[Either[ReplayLogRecord, Either[MainThreadDelegate, WorkflowFIFOMessage]]]()
   private val writerQueue =
-    Queues.newLinkedBlockingQueue[Either[ReplayLogRecord, Either[MainThreadDelegate, WorkflowFIFOMessage]]]()
+    Queues.newLinkedBlockingQueue[
+      Either[ReplayLogRecord, Either[MainThreadDelegate, WorkflowFIFOMessage]]
+    ]()
   private var stopped = false
   private val logInterval =
     AmberConfig.faultToleranceLogFlushIntervalInMs

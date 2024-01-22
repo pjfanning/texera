@@ -7,7 +7,6 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartition
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateInputLinkingHandler.UpdateInputLinking
 import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 
@@ -47,8 +46,7 @@ trait LinkWorkersHandler {
               channelConfig.toWorkerId
             )
           )
-        }
-        )
+        })
 
       Future.collect(futures).map { _ =>
         // returns when all has completed

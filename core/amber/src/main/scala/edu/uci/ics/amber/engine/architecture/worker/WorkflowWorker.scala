@@ -10,7 +10,14 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.scheduling.config.{OperatorConfig, WorkerConfig}
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, MainThreadDelegate, TimerBasedControlElement, WorkerReplayInitialization}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  ActorCommandElement,
+  DPInputQueueElement,
+  FIFOMessageElement,
+  MainThreadDelegate,
+  TimerBasedControlElement,
+  WorkerReplayInitialization
+}
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
@@ -20,7 +27,6 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object WorkflowWorker {
   def props(
@@ -76,7 +82,8 @@ class WorkflowWorker(
   val dpThread =
     new DPThread(workerConfig.workerId, dp, logManager, inputQueue)
 
-  val inputRecordings = new mutable.HashMap[String, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
+  val inputRecordings =
+    new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
     dp.initTimerService(timerService)
@@ -110,7 +117,7 @@ class WorkflowWorker(
       t.closure(this)
   }
 
-  def handleActorCommand:Receive ={
+  def handleActorCommand: Receive = {
     case c: ActorCommand =>
       println(c)
   }
@@ -131,8 +138,8 @@ class WorkflowWorker(
 
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     inputQueue.put(FIFOMessageElement(workflowMsg))
-    inputRecordings.values.foreach{
-      buffer => buffer.append(workflowMsg)
+    inputRecordings.values.foreach { buffer =>
+      buffer.append(workflowMsg)
     }
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channel))
   }

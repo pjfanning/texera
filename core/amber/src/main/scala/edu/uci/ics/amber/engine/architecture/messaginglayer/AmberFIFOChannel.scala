@@ -1,18 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import com.twitter.util.{Future, Promise}
+import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
-  ChannelMarkerPayload,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /* The abstracted FIFO/exactly-once logic */
 class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
@@ -29,7 +24,6 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
   private var enabled = true
   private val fifoQueue = new mutable.Queue[WorkflowFIFOMessage]
   private val holdCredit = new AtomicLong()
-  private val messageCollectors = new mutable.HashMap[String, MessageCollector]
 
   def acceptMessage(msg: WorkflowFIFOMessage): Unit = {
     val seq = msg.sequenceNumber
@@ -44,22 +38,6 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
     } else {
       enforceFIFO(msg)
     }
-  }
-
-  def collectMessagesUntilMarker(markerId: String): Future[Iterable[WorkflowFIFOMessage]] = {
-    val promise = Promise[Iterable[WorkflowFIFOMessage]]()
-    fifoQueue.foreach { msg =>
-      msg.payload match {
-        case ChannelMarkerPayload(id, markerType, scope, commandMapping) =>
-          if (id == markerId) {
-            promise.setValue(Iterable.empty)
-            return promise // early return since we already received the marker.
-          }
-        case _ => //skip
-      }
-    }
-    messageCollectors(markerId) = MessageCollector(promise, new ArrayBuffer[WorkflowFIFOMessage]())
-    promise
   }
 
   def getCurrentSeq: Long = current
@@ -86,18 +64,6 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
   @inline private def afterEnqueueMessage(msg: WorkflowFIFOMessage): Unit = {
     holdCredit.getAndAdd(getInMemSize(msg))
-    messageCollectors.values.foreach { collector: MessageCollector =>
-      collector.collectedMessages.append(msg)
-    }
-    msg.payload match {
-      case payload: ChannelMarkerPayload =>
-        if (messageCollectors.contains(payload.id)) {
-          val collector = messageCollectors(payload.id)
-          collector.promise.setValue(collector.collectedMessages)
-          messageCollectors.remove(payload.id)
-        }
-      case _ => // skip
-    }
     current += 1
   }
 

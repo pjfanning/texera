@@ -1,15 +1,15 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import com.twitter.util.{Future, Promise}
+import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeCheckpointHandler.FinalizeCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
-import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState, VirtualIdentityUtils}
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DelayedCallPayload, NoAlignment, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState}
+import edu.uci.ics.amber.engine.common.ambermessage.NoAlignment
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
+import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 
 import java.net.URI
 import java.util.UUID
@@ -37,7 +37,7 @@ trait TakeGlobalCheckpointHandler {
         }
         logger.info("Serialized CP state")
       }
-      val checkpointId = s"Checkpoint_${UUID.randomUUID().toString}"
+      val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
       val storageFolder = AmberConfig.faultToleranceLogRootFolder.get
       val uri = new URI(s"$storageFolder$checkpointId/")
       val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
@@ -58,14 +58,16 @@ trait TakeGlobalCheckpointHandler {
         ),
         sender
       ).flatMap { ret =>
-        Future.collect(ret.map {
-          case (workerId, chkptSize: Long) =>
-            totalSize += chkptSize
-            send(FinalizeCheckpoint(checkpointId, uri), workerId)
-        }).map { _ =>
-          logger.info(s"global checkpoint finalized, size = $totalSize")
-          totalSize
-        }
+        Future
+          .collect(ret.map {
+            case (workerId, chkptSize: Long) =>
+              totalSize += chkptSize
+              send(FinalizeCheckpoint(checkpointId, uri), workerId)
+          })
+          .map { _ =>
+            logger.info(s"global checkpoint finalized, size = $totalSize")
+            totalSize
+          }
       }
     }
   }

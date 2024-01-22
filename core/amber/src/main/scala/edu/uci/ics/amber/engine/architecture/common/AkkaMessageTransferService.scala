@@ -113,12 +113,12 @@ class AkkaMessageTransferService(
     }
   }
 
-  def getAllUnAckedMessages:Iterable[WorkflowFIFOMessage] = {
-    val fcMessages = channelToFC.values.flatMap{
-      fc => fc.getMessagesToSend.map(_.internalMessage)
+  def getAllUnAckedMessages: Iterable[WorkflowFIFOMessage] = {
+    val fcMessages = channelToFC.values.flatMap { fc =>
+      fc.getMessagesToSend.map(_.internalMessage)
     }
-    val ccMessages = channelToCC.values.flatMap{
-      cc => cc.getAllMessages.map(_.internalMessage)
+    val ccMessages = channelToCC.values.flatMap { cc =>
+      cc.getAllMessages.map(_.internalMessage)
     }
     fcMessages ++ ccMessages
   }

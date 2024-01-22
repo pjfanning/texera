@@ -62,7 +62,8 @@ trait ReplayLogManager {
 
 }
 
-class EmptyReplayLogManagerImpl(handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit) extends ReplayLogManager {
+class EmptyReplayLogManagerImpl(handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit)
+    extends ReplayLogManager {
   override def setupWriter(
       logWriter: SequentialRecordStorage.SequentialRecordWriter[ReplayLogRecord]
   ): Unit = {}
@@ -76,7 +77,8 @@ class EmptyReplayLogManagerImpl(handler: Either[MainThreadDelegate, WorkflowFIFO
   override def markAsReplayDestination(id: ChannelMarkerIdentity): Unit = {}
 }
 
-class ReplayLogManagerImpl(handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit) extends ReplayLogManager {
+class ReplayLogManagerImpl(handler: Either[MainThreadDelegate, WorkflowFIFOMessage] => Unit)
+    extends ReplayLogManager {
 
   private val replayLogger = new ReplayLoggerImpl()
 
