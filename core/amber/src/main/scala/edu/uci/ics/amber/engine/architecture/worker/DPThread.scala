@@ -11,9 +11,9 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
   ControlPayload,
   DataPayload,
+  ChannelMarkerPayload,
   WorkflowFIFOMessage
 }
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelMarkerPayload
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.error.ErrorUtils.safely

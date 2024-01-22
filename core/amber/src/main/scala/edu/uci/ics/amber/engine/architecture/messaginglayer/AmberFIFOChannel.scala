@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import com.twitter.util.Promise
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
@@ -11,11 +10,6 @@ import scala.collection.mutable
 
 /* The abstracted FIFO/exactly-once logic */
 class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
-
-  private final case class MessageCollector(
-      promise: Promise[Iterable[WorkflowFIFOMessage]],
-      collectedMessages: mutable.ArrayBuffer[WorkflowFIFOMessage]
-  )
 
   override def actorId: ActorVirtualIdentity = channelId.to
 
@@ -53,18 +47,15 @@ class AmberFIFOChannel(val channelId: ChannelID) extends AmberLogging {
 
   private def enforceFIFO(data: WorkflowFIFOMessage): Unit = {
     fifoQueue.enqueue(data)
-    afterEnqueueMessage(data)
+    holdCredit.getAndAdd(getInMemSize(data))
+    current += 1
     while (ofoMap.contains(current)) {
       val msg = ofoMap(current)
       fifoQueue.enqueue(msg)
+      holdCredit.getAndAdd(getInMemSize(msg))
       ofoMap.remove(current)
-      afterEnqueueMessage(msg)
+      current += 1
     }
-  }
-
-  @inline private def afterEnqueueMessage(msg: WorkflowFIFOMessage): Unit = {
-    holdCredit.getAndAdd(getInMemSize(msg))
-    current += 1
   }
 
   def take: WorkflowFIFOMessage = {

@@ -41,12 +41,7 @@ class ReplayOrderEnforcer(
   def canProceed(channelID: ChannelID): Boolean = {
     val step = logManager.getStep
     // release the next log record if the step matches
-    // Hack: We increment step before receiving the messages. When we finalize checkpoint,
-    // we could push another processing step with the updated step count.
-    // If such case happen, the log will contain 2 processing step
-    // with different channel but the same step count. The following while loop finds
-    // the last processing step.
-    while (channelStepOrder.nonEmpty && channelStepOrder.head.step == step) {
+    if (channelStepOrder.nonEmpty && channelStepOrder.head.step == step) {
       forwardNext()
     }
     // To terminate replay:

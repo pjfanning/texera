@@ -1,7 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.messaginglayer.InputGateway
-import edu.uci.ics.amber.engine.architecture.worker.EpochManager.MarkerContext
+import edu.uci.ics.amber.engine.architecture.worker.ChannelMarkerManager.MarkerContext
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState}
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelID,
@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Ch
 
 import scala.collection.mutable
 
-object EpochManager {
+object ChannelMarkerManager {
   final case class MarkerContext(marker: ChannelMarkerPayload, fromChannel: ChannelID)
 }
 
@@ -34,13 +34,13 @@ class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtual
   def getContext: MarkerContext = markerContext
 
   /**
-   * Determines if an epoch marker is fully received from all relevant senders within its scope.
-   * This method checks if the epoch marker, based on its type, has been received from all necessary channels.
-   * For markers requiring alignment, it verifies receipt from all senders in the scope. For non-aligned markers,
-   * it checks if it's the first received marker. Post verification, it cleans up the markers.
-   *
-   * @return true if the epoch marker is fully received from all senders in the scope, false otherwise.
-   */
+    * Determines if an epoch marker is fully received from all relevant senders within its scope.
+    * This method checks if the epoch marker, based on its type, has been received from all necessary channels.
+    * For markers requiring alignment, it verifies receipt from all senders in the scope. For non-aligned markers,
+    * it checks if it's the first received marker. Post verification, it cleans up the markers.
+    *
+    * @return true if the epoch marker is fully received from all senders in the scope, false otherwise.
+    */
   def isMarkerAligned: Boolean = {
     assert(markerContext != null)
     val markerId = markerContext.marker.id
