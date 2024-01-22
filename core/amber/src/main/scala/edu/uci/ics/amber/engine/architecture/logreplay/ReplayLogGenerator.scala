@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.architecture.logreplay
 
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
+import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 
 import scala.collection.mutable
 
@@ -9,7 +10,7 @@ object ReplayLogGenerator {
   def generate(
       logStorage: SequentialRecordStorage[ReplayLogRecord],
       logFileName: String,
-      replayTo: String
+      replayTo: ChannelMarkerIdentity
   ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
     val logs = logStorage.getReader(logFileName).mkRecordIterator()
     val steps = mutable.Queue[ProcessingStep]()

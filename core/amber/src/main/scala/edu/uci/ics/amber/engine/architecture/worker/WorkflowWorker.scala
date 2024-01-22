@@ -7,14 +7,14 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusU
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
-import edu.uci.ics.amber.engine.architecture.scheduling.WorkerConfig
+import edu.uci.ics.amber.engine.architecture.scheduling.config.{OperatorConfig, WorkerConfig}
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, MainThreadDelegate, TimerBasedControlElement, WorkerReplayInitialization}
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.net.URI
@@ -24,16 +24,16 @@ import scala.collection.mutable.ArrayBuffer
 
 object WorkflowWorker {
   def props(
-      id: ActorVirtualIdentity,
+      workerConfig: WorkerConfig,
       physicalOp: PhysicalOp,
-      workerConf: WorkerConfig,
+      operatorConfig: OperatorConfig,
       replayInitialization: WorkerReplayInitialization
   ): Props =
     Props(
       new WorkflowWorker(
-        id,
+        workerConfig,
         physicalOp,
-        workerConf,
+        operatorConfig,
         replayInitialization
       )
     )
@@ -54,35 +54,36 @@ object WorkflowWorker {
       restoreConfOpt: Option[WorkerStateRestoreConfig] = None,
       replayLogConfOpt: Option[WorkerReplayLoggingConfig] = None
   )
-  final case class WorkerStateRestoreConfig(readFrom: URI, replayDestination: String)
+  final case class WorkerStateRestoreConfig(readFrom: URI, replayDestination: ChannelMarkerIdentity)
 
   final case class WorkerReplayLoggingConfig(writeTo: URI)
 }
 
 class WorkflowWorker(
-    workerId: ActorVirtualIdentity,
+    workerConfig: WorkerConfig,
     physicalOp: PhysicalOp,
-    workerConf: WorkerConfig,
+    operatorConfig: OperatorConfig,
     replayInitialization: WorkerReplayInitialization
-) extends WorkflowActor(replayInitialization.replayLogConfOpt, workerId) {
+) extends WorkflowActor(replayInitialization.replayLogConfOpt, workerConfig.workerId) {
   val inputQueue: LinkedBlockingQueue[DPInputQueueElement] =
     new LinkedBlockingQueue()
   var dp = new DataProcessor(
-    workerId,
+    workerConfig.workerId,
     logManager.sendCommitted
   )
   val timerService = new WorkerTimerService(actorService)
 
   val dpThread =
-    new DPThread(workerId, dp, logManager, inputQueue)
+    new DPThread(workerConfig.workerId, dp, logManager, inputQueue)
 
   val inputRecordings = new mutable.HashMap[String, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
     dp.initTimerService(timerService)
     dp.initOperator(
-      VirtualIdentityUtils.getWorkerIndex(workerId),
+      VirtualIdentityUtils.getWorkerIndex(workerConfig.workerId),
       physicalOp,
+      operatorConfig,
       currentOutputIterator = Iterator.empty
     )
     if (replayInitialization.restoreConfOpt.isDefined) {
@@ -119,7 +120,7 @@ class WorkflowWorker(
     logger.error(s"Encountered fatal error, worker is shutting done.", reason)
     postStop()
     dp.asyncRPCClient.send(
-      FatalError(reason, Some(workerId)),
+      FatalError(reason, Some(workerConfig.workerId)),
       CONTROLLER
     )
   }

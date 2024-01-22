@@ -1,12 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.scheduling
 
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
+import edu.uci.ics.amber.engine.architecture.scheduling.config.{OperatorConfig, WorkerConfig}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.COMPLETED
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.virtualidentity.{PhysicalLinkIdentity, OperatorIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
+import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
-import edu.uci.ics.texera.workflow.common.workflow.{LogicalLink, LogicalPort}
+import edu.uci.ics.texera.workflow.common.workflow.LogicalLink
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -19,6 +21,10 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
   ): Unit = {
     val physicalOps = workflow.physicalPlan.getPhysicalOpsOfLogicalOp(logicalOpId)
     physicalOps.foreach { physicalOp =>
+      executionState.initOperatorState(
+        physicalOp.id,
+        OperatorConfig(List(WorkerConfig(workerId = null)))
+      )
       executionState.getOperatorExecution(physicalOp.id).setAllWorkerState(COMPLETED)
     }
   }
@@ -31,12 +37,16 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       List(headerlessCsvOpDesc, keywordOpDesc, sink),
       List(
         LogicalLink(
-          LogicalPort(headerlessCsvOpDesc.operatorIdentifier, 0),
-          LogicalPort(keywordOpDesc.operatorIdentifier, 0)
+          headerlessCsvOpDesc.operatorIdentifier,
+          PortIdentity(),
+          keywordOpDesc.operatorIdentifier,
+          PortIdentity()
         ),
         LogicalLink(
-          LogicalPort(keywordOpDesc.operatorIdentifier, 0),
-          LogicalPort(sink.operatorIdentifier, 0)
+          keywordOpDesc.operatorIdentifier,
+          PortIdentity(),
+          sink.operatorIdentifier,
+          PortIdentity()
         )
       )
     )
@@ -89,24 +99,34 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
       ),
       List(
         LogicalLink(
-          LogicalPort(buildCsv.operatorIdentifier, 0),
-          LogicalPort(hashJoin1.operatorIdentifier, 0)
+          buildCsv.operatorIdentifier,
+          PortIdentity(),
+          hashJoin1.operatorIdentifier,
+          PortIdentity()
         ),
         LogicalLink(
-          LogicalPort(probeCsv.operatorIdentifier, 0),
-          LogicalPort(hashJoin1.operatorIdentifier, 1)
+          probeCsv.operatorIdentifier,
+          PortIdentity(),
+          hashJoin1.operatorIdentifier,
+          PortIdentity(1)
         ),
         LogicalLink(
-          LogicalPort(buildCsv.operatorIdentifier, 0),
-          LogicalPort(hashJoin2.operatorIdentifier, 0)
+          buildCsv.operatorIdentifier,
+          PortIdentity(),
+          hashJoin2.operatorIdentifier,
+          PortIdentity()
         ),
         LogicalLink(
-          LogicalPort(hashJoin1.operatorIdentifier, 0),
-          LogicalPort(hashJoin2.operatorIdentifier, 1)
+          hashJoin1.operatorIdentifier,
+          PortIdentity(),
+          hashJoin2.operatorIdentifier,
+          PortIdentity(1)
         ),
         LogicalLink(
-          LogicalPort(hashJoin2.operatorIdentifier, 0),
-          LogicalPort(sink.operatorIdentifier, 0)
+          hashJoin2.operatorIdentifier,
+          PortIdentity(),
+          sink.operatorIdentifier,
+          PortIdentity()
         )
       )
     )
@@ -143,42 +163,42 @@ class WorkflowSchedulerSpec extends AnyFlatSpec with MockFactory {
     nextRegions = scheduler.schedulingPolicy.onLinkCompletion(
       workflow,
       executionState,
-      PhysicalLinkIdentity(
+      PhysicalLink(
         workflow.physicalPlan
           .getPhysicalOpsOfLogicalOp(
             buildCsv.operatorIdentifier
           )
           .last
           .id,
-        0,
+        PortIdentity(),
         workflow.physicalPlan
           .getPhysicalOpsOfLogicalOp(
             hashJoin1.operatorIdentifier
           )
           .head
           .id,
-        0
+        PortIdentity()
       )
     )
     assert(nextRegions.isEmpty)
     nextRegions = scheduler.schedulingPolicy.onLinkCompletion(
       workflow,
       executionState,
-      PhysicalLinkIdentity(
+      PhysicalLink(
         workflow.physicalPlan
           .getPhysicalOpsOfLogicalOp(
             buildCsv.operatorIdentifier
           )
           .last
           .id,
-        0,
+        PortIdentity(),
         workflow.physicalPlan
           .getPhysicalOpsOfLogicalOp(
             hashJoin2.operatorIdentifier
           )
           .head
           .id,
-        0
+        PortIdentity()
       )
     )
     assert(nextRegions.nonEmpty)

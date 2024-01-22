@@ -9,9 +9,10 @@ import edu.uci.ics.amber.engine.common.ambermessage.ChannelID
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalLinkIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 
 object LinkWorkersHandler {
-  final case class LinkWorkers(linkId: PhysicalLinkIdentity) extends ControlCommand[Unit]
+  final case class LinkWorkers(link: PhysicalLink) extends ControlCommand[Unit]
 }
 
 /** add a data transfer partitioning to the sender workers and update input linking
@@ -24,24 +25,30 @@ trait LinkWorkersHandler {
 
   registerHandler { (msg: LinkWorkers, sender) =>
     {
-      val partitionings = cp.workflow.physicalPlan.getLink(msg.linkId).partitionings
-      val senderWorkerIds = cp.workflow.physicalPlan.getOperator(msg.linkId.from).getWorkerIds
-      val futures = senderWorkerIds
-        .zip(partitionings)
-        .flatMap({
-          case (senderWorkerId, (partitioning, receiverWorkerIds)) =>
-            cp.executionState.builtChannels
-              .add(ChannelID(CONTROLLER, senderWorkerId, isControl = true))
-            Seq(
-              send(AddPartitioning(msg.linkId, partitioning), senderWorkerId)
-            ) ++ receiverWorkerIds.map { receiverId =>
-              cp.executionState.builtChannels
-                .add(ChannelID(CONTROLLER, receiverId, isControl = true))
-              cp.executionState.builtChannels
-                .add(ChannelID(senderWorkerId, receiverId, isControl = false))
-              send(UpdateInputLinking(senderWorkerId, msg.linkId), receiverId)
-            }
-        })
+      val linkConfig = cp.workflow.regionPlan
+        .getRegionOfPhysicalLink(msg.link)
+        .get
+        .config
+        .get
+        .linkConfigs(msg.link)
+
+      val futures = linkConfig.channelConfigs
+        .flatMap(channelConfig => {
+          cp.executionState.builtChannels
+            .add(ChannelID(CONTROLLER, channelConfig.fromWorkerId, isControl = true))
+          cp.executionState.builtChannels
+            .add(ChannelID(CONTROLLER, channelConfig.toWorkerId, isControl = true))
+          cp.executionState.builtChannels
+            .add(ChannelID(channelConfig.fromWorkerId, channelConfig.toWorkerId, isControl = false))
+          Seq(
+            send(AddPartitioning(msg.link, linkConfig.partitioning), channelConfig.fromWorkerId),
+            send(
+              UpdateInputLinking(channelConfig.fromWorkerId, msg.link),
+              channelConfig.toWorkerId
+            )
+          )
+        }
+        )
 
       Future.collect(futures).map { _ =>
         // returns when all has completed

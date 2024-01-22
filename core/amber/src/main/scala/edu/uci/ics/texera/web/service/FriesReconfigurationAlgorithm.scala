@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EpochMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.RegionPlan
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperatorLogicHandler.{
@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ModifyOperat
   WorkerModifyLogicMultiple
 }
 import edu.uci.ics.amber.engine.common.ambermessage.RequireAlignment
-import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, PhysicalOpIdentity}
 import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import org.jgrapht.alg.connectivity.ConnectivityInspector
@@ -102,7 +102,7 @@ object FriesReconfigurationAlgorithm {
       val sources = componentSet.intersect(mcsPlan.getSourceOperatorIds)
       epochMarkers += PropagateChannelMarker(
         sources,
-        epochMarkerId,
+        ChannelMarkerIdentity(epochMarkerId),
         RequireAlignment,
         componentPlan,
         reconfigurations.map(_._1.id).toSet,

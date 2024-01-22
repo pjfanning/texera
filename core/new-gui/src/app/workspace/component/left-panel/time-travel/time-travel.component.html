@@ -35,8 +35,10 @@
           <div class="interaction-container">
             <ng-container *ngFor="let interaction of interactionHistories[execution.eId]">
               <button
-                class="interaction-item"
-                (click)="onInteractionClick(execution.vId, execution.eId, interaction)">
+                nz-popconfirm
+                nzPopconfirmTitle="Revert to this interaction will kill the current execution, do you want to proceed?"
+                (nzOnConfirm)="onInteractionClick(execution.vId, execution.eId, interaction)"
+                class="interaction-item">
                 {{ interaction }}
               </button>
             </ng-container>
@@ -46,10 +48,3 @@
     </ng-container>
   </tbody>
 </nz-table>
-
-<button
-  id="close-time-travel"
-  nz-button
-  (click)="this.closeFrame()">
-  Close Time Travel
-</button>

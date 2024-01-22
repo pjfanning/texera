@@ -78,9 +78,7 @@ class ExecutionRuntimeService(
 
   // Receive Interaction
   addSubscription(wsInput.subscribe((req: WorkflowInteractionRequest, uidOpt) => {
-    client.sendAsync(RetrieveWorkflowState(dp => {
-      dp.getCurrentInputTuple.mkString
-    }))
+    client.sendAsync(RetrieveWorkflowState())
   }))
 
 }

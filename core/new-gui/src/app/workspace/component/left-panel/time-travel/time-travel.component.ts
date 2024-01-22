@@ -1,10 +1,19 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 import { WorkflowExecutionsEntry } from "../../../../dashboard/user/type/workflow-executions-entry";
-import { TimeTravelService } from "../../../service/time-travel/time-travel.service";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
 import { WorkflowVersionService } from "../../../../dashboard/user/service/workflow-version/workflow-version.service";
+import {
+  WORKFLOW_EXECUTIONS_API_BASE_URL,
+  WorkflowExecutionsService,
+} from "../../../../dashboard/user/service/workflow-executions/workflow-executions.service";
+import { HttpClient } from "@angular/common/http";
+import { Observable, take, timer } from "rxjs";
+import { filter, map } from "rxjs/operators";
+import { ReplayExecutionInfo } from "../../../types/workflow-websocket.interface";
+import { NotificationService } from "../../../../common/service/notification/notification.service";
+import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
 
 const FULL_REPLAY_FLAG = "Full Replay";
 @UntilDestroy()
@@ -13,28 +22,47 @@ const FULL_REPLAY_FLAG = "Full Replay";
   templateUrl: "time-travel.component.html",
   styleUrls: ["time-travel.component.scss"],
 })
-export class TimeTravelComponent implements OnInit {
+export class TimeTravelComponent implements OnInit, OnDestroy {
   interactionHistories: { [eid: number]: string[] } = {};
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
-  private reverted = false;
-
-  public wid: number | undefined;
+  public revertedToInteraction: ReplayExecutionInfo | undefined = undefined;
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    public timetravelService: TimeTravelService,
     public executeWorkflowService: ExecuteWorkflowService,
-    private workflowVersionService: WorkflowVersionService
+    private workflowVersionService: WorkflowVersionService,
+    private workflowExecutionsService: WorkflowExecutionsService,
+    private notificationService: NotificationService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
-    this.wid = this.workflowActionService.getWorkflowMetadata()?.wid;
-    if (this.wid === undefined) {
-      return;
-    }
     // gets the versions result and updates the workflow versions table displayed on the form
-    this.displayExecutionWithLogs(this.wid);
+    timer(0, 5000) // trigger per 5 secs
+      .pipe(untilDestroyed(this))
+      .subscribe(e => {
+        let wid = this.getWid();
+        if (wid === undefined) {
+          return;
+        }
+        this.displayExecutionWithLogs(wid);
+      });
+  }
+
+  ngOnDestroy() {
+    if (this.revertedToInteraction !== undefined) {
+      this.workflowVersionService.closeReadonlyWorkflowDisplay();
+      try {
+        this.executeWorkflowService.killWorkflow();
+      } catch (e) {
+        // ignore exception.
+      }
+    }
+  }
+
+  public getWid(): number | undefined {
+    return this.workflowActionService.getWorkflowMetadata()?.wid;
   }
 
   toggleRow(eId: number): void {
@@ -46,12 +74,26 @@ export class TimeTravelComponent implements OnInit {
     }
   }
 
+  retrieveInteractionHistory(wid: number, eid: number): Observable<string[]> {
+    return this.http.get<string[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/interactions/${eid}`);
+  }
+
+  public retrieveLoggedExecutions(wid: number): Observable<WorkflowExecutionsEntry[]> {
+    return this.workflowExecutionsService.retrieveWorkflowExecutions(wid).pipe(
+      map(executionList =>
+        executionList.filter(execution => {
+          return execution.logLocation ? execution.logLocation.length > 0 : false;
+        })
+      )
+    );
+  }
+
   getInteractionHistory(eid: number): void {
-    if (this.wid === undefined) {
+    let wid = this.getWid();
+    if (wid === undefined) {
       return;
     }
-    this.timetravelService
-      .retrieveInteractionHistory(this.wid, eid)
+    this.retrieveInteractionHistory(wid, eid)
       .pipe(untilDestroyed(this))
       .subscribe(data => {
         this.interactionHistories[eid] = data; // TODO:add FULL_REPLAY here to support fault tolerance.
@@ -62,34 +104,28 @@ export class TimeTravelComponent implements OnInit {
    * calls the http get request service to display the versions result in the table
    */
   displayExecutionWithLogs(wid: number): void {
-    this.timetravelService
-      .retrieveLoggedExecutions(wid)
+    this.retrieveLoggedExecutions(wid)
       .pipe(untilDestroyed(this))
       .subscribe(executions => {
         this.executionList = executions;
+        this.expandedRows.forEach(row => this.getInteractionHistory(row));
       });
   }
 
-  closeFrame() {
-    if (this.reverted) {
-      this.workflowVersionService.closeReadonlyWorkflowDisplay();
-      try {
-        this.executeWorkflowService.killWorkflow();
-      } catch (e) {
-        // ignore exception.
-      }
-    }
-    this.timetravelService.closeFrame();
-  }
-
   onInteractionClick(vid: number, eid: number, interaction: string) {
+    let wid = this.getWid();
+    if (wid === undefined) {
+      return;
+    }
     this.workflowVersionService
-      .retrieveWorkflowByVersion(this.wid!, vid)
+      .retrieveWorkflowByVersion(wid, vid)
       .pipe(untilDestroyed(this))
       .subscribe(workflow => {
         this.workflowVersionService.displayReadonlyWorkflow(workflow);
-        this.reverted = true;
-        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay({ eid: eid, interaction: interaction });
+        let replayExecutionInfo = { eid: eid, interaction: interaction };
+        this.revertedToInteraction = replayExecutionInfo;
+        this.notificationService.info(`start replay to interaction ${interaction} at execution ${eid}`);
+        this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay(replayExecutionInfo);
       });
   }
 }
