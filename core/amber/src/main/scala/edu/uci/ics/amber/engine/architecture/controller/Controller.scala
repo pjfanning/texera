@@ -95,10 +95,7 @@ class Controller(
   )
 
   override def initState(): Unit = {
-    cp.setupActorService(actorService)
-    cp.setupTimerService(controllerTimerService)
-    cp.setupActorRefService(actorRefMappingService)
-    cp.setupLogManager(logManager)
+    cp.setupController(this)
     val controllerRestoreConf = controllerConfig.workerRestoreConfMapping(CONTROLLER)
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
