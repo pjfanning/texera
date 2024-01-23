@@ -42,7 +42,7 @@ trait FinalizeCheckpointHandler {
       val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
       writer.writeRecord(chkpt)
       writer.flush()
-      logger.info(s"Checkpoint finalized")
+      logger.info(s"Checkpoint finalized, size = ${chkpt.size()}")
       chkpt.size()
     } else {
       0L

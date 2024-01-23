@@ -47,7 +47,7 @@ class ExecutionRuntimeService(
       updateWorkflowState(PAUSING, metadataStore)
     )
     client.sendAsync(PauseWorkflow()).foreach { ret =>
-      client.sendAsync(TakeGlobalCheckpoint(true))
+      client.sendAsync(TakeGlobalCheckpoint(false))
     }
   }))
 

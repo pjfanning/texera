@@ -75,29 +75,5 @@ trait TakeCheckpointHandler {
     dp.outputHandler(Left(MainThreadDelegate(closure)))
     waitFuture.get()
     chkpt.size() // end of the first phase
-//    val channelsWithinScope = dp.epochManager.getChannelsWithinScope
-//    val channelsToCollect = channelsWithinScope - dp.epochManager.getContext.fromChannel
-//    val collectorFutures = dp.inputGateway.getAllChannels
-//      .filter(c => channelsToCollect.contains(c.channelId))
-//      .map(_.collectMessagesUntilMarker(dp.epochManager.getContext.marker.id))
-//    Future.collect(collectorFutures.toSeq).flatMap { iterables =>
-//      val promise = Promise[Long]()
-//      val closure = () => {
-//        if (!msg.estimationOnly) {
-//          chkpt.save(SerializedState.IN_FLIGHT_MSG_KEY, iterables.flatten)
-//          logger.info(
-//            s"Serialized all inflight messages, start to push checkpoint to the storage. checkpoint size = ${chkpt.size()} bytes"
-//          )
-//          val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
-//          val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
-//          writer.writeRecord(chkpt)
-//          writer.flush()
-//          totalSize = chkpt.size()
-//          logger.info(s"Checkpoint finalized")
-//
-//        }
-//        promise.setValue(totalSize)
-//      }
-//      promise
   }
 }
