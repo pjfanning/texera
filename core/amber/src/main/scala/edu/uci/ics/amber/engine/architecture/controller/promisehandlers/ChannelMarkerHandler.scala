@@ -80,7 +80,7 @@ trait ChannelMarkerHandler {
 
       // step 5: wait for the marker propagation.
       Future.collect(futures.toList).map { ret =>
-        cp.controller.logManager.markAsReplayDestination(msg.id)
+        cp.logManager.markAsReplayDestination(msg.id)
         ret
       }
     }

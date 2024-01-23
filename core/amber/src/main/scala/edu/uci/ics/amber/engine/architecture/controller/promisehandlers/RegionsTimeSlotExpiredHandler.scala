@@ -28,8 +28,8 @@ trait RegionsTimeSlotExpiredHandler {
           .onTimeSlotExpired(
             cp.workflow,
             notCompletedRegions,
-            cp.controller.actorRefMappingService,
-            cp.controller.actorService
+            cp.actorRefService,
+            cp.actorService
           )
           .flatMap(_ => Future.Unit)
       } else {

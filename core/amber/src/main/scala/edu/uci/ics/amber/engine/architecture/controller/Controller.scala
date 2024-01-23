@@ -99,7 +99,11 @@ class Controller(
     new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
-    cp.setupController(this)
+    cp.setupActorService(actorService)
+    cp.setupTimerService(controllerTimerService)
+    cp.setupActorRefService(actorRefMappingService)
+    cp.setupLogManager(logManager)
+    cp.setupInputRecording(inputRecordings)
     val controllerRestoreConf = controllerConfig.workerRestoreConfMapping(CONTROLLER)
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)

@@ -42,16 +42,16 @@ trait WorkerExecutionCompletedHandler {
           if (cp.executionState.isCompleted) {
             // after query result come back: send completed event, cleanup ,and kill workflow
             sendToClient(WorkflowCompleted())
-            cp.controller.controllerTimerService.disableStatusUpdate()
-            cp.controller.controllerTimerService.disableMonitoring()
-            cp.controller.controllerTimerService.disableSkewHandling()
+            cp.controllerTimerService.disableStatusUpdate()
+            cp.controllerTimerService.disableMonitoring()
+            cp.controllerTimerService.disableSkewHandling()
             Future.Done
           } else {
             cp.workflowScheduler
               .onWorkerCompletion(
                 cp.workflow,
-                cp.controller.actorRefMappingService,
-                cp.controller.actorService,
+                cp.actorRefService,
+                cp.actorService,
                 sender
               )
               .flatMap(_ => Future.Unit)

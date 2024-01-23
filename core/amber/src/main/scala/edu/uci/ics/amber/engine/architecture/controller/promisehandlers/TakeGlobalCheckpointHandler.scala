@@ -46,8 +46,7 @@ trait TakeGlobalCheckpointHandler {
       val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
       var totalSize = 0L
       // start to record input messages
-      this.cp.controller.inputRecordings(checkpointId) =
-        new mutable.ArrayBuffer[WorkflowFIFOMessage]()
+      this.cp.inputRecordings(checkpointId) = new mutable.ArrayBuffer[WorkflowFIFOMessage]()
       execute(
         PropagateChannelMarker(
           cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
@@ -68,9 +67,9 @@ trait TakeGlobalCheckpointHandler {
           .map { _ =>
             chkpt.save(
               SerializedState.IN_FLIGHT_MSG_KEY,
-              cp.controller.inputRecordings.getOrElse(checkpointId, new ArrayBuffer())
+              cp.inputRecordings.getOrElse(checkpointId, new ArrayBuffer())
             )
-            cp.controller.inputRecordings.remove(checkpointId)
+            cp.inputRecordings.remove(checkpointId)
             totalSize += chkpt.size()
             val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(uri))
             val writer = storage.getWriter(actorId.name)

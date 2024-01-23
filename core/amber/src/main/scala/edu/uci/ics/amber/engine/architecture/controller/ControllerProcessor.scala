@@ -1,10 +1,17 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
+import edu.uci.ics.amber.engine.architecture.common.{
+  AkkaActorRefMappingService,
+  AkkaActorService,
+  AmberProcessor
+}
+import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegate
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
-import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
+
+import scala.collection.mutable
 
 class ControllerProcessor(
     val workflow: Workflow,
@@ -24,8 +31,35 @@ class ControllerProcessor(
 
   private val initializer = new ControllerAsyncRPCHandlerInitializer(this)
 
-  @transient var controller: Controller = _
-  def setupController(controller: Controller): Unit = {
-    this.controller = controller
+  @transient var controllerTimerService: ControllerTimerService = _
+  def setupTimerService(controllerTimerService: ControllerTimerService): Unit = {
+    this.controllerTimerService = controllerTimerService
+  }
+
+  @transient var actorService: AkkaActorService = _
+  def setupActorService(akkaActorService: AkkaActorService): Unit = {
+    this.actorService = akkaActorService
+  }
+
+  @transient var actorRefService: AkkaActorRefMappingService = _
+  def setupActorRefService(actorRefService: AkkaActorRefMappingService): Unit = {
+    this.actorRefService = actorRefService
+  }
+
+  @transient var logManager: ReplayLogManager = _
+
+  def setupLogManager(logManager: ReplayLogManager): Unit = {
+    this.logManager = logManager
+  }
+
+  @transient var inputRecordings
+      : mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]] = _
+
+  def setupInputRecording(
+      inputRecording: mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[
+        WorkflowFIFOMessage
+      ]]
+  ): Unit = {
+    this.inputRecordings = inputRecording
   }
 }

@@ -29,8 +29,8 @@ trait LinkCompletedHandler {
         cp.workflowScheduler
           .onLinkCompletion(
             cp.workflow,
-            cp.controller.actorRefMappingService,
-            cp.controller.actorService,
+            cp.actorRefService,
+            cp.actorService,
             msg.link
           )
           .flatMap(_ => Future.Unit)

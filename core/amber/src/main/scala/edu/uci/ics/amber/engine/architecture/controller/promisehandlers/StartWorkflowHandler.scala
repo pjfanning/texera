@@ -23,13 +23,13 @@ trait StartWorkflowHandler {
         cp.workflowScheduler
           .startWorkflow(
             cp.workflow,
-            cp.controller.actorRefMappingService,
-            cp.controller.actorService
+            cp.actorRefService,
+            cp.actorService
           )
           .map(_ => {
-            cp.controller.controllerTimerService.enableStatusUpdate()
-            cp.controller.controllerTimerService.enableMonitoring()
-            cp.controller.controllerTimerService.enableSkewHandling()
+            cp.controllerTimerService.enableStatusUpdate()
+            cp.controllerTimerService.enableMonitoring()
+            cp.controllerTimerService.enableSkewHandling()
           })
       } else {
         Future.Unit
