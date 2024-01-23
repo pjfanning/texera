@@ -1,11 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.common.{
-  AkkaActorRefMappingService,
-  AkkaActorService,
-  AmberProcessor
-}
-import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
+import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
@@ -29,7 +24,7 @@ class ControllerProcessor(
   private val initializer = new ControllerAsyncRPCHandlerInitializer(this)
 
   @transient var controller: Controller = _
-  def setupController(controller:Controller): Unit = {
+  def setupController(controller: Controller): Unit = {
     this.controller = controller
   }
 }

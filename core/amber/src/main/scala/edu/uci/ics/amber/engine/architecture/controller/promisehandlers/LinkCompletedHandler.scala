@@ -27,7 +27,12 @@ trait LinkCompletedHandler {
       link.incrementCompletedReceiversCount()
       if (link.isCompleted) {
         cp.workflowScheduler
-          .onLinkCompletion(cp.workflow, cp.controller.actorRefMappingService, cp.controller.actorService, msg.link)
+          .onLinkCompletion(
+            cp.workflow,
+            cp.controller.actorRefMappingService,
+            cp.controller.actorService,
+            msg.link
+          )
           .flatMap(_ => Future.Unit)
       } else {
         // if the link is not completed yet, do nothing

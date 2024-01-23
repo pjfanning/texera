@@ -21,7 +21,11 @@ trait StartWorkflowHandler {
     {
       if (cp.executionState.getState.isUninitialized) {
         cp.workflowScheduler
-          .startWorkflow(cp.workflow, cp.controller.actorRefMappingService, cp.controller.actorService)
+          .startWorkflow(
+            cp.workflow,
+            cp.controller.actorRefMappingService,
+            cp.controller.actorService
+          )
           .map(_ => {
             cp.controller.controllerTimerService.enableStatusUpdate()
             cp.controller.controllerTimerService.enableMonitoring()
