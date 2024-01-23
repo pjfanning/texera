@@ -1,10 +1,11 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalLink, PhysicalOp}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.logreplay.storage.ReplayLogStorage
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
+import edu.uci.ics.amber.engine.architecture.scheduling.config.{OperatorConfig, WorkerConfig}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   DPInputQueueElement,
   FIFOMessageElement,
@@ -20,6 +21,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   OperatorIdentity,
   PhysicalOpIdentity
 }
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.WorkflowContext.{
   DEFAULT_EXECUTION_ID,
   DEFAULT_WORKFLOW_ID
@@ -50,19 +52,21 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     workflowId = DEFAULT_WORKFLOW_ID,
     executionId = DEFAULT_EXECUTION_ID,
     opExecInitInfo = null
-  )
-  private val mockLink = PhysicalLink(physicalOp1, 0, physicalOp2, 0)
+  ).withInputPorts(List(InputPort()))
+    .withOutputPorts(List(OutputPort()))
+  private val mockLink =
+    PhysicalLink(physicalOp1.id, PortIdentity(), physicalOp2.id, PortIdentity())
 
   private val physicalOp = PhysicalOp
     .oneToOnePhysicalOp(
       workflowId = DEFAULT_WORKFLOW_ID,
       executionId = DEFAULT_EXECUTION_ID,
       logicalOpId = operatorIdentity,
-      OpExecInitInfo(_ => operator)
+      OpExecInitInfo((_, _, _) => operator)
     )
     .copy(
-      inputPortToLinkMapping = Map(0 -> List(mockLink)),
-      outputPortToLinkMapping = Map(0 -> List(mockLink))
+      inputPorts = Map(PortIdentity() -> (InputPort(), List(mockLink))),
+      outputPorts = Map(PortIdentity() -> (OutputPort(), List(mockLink)))
     )
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = ReplayLogStorage.getLogStorage(None)
@@ -71,9 +75,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
-    dp.registerInput(senderID, mockLink.id)
+    dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -97,9 +101,9 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume using fifo messages" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
-    dp.registerInput(senderID, mockLink.id)
+    dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -126,11 +130,11 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle multiple batches from multiple sources" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
-    dp.registerInput(senderID, mockLink.id)
-    dp.registerInput(anotherSender, mockLink.id)
+    dp.registerInput(senderID, mockLink)
+    dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val dpThread = new DPThread(identifier, dp, logManager, inputQueue)
@@ -138,7 +142,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
     }
-    val dataChannelID2 = ChannelID(anotherSender, identifier, false)
+    val dataChannelID2 = ChannelID(anotherSender, identifier, isControl = false)
     val message1 = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples.slice(0, 100)))
     val message2 = WorkflowFIFOMessage(dataChannelID, 1, DataFrame(tuples.slice(100, 200)))
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
@@ -157,11 +161,11 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "write determinant logs to local storage while processing" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
-    dp.registerInput(senderID, mockLink.id)
-    dp.registerInput(anotherSender, mockLink.id)
+    dp.registerInput(senderID, mockLink)
+    dp.registerInput(anotherSender, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
     (dp.adaptiveBatchingMonitor.resumeAdaptiveBatching _).expects().anyNumberOfTimes()
     val logStorage = ReplayLogStorage.getLogStorage(Some(new URI("file:///recovery-logs/tmp")))

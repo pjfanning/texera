@@ -68,15 +68,15 @@
           nz-icon
           nzTheme="outline"
           nzType="user"></i>
-                <i
-                  *ngIf="!entry.dataset.isOwner"
-                  nz-tooltip="{{
+        <i
+          *ngIf="!entry.dataset.isOwner"
+          nz-tooltip="{{
                                   entry.dataset.accessPrivilege
-                              }} access shared by {{ entry.dataset.ownerName }}"
-                  nzTooltipPlacement="bottom"
-                  nz-icon
-                  nzTheme="outline"
-                  nzType="team"></i>
+                              }} Access"
+          nzTooltipPlacement="bottom"
+          nz-icon
+          nzTheme="outline"
+          nzType="team"></i>
       </div>
     </nz-list-item-meta-title>
 
@@ -101,7 +101,6 @@
         </ng-template>
       </div>
     </nz-list-item-meta-description>
-
   </nz-list-item-meta>
 
   <ul nz-list-item-actions>
@@ -113,7 +112,6 @@
                       dataset.name
                   }} to others"
         nzTooltipPlacement="bottom"
-        [disabled]="entry.dataset.accessPrivilege != 'WRITE'"
         type="button">
         <i
           nz-icon
@@ -137,21 +135,6 @@
           nz-icon
           nzTheme="outline"
           nzType="delete"></i>
-      </button>
-    </nz-list-item-action>
-    <nz-list-item-action *ngIf="datasetVersionTrackingEnabled">
-      <button
-        (click)="onClickGetDatasetVersions()"
-        nz-button
-        nz-tooltip="Versions of the dataset {{
-                      dataset.name
-                  }}"
-        nzTooltipPlacement="bottom"
-        type="button">
-        <i
-          nz-icon
-          nzTheme="outline"
-          nzType="history"></i>
       </button>
     </nz-list-item-action>
   </ul>

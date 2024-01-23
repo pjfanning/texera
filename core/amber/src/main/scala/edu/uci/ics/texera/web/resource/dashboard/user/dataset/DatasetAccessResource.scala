@@ -7,16 +7,35 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.USER
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, UserDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetUserAccessDao,
+  UserDao
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, User}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{context, getOwner}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{PUBLIC, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
+  context,
+  getOwner
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  PUBLIC,
+  withExceptionHandling
+}
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
 import java.util
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, DELETE, GET, InternalServerErrorException, PUT, Path, PathParam, Produces}
+import javax.ws.rs.{
+  BadRequestException,
+  DELETE,
+  GET,
+  InternalServerErrorException,
+  PUT,
+  Path,
+  PathParam,
+  Produces
+}
 import javax.ws.rs.core.{MediaType, Response}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 
@@ -112,16 +131,16 @@ class DatasetAccessResource {
   @GET
   @Path("/owner/{did}")
   def getOwnerEmailOfDataset(@PathParam("did") did: UInteger): String = {
+    var email = "";
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val owner = getOwner(ctx, did)
         if (owner != null) {
-          return owner.getEmail
+          email = owner.getEmail
         }
-        // this should not happen based on the foreign key constrains
-        return ""
       }
     }
+    email
   }
 
   /**

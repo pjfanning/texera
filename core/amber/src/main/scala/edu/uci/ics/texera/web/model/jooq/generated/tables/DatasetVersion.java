@@ -19,7 +19,7 @@ import org.jooq.Identity;
 import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row5;
+import org.jooq.Row6;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -35,7 +35,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class DatasetVersion extends TableImpl<DatasetVersionRecord> {
 
-    private static final long serialVersionUID = -1489498727;
+    private static final long serialVersionUID = 707423488;
 
     /**
      * The reference instance of <code>texera_db.dataset_version</code>
@@ -74,6 +74,11 @@ public class DatasetVersion extends TableImpl<DatasetVersionRecord> {
      * The column <code>texera_db.dataset_version.creation_time</code>.
      */
     public final TableField<DatasetVersionRecord, Timestamp> CREATION_TIME = createField(DSL.name("creation_time"), org.jooq.impl.SQLDataType.TIMESTAMP.nullable(false).defaultValue(org.jooq.impl.DSL.field("CURRENT_TIMESTAMP", org.jooq.impl.SQLDataType.TIMESTAMP)), this, "");
+
+    /**
+     * The column <code>texera_db.dataset_version.creator_uid</code>.
+     */
+    public final TableField<DatasetVersionRecord, UInteger> CREATOR_UID = createField(DSL.name("creator_uid"), org.jooq.impl.SQLDataType.INTEGERUNSIGNED.nullable(false), this, "");
 
     /**
      * Create a <code>texera_db.dataset_version</code> table reference
@@ -169,11 +174,11 @@ public class DatasetVersion extends TableImpl<DatasetVersionRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row5 type methods
+    // Row6 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row5<UInteger, UInteger, String, String, Timestamp> fieldsRow() {
-        return (Row5) super.fieldsRow();
+    public Row6<UInteger, UInteger, String, String, Timestamp, UInteger> fieldsRow() {
+        return (Row6) super.fieldsRow();
     }
 }

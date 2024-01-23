@@ -273,9 +273,10 @@ class DashboardResource {
         DATASET.OWNER_UID,
         DATASET.IS_PUBLIC,
         DATASET.CREATION_TIME,
-        DATASET_USER_ACCESS.PRIVILEGE,
-        DATASET_USER_ACCESS.UID,
-        USER.NAME
+        USER.NAME.as("userName"),
+        // use aggregation and groupby to remove duplicated item
+        DSL.max(DATASET_USER_ACCESS.PRIVILEGE).as("privilege"),
+        DSL.max(DATASET_USER_ACCESS.UID).as("uid")
       )
       .from(DATASET)
       .leftJoin(DATASET_USER_ACCESS)
@@ -288,6 +289,7 @@ class DashboardResource {
           .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
       )
       .and(datasetMatchQuery)
+      .groupBy(DATASET.DID)
 
 
     // Retrieve project resource
@@ -736,7 +738,6 @@ class DashboardResource {
               val dataset = record.into(DATASET).into(classOf[Dataset])
               val datasetOfUserUid = record.into(DATASET_USER_ACCESS).getUid
               var accessLevel = record.into(DATASET_USER_ACCESS).getPrivilege
-              val ownerName = record.into(USER).getName
               if (datasetOfUserUid != user.getUid) {
                 accessLevel = DatasetUserAccessPrivilege.READ
               }
@@ -746,7 +747,6 @@ class DashboardResource {
               DashboardDataset(
                 dataset,
                 accessLevel,
-                ownerName,
                 dataset.getOwnerUid == user.getUid
               )
             } else {

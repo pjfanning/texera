@@ -6,21 +6,24 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
+import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig;
 import edu.uci.ics.amber.engine.common.IOperatorExecutor;
 import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity;
-import edu.uci.ics.texera.workflow.common.metadata.InputPort;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
-import edu.uci.ics.texera.workflow.common.metadata.OutputPort;
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 import edu.uci.ics.texera.workflow.common.tuple.schema.OperatorSchemaInfo;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
+import edu.uci.ics.amber.engine.common.workflow.InputPort;
+import edu.uci.ics.amber.engine.common.workflow.OutputPort;
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity;
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants;
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator;
-import scala.Tuple2;
+import scala.Tuple3;
+import scala.collection.immutable.List;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -87,7 +90,10 @@ public class ScatterplotOpDesc extends VisualizationOperator {
                     workflowId,
                     executionId,
                     this.operatorIdentifier(),
-                    OpExecInitInfo.apply((Function<Tuple2<Object, PhysicalOp>, IOperatorExecutor> & java.io.Serializable) worker -> new ScatterplotOpExec(this, operatorSchemaInfo))
+                    OpExecInitInfo.apply(
+                            (Function<Tuple3<Object, PhysicalOp, OperatorConfig>, IOperatorExecutor> & java.io.Serializable)
+                                    worker -> new ScatterplotOpExec(this, operatorSchemaInfo)
+                    )
                 )
                 .withIsOneToManyOp(true).withParallelizable(!isGeometric);
     }
@@ -98,9 +104,13 @@ public class ScatterplotOpDesc extends VisualizationOperator {
                 "Scatterplot",
                 "View the result in a scatterplot",
                 OperatorGroupConstants.VISUALIZATION_GROUP(),
-                asScalaBuffer(singletonList(new InputPort("", false))).toList(),
-                asScalaBuffer(singletonList(new OutputPort(""))).toList(),
-                false, false, false, false);
+                asScalaBuffer(singletonList(new InputPort(new PortIdentity(0, false), "", false, List.empty()))).toList(),
+                asScalaBuffer(singletonList(new OutputPort(new PortIdentity(0, false ), ""))).toList(),
+                false,
+                false,
+                false,
+                false
+        );
     }
 
     @Override

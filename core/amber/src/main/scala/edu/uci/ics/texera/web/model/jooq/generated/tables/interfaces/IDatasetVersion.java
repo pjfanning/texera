@@ -66,6 +66,16 @@ public interface IDatasetVersion extends Serializable {
      */
     public Timestamp getCreationTime();
 
+    /**
+     * Setter for <code>texera_db.dataset_version.creator_uid</code>.
+     */
+    public void setCreatorUid(UInteger value);
+
+    /**
+     * Getter for <code>texera_db.dataset_version.creator_uid</code>.
+     */
+    public UInteger getCreatorUid();
+
     // -------------------------------------------------------------------------
     // FROM and INTO
     // -------------------------------------------------------------------------

@@ -90,7 +90,6 @@ export class DashboardEntry {
     if (!("dataset" in this.value)) {
       throw new Error("Value is not of type Dataset");
     }
-
     return this.value;
   }
 

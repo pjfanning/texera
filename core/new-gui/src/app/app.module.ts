@@ -85,7 +85,6 @@ import { ConsoleFrameComponent } from "./workspace/component/result-panel/consol
 import { ResultTableFrameComponent } from "./workspace/component/result-panel/result-table-frame/result-table-frame.component";
 import { DynamicModule } from "ng-dynamic-component";
 import { RowModalComponent } from "./workspace/component/result-panel/result-panel-modal.component";
-import { MonacoEditorModule } from "ngx-monaco-editor";
 import { OperatorPropertyEditFrameComponent } from "./workspace/component/property-editor/operator-property-edit-frame/operator-property-edit-frame.component";
 import { BreakpointPropertyEditFrameComponent } from "./workspace/component/property-editor/breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
 import { NotificationComponent } from "./common/component/notification/notification/notification.component";
@@ -156,6 +155,7 @@ import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 import {EnvironmentDatasetItemComponent} from "./workspace/component/property-editor/environment-property-edit-frame/dataset-item/environment-dataset-item.component";
+import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 
 registerLocaleData(en);
 
@@ -245,6 +245,7 @@ registerLocaleData(en);
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
+    WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
   ],
   imports: [
@@ -305,8 +306,6 @@ registerLocaleData(en);
     NzPopconfirmModule,
     NzAvatarModule,
     DynamicModule,
-    MonacoEditorModule.forRoot(),
-    NzDividerModule,
     NzTabsModule,
     NzTreeViewModule,
     NzPaginationModule,

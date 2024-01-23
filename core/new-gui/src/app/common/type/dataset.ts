@@ -3,6 +3,7 @@ import { DatasetVersionFileTreeNode } from "./datasetVersionFileTree";
 export interface DatasetVersion {
   dvid: number | undefined;
   did: number;
+  creatorUid: number;
   name: string;
   versionHash: string | undefined;
   creationTime: number | undefined;

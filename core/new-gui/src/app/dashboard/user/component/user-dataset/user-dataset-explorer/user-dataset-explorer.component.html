@@ -21,7 +21,9 @@
         <div style="display: flex">
           <button
             nz-button
-            nz-tooltip="Download the file">
+            nz-tooltip="Download the file"
+            (click)="onClickDownloadCurrentFile()"
+          >
             <i
               nz-icon
               nzTheme="outline"

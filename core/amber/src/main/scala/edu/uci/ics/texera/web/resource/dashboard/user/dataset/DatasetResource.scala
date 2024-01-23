@@ -4,13 +4,45 @@ import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetUserAccessDao,
+  DatasetVersionDao,
+  UserDao
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetUserAccess,
+  DatasetVersion
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDatasetByID, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
+  getDatasetUserAccessPrivilege,
+  getOwner,
+  userHasReadAccess,
+  userHasWriteAccess,
+  userOwnDataset
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DashboardDataset,
+  DashboardDatasetVersion,
+  DatasetDescriptionModification,
+  DatasetIDs,
+  DatasetNameModification,
+  DatasetVersionFileTree,
+  DatasetVersions,
+  context,
+  getDatasetByID,
+  getDatasetVersionHashByID,
+  persistNewVersion,
+  withExceptionHandling
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
+  DatasetVersionNotFoundException,
+  ResourceNotExistsException,
+  UserHasNoAccessToDatasetException
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -24,7 +56,17 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  BadRequestException,
+  Consumes,
+  GET,
+  InternalServerErrorException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -46,7 +88,6 @@ object DatasetResource {
         throw e
       case e: Exception =>
         // Optionally log the full exception here for debugging purposes
-        println(e)
         throw new InternalServerErrorException(
           Option(e.getMessage).getOrElse("An unknown error occurred.")
         )
@@ -87,6 +128,7 @@ object DatasetResource {
   private def persistNewVersion(
       ctx: DSLContext,
       did: UInteger,
+      uid: UInteger,
       versionName: String,
       multiPart: FormDataMultiPart
   ): Option[DashboardDatasetVersion] = {
@@ -140,6 +182,7 @@ object DatasetResource {
 
       datasetVersion.setName(versionName)
       datasetVersion.setDid(did)
+      datasetVersion.setCreatorUid(uid)
       datasetVersion.setVersionHash(commitHash)
 
       Some(
@@ -162,7 +205,6 @@ object DatasetResource {
   case class DashboardDataset(
       dataset: Dataset,
       accessPrivilege: EnumType,
-      ownerName: String,
       isOwner: Boolean
   )
 
@@ -234,7 +276,7 @@ class DatasetResource {
         val datasetVersionControl = new GitVersionControl(datasetPath)
         datasetVersionControl.initRepo()
 
-        val createdVersion = persistNewVersion(ctx, did, initialVersionName, files)
+        val createdVersion = persistNewVersion(ctx, did, uid, initialVersionName, files)
 
         createdVersion match {
           case Some(_) =>
@@ -255,7 +297,6 @@ class DatasetResource {
           ),
           DatasetUserAccessPrivilege.WRITE,
           isOwner = true,
-          ownerName = user.getName,
         )
       }
     }
@@ -289,9 +330,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/name")
   def updateDatasetName(
-                         modificator: DatasetNameModification,
-                         @Auth sessionUser: SessionUser
-                       ): Response = {
+      modificator: DatasetNameModification,
+      @Auth sessionUser: SessionUser
+  ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -315,9 +356,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/description")
   def updateDatasetDescription(
-                                modificator: DatasetDescriptionModification,
-                                @Auth sessionUser: SessionUser
-                       ): Response = {
+      modificator: DatasetDescriptionModification,
+      @Auth sessionUser: SessionUser
+  ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -354,7 +395,7 @@ class DatasetResource {
           throw new UserHasNoAccessToDatasetException(did.intValue())
         }
         // create the version
-        val createdVersion = persistNewVersion(ctx, did, versionName, multiPart)
+        val createdVersion = persistNewVersion(ctx, did, uid, versionName, multiPart)
 
         createdVersion match {
           case None =>
@@ -376,13 +417,11 @@ class DatasetResource {
       withTransaction(context)(ctx => {
         val targetDataset = getDatasetByID(ctx, did, uid)
         val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
-        val ownerEmail = getOwner(ctx, did).getEmail
 
         DashboardDataset(
           targetDataset,
           userAccessPrivilege,
-          ownerEmail,
-          targetDataset.getOwnerUid == uid,
+          targetDataset.getOwnerUid == uid
         )
       })
     })

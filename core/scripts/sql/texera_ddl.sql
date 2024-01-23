@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS dataset_version
 (
     `dvid`            INT UNSIGNED AUTO_INCREMENT NOT NULL,
     `did`             INT UNSIGNED NOT NULL,
+    `creator_uid`     INT UNSIGNED NOT NULL,
     `name`            VARCHAR(128) NOT NULL,
     `version_hash`    VARCHAR(64) NOT NULL,
     `creation_time`   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
