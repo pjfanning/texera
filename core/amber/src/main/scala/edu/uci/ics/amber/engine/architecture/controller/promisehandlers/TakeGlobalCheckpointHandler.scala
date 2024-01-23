@@ -9,11 +9,13 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpoi
 import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState}
 import edu.uci.ics.amber.engine.common.ambermessage.{NoAlignment, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 
 import java.net.URI
 import java.util.UUID
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 object TakeGlobalCheckpointHandler {
   final case class TakeGlobalCheckpoint(estimationOnly: Boolean)
@@ -43,7 +45,7 @@ trait TakeGlobalCheckpointHandler {
       val uri = new URI(s"$storageFolder$checkpointId/")
       val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
       var totalSize = 0L
-      // start to record input messages on main thread
+      // start to record input messages
       this.cp.controller.inputRecordings(checkpointId) =
         new mutable.ArrayBuffer[WorkflowFIFOMessage]()
       execute(
@@ -64,6 +66,16 @@ trait TakeGlobalCheckpointHandler {
               send(FinalizeCheckpoint(checkpointId, uri), workerId)
           })
           .map { _ =>
+            chkpt.save(
+              SerializedState.IN_FLIGHT_MSG_KEY,
+              cp.controller.inputRecordings.getOrElse(checkpointId, new ArrayBuffer())
+            )
+            cp.controller.inputRecordings.remove(checkpointId)
+            totalSize += chkpt.size()
+            val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(uri))
+            val writer = storage.getWriter(actorId.name)
+            writer.writeRecord(chkpt)
+            writer.flush()
             logger.info(s"global checkpoint finalized, size = $totalSize")
             totalSize
           }
