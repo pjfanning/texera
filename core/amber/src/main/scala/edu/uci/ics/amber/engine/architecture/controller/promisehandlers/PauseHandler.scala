@@ -31,9 +31,9 @@ trait PauseHandler {
 
   registerHandler { (msg: PauseWorkflow, sender) =>
     {
-      cp.controllerTimerService.disableStatusUpdate() // to be enabled in resume
-      cp.controllerTimerService.disableMonitoring()
-      cp.controllerTimerService.disableSkewHandling()
+      cp.controller.controllerTimerService.disableStatusUpdate() // to be enabled in resume
+      cp.controller.controllerTimerService.disableMonitoring()
+      cp.controller.controllerTimerService.disableSkewHandling()
       Future
         .collect(cp.executionState.getAllOperatorExecutions.map {
           case (physicalOpId, opExecution) =>

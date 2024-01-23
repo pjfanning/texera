@@ -32,10 +32,10 @@ trait ResumeHandler {
         .map { _ =>
           // update frontend status
           sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
-          cp.controllerTimerService
+          cp.controller.controllerTimerService
             .enableStatusUpdate() //re-enabled it since it is disabled in pause
-          cp.controllerTimerService.enableMonitoring()
-          cp.controllerTimerService.enableSkewHandling()
+          cp.controller.controllerTimerService.enableMonitoring()
+          cp.controller.controllerTimerService.enableSkewHandling()
         }
     }
   }

@@ -21,11 +21,11 @@ trait StartWorkflowHandler {
     {
       if (cp.executionState.getState.isUninitialized) {
         cp.workflowScheduler
-          .startWorkflow(cp.workflow, cp.actorRefService, cp.actorService)
+          .startWorkflow(cp.workflow, cp.controller.actorRefMappingService, cp.controller.actorService)
           .map(_ => {
-            cp.controllerTimerService.enableStatusUpdate()
-            cp.controllerTimerService.enableMonitoring()
-            cp.controllerTimerService.enableSkewHandling()
+            cp.controller.controllerTimerService.enableStatusUpdate()
+            cp.controller.controllerTimerService.enableMonitoring()
+            cp.controller.controllerTimerService.enableSkewHandling()
           })
       } else {
         Future.Unit
