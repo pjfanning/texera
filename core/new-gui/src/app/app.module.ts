@@ -85,7 +85,6 @@ import { ConsoleFrameComponent } from "./workspace/component/result-panel/consol
 import { ResultTableFrameComponent } from "./workspace/component/result-panel/result-table-frame/result-table-frame.component";
 import { DynamicModule } from "ng-dynamic-component";
 import { RowModalComponent } from "./workspace/component/result-panel/result-panel-modal.component";
-import { MonacoEditorModule } from "ngx-monaco-editor";
 import { OperatorPropertyEditFrameComponent } from "./workspace/component/property-editor/operator-property-edit-frame/operator-property-edit-frame.component";
 import { BreakpointPropertyEditFrameComponent } from "./workspace/component/property-editor/breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
 import { NotificationComponent } from "./common/component/notification/notification/notification.component";
@@ -148,6 +147,7 @@ import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/
 import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
 import { PdfViewerModule } from "ng2-pdf-viewer";
 import { ImageViewerModule } from "ngx-image-viewer";
+import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 
 registerLocaleData(en);
 
@@ -229,6 +229,7 @@ registerLocaleData(en);
     SearchComponent,
     SearchResultsComponent,
     PortPropertyEditFrameComponent,
+    WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
   ],
   imports: [
@@ -289,8 +290,6 @@ registerLocaleData(en);
     NzPopconfirmModule,
     NzAvatarModule,
     DynamicModule,
-    MonacoEditorModule.forRoot(),
-    NzDividerModule,
     NzTabsModule,
     NzTreeViewModule,
     NzPaginationModule,
