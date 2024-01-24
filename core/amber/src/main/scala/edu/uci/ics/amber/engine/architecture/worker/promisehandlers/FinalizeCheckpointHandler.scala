@@ -33,7 +33,7 @@ trait FinalizeCheckpointHandler {
           worker.inputRecordings.getOrElse(msg.checkpointId, new ArrayBuffer())
         )
         worker.inputRecordings.remove(msg.checkpointId)
-        waitFuture.complete()
+        waitFuture.complete(())
         ()
       }
       dp.outputHandler(Left(MainThreadDelegate(closure)))

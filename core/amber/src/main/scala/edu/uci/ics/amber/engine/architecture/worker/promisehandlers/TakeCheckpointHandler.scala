@@ -69,7 +69,7 @@ trait TakeCheckpointHandler {
         new mutable.ArrayBuffer[WorkflowFIFOMessage]()
       // get all messages from worker.transferService
       chkpt.save("InflightMessages", worker.transferService.getAllUnAckedMessages.toArray)
-      waitFuture.complete()
+      waitFuture.complete(())
       ()
     }
     dp.outputHandler(Left(MainThreadDelegate(closure)))

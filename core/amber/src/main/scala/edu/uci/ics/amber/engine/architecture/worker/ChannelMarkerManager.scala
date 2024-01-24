@@ -17,10 +17,10 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
 import scala.collection.mutable
 
 object ChannelMarkerManager {
-  final case class MarkerContext(marker: ChannelMarkerPayload, fromChannel: ChannelID)
+  final case class MarkerContext(marker: ChannelMarkerPayload, fromChannel: ChannelIdentity)
 }
 
-class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity, inputGateway: InputGateway)
+class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: InputGateway)
     extends AmberLogging {
 
   private val markerReceived =
@@ -30,7 +30,7 @@ class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtual
 
   val checkpoints = new mutable.HashMap[ChannelMarkerIdentity, CheckpointState]()
 
-  def setContext(marker: ChannelMarkerPayload, from: ChannelID): Unit = {
+  def setContext(marker: ChannelMarkerPayload, from: ChannelIdentity): Unit = {
     markerContext = MarkerContext(marker, from)
   }
 

@@ -28,7 +28,6 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
   RUNNING
 }
 import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
   ChannelMarkerPayload,
   DataFrame,
   DataPayload,
@@ -36,13 +35,6 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   RequireAlignment,
   WorkflowFIFOMessage
 }
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING
-}
-import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
@@ -167,7 +159,7 @@ class DataProcessor(
   val outputManager: OutputManager =
     new OutputManager(actorId, outputGateway)
   // 6. epoch manager
-  val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(inputGateway, actorId, inputGateway)
+  val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(actorId, inputGateway)
 
   // dp thread stats:
   protected var inputTupleCount = 0L
