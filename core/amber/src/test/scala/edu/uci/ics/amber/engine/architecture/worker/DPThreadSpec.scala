@@ -12,12 +12,13 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
 }
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeHandler.ResumeWorker
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelID, DataFrame, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
+  ChannelIdentity,
   OperatorIdentity,
   PhysicalOpIdentity
 }
@@ -32,13 +33,14 @@ import org.scalatest.flatspec.AnyFlatSpec
 
 import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
+import scala.collection.mutable
 
 class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   private val identifier: ActorVirtualIdentity = ActorVirtualIdentity("DP mock")
   private val senderID: ActorVirtualIdentity = ActorVirtualIdentity("mock sender")
-  private val dataChannelID = ChannelID(senderID, identifier, isControl = false)
-  private val controlChannelID = ChannelID(senderID, identifier, isControl = true)
+  private val dataChannelID = ChannelIdentity(senderID, identifier, isControl = false)
+  private val controlChannelID = ChannelIdentity(senderID, identifier, isControl = true)
   private val operator = mock[OperatorExecutor]
   private val operatorIdentity = OperatorIdentity("testOperator")
   private val physicalOp1 = PhysicalOp(
@@ -52,8 +54,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     workflowId = DEFAULT_WORKFLOW_ID,
     executionId = DEFAULT_EXECUTION_ID,
     opExecInitInfo = null
-  ).withInputPorts(List(InputPort()))
-    .withOutputPorts(List(OutputPort()))
+  ).withInputPorts(List(InputPort()), mutable.Map(PortIdentity() -> null))
+    .withOutputPorts(List(OutputPort()), mutable.Map(PortIdentity() -> null))
   private val mockLink =
     PhysicalLink(physicalOp1.id, PortIdentity(), physicalOp2.id, PortIdentity())
 
@@ -65,8 +67,8 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
       OpExecInitInfo((_, _, _) => operator)
     )
     .copy(
-      inputPorts = Map(PortIdentity() -> (InputPort(), List(mockLink))),
-      outputPorts = Map(PortIdentity() -> (OutputPort(), List(mockLink)))
+      inputPorts = Map(PortIdentity() -> (InputPort(), List(mockLink), null)),
+      outputPorts = Map(PortIdentity() -> (OutputPort(), List(mockLink), null))
     )
   private val tuples: Array[ITuple] = (0 until 5000).map(ITuple(_)).toArray
   private val logStorage = SequentialRecordStorage.getStorage[ReplayLogRecord](None)
@@ -142,7 +144,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
     }
-    val dataChannelID2 = ChannelID(anotherSender, identifier, isControl = false)
+    val dataChannelID2 = ChannelIdentity(anotherSender, identifier, isControl = false)
     val message1 = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples.slice(0, 100)))
     val message2 = WorkflowFIFOMessage(dataChannelID, 1, DataFrame(tuples.slice(100, 200)))
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))
@@ -179,7 +181,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
     tuples.foreach { x =>
       (operator.processTuple _).expects(Left(x), 0, dp.pauseManager, dp.asyncRPCClient)
     }
-    val dataChannelID2 = ChannelID(anotherSender, identifier, isControl = false)
+    val dataChannelID2 = ChannelIdentity(anotherSender, identifier, isControl = false)
     val message1 = WorkflowFIFOMessage(dataChannelID, 0, DataFrame(tuples.slice(0, 100)))
     val message2 = WorkflowFIFOMessage(dataChannelID, 1, DataFrame(tuples.slice(100, 200)))
     val message3 = WorkflowFIFOMessage(dataChannelID2, 0, DataFrame(tuples.slice(300, 1000)))

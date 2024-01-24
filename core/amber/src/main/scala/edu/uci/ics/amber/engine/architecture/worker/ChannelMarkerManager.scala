@@ -4,12 +4,15 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.InputGateway
 import edu.uci.ics.amber.engine.architecture.worker.ChannelMarkerManager.MarkerContext
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState}
 import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelID,
   ChannelMarkerPayload,
   NoAlignment,
   RequireAlignment
 }
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  ChannelIdentity,
+  ChannelMarkerIdentity
+}
 
 import scala.collection.mutable
 
@@ -17,11 +20,11 @@ object ChannelMarkerManager {
   final case class MarkerContext(marker: ChannelMarkerPayload, fromChannel: ChannelID)
 }
 
-class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity)
+class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtualIdentity, inputGateway: InputGateway)
     extends AmberLogging {
 
   private val markerReceived =
-    new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelID]]().withDefaultValue(Set())
+    new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelIdentity]]().withDefaultValue(Set())
 
   private var markerContext: MarkerContext = _
 
@@ -58,9 +61,9 @@ class ChannelMarkerManager(inputGateway: InputGateway, val actorId: ActorVirtual
     epochMarkerCompleted
   }
 
-  private def getChannelsWithinScope: Set[ChannelID] = {
+  private def getChannelsWithinScope: Set[ChannelIdentity] = {
     assert(markerContext != null)
-    val upstreams = markerContext.marker.scope.filter(_.to == actorId)
+    val upstreams = markerContext.marker.scope.filter(_.toWorkerId == actorId)
     inputGateway.getAllChannels
       .map(_.channelId)
       .filter { id =>
