@@ -4,45 +4,13 @@ import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  DatasetDao,
-  DatasetUserAccessDao,
-  DatasetVersionDao,
-  UserDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
-  Dataset,
-  DatasetUserAccess,
-  DatasetVersion
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
-  getDatasetUserAccessPrivilege,
-  getOwner,
-  userHasReadAccess,
-  userHasWriteAccess,
-  userOwnDataset
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DashboardDataset,
-  DashboardDatasetVersion,
-  DatasetDescriptionModification,
-  DatasetIDs,
-  DatasetNameModification,
-  DatasetVersionFileTree,
-  DatasetVersions,
-  context,
-  getDatasetByID,
-  getDatasetVersionHashByID,
-  persistNewVersion,
-  withExceptionHandling
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
-  DatasetVersionNotFoundException,
-  ResourceNotExistsException,
-  UserHasNoAccessToDatasetException
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDashboardDataset, getDatasetByID, getDatasetLatestVersion, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -56,17 +24,7 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  BadRequestException,
-  Consumes,
-  GET,
-  InternalServerErrorException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -123,6 +81,45 @@ object DatasetResource {
       throw new ResourceNotExistsException("dataset version")
     }
     version.getVersionHash
+  }
+
+  def getDashboardDataset(
+      ctx: DSLContext,
+      did: UInteger,
+      uid: UInteger): DashboardDataset = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
+
+    val targetDataset = getDatasetByID(ctx, did, uid)
+    val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
+
+    DashboardDataset(
+      targetDataset,
+      userAccessPrivilege,
+      targetDataset.getOwnerUid == uid
+    )
+  }
+
+  def getDatasetLatestVersion(ctx: DSLContext, did: UInteger, uid: UInteger): DatasetVersion = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
+
+    val latestVersion: DatasetVersion = ctx
+      .selectFrom(DATASET_VERSION)
+      .where(DATASET_VERSION.DID.eq(did))
+      .orderBy(
+        DATASET_VERSION.CREATION_TIME.desc()
+      ) // Assuming latest version is the one with the most recent creation time
+      .limit(1) // Limit to only one result
+      .fetchOneInto(classOf[DatasetVersion])
+
+    if (latestVersion == null) {
+      throw new DatasetVersionNotFoundException(did.intValue())
+    }
+
+    latestVersion
   }
 
   private def persistNewVersion(
@@ -415,14 +412,7 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        val targetDataset = getDatasetByID(ctx, did, uid)
-        val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
-
-        DashboardDataset(
-          targetDataset,
-          userAccessPrivilege,
-          targetDataset.getOwnerUid == uid
-        )
+        getDashboardDataset(ctx, did, uid)
       })
     })
   }
@@ -460,22 +450,7 @@ class DatasetResource {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        if (!userHasReadAccess(ctx, did, uid)) {
-          throw new UserHasNoAccessToDatasetException(did.intValue())
-        }
-
-        val latestVersion: DatasetVersion = ctx
-          .selectFrom(DATASET_VERSION)
-          .where(DATASET_VERSION.DID.eq(did))
-          .orderBy(
-            DATASET_VERSION.CREATION_TIME.desc()
-          ) // Assuming latest version is the one with the most recent creation time
-          .limit(1) // Limit to only one result
-          .fetchOneInto(classOf[DatasetVersion])
-
-        if (latestVersion == null) {
-          throw new DatasetVersionNotFoundException(did.intValue())
-        }
+        val latestVersion = getDatasetLatestVersion(ctx, did, uid)
 
         val gitVersionControl =
           new GitVersionControl(PathUtils.getDatasetPath(latestVersion.getDid).toString)

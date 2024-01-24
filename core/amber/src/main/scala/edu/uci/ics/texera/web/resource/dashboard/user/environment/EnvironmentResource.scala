@@ -3,11 +3,17 @@ package edu.uci.ics.texera.web.resource.dashboard.user.environment
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{DatasetOfEnvironment, Environment}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{DatasetOfEnvironment, Environment, EnvironmentOfWorkflow}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DashboardEnvironmentInput, EnvironmentIDs, EnvironmentNotFoundMessage, InputOfEnvironmentAlreadyExistsMessage, UserNoPermissionExceptionMessage, context, doesUserOwnEnvironment, getEnvironmentByEid, withExceptionHandling}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.ENVIRONMENT_OF_WORKFLOW
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao, EnvironmentOfWorkflowDao}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, EnvironmentIDs, EnvironmentNotFoundMessage, DatasetOfEnvironmentAlreadyExistsMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
+import io.dropwizard.servlets.assets.ResourceNotFoundException
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
@@ -15,6 +21,7 @@ import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.{MediaType, Response}
 import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam, Produces}
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.asScalaBufferConverter
 
 object EnvironmentResource {
   private def withExceptionHandling[T](block: () => T): T = {
@@ -22,7 +29,6 @@ object EnvironmentResource {
       block()
     } catch {
       case e: Exception =>
-        // Optionally log the full exception here for debugging purposes
         throw new InternalServerErrorException(
           Option(e.getMessage).getOrElse("An unknown error occurred.")
         )
@@ -31,37 +37,91 @@ object EnvironmentResource {
 
   private val context = SqlServer.createDSLContext()
 
-  private def getEnvironmentByEid(ctx: DSLContext, eid: UInteger): Option[Environment] = {
+  private def getEnvironmentByEid(ctx: DSLContext, eid: UInteger): Environment = {
     val environmentDao: EnvironmentDao = new EnvironmentDao(ctx.configuration())
-    Option(environmentDao.fetchOneByEid(eid))
+    val env = environmentDao.fetchOneByEid(eid)
+
+    if (env == null) {
+      throw new Exception("Environment is not found")
+    }
+
+    env
   }
   private def doesUserOwnEnvironment(ctx: DSLContext, uid: UInteger, eid: UInteger): Boolean = {
     val environment = getEnvironmentByEid(ctx, eid)
-    environment match {
-      case Some(env) => env.getUid == uid
-      case None      => false
+    environment.getUid == uid
+  }
+
+  private def doesDatasetExistInEnvironment(ctx: DSLContext, did: UInteger, eid: UInteger): Boolean = {
+    ctx.selectCount()
+      .from(DATASET_OF_ENVIRONMENT)
+      .where(DATASET_OF_ENVIRONMENT.EID.eq(eid)
+        .and(DATASET_OF_ENVIRONMENT.DID.eq(did)))
+      .fetchOne(0, classOf[Int]) > 0
+  }
+
+  private def fetchEnvironmentIdOfWorkflow(ctx: DSLContext, wid: UInteger): Option[UInteger] = {
+    val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
+    val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
+    if (environmentOfWorkflow.isEmpty) {
+      None
+    } else {
+      Some(environmentOfWorkflow.get(0).getEid)
     }
+  }
+
+  private def fetchWorkflowIdsOfEnvironment(ctx: DSLContext, eid: UInteger): List[UInteger] = {
+    val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
+    val envOfWorkflows = environmentOfWorkflowDao.fetchByEid(eid)
+
+    // Extract wids from envOfWorkflows and collect them into a list
+    val workflowIds = envOfWorkflows.asScala.map(_.getWid).toList
+    workflowIds
+  }
+  private def userHasWriteAccessToEnvironment(ctx: DSLContext, eid: UInteger, uid: UInteger): Boolean = {
+    // if user is the owner of the environment, return true
+    if (doesUserOwnEnvironment(ctx, uid, eid)) {
+      return true
+    }
+
+    // else, check the corresponding workflow if any, see if user has the write access to that workflow
+    fetchWorkflowIdsOfEnvironment(ctx, eid).foreach(wid => {
+      if (WorkflowAccessResource.hasWriteAccess(wid, uid)) {
+        return true
+      }
+    })
+    false
+  }
+  private def userHasReadAccessToEnvironment(ctx: DSLContext, eid: UInteger, uid: UInteger): Boolean = {
+    // if user is the owner of the environment, return true
+    if (doesUserOwnEnvironment(ctx, uid, eid)) {
+      return true
+    }
+
+    // else, check the corresponding workflow if any, see if user has the read access to that workflow
+    fetchWorkflowIdsOfEnvironment(ctx, eid).foreach(wid => {
+      if (WorkflowAccessResource.hasReadAccess(wid, uid)) {
+        return true
+      }
+    })
+    false
   }
 
   case class DashboardEnvironment(
       environment: Environment,
-      isOwner: Boolean,
-      inputs: List[String],
-      outputs: List[String]
-  )
-
-  case class DashboardEnvironmentInput(
-      input: DatasetOfEnvironment,
-      inputName: String
+      isEditable: Boolean,
   )
 
   case class EnvironmentIDs(eids: List[UInteger])
 
+  case class DatasetID(did: UInteger)
+  case class WorkflowLink(wid: UInteger)
+
   // error handling
   private val UserNoPermissionExceptionMessage = "user has no permission for the environment"
   private val EnvironmentNotFoundMessage = "environment not found"
-  private val InputOfEnvironmentAlreadyExistsMessage =
-    "the given input already exists in the environment"
+  private val DatasetOfEnvironmentAlreadyExistsMessage =
+    "the given dataset already exists in the environment"
 }
 
 @RolesAllowed(Array("REGULAR", "ADMIN"))
@@ -92,39 +152,9 @@ class EnvironmentResource {
                 createdEnvironment.getDescription,
                 createdEnvironment.getCreationTime
               ),
-              createdEnvironment.getUid == user.getUid,
-              List(),
-              List()
+              isEditable = true
             )
           }
-        }
-      }
-    }
-  }
-
-  @GET
-  @Path("")
-  def retrieveEnvironments(@Auth user: SessionUser): List[DashboardEnvironment] = {
-    val uid = user.getUid
-
-    withExceptionHandling { () =>
-      {
-        withTransaction(context) { ctx =>
-          val environmentDao = new EnvironmentDao(ctx.configuration())
-
-          val environments = environmentDao.findAll()
-          val dashboardEnvironments: ListBuffer[DashboardEnvironment] = ListBuffer()
-
-          environments.forEach(env => {
-            dashboardEnvironments += DashboardEnvironment(
-              environment = env,
-              isOwner = env.getUid == uid,
-              inputs = List(),
-              outputs = List()
-            )
-          })
-
-          dashboardEnvironments.toList
         }
       }
     }
@@ -139,6 +169,7 @@ class EnvironmentResource {
       {
         withTransaction(context) { ctx =>
           val environmentDao: EnvironmentDao = new EnvironmentDao(ctx.configuration())
+
           for (eid <- environmentIDs.eids) {
             if (!doesUserOwnEnvironment(ctx, uid, eid)) {
               Response
@@ -161,121 +192,140 @@ class EnvironmentResource {
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser
   ): DashboardEnvironment = {
+    val uid = user.getUid
     withExceptionHandling { () =>
       {
         withTransaction(context) { ctx =>
-          val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
-          val environment = getEnvironmentByEid(ctx, eid);
-
-          val inputsOfEnvironment = inputOfEnvironmentDao.fetchByEid(eid)
-          val inputs: ListBuffer[String] = ListBuffer()
-
-          inputsOfEnvironment.forEach(input => {
-            inputs += ("ds" + input.getDid)
-          })
-
-          environment match {
-            case Some(env) =>
-              DashboardEnvironment(
-                env,
-                env.getUid == user.getUid,
-                inputs.toList,
-                List()
-              )
-
-            case None => throw new Exception(EnvironmentNotFoundMessage)
+          if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
+            Response
+              .status(Response.Status.FORBIDDEN)
+              .entity(UserNoPermissionExceptionMessage)
+              .build()
           }
+          val environment = getEnvironmentByEid(ctx, eid);
+          DashboardEnvironment(
+            environment = environment,
+            isEditable = userHasWriteAccessToEnvironment(ctx, eid, uid)
+          )
         }
       }
     }
   }
 
   @GET
-  @Path("/{eid}/input")
-  def getInputsOfEnvironment(
+  @Path("/{eid}/dataset")
+  def getDatasetsOfEnvironment(
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser
-  ): List[DashboardEnvironmentInput] = {
+  ): List[DashboardDataset] = {
+    val uid = user.getUid
     withExceptionHandling(() => {
       withTransaction(context) { ctx =>
-        val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
+        val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
 
-        val inputs = inputOfEnvironmentDao.fetchByEid(eid)
-        val res = ListBuffer[DashboardEnvironmentInput]()
+        val datasets = datasetOfEnvironmentDao.fetchByEid(eid)
+        val res = ListBuffer[DashboardDataset]()
 
-        inputs.forEach(input =>
-          res += DashboardEnvironmentInput(
-            input,
-            "ds" + input.getDid
-          )
+        datasets.forEach(dataset => {
+            val did = dataset.getDid
+            res += DatasetResource.getDashboardDataset(ctx, did, uid)
+          }
         )
-
         res.toList
       }
     })
   }
 
-  @GET
-  @Path("/{eid}/input/{did}")
-  def getInputForEnvironment(
-      @PathParam("eid") eid: UInteger,
-      @PathParam("did") did: UInteger
-  ): DashboardEnvironmentInput = ???
-
   @POST
-  @Path("/{eid}/input/add")
-  def addInputForEnvironment(
-      @PathParam("eid") eid: UInteger,
-      @Auth user: SessionUser,
-      inputOfEnvironment: DatasetOfEnvironment
+  @Path("/{eid}/dataset/add")
+  def addDatasetForEnvironment(
+                                @PathParam("eid") eid: UInteger,
+                                @Auth user: SessionUser,
+                                datasetID: DatasetID
   ): Response = {
     val uid = user.getUid
 
     withExceptionHandling(() => {
       withTransaction(context)(ctx => {
-        val environment = getEnvironmentByEid(ctx, eid)
+        val env = getEnvironmentByEid(ctx, eid)
+        val did = datasetID.did
 
-        if (environment.isEmpty || !doesUserOwnEnvironment(ctx, uid, eid)) {
+        if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)
+        || !userHasWriteAccessToEnvironment(ctx, eid, uid)) {
           Response
             .status(Response.Status.FORBIDDEN)
             .entity(UserNoPermissionExceptionMessage)
             .build()
         }
 
-        val env = environment.get
+        if (doesDatasetExistInEnvironment(ctx, did, eid)) {
+          Response
+            .status(Response.Status.BAD_REQUEST)
+            .entity(DatasetOfEnvironmentAlreadyExistsMessage)
+            .build()
+        }
 
-        val inputOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
-        val inputs = inputOfEnvironmentDao.fetchByEid(env.getEid)
-
-        inputs.forEach(input =>
-          if (input.getDid == inputOfEnvironment.getDid) {
-            Response
-              .status(Response.Status.BAD_REQUEST)
-              .entity(InputOfEnvironmentAlreadyExistsMessage)
-              .build()
-          }
-        )
-
-        inputOfEnvironmentDao.insert(inputOfEnvironment)
+        val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
+        val latestDatasetVersion = DatasetResource.getDatasetLatestVersion(ctx, did, uid)
+        // TODO: add version to it
+        datasetOfEnvironmentDao.insert(new DatasetOfEnvironment(
+          did,
+          eid,
+          latestDatasetVersion.getDvid
+        ))
         Response.status(Response.Status.OK).build()
       })
     })
   }
 
-  @POST
-  @Path("/{eid}/input/{did}/update")
-  def linkDatasetForEnvironment(
-      @PathParam("eid") eid: UInteger,
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser,
-      inputOfEnvironment: DatasetOfEnvironment
-  ): Response = ???
-
   @DELETE
-  @Path("/{eid}/input/{did}")
-  def unlinkDatasetForEnvironment(
-      @PathParam("eid") eid: UInteger,
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser
-  ): Response = ???
+  @Path("/{eid}/dataset/{did}")
+  def removeDatasetForEnvironment(
+                                   @PathParam("eid") eid: UInteger,
+                                   @PathParam("did") did: UInteger,
+                                   @Auth user: SessionUser
+                                 ): Response = ???
+  @POST
+  @Path("/{eid}/linkWorkflow")
+  def linkWorkflowToEnvironment(
+                                 @PathParam("eid") eid: UInteger,
+                                 @Auth user: SessionUser,
+                                 workflowLink: WorkflowLink
+                               ): Response = {
+    val uid = user.getUid
+
+    withExceptionHandling(() => {
+      withTransaction(context)(ctx => {
+        val wid = workflowLink.wid
+        if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
+          Response
+            .status(Response.Status.FORBIDDEN)
+            .entity(UserNoPermissionExceptionMessage)
+            .build()
+        }
+
+        // Check if an entry with the specified wid already exists
+        val exists = ctx.selectCount()
+          .from(ENVIRONMENT_OF_WORKFLOW)
+          .where(ENVIRONMENT_OF_WORKFLOW.WID.eq(wid))
+          .fetchOne(0, classOf[Int]) > 0
+
+        if (exists) {
+          // Update the existing entry
+          ctx.update(ENVIRONMENT_OF_WORKFLOW)
+            .set(ENVIRONMENT_OF_WORKFLOW.EID, eid)
+            .where(ENVIRONMENT_OF_WORKFLOW.WID.eq(wid))
+            .execute()
+        } else {
+          // Insert a new entry
+          ctx.insertInto(ENVIRONMENT_OF_WORKFLOW)
+            .set(ENVIRONMENT_OF_WORKFLOW.EID, eid)
+            .set(ENVIRONMENT_OF_WORKFLOW.WID, wid)
+            .execute()
+        }
+
+        Response.ok().build()
+      })
+    })
+  }
 }
