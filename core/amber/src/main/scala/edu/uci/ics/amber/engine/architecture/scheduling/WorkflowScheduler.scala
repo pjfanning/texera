@@ -150,11 +150,11 @@ class WorkflowScheduler(
         builtOpsInRegion.add(physicalOpId)
       }
 
-      frontier = region.getEffectiveOperators
+      frontier = region.getEffectiveOpIds
         .filter(physicalOpId => {
           !builtOpsInRegion.contains(physicalOpId) && workflow.physicalPlan
             .getUpstreamPhysicalOpIds(physicalOpId)
-            .intersect(region.physicalOpIds)
+            .intersect(region.physicalOps.map(_.id))
             .forall(builtPhysicalOpIds.contains)
         })
     }
@@ -178,7 +178,7 @@ class WorkflowScheduler(
     )
   }
   private def initializePythonOperators(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOperators
+    val allOperatorsInRegion = region.getEffectiveOpIds
     val uninitializedPythonOperators = executionState.filterPythonPhysicalOpIds(
       allOperatorsInRegion.diff(initializedPythonOperators)
     )
@@ -217,7 +217,7 @@ class WorkflowScheduler(
   }
 
   private def activateAllLinks(workflow: Workflow, region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOperators
+    val allOperatorsInRegion = region.getEffectiveOpIds
     Future.collect(
       // activate all links
       workflow.physicalPlan.links
@@ -236,7 +236,7 @@ class WorkflowScheduler(
   }
 
   private def openAllOperators(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOperators
+    val allOperatorsInRegion = region.getEffectiveOpIds
     val allNotOpenedOperators =
       allOperatorsInRegion.diff(openedOperators)
     Future
@@ -252,7 +252,7 @@ class WorkflowScheduler(
   }
 
   private def startRegion(workflow: Workflow, region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOperators
+    val allOperatorsInRegion = region.getEffectiveOpIds
 
     allOperatorsInRegion
       .filter(opId =>
@@ -278,7 +278,7 @@ class WorkflowScheduler(
       Future.collect(futures)
     } else {
       throw new WorkflowRuntimeException(
-        s"Start region called on an already running region: ${region.physicalOpIds.mkString(",")}"
+        s"Start region called on an already running region: ${region.physicalOps.mkString(",")}"
       )
     }
   }
@@ -291,7 +291,7 @@ class WorkflowScheduler(
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
-        region.getEffectiveOperators
+        region.getEffectiveOpIds
           .map(physicalOpId => {
             physicalOpId.logicalOpId.id -> executionState
               .getOperatorExecution(physicalOpId)
@@ -334,7 +334,7 @@ class WorkflowScheduler(
         }
     } else {
       throw new WorkflowRuntimeException(
-        s"Resume region called on an already running region: ${region.physicalOpIds.mkString(",")}"
+        s"Resume region called on an already running region: ${region.physicalOps.mkString(",")}"
       )
     }
 

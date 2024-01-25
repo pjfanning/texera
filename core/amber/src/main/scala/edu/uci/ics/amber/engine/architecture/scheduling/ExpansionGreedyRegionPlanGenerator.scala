@@ -105,7 +105,8 @@ class ExpansionGreedyRegionPlanGenerator(
           physicalPlan.getUpstreamPhysicalLinks(operatorId) ++ physicalPlan
             .getDownstreamPhysicalLinks(operatorId)
         })
-        Region(RegionIdentity(idx.toString), operatorIds, links)
+        val operators = operatorIds.map(operatorId => physicalPlan.getOperator(operatorId))
+        Region(RegionIdentity(idx.toString), operators, links)
     }
   }
 
@@ -268,11 +269,11 @@ class ExpansionGreedyRegionPlanGenerator(
       .vertexSet()
       .toList
       .foreach(region => {
-        val sourceOpIds = region.physicalOpIds
+        val sourceOpIds = region.physicalOps.map(_.id)
           .filter(physicalOpId =>
             physicalPlan
               .getUpstreamPhysicalOpIds(physicalOpId)
-              .forall(upstreamOpId => !region.physicalOpIds.contains(upstreamOpId))
+              .forall(upstreamOpId => !region.physicalOps.map(_.id).contains(upstreamOpId))
           )
         val newRegion = region.copy(sourcePhysicalOpIds = sourceOpIds)
         replaceVertex(regionDAG, region, newRegion)
@@ -284,7 +285,7 @@ class ExpansionGreedyRegionPlanGenerator(
       physicalOpId: PhysicalOpIdentity,
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
   ): Set[Region] = {
-    regionDAG.vertexSet().filter(region => region.physicalOpIds.contains(physicalOpId)).toSet
+    regionDAG.vertexSet().filter(region => region.physicalOps.map(_.id).contains(physicalOpId)).toSet
   }
 
   private def populateDownstreamLinks(

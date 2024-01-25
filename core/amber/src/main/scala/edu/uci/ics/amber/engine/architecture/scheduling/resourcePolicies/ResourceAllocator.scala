@@ -48,7 +48,7 @@ class DefaultResourceAllocator(
       region: Region
   ): (Region, Double) = {
 
-    val opToOperatorConfigMapping = region.getEffectiveOperators
+    val opToOperatorConfigMapping = region.getEffectiveOpIds
       .map(physicalOpId => physicalPlan.getOperator(physicalOpId))
       .map(physicalOp => physicalOp.id -> OperatorConfig(generateWorkerConfigs(physicalOp)))
       .toMap
@@ -97,7 +97,7 @@ class DefaultResourceAllocator(
   private def propagatePartitionRequirement(region: Region): Unit = {
     physicalPlan
       .topologicalIterator()
-      .filter(physicalOpId => region.getEffectiveOperators.contains(physicalOpId))
+      .filter(physicalOpId => region.getEffectiveOpIds.contains(physicalOpId))
       .foreach(physicalOpId => {
         val physicalOp = physicalPlan.getOperator(physicalOpId)
         val outputPartitionInfo = if (physicalPlan.getSourceOperatorIds.contains(physicalOpId)) {
