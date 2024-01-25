@@ -2,6 +2,7 @@
   <mat-label> {{ this.field?.templateOptions?.label }} </mat-label>
   <input
     (input)="autocomplete()"
+
     (focus)="autocomplete()"
     [formControl]="getControl()"
     [(ngModel)]="field?.formControl.value"

@@ -185,6 +185,8 @@ export class WorkflowActionService {
    * @param point
    */
   public addOperator(operator: OperatorPredicate, point: Point): void {
+    console.log("here");
+    console.log(operator);
     // turn off multiselect since there's only one operator added
     this.jointGraphWrapper.setMultiSelectMode(false);
     // check that the operator doesn't exist
@@ -196,9 +198,12 @@ export class WorkflowActionService {
 
     this.texeraGraph.bundleActions(() => {
       // add operator to texera graph
+      console.log(operator);
       this.texeraGraph.addOperator(operator);
       this.texeraGraph.sharedModel.elementPositionMap?.set(operator.operatorID, point);
     });
+    console.log("added op!!!!!!");
+
   }
 
   /**
@@ -298,6 +303,8 @@ export class WorkflowActionService {
     this.texeraGraph.bundleActions(() => {
       for (const operatorsAndPosition of operatorsAndPositions) {
         this.addOperator(operatorsAndPosition.op, operatorsAndPosition.pos);
+        console.log(operatorsAndPosition.op);
+        console.log(operatorsAndPosition.pos);
       }
       if (links) {
         for (let i = 0; i < links.length; i++) {
@@ -311,6 +318,7 @@ export class WorkflowActionService {
         commentBoxes.forEach(commentBox => this.addCommentBox(commentBox));
       }
     });
+    console.log("added op copy paste!!!!!!");
   }
 
   /**

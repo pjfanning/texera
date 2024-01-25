@@ -80,6 +80,7 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
 
     } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
+
       filePath = fileName
     }
 
