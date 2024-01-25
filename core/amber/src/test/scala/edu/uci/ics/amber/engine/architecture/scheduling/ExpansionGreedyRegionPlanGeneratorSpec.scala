@@ -79,8 +79,8 @@ class ExpansionGreedyRegionPlanGeneratorSpec extends AnyFlatSpec with MockFactor
     assert(regions.size == 2)
 
     val buildRegion = regions
-      .find(v =>
-        v.physicalOps
+      .find(region =>
+        region.physicalOps
           .map(_.id)
           .exists(physicalOpId =>
             OperatorIdentity(physicalOpId.logicalOpId.id) == headerlessCsvOpDesc1.operatorIdentifier
@@ -88,8 +88,8 @@ class ExpansionGreedyRegionPlanGeneratorSpec extends AnyFlatSpec with MockFactor
       )
       .get
     val probeRegion = regions
-      .find(v =>
-        v.physicalOps
+      .find(region =>
+        region.physicalOps
           .map(_.id)
           .exists(physicalOpId =>
             OperatorIdentity(physicalOpId.logicalOpId.id) == headerlessCsvOpDesc2.operatorIdentifier
