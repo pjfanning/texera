@@ -148,6 +148,7 @@ import { UserDatasetVersionCreator } from "./dashboard/user/component/user-datas
 import { PdfViewerModule } from "ng2-pdf-viewer";
 import { ImageViewerModule } from "ngx-image-viewer";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
+import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
 
 registerLocaleData(en);
 
@@ -161,6 +162,7 @@ registerLocaleData(en);
     OperatorMenuComponent,
     PropertyEditorComponent,
     VersionsListComponent,
+    TimeTravelComponent,
     WorkflowEditorComponent,
     ResultPanelComponent,
     OperatorLabelComponent,
