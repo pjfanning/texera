@@ -10,6 +10,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
@@ -43,7 +44,6 @@ class WorkflowScheduler(
 
   // Since one operator/link(i.e. links within an operator) can belong to multiple regions, we need to keep
   // track of those already built
-  private val builtPhysicalOpIds = new mutable.HashSet[PhysicalOpIdentity]()
   private val openedOperators = new mutable.HashSet[PhysicalOpIdentity]()
   private val initializedPythonOperators = new mutable.HashSet[PhysicalOpIdentity]()
   private val activatedLink = new mutable.HashSet[PhysicalLink]()
@@ -129,46 +129,26 @@ class WorkflowScheduler(
   }
 
   private def constructRegion(
-      workflow: Workflow,
       region: Region,
       akkaActorService: AkkaActorService
   ): Unit = {
-    val builtOpsInRegion = new mutable.HashSet[PhysicalOpIdentity]()
     val resourceConfig = region.resourceConfig.get
-    var frontier = region.getSourceOpIds
-    while (frontier.nonEmpty) {
-      frontier.foreach { (physicalOpId: PhysicalOpIdentity) =>
-        if (!builtPhysicalOpIds.contains(physicalOpId)) {
-          buildOperator(
-            workflow,
-            physicalOpId,
-            resourceConfig.operatorConfigs(physicalOpId),
-            akkaActorService
-          )
-          builtPhysicalOpIds.add(physicalOpId)
-        }
-        builtOpsInRegion.add(physicalOpId)
-      }
-
-      frontier = region.getEffectiveOpIds
-        .filter(physicalOpId => {
-          !builtOpsInRegion.contains(physicalOpId) && workflow.physicalPlan
-            .getUpstreamPhysicalOpIds(physicalOpId)
-            .intersect(region.physicalOps.map(_.id))
-            .forall(builtPhysicalOpIds.contains)
-        })
+    region.topologicalIterator().foreach { (physicalOpId: PhysicalOpIdentity) =>
+      val physicalOp = region.operators.find(op => op.id == physicalOpId).get
+      buildOperator(
+        physicalOp,
+        resourceConfig.operatorConfigs(physicalOpId),
+        akkaActorService
+      )
     }
-
   }
 
   private def buildOperator(
-      workflow: Workflow,
-      physicalOpId: PhysicalOpIdentity,
+      physicalOp: PhysicalOp,
       operatorConfig: OperatorConfig,
       controllerActorService: AkkaActorService
   ): Unit = {
-    val physicalOp = workflow.physicalPlan.getOperator(physicalOpId)
-    val opExecution = executionState.initOperatorState(physicalOpId, operatorConfig)
+    val opExecution = executionState.initOperatorState(physicalOp.id, operatorConfig)
     physicalOp.build(
       controllerActorService,
       opExecution,
@@ -216,11 +196,11 @@ class WorkflowScheduler(
       )
   }
 
-  private def activateAllLinks(workflow: Workflow, region: Region): Future[Seq[Unit]] = {
+  private def activateAllLinks(region: Region): Future[Seq[Unit]] = {
     val allOperatorsInRegion = region.getEffectiveOpIds
     Future.collect(
       // activate all links
-      workflow.physicalPlan.links
+      region.getEffectiveLinks
         .filter(link => {
           !activatedLink.contains(link) &&
             allOperatorsInRegion.contains(link.fromOpId) &&
@@ -251,7 +231,7 @@ class WorkflowScheduler(
       .onSuccess(_ => allNotOpenedOperators.foreach(opId => openedOperators.add(opId)))
   }
 
-  private def startRegion(workflow: Workflow, region: Region): Future[Seq[Unit]] = {
+  private def startRegion(region: Region): Future[Seq[Unit]] = {
     val allOperatorsInRegion = region.getEffectiveOpIds
 
     allOperatorsInRegion
@@ -261,7 +241,7 @@ class WorkflowScheduler(
       .foreach(opId => executionState.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
 
-    val ops = region.getSourceOpIds
+    val ops = region.getEffectiveSourceOpIds
     if (!schedulingPolicy.getRunningRegions.contains(region)) {
       val futures = ops.flatMap { opId =>
         val opExecution = executionState.getOperatorExecution(opId)
@@ -284,7 +264,6 @@ class WorkflowScheduler(
   }
 
   private def prepareAndStartRegion(
-      workflow: Workflow,
       region: Region,
       actorService: AkkaActorService
   ): Future[Unit] = {
@@ -304,9 +283,9 @@ class WorkflowScheduler(
     )
     Future(())
       .flatMap(_ => initializePythonOperators(region))
-      .flatMap(_ => activateAllLinks(workflow, region))
+      .flatMap(_ => activateAllLinks(region))
       .flatMap(_ => openAllOperators(region))
-      .flatMap(_ => startRegion(workflow, region))
+      .flatMap(_ => startRegion(region))
       .map(_ => {
         constructingRegions.remove(region.id)
         schedulingPolicy.addToRunningRegions(Set(region), actorService)
@@ -351,8 +330,8 @@ class WorkflowScheduler(
     if (!startedRegions.contains(region.id)) {
       constructingRegions.add(region.id)
 
-      constructRegion(workflow, region, actorService)
-      prepareAndStartRegion(workflow, region, actorService).rescue {
+      constructRegion(region, actorService)
+      prepareAndStartRegion(region, actorService).rescue {
         case err: Throwable =>
           // this call may come from client or worker(by execution completed)
           // thus we need to force it to send error to client.
