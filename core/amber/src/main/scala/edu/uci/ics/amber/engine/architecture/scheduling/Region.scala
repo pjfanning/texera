@@ -11,7 +11,7 @@ import scala.jdk.CollectionConverters.asScalaIteratorConverter
 
 case class RegionLink(fromRegion: Region, toRegion: Region)
 
-case class RegionIdentity(id: String)
+case class RegionIdentity(id: Long)
 
 case class Region(
     id: RegionIdentity,
@@ -23,6 +23,9 @@ case class Region(
     downstreamLinks: Set[PhysicalLink] = Set.empty
 ) {
 
+  private val operators: Map[PhysicalOpIdentity, PhysicalOp] =
+    getEffectiveOperators.map(op => op.id -> op).toMap
+
   @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     (physicalOps ++ downstreamOps).foreach(op => jgraphtDag.addVertex(op.id))
@@ -31,23 +34,24 @@ case class Region(
       .foreach(link => jgraphtDag.addEdge(link.fromOpId, link.toOpId))
     jgraphtDag
   }
-
   def topologicalIterator(): Iterator[PhysicalOpIdentity] = {
     new TopologicalOrderIterator(dag).asScala
   }
 
   /**
-    * Return all PhysicalOpIds that this region may affect.
+    * Return all PhysicalOps that this region may affect.
     * This includes:
     *   1) operators in this region;
-    *   2) operators not in this region but blocked by this region (connected by the downstream links).
+    *   2) operators not in this region but receiving input from by this region.
     */
-  def getEffectiveOpIds: Set[PhysicalOpIdentity] = {
-    physicalOps.map(_.id) ++ downstreamLinks.map(link => link.toOpId)
-  }
+  def getEffectiveOperators: Set[PhysicalOp] = physicalOps ++ downstreamOps
 
   def getEffectiveLinks: Set[PhysicalLink] = {
     physicalLinks ++ downstreamLinks
+  }
+
+  def getEffectiveOperator(physicalOpId: PhysicalOpIdentity): PhysicalOp = {
+    operators(physicalOpId)
   }
 
   /**
@@ -64,7 +68,5 @@ case class Region(
       )
       .map(_.id)
   }
-
-  def operators: Set[PhysicalOp] = physicalOps ++ downstreamOps
 
 }

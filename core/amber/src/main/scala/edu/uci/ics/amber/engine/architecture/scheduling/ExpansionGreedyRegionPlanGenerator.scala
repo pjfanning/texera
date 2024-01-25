@@ -106,7 +106,7 @@ class ExpansionGreedyRegionPlanGenerator(
             .getDownstreamPhysicalLinks(operatorId)
         })
         val operators = operatorIds.map(operatorId => physicalPlan.getOperator(operatorId))
-        Region(RegionIdentity(idx.toString), operators, links)
+        Region(RegionIdentity(idx), operators, links)
     }
   }
 

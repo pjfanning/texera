@@ -134,7 +134,7 @@ class WorkflowScheduler(
   ): Unit = {
     val resourceConfig = region.resourceConfig.get
     region.topologicalIterator().foreach { (physicalOpId: PhysicalOpIdentity) =>
-      val physicalOp = region.operators.find(op => op.id == physicalOpId).get
+      val physicalOp = region.getEffectiveOperator(physicalOpId)
       buildOperator(
         physicalOp,
         resourceConfig.operatorConfigs(physicalOpId),
@@ -158,9 +158,8 @@ class WorkflowScheduler(
     )
   }
   private def initializePythonOperators(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOpIds
     val uninitializedPythonOperators = executionState.filterPythonPhysicalOpIds(
-      allOperatorsInRegion.diff(initializedPythonOperators)
+      region.getEffectiveOperators.map(_.id).diff(initializedPythonOperators)
     )
     Future
       .collect(
@@ -197,7 +196,7 @@ class WorkflowScheduler(
   }
 
   private def activateAllLinks(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOpIds
+    val allOperatorsInRegion = region.getEffectiveOperators.map(_.id)
     Future.collect(
       // activate all links
       region.getEffectiveLinks
@@ -216,9 +215,8 @@ class WorkflowScheduler(
   }
 
   private def openAllOperators(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOpIds
     val allNotOpenedOperators =
-      allOperatorsInRegion.diff(openedOperators)
+      region.getEffectiveOperators.map(_.id).diff(openedOperators)
     Future
       .collect(
         executionState
@@ -232,9 +230,9 @@ class WorkflowScheduler(
   }
 
   private def startRegion(region: Region): Future[Seq[Unit]] = {
-    val allOperatorsInRegion = region.getEffectiveOpIds
 
-    allOperatorsInRegion
+
+    region.getEffectiveOperators.map(_.id)
       .filter(opId =>
         executionState.getOperatorExecution(opId).getState == WorkflowAggregatedState.UNINITIALIZED
       )
@@ -270,7 +268,7 @@ class WorkflowScheduler(
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
-        region.getEffectiveOpIds
+        region.getEffectiveOperators.map(_.id)
           .map(physicalOpId => {
             physicalOpId.logicalOpId.id -> executionState
               .getOperatorExecution(physicalOpId)
