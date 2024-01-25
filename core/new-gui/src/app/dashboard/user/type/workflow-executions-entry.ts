@@ -2,6 +2,7 @@ export interface WorkflowExecutionsEntry {
   eId: number;
   vId: number;
   sId: number;
+  envId: number;
   userName: string;
   name: string;
   startingTime: number;
@@ -9,4 +10,5 @@ export interface WorkflowExecutionsEntry {
   status: number;
   result: string;
   bookmarked: boolean;
+  logLocation: string;
 }

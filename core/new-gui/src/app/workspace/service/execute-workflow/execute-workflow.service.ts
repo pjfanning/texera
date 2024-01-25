@@ -17,6 +17,7 @@ import {
   WorkflowFatalError,
   OperatorCurrentTuples,
   TexeraWebsocketEvent,
+  ReplayExecutionInfo,
 } from "../../types/workflow-websocket.interface";
 import { isEqual } from "lodash-es";
 import { PAGINATION_INFO_STORAGE_KEY, ResultPaginationInfo } from "../../types/result-table.interface";
@@ -194,12 +195,29 @@ export class ExecuteWorkflowService {
     this.sendExecutionRequest(executionName, environmentEid, logicalPlan);
   }
 
-  public sendExecutionRequest(executionName: string, environmentEid: number, logicalPlan: LogicalPlan): void {
+  public executeWorkflowAmberTexeraWithReplay(environmentEid: number, replayExecutionInfo: ReplayExecutionInfo): void {
+    // get the current workflow graph
+    const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
+    this.sendExecutionRequest(
+      `Replay run of ${replayExecutionInfo.eid} to ${replayExecutionInfo.interaction}`,
+        environmentEid,
+        logicalPlan,
+      replayExecutionInfo
+    );
+  }
+
+  public sendExecutionRequest(
+    executionName: string,
+    environmentEid: number,
+    logicalPlan: LogicalPlan,
+    replayExecutionInfo: ReplayExecutionInfo | undefined = undefined
+  ): void {
     const workflowExecuteRequest = {
       executionName: executionName,
       environmentEid: environmentEid,
       engineVersion: version.hash,
       logicalPlan: logicalPlan,
+      replayFromExecution: replayExecutionInfo,
     };
     // wait for the form debounce to complete, then send
     window.setTimeout(() => {
@@ -239,6 +257,19 @@ export class ExecuteWorkflowService {
       throw new Error("cannot kill workflow, the current execution state is " + this.currentState.state);
     }
     this.workflowWebsocketService.send("WorkflowKillRequest", {});
+  }
+
+  public addExecutionInteraction(): void {
+    if (!environment.pauseResumeEnabled || !environment.amberEngineEnabled) {
+      return;
+    }
+    if (
+      this.currentState.state === ExecutionState.Uninitialized ||
+      this.currentState.state === ExecutionState.Completed
+    ) {
+      throw new Error("cannot add interaction to workflow, the current execution state is " + this.currentState.state);
+    }
+    this.workflowWebsocketService.send("WorkflowInteractionRequest", {});
   }
 
   public resumeWorkflow(): void {

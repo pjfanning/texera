@@ -754,12 +754,11 @@ class DashboardResource {
             },
             if (resourceType == "environment") {
               val environmentRecord = record.into(ENVIRONMENT).into(classOf[Environment])
+              // TODO: fix this editable
               val isOwner = environmentRecord.getUid == user.getUid
               DashboardEnvironment(
                 environmentRecord,
                 isOwner,
-                List(),
-                List()
               )
             } else {
               null

@@ -156,6 +156,7 @@ import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-en
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 import {EnvironmentDatasetItemComponent} from "./workspace/component/property-editor/environment-property-edit-frame/dataset-item/environment-dataset-item.component";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
+import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
 
 registerLocaleData(en);
 
@@ -169,6 +170,7 @@ registerLocaleData(en);
     OperatorMenuComponent,
     PropertyEditorComponent,
     VersionsListComponent,
+    TimeTravelComponent,
     EnvironmentPropertyEditFrameComponent,
     EnvironmentDatasetItemComponent,
     WorkflowEditorComponent,
