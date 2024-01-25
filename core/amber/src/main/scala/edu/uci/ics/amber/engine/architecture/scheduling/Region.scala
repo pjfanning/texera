@@ -55,8 +55,7 @@ case class Region(
   }
 
   /**
-    * Source operators in region are effective operators that have 0 input links in the region.
-    * @return
+    * Effective source operators in a region are effective operators that have 0 effective input links.
     */
   def getEffectiveSourceOpIds: Set[PhysicalOpIdentity] = {
     physicalOps
