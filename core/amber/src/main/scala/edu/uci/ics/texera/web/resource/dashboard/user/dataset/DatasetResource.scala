@@ -4,45 +4,13 @@ import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  DatasetDao,
-  DatasetUserAccessDao,
-  DatasetVersionDao,
-  UserDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
-  Dataset,
-  DatasetUserAccess,
-  DatasetVersion
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
-  getDatasetUserAccessPrivilege,
-  getOwner,
-  userHasReadAccess,
-  userHasWriteAccess,
-  userOwnDataset
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DashboardDataset,
-  DashboardDatasetVersion,
-  DatasetDescriptionModification,
-  DatasetIDs,
-  DatasetNameModification,
-  DatasetVersionFileTree,
-  DatasetVersions,
-  context,
-  getDatasetByID,
-  getDatasetVersionHashByID,
-  persistNewVersion,
-  withExceptionHandling
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{
-  DatasetVersionNotFoundException,
-  ResourceNotExistsException,
-  UserHasNoAccessToDatasetException
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDashboardDataset, getDatasetByID, getDatasetLatestVersion, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
 import io.dropwizard.auth.Auth
@@ -56,17 +24,7 @@ import java.nio.charset.StandardCharsets
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  BadRequestException,
-  Consumes,
-  GET,
-  InternalServerErrorException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{BadRequestException, Consumes, GET, InternalServerErrorException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -109,11 +67,11 @@ object DatasetResource {
   }
 
   private def getDatasetVersionHashByID(
-      ctx: DSLContext,
-      did: UInteger,
-      dvid: UInteger,
-      uid: UInteger
-  ): String = {
+                                         ctx: DSLContext,
+                                         did: UInteger,
+                                         dvid: UInteger,
+                                         uid: UInteger
+                                       ): String = {
     if (!userHasReadAccess(ctx, did, uid)) {
       throw new UserHasNoAccessToDatasetException(did.intValue())
     }
@@ -125,13 +83,52 @@ object DatasetResource {
     version.getVersionHash
   }
 
+  def getDashboardDataset(
+                           ctx: DSLContext,
+                           did: UInteger,
+                           uid: UInteger): DashboardDataset = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
+
+    val targetDataset = getDatasetByID(ctx, did, uid)
+    val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
+
+    DashboardDataset(
+      targetDataset,
+      userAccessPrivilege,
+      targetDataset.getOwnerUid == uid
+    )
+  }
+
+  def getDatasetLatestVersion(ctx: DSLContext, did: UInteger, uid: UInteger): DatasetVersion = {
+    if (!userHasReadAccess(ctx, did, uid)) {
+      throw new UserHasNoAccessToDatasetException(did.intValue())
+    }
+
+    val latestVersion: DatasetVersion = ctx
+      .selectFrom(DATASET_VERSION)
+      .where(DATASET_VERSION.DID.eq(did))
+      .orderBy(
+        DATASET_VERSION.CREATION_TIME.desc()
+      ) // Assuming latest version is the one with the most recent creation time
+      .limit(1) // Limit to only one result
+      .fetchOneInto(classOf[DatasetVersion])
+
+    if (latestVersion == null) {
+      throw new DatasetVersionNotFoundException(did.intValue())
+    }
+
+    latestVersion
+  }
+
   private def persistNewVersion(
-      ctx: DSLContext,
-      did: UInteger,
-      uid: UInteger,
-      versionName: String,
-      multiPart: FormDataMultiPart
-  ): Option[DashboardDatasetVersion] = {
+                                 ctx: DSLContext,
+                                 did: UInteger,
+                                 uid: UInteger,
+                                 versionName: String,
+                                 multiPart: FormDataMultiPart
+                               ): Option[DashboardDatasetVersion] = {
 
     // Acquire the lock
     val lock = DatasetResource.datasetLocks.getOrElseUpdate(did, new ReentrantLock())
@@ -203,19 +200,19 @@ object DatasetResource {
   }
 
   case class DashboardDataset(
-      dataset: Dataset,
-      accessPrivilege: EnumType,
-      isOwner: Boolean
-  )
+                               dataset: Dataset,
+                               accessPrivilege: EnumType,
+                               isOwner: Boolean
+                             )
 
   case class DatasetVersionFileTree(fileTree: util.Map[String, AnyRef])
 
   case class DatasetVersions(versions: List[DatasetVersion])
 
   case class DashboardDatasetVersion(
-      datasetVersion: DatasetVersion,
-      fileTree: util.Map[String, AnyRef]
-  )
+                                      datasetVersion: DatasetVersion,
+                                      fileTree: util.Map[String, AnyRef]
+                                    )
 
   case class DatasetIDs(dids: List[UInteger])
 
@@ -233,13 +230,13 @@ class DatasetResource {
   @Path("/create")
   @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
   def createDataset(
-      @Auth user: SessionUser,
-      @FormDataParam("datasetName") datasetName: String,
-      @FormDataParam("datasetDescription") datasetDescription: String,
-      @FormDataParam("isDatasetPublic") isDatasetPublic: String,
-      @FormDataParam("initialVersionName") initialVersionName: String,
-      files: FormDataMultiPart
-  ): DashboardDataset = {
+                     @Auth user: SessionUser,
+                     @FormDataParam("datasetName") datasetName: String,
+                     @FormDataParam("datasetDescription") datasetDescription: String,
+                     @FormDataParam("isDatasetPublic") isDatasetPublic: String,
+                     @FormDataParam("initialVersionName") initialVersionName: String,
+                     files: FormDataMultiPart
+                   ): DashboardDataset = {
 
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
@@ -330,9 +327,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/name")
   def updateDatasetName(
-      modificator: DatasetNameModification,
-      @Auth sessionUser: SessionUser
-  ): Response = {
+                         modificator: DatasetNameModification,
+                         @Auth sessionUser: SessionUser
+                       ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -356,9 +353,9 @@ class DatasetResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/update/description")
   def updateDatasetDescription(
-      modificator: DatasetDescriptionModification,
-      @Auth sessionUser: SessionUser
-  ): Response = {
+                                modificator: DatasetDescriptionModification,
+                                @Auth sessionUser: SessionUser
+                              ): Response = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
         val datasetDao = new DatasetDao(ctx.configuration())
@@ -382,11 +379,11 @@ class DatasetResource {
   @Path("/{did}/version/create")
   @Consumes(Array(MediaType.MULTIPART_FORM_DATA))
   def createDatasetVersion(
-      @PathParam("did") did: UInteger,
-      @FormDataParam("versionName") versionName: String,
-      @Auth user: SessionUser,
-      multiPart: FormDataMultiPart
-  ): DashboardDatasetVersion = {
+                            @PathParam("did") did: UInteger,
+                            @FormDataParam("versionName") versionName: String,
+                            @Auth user: SessionUser,
+                            multiPart: FormDataMultiPart
+                          ): DashboardDatasetVersion = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context) { ctx =>
@@ -409,20 +406,13 @@ class DatasetResource {
   @GET
   @Path("/{did}")
   def getDataset(
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser
-  ): DashboardDataset = {
+                  @PathParam("did") did: UInteger,
+                  @Auth user: SessionUser
+                ): DashboardDataset = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        val targetDataset = getDatasetByID(ctx, did, uid)
-        val userAccessPrivilege = getDatasetUserAccessPrivilege(ctx, did, uid)
-
-        DashboardDataset(
-          targetDataset,
-          userAccessPrivilege,
-          targetDataset.getOwnerUid == uid
-        )
+        getDashboardDataset(ctx, did, uid)
       })
     })
   }
@@ -430,9 +420,9 @@ class DatasetResource {
   @GET
   @Path("/{did}/version/list")
   def getDatasetVersionList(
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser
-  ): DatasetVersions = {
+                             @PathParam("did") did: UInteger,
+                             @Auth user: SessionUser
+                           ): DatasetVersions = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
@@ -454,28 +444,13 @@ class DatasetResource {
   @GET
   @Path("/{did}/version/latest")
   def getLatestDatasetVersion(
-      @PathParam("did") did: UInteger,
-      @Auth user: SessionUser
-  ): DashboardDatasetVersion = {
+                               @PathParam("did") did: UInteger,
+                               @Auth user: SessionUser
+                             ): DashboardDatasetVersion = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
-        if (!userHasReadAccess(ctx, did, uid)) {
-          throw new UserHasNoAccessToDatasetException(did.intValue())
-        }
-
-        val latestVersion: DatasetVersion = ctx
-          .selectFrom(DATASET_VERSION)
-          .where(DATASET_VERSION.DID.eq(did))
-          .orderBy(
-            DATASET_VERSION.CREATION_TIME.desc()
-          ) // Assuming latest version is the one with the most recent creation time
-          .limit(1) // Limit to only one result
-          .fetchOneInto(classOf[DatasetVersion])
-
-        if (latestVersion == null) {
-          throw new DatasetVersionNotFoundException(did.intValue())
-        }
+        val latestVersion = getDatasetLatestVersion(ctx, did, uid)
 
         val gitVersionControl =
           new GitVersionControl(PathUtils.getDatasetPath(latestVersion.getDid).toString)
@@ -490,34 +465,34 @@ class DatasetResource {
   @GET
   @Path("/{did}/version/{dvid}/fileTree")
   def retrieveDatasetVersionFileTree(
-      @PathParam("did") did: UInteger,
-      @PathParam("dvid") dvid: UInteger,
-      @Auth user: SessionUser
-  ): DatasetVersionFileTree = {
+                                      @PathParam("did") did: UInteger,
+                                      @PathParam("dvid") dvid: UInteger,
+                                      @Auth user: SessionUser
+                                    ): DatasetVersionFileTree = {
     val uid = user.getUid
     withExceptionHandling({ () =>
-      {
-        withTransaction(context)(ctx => {
-          val targetDataset = getDatasetByID(ctx, did, uid)
-          val targetDatasetStoragePath = targetDataset.getStoragePath
-          val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
-          val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
+    {
+      withTransaction(context)(ctx => {
+        val targetDataset = getDatasetByID(ctx, did, uid)
+        val targetDatasetStoragePath = targetDataset.getStoragePath
+        val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
+        val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
 
-          val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
-          DatasetVersionFileTree(fileTree)
-        })
-      }
+        val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
+        DatasetVersionFileTree(fileTree)
+      })
+    }
     })
   }
 
   @GET
   @Path("/{did}/version/{dvid}/file")
   def retrieveDatasetSingleFile(
-      @PathParam("did") did: UInteger,
-      @PathParam("dvid") dvid: UInteger,
-      @QueryParam("path") path: String,
-      @Auth user: SessionUser
-  ): Response = {
+                                 @PathParam("did") did: UInteger,
+                                 @PathParam("dvid") dvid: UInteger,
+                                 @QueryParam("path") path: String,
+                                 @Auth user: SessionUser
+                               ): Response = {
     val uid = user.getUid
     withExceptionHandling({ () =>
       withTransaction(context)(ctx => {
