@@ -57,7 +57,7 @@ class WorkflowScheduler(
       akkaActorService: AkkaActorService
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.startWorkflow(workflow)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
   }
 
   def onWorkerCompletion(
@@ -68,7 +68,7 @@ class WorkflowScheduler(
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule =
       schedulingPolicy.onWorkerCompletion(workflow, executionState, workerId)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
   }
 
   def onLinkCompletion(
@@ -78,7 +78,7 @@ class WorkflowScheduler(
       link: PhysicalLink
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, link)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(nextRegionsToSchedule, akkaActorService)
   }
 
   def onTimeSlotExpired(
@@ -93,7 +93,7 @@ class WorkflowScheduler(
       regionsToPause = timeExpiredRegions
     }
 
-    doSchedulingWork(workflow, nextRegions, akkaActorService)
+    doSchedulingWork(nextRegions, akkaActorService)
       .flatMap(_ => {
         val pauseFutures = new ArrayBuffer[Future[Unit]]()
         regionsToPause.foreach(stoppingRegion => {
@@ -115,13 +115,12 @@ class WorkflowScheduler(
   }
 
   private def doSchedulingWork(
-      workflow: Workflow,
       regions: Set[Region],
       actorService: AkkaActorService
   ): Future[Seq[Unit]] = {
     if (regions.nonEmpty) {
       Future.collect(
-        regions.toArray.map(r => scheduleRegion(workflow, r, actorService))
+        regions.toArray.map(region => scheduleRegion(region, actorService))
       )
     } else {
       Future(Seq())
@@ -319,7 +318,6 @@ class WorkflowScheduler(
   }
 
   private def scheduleRegion(
-      workflow: Workflow,
       region: Region,
       actorService: AkkaActorService
   ): Future[Unit] = {
