@@ -14,9 +14,7 @@ case class Region(
                    physicalOps: Set[PhysicalOp],
                    physicalLinks: Set[PhysicalLink],
                    resourceConfig: Option[ResourceConfig] = None,
-                   // operators whose all inputs are from upstream region.
-                   sourcePhysicalOpIds: Set[PhysicalOpIdentity] = Set.empty,
-                   // links to downstream regions, where this region generates blocking output.
+                   // links to downstream regions, where this region generates outputs to
                    downstreamLinks: Set[PhysicalLink] = Set.empty
 ) {
 
@@ -32,6 +30,13 @@ case class Region(
 
   def getEffectiveLinks: Set[PhysicalLink] = {
     physicalLinks ++ downstreamLinks
+  }
+
+  def getSourceOpIds: Set[PhysicalOpIdentity] = {
+    physicalOps
+      .filter(physicalOp =>
+          physicalOp.getInputLinks().map(link => link.fromOpId).forall(upstreamOpId => !physicalOps.map(_.id).contains(upstreamOpId))
+      ).map(_.id)
   }
 
 

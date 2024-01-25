@@ -240,9 +240,6 @@ class ExpansionGreedyRegionPlanGenerator(
         )
     }
 
-    // mark source operators in each region
-    populateSourceOperators(regionDAG)
-
     // mark links that go to downstream regions
     populateDownstreamLinks(regionDAG)
 
@@ -262,24 +259,6 @@ class ExpansionGreedyRegionPlanGenerator(
       })
   }
 
-  private def populateSourceOperators(
-      regionDAG: DirectedAcyclicGraph[Region, RegionLink]
-  ): DirectedAcyclicGraph[Region, RegionLink] = {
-    regionDAG
-      .vertexSet()
-      .toList
-      .foreach(region => {
-        val sourceOpIds = region.physicalOps.map(_.id)
-          .filter(physicalOpId =>
-            physicalPlan
-              .getUpstreamPhysicalOpIds(physicalOpId)
-              .forall(upstreamOpId => !region.physicalOps.map(_.id).contains(upstreamOpId))
-          )
-        val newRegion = region.copy(sourcePhysicalOpIds = sourceOpIds)
-        replaceVertex(regionDAG, region, newRegion)
-      })
-    regionDAG
-  }
 
   private def getRegions(
       physicalOpId: PhysicalOpIdentity,

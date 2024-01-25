@@ -135,7 +135,7 @@ class WorkflowScheduler(
   ): Unit = {
     val builtOpsInRegion = new mutable.HashSet[PhysicalOpIdentity]()
     val resourceConfig = region.resourceConfig.get
-    var frontier = region.sourcePhysicalOpIds
+    var frontier = region.getSourceOpIds
     while (frontier.nonEmpty) {
       frontier.foreach { (physicalOpId: PhysicalOpIdentity) =>
         if (!builtPhysicalOpIds.contains(physicalOpId)) {
@@ -261,7 +261,7 @@ class WorkflowScheduler(
       .foreach(opId => executionState.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
 
-    val ops = region.sourcePhysicalOpIds
+    val ops = region.getSourceOpIds
     if (!schedulingPolicy.getRunningRegions.contains(region)) {
       val futures = ops.flatMap { opId =>
         val opExecution = executionState.getOperatorExecution(opId)
