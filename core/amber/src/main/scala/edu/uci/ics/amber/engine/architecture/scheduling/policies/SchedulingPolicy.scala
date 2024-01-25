@@ -51,7 +51,9 @@ abstract class SchedulingPolicy(
       ) &&
     region.physicalOps
       .forall(operator =>
-        executionState.getOperatorExecution(operator.id).getState == WorkflowAggregatedState.COMPLETED
+        executionState
+          .getOperatorExecution(operator.id)
+          .getState == WorkflowAggregatedState.COMPLETED
       )
   }
 

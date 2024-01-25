@@ -231,8 +231,8 @@ class WorkflowScheduler(
 
   private def startRegion(region: Region): Future[Seq[Unit]] = {
 
-
-    region.getEffectiveOperators.map(_.id)
+    region.getEffectiveOperators
+      .map(_.id)
       .filter(opId =>
         executionState.getOperatorExecution(opId).getState == WorkflowAggregatedState.UNINITIALIZED
       )
@@ -268,7 +268,8 @@ class WorkflowScheduler(
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
-        region.getEffectiveOperators.map(_.id)
+        region.getEffectiveOperators
+          .map(_.id)
           .map(physicalOpId => {
             physicalOpId.logicalOpId.id -> executionState
               .getOperatorExecution(physicalOpId)
