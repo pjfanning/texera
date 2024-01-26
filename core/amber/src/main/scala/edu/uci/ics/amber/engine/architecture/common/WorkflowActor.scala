@@ -25,14 +25,12 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   StateRestoreConfig,
   TriggerSend
 }
-import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState, SerializedState}
+import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 

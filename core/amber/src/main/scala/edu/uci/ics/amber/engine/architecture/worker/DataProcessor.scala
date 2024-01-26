@@ -48,13 +48,10 @@ import edu.uci.ics.amber.engine.common.{
   CheckpointState,
   CheckpointSupport,
   IOperatorExecutor,
-  ISinkOperatorExecutor,
-  ISourceOperatorExecutor,
   InputExhausted,
   VirtualIdentityUtils
 }
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 
 import scala.collection.mutable
 

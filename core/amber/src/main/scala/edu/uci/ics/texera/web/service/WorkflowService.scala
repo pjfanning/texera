@@ -158,7 +158,7 @@ class WorkflowService(
       // enable only if we have mysql
       if (AmberConfig.faultToleranceLogRootFolder.isDefined) {
         val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
-          workflowContext.workflowId + "/" + workflowContext.executionId
+          workflowContext.workflowId + "/" + workflowContext.executionId + "/"
         )
         ExecutionsMetadataPersistService.tryUpdateExistingExecution(workflowContext.executionId) {
           execution => execution.setLogLocation(writeLocation.toString)

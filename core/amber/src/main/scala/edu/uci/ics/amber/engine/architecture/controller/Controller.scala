@@ -8,10 +8,12 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.{
   ReplayStatusUpdate,
   WorkflowRecoveryStatus
 }
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
+  WorkflowPaused,
+  WorkflowStatusUpdate
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  FIFOMessageElement,
   FaultToleranceConfig,
   StateRestoreConfig
 }
@@ -208,6 +210,7 @@ class Controller(
     val cpState: ControllerProcessor = chkpt.load(SerializedState.CP_STATE_KEY)
     val outputMessages: Array[WorkflowFIFOMessage] = chkpt.load(SerializedState.OUTPUT_MSG_KEY)
     cp = cpState
+    cp.outputHandler = logManager.sendCommitted
     initControllerProcessor()
     // revive all workers.
     val builtPhysicalOps = cp.executionState.getAllBuiltWorkers
@@ -232,6 +235,8 @@ class Controller(
       channel.acceptMessage(msg)
     })
     outputMessages.foreach(transferService.send)
+    cp.asyncRPCClient.sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
+    cp.asyncRPCClient.sendToClient(WorkflowPaused())
     globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
   }
 }
