@@ -186,6 +186,10 @@ class DPThread(
           }
         }
       }
+      if(dp.serializationCall != null){
+        dp.serializationCall()
+        dp.serializationCall = null
+      }
       // End of Main loop
     }
   }

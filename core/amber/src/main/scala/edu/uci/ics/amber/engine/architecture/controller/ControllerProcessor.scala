@@ -57,15 +57,4 @@ class ControllerProcessor(
   def setupLogManager(logManager: ReplayLogManager): Unit = {
     this.logManager = logManager
   }
-
-  @transient var inputRecordings
-      : mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]] = _
-
-  def setupInputRecording(
-      inputRecording: mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[
-        WorkflowFIFOMessage
-      ]]
-  ): Unit = {
-    this.inputRecordings = inputRecording
-  }
 }
