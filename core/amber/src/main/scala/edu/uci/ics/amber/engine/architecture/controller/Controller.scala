@@ -24,11 +24,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  ChannelMarkerIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.{
   AmberConfig,
   CheckpointState,
@@ -37,7 +33,6 @@ import edu.uci.ics.amber.engine.common.{
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
-import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
 object ControllerConfig {
@@ -106,7 +101,6 @@ class Controller(
       context.parent ! WorkflowRecoveryStatus(false)
     }
   )
-
 
   override def initState(): Unit = {
     initControllerProcessor()

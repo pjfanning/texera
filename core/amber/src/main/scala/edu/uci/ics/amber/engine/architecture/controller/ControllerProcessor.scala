@@ -10,9 +10,7 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.scheduling.WorkflowScheduler
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegate
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
-
-import scala.collection.mutable
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 class ControllerProcessor(
     val workflow: Workflow,
@@ -56,16 +54,5 @@ class ControllerProcessor(
 
   def setupLogManager(logManager: ReplayLogManager): Unit = {
     this.logManager = logManager
-  }
-
-  @transient var inputRecordings
-      : mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]] = _
-
-  def setupInputRecording(
-      inputRecording: mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[
-        WorkflowFIFOMessage
-      ]]
-  ): Unit = {
-    this.inputRecordings = inputRecording
   }
 }

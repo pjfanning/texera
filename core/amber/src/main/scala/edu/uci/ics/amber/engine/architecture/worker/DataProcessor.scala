@@ -108,6 +108,7 @@ class DataProcessor(
   @transient var physicalOp: PhysicalOp = _
   @transient var operatorConfig: OperatorConfig = _
   @transient var operator: IOperatorExecutor = _
+  @transient var serializationCall: () => Unit = _
 
   def initOperator(
       workerIdx: Int,
