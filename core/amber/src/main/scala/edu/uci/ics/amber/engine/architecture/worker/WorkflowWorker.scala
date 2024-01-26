@@ -83,8 +83,7 @@ class WorkflowWorker(
   )
   val timerService = new WorkerTimerService(actorService)
 
-  val dpThread =
-    new DPThread(workerConfig.workerId, dp, logManager, inputQueue)
+  var dpThread:DPThread = _
 
   val inputRecordings =
     new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
@@ -108,6 +107,8 @@ class WorkflowWorker(
         }
       )
     }
+    // dp is ready
+    dpThread = new DPThread(workerConfig.workerId, dp, logManager, inputQueue)
     dpThread.start()
   }
 

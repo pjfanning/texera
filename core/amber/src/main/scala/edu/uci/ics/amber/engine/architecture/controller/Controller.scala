@@ -107,8 +107,6 @@ class Controller(
     }
   )
 
-  val inputRecordings =
-    new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
     initControllerProcessor()
@@ -129,7 +127,6 @@ class Controller(
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channelId)
     channel.acceptMessage(workflowMsg)
-    inputRecordings.values.foreach(_.append(workflowMsg))
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channelId))
     processMessages()
   }
@@ -200,13 +197,10 @@ class Controller(
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
     cp.setupLogManager(logManager)
-    cp.setupInputRecording(inputRecordings)
     cp.setupTransferService(transferService)
   }
 
   override def initFromCheckpoint(chkpt: CheckpointState): Unit = {
-    val inflightMessages: mutable.ArrayBuffer[WorkflowFIFOMessage] =
-      chkpt.load(SerializedState.IN_FLIGHT_MSG_KEY)
     val cpState: ControllerProcessor = chkpt.load(SerializedState.CP_STATE_KEY)
     val outputMessages: Array[WorkflowFIFOMessage] = chkpt.load(SerializedState.OUTPUT_MSG_KEY)
     cp = cpState
@@ -230,10 +224,6 @@ class Controller(
         controllerConfig.workerLoggingConf
       )
     }
-    inflightMessages.foreach(msg => {
-      val channel = cp.inputGateway.getChannel(msg.channelId)
-      channel.acceptMessage(msg)
-    })
     outputMessages.foreach(transferService.send)
     cp.asyncRPCClient.sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
     cp.asyncRPCClient.sendToClient(WorkflowPaused())
