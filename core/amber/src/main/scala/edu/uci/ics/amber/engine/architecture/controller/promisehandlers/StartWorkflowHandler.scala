@@ -1,12 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
-import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
 
 object StartWorkflowHandler {
-  final case class StartWorkflow() extends ControlCommand[Unit]
+  final case class StartWorkflow() extends ControlCommand[WorkflowAggregatedState]
 }
 
 /** start the workflow by starting the source workers
@@ -31,8 +32,9 @@ trait StartWorkflowHandler {
             cp.controllerTimerService.enableMonitoring()
             cp.controllerTimerService.enableSkewHandling()
           })
+        RUNNING
       } else {
-        Future.Unit
+        cp.executionState.getState
       }
     }
   }

@@ -19,10 +19,9 @@ import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAIL
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
   COMPLETED,
   FAILED,
-  READY,
-  RUNNING
+  READY
 }
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
+import edu.uci.ics.texera.web.workflowruntimestate.{WorkflowAggregatedState, WorkflowFatalError}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
@@ -163,12 +162,12 @@ class WorkflowExecutionService(
     executionStateStore.statsStore.updateState(stats =>
       stats.withStartTimeStamp(System.currentTimeMillis())
     )
-    client.sendAsyncWithCallback[Unit](
+    client.sendAsyncWithCallback[WorkflowAggregatedState](
       StartWorkflow(),
-      _ =>
+      state =>
         executionStateStore.metadataStore.updateState(metadataStore =>
           if (metadataStore.state != FAILED) {
-            updateWorkflowState(RUNNING, metadataStore)
+            updateWorkflowState(state, metadataStore)
           } else {
             metadataStore
           }

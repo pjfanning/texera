@@ -24,7 +24,7 @@ class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: Inpu
     extends AmberLogging {
 
   private val markerReceived =
-    new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelIdentity]]().withDefaultValue(Set())
+    new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelIdentity]]()
 
   private var markerContext: MarkerContext = _
 
@@ -47,6 +47,9 @@ class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: Inpu
   def isMarkerAligned: Boolean = {
     assert(markerContext != null)
     val markerId = markerContext.marker.id
+    if (!markerReceived.contains(markerId)) {
+      markerReceived(markerId) = Set()
+    }
     markerReceived.update(markerId, markerReceived(markerId) + markerContext.fromChannel)
     // check if the epoch marker is completed
     val markerReceivedFromAllChannels =
