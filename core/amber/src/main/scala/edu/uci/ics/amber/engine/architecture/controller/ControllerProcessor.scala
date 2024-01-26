@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.controller
 import edu.uci.ics.amber.engine.architecture.common.{
   AkkaActorRefMappingService,
   AkkaActorService,
+  AkkaMessageTransferService,
   AmberProcessor
 }
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
@@ -34,6 +35,11 @@ class ControllerProcessor(
   @transient var controllerTimerService: ControllerTimerService = _
   def setupTimerService(controllerTimerService: ControllerTimerService): Unit = {
     this.controllerTimerService = controllerTimerService
+  }
+
+  @transient var transferService: AkkaMessageTransferService = _
+  def setupTransferService(transferService: AkkaMessageTransferService): Unit = {
+    this.transferService = transferService
   }
 
   @transient var actorService: AkkaActorService = _

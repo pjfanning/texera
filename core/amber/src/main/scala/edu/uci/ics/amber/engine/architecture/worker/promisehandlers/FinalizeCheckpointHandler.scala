@@ -29,16 +29,19 @@ trait FinalizeCheckpointHandler {
       val chkpt = dp.channelMarkerManager.checkpoints(msg.checkpointId)
       val oldSize = chkpt.size()
       val closure = (worker: WorkflowWorker) => {
+        logger.info(s"Main thread: start to serialize recorded messages.")
         chkpt.save(
           SerializedState.IN_FLIGHT_MSG_KEY,
           worker.inputRecordings.getOrElse(msg.checkpointId, new ArrayBuffer())
         )
         worker.inputRecordings.remove(msg.checkpointId)
+        logger.info(s"Main thread: recorded messages serialized.")
         waitFuture.complete(())
         ()
       }
       dp.outputHandler(Left(MainThreadDelegate(closure)))
       waitFuture.get()
+      logger.info(s"Start to write checkpoint to storage. Destination: ${msg.writeTo}")
       val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.writeTo))
       val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
       writer.writeRecord(chkpt)
@@ -46,6 +49,7 @@ trait FinalizeCheckpointHandler {
       logger.info(s"Checkpoint finalized, total size = ${chkpt.size()} bytes")
       chkpt.size() - oldSize // report the diff to controller
     } else {
+      logger.info(s"Checkpoint is estimation-only. report 0 as inflight message size.")
       0L // for estimation
     }
   }

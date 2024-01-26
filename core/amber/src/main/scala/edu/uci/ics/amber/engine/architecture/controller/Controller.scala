@@ -107,6 +107,7 @@ class Controller(
     cp.setupActorRefService(actorRefMappingService)
     cp.setupLogManager(logManager)
     cp.setupInputRecording(inputRecordings)
+    cp.setupTransferService(transferService)
     val controllerRestoreConf = controllerConfig.workerRestoreConf
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)

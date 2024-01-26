@@ -45,9 +45,7 @@ trait PrepareCheckpointHandler {
         logger.info("Operator does not open, nothing to serialize")
       }
       // 3. record inflight messages
-      logger.info(
-        "Begin collecting inflight messages for all channels in the score except the current sender"
-      )
+      logger.info("Begin collecting inflight messages")
       val waitFuture = new CompletableFuture[Unit]()
       val closure = (worker: WorkflowWorker) => {
         val queuedMsgs = mutable.ArrayBuffer[WorkflowFIFOMessage]()
@@ -56,12 +54,17 @@ trait PrepareCheckpointHandler {
           case WorkflowWorker.TimerBasedControlElement(control) => // skip
           case WorkflowWorker.ActorCommandElement(cmd)          => // skip
         }
-        chkpt.save("QueuedMessages", queuedMsgs)
+        chkpt.save(SerializedState.DP_QUEUED_MSG_KEY, queuedMsgs)
+        // get all output messages from worker.transferService
+        chkpt.save(
+          SerializedState.OUTPUT_MSG_KEY,
+          worker.transferService.getAllUnAckedMessages.toArray
+        )
+        logger.info("Main thread: serialized queued and output messages.")
         // start to record input messages on main thread
         worker.inputRecordings(dp.channelMarkerManager.getContext.marker.id) =
           new mutable.ArrayBuffer[WorkflowFIFOMessage]()
-        // get all messages from worker.transferService
-        chkpt.save("InflightMessages", worker.transferService.getAllUnAckedMessages.toArray)
+        logger.info("Main thread: start recording for input messages from now on.")
         waitFuture.complete(())
         ()
       }
@@ -69,12 +72,14 @@ trait PrepareCheckpointHandler {
       waitFuture.get()
       totalSize += chkpt.size()
     } else {
+      logger.info(s"Checkpoint is estimation-only. report estimated size.")
       totalSize += (dp.operator match {
         case support: CheckpointSupport =>
           support.getEstimatedCheckpointCost
         case _ => 0L
       })
     }
+    logger.info(s"Reply the current checkpoint size to controller. size = $totalSize")
     totalSize // end of the first phase
   }
 }

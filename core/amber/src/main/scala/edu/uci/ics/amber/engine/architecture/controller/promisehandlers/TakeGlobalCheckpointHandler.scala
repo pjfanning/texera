@@ -38,6 +38,11 @@ trait TakeGlobalCheckpointHandler {
       }
       logger.info("Serialized CP state")
     }
+    // get all output messages from cp.transferService
+    chkpt.save(
+      SerializedState.OUTPUT_MSG_KEY,
+      this.cp.transferService.getAllUnAckedMessages.toArray
+    )
     val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
     var totalSize = 0L
     // start to record input messages
