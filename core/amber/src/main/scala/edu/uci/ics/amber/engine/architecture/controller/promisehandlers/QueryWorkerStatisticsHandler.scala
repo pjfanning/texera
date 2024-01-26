@@ -31,10 +31,10 @@ trait QueryWorkerStatisticsHandler {
     // send QueryStatistics message
     val requests = workers.map(worker =>
       // must immediately update worker state and stats after reply
-      send(QueryStatistics(), worker).map(res => {
-        val workerInfo = cp.executionState.getOperatorExecution(worker).getWorkerInfo(worker)
-        workerInfo.state = res.workerState
-        workerInfo.stats = res
+      send(QueryStatistics(), worker).map( updatedStats => {
+        val workerExecution = cp.executionState.getOperatorExecution(worker).getWorkerExecution(worker)
+        workerExecution.setState(updatedStats.workerState)
+        workerExecution.setStats(updatedStats)
       })
     )
 

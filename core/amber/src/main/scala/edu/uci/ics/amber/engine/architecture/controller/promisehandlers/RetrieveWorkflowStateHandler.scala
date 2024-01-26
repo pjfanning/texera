@@ -19,7 +19,7 @@ trait RetrieveWorkflowStateHandler {
   registerHandler { (msg: RetrieveWorkflowState, sender) =>
     execute(
       PropagateChannelMarker(
-        cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
+        cp.executionState.getAllActiveOperatorExecutions.map(_._1).toSet,
         ChannelMarkerIdentity("RetrieveWorkflowState_" + Instant.now().toString),
         NoAlignment,
         cp.workflow.physicalPlan,

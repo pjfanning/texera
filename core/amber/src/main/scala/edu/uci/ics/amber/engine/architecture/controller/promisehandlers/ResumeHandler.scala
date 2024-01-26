@@ -25,8 +25,9 @@ trait ResumeHandler {
       // resume message has no effect on non-paused workers
       Future
         .collect(cp.executionState.getAllBuiltWorkers.map { worker =>
-          send(ResumeWorker(), worker).map { ret =>
-            cp.executionState.getOperatorExecution(worker).getWorkerInfo(worker).state = ret
+          send(ResumeWorker(), worker).map { updateState =>
+            val workerExecution = cp.executionState.getOperatorExecution(worker).getWorkerExecution(worker)
+            workerExecution.setState(updateState)
           }
         }.toSeq)
         .map { _ =>

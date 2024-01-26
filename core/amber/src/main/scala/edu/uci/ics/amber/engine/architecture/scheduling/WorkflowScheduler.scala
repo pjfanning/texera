@@ -3,13 +3,10 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkerAssignmentUpdate,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, RegionExecution, Workflow}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
@@ -36,6 +33,8 @@ class WorkflowScheduler(
     controllerConfig: ControllerConfig,
     asyncRPCClient: AsyncRPCClient
 ) extends LazyLogging {
+
+
   val schedulingPolicy: SchedulingPolicy =
     SchedulingPolicy.createPolicy(
       AmberConfig.schedulingPolicyName,
@@ -119,9 +118,10 @@ class WorkflowScheduler(
       actorService: AkkaActorService
   ): Future[Seq[Unit]] = {
     if (regions.nonEmpty) {
-      Future.collect(
+      Future.collect {
+        executionState.appendRegions(regions.map(_.id))
         regions.toArray.map(region => scheduleRegion(region, actorService))
-      )
+      }
     } else {
       Future(Seq())
     }
@@ -131,23 +131,33 @@ class WorkflowScheduler(
       region: Region,
       akkaActorService: AkkaActorService
   ): Unit = {
+    val regionExecution = executionState.initRegionExecution(region)
     val resourceConfig = region.resourceConfig.get
     region.topologicalIterator().foreach { (physicalOpId: PhysicalOpIdentity) =>
       val physicalOp = region.getEffectiveOperator(physicalOpId)
-      buildOperator(
-        physicalOp,
-        resourceConfig.operatorConfigs(physicalOpId),
-        akkaActorService
-      )
+      val latestOperatorExecution = executionState.getLatestOperatorExecution(physicalOpId)
+      latestOperatorExecution match {
+        case Some(execution) =>
+          regionExecution.setOperatorExecution(physicalOpId, execution)
+        case None =>
+          buildOperator(
+            physicalOp,
+            regionExecution,
+            resourceConfig.operatorConfigs(physicalOpId),
+            akkaActorService
+          )
+      }
+
     }
   }
 
   private def buildOperator(
       physicalOp: PhysicalOp,
+      regionExecution: RegionExecution,
       operatorConfig: OperatorConfig,
       controllerActorService: AkkaActorService
   ): Unit = {
-    val opExecution = executionState.initOperatorState(physicalOp.id, operatorConfig)
+    val opExecution = regionExecution.initOperatorExecution(physicalOp.id, operatorConfig)
     physicalOp.build(
       controllerActorService,
       opExecution,
@@ -229,15 +239,14 @@ class WorkflowScheduler(
   }
 
   private def startRegion(region: Region): Future[Seq[Unit]] = {
-
+    val regionExecution = executionState.getRegionExecution(region.id)
     region.getEffectiveOperators
       .map(_.id)
       .filter(opId =>
-        executionState.getOperatorExecution(opId).getState == WorkflowAggregatedState.UNINITIALIZED
+        regionExecution.getOperatorExecution(opId).get.getState == WorkflowAggregatedState.UNINITIALIZED
       )
       .foreach(opId => executionState.getOperatorExecution(opId).setAllWorkerState(READY))
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
-
     val ops = region.getEffectiveSourceOpIds
     if (!schedulingPolicy.getRunningRegions.contains(region)) {
       val futures = ops.flatMap { opId =>
@@ -248,7 +257,7 @@ class WorkflowScheduler(
               .send(StartWorker(), worker)
               .map(ret =>
                 // update worker state
-                opExecution.getWorkerInfo(worker).state = ret
+                opExecution.getWorkerExecution(worker).state = ret
               )
           )
       }.toSeq
@@ -264,14 +273,16 @@ class WorkflowScheduler(
       region: Region,
       actorService: AkkaActorService
   ): Future[Unit] = {
+    val regionExecution = executionState.getRegionExecution(region.id)
     asyncRPCClient.sendToClient(WorkflowStatusUpdate(executionState.getWorkflowStatus))
     asyncRPCClient.sendToClient(
       WorkerAssignmentUpdate(
         region.getEffectiveOperators
           .map(_.id)
           .map(physicalOpId => {
-            physicalOpId.logicalOpId.id -> executionState
+            physicalOpId.logicalOpId.id -> regionExecution
               .getOperatorExecution(physicalOpId)
+              .get
               .getBuiltWorkerIds
               .map(_.name)
               .toList

@@ -35,7 +35,7 @@ trait PauseHandler {
       cp.controllerTimerService.disableMonitoring()
       cp.controllerTimerService.disableSkewHandling()
       Future
-        .collect(cp.executionState.getAllOperatorExecutions.map {
+        .collect(cp.executionState.getAllActiveOperatorExecutions.map {
           case (physicalOpId, opExecution) =>
             // create a buffer for the current input tuple
             // since we need to show them on the frontend
@@ -46,16 +46,16 @@ trait PauseHandler {
                   // send pause to all workers
                   // pause message has no effect on completed or paused workers
                   .map { worker =>
-                    val info = opExecution.getWorkerInfo(worker)
+                    val workerExecution = opExecution.getWorkerExecution(worker)
                     // send a pause message
-                    send(PauseWorker(), worker).flatMap { ret =>
-                      info.state = ret
+                    send(PauseWorker(), worker).flatMap { updateState =>
+                      workerExecution.setState(updateState)
                       send(QueryStatistics(), worker)
                         .join(send(QueryCurrentInputTuple(), worker))
                         // get the stats and current input tuple from the worker
                         .map {
                           case (stats, tuple) =>
-                            info.stats = stats
+                            workerExecution.stats = stats
                             buffer.append((tuple, worker))
                         }
                     }

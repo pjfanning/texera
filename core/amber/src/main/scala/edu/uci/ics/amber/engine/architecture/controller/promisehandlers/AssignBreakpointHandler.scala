@@ -35,7 +35,7 @@ trait AssignBreakpointHandler {
       // attach the breakpoint
       opExecution.attachedBreakpoints(msg.breakpoint.id) = msg.breakpoint
       // get target workers from the operator given a breakpoint
-      val targetWorkers = opExecution.assignBreakpoint(msg.breakpoint)
+      val targetWorkers = opExecution.assignBreakpoint(msg.breakpoint).toArray
 
       val workersTobeAssigned: List[(ActorVirtualIdentity, LocalBreakpoint)] =
         msg.breakpoint.partition(targetWorkers).toList
