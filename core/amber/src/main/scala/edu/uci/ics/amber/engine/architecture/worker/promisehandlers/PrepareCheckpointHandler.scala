@@ -14,8 +14,7 @@ import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 
 object PrepareCheckpointHandler {
-  final case class PrepareCheckpoint(estimationOnly: Boolean)
-      extends ControlCommand[Unit]
+  final case class PrepareCheckpoint(estimationOnly: Boolean) extends ControlCommand[Unit]
 }
 
 trait PrepareCheckpointHandler {
@@ -24,15 +23,13 @@ trait PrepareCheckpointHandler {
   registerHandler { (msg: PrepareCheckpoint, sender) =>
     logger.info("Start to take checkpoint")
     if (!msg.estimationOnly) {
-      dp.serializationCall = () =>{
+      dp.serializationCall = () => {
         serializeWorkerState()
       }
     } else {
       logger.info(s"Checkpoint is estimation-only. do nothing.")
     }
   }
-
-
 
   private def serializeWorkerState(): Unit = {
     val chkpt = new CheckpointState()
@@ -61,9 +58,9 @@ trait PrepareCheckpointHandler {
     val closure = (worker: WorkflowWorker) => {
       val queuedMsgs = mutable.ArrayBuffer[WorkflowFIFOMessage]()
       worker.inputQueue.forEach {
-        case WorkflowWorker.FIFOMessageElement(msg) => queuedMsgs.append(msg)
+        case WorkflowWorker.FIFOMessageElement(msg)           => queuedMsgs.append(msg)
         case WorkflowWorker.TimerBasedControlElement(control) => // skip
-        case WorkflowWorker.ActorCommandElement(cmd) => // skip
+        case WorkflowWorker.ActorCommandElement(cmd)          => // skip
       }
       chkpt.save(SerializedState.DP_QUEUED_MSG_KEY, queuedMsgs)
       // get all output messages from worker.transferService

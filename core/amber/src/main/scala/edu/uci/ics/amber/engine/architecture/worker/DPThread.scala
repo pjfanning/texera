@@ -186,7 +186,7 @@ class DPThread(
           }
         }
       }
-      if(dp.serializationCall != null){
+      if (dp.serializationCall != null) {
         dp.serializationCall()
         dp.serializationCall = null
       }

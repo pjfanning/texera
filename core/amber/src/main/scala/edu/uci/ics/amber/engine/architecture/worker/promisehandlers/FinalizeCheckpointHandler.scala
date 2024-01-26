@@ -1,6 +1,9 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.{DataProcessorRPCHandlerInitializer, WorkflowWorker}
+import edu.uci.ics.amber.engine.architecture.worker.{
+  DataProcessorRPCHandlerInitializer,
+  WorkflowWorker
+}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegate
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeCheckpointHandler.FinalizeCheckpoint
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}

@@ -7,14 +7,12 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlob
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeCheckpointHandler.FinalizeCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PrepareCheckpointHandler.PrepareCheckpoint
 import edu.uci.ics.amber.engine.common.{CheckpointState, SerializedState}
-import edu.uci.ics.amber.engine.common.ambermessage.{NoAlignment, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.NoAlignment
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 
 import java.net.URI
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object TakeGlobalCheckpointHandler {
   final case class TakeGlobalCheckpoint(
@@ -43,8 +41,8 @@ trait TakeGlobalCheckpointHandler {
       Future
         .collect(ret.map {
           case (workerId, _) =>
-            send(FinalizeCheckpoint(msg.checkpointId, msg.destination), workerId).map{
-              size => totalSize += size
+            send(FinalizeCheckpoint(msg.checkpointId, msg.destination), workerId).map { size =>
+              totalSize += size
             }
         })
         .map { _ =>

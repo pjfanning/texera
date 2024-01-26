@@ -20,15 +20,10 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  ChannelMarkerIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
-import scala.collection.mutable
 import scala.concurrent.duration.DurationInt
 
 object ControllerConfig {
@@ -98,15 +93,11 @@ class Controller(
     }
   )
 
-  val inputRecordings =
-    new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
-
   override def initState(): Unit = {
     cp.setupActorService(actorService)
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
     cp.setupLogManager(logManager)
-    cp.setupInputRecording(inputRecordings)
     cp.setupTransferService(transferService)
     val controllerRestoreConf = controllerConfig.workerRestoreConf
     if (controllerRestoreConf.isDefined) {
@@ -125,7 +116,6 @@ class Controller(
   override def handleInputMessage(id: Long, workflowMsg: WorkflowFIFOMessage): Unit = {
     val channel = cp.inputGateway.getChannel(workflowMsg.channelId)
     channel.acceptMessage(workflowMsg)
-    inputRecordings.values.foreach(_.append(workflowMsg))
     sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channelId))
     processMessages()
   }
