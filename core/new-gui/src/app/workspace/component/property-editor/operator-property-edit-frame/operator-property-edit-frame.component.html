@@ -88,10 +88,6 @@
   (click)="allowModifyOperatorLogic()"
   *ngIf="
 		currentOperatorId !== undefined &&
-		(this.executeWorkflowService.getExecutionState().state ===
-			ExecutionState.Paused ||
-			this.executeWorkflowService.getExecutionState().state ===
-				ExecutionState.BreakpointTriggered) &&
 		this.interactive === false"
   nz-button
   nz-tooltip="Unlock the operator to change logic"
@@ -111,10 +107,6 @@
   (click)="confirmModifyOperatorLogic()"
   *ngIf="
 		currentOperatorId !== undefined &&
-		(this.executeWorkflowService.getExecutionState().state ===
-			ExecutionState.Paused ||
-			this.executeWorkflowService.getExecutionState().state ===
-				ExecutionState.BreakpointTriggered) &&
 		this.interactive === true"
   nz-button
   nz-tooltip="Confirm change and modify the operator runtime"

@@ -315,9 +315,9 @@ export class ExecuteWorkflowService {
     if (!environment.amberEngineEnabled) {
       return;
     }
-    if (this.currentState.state !== ExecutionState.Paused) {
-      throw new Error("cannot retry the current tuple, the current execution state is " + this.currentState.state);
-    }
+    // if (this.currentState.state !== ExecutionState.Paused) {
+    //   throw new Error("cannot retry the current tuple, the current execution state is " + this.currentState.state);
+    // }
     this.workflowWebsocketService.send("RetryRequest", { workers });
   }
 
@@ -326,12 +326,12 @@ export class ExecuteWorkflowService {
       return;
     }
     console.log("modifying operator logic " + operatorID);
-    if (
-      this.currentState.state !== ExecutionState.BreakpointTriggered &&
-      this.currentState.state !== ExecutionState.Paused
-    ) {
-      throw new Error("cannot modify logic, the current execution state is " + this.currentState.state);
-    }
+    // if (
+    //   this.currentState.state !== ExecutionState.BreakpointTriggered &&
+    //   this.currentState.state !== ExecutionState.Paused
+    // ) {
+    //   throw new Error("cannot modify logic, the current execution state is " + this.currentState.state);
+    // }
     const op = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
     const operator: LogicalOperator = {
       ...op.operatorProperties,

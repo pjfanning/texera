@@ -157,6 +157,8 @@ class PythonUDFOpDescV2 extends LogicalOp {
       oldLogicalOp: LogicalOp,
       newLogicalOp: LogicalOp
   ): Try[(PhysicalOp, Option[StateTransferFunc])] = {
+    newLogicalOp.inputPortToSchemaMapping ++= oldLogicalOp.inputPortToSchemaMapping
+    newLogicalOp.outputPortToSchemaMapping ++= oldLogicalOp.outputPortToSchemaMapping
     Success(newLogicalOp.getPhysicalOp(workflowId, executionId), None)
   }
 }

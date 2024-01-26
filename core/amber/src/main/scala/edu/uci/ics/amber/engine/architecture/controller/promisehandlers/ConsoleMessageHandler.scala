@@ -17,7 +17,7 @@ trait ConsoleMessageHandler {
     {
       if (msg.consoleMessage.msgType.isError) {
         // if its an error message, pause the workflow
-        execute(PauseWorkflow(), CONTROLLER)
+//        execute(PauseWorkflow(), CONTROLLER)
       }
 
       // forward message to frontend

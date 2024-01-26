@@ -13,7 +13,7 @@ class ExceptionManager:
         self.exc_info_history.append(exc_info)
 
     def has_exception(self) -> bool:
-        return self.exc_info is not None
+        return self.get_exc_info() is not None
 
     def get_exc_info(self) -> ExceptionInfo:
         exc_info = self.exc_info
