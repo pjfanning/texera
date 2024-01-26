@@ -61,12 +61,12 @@ object WorkflowWorker {
   final case class ActorCommandElement(cmd: ActorCommand) extends DPInputQueueElement
 
   final case class WorkerReplayInitialization(
-      restoreConfOpt: Option[WorkerStateRestoreConfig] = None,
-      replayLogConfOpt: Option[WorkerReplayLoggingConfig] = None
+      restoreConfOpt: Option[StateRestoreConfig] = None,
+      replayLogConfOpt: Option[FaultToleranceConfig] = None
   )
-  final case class WorkerStateRestoreConfig(readFrom: URI, replayDestination: ChannelMarkerIdentity)
+  final case class StateRestoreConfig(readFrom: URI, replayDestination: ChannelMarkerIdentity)
 
-  final case class WorkerReplayLoggingConfig(writeTo: URI)
+  final case class FaultToleranceConfig(writeTo: URI)
 }
 
 class WorkflowWorker(

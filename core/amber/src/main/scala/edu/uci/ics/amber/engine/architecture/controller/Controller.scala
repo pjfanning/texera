@@ -10,8 +10,8 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.{
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  WorkerReplayLoggingConfig,
-  WorkerStateRestoreConfig
+  FaultToleranceConfig,
+  StateRestoreConfig
 }
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{
@@ -37,8 +37,8 @@ object ControllerConfig {
       monitoringIntervalMs = Option(AmberConfig.monitoringIntervalInMs),
       skewDetectionIntervalMs = Option(AmberConfig.reshapeSkewDetectionIntervalInMs),
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
-      workerRestoreConfMapping = _ => None,
-      workerLoggingConfMapping = _ => None
+      workerRestoreConf = None,
+      workerLoggingConf = None
     )
 }
 
@@ -46,8 +46,8 @@ final case class ControllerConfig(
     monitoringIntervalMs: Option[Long],
     skewDetectionIntervalMs: Option[Long],
     statusUpdateIntervalMs: Option[Long],
-    workerRestoreConfMapping: ActorVirtualIdentity => Option[WorkerStateRestoreConfig],
-    workerLoggingConfMapping: ActorVirtualIdentity => Option[WorkerReplayLoggingConfig]
+    workerRestoreConf: Option[StateRestoreConfig],
+    workerLoggingConf: Option[FaultToleranceConfig]
 )
 
 object Controller {
@@ -71,7 +71,7 @@ class Controller(
     val workflow: Workflow,
     val controllerConfig: ControllerConfig
 ) extends WorkflowActor(
-      controllerConfig.workerLoggingConfMapping(CONTROLLER),
+      controllerConfig.workerLoggingConf,
       CONTROLLER
     ) {
 
@@ -107,7 +107,7 @@ class Controller(
     cp.setupActorRefService(actorRefMappingService)
     cp.setupLogManager(logManager)
     cp.setupInputRecording(inputRecordings)
-    val controllerRestoreConf = controllerConfig.workerRestoreConfMapping(CONTROLLER)
+    val controllerRestoreConf = controllerConfig.workerRestoreConf
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
       setupReplay(

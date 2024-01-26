@@ -173,8 +173,8 @@ class WorkflowScheduler(
       controllerActorService,
       opExecution,
       operatorConfig,
-      controllerConfig.workerRestoreConfMapping,
-      controllerConfig.workerLoggingConfMapping
+      controllerConfig.workerRestoreConf,
+      controllerConfig.workerLoggingConf
     )
   }
   private def initializePythonOperators(region: Region): Future[Seq[Unit]] = {

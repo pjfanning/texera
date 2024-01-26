@@ -22,8 +22,8 @@ import edu.uci.ics.amber.engine.architecture.logreplay.{
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   MainThreadDelegate,
   TriggerSend,
-  WorkerReplayLoggingConfig,
-  WorkerStateRestoreConfig
+  FaultToleranceConfig,
+  StateRestoreConfig
 }
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
@@ -66,7 +66,7 @@ object WorkflowActor {
 }
 
 abstract class WorkflowActor(
-    replayLogConfOpt: Option[WorkerReplayLoggingConfig],
+    replayLogConfOpt: Option[FaultToleranceConfig],
     val actorId: ActorVirtualIdentity
 ) extends Actor
     with Stash
@@ -177,7 +177,7 @@ abstract class WorkflowActor(
 
   def setupReplay(
       amberProcessor: AmberProcessor,
-      replayConf: WorkerStateRestoreConfig,
+      replayConf: StateRestoreConfig,
       onComplete: () => Unit
   ): Unit = {
     val logStorageToRead =

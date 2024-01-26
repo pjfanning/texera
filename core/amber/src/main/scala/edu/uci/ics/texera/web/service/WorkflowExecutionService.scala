@@ -142,7 +142,8 @@ class WorkflowExecutionService(
       executionStateStore,
       wsInput,
       executionBreakpointService,
-      executionReconfigurationService
+      executionReconfigurationService,
+      controllerConfig.workerLoggingConf
     )
     executionConsoleService =
       new ExecutionConsoleService(client, executionStateStore, wsInput, executionBreakpointService)

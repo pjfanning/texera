@@ -5,10 +5,9 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetrieveWorkflowStateHandler.RetrieveWorkflowState
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetrieveWorkflowStateHandler.RetrieveWorkflowState
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.FaultToleranceConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.request.{
   SkipTupleRequest,
@@ -21,12 +20,15 @@ import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
 
+import java.util.UUID
+
 class ExecutionRuntimeService(
     client: AmberClient,
     stateStore: ExecutionStateStore,
     wsInput: WebsocketInput,
     breakpointService: ExecutionBreakpointService,
-    reconfigurationService: ExecutionReconfigurationService
+    reconfigurationService: ExecutionReconfigurationService,
+    logConf: Option[FaultToleranceConfig]
 ) extends SubscriptionManager
     with LazyLogging {
 
@@ -47,9 +49,7 @@ class ExecutionRuntimeService(
     stateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(PAUSING, metadataStore)
     )
-    client.sendAsync(PauseWorkflow()).foreach { ret =>
-      client.sendAsync(TakeGlobalCheckpoint(false))
-    }
+    client.sendAsync(PauseWorkflow())
   }))
 
   // Receive Resume
@@ -79,7 +79,15 @@ class ExecutionRuntimeService(
 
   // Receive Interaction
   addSubscription(wsInput.subscribe((req: WorkflowInteractionRequest, uidOpt) => {
-    client.sendAsync(RetrieveWorkflowState())
+    if (logConf.isEmpty) {
+      logger.info(
+        "Fault tolerance log folder is not established. Unable to take a global checkpoint."
+      )
+    } else {
+      val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+      val uri = logConf.get.writeTo.resolve(checkpointId.toString)
+      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri))
+    }
   }))
 
 }
