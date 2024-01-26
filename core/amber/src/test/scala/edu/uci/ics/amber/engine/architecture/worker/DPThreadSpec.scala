@@ -77,7 +77,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume during processing" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), None)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
@@ -103,7 +103,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle pause/resume using fifo messages" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), None)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     dp.registerInput(senderID, mockLink)
     dp.adaptiveBatchingMonitor = mock[WorkerTimerService]
@@ -132,7 +132,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "handle multiple batches from multiple sources" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), None)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)
@@ -163,7 +163,7 @@ class DPThreadSpec extends AnyFlatSpec with MockFactory {
 
   "DP Thread" should "write determinant logs to local storage while processing" in {
     val dp = new DataProcessor(identifier, x => {})
-    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(identifier))), None)
     val inputQueue = new LinkedBlockingQueue[DPInputQueueElement]()
     val anotherSender = ActorVirtualIdentity("another")
     dp.registerInput(senderID, mockLink)

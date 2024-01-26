@@ -18,7 +18,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
   TimerBasedControlElement,
   WorkerReplayInitialization
 }
-import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
+import edu.uci.ics.amber.engine.common.{CheckpointState, SerializedState, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.{
@@ -95,7 +95,7 @@ class WorkflowWorker(
       VirtualIdentityUtils.getWorkerIndex(workerConfig.workerId),
       physicalOp,
       operatorConfig,
-      currentOutputIterator = Iterator.empty
+      None
     )
     if (replayInitialization.restoreConfOpt.isDefined) {
       context.parent ! ReplayStatusUpdate(actorId, status = true)
@@ -160,5 +160,27 @@ class WorkflowWorker(
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {
     inputQueue.put(ActorCommandElement(Backpressure(isBackpressured)))
+  }
+
+  override def initFromCheckpoint(chkpt: CheckpointState): Unit = {
+    val inflightMessages: mutable.ArrayBuffer[WorkflowFIFOMessage] =
+      chkpt.load(SerializedState.IN_FLIGHT_MSG_KEY)
+    val dpState: DataProcessor = chkpt.load(SerializedState.DP_STATE_KEY)
+    val queuedMessages: mutable.ArrayBuffer[WorkflowFIFOMessage] =
+      chkpt.load(SerializedState.DP_QUEUED_MSG_KEY)
+    val outputMessages: Array[WorkflowFIFOMessage] = chkpt.load(SerializedState.OUTPUT_MSG_KEY)
+    dp = dpState // overwrite dp state
+    dp.outputHandler = logManager.sendCommitted
+    dp.initTimerService(timerService)
+    dp.initOperator(
+      VirtualIdentityUtils.getWorkerIndex(workerConfig.workerId),
+      physicalOp,
+      operatorConfig,
+      Some(chkpt)
+    )
+    queuedMessages.foreach(msg => inputQueue.put(FIFOMessageElement(msg)))
+    inflightMessages.foreach(msg => inputQueue.put(FIFOMessageElement(msg)))
+    outputMessages.foreach(transferService.send)
+    context.parent ! ReplayStatusUpdate(actorId, status = false)
   }
 }

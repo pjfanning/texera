@@ -133,7 +133,7 @@ class WorkerSpec
           0,
           physicalOp,
           OperatorConfig(List(WorkerConfig(identifier1))),
-          Iterator.empty
+          None
         )
         this.dp.initTimerService(timerService)
         override val dpThread: DPThread =

@@ -44,8 +44,17 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   PhysicalOpIdentity
 }
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
-import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
+import edu.uci.ics.amber.engine.common.{
+  CheckpointState,
+  CheckpointSupport,
+  IOperatorExecutor,
+  ISinkOperatorExecutor,
+  ISourceOperatorExecutor,
+  InputExhausted,
+  VirtualIdentityUtils
+}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
+import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 
 import scala.collection.mutable
 
@@ -107,7 +116,7 @@ class DataProcessor(
       workerIdx: Int,
       physicalOp: PhysicalOp,
       operatorConfig: OperatorConfig,
-      currentOutputIterator: Iterator[(ITuple, Option[PortIdentity])]
+      loadFromChkpt: Option[CheckpointState]
   ): Unit = {
     this.workerIdx = workerIdx
     this.operator = physicalOp.opExecInitInfo match {
@@ -126,7 +135,15 @@ class DataProcessor(
         physicalOp.getInputLinks().toSet
       }
     )
-    this.outputIterator.setTupleOutput(currentOutputIterator)
+    var iter: Iterator[(ITuple, Option[PortIdentity])] = Iterator.empty
+    if (loadFromChkpt.isDefined) {
+      this.operator match {
+        case support: CheckpointSupport =>
+          iter = support.deserializeState(loadFromChkpt.get)
+        case _ => // skip
+      }
+    }
+    this.outputIterator.setTupleOutput(iter)
   }
 
   var outputIterator: DPOutputIterator = new DPOutputIterator()

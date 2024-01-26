@@ -9,7 +9,9 @@ import edu.uci.ics.amber.engine.architecture.controller.Controller.{
   WorkflowRecoveryStatus
 }
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  FIFOMessageElement,
   FaultToleranceConfig,
   StateRestoreConfig
 }
@@ -25,7 +27,12 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
   ChannelIdentity,
   ChannelMarkerIdentity
 }
-import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.{
+  AmberConfig,
+  CheckpointState,
+  SerializedState,
+  VirtualIdentityUtils
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
 import scala.collection.mutable
@@ -77,7 +84,7 @@ class Controller(
 
   actorRefMappingService.registerActorRef(CLIENT, context.parent)
   val controllerTimerService = new ControllerTimerService(controllerConfig, actorService)
-  val cp = new ControllerProcessor(
+  var cp = new ControllerProcessor(
     workflow,
     controllerConfig,
     actorId,
@@ -102,12 +109,7 @@ class Controller(
     new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
-    cp.setupActorService(actorService)
-    cp.setupTimerService(controllerTimerService)
-    cp.setupActorRefService(actorRefMappingService)
-    cp.setupLogManager(logManager)
-    cp.setupInputRecording(inputRecordings)
-    cp.setupTransferService(transferService)
+    initControllerProcessor()
     val controllerRestoreConf = controllerConfig.workerRestoreConf
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)
@@ -191,4 +193,45 @@ class Controller(
         Stop
     }
 
+  private def initControllerProcessor(): Unit = {
+    cp.setupActorService(actorService)
+    cp.setupTimerService(controllerTimerService)
+    cp.setupActorRefService(actorRefMappingService)
+    cp.setupLogManager(logManager)
+    cp.setupInputRecording(inputRecordings)
+    cp.setupTransferService(transferService)
+  }
+
+  override def initFromCheckpoint(chkpt: CheckpointState): Unit = {
+    val inflightMessages: mutable.ArrayBuffer[WorkflowFIFOMessage] =
+      chkpt.load(SerializedState.IN_FLIGHT_MSG_KEY)
+    val cpState: ControllerProcessor = chkpt.load(SerializedState.CP_STATE_KEY)
+    val outputMessages: Array[WorkflowFIFOMessage] = chkpt.load(SerializedState.OUTPUT_MSG_KEY)
+    cp = cpState
+    initControllerProcessor()
+    // revive all workers.
+    val builtPhysicalOps = cp.executionState.getAllBuiltWorkers
+      .map(workerId => VirtualIdentityUtils.getPhysicalOpId(workerId))
+      .toSet
+    builtPhysicalOps.foreach { opId =>
+      val op = workflow.physicalPlan.getOperator(opId)
+      val region =
+        workflow.regionPlan.regions.find(r => r.resourceConfig.get.operatorConfigs.contains(opId))
+      val dummyExecution =
+        new OperatorExecution(workflow.context.workflowId, workflow.context.executionId, opId, 1)
+      op.build(
+        actorService,
+        dummyExecution,
+        region.get.resourceConfig.get.operatorConfigs(opId),
+        controllerConfig.workerRestoreConf,
+        controllerConfig.workerLoggingConf
+      )
+    }
+    inflightMessages.foreach(msg => {
+      val channel = cp.inputGateway.getChannel(msg.channelId)
+      channel.acceptMessage(msg)
+    })
+    outputMessages.foreach(transferService.send)
+    globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
+  }
 }

@@ -74,7 +74,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
         override val outputManager: OutputManager = mock[OutputManager]
         override val asyncRPCClient: AsyncRPCClient = mock[AsyncRPCClient]
       }
-    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(testWorkerId))), Iterator.empty)
+    dp.initOperator(0, physicalOp, OperatorConfig(List(WorkerConfig(testWorkerId))), None)
     dp.initTimerService(adaptiveBatchingMonitor)
     dp
   }

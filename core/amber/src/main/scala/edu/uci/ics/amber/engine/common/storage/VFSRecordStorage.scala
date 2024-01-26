@@ -43,4 +43,9 @@ class VFSRecordStorage[T >: Null <: AnyRef](vfsLogFolderURI: URI)
   override def deleteStorage(): Unit = {
     folder.deleteAll()
   }
+
+  override def containsFolder(folderName: String): Boolean = {
+    val fileObj = folder.getChild(folderName)
+    fileObj.exists() && fileObj.isFolder
+  }
 }
