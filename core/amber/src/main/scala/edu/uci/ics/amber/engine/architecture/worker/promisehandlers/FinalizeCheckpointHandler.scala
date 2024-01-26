@@ -27,6 +27,7 @@ trait FinalizeCheckpointHandler {
     if (dp.channelMarkerManager.checkpoints.contains(msg.checkpointId)) {
       val waitFuture = new CompletableFuture[Unit]()
       val chkpt = dp.channelMarkerManager.checkpoints(msg.checkpointId)
+      val oldSize = chkpt.size()
       val closure = (worker: WorkflowWorker) => {
         chkpt.save(
           SerializedState.IN_FLIGHT_MSG_KEY,
@@ -42,10 +43,10 @@ trait FinalizeCheckpointHandler {
       val writer = storage.getWriter(actorId.name.replace("Worker:", ""))
       writer.writeRecord(chkpt)
       writer.flush()
-      logger.info(s"Checkpoint finalized, size = ${chkpt.size()}")
-      chkpt.size()
+      logger.info(s"Checkpoint finalized, total size = ${chkpt.size()} bytes")
+      chkpt.size() - oldSize // report the diff to controller
     } else {
-      0L
+      0L // for estimation
     }
   }
 }

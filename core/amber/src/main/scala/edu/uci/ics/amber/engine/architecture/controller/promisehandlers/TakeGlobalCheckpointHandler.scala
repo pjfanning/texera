@@ -5,7 +5,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandle
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeCheckpointHandler.FinalizeCheckpoint
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.TakeCheckpointHandler.TakeCheckpoint
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PrepareCheckpointHandler.PrepareCheckpoint
 import edu.uci.ics.amber.engine.common.{CheckpointState, SerializedState}
 import edu.uci.ics.amber.engine.common.ambermessage.{NoAlignment, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
@@ -49,7 +49,7 @@ trait TakeGlobalCheckpointHandler {
         NoAlignment,
         cp.workflow.physicalPlan,
         physicalOpToTakeCheckpoint,
-        TakeCheckpoint(msg.estimationOnly)
+        PrepareCheckpoint(msg.estimationOnly)
       ),
       sender
     ).flatMap { ret =>
@@ -70,7 +70,7 @@ trait TakeGlobalCheckpointHandler {
           val writer = storage.getWriter(actorId.name)
           writer.writeRecord(chkpt)
           writer.flush()
-          logger.info(s"global checkpoint finalized, size = $totalSize")
+          logger.info(s"global checkpoint finalized, total size = $totalSize")
           totalSize
         }
     }
