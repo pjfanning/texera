@@ -83,7 +83,7 @@ class WorkflowWorker(
   )
   val timerService = new WorkerTimerService(actorService)
 
-  var dpThread:DPThread = _
+  var dpThread: DPThread = _
 
   val inputRecordings =
     new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
