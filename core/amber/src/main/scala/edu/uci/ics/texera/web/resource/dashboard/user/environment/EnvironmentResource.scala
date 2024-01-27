@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.D
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao, EnvironmentOfWorkflowDao}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, EnvironmentIDs, EnvironmentNotFoundMessage, DatasetOfEnvironmentAlreadyExistsMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import io.dropwizard.servlets.assets.ResourceNotFoundException
@@ -20,6 +20,7 @@ import org.jooq.types.UInteger
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.{MediaType, Response}
 import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam, Produces}
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.asScalaBufferConverter
 
@@ -217,21 +218,19 @@ class EnvironmentResource {
   def getDatasetsOfEnvironment(
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser
-  ): List[DashboardDataset] = {
+  ): List[DatasetOfEnvironment] = {
     val uid = user.getUid
     withExceptionHandling(() => {
       withTransaction(context) { ctx =>
+        if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
+          Response
+            .status(Response.Status.FORBIDDEN)
+            .entity(UserNoPermissionExceptionMessage)
+            .build()
+        }
         val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
-
-        val datasets = datasetOfEnvironmentDao.fetchByEid(eid)
-        val res = ListBuffer[DashboardDataset]()
-
-        datasets.forEach(dataset => {
-            val did = dataset.getDid
-            res += DatasetResource.getDashboardDataset(ctx, did, uid)
-          }
-        )
-        res.toList
+        val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
+        datasetsOfEnvironment.toList
       }
     })
   }
@@ -247,7 +246,6 @@ class EnvironmentResource {
 
     withExceptionHandling(() => {
       withTransaction(context)(ctx => {
-        val env = getEnvironmentByEid(ctx, eid)
         val did = datasetID.did
 
         if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)

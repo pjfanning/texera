@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {DashboardEnvironment, Environment} from "../../type/environment";
+import {DashboardEnvironment, DatasetOfEnvironment, Environment} from "../../type/environment";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {HttpClient} from "@angular/common/http";
 import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
@@ -7,15 +7,16 @@ import next from "ajv/dist/vocabularies/next";
 import {Observable, of, throwError} from "rxjs";
 import {catchError, filter, map} from "rxjs/operators";
 import {AppSettings} from "../../../../common/app-setting";
-import {InputOfEnvironment} from "../../type/input_of_environment";
+import {Dataset} from "../../../../common/type/dataset";
 
 export const ENVIRONMENT_BASE_URL = "environment";
 export const ENVIRONMENT_CREATE_URL = ENVIRONMENT_BASE_URL + "/create"
 export const ENVIRONMENT_DELETE_URL = ENVIRONMENT_BASE_URL + "/delete"
-export const ENVIRONMENT_INPUT_RETRIEVAL_URL = "/input"
-export const ENVIRONMENT_INPUT_ADD_URL = ENVIRONMENT_INPUT_RETRIEVAL_URL + "/add"
+export const ENVIRONMENT_LINK_WORKFLOW = ENVIRONMENT_BASE_URL + "/linkWorkflow"
+export const ENVIRONMENT_DATASET_RETRIEVAL_URL = "/dataset"
+export const ENVIRONMENT_DATASET_ADD_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/add"
 
-
+export const ENVIRONMENT_DATASET_REMOVE_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/remove"
 @Injectable({
   providedIn: 'root'
 })
@@ -40,19 +41,7 @@ export class EnvironmentService {
       .pipe()
   }
 
-  retrieveEnvironments(): Observable<DashboardEnvironment[]> {
-    // TODO: finish this
-    return this.http
-      .get<DashboardEnvironment[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}`)
-      .pipe()
-  }
-
-  getAllEnvironments(): DashboardEnvironment[] {
-    return this.environments;
-  }
-
-  // Read: Get an environment by its index (eid)
-  retrieveEnvironmentByEid(eid: number): Observable<null | DashboardEnvironment> {
+  retrieveEnvironmentByEid(eid: number): Observable<DashboardEnvironment> {
     return this.http
       .get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}`)
       .pipe(
@@ -61,24 +50,21 @@ export class EnvironmentService {
           return throwError(error);
         }),
         map(response => {
-          // If response is empty or null (considering backend sends 204 or empty object for None)
-          if (!response) {
-            return null;
-          }
           return response
         })
       )
   }
 
-  addDatasetToEnvironment(input: InputOfEnvironment): Observable<Response> {
-    const eid = input.eid;
-
+  addDatasetToEnvironment(eid: number, did: number): Observable<Response> {
     return this.http
-      .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_INPUT_ADD_URL}`, {
-        eid: input.eid,
-        did: input.did,
-        versionDescriptor: ""
+      .post<Response>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_ADD_URL}`, {
+        did: did
       })
+  }
+
+  retrieveDatasetsOfEnvironment(eid: number): Observable<DatasetOfEnvironment[]> {
+      return this.http
+          .get<DatasetOfEnvironment[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_RETRIEVAL_URL}`)
   }
 
   // Delete: Remove an environment by its index (eid)
