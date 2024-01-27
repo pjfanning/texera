@@ -15,12 +15,7 @@ class VFSRecordStorage[T >: Null <: AnyRef](vfsLogFolderURI: URI)
     with LazyLogging {
 
   private val fs: FileSystemManager = VFS.getManager
-  private var folder: FileObject = _
-  try {
-    folder = fs.resolveFile(vfsLogFolderURI)
-  } catch {
-    case e: Throwable => throw e
-  }
+  private val folder: FileObject = fs.resolveFile(vfsLogFolderURI)
 
   if (!folder.exists()) {
     folder.createFolder()
