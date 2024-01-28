@@ -31,6 +31,7 @@
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "node_modules/ng-zorro-antd/resizable/style/index.min.css",
               "node_modules/monaco-editor/min/vs/editor/editor.main.css",
+              "node_modules/monaco-breakpoints/dist/style.css",
               "src/styles.scss"
             ],
             "scripts": [

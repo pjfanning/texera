@@ -57,6 +57,8 @@ export class CodeareaCustomTemplateComponent extends FieldType<any> implements A
       maxWidth: "95vw",
       maxHeight: "95vh",
       data: this.field.formControl,
+      disableClose: true,
+      hasBackdrop: false,
     });
   }
 

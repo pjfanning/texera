@@ -7,8 +7,8 @@ import { YText } from "yjs/dist/src/types/YText";
 import { MonacoBinding } from "y-monaco";
 import { Subject } from "rxjs";
 import { takeUntil } from "rxjs/operators";
-import { MonacoLanguageClient } from "monaco-languageclient";
-import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from "vscode-ws-jsonrpc";
+// import { MonacoLanguageClient } from "monaco-languageclient";
+// import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from "vscode-ws-jsonrpc";
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
 import { DomSanitizer, SafeStyle } from "@angular/platform-browser";
 import { Coeditor } from "../../../common/type/user";
@@ -16,8 +16,11 @@ import { YType } from "../../types/shared-editing.interface";
 import { FormControl } from "@angular/forms";
 import { getWebsocketUrl } from "src/app/common/util/url";
 import { isUndefined } from "lodash";
-import { CloseAction, ErrorAction, MessageTransports } from "vscode-languageclient/lib/common/client.js";
+// import { CloseAction, ErrorAction, MessageTransports } from "vscode-languageclient/lib/common/client.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import { MonacoBreakpoint } from "monaco-breakpoints";
+import { WorkflowWebsocketService } from "../../service/workflow-websocket/workflow-websocket.service";
+import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
 
 /**
  * CodeEditorDialogComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.
@@ -43,12 +46,17 @@ export class CodeEditorDialogComponent implements AfterViewInit, SafeStyle, OnDe
   private languageServerSocket?: WebSocket;
   private workflowVersionStreamSubject: Subject<void> = new Subject<void>();
 
+  workerIds: readonly string[] = [];
+
+
   constructor(
     private sanitizer: DomSanitizer,
     @Inject(MAT_DIALOG_DATA) formControl: FormControl,
     private workflowActionService: WorkflowActionService,
     private workflowVersionService: WorkflowVersionService,
-    public coeditorPresenceService: CoeditorPresenceService
+    public coeditorPresenceService: CoeditorPresenceService,
+    private workflowWebsocketService: WorkflowWebsocketService,
+    private executeWorkflowService: ExecuteWorkflowService,
   ) {
     this.formControl = formControl;
   }
@@ -84,27 +92,27 @@ export class CodeEditorDialogComponent implements AfterViewInit, SafeStyle, OnDe
     }
   }
 
-  createLanguageClient(transports: MessageTransports): MonacoLanguageClient {
-    return new MonacoLanguageClient({
-      name: "Python UDF Language Client",
-      clientOptions: {
-        documentSelector: ["python"],
-        errorHandler: {
-          error: () => ({ action: ErrorAction.Continue }),
-          closed: () => ({ action: CloseAction.Restart }),
-        },
-      },
-      connectionProvider: {
-        get: () => {
-          return Promise.resolve(transports);
-        },
-      },
-    });
-  }
-
-  getLanguageServerSocket() {
-    return this.languageServerSocket;
-  }
+  // createLanguageClient(transports: MessageTransports): MonacoLanguageClient {
+  //   return new MonacoLanguageClient({
+  //     name: "Python UDF Language Client",
+  //     clientOptions: {
+  //       documentSelector: ["python"],
+  //       errorHandler: {
+  //         error: () => ({ action: ErrorAction.Continue }),
+  //         closed: () => ({ action: CloseAction.Restart }),
+  //       },
+  //     },
+  //     connectionProvider: {
+  //       get: () => {
+  //         return Promise.resolve(transports);
+  //       },
+  //     },
+  //   });
+  // }
+  //
+  // getLanguageServerSocket() {
+  //   return this.languageServerSocket;
+  // }
 
   ngAfterViewInit() {
     const dialog = document.getElementById("mat-dialog-udf");
@@ -168,16 +176,40 @@ export class CodeEditorDialogComponent implements AfterViewInit, SafeStyle, OnDe
     return this.sanitizer.bypassSecurityTrustHtml(textCSS);
   }
 
+
+
+  private restoreBreakpoints(instance: MonacoBreakpoint, breakpoints: number[]){
+    for (let lineNumber of breakpoints) {
+      const decorationId = instance["lineNumberAndDecorationIdMap"].get(lineNumber)
+      if (decorationId) {
+        instance["removeSpecifyDecoration"](decorationId, lineNumber);
+      } else {
+        const range: monaco.IRange = {
+          startLineNumber: lineNumber,
+          endLineNumber: lineNumber,
+          startColumn: 0,
+          endColumn: 0
+        }
+        instance["createSpecifyDecoration"](range);
+      }
+    }
+  }
+
   /**
    * Create a Monaco editor and connect it to MonacoBinding.
    * @private
    */
   private initMonaco() {
+
     const editor = monaco.editor.create(this.divEditor?.nativeElement, {
       language: "python",
       fontSize: 11,
       theme: "vs-dark",
       automaticLayout: true,
+      minimap: {
+        enabled: false,
+      },
+      glyphMargin: true,
     });
 
     if (this.code) {
@@ -189,33 +221,86 @@ export class CodeEditorDialogComponent implements AfterViewInit, SafeStyle, OnDe
       );
     }
     this.editor = editor;
-    this.connectLanguageServer();
+    // this.connectLanguageServer();
+
+
+    const instance  = new MonacoBreakpoint({ editor });
+
+    const currentOperatorId: string = this.workflowActionService
+      .getJointGraphWrapper()
+      .getCurrentHighlightedOperatorIDs()[0];
+    this.workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
+
+    this.restoreBreakpoints(instance, this.executeWorkflowService.breakpoints)
+
+    instance.on("breakpointChanged", breakpoints => {
+      console.log("breakpointChanged: ", breakpoints);
+      // first un-set all existing breakpoints
+      for (let worker of this.workerIds) {
+        for (let i = breakpoints.length - 1; i >= 0; i--) {
+          const breakpointNum = this.executeWorkflowService.breakpointNum + i
+          this.workflowWebsocketService.send("DebugCommandRequest", {
+            operatorId: currentOperatorId,
+            workerId: worker,
+            cmd: "clear " + breakpointNum,
+          });
+        }
+      }
+      for (let breakpoint of breakpoints) {
+        for (let worker of this.workerIds) {
+          this.workflowWebsocketService.send("DebugCommandRequest", {
+            operatorId: currentOperatorId,
+            workerId: worker,
+            cmd: "break " + breakpoint,
+          });
+        }
+      }
+      this.executeWorkflowService.breakpoints = breakpoints
+      this.executeWorkflowService.breakpointNum += breakpoints.length
+    })
+
+    this.executeWorkflowService.highlightLineNum.subscribe(lineNum => {
+      console.log("highlight " + lineNum)
+      instance.removeHighlight();
+      if (lineNum != 0) {
+        instance.setLineHighlight(lineNum);
+      }
+    })
+
+
+    // console.log(instance)
+
+    // highlight background for the passed line number
+    // instance.setLineHighlight(1)
+
+// // remove the current highlight background
+//     instance.removeHighlight();
   }
 
   /**
    * Create a Monaco editor and connect it to MonacoBinding.
    * @private
    */
-  private connectLanguageServer() {
-    const url = getWebsocketUrl("/python-language-server", "3000");
-
-    if (this.languageServerSocket === undefined) {
-      this.languageServerSocket = new WebSocket(url);
-      this.languageServerSocket.onopen = () => {
-        if (this.languageServerSocket !== undefined) {
-          const socket = toSocket(this.languageServerSocket);
-          const reader = new WebSocketMessageReader(socket);
-          const writer = new WebSocketMessageWriter(socket);
-          const languageClient = this.createLanguageClient({
-            reader,
-            writer,
-          });
-          languageClient.start();
-          reader.onClose(() => languageClient.stop());
-        }
-      };
-    }
-  }
+  // private connectLanguageServer() {
+  //   const url = getWebsocketUrl("/python-language-server", "3000");
+  //
+  //   if (this.languageServerSocket === undefined) {
+  //     this.languageServerSocket = new WebSocket(url);
+  //     this.languageServerSocket.onopen = () => {
+  //       if (this.languageServerSocket !== undefined) {
+  //         const socket = toSocket(this.languageServerSocket);
+  //         const reader = new WebSocketMessageReader(socket);
+  //         const writer = new WebSocketMessageWriter(socket);
+  //         const languageClient = this.createLanguageClient({
+  //           reader,
+  //           writer,
+  //         });
+  //         languageClient.start();
+  //         reader.onClose(() => languageClient.stop());
+  //       }
+  //     };
+  //   }
+  // }
 
   private initDiffEditor() {
     if (isUndefined(this.code)) {

@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { from, Observable, Subject } from "rxjs";
+import { BehaviorSubject, from, Observable, Subject } from "rxjs";
 import { WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
 import { WorkflowGraphReadonly } from "../workflow-graph/model/workflow-graph";
 import {
@@ -68,6 +68,11 @@ export class ExecuteWorkflowService {
   //   information is stored on the frontend.
   private assignedWorkerIds: Map<string, readonly string[]> = new Map();
 
+  public breakpoints: number[] = [];
+  public breakpointNum: number = 0;
+  public highlightLineNum: Subject<number> = new BehaviorSubject(0)
+
+
   constructor(
     private workflowActionService: WorkflowActionService,
     private workflowWebsocketService: WorkflowWebsocketService,
@@ -89,6 +94,56 @@ export class ExecuteWorkflowService {
         }
       });
     }
+
+    this.subscribePythonLineHighlight();
+  }
+
+
+  private subscribePythonLineHighlight() {
+    this.workflowWebsocketService.subscribeToEvent("ConsoleUpdateEvent").subscribe(event => {
+      if (event.messages.length == 0) {
+        return
+      }
+      const msg = event.messages[0]
+      console.log("processing message", msg)
+      if (msg.source == "(Pdb)" && msg.msgType.name == "DEBUGGER") {
+        if (msg.title.startsWith(">")) {
+          const lineNum = this.extractLineNumber(msg.title)
+          if (lineNum) {
+            this.highlightLineNum.next(lineNum)
+          }
+        }
+      }
+      if (msg.msgType.name == "ERROR") {
+        const lineNum = this.extractLineNumberException(msg.source)
+        console.log(lineNum)
+        if (lineNum) {
+          this.highlightLineNum.next(lineNum)
+        }
+      }
+    })
+  }
+
+  private extractLineNumber(message: string): number | undefined {
+    const regex = /\.py\((\d+)\)/;
+    const match = message.match(regex);
+
+    if (match && match[1]) {
+      return parseInt(match[1]);
+    }
+
+    return undefined;
+  }
+
+  private extractLineNumberException(message: string): number | undefined {
+    const regex = /:(\d+)/;
+    const match = message.match(regex);
+
+    if (match && match[1]) {
+      return parseInt(match[1]);
+    }
+
+    return undefined;
   }
 
   public handleReconfigurationEvent(event: TexeraWebsocketEvent) {
@@ -182,6 +237,8 @@ export class ExecuteWorkflowService {
 
   public executeWorkflow(executionName: string): void {
     if (environment.amberEngineEnabled) {
+      this.breakpointNum = 0;
+      this.highlightLineNum.next(0);
       this.executeWorkflowAmberTexera(executionName);
     } else {
       throw new Error("old texera engine not supported");

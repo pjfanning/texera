@@ -264,6 +264,36 @@ export class MenuComponent implements OnInit {
     this.workflowActionService.getJointGraphWrapper().toggleGrids();
   }
 
+  public onClickStepOver(): void {
+    const currentOperatorId: string = this.workflowActionService
+      .getJointGraphWrapper()
+      .getCurrentHighlightedOperatorIDs()[0];
+    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
+
+    for (let worker of workerIds) {
+      this.workflowWebsocketService.send("DebugCommandRequest", {
+        operatorId: currentOperatorId,
+        workerId: worker,
+        cmd: "n",
+      });
+    }
+  }
+
+  public onClickContinue(): void {
+    const currentOperatorId: string = this.workflowActionService
+      .getJointGraphWrapper()
+      .getCurrentHighlightedOperatorIDs()[0];
+    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
+
+    for (let worker of workerIds) {
+      this.workflowWebsocketService.send("DebugCommandRequest", {
+        operatorId: currentOperatorId,
+        workerId: worker,
+        cmd: "c",
+      });
+    }
+  }
+
   /**
    * This method will decrease the zoom ratio and send the new zoom ratio value
    *  to the joint graph wrapper to change overall zoom ratio that is used in
