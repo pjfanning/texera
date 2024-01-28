@@ -128,7 +128,7 @@ export class UserEnvironmentComponent implements AfterViewInit {
                 // this.environments.unshift(entry);
                 // console.log(this.environments);
                 // this.searchResultsComponent.setEntries(this.environments);
-                this.environmentService.addEnvironment(new_entry).subscribe({
+                this.environmentService.createEnvironment(new_entry).subscribe({
                         next(_) {
                             console.log("environment creation successfully")
 

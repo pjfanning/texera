@@ -10,7 +10,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.D
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao, EnvironmentOfWorkflowDao}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import io.dropwizard.servlets.assets.ResourceNotFoundException
@@ -54,11 +54,14 @@ object EnvironmentResource {
   }
 
   private def doesDatasetExistInEnvironment(ctx: DSLContext, did: UInteger, eid: UInteger): Boolean = {
-    ctx.selectCount()
+    val count = ctx.selectCount()
       .from(DATASET_OF_ENVIRONMENT)
       .where(DATASET_OF_ENVIRONMENT.EID.eq(eid)
         .and(DATASET_OF_ENVIRONMENT.DID.eq(did)))
-      .fetchOne(0, classOf[Int]) > 0
+      .fetchOne() // Fetch the record
+
+    val countVal = count.getValue(0, classOf[Int]) // Get the count value from the record
+    countVal > 0
   }
 
   private def fetchEnvironmentIdOfWorkflow(ctx: DSLContext, wid: UInteger): Option[UInteger] = {
@@ -123,6 +126,8 @@ object EnvironmentResource {
   private val EnvironmentNotFoundMessage = "environment not found"
   private val DatasetOfEnvironmentAlreadyExistsMessage =
     "the given dataset already exists in the environment"
+  private val DatasetOfEnvironmentDoseNotExistMessage =
+    "the given dataset does not exist in the environment"
 }
 
 @RolesAllowed(Array("REGULAR", "ADMIN"))
@@ -173,10 +178,7 @@ class EnvironmentResource {
 
           for (eid <- environmentIDs.eids) {
             if (!doesUserOwnEnvironment(ctx, uid, eid)) {
-              Response
-                .status(Response.Status.FORBIDDEN)
-                .entity(UserNoPermissionExceptionMessage)
-                .build()
+              throw new Exception(UserNoPermissionExceptionMessage)
             }
             environmentDao.deleteById(eid)
           }
@@ -198,10 +200,7 @@ class EnvironmentResource {
       {
         withTransaction(context) { ctx =>
           if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
-            Response
-              .status(Response.Status.FORBIDDEN)
-              .entity(UserNoPermissionExceptionMessage)
-              .build()
+            throw new Exception(UserNoPermissionExceptionMessage)
           }
           val environment = getEnvironmentByEid(ctx, eid);
           DashboardEnvironment(
@@ -223,10 +222,7 @@ class EnvironmentResource {
     withExceptionHandling(() => {
       withTransaction(context) { ctx =>
         if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
-          Response
-            .status(Response.Status.FORBIDDEN)
-            .entity(UserNoPermissionExceptionMessage)
-            .build()
+          throw new Exception(UserNoPermissionExceptionMessage)
         }
         val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
         val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
@@ -250,14 +246,14 @@ class EnvironmentResource {
 
         if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)
         || !userHasWriteAccessToEnvironment(ctx, eid, uid)) {
-          Response
+          return Response
             .status(Response.Status.FORBIDDEN)
             .entity(UserNoPermissionExceptionMessage)
             .build()
         }
 
         if (doesDatasetExistInEnvironment(ctx, did, eid)) {
-          Response
+          return Response
             .status(Response.Status.BAD_REQUEST)
             .entity(DatasetOfEnvironmentAlreadyExistsMessage)
             .build()
@@ -276,13 +272,43 @@ class EnvironmentResource {
     })
   }
 
-  @DELETE
-  @Path("/{eid}/dataset/{did}")
+  @POST
+  @Path("/{eid}/dataset/remove")
   def removeDatasetForEnvironment(
                                    @PathParam("eid") eid: UInteger,
-                                   @PathParam("did") did: UInteger,
-                                   @Auth user: SessionUser
-                                 ): Response = ???
+                                   @Auth user: SessionUser,
+                                   datasetID: DatasetID,
+                                 ): Response = {
+    val uid = user.getUid
+    withExceptionHandling(() => {
+      withTransaction(context)(ctx => {
+        val did = datasetID.did
+
+        if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)
+          || !userHasWriteAccessToEnvironment(ctx, eid, uid)) {
+          return Response
+            .status(Response.Status.FORBIDDEN)
+            .entity(UserNoPermissionExceptionMessage)
+            .build()
+        }
+
+        if (!doesDatasetExistInEnvironment(ctx, did, eid)) {
+          return Response
+            .status(Response.Status.BAD_REQUEST)
+            .entity(DatasetOfEnvironmentDoseNotExistMessage)
+            .build()
+        }
+
+
+        ctx.deleteFrom(DATASET_OF_ENVIRONMENT)
+          .where(DATASET_OF_ENVIRONMENT.DID.eq(did))
+          .and(DATASET_OF_ENVIRONMENT.EID.eq(eid))
+          .execute()
+
+        Response.status(Response.Status.OK).build()
+      })
+    })
+  }
   @POST
   @Path("/{eid}/linkWorkflow")
   def linkWorkflowToEnvironment(
@@ -296,7 +322,7 @@ class EnvironmentResource {
       withTransaction(context)(ctx => {
         val wid = workflowLink.wid
         if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
-          Response
+          return Response
             .status(Response.Status.FORBIDDEN)
             .entity(UserNoPermissionExceptionMessage)
             .build()

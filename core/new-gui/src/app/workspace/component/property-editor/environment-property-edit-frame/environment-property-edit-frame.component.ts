@@ -50,7 +50,7 @@ export class EnvironmentPropertyEditFrameComponent implements OnInit {
         if (selectedEnvironmentID == null) {
           // If an environment was not selected, create a new one and relate it
           // Here, you can perform further actions with the selected environment
-          this.environmentService.addEnvironment(
+          this.environmentService.createEnvironment(
             {
               eid: undefined,
               uid: undefined,

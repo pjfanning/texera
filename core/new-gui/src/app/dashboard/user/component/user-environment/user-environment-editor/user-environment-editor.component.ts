@@ -13,6 +13,7 @@ import {EnvironmentService} from "../../../service/user-environment/environment.
 export class UserEnvironmentEditorComponent implements OnInit {
   environment: DashboardEnvironment | undefined;
   eid : number = 0;
+  selectedMenu: "datasets" = "datasets";
 
   constructor(
     private router: Router,
@@ -25,9 +26,7 @@ export class UserEnvironmentEditorComponent implements OnInit {
       this.eid = +params['eid'];  // The '+' converts the string to a number
 
       this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
-        if (env == null) {
-          this.environment = undefined;
-        } else {
+        if (env) {
           this.environment = env;
         }
       })
