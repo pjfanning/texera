@@ -1,0 +1,11 @@
+<nz-collapse>
+    <nz-collapse-panel *ngFor="let panel of panels; let i = index" [nzHeader]="panel.title" [nzExtra]="extraTemplate">
+        <ng-template #extraTemplate>
+            <i nz-icon nzType="ellipsis" nzTheme="outline" (click)="onMoreAction(i, $event)"></i>
+        </ng-template>
+        <div>
+            <!-- Some dummy content inside the panel -->
+            <div>Dummy Content for {{ panel.title }}</div>
+        </div>
+    </nz-collapse-panel>
+</nz-collapse>
