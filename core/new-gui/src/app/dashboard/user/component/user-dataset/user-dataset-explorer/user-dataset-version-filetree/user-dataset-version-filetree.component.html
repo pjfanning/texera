@@ -1,28 +1,19 @@
 <div class="file-tree-container">
-  <tree-root
-    [nodes]="fileTreeNodeList"
-    [options]="fileTreeDisplayOptions">
-    <ng-template
-      #treeNodeTemplate
-      let-node>
+  <tree-root [nodes]="fileTreeNodeList" [options]="fileTreeDisplayOptions">
+    <ng-template #treeNodeTemplate let-node>
       <span title="{{ node.data.name }}">
-        <i
-          *ngIf="node.data.children"
-          class="fa fa-folder"></i>
-        <i
-          *ngIf="!node.data.children"
-          class="fa fa-file"></i>
+        <!-- NG-ZORRO folder icon -->
+        <i *ngIf="node.data.children" nz-icon nzType="folder" nzTheme="outline"></i>
+        <!-- NG-ZORRO file icon -->
+        <i *ngIf="!node.data.children" nz-icon nzType="file" nzTheme="outline"></i>
         {{ node.data.name }}
         <button
-          nz-button
-          nzType="link"
-          *ngIf="isFileTreeNodeDeletable"
-          class="delete-button"
-          (click)="deleteFileTreeNode(node.data)">
-          <i
-            nz-icon
-            nzType="delete"
-            nzTheme="outline"></i>
+                nz-button
+                nzType="link"
+                *ngIf="isFileTreeNodeDeletable"
+                class="delete-button"
+                (click)="deleteFileTreeNode(node.data)">
+          <i nz-icon nzType="delete" nzTheme="outline"></i>
         </button>
       </span>
     </ng-template>

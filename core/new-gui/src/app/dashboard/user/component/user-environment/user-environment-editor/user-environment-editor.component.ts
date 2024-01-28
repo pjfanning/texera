@@ -15,6 +15,7 @@ export class UserEnvironmentEditorComponent implements OnInit {
   eid : number = 0;
   selectedMenu: "datasets" = "datasets";
 
+
   constructor(
     private router: Router,
     private activatedRoute : ActivatedRoute,
@@ -31,5 +32,29 @@ export class UserEnvironmentEditorComponent implements OnInit {
         }
       })
     });
+  }
+
+  get environmentName(): string {
+    if (this.environment) {
+      return this.environment.environment.name;
+    }
+    return ''
+  }
+
+  get environmentCreationTime(): number {
+    if (this.environment) {
+      if (this.environment.environment.creationTime) {
+        return this.environment.environment.creationTime;
+      }
+    }
+    return 0;
+  }
+
+  get environmentDescription(): string {
+    if (this.environment) {
+      return this.environment.environment.description;
+    }
+
+    return '';
   }
 }

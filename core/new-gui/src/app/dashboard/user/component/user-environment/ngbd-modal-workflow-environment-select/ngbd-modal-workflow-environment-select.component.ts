@@ -29,11 +29,12 @@ export class NgbdModalWorkflowEnvironmentSelectComponent implements OnInit {
     if (!this.isEditingWorkflow) {
       this.goButtonText = BUTTON_TEXT_RUN_WORKFLOW;
     }
-    const environmentIdentifiers = this.environmentService.retrieveEnvironments();
-    this.environmentService.retrieveEnvironments().subscribe(envs => {
-      console.log(envs)
-      this.environments = envs
-    });
+    // TODO: place holder, once environment Milestone 1 is merged, this can be done
+    // const environmentIdentifiers = this.environmentService.retrieveEnvironments();
+    // this.environmentService.retrieveEnvironments().subscribe(envs => {
+    //   console.log(envs)
+    //   this.environments = envs
+    // });
   }
 
   goToWorkflow(): void {
