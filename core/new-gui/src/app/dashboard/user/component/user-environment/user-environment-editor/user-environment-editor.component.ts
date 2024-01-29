@@ -1,8 +1,10 @@
 import {ActivatedRoute, Router} from '@angular/router';
 import {UntilDestroy} from "@ngneat/until-destroy";
 import {Component, OnInit} from "@angular/core";
-import {DashboardEnvironment} from "../../../type/environment";
+import {DashboardEnvironment, DatasetOfEnvironmentDetails} from "../../../type/environment";
 import {EnvironmentService} from "../../../service/user-environment/environment.service";
+import {NotificationService} from "../../../../../common/service/notification/notification.service";
+import {DashboardDataset} from "../../../type/dashboard-dataset.interface";
 
 @UntilDestroy()
 @Component({
@@ -15,25 +17,53 @@ export class UserEnvironmentEditorComponent implements OnInit {
   eid : number = 0;
   selectedMenu: "datasets" = "datasets";
 
-
+  datasetsOfEnvironment: Map<[number, number], DatasetOfEnvironmentDetails> = new Map();
   constructor(
     private router: Router,
     private activatedRoute : ActivatedRoute,
-    private environmentService: EnvironmentService) {}
+    private environmentService: EnvironmentService,
+    private notificationService: NotificationService) {}
 
   ngOnInit() {
     this.activatedRoute.params.subscribe(params => {
       // Get the eid from the params
       this.eid = +params['eid'];  // The '+' converts the string to a number
 
-      this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe(env => {
+      this.environmentService.retrieveEnvironmentByEid(this.eid).subscribe({
+        next: env => {
         if (env) {
-          this.environment = env;
+            this.environment = env;
+            // load the datasets
+            this.loadDatasetsOfEnvironment();
+          }
+        },
+        error: err => {
+          this.notificationService.error(`Environment loading encounters error`)
         }
       })
     });
   }
 
+  private loadDatasetsOfEnvironment() {
+    if (this.environment && this.environment.environment.eid) {
+      const eid = this.environment.environment.eid;
+      this.environmentService.retrieveDatasetsOfEnvironmentDetails(eid)
+          .subscribe({
+            next: datasets => {
+              datasets.forEach((entry) => {
+                const did = entry.dataset.did;
+                const dvid = entry.version.dvid;
+                if (did && dvid) {
+                  this.datasetsOfEnvironment.set([did, dvid], entry);
+                }
+              })
+            },
+            error: err => {
+              this.notificationService.error("Datasets of Environment loading error!");
+            }
+          })
+    }
+  }
   get environmentName(): string {
     if (this.environment) {
       return this.environment.environment.name;

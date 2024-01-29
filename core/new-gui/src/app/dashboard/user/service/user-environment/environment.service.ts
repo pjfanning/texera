@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {DashboardEnvironment, DatasetOfEnvironment, Environment} from "../../type/environment";
+import {DashboardEnvironment, DatasetOfEnvironment, DatasetOfEnvironmentDetails, Environment} from "../../type/environment";
 import {NotificationService} from "../../../../common/service/notification/notification.service";
 import {HttpClient} from "@angular/common/http";
 import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
@@ -8,12 +8,16 @@ import {Observable, of, throwError} from "rxjs";
 import {catchError, filter, map} from "rxjs/operators";
 import {AppSettings} from "../../../../common/app-setting";
 import {Dataset} from "../../../../common/type/dataset";
+import {DashboardDataset} from "../../type/dashboard-dataset.interface";
 
 export const ENVIRONMENT_BASE_URL = "environment";
 export const ENVIRONMENT_CREATE_URL = ENVIRONMENT_BASE_URL + "/create"
 export const ENVIRONMENT_DELETE_URL = ENVIRONMENT_BASE_URL + "/delete"
 export const ENVIRONMENT_LINK_WORKFLOW = "/linkWorkflow"
 export const ENVIRONMENT_DATASET_RETRIEVAL_URL = "/dataset"
+export const ENVIRONMENT_DATASET_DETAILS_RETRIEVAL_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/details"
+
+
 export const ENVIRONMENT_DATASET_ADD_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/add"
 
 export const ENVIRONMENT_DATASET_REMOVE_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/remove"
@@ -73,6 +77,11 @@ export class EnvironmentService {
     retrieveDatasetsOfEnvironment(eid: number): Observable<DatasetOfEnvironment[]> {
         return this.http
             .get<DatasetOfEnvironment[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_RETRIEVAL_URL}`)
+    }
+
+    retrieveDatasetsOfEnvironmentDetails(eid: number): Observable<DatasetOfEnvironmentDetails[]> {
+        return this.http
+            .get<DatasetOfEnvironmentDetails[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_RETRIEVAL_URL}`)
     }
 
     // Delete: Remove an environment by its index (eid)

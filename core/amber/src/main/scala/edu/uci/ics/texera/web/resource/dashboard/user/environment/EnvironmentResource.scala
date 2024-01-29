@@ -3,14 +3,13 @@ package edu.uci.ics.texera.web.resource.dashboard.user.environment
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{DatasetOfEnvironment, Environment, EnvironmentOfWorkflow}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfEnvironment, DatasetVersion, Environment, EnvironmentOfWorkflow}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.ENVIRONMENT_OF_WORKFLOW
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetOfEnvironmentDao, EnvironmentDao, EnvironmentOfWorkflowDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfEnvironmentDao, DatasetVersionDao, EnvironmentDao, EnvironmentOfWorkflowDao}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDoseNotExistMessage, DatasetOfEnvironmentDetails, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import io.dropwizard.servlets.assets.ResourceNotFoundException
@@ -111,10 +110,41 @@ object EnvironmentResource {
     false
   }
 
+  private def retrieveDatasetsAndVersions(ctx: DSLContext, uid: UInteger, datasetsOfEnvironment: List[DatasetOfEnvironment]): List[DatasetOfEnvironmentDetails] = {
+    datasetsOfEnvironment.map { datasetOfEnvironment =>
+      val did = datasetOfEnvironment.getDid
+      val dvid = datasetOfEnvironment.getDvid
+
+      // Check for read access to the dataset
+      if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)) {
+        throw new Exception(UserNoPermissionExceptionMessage)
+      }
+
+      val datasetDao = new DatasetDao(ctx.configuration())
+      val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
+
+      // Retrieve the Dataset and DatasetVersion
+      val dataset = datasetDao.fetchOneByDid(did)
+      val datasetVersion = datasetVersionDao.fetchOneByDvid(dvid)
+
+      if (dataset == null || datasetVersion == null) {
+        throw new Exception(EnvironmentNotFoundMessage) // Dataset or its version not found
+      }
+
+      DatasetOfEnvironmentDetails(dataset, datasetVersion)
+    }
+  }
+
+
   case class DashboardEnvironment(
       environment: Environment,
       isEditable: Boolean,
   )
+
+  case class DatasetOfEnvironmentDetails(
+      dataset: Dataset,
+      version: DatasetVersion
+                                      )
 
   case class EnvironmentIDs(eids: List[UInteger])
 
@@ -227,6 +257,27 @@ class EnvironmentResource {
         val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
         val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
         datasetsOfEnvironment.toList
+      }
+    })
+  }
+
+  @GET
+  @Path("/{eid}/dataset/details")
+  def getDatasetsOfEnvironmentDetails(
+      @PathParam("eid") eid: UInteger,
+      @Auth user: SessionUser
+                                     ): List[DatasetOfEnvironmentDetails] = {
+    val uid = user.getUid
+    withExceptionHandling(() => {
+      withTransaction(context) { ctx =>
+        if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
+          throw new Exception(UserNoPermissionExceptionMessage)
+        }
+        val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
+        val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
+        datasetsOfEnvironment.toList
+
+        retrieveDatasetsAndVersions(ctx, uid, datasetsOfEnvironment.toList)
       }
     })
   }

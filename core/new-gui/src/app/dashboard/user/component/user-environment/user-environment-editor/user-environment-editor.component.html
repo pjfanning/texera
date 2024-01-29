@@ -22,9 +22,12 @@
   <!-- Conditional Content Based on Selected Menu -->
   <div *ngIf="selectedMenu === 'datasets'">
     <!-- Content for Datasets -->
-    <p>This is the Datasets content.</p>
+    <texera-user-environment-datasets-viewer
+            [eid]="eid"
+      [datasetIdToDatasetOfEnvironmentDetails]="datasetsOfEnvironment"
+    >
+    </texera-user-environment-datasets-viewer>
   </div>
 
   <!-- Add more content sections for other menu items if needed -->
-  <texera-user-environment-datasets-viewer></texera-user-environment-datasets-viewer>
 </nz-layout>

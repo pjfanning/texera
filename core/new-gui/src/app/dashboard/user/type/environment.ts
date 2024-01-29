@@ -1,3 +1,5 @@
+import {Dataset, DatasetVersion} from "../../../common/type/dataset";
+
 export interface DashboardEnvironment {
   environment: Environment,
   isEditable: boolean | undefined,
@@ -17,4 +19,9 @@ export interface DatasetOfEnvironment {
   did: number;
   eid: number;
   dvid: number;
+}
+
+export interface DatasetOfEnvironmentDetails {
+  dataset: Dataset,
+  version: DatasetVersion
 }
