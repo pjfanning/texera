@@ -117,6 +117,7 @@ case class ExecutionGroupBookmarkRequest(
 )
 case class ExecutionGroupDeleteRequest(wid: UInteger, eIds: Array[UInteger])
 case class ExecutionRenameRequest(wid: UInteger, eId: UInteger, executionName: String)
+case class OptimizeReplayRequest(wid: UInteger, eid: UInteger, logicalPlanPojo: LogicalPlanPojo)
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/executions")
@@ -158,24 +159,21 @@ class WorkflowExecutionsResource {
     }
   }
 
-  @GET
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  @Path("/{wid}/interactions/{eid}/optimize")
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Path("/optimize")
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   def doReplayCheckpointOptimization(
-      @PathParam("wid") wid: UInteger,
-      @PathParam("eid") eid: UInteger,
+                                      req:OptimizeReplayRequest,
       @Auth sessionUser: SessionUser
   ): String = {
+    val eid = req.eid
+    val wid = req.wid
+    val workflowPojo = req.logicalPlanPojo
     val exec = getExecutionById(eid)
-    val vid = exec.getVid
     val logLocation = exec.getLogLocation
-    val workflow = WorkflowVersionResource.retrieveWorkflow(wid, vid)
     val system = TexeraWebApplication.actorSystem
     var controllerConfig = ControllerConfig.default
-    val workflowPojo = Utils.objectMapper
-      .readValue(workflow.getContent, LogicalPlanPojo.getClass)
-      .asInstanceOf[LogicalPlanPojo]
     val workflowContext = new WorkflowContext(
       Some(sessionUser.getUid),
       WorkflowIdentity(wid.longValue()),
@@ -195,7 +193,7 @@ class WorkflowExecutionsResource {
       val result = new mutable.ArrayBuffer[ChannelMarkerIdentity]()
       storage.getReader("CONTROLLER").mkRecordIterator().foreach {
         case destination: ReplayDestination =>
-          if (destination.id.id.contains("Checkpoint_")) {
+          if (destination.id.id.contains("RetrieveState_")) {
             result.append(destination.id)
           }
         case _ =>

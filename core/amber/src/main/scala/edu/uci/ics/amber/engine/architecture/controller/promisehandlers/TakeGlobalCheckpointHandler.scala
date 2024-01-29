@@ -57,16 +57,16 @@ trait TakeGlobalCheckpointHandler {
               case e: Throwable => logger.error("Failed to serialize controller state", e)
             }
             logger.info("Serialized CP state")
+            // get all output messages from cp.transferService
+            chkpt.save(
+              SerializedState.OUTPUT_MSG_KEY,
+              this.cp.transferService.getAllUnAckedMessages.toArray
+            )
+            val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
+            val writer = storage.getWriter(actorId.name)
+            writer.writeRecord(chkpt)
+            writer.flush()
           }
-          // get all output messages from cp.transferService
-          chkpt.save(
-            SerializedState.OUTPUT_MSG_KEY,
-            this.cp.transferService.getAllUnAckedMessages.toArray
-          )
-          val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
-          val writer = storage.getWriter(actorId.name)
-          writer.writeRecord(chkpt)
-          writer.flush()
           logger.info(s"global checkpoint finalized, total size = $totalSize")
           totalSize
         }

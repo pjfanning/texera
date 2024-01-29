@@ -84,12 +84,14 @@ class ExecutionRuntimeService(
       logger.info(
         "Fault tolerance log folder is not established. Unable to take a global checkpoint."
       )
-    } else if (req.toCheckpoint) {
-      val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+    } else{
+      val checkpointId = if(req.toCheckpoint){
+        ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+      }else{
+        ChannelMarkerIdentity(s"RetrieveState_${UUID.randomUUID().toString}")
+      }
       val uri = logConf.get.writeTo.resolve(checkpointId.toString)
-      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri))
-    } else {
-      client.sendAsync(RetrieveWorkflowState())
+      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, uri))
     }
   }))
 

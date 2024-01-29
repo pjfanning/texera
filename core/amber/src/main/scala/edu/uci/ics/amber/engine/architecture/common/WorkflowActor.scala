@@ -199,7 +199,6 @@ abstract class WorkflowActor(
           logStorageToRead,
           getLogName,
           replayTo,
-          actorId,
           replayConf.additionalCheckpoints
         )
       logger.info(

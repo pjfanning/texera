@@ -72,7 +72,7 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleOptimize(eid: number){
+  toggleOptimize(eid: number, vid:number){
     let wid = this.getWid();
     let execution: WorkflowExecutionsEntry | undefined = undefined;
     this.executionList.forEach(entry => {
@@ -81,12 +81,19 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
         entry.checkpointOptimizationStatus = "inProgress";
       }
     })
-    this.http.get<string>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/interactions/${eid}/optimize`)
-      .pipe(untilDestroyed(this)).subscribe(s =>{
-        if(execution !== undefined){
-         execution.checkpointOptimizationStatus = s;
-        }
-    })
+    this.workflowVersionService.retrieveWorkflowByVersion(wid!, vid).pipe(untilDestroyed(this)).subscribe(
+      workflow =>{
+        this.workflowVersionService.displayReadonlyWorkflow(workflow);
+        let logicalPlanPojo = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
+        this.workflowVersionService.closeReadonlyWorkflowDisplay();
+        this.http.post<string>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/optimize`,{wid, eid, logicalPlanPojo})
+          .pipe(untilDestroyed(this)).subscribe(s =>{
+          if(execution !== undefined){
+            execution.checkpointOptimizationStatus = s;
+          }
+        })
+      }
+    )
   }
 
   retrieveInteractionHistory(wid: number, eid: number): Observable<string[]> {

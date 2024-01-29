@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web.model.websocket.request
 
+import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalLink}
@@ -17,10 +18,13 @@ case class WorkflowExecuteRequest(
     replayFromExecution: Option[ReplayExecutionInfo] // contains execution Id, interaction Id.
 ) extends TexeraWebSocketRequest
 
-case class LogicalPlanPojo(
-    operators: List[LogicalOp],
-    links: List[LogicalLink],
-    breakpoints: List[BreakpointInfo],
-    opsToViewResult: List[String],
-    opsToReuseResult: List[String]
+@JsonIgnoreProperties(ignoreUnknown = true)
+class LogicalPlanPojo(
+    @JsonProperty("operators")
+    val operators: List[LogicalOp],
+    @JsonProperty("links")
+    val links: List[LogicalLink],
+    val breakpoints: List[BreakpointInfo],
+    val opsToViewResult: List[String],
+    val opsToReuseResult: List[String]
 )

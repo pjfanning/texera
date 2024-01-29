@@ -21,7 +21,7 @@
         <td (click)="toggleRow(execution.eId)">{{ execution.startingTime | date:'short' }}</td>
         <td nzAlign="center"><button nz-button nzType="primary"
                     [disabled]="execution.checkpointOptimizationStatus === 'completed'"
-                    (click)="toggleOptimize(execution.eId)"
+                    (click)="toggleOptimize(execution.eId, execution.vId)"
                     [nzLoading]="execution.checkpointOptimizationStatus === 'inProgress'">
           <span nz-icon nzType="rocket" nzTheme="outline"></span>
         </button></td>

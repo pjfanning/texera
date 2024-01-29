@@ -1,7 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.logreplay
 
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PrepareCheckpointHandler.PrepareCheckpoint
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.ControlPayloadV2Message.SealedValue.ControlInvocation
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, ControlPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelMarkerIdentity}
 
@@ -12,7 +15,6 @@ object ReplayLogGenerator {
       logStorage: SequentialRecordStorage[ReplayLogRecord],
       logFileName: String,
       replayTo: ChannelMarkerIdentity,
-      actorId: ActorVirtualIdentity,
       additionalCheckpoints: List[ChannelMarkerIdentity]
   ): (mutable.Queue[ProcessingStep], mutable.Queue[WorkflowFIFOMessage]) = {
     val logs = logStorage.getReader(logFileName).mkRecordIterator()
@@ -23,16 +25,13 @@ object ReplayLogGenerator {
         steps.enqueue(s)
       case MessageContent(message) =>
         message.payload match {
-          case a: ChannelMarkerPayload =>
-            if (additionalCheckpoints.contains(a.id)) {
-              val invocation = a.commandMapping(actorId)
-              val cmd = invocation.command.asInstanceOf[PrepareCheckpoint]
-              val payload = a.copy(commandMapping =
-                a.commandMapping + (actorId -> invocation.copy(command =
-                  cmd.copy(estimationOnly = false)
-                ))
-              )
-              messages.enqueue(message.copy(payload = payload))
+          case a: ControlPayload =>
+            a match {
+              case b @ AsyncRPCClient.ControlInvocation(commandID, cmd: TakeGlobalCheckpoint) =>
+                if(additionalCheckpoints.contains(cmd.checkpointId)){
+                  messages.enqueue(message.copy(payload = b.copy(command = cmd.copy(estimationOnly = false))))
+                }
+              case _ => messages.enqueue(message)
             }
           case _ => messages.enqueue(message)
         }
