@@ -10,4 +10,5 @@ export interface WorkflowExecutionsEntry {
   result: string;
   bookmarked: boolean;
   logLocation: string;
+  checkpointOptimizationStatus: string;
 }

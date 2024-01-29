@@ -195,7 +195,13 @@ abstract class WorkflowActor(
     } else {
       // do replay from scratch
       val (processSteps, messages) =
-        ReplayLogGenerator.generate(logStorageToRead, getLogName, replayTo)
+        ReplayLogGenerator.generate(
+          logStorageToRead,
+          getLogName,
+          replayTo,
+          actorId,
+          replayConf.additionalCheckpoints
+        )
       logger.info(
         s"setting up replay, " +
           s"read from ${replayConf.readFrom} " +

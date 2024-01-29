@@ -72,6 +72,23 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleOptimize(eid: number){
+    let wid = this.getWid();
+    let execution: WorkflowExecutionsEntry | undefined = undefined;
+    this.executionList.forEach(entry => {
+      if (entry.eId === eid) {
+        execution = entry;
+        entry.checkpointOptimizationStatus = "inProgress";
+      }
+    })
+    this.http.get<string>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/interactions/${eid}/optimize`)
+      .pipe(untilDestroyed(this)).subscribe(s =>{
+        if(execution !== undefined){
+         execution.checkpointOptimizationStatus = s;
+        }
+    })
+  }
+
   retrieveInteractionHistory(wid: number, eid: number): Observable<string[]> {
     return this.http.get<string[]>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/${wid}/interactions/${eid}`);
   }

@@ -113,6 +113,21 @@ object WorkflowVersionResource {
     workflowVersion
   }
 
+  def retrieveWorkflow(wid: UInteger, vid: UInteger): Workflow = {
+    // fetch all versions preceding this
+    val versionEntries = context
+      .select(WORKFLOW_VERSION.VID, WORKFLOW_VERSION.CREATION_TIME, WORKFLOW_VERSION.CONTENT)
+      .from(WORKFLOW_VERSION)
+      .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_VERSION.VID.ge(vid)))
+      .fetchInto(classOf[WorkflowVersion])
+      .toList
+    // apply patch
+    val currentWorkflow = workflowDao.fetchOneByWid(wid)
+    // return particular version of the workflow
+    val res: Workflow = applyPatch(versionEntries.reverse, currentWorkflow)
+    res
+  }
+
   /**
     * This function is for testing if the version is following the current design of keeping an empty delta for the
     * last version for migrating versions that followed the old design to the new design.
@@ -345,18 +360,7 @@ class WorkflowVersionResource {
     if (!WorkflowAccessResource.hasReadAccess(wid, user.getUid)) {
       throw new ForbiddenException("No sufficient access privilege.")
     } else {
-      // fetch all versions preceding this
-      val versionEntries = context
-        .select(WORKFLOW_VERSION.VID, WORKFLOW_VERSION.CREATION_TIME, WORKFLOW_VERSION.CONTENT)
-        .from(WORKFLOW_VERSION)
-        .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_VERSION.VID.ge(vid)))
-        .fetchInto(classOf[WorkflowVersion])
-        .toList
-      // apply patch
-      val currentWorkflow = workflowDao.fetchOneByWid(wid)
-      // return particular version of the workflow
-      val res: Workflow = applyPatch(versionEntries.reverse, currentWorkflow)
-      res
+      retrieveWorkflow(wid, vid)
     }
   }
 }

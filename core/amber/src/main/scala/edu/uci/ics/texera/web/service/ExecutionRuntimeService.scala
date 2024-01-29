@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowPaused
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetrieveWorkflowStateHandler.RetrieveWorkflowState
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.FaultToleranceConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
@@ -83,10 +84,12 @@ class ExecutionRuntimeService(
       logger.info(
         "Fault tolerance log folder is not established. Unable to take a global checkpoint."
       )
-    } else {
+    } else if (req.toCheckpoint) {
       val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
       val uri = logConf.get.writeTo.resolve(checkpointId.toString)
       client.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri))
+    } else {
+      client.sendAsync(RetrieveWorkflowState())
     }
   }))
 

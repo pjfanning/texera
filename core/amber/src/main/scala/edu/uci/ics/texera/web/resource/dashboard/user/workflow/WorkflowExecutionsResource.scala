@@ -1,9 +1,18 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
+import akka.persistence.RecoveryCompleted
+import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StateRestoreConfig
+import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity}
-import edu.uci.ics.texera.web.SqlServer
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ChannelMarkerIdentity,
+  ExecutionIdentity,
+  WorkflowIdentity
+}
+import edu.uci.ics.texera.Utils
+import edu.uci.ics.texera.web.{SqlServer, TexeraWebApplication}
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
   USER,
@@ -13,15 +22,20 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
 }
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
+import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource._
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
+import edu.uci.ics.texera.web.storage.ExecutionStateStore
+import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
+import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 import io.dropwizard.auth.Auth
 import org.jooq.impl.DSL._
 import org.jooq.types.UInteger
 
 import java.net.URI
 import java.sql.Timestamp
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CompletableFuture, TimeUnit}
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.{MediaType, Response}
@@ -142,6 +156,64 @@ class WorkflowExecutionsResource {
         case None => List()
       }
     }
+  }
+
+  @GET
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/{wid}/interactions/{eid}/optimize")
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  def doReplayCheckpointOptimization(
+      @PathParam("wid") wid: UInteger,
+      @PathParam("eid") eid: UInteger,
+      @Auth sessionUser: SessionUser
+  ): String = {
+    val exec = getExecutionById(eid)
+    val vid = exec.getVid
+    val logLocation = exec.getLogLocation
+    val workflow = WorkflowVersionResource.retrieveWorkflow(wid, vid)
+    val system = TexeraWebApplication.actorSystem
+    var controllerConfig = ControllerConfig.default
+    val workflowPojo = Utils.objectMapper
+      .readValue(workflow.getContent, LogicalPlanPojo.getClass)
+      .asInstanceOf[LogicalPlanPojo]
+    val workflowContext = new WorkflowContext(
+      Some(sessionUser.getUid),
+      WorkflowIdentity(wid.longValue()),
+      ExecutionIdentity(eid.longValue())
+    )
+    val workflowCompiler = new WorkflowCompiler(workflowContext)
+    val workflowObj = workflowCompiler.compile(
+      workflowPojo,
+      new OpResultStorage(),
+      None,
+      new ExecutionStateStore(),
+      controllerConfig
+    )
+    val additionalCheckpoints = if (logLocation != null && logLocation.nonEmpty) {
+      val storage =
+        SequentialRecordStorage.getStorage[ReplayLogRecord](Some(new URI(logLocation)))
+      val result = new mutable.ArrayBuffer[ChannelMarkerIdentity]()
+      storage.getReader("CONTROLLER").mkRecordIterator().foreach {
+        case destination: ReplayDestination =>
+          if (destination.id.id.contains("Checkpoint_")) {
+            result.append(destination.id)
+          }
+        case _ =>
+      }
+      result.toList
+    } else {
+      List()
+    }
+    val srConf =
+      StateRestoreConfig(new URI(logLocation), ChannelMarkerIdentity(""), additionalCheckpoints)
+    controllerConfig = controllerConfig.copy(workerRestoreConf = Some(srConf))
+    val waitFuture = new CompletableFuture[Unit]()
+    val amberClient = new AmberClient(system, workflowObj, controllerConfig, err => {})
+    amberClient.registerCallback[RecoveryCompleted] { evt =>
+      waitFuture.complete(())
+    }
+    waitFuture.get()
+    "completed"
   }
 
   /**

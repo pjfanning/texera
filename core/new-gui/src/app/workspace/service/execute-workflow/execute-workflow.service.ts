@@ -256,7 +256,7 @@ export class ExecuteWorkflowService {
     this.workflowWebsocketService.send("WorkflowKillRequest", {});
   }
 
-  public addExecutionInteraction(): void {
+  public addExecutionInteraction(checkpoint:boolean): void {
     if (!environment.pauseResumeEnabled || !environment.amberEngineEnabled) {
       return;
     }
@@ -266,7 +266,7 @@ export class ExecuteWorkflowService {
     ) {
       throw new Error("cannot add interaction to workflow, the current execution state is " + this.currentState.state);
     }
-    this.workflowWebsocketService.send("WorkflowInteractionRequest", {});
+    this.workflowWebsocketService.send("WorkflowInteractionRequest", {toCheckpoint:checkpoint});
   }
 
   public resumeWorkflow(): void {

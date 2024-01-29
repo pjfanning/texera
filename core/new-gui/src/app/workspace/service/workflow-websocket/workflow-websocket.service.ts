@@ -25,7 +25,7 @@ export class WorkflowWebsocketService {
 
   public isConnected: boolean = false;
   public numWorkers: number = -1;
-
+  public supportFaultTolerance: boolean = false;
   private websocket?: WebSocketSubject<TexeraWebsocketEvent | TexeraWebsocketRequest>;
   private wsWithReconnectSubscription?: Subscription;
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
@@ -99,6 +99,8 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(evt => {
       if (evt.type === "ClusterStatusUpdateEvent") {
         this.numWorkers = evt.numWorkers;
+      }else if(evt.type === "RegisterWorkflowIdResponse"){
+        this.supportFaultTolerance = evt.supportFaultTolerance;
       }
       this.isConnected = true;
     });

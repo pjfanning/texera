@@ -237,7 +237,11 @@ export class MenuComponent implements OnInit {
   }
 
   public handleInteraction(): void {
-    this.executeWorkflowService.addExecutionInteraction();
+    this.executeWorkflowService.addExecutionInteraction(false);
+  }
+
+  public handleCheckpoint(): void{
+    this.executeWorkflowService.addExecutionInteraction(true);
   }
 
   /**

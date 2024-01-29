@@ -44,6 +44,7 @@ export interface ReplayExecutionInfo
 export interface RegisterWIdEvent
   extends Readonly<{
     message: string;
+    supportFaultTolerance:boolean;
   }> {}
 
 export interface WorkflowFatalError
@@ -192,7 +193,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowExecuteRequest: WorkflowExecuteRequest;
   WorkflowKillRequest: {};
   WorkflowPauseRequest: {};
-  WorkflowInteractionRequest: {};
+  WorkflowInteractionRequest: {toCheckpoint:boolean};
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
   DebugCommandRequest: DebugCommandRequest;

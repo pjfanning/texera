@@ -10,20 +10,26 @@
     <tr>
       <th nzAlign="center">EID</th>
       <th nzAlign="center">Starting Time</th>
-      <!-- New column header for timestamp -->
+      <th nzAlign="center">Optimize Replay</th>
     </tr>
   </thead>
   <tbody>
     <ng-container *ngFor="let execution of executionList">
       <!-- Main row for each execution -->
-      <tr (click)="toggleRow(execution.eId)">
-        <td>{{ execution.eId }}</td>
-        <td>{{ execution.startingTime | date:'short' }}</td>
+      <tr>
+        <td (click)="toggleRow(execution.eId)">{{ execution.eId }}</td>
+        <td (click)="toggleRow(execution.eId)">{{ execution.startingTime | date:'short' }}</td>
+        <td nzAlign="center"><button nz-button nzType="primary"
+                    [disabled]="execution.checkpointOptimizationStatus === 'completed'"
+                    (click)="toggleOptimize(execution.eId)"
+                    [nzLoading]="execution.checkpointOptimizationStatus === 'inProgress'">
+          <span nz-icon nzType="rocket" nzTheme="outline"></span>
+        </button></td>
         <!-- Display timestamp -->
       </tr>
       <!-- Collapsible row for interaction history -->
       <tr *ngIf="expandedRows.has(execution.eId)">
-        <td colspan="2">
+        <td colspan="3">
           <!-- Adjust the colspan to match the number of columns -->
           <div class="interaction-container">
             <ng-container *ngFor="let interaction of interactionHistories[execution.eId]">

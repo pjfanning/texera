@@ -3,6 +3,7 @@ package edu.uci.ics.texera.web.resource
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.clustering.ClusterListener
+import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils.objectMapper
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.User
@@ -62,7 +63,9 @@ class WorkflowWebsocketResource extends LazyLogging {
             WorkflowService.getOrCreate(WorkflowIdentity(registerWorkflowIdRequest.workflowId))
           sessionState.subscribe(workflowState)
           sessionState.send(ClusterStatusUpdateEvent(ClusterListener.numWorkerNodesInCluster))
-          sessionState.send(RegisterWorkflowIdResponse("workflowId registered"))
+          sessionState.send(
+            RegisterWorkflowIdResponse("workflowId registered", AmberConfig.isFaultToleranceEnabled)
+          )
         case heartbeat: HeartBeatRequest =>
           sessionState.send(HeartBeatResponse())
         case paginationRequest: ResultPaginationRequest =>

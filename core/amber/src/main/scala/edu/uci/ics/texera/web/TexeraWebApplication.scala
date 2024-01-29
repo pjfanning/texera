@@ -84,7 +84,7 @@ object TexeraWebApplication {
     actorSystem.scheduler.scheduleWithFixedDelay(initialDelay, delay)(() => call)
   }
 
-  private var actorSystem: ActorSystem = _
+  var actorSystem: ActorSystem = _
 
   type OptionMap = Map[Symbol, Any]
   def parseArgs(args: Array[String]): OptionMap = {

@@ -64,7 +64,11 @@ object WorkflowWorker {
       restoreConfOpt: Option[StateRestoreConfig] = None,
       replayLogConfOpt: Option[FaultToleranceConfig] = None
   )
-  final case class StateRestoreConfig(readFrom: URI, replayDestination: ChannelMarkerIdentity)
+  final case class StateRestoreConfig(
+      readFrom: URI,
+      replayDestination: ChannelMarkerIdentity,
+      additionalCheckpoints: List[ChannelMarkerIdentity] = List()
+  )
 
   final case class FaultToleranceConfig(writeTo: URI)
 }

@@ -346,16 +346,28 @@
           <span> {{ runButtonText }} </span>
         </button>
         <button
-          *ngIf="userSystemEnabled"
+          *ngIf="workflowWebsocketService.supportFaultTolerance"
           (click)="handleInteraction()"
-          title="add interaction"
-          [disabled]="!userSystemEnabled || executionState !== ExecutionState.Paused"
+          title="tag current workflow state"
+          [disabled]="executionState !== ExecutionState.Paused"
           id="interaction-button"
           nz-button
           nzType="primary">
           <i
             nz-icon
-            nzType="audit"></i>
+            nzType="pushpin"></i>
+        </button>
+        <button
+          *ngIf="workflowWebsocketService.supportFaultTolerance"
+          (click)="handleCheckpoint()"
+          title="take a checkpoint"
+          [disabled]="executionState !== ExecutionState.Paused"
+          id="checkpoint-button"
+          nz-button
+          nzType="primary">
+          <i
+            nz-icon
+            nzType="hdd"></i>
         </button>
         <ng-template #execution_name>
           <input
