@@ -1,6 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
 import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport}
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Schema}
@@ -8,12 +11,13 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Sche
 import java.io.{File, FileInputStream, InputStreamReader}
 
 class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
-    extends SourceOperatorExecutor {
+    extends SourceOperatorExecutor with CheckpointSupport {
   val schema: Schema = desc.inferSchema()
   var inputReader: InputStreamReader = _
   var parser: CsvParser = _
 
   var nextRow: Array[String] = _
+  var numRowGenerated = 0
 
   override def produceTexeraTuple(): Iterator[Tuple] = {
 
@@ -28,6 +32,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
       override def next(): Array[String] = {
         val ret = nextRow
+        numRowGenerated += 1
         nextRow = null
         ret
       }
@@ -80,4 +85,22 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       inputReader.close()
     }
   }
+
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[PortIdentity])], checkpoint: CheckpointState): Iterator[(ITuple, Option[PortIdentity])] = {
+    checkpoint.save(
+      "numOutputRows",
+      numRowGenerated
+    )
+    currentIteratorState
+  }
+
+  override def deserializeState(checkpoint: CheckpointState): Iterator[(ITuple, Option[PortIdentity])] = {
+    open()
+    numRowGenerated = checkpoint.load("numOutputRows")
+    var tupleIterator = produceTexeraTuple() .drop(numRowGenerated)
+    if (desc.limit.isDefined) tupleIterator = tupleIterator.take(desc.limit.get - numRowGenerated)
+    tupleIterator.map(tuple => (tuple, Option.empty))
+  }
+
+  override def getEstimatedCheckpointCost: Long = 0L
 }

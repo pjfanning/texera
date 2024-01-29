@@ -220,7 +220,6 @@ class Controller(
     }
     outputMessages.foreach(transferService.send)
     cp.asyncRPCClient.sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
-    cp.asyncRPCClient.sendToClient(WorkflowPaused())
     globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
   }
 }
