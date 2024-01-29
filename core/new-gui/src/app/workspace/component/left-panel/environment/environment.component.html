@@ -9,6 +9,13 @@
 
     <!-- Conditional Content Based on Selected Menu -->
     <div *ngIf="selectedMenu === 'datasets'">
+        <button
+                nz-button
+                nzType="default"
+                (click)="onClickOpenLinkDatasetWindow()"
+        >
+            Link Dataset
+        </button>
         <!-- Content for Datasets -->
         <texera-user-environment-datasets-viewer
                 [eid]="eid"

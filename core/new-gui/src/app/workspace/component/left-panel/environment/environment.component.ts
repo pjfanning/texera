@@ -5,6 +5,8 @@ import {NotificationService} from "../../../../common/service/notification/notif
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
 import {WorkflowPersistService} from "../../../../common/service/workflow-persist/workflow-persist.service";
+import {NgbdModalEnvironmentDatasetAddComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
+import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 
 @UntilDestroy()
 @Component({
@@ -30,7 +32,8 @@ export class EnvironmentComponent implements OnInit {
         private activatedRoute : ActivatedRoute,
         private environmentService: EnvironmentService,
         private notificationService: NotificationService,
-        private workflowPersistService: WorkflowPersistService) {}
+        private workflowPersistService: WorkflowPersistService,
+        private modalService: NgbModal) {}
 
     ngOnInit(): void {
         if (this.eid) {
@@ -81,5 +84,17 @@ export class EnvironmentComponent implements OnInit {
                     }
                 })
         }
+    }
+
+    onClickOpenLinkDatasetWindow() {
+        const modalRef = this.modalService.open(NgbdModalEnvironmentDatasetAddComponent);
+        modalRef.result.then((result) => {
+            if (result) {
+                console.log('Modal closed with:', result);
+                // Handle the modal result if needed
+            }
+        }, (reason) => {
+            // Handle the modal dismiss if needed
+        });
     }
 }

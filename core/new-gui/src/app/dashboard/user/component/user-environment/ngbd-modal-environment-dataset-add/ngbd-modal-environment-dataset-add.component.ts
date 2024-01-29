@@ -1,11 +1,9 @@
-import {Component, Input, OnInit} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import { UserService } from "../../../../../common/service/user/user.service";
-import {EnvironmentService} from "../../../service/user-environment/environment.service";
-import {DashboardEnvironment} from "../../../type/environment";
+import { UntilDestroy } from "@ngneat/until-destroy";
+import { EnvironmentService } from "../../../service/user-environment/environment.service";
 
 @UntilDestroy()
 @Component({
@@ -17,12 +15,12 @@ export class NgbdModalEnvironmentDatasetAddComponent implements OnInit {
   validateForm: FormGroup;
 
   constructor(
-    private activeModal: NgbActiveModal,
-    private formBuilder: FormBuilder,
-    private environmentService: EnvironmentService
+      private activeModal: NgbActiveModal,
+      private formBuilder: FormBuilder,
+      private environmentService: EnvironmentService
   ) {
     this.validateForm = this.formBuilder.group({
-      name: [""],
+      did: [null]
     });
   }
 
@@ -32,8 +30,10 @@ export class NgbdModalEnvironmentDatasetAddComponent implements OnInit {
     this.activeModal.close();
   }
 
-   onSubmitAddDatasetToEnvironment(): void {
-     const dsName = this.validateForm.get("name")?.value;
-     this.activeModal.close(dsName);
+  onSubmitLinkDatasetToEnvironment(): void {
+    const did = this.validateForm.get("did")?.value;
+    // Ensure did is treated as a number
+    const didNumber = did ? parseInt(did, 10) : null;
+    this.activeModal.close(didNumber);
   }
 }

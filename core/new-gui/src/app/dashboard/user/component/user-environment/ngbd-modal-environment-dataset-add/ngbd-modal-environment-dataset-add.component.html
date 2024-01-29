@@ -1,22 +1,20 @@
 <div class="modal-header">
-  <h4 class="modal-title">Add Dataset to the Environment</h4>
+  <h4 class="modal-title">Link Dataset to the Environment</h4>
   <button type="button" class="close" aria-label="Close" (click)="close()">
     <span aria-hidden="true">&times;</span>
   </button>
 </div>
 <div class="modal-body">
-  <form [formGroup]="validateForm" (ngSubmit)="onSubmitAddDatasetToEnvironment()">
+  <form [formGroup]="validateForm" (ngSubmit)="onSubmitLinkDatasetToEnvironment()">
     <div class="form-group">
-      <!-- Name Field -->
-      <!--      <nz-card nzTitle="Name">-->
+      <!-- Dataset ID Field -->
       <nz-form-item>
-        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="name">Dataset Name</nz-form-label>
+        <nz-form-label [nzSm]="6" [nzXs]="24" nzRequired nzFor="did">Dataset ID</nz-form-label>
         <nz-form-control [nzSm]="14" [nzXs]="24">
-          <input nz-input id="name" type="text" formControlName="name">
+          <input nz-input id="did" type="number" formControlName="did" placeholder="Enter Dataset ID">
         </nz-form-control>
       </nz-form-item>
-      <!--      </nz-card>-->
     </div>
-        <button nz-button nzType="primary" type="submit">Submit</button>
+    <button nz-button nzType="primary" type="submit">Submit</button>
   </form>
 </div>
