@@ -12,7 +12,7 @@ import {DatasetOfEnvironmentDetails} from "../../../type/environment";
     templateUrl: './user-environment-datasets-viewer.component.html',
     styleUrls: ['./user-environment-datasets-viewer.component.scss']
 })
-export class UserEnvironmentDatasetsViewerComponent implements OnInit, OnChanges {
+export class UserEnvironmentDatasetsViewerComponent implements OnInit, OnChanges{
 
     // from did to dvid
     @Input()
@@ -37,50 +37,25 @@ export class UserEnvironmentDatasetsViewerComponent implements OnInit, OnChanges
         private notificationService: NotificationService) {
     }
 
-    ngOnChanges(changes: SimpleChanges): void {
-        if (changes.datasetIdToVersionId) {
-            // Check if the value has changed by comparing the current value to the previous value
-            const prev = changes.datasetIdToVersionId.previousValue as Map<DashboardDataset, number>;
-            const curr = changes.datasetIdToVersionId.currentValue as Map<DashboardDataset, number>;
-            //
-            // this.handleMapChange(prev, curr);
-        }
+    ngOnInit(): void {
+        this.loadFromDatasetOfEnvironmentDetails();
     }
 
-    // private handleMapChange(prev: Map<DashboardDataset, number>, curr: Map<DashboardDataset, number>): void {
-    //     // New key-value pairs added
-    //     curr.forEach((currValue, currKey) => {
-    //         if (!prev.has(currKey)) {
-    //             if (currKey.dataset.did) {
-    //                 const did = currKey.dataset.did;
-    //                 this.updateNewDatasetWithVersion(did, currValue, currKey.dataset.name);
-    //             }
-    //         }
-    //     });
-    //
-    //     // Old keys that might have new values or be deleted
-    //     prev.forEach((prevValue, prevKey) => {
-    //         if (!curr.has(prevKey)) {
-    //             // Handle deleted key
-    //             if (prevKey.dataset.did)
-    //                 this.datasetFileTreeNodeLists.delete([prevKey.dataset.did, prevValue]);
-    //         } else if (curr.get(prevKey) !== prevValue) {
-    //             // Handle old key with new value
-    //             if (prevKey.dataset.did) {
-    //                 this.updateNewDatasetWithVersion(prevKey.dataset.did, prevValue, prevKey.dataset.name);
-    //             }
-    //         }
-    //     });
-    // }
+    ngOnChanges(changes: SimpleChanges) {
+        this.datasetFileTreeNodeLists.clear();
+        this.loadFromDatasetOfEnvironmentDetails();
+        console.log("changes!")
+        // console.log(this.datasetFileTreeNodeLists);
+        console.log(this.datasetIdToDatasetOfEnvironmentDetails);
+    }
 
-
-    ngOnInit(): void {
+    loadFromDatasetOfEnvironmentDetails() {
         this.datasetIdToDatasetOfEnvironmentDetails.forEach((value, key) => {
             const did = key[0];
             const dvid = key[1];
             const dataset = value.dataset;
             this.updateNewDatasetWithVersion(did, dvid, dataset.name);
-        })
+        });
     }
 
     private updateNewDatasetWithVersion(did: number, dvid: number, datasetName: string) {
@@ -94,5 +69,9 @@ export class UserEnvironmentDatasetsViewerComponent implements OnInit, OnChanges
                     this.notificationService.error(`Error loading dataset info`);
                 },
             })
+    }
+
+    get datasets(): [string, DatasetVersionFileTreeNode[]][]{
+        return Array.from(this.datasetFileTreeNodeLists.values());
     }
 }

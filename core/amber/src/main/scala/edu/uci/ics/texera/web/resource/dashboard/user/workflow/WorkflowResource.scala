@@ -5,14 +5,9 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  EnvironmentDao,
-  WorkflowDao,
-  WorkflowOfProjectDao,
-  WorkflowOfUserDao,
-  WorkflowUserAccessDao
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.DashboardEnvironment
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
@@ -750,6 +745,17 @@ class WorkflowResource extends LazyLogging {
         // return a empty list
         List[DashboardWorkflow]()
     }
+  }
+
+  @GET
+  @Path("/{wid}/environment")
+  def retrieveWorkflowEnvironment(
+      @PathParam("wid") wid: UInteger,
+      @Auth user: SessionUser
+    ): Environment = {
+
+    val uid = user.getUid
+    EnvironmentResource.getEnvironmentByWid(context, uid, wid)
   }
 
 }

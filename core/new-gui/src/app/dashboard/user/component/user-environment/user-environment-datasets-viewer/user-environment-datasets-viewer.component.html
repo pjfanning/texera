@@ -1,12 +1,12 @@
 <nz-collapse>
-    <nz-collapse-panel *ngFor="let datasetFileTree of datasetFileTreeNodeLists; let i = index" [nzHeader]="datasetFileTree[1][0]" [nzExtra]="extraTemplate">
+    <nz-collapse-panel *ngFor="let datasetFileTree of datasets; let i = index" [nzHeader]="datasetFileTree[0]" [nzExtra]="extraTemplate">
         <ng-template #extraTemplate>
             <i nz-icon nzType="ellipsis" nzTheme="outline" (click)="onMoreAction(i, $event)"></i>
         </ng-template>
         <div>
             <!-- Some dummy content inside the panel -->
             <texera-user-dataset-version-filetree
-                [fileTreeNodeList]="datasetFileTree[1][1]"
+                [fileTreeNodeList]="datasetFileTree[1]"
                 [isFileTreeNodeDeletable]="false"
             >
             </texera-user-dataset-version-filetree>

@@ -81,7 +81,7 @@ export class EnvironmentService {
 
     retrieveDatasetsOfEnvironmentDetails(eid: number): Observable<DatasetOfEnvironmentDetails[]> {
         return this.http
-            .get<DatasetOfEnvironmentDetails[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_RETRIEVAL_URL}`)
+            .get<DatasetOfEnvironmentDetails[]>(`${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_DATASET_DETAILS_RETRIEVAL_URL}`)
     }
 
     // Delete: Remove an environment by its index (eid)

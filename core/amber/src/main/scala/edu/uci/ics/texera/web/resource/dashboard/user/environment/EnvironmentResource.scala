@@ -37,6 +37,18 @@ object EnvironmentResource {
 
   private val context = SqlServer.createDSLContext()
 
+  def getEnvironmentByWid(ctx: DSLContext, uid: UInteger, wid: UInteger): Environment = {
+    val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
+    val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
+
+    if (environmentOfWorkflow == null || environmentOfWorkflow.isEmpty) {
+      throw new Exception("No environment associated with this workflow ID")
+    }
+
+    getEnvironmentByEid(ctx, environmentOfWorkflow.get(0).getEid)
+  }
+
+
   private def getEnvironmentByEid(ctx: DSLContext, eid: UInteger): Environment = {
     val environmentDao: EnvironmentDao = new EnvironmentDao(ctx.configuration())
     val env = environmentDao.fetchOneByEid(eid)
