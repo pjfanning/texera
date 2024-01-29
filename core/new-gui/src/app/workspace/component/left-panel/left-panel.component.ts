@@ -6,6 +6,7 @@ import { ComponentType } from "@angular/cdk/overlay";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
 import { environment } from "../../../../environments/environment";
+import {EnvironmentComponent} from "./environment/environment.component";
 
 @UntilDestroy()
 @Component({
@@ -14,7 +15,7 @@ import { environment } from "../../../../environments/environment";
   styleUrls: ["left-panel.component.scss"],
 })
 export class LeftPanelComponent {
-  currentComponent: ComponentType<OperatorMenuComponent | VersionsListComponent | TimeTravelComponent>;
+  currentComponent: ComponentType<OperatorMenuComponent | VersionsListComponent | TimeTravelComponent | EnvironmentComponent>;
   title = "Operators";
   screenWidth = window.innerWidth;
   width = 240;
@@ -48,5 +49,10 @@ export class LeftPanelComponent {
   openOperatorMenu(): void {
     this.currentComponent = OperatorMenuComponent;
     this.title = "Operators";
+  }
+
+  openEnvironmentFrame(): void {
+    this.currentComponent = EnvironmentComponent;
+    this.title = "Environment"
   }
 }

@@ -47,6 +47,18 @@
           nzType="clock-circle"
           nzTheme="outline"></span>
       </li>
+      <li
+              nz-menu-item
+              nzTooltipPlacement="left"
+              nz-tooltip="Environment"
+              (click)="openEnvironmentFrame()"
+              *ngIf="userSystemEnabled"
+      >
+        <span
+                nz-icon
+                nzType="control"
+                nzTheme="outline"></span>
+      </li>
     </ul>
     <div id="left-panel-content">
       <ng-container *ngComponentOutlet="currentComponent;"></ng-container>

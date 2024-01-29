@@ -537,24 +537,6 @@ export class MenuComponent implements OnInit {
   onClickGetAllVersions() {
     this.workflowVersionService.displayWorkflowVersions();
   }
-
-  onClickOpenEnvironmentEditor() {
-    if (this.workflowId) {
-      const wid = this.workflowId;
-      this.workflowEnvironmentService.doesWorkflowHaveEnvironment(this.workflowId).subscribe(hasEnv => {
-        if (hasEnv && this.workflowId) {
-          this.workflowEnvironmentService.retrieveEnvironmentIdOfWorkflow(wid).subscribe(eid => {
-            this.runtimeEnvironmentId = eid;
-            this.environmentEditorService.clickDisplayEnvironmentEditor(wid, this.runtimeEnvironmentId);
-          })
-        } else {
-          this.environmentEditorService.clickDisplayEnvironmentEditor(wid, this.runtimeEnvironmentId);
-        }
-      })
-
-    }
-  }
-
   private handleWorkflowVersionDisplay(): void {
     this.workflowVersionService
       .getDisplayParticularVersionStream()

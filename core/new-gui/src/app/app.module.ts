@@ -147,17 +147,16 @@ import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/
 import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
 import { PdfViewerModule } from "ng2-pdf-viewer";
 import { ImageViewerModule } from "ngx-image-viewer";
-import {EnvironmentPropertyEditFrameComponent} from "./workspace/component/property-editor/environment-property-edit-frame/environment-property-edit-frame.component";
 import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
 import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
-import {EnvironmentDatasetItemComponent} from "./workspace/component/property-editor/environment-property-edit-frame/dataset-item/environment-dataset-item.component";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
 import {UserEnvironmentDatasetsViewerComponent} from "./dashboard/user/component/user-environment/user-environment-datasets-viewer/user-environment-datasets-viewer.component";
+import {EnvironmentComponent} from "./workspace/component/left-panel/environment/environment.component";
 
 registerLocaleData(en);
 
@@ -172,8 +171,7 @@ registerLocaleData(en);
     PropertyEditorComponent,
     VersionsListComponent,
     TimeTravelComponent,
-    EnvironmentPropertyEditFrameComponent,
-    EnvironmentDatasetItemComponent,
+    EnvironmentComponent,
     WorkflowEditorComponent,
     ResultPanelComponent,
     OperatorLabelComponent,

@@ -8,6 +8,7 @@ import { DashboardWorkflow } from "../../../dashboard/user/type/dashboard-workfl
 import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/util/workflow-util.service";
 import { NotificationService } from "../notification/notification.service";
 import { SearchFilterParameters, toQueryStrings } from "src/app/dashboard/user/type/search-filter-parameters";
+import {DashboardEnvironment} from "../../../dashboard/user/type/environment";
 
 export const WORKFLOW_BASE_URL = "workflow";
 export const WORKFLOW_PERSIST_URL = WORKFLOW_BASE_URL + "/persist";
@@ -20,6 +21,8 @@ export const WORKFLOW_UPDATENAME_URL = WORKFLOW_BASE_URL + "/update/name";
 export const WORKFLOW_UPDATEDESCRIPTION_URL = WORKFLOW_BASE_URL + "/update/description";
 export const WORKFLOW_OWNER_URL = WORKFLOW_BASE_URL + "/user-workflow-owners";
 export const WORKFLOW_ID_URL = WORKFLOW_BASE_URL + "/user-workflow-ids";
+
+export const WORKFLOW_ENVIRONMENT = WORKFLOW_BASE_URL + "/environment";
 
 export const DEFAULT_WORKFLOW_NAME = "Untitled workflow";
 
@@ -90,6 +93,10 @@ export class WorkflowPersistService {
       filter((workflow: Workflow) => workflow != null),
       map(WorkflowUtilService.parseWorkflowInfo)
     );
+  }
+
+  public retrieveWorkflowEnvironment(wid: number): Observable<DashboardEnvironment> {
+      return this.http.get<DashboardEnvironment>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_ENVIRONMENT}`).pipe();
   }
 
   private makeRequestAndFormatWorkflowResponse(url: string): Observable<DashboardWorkflow[]> {

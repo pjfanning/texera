@@ -7,14 +7,12 @@ import { DynamicComponentConfig } from "../../../common/type/dynamic-component-c
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { filter } from "rxjs/operators";
 import { PortPropertyEditFrameComponent } from "./port-property-edit-frame/port-property-edit-frame.component";
-import {EnvironmentPropertyEditFrameComponent} from "./environment-property-edit-frame/environment-property-edit-frame.component";
 import {DISPLAY_ENVIRONMENT_EDITOR_EVENT, EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
 
 export type PropertyEditFrameComponent =
   | OperatorPropertyEditFrameComponent
   | BreakpointPropertyEditFrameComponent
-  | PortPropertyEditFrameComponent
-  | EnvironmentPropertyEditFrameComponent;
+  | PortPropertyEditFrameComponent;
 
 export type PropertyEditFrameConfig = DynamicComponentConfig<PropertyEditFrameComponent>;
 
@@ -80,7 +78,6 @@ export class PropertyEditorComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe(event => {
-        const isDisplayEnvironmentEditor = event[0] === DISPLAY_ENVIRONMENT_EDITOR_EVENT;
         const highlightedOperators = this.workflowActionService
           .getJointGraphWrapper()
           .getCurrentHighlightedOperatorIDs();
@@ -88,20 +85,7 @@ export class PropertyEditorComponent implements OnInit {
         const highlightLinks = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
         this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedCommentBoxIDs();
         const highlightedPorts = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedPortIDs();
-        if (isDisplayEnvironmentEditor) {
-          const wid = parseInt(<string>event[1]);
-          let eid = undefined;
-          if (event.length == 3) {
-            eid = parseInt(<string>event[2]);
-          }
-          this.switchFrameComponent({
-            component: EnvironmentPropertyEditFrameComponent,
-            componentInputs: {
-              eid : eid,
-              wid : wid
-            }
-          });
-        } else if (
+        if (
           highlightedOperators.length === 1 &&
           highlightedGroups.length === 0 &&
           highlightLinks.length === 0 &&
