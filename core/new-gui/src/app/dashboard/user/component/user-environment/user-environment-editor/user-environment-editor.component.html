@@ -10,24 +10,7 @@
   </nz-card>
 </div>
 
-<nz-layout>
-  <ul nz-menu nzMode="horizontal">
-    <li nz-menu-item (click)="selectedMenu='datasets'" [nzSelected]="selectedMenu === 'datasets'">
-      <span nz-icon nzType="database"></span>
-      Datasets
-    </li>
-    <!-- Add more menu items here if needed -->
-  </ul>
-
-  <!-- Conditional Content Based on Selected Menu -->
-  <div *ngIf="selectedMenu === 'datasets'">
-    <!-- Content for Datasets -->
-    <texera-user-environment-datasets-viewer
-            [eid]="eid"
-      [datasetIdToDatasetOfEnvironmentDetails]="datasetsOfEnvironment"
-    >
-    </texera-user-environment-datasets-viewer>
-  </div>
-
-  <!-- Add more content sections for other menu items if needed -->
-</nz-layout>
+<texera-environment
+  [eid]="eid"
+>
+</texera-environment>

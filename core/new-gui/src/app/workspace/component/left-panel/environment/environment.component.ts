@@ -8,6 +8,8 @@ import {WorkflowPersistService} from "../../../../common/service/workflow-persis
 import {NgbdModalEnvironmentDatasetAddComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {WorkflowActionService} from "../../../service/workflow-graph/model/workflow-action.service";
+import {DatasetVersionFileTreeNode} from "../../../../common/type/datasetVersionFileTree";
+import {DatasetService} from "../../../../dashboard/user/service/user-dataset/dataset.service";
 
 @UntilDestroy()
 @Component({
@@ -24,9 +26,11 @@ export class EnvironmentComponent implements OnInit {
 
     wid: number | undefined;
 
-    selectedMenu: "datasets" = "datasets";
+    selectedMenu: "datasets" | "metadata" = "datasets";
 
-    datasetsOfEnvironment: Map<[number, number], DatasetOfEnvironmentDetails> = new Map();
+    // [did, dvid] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
+    datasetsOfEnvironment: Map<number, [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]> = new Map();
+    datasetFileTrees: [number, string, DatasetVersionFileTreeNode[]][] = [];
     constructor(
         private router: Router,
         private activatedRoute : ActivatedRoute,
@@ -34,6 +38,7 @@ export class EnvironmentComponent implements OnInit {
         private notificationService: NotificationService,
         private workflowPersistService: WorkflowPersistService,
         private workflowActionService: WorkflowActionService,
+        private datasetService: DatasetService,
         private modalService: NgbModal) {}
 
     ngOnInit(): void {
@@ -80,17 +85,25 @@ export class EnvironmentComponent implements OnInit {
                             const did = entry.dataset.did;
                             const dvid = entry.version.dvid;
                             if (did && dvid) {
-                                this.datasetsOfEnvironment.set([did, dvid], entry);
+                                this.datasetService.retrieveDatasetVersionFileTree(did, dvid)
+                                    .subscribe({
+                                        next: datasetFileTree => {
+                                            this.datasetsOfEnvironment.set(did, [entry, datasetFileTree]);
+                                            this.datasetFileTrees.push([did, entry.dataset.name, datasetFileTree])
+                                        }
+                                    })
                             }
                         })
-                        console.log(this.datasetsOfEnvironment);
-                        this.datasetsOfEnvironment = new Map(this.datasetsOfEnvironment)
                     },
                     error: err => {
                         this.notificationService.error("Datasets of Environment loading error!");
                     }
                 })
         }
+    }
+
+    onClickOpenEnvironmentDatasetDetails(did: number) {
+        // TODO: show the datasets of environment details.
     }
 
     onClickOpenLinkDatasetWindow() {

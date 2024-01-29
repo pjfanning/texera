@@ -155,7 +155,6 @@ import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-en
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
-import {UserEnvironmentDatasetsViewerComponent} from "./dashboard/user/component/user-environment/user-environment-datasets-viewer/user-environment-datasets-viewer.component";
 import {EnvironmentComponent} from "./workspace/component/left-panel/environment/environment.component";
 
 registerLocaleData(en);
@@ -187,7 +186,6 @@ registerLocaleData(en);
     UserQuotaComponent,
     UserEnvironmentComponent,
     UserEnvironmentEditorComponent,
-    UserEnvironmentDatasetsViewerComponent,
     NgbdModalFileAddComponent,
     NgbdModalEnvironmentDatasetAddComponent,
     NgbdModalWorkflowEnvironmentSelectComponent,

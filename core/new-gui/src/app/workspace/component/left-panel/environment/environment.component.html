@@ -4,23 +4,39 @@
             <span nz-icon nzType="database"></span>
             Datasets
         </li>
+        <li nz-menu-item (click)="selectedMenu='metadata'" [nzSelected]="selectedMenu === 'metadata'">
+            <span nz-icon nzType="bulb"></span>
+            Metadata
+        </li>
         <!-- Add more menu items here if needed -->
     </ul>
 
     <!-- Conditional Content Based on Selected Menu -->
-    <div *ngIf="selectedMenu === 'datasets'">
+    <div *ngIf="selectedMenu === 'datasets'" class="datasets-container">
         <button
+                class="link-dataset-btn"
                 nz-button
-                nzType="default"
+                nzType="primary"
                 (click)="onClickOpenLinkDatasetWindow()"
         >
             Link Dataset
         </button>
         <!-- Content for Datasets -->
-        <texera-user-environment-datasets-viewer
-                [datasetIdToDatasetOfEnvironmentDetails]="datasetsOfEnvironment"
-        >
-        </texera-user-environment-datasets-viewer>
+        <nz-collapse>
+            <nz-collapse-panel *ngFor="let datasetFileTree of datasetFileTrees" [nzHeader]="datasetFileTree[1]" [nzExtra]="extraTemplate">
+                <ng-template #extraTemplate>
+                    <i nz-icon nzType="ellipsis" nzTheme="outline" (click)="onClickOpenEnvironmentDatasetDetails(datasetFileTree[0])"></i>
+                </ng-template>
+                <div>
+                    <!-- Some dummy content inside the panel -->
+                    <texera-user-dataset-version-filetree
+                            [fileTreeNodeList]="datasetFileTree[2]"
+                            [isFileTreeNodeDeletable]="false"
+                    >
+                    </texera-user-dataset-version-filetree>
+                </div>
+            </nz-collapse-panel>
+        </nz-collapse>
     </div>
 
     <!-- Add more content sections for other menu items if needed -->
