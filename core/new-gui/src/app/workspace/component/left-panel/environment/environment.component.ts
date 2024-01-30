@@ -5,11 +5,11 @@ import {NotificationService} from "../../../../common/service/notification/notif
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
 import {WorkflowPersistService} from "../../../../common/service/workflow-persist/workflow-persist.service";
-import {NgbdModalEnvironmentDatasetAddComponent} from "../../../../dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {WorkflowActionService} from "../../../service/workflow-graph/model/workflow-action.service";
 import {DatasetVersionFileTreeNode} from "../../../../common/type/datasetVersionFileTree";
 import {DatasetService} from "../../../../dashboard/user/service/user-dataset/dataset.service";
+import {DashboardDataset} from "../../../../dashboard/user/type/dashboard-dataset.interface";
 
 @UntilDestroy()
 @Component({
@@ -28,9 +28,16 @@ export class EnvironmentComponent implements OnInit {
 
     selectedMenu: "datasets" | "metadata" = "datasets";
 
-    // [did, dvid] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
+    // [did] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
     datasetsOfEnvironment: Map<number, [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]> = new Map();
     datasetFileTrees: [number, string, DatasetVersionFileTreeNode[]][] = [];
+
+    // dataset link related control
+    showDatasetLinkModal: boolean = false;
+    userAccessibleDatasets: DashboardDataset[] = [];
+    filteredLinkingDatasetsName: string[] = [];
+    inputDatasetName?: string;
+
     constructor(
         private router: Router,
         private activatedRoute : ActivatedRoute,
@@ -42,6 +49,7 @@ export class EnvironmentComponent implements OnInit {
         private modalService: NgbModal) {}
 
     ngOnInit(): void {
+        // initilize the environment info
         if (this.eid) {
             // used by the environment editor directly
             this.environmentService.retrieveEnvironmentByEid(this.eid)
@@ -106,26 +114,49 @@ export class EnvironmentComponent implements OnInit {
         // TODO: show the datasets of environment details.
     }
 
-    onClickOpenLinkDatasetWindow() {
-        const modalRef = this.modalService.open(NgbdModalEnvironmentDatasetAddComponent);
-        modalRef.result.then((result) => {
-            if (result) {
-                const did = Number(result)
-                if (!isNaN(did) && this.eid) {
-                    this.environmentService.addDatasetToEnvironment(this.eid, did)
-                        .subscribe({
-                            next: response => {
-                                this.notificationService.success(`Add dataset ${did} to the environment succeed!`)
-                                this.loadDatasetsOfEnvironment();
-                            },
-                            error: err => {
-                                this.notificationService.error("Add dataset to environment encountering error.");
-                            }
-                        })
+    // related control for dataset link modal
+    retrieveUserAccessibleUnlinkedDatasets() {
+        // initialize the datasets info
+        this.datasetService.retrieveAccessibleDatasets()
+            .subscribe({
+                next: datasets => {
+                    this.userAccessibleDatasets =
+                        datasets.filter(ds => {
+                            const newDid = ds.dataset.did;
+                            return !newDid || this.datasetsOfEnvironment.has(newDid);
+                        });
                 }
-            }
-        }, (reason) => {
-            this.notificationService.error("Add dataset to environment encountering error.")
-        });
+            })
     }
+    onClickOpenLinkDatasetWindow() {
+        if (this.selectedMenu == 'datasets') {
+            this.retrieveUserAccessibleUnlinkedDatasets();
+            if (this.userAccessibleDatasets.length == 0) {
+                this.notificationService.warning(`There is no available datasets to be linked to the environment.`)
+            } else {
+                this.showDatasetLinkModal = true;
+            }
+        }
+    }
+
+    handleConfirmLinkDataset() {
+        this.showDatasetLinkModal = false;
+    }
+
+    handleCancelLinkDataset() {
+        this.showDatasetLinkModal = false;
+    }
+
+    onUserInputDatasetName(event: Event): void {
+        const value = this.inputDatasetName;
+
+        if (value) {
+            this.filteredLinkingDatasetsName = this.userAccessibleDatasets
+                .map(d => d.dataset.name)
+                .filter(name => name.toLowerCase().includes(value.toLowerCase()));
+        }
+
+        // console.log(this.filteredLinkingDatasetsName)
+    }
+
 }

@@ -37,6 +37,24 @@
                 </div>
             </nz-collapse-panel>
         </nz-collapse>
+
+        <!-- Link Datasets Modal -->
+        <nz-modal [(nzVisible)]="showDatasetLinkModal" nzTitle="Link a new Dataset to the Environment" (nzOnCancel)="handleCancelLinkDataset()" (nzOnOk)="handleConfirmLinkDataset()">
+            <ng-container *nzModalContent>
+            <div class="link-new-dataset-area">
+                <input
+                        [(ngModel)]="inputDatasetName"
+                        (input)="onUserInputDatasetName($event)"
+                        type="text"
+                        nz-input
+                        name="datasetName"
+                        placeholder="Enter Dataset Name"
+                        [nzAutocomplete]="auto"/>
+                <nz-autocomplete [nzDataSource]="filteredLinkingDatasetsName" nzBackfill #auto>
+                </nz-autocomplete>
+            </div>
+            </ng-container>
+        </nz-modal>
     </div>
 
     <!-- Add more content sections for other menu items if needed -->

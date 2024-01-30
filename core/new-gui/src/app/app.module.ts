@@ -149,7 +149,6 @@ import { PdfViewerModule } from "ng2-pdf-viewer";
 import { ImageViewerModule } from "ngx-image-viewer";
 import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
 import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
-import {NgbdModalEnvironmentDatasetAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-dataset-add/ngbd-modal-environment-dataset-add.component";
 import {NgbdModalEnvironmentAddComponent} from "./dashboard/user/component/user-environment/ngbd-modal-environment-add/ngbd-modal-environment-add.component";
 import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 import {NgbdModalWorkflowEnvironmentSelectComponent} from "./dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
@@ -187,7 +186,6 @@ registerLocaleData(en);
     UserEnvironmentComponent,
     UserEnvironmentEditorComponent,
     NgbdModalFileAddComponent,
-    NgbdModalEnvironmentDatasetAddComponent,
     NgbdModalWorkflowEnvironmentSelectComponent,
     NgbdModalEnvironmentAddComponent,
     RowModalComponent,
