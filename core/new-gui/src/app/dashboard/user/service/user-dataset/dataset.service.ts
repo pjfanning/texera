@@ -53,6 +53,10 @@ export class DatasetService {
     return this.http.post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData).pipe();
   }
 
+  public retrieveAccessibleDatasets(did: number): Observable<DashboardDataset[]> {
+    return this.http.get<DashboardDataset[]>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}`)
+  }
+
   public getDataset(did: number): Observable<DashboardDataset> {
     return this.http.get<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_BASE_URL}/${did}`).pipe();
   }

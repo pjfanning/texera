@@ -6,6 +6,8 @@ import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.User.USER
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
@@ -225,6 +227,60 @@ object DatasetResource {
 @RolesAllowed(Array("REGULAR", "ADMIN"))
 @Path("/dataset")
 class DatasetResource {
+
+  @GET
+  @Path("")
+  @GET
+  @Path("")
+  def retrieveAccessibleDatasets(@Auth user: SessionUser): List[DashboardDataset] = {
+    withExceptionHandling { () =>
+      withTransaction(context) { ctx =>
+        val uid = user.getUid
+
+        // Query to retrieve datasets
+        val datasetQuery = ctx
+          .select(
+            DATASET.DID,
+            DATASET.NAME,
+            DATASET.DESCRIPTION,
+            DATASET.IS_PUBLIC,
+            DATASET.OWNER_UID,
+            DATASET.CREATION_TIME
+            // Add other required fields here
+          )
+          .from(DATASET)
+          .leftJoin(DATASET_USER_ACCESS)
+          .on(DATASET_USER_ACCESS.DID.eq(DATASET.DID))
+          .leftJoin(USER)
+          .on(USER.UID.eq(DATASET_USER_ACCESS.UID))
+          .where(
+            USER.UID.eq(uid)
+              .or(DATASET.IS_PUBLIC.eq(DatasetResource.PUBLIC))
+          )
+          .groupBy(DATASET.DID)
+          .fetchInto(classOf[Dataset])
+
+        // Convert the result into DashboardDataset objects
+        datasetQuery.asScala.toList.map { dataset =>
+          val accessPrivilege = if (dataset.getIsPublic == DatasetResource.PUBLIC || dataset.getOwnerUid == uid) {
+            DatasetUserAccessPrivilege.READ // Or appropriate privilege based on your logic
+          } else {
+            // Logic to determine the access privilege
+            getDatasetUserAccessPrivilege(ctx, dataset.getDid, uid)
+          }
+
+          val isOwner = dataset.getOwnerUid == uid
+
+          DashboardDataset(
+            dataset,
+            accessPrivilege,
+            isOwner
+          )
+        }
+      }
+    }
+  }
+
 
   @POST
   @Path("/create")
