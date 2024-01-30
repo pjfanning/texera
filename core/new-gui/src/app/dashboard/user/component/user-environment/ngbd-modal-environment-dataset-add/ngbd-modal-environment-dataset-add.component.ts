@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-
-import { UntilDestroy } from "@ngneat/until-destroy";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
+import { DashboardDataset } from "../../../type/dashboard-dataset.interface";
+import { DatasetService } from "../../../service/user-dataset/dataset.service";
 
 @UntilDestroy()
 @Component({
@@ -12,28 +12,40 @@ import { EnvironmentService } from "../../../service/user-environment/environmen
   styleUrls: ['./ngbd-modal-environment-dataset-add.component.scss']
 })
 export class NgbdModalEnvironmentDatasetAddComponent implements OnInit {
-  validateForm: FormGroup;
+  dashboardDatasets: DashboardDataset[] = [];
+  filteredOptions: string[] = [];
+  inputValue?: string; // Used for ngModel binding
 
   constructor(
       private activeModal: NgbActiveModal,
-      private formBuilder: FormBuilder,
-      private environmentService: EnvironmentService
-  ) {
-    this.validateForm = this.formBuilder.group({
-      did: [null]
-    });
+      private environmentService: EnvironmentService,
+      private datasetService: DatasetService,
+  ) {}
+
+  ngOnInit(): void {
+    this.datasetService.retrieveAccessibleDatasets()
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: datasets => {
+            this.dashboardDatasets = datasets;
+          }
+        });
   }
 
-  ngOnInit(): void {}
+  onSearch(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.filteredOptions = this.dashboardDatasets
+        .map(d => d.dataset.name)
+        .filter(name => name.toLowerCase().includes(value.toLowerCase()));
+  }
 
   close(): void {
-    this.activeModal.close();
+    this.activeModal.dismiss();
   }
 
   onSubmitLinkDatasetToEnvironment(): void {
-    const did = this.validateForm.get("did")?.value;
-    // Ensure did is treated as a number
-    const didNumber = did ? parseInt(did, 10) : null;
+    const selectedDataset = this.dashboardDatasets.find(d => d.dataset.name === this.inputValue);
+    const didNumber = selectedDataset?.dataset.did;
     this.activeModal.close(didNumber);
   }
 }

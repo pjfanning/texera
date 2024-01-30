@@ -230,8 +230,6 @@ class DatasetResource {
 
   @GET
   @Path("")
-  @GET
-  @Path("")
   def retrieveAccessibleDatasets(@Auth user: SessionUser): List[DashboardDataset] = {
     withExceptionHandling { () =>
       withTransaction(context) { ctx =>
