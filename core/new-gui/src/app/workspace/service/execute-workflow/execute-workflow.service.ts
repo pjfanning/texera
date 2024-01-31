@@ -68,15 +68,11 @@ export class ExecuteWorkflowService {
   //   information is stored on the frontend.
   private assignedWorkerIds: Map<string, readonly string[]> = new Map();
 
-  public breakpoints: number[] = [];
-  public breakpointNum: number = 0;
-  public highlightLineNum: Subject<number> = new BehaviorSubject(0)
-
 
   constructor(
     private workflowActionService: WorkflowActionService,
     private workflowWebsocketService: WorkflowWebsocketService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {
     if (environment.amberEngineEnabled) {
       workflowWebsocketService.websocketEvent().subscribe(event => {
@@ -94,57 +90,8 @@ export class ExecuteWorkflowService {
         }
       });
     }
-
-    this.subscribePythonLineHighlight();
   }
 
-
-  private subscribePythonLineHighlight() {
-    this.workflowWebsocketService.subscribeToEvent("ConsoleUpdateEvent").subscribe(event => {
-      if (event.messages.length == 0) {
-        return
-      }
-      const msg = event.messages[0]
-      console.log("processing message", msg)
-      if (msg.source == "(Pdb)" && msg.msgType.name == "DEBUGGER") {
-        if (msg.title.startsWith(">")) {
-          const lineNum = this.extractLineNumber(msg.title)
-          if (lineNum) {
-            this.highlightLineNum.next(lineNum)
-          }
-        }
-      }
-      if (msg.msgType.name == "ERROR") {
-        const lineNum = this.extractLineNumberException(msg.source)
-        console.log(lineNum)
-        if (lineNum) {
-          this.highlightLineNum.next(lineNum)
-        }
-      }
-    })
-  }
-
-  private extractLineNumber(message: string): number | undefined {
-    const regex = /\.py\((\d+)\)/;
-    const match = message.match(regex);
-
-    if (match && match[1]) {
-      return parseInt(match[1]);
-    }
-
-    return undefined;
-  }
-
-  private extractLineNumberException(message: string): number | undefined {
-    const regex = /:(\d+)/;
-    const match = message.match(regex);
-
-    if (match && match[1]) {
-      return parseInt(match[1]);
-    }
-
-    return undefined;
-  }
 
   public handleReconfigurationEvent(event: TexeraWebsocketEvent) {
     switch (event.type) {
@@ -237,8 +184,6 @@ export class ExecuteWorkflowService {
 
   public executeWorkflow(executionName: string): void {
     if (environment.amberEngineEnabled) {
-      this.breakpointNum = 0;
-      this.highlightLineNum.next(0);
       this.executeWorkflowAmberTexera(executionName);
     } else {
       throw new Error("old texera engine not supported");
@@ -258,14 +203,14 @@ export class ExecuteWorkflowService {
     this.sendExecutionRequest(
       `Replay run of ${replayExecutionInfo.eid} to ${replayExecutionInfo.interaction}`,
       logicalPlan,
-      replayExecutionInfo
+      replayExecutionInfo,
     );
   }
 
   public sendExecutionRequest(
     executionName: string,
     logicalPlan: LogicalPlan,
-    replayExecutionInfo: ReplayExecutionInfo | undefined = undefined
+    replayExecutionInfo: ReplayExecutionInfo | undefined = undefined,
   ): void {
     const workflowExecuteRequest = {
       executionName: executionName,
@@ -354,7 +299,7 @@ export class ExecuteWorkflowService {
     console.log("sending add breakpoint request");
     this.workflowWebsocketService.send(
       "AddBreakpointRequest",
-      ExecuteWorkflowService.transformBreakpoint(this.workflowActionService.getTexeraGraph(), linkID, breakpointData)
+      ExecuteWorkflowService.transformBreakpoint(this.workflowActionService.getTexeraGraph(), linkID, breakpointData),
     );
   }
 
@@ -501,15 +446,15 @@ export class ExecuteWorkflowService {
     });
 
     const breakpoints: BreakpointInfo[] = Array.from(workflowGraph.getAllEnabledLinkBreakpoints().entries()).map(e =>
-      ExecuteWorkflowService.transformBreakpoint(workflowGraph, e[0], e[1])
+      ExecuteWorkflowService.transformBreakpoint(workflowGraph, e[0], e[1]),
     );
 
     const opsToViewResult: string[] = Array.from(workflowGraph.getOperatorsToViewResult()).filter(
-      op => !workflowGraph.isOperatorDisabled(op)
+      op => !workflowGraph.isOperatorDisabled(op),
     );
 
     const opsToReuseResult: string[] = Array.from(workflowGraph.getOperatorsMarkedForReuseResult()).filter(
-      op => !workflowGraph.isOperatorDisabled(op)
+      op => !workflowGraph.isOperatorDisabled(op),
     );
     return { operators, links, breakpoints, opsToViewResult, opsToReuseResult };
   }
@@ -517,7 +462,7 @@ export class ExecuteWorkflowService {
   public static transformBreakpoint(
     workflowGraph: WorkflowGraphReadonly,
     linkID: string,
-    breakpointData: Breakpoint
+    breakpointData: Breakpoint,
   ): BreakpointInfo {
     const operatorID = workflowGraph.getLinkWithID(linkID).source.operatorID;
     let breakpoint: BreakpointRequest;

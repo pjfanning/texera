@@ -9,6 +9,7 @@ import { presetPalettes } from "@ant-design/colors";
 import { isDefined } from "../../../../common/util/predicate";
 import { WorkflowWebsocketService } from "../../../service/workflow-websocket/workflow-websocket.service";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
+import { UdfDebugService } from "../../../service/operator-debug/udf-debug.service";
 
 @UntilDestroy()
 @Component({
@@ -17,7 +18,7 @@ import { NotificationService } from "../../../../common/service/notification/not
   styleUrls: ["./console-frame.component.scss"],
 })
 export class ConsoleFrameComponent implements OnInit, OnChanges {
-  @Input() operatorId?: string;
+  @Input() operatorId!: string;
   @Input() consoleInputEnabled?: boolean;
   @ViewChild(CdkVirtualScrollViewport) viewPort?: CdkVirtualScrollViewport;
   @ViewChild("consoleList", { read: ElementRef }) listElement?: ElementRef;
@@ -47,7 +48,8 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     private executeWorkflowService: ExecuteWorkflowService,
     private workflowConsoleService: WorkflowConsoleService,
     private workflowWebsocketService: WorkflowWebsocketService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private udfDebugService: UdfDebugService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -166,6 +168,28 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       this.executeWorkflowService.retryExecution(this.workerIds);
     } catch (e) {
       this.notificationService.error(e);
+    }
+  }
+
+  public onClickStepOver(): void {
+    this.udfDebugService.initManager(this.operatorId)?.setHitLineNum(0);
+    for (let worker of this.workerIds) {
+      this.workflowWebsocketService.send("DebugCommandRequest", {
+        operatorId: this.operatorId,
+        workerId: worker,
+        cmd: "n",
+      });
+    }
+  }
+
+  public onClickContinue(): void {
+    this.udfDebugService.initManager(this.operatorId)?.setHitLineNum(0);
+    for (let worker of this.workerIds) {
+      this.workflowWebsocketService.send("DebugCommandRequest", {
+        operatorId: this.operatorId,
+        workerId: worker,
+        cmd: "c",
+      });
     }
   }
 

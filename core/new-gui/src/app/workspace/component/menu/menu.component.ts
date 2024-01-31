@@ -28,6 +28,7 @@ import { CoeditorPresenceService } from "../../service/workflow-graph/model/coed
 import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
+import { UdfDebugService } from "../../service/operator-debug/udf-debug.service";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -95,8 +96,10 @@ export class MenuComponent implements OnInit {
     private userProjectService: UserProjectService,
     private notificationService: NotificationService,
     public operatorMenu: OperatorMenuService,
-    public coeditorPresenceService: CoeditorPresenceService
+    public coeditorPresenceService: CoeditorPresenceService,
+    private udfDebugService: UdfDebugService,
   ) {
+
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
       .pipe(untilDestroyed(this))
@@ -180,7 +183,10 @@ export class MenuComponent implements OnInit {
           text: "Run",
           icon: "play-circle",
           disable: false,
-          onClick: () => this.executeWorkflowService.executeWorkflow(this.currentExecutionName),
+          onClick: () => {
+            this.udfDebugService.resetAll()
+            this.executeWorkflowService.executeWorkflow(this.currentExecutionName)
+          },
         };
       case ExecutionState.Initializing:
         return {
@@ -264,35 +270,6 @@ export class MenuComponent implements OnInit {
     this.workflowActionService.getJointGraphWrapper().toggleGrids();
   }
 
-  public onClickStepOver(): void {
-    const currentOperatorId: string = this.workflowActionService
-      .getJointGraphWrapper()
-      .getCurrentHighlightedOperatorIDs()[0];
-    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
-
-    for (let worker of workerIds) {
-      this.workflowWebsocketService.send("DebugCommandRequest", {
-        operatorId: currentOperatorId,
-        workerId: worker,
-        cmd: "n",
-      });
-    }
-  }
-
-  public onClickContinue(): void {
-    const currentOperatorId: string = this.workflowActionService
-      .getJointGraphWrapper()
-      .getCurrentHighlightedOperatorIDs()[0];
-    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
-
-    for (let worker of workerIds) {
-      this.workflowWebsocketService.send("DebugCommandRequest", {
-        operatorId: currentOperatorId,
-        workerId: worker,
-        cmd: "c",
-      });
-    }
-  }
 
   /**
    * This method will decrease the zoom ratio and send the new zoom ratio value

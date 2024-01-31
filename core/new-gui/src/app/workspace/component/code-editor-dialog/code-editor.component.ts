@@ -6,17 +6,24 @@ import { YText } from "yjs/dist/src/types/YText";
 import { MonacoBinding } from "y-monaco";
 import { Subject } from "rxjs";
 import { takeUntil } from "rxjs/operators";
-import { MonacoLanguageClient } from "monaco-languageclient";
+// import { MonacoLanguageClient } from "monaco-languageclient";
 import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from "vscode-ws-jsonrpc";
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
 import { DomSanitizer, SafeStyle } from "@angular/platform-browser";
 import { Coeditor } from "../../../common/type/user";
 import { YType } from "../../types/shared-editing.interface";
-import { getWebsocketUrl } from "src/app/common/util/url";
 import { isUndefined } from "lodash";
-import { CloseAction, ErrorAction } from "vscode-languageclient/lib/common/client.js";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { FormControl } from "@angular/forms";
+import { MonacoBreakpoint } from "monaco-breakpoints";
+import { WorkflowWebsocketService } from "../../service/workflow-websocket/workflow-websocket.service";
+import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
+import { BreakpointManager, UdfDebugService } from "../../service/operator-debug/udf-debug.service";
+import { isDefined } from "../../../common/util/predicate";
+import { ConsoleMessage, ConsoleUpdateEvent } from "../../types/workflow-common.interface";
+import { RingBuffer } from "ring-buffer-ts";
+import { CONSOLE_BUFFER_SIZE } from "../../service/workflow-console/workflow-console.service";
+
 
 /**
  * CodeEditorComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.
@@ -40,16 +47,23 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   private languageServerSocket?: WebSocket;
   private workflowVersionStreamSubject: Subject<void> = new Subject<void>();
   private operatorID!: string;
+  private breakpointManager: BreakpointManager | undefined;
   public title: string | undefined;
   public formControl!: FormControl;
   public componentRef: ComponentRef<CodeEditorComponent> | undefined;
+
 
   constructor(
     private sanitizer: DomSanitizer,
     private workflowActionService: WorkflowActionService,
     private workflowVersionService: WorkflowVersionService,
-    public coeditorPresenceService: CoeditorPresenceService
-  ) {}
+    public coeditorPresenceService: CoeditorPresenceService,
+    public executeWorkflowService: ExecuteWorkflowService,
+    public workflowWebsocketService: WorkflowWebsocketService,
+    public udfDebugService: UdfDebugService,
+  ) {
+  }
+
   ngAfterViewInit() {
     this.workflowActionService.getTexeraGraph().updateSharedModelAwareness("editingCode", true);
     this.operatorID = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0];
@@ -62,6 +76,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         .getSharedOperatorType(this.operatorID)
         .get("operatorProperties") as YType<Readonly<{ [key: string]: any }>>
     ).get("code") as YText;
+
+    this.breakpointManager = this.udfDebugService.initManager(this.operatorID);
 
     this.workflowVersionService
       .getDisplayParticularVersionStream()
@@ -77,6 +93,29 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
             });
           });
         }
+      });
+
+
+    this.workflowWebsocketService
+      .subscribeToEvent("ConsoleUpdateEvent")
+      .pipe(untilDestroyed(this))
+      .subscribe((pythonConsoleUpdateEvent: ConsoleUpdateEvent) => {
+        const operatorId = pythonConsoleUpdateEvent.operatorId;
+        pythonConsoleUpdateEvent.messages
+          .filter(consoleMessage => consoleMessage.msgType.name === "DEBUGGER")
+          .map(
+          consoleMessage => {
+            console.log(consoleMessage);
+            const pattern = /^Breakpoint (\d+).*\.py:(\d+)\s*$/
+            return consoleMessage.title.match(pattern)
+          },
+        )
+          .filter(isDefined)
+          .forEach(match => {
+          const breakpoint = Number(match[1]);
+          const lineNumber = Number(match[2]);
+          this.breakpointManager?.addBreakpoint(lineNumber, breakpoint);
+        });
       });
   }
 
@@ -98,6 +137,24 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     if (!isUndefined(this.workflowVersionStreamSubject)) {
       this.workflowVersionStreamSubject.next();
       this.workflowVersionStreamSubject.complete();
+    }
+  }
+
+  private restoreBreakpoints(instance: MonacoBreakpoint, lineNums: number[]) {
+    console.log("trying to restore " + lineNums);
+    for (let lineNumber of lineNums) {
+      const decorationId = instance["lineNumberAndDecorationIdMap"].get(lineNumber);
+      if (decorationId) {
+        instance["removeSpecifyDecoration"](decorationId, lineNumber);
+      } else {
+        const range: monaco.IRange = {
+          startLineNumber: lineNumber,
+          endLineNumber: lineNumber,
+          startColumn: 0,
+          endColumn: 0,
+        };
+        instance["createSpecifyDecoration"](range);
+      }
     }
   }
 
@@ -125,6 +182,10 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
       fontSize: 11,
       theme: "vs-dark",
       automaticLayout: true,
+      minimap: {
+        enabled: false,
+      },
+      glyphMargin: true,
     });
 
     if (this.code) {
@@ -132,38 +193,88 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         this.code,
         editor.getModel()!,
         new Set([editor]),
-        this.workflowActionService.getTexeraGraph().getSharedModelAwareness()
+        this.workflowActionService.getTexeraGraph().getSharedModelAwareness(),
       );
     }
     this.editor = editor;
-    this.connectLanguageServer();
+    // this.connectLanguageServer();
+
+    const instance = new MonacoBreakpoint({ editor });
+
+    const currentOperatorId: string = this.workflowActionService
+      .getJointGraphWrapper()
+      .getCurrentHighlightedOperatorIDs()[0];
+    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
+
+    this.restoreBreakpoints(instance, this.breakpointManager?.getLinesWithBreakpoint()!);
+
+    instance.on("breakpointChanged", lineNums => {
+      const existingLines = this.breakpointManager?.getLinesWithBreakpoint();
+      existingLines?.filter(number => !lineNums.includes(number)).forEach(lineNum => {
+        console.log("trying to remove line " + lineNum);
+        const breakpointId = this.breakpointManager?.getBreakpoint(lineNum);
+        for (let worker of workerIds) {
+          this.workflowWebsocketService.send("DebugCommandRequest", {
+            operatorId: currentOperatorId,
+            workerId: worker,
+            cmd: "clear " + breakpointId,
+          });
+        }
+        this.breakpointManager?.removeBreakpoint(lineNum);
+      })
+
+      for (let lineNum of lineNums) {
+        if (!this.breakpointManager?.hasBreakpoint(lineNum)) {
+          for (let worker of workerIds) {
+            this.workflowWebsocketService.send("DebugCommandRequest", {
+              operatorId: currentOperatorId,
+              workerId: worker,
+              cmd: "break " + lineNum,
+            });
+          }
+        }
+      }
+
+
+    });
+
+    this.breakpointManager?.getBreakpointHitStream()
+      .pipe(untilDestroyed(this))
+      .subscribe(lineNum => {
+        console.log("highlight " + lineNum);
+        instance.removeHighlight();
+        if (lineNum != 0) {
+          instance.setLineHighlight(lineNum);
+        }
+      });
   }
 
-  private connectLanguageServer() {
-    if (this.languageServerSocket === undefined) {
-      this.languageServerSocket = new WebSocket(getWebsocketUrl("/python-language-server", "3000"));
-      this.languageServerSocket.onopen = () => {
-        if (this.languageServerSocket !== undefined) {
-          const socket = toSocket(this.languageServerSocket);
-          const reader = new WebSocketMessageReader(socket);
-          const writer = new WebSocketMessageWriter(socket);
-          const languageClient = new MonacoLanguageClient({
-            name: "Python UDF Language Client",
-            clientOptions: {
-              documentSelector: ["python"],
-              errorHandler: {
-                error: () => ({ action: ErrorAction.Continue }),
-                closed: () => ({ action: CloseAction.Restart }),
-              },
-            },
-            connectionProvider: { get: () => Promise.resolve({ reader, writer }) },
-          });
-          languageClient.start();
-          reader.onClose(() => languageClient.stop());
-        }
-      };
-    }
-  }
+
+  // private connectLanguageServer() {
+  //   if (this.languageServerSocket === undefined) {
+  //     this.languageServerSocket = new WebSocket(getWebsocketUrl("/python-language-server", "3000"));
+  //     this.languageServerSocket.onopen = () => {
+  //       if (this.languageServerSocket !== undefined) {
+  //         const socket = toSocket(this.languageServerSocket);
+  //         const reader = new WebSocketMessageReader(socket);
+  //         const writer = new WebSocketMessageWriter(socket);
+  //         // const languageClient = new MonacoLanguageClient({
+  //         //   name: "Python UDF Language Client",
+  //         //   clientOptions: {
+  //         //     documentSelector: ["python"],
+  //         //     errorHandler: {
+  //         //       error: () => ({ action: ErrorAction.Continue }),
+  //         //       closed: () => ({ action: CloseAction.Restart }),
+  //         //     },
+  //         //   },
+  //         //   connectionProvider: { get: () => Promise.resolve({ reader, writer }) },
+  //         // });
+  //         // languageClient.start();
+  //         // reader.onClose(() => languageClient.stop());
+  //       }
+  //     };
+  //   }
+  // }
 
   private initDiffEditor() {
     if (this.code) {
@@ -178,7 +289,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         ?.content.operators?.filter(
           operator =>
             operator.operatorID ===
-            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0]
+            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0],
         )?.[0].operatorProperties.code;
       this.editor.setModel({
         original: monaco.editor.createModel(this.code.toString(), "python"),
