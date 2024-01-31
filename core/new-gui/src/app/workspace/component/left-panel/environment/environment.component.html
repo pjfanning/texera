@@ -7,7 +7,7 @@
         <!-- Add more menu items here if needed -->
     </ul>
 
-    <!-- Conditional Content Based on Selected Menu -->
+    <!-- datasets display -->
     <div *ngIf="selectedMenu === 'datasets'" class="datasets-container">
         <button
                 class="link-dataset-btn"
@@ -35,7 +35,13 @@
         </nz-collapse>
 
         <!-- Link Datasets Modal -->
-        <nz-modal [(nzVisible)]="showDatasetLinkModal" nzTitle="Link a new Dataset to the Environment" (nzOnCancel)="handleCancelLinkDataset()">
+        <nz-modal
+                [(nzVisible)]="showDatasetLinkModal"
+                nzTitle="Link a new Dataset to the Environment"
+                [nzMaskClosable]="true"
+                (nzOnCancel)="handleCancelLinkDataset()"
+                [nzFooter]="null"
+        >
             <ng-container *nzModalContent>
             <div class="link-new-dataset-area">
                 <input
@@ -67,6 +73,38 @@
             </div>
             </ng-container>
         </nz-modal>
+
+        <nz-modal
+                [(nzVisible)]="showDatasetDetails" nzTitle="Dataset Details"
+                (nzOnCancel)="handleCancelDatasetDetails()"
+                [nzFooter]="null"
+                [nzMaskClosable]="true"
+        >
+            <ng-container *nzModalContent>
+                <table class="custom-table">
+                    <tbody>
+                    <tr>
+                        <td class="table-label">Dataset ID</td>
+                        <td class="table-value">{{showingDatasetDid}}</td>
+                    </tr>
+                    <tr>
+                        <td class="table-label">Name</td>
+                        <td class="table-value">{{showingDatasetName}}</td>
+                    </tr>
+                    <tr>
+                        <td class="table-label">Description</td>
+                        <td class="table-value">{{showingDatasetDescription}}</td>
+                    </tr>
+                    <tr>
+                        <td class="table-label">Version Name</td>
+                        <td class="table-value">{{showingDatasetVersionName}}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </ng-container>
+        </nz-modal>
+
+
     </div>
 
     <!-- Add more content sections for other menu items if needed -->

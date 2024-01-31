@@ -39,6 +39,10 @@ export class EnvironmentComponent implements OnInit {
     filteredLinkingDatasets: {did: number | undefined, name: string}[] = [];
     inputDatasetName?: string;
 
+    // dataset details related control
+    showDatasetDetails: boolean = false;
+    showingDataset: DatasetOfEnvironmentDetails | undefined;
+
     constructor(
         private router: Router,
         private activatedRoute : ActivatedRoute,
@@ -113,7 +117,11 @@ export class EnvironmentComponent implements OnInit {
     }
 
     onClickOpenEnvironmentDatasetDetails(did: number) {
-        // TODO: show the datasets of environment details.
+        const selectedEntry = this.datasetsOfEnvironment.get(did);
+        if (selectedEntry) {
+            this.showingDataset = selectedEntry[0];
+            this.showDatasetDetails = true;
+        }
     }
 
 
@@ -172,6 +180,51 @@ export class EnvironmentComponent implements OnInit {
                 }));
         }
         // console.log(this.filteredLinkingDatasetsName)
+    }
+
+    // controls of dataset details
+    get showingDatasetName(): string {
+        if (this.showingDataset?.dataset.name) {
+            return this.showingDataset.dataset.name;
+        }
+
+        return "";
+    }
+
+    get showingDatasetDid(): string {
+        const did = this.showingDataset?.dataset.did;
+        if (did) {
+            return did.toString();
+        }
+        return '';
+    }
+
+    get showingDatasetVersionName(): string {
+        const versionName = this.showingDataset?.version.name;
+        if (versionName) {
+            return versionName;
+        }
+        return "";
+    }
+
+    get showingDatasetDescription(): string {
+        const desc = this.showingDataset?.dataset.description;
+        if (desc) {
+            return desc;
+        }
+        return ""
+    }
+
+    get showingDatasetVersionDvid(): string {
+        const did = this.showingDataset?.version.dvid;
+        if (did) {
+            return did.toString();
+        }
+        return '';
+    }
+
+    handleCancelDatasetDetails() {
+        this.showDatasetDetails = false;
     }
 
 }

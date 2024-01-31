@@ -47,3 +47,23 @@
   //height: 90%;
   //text-align: center;
 }
+
+.custom-table {
+  width: 100%; /* Make the table take the full width of its container */
+  border-collapse: collapse; /* Collapse borders */
+}
+
+.custom-table td {
+  padding: 8px; /* Add some padding to table cells */
+  border-bottom: 1px solid #e8e8e8; /* Add a subtle line between rows */
+}
+
+.table-label {
+  font-weight: bold; /* Make label text bold */
+  width: 30%; /* Allocate 30% of the width to labels */
+  background-color: #f0f0f0; /* A light grey background for the labels */
+}
+
+.table-value {
+  width: 70%; /* Allocate 70% of the width to values */
+}
