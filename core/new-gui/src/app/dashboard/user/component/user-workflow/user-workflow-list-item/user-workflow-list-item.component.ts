@@ -14,7 +14,6 @@ import {DashboardProject} from "../../../type/dashboard-project.interface";
 import {UserProjectService} from "../../../service/user-project/user-project.service";
 import {DashboardEntry} from "../../../type/dashboard-entry";
 import {firstValueFrom} from "rxjs";
-import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 import {EnvironmentService} from "../../../service/user-environment/environment.service";
 import {WorkflowEnvironmentService} from "../../../../../common/service/workflow-environment/workflow-environment.service";
 

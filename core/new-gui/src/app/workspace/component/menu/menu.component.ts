@@ -32,7 +32,6 @@ import {EnvironmentEditorService} from "../../../dashboard/user/service/environm
 import {WorkflowEnvironmentService} from "../../../common/service/workflow-environment/workflow-environment.service";
 import {EnvironmentService} from "../../../dashboard/user/service/user-environment/environment.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {NgbdModalWorkflowEnvironmentSelectComponent} from "../../../dashboard/user/component/user-environment/ngbd-modal-workflow-environment-select/ngbd-modal-workflow-environment-select.component";
 
 /**
  * MenuComponent is the top level menu bar that shows

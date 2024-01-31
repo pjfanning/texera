@@ -10,10 +10,7 @@ import {SearchService} from "../../service/search.service";
 import {firstValueFrom} from "rxjs";
 import {DashboardEntry} from "../../type/dashboard-entry";
 import {SortMethod} from "../../type/sort-method";
-import {NgbdModalEnvironmentAddComponent} from "./ngbd-modal-environment-add/ngbd-modal-environment-add.component";
-import {DashboardEnvironment, Environment} from "../../type/environment";
 import {EnvironmentService} from "../../service/user-environment/environment.service";
-import next from "ajv/dist/vocabularies/next";
 
 export const ROUTER_ENVIRONMENT_VIEW_URL = "/"
 
@@ -119,31 +116,7 @@ export class UserEnvironmentComponent implements AfterViewInit {
     }
 
     public onClickOpenEnvironmentAddComponent(): void {
-        const modalRef = this.modalService.open(NgbdModalEnvironmentAddComponent)
 
-        // When the modal is closed, retrieve the result
-        modalRef.result.then(
-            (new_entry: Environment) => {
-                // Do something with the new_entry here
-                // this.environments.unshift(entry);
-                // console.log(this.environments);
-                // this.searchResultsComponent.setEntries(this.environments);
-                this.environmentService.createEnvironment(new_entry).subscribe({
-                        next(_) {
-                            console.log("environment creation successfully")
-
-                        },
-                        error(err) {
-                            console.error('Something wrong occurred: ' + err);
-                        }
-                    }
-                );
-                },
-        );
-
-        modalRef.dismissed.pipe(untilDestroyed(this)).subscribe(_ => {
-            this.reloadDashboardEnvironmentEntries(true)
-        });
     }
 
     public reloadDashboardEnvironmentEntries(forced: boolean = false): void {
