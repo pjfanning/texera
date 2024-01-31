@@ -4,10 +4,6 @@
             <span nz-icon nzType="database"></span>
             Datasets
         </li>
-        <li nz-menu-item (click)="selectedMenu='metadata'" [nzSelected]="selectedMenu === 'metadata'">
-            <span nz-icon nzType="bulb"></span>
-            Metadata
-        </li>
         <!-- Add more menu items here if needed -->
     </ul>
 
@@ -59,7 +55,12 @@
                                 {{dataset.did?.toString()}}
                             </div>
                             <span class="dataset-name">{{ dataset.name }}</span>
-                            <button nz-button nzType="primary" class="dataset-option-link-btn">Link</button>
+                            <button
+                                    nz-button
+                                    nzType="primary"
+                                    class="dataset-option-link-btn"
+                                    (click)="onClickLinkDataset(dataset)"
+                            >Link</button>
                         </div>
                     </nz-auto-option>
                 </nz-autocomplete>

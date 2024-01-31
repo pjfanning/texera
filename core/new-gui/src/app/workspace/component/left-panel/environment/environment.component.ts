@@ -27,7 +27,7 @@ export class EnvironmentComponent implements OnInit {
 
     wid: number | undefined;
 
-    selectedMenu: "datasets" | "metadata" = "datasets";
+    selectedMenu: "datasets" = "datasets";
 
     // [did] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
     datasetsOfEnvironment: Map<number, [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]> = new Map();
@@ -38,7 +38,6 @@ export class EnvironmentComponent implements OnInit {
     userAccessibleDatasets: DashboardDataset[] = [];
     filteredLinkingDatasets: {did: number | undefined, name: string}[] = [];
     inputDatasetName?: string;
-    selectedDataset: {did: number | undefined, name: string} | undefined;
 
     constructor(
         private router: Router,
@@ -86,6 +85,7 @@ export class EnvironmentComponent implements OnInit {
     }
 
     private loadDatasetsOfEnvironment() {
+        this.datasetFileTrees = [];
         if (this.eid) {
             const eid = this.eid;
             this.environmentService.retrieveDatasetsOfEnvironmentDetails(eid)
@@ -116,6 +116,8 @@ export class EnvironmentComponent implements OnInit {
         // TODO: show the datasets of environment details.
     }
 
+
+
     // related control for dataset link modal
     onClickOpenDatasetLinkModal() {
         // initialize the datasets info
@@ -129,7 +131,6 @@ export class EnvironmentComponent implements OnInit {
                             return !newDid || !this.datasetsOfEnvironment.has(newDid);
                         });
 
-                    console.log("newly fetched: ", this.userAccessibleDatasets);
                     if (this.userAccessibleDatasets.length == 0) {
                         this.notificationService.warning(`There is no available datasets to be linked to the environment.`);
                     } else {
@@ -138,30 +139,26 @@ export class EnvironmentComponent implements OnInit {
                 }
             })
     }
-    handleConfirmLinkDataset() {
-        if (this.selectedDataset === undefined || this.inputDatasetName != this.selectedDataset.name) {
-            console.log(this.inputDatasetName, this.selectedDataset?.name)
-            this.notificationService.info('No dataset is added.');
-        } else {
-            // Proceed with the linking logic using this.selectedDid
-
-            // Example: Call a service method to link the dataset by its DID
-            // this.environmentService.linkDataset(this.selectedDid).subscribe(...);
-
-            // Close the modal
-        }
-        this.showDatasetLinkModal = false;
-    }
 
     handleCancelLinkDataset() {
         this.showDatasetLinkModal = false;
     }
 
-    onDatasetSelect(dataset: {did: number | undefined, name: string}): void {
-        this.selectedDataset = dataset;
+    onClickLinkDataset(dataset: {did: number | undefined; name: string}) {
+        if (this.eid && dataset.did) {
+            this.environmentService.addDatasetToEnvironment(this.eid, dataset.did)
+                .subscribe({
+                    next: response => {
+                        this.notificationService.success(`Link dataset ${dataset.name} to the environment successfully`);
+                        this.showDatasetLinkModal = false;
+                        this.loadDatasetsOfEnvironment();
+                    },
+                    error : err => {
+                        this.notificationService.error(`Linking dataset ${dataset.name} encounters error`)
+                    }
+                })
+        }
     }
-
-
 
     onUserInputDatasetName(event: Event): void {
         const value = this.inputDatasetName;
