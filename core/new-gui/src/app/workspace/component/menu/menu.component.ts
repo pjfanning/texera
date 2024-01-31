@@ -97,6 +97,18 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService
   ) {
+
+    workflowWebsocketService.subscribeToEvent("WorkflowCheckpointStatusEvent").pipe(untilDestroyed(this)).subscribe(
+      event => {
+        if(event.id.startsWith("RetrieveState_")){
+          this.notificationService.info(`Interaction ${event.id} is registered! Elapsed time: ${event.elapsedMs} ms`)
+        }else{
+          this.notificationService.info(`${event.id} is taken! Elapsed time: ${event.elapsedMs} ms. Overhead: ${event.checkpointSize/1000/1000} MB`)
+        }
+      }
+    )
+
+
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
       .pipe(untilDestroyed(this))
@@ -238,10 +250,12 @@ export class MenuComponent implements OnInit {
 
   public handleInteraction(): void {
     this.executeWorkflowService.addExecutionInteraction(false);
+    this.notificationService.info("Registering Interaction...")
   }
 
   public handleCheckpoint(): void{
     this.executeWorkflowService.addExecutionInteraction(true);
+    this.notificationService.info("Taking Checkpoint...")
   }
 
   /**

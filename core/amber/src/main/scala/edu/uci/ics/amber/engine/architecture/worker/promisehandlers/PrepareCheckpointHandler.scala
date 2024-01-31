@@ -76,7 +76,7 @@ trait PrepareCheckpointHandler {
       waitFuture.complete(())
       ()
     }
-    dp.outputHandler(Left(MainThreadDelegate(closure)))
+    dp.outputHandler(Left(MainThreadDelegate(closure)))  //this will create duplicate log records!
     waitFuture.get()
   }
 }

@@ -39,6 +39,8 @@ class WorkflowExecutionService(
     with LazyLogging {
   logger.info("Creating a new execution.")
 
+  var sendEventFunc: TexeraWebSocketEvent => Unit = evt => {}
+
   val errorHandler: Throwable => Unit = { t =>
     {
       logger.error("error during execution", t)
@@ -143,7 +145,8 @@ class WorkflowExecutionService(
       wsInput,
       executionBreakpointService,
       executionReconfigurationService,
-      controllerConfig.workerLoggingConf
+      controllerConfig.workerLoggingConf,
+      sendEventFunc
     )
     executionConsoleService =
       new ExecutionConsoleService(client, executionStateStore, wsInput, executionBreakpointService)

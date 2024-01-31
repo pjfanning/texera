@@ -53,12 +53,11 @@ class SessionState(session: Session) {
   def subscribe(workflowService: WorkflowService): Unit = {
     unsubscribe()
     currentWorkflowState = Some(workflowService)
-    workflowSubscription = workflowService.connect(evt =>
+    val sendEvtFunc: TexeraWebSocketEvent => Unit = (evt) => {
       session.getAsyncRemote.sendText(objectMapper.writeValueAsString(evt))
-    )
-    executionSubscription = workflowService.connectToExecution(evt =>
-      session.getAsyncRemote.sendText(objectMapper.writeValueAsString(evt))
-    )
+    }
+    workflowSubscription = workflowService.connect(sendEvtFunc)
+    executionSubscription = workflowService.connectToExecution(sendEvtFunc)
 
   }
 }

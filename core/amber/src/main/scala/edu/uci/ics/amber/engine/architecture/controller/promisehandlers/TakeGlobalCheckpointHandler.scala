@@ -25,13 +25,13 @@ trait TakeGlobalCheckpointHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: TakeGlobalCheckpoint, sender) =>
-    logger.info(s"before checking: ${System.currentTimeMillis()}")
     @transient val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
+    var estimationOnly = msg.estimationOnly
     if (storage.containsFolder(msg.checkpointId.toString)) {
       logger.info("skip checkpoint since its already taken")
-      Future(0L) // prevent making duplicated checkpoints
-    } else {
-      logger.info(s"after checking: ${System.currentTimeMillis()}")
+      estimationOnly = true
+    }
+      val uri = msg.destination.resolve(msg.checkpointId.toString)
       var totalSize = 0L
       val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
       execute(
@@ -41,11 +41,10 @@ trait TakeGlobalCheckpointHandler {
           NoAlignment,
           cp.workflow.physicalPlan,
           physicalOpToTakeCheckpoint,
-          PrepareCheckpoint(msg.estimationOnly)
+          PrepareCheckpoint(estimationOnly)
         ),
         sender
       ).flatMap { ret =>
-        val uri = msg.destination.resolve(msg.checkpointId.toString)
         Future
           .collect(ret.map {
             case (workerId, _) =>
@@ -57,7 +56,7 @@ trait TakeGlobalCheckpointHandler {
             logger.info("Start to take checkpoint")
             val chkpt = new CheckpointState()
             totalSize += chkpt.size()
-            if (!msg.estimationOnly) {
+            if (!estimationOnly) {
               // serialize CP state
               try {
                 chkpt.save(SerializedState.CP_STATE_KEY, this.cp)
@@ -70,7 +69,7 @@ trait TakeGlobalCheckpointHandler {
                 SerializedState.OUTPUT_MSG_KEY,
                 this.cp.transferService.getAllUnAckedMessages.toArray
               )
-              val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
+              val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(uri))
               val writer = storage.getWriter(actorId.name)
               writer.writeRecord(chkpt)
               writer.flush()
@@ -79,6 +78,5 @@ trait TakeGlobalCheckpointHandler {
             totalSize
           }
       }
-    }
   }
 }

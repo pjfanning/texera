@@ -4,33 +4,16 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{
-  ReplayStatusUpdate,
-  WorkflowRecoveryStatus
-}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkflowPaused,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowPaused, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  FaultToleranceConfig,
-  StateRestoreConfig
-}
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelMarkerPayload,
-  ControlPayload,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, ControlPayload, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
-import edu.uci.ics.amber.engine.common.{
-  AmberConfig,
-  CheckpointState,
-  SerializedState,
-  VirtualIdentityUtils
-}
+import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 
 import scala.concurrent.duration.DurationInt
@@ -111,6 +94,7 @@ class Controller(
         cp,
         controllerRestoreConf.get,
         () => {
+          logger.info("replay completed!")
           globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
         }
       )
@@ -223,7 +207,9 @@ class Controller(
       )
     }
     outputMessages.foreach(transferService.send)
+    logger.info(s"restored workflow state = ${cp.executionState.getState}")
     cp.asyncRPCClient.sendToClient(WorkflowStatusUpdate(cp.executionState.getWorkflowStatus))
+    cp.asyncRPCClient.sendToClient(WorkflowPaused())
     globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
   }
 }

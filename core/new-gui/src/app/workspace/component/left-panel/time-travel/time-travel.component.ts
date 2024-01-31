@@ -9,7 +9,7 @@ import {
   WorkflowExecutionsService,
 } from "../../../../dashboard/user/service/workflow-executions/workflow-executions.service";
 import { HttpClient } from "@angular/common/http";
-import { Observable, timer } from "rxjs";
+import {Observable, Subscription, timer} from "rxjs";
 import { map } from "rxjs/operators";
 import { ReplayExecutionInfo } from "../../../types/workflow-websocket.interface";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
@@ -25,7 +25,7 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   public executionList: WorkflowExecutionsEntry[] = [];
   expandedRows = new Set<number>(); // Tracks expanded rows by execution ID
   public revertedToInteraction: ReplayExecutionInfo | undefined = undefined;
-
+  timerSubscription:Subscription = Subscription.EMPTY
   constructor(
     private workflowActionService: WorkflowActionService,
     public executeWorkflowService: ExecuteWorkflowService,
@@ -37,7 +37,11 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // gets the versions result and updates the workflow versions table displayed on the form
-    timer(0, 5000) // trigger per 5 secs
+    this.setupRefresh()
+  }
+
+  setupRefresh(){
+    this.timerSubscription = timer(0, 5000) // trigger per 5 secs
       .pipe(untilDestroyed(this))
       .subscribe(e => {
         let wid = this.getWid();
@@ -73,6 +77,7 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
   }
 
   toggleOptimize(eid: number, vid:number){
+    this.timerSubscription.unsubscribe() // cancel refresh
     let wid = this.getWid();
     let execution: WorkflowExecutionsEntry | undefined = undefined;
     this.executionList.forEach(entry => {
@@ -87,10 +92,11 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
         let logicalPlanPojo = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
         this.workflowVersionService.closeReadonlyWorkflowDisplay();
         this.http.post<string>(`${WORKFLOW_EXECUTIONS_API_BASE_URL}/optimize`,{wid, eid, logicalPlanPojo})
-          .pipe(untilDestroyed(this)).subscribe(s =>{
+          .pipe(untilDestroyed(this)).subscribe(() =>{
           if(execution !== undefined){
-            execution.checkpointOptimizationStatus = s;
+            execution.checkpointOptimizationStatus = "completed";
           }
+          this.setupRefresh() //restart refresh
         })
       }
     )

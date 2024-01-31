@@ -161,7 +161,7 @@ class WorkflowExecutionsResource {
   def doReplayCheckpointOptimization(
                                       req:OptimizeReplayRequest,
       @Auth sessionUser: SessionUser
-  ): String = {
+  ): Unit = {
     val eid = req.eid
     val wid = req.wid
     val workflowPojo = req.logicalPlanPojo
@@ -204,12 +204,12 @@ class WorkflowExecutionsResource {
     val waitFuture = new CompletableFuture[Unit]()
     val amberClient = new AmberClient(system, workflowObj, controllerConfig, err => {})
     amberClient.registerCallback[WorkflowRecoveryStatus] { evt =>
+      println(s"?????????$evt")
       if(!evt.isRecovering){
         waitFuture.complete(())
       }
     }
     waitFuture.get()
-    "completed"
   }
 
   /**

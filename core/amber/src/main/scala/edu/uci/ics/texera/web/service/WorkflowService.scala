@@ -116,6 +116,7 @@ class WorkflowService(
   def connectToExecution(onNext: TexeraWebSocketEvent => Unit): Disposable = {
     var localDisposable = Disposable.empty()
     executionService.subscribe { executionService: WorkflowExecutionService =>
+      executionService.sendEventFunc = onNext
       localDisposable.dispose()
       val subscriptions = executionService.executionStateStore.getAllStores
         .map(_.getWebsocketEventObservable)
@@ -147,43 +148,45 @@ class WorkflowService(
     val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
     var controllerConf = ControllerConfig.default
 
-    workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(
-      workflowContext.workflowId,
-      workflowContext.userId,
-      req.executionName,
-      convertToJson(req.engineVersion)
-    )
+    if(req.replayFromExecution.isEmpty){
+      workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(
+        workflowContext.workflowId,
+        workflowContext.userId,
+        req.executionName,
+        convertToJson(req.engineVersion)
+      )
+    }
 
-    if (AmberConfig.isUserSystemEnabled) {
-      // enable only if we have mysql
-      if (AmberConfig.faultToleranceLogRootFolder.isDefined) {
-        val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
-          workflowContext.workflowId + "/" + workflowContext.executionId + "/"
-        )
+    // enable only if we have mysql
+    if (AmberConfig.faultToleranceLogRootFolder.isDefined && req.replayFromExecution.isEmpty) {
+      val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
+        workflowContext.workflowId + "/" + workflowContext.executionId + "/"
+      )
+      if(AmberConfig.isUserSystemEnabled){
         ExecutionsMetadataPersistService.tryUpdateExistingExecution(workflowContext.executionId) {
           execution => execution.setLogLocation(writeLocation.toString)
         }
-        controllerConf = controllerConf.copy(workerLoggingConf =
-          Some(FaultToleranceConfig(writeTo = writeLocation))
-        )
       }
-      if (req.replayFromExecution.isDefined) {
-        val replayInfo = req.replayFromExecution.get
-        ExecutionsMetadataPersistService
-          .tryGetExistingExecution(ExecutionIdentity(replayInfo.eid))
-          .foreach { execution =>
-            val readLocation = new URI(execution.getLogLocation)
-            controllerConf = controllerConf.copy(workerRestoreConf =
-              Some(
-                StateRestoreConfig(
-                  readFrom = readLocation,
-                  replayDestination = ChannelMarkerIdentity(replayInfo.interaction),
-                  readOnlyState = replayInfo.readOnlyState
-                )
+      controllerConf = controllerConf.copy(workerLoggingConf =
+        Some(FaultToleranceConfig(writeTo = writeLocation))
+      )
+    }
+    if (req.replayFromExecution.isDefined) {
+      val replayInfo = req.replayFromExecution.get
+      ExecutionsMetadataPersistService
+        .tryGetExistingExecution(ExecutionIdentity(replayInfo.eid))
+        .foreach { execution =>
+          val readLocation = new URI(execution.getLogLocation)
+          controllerConf = controllerConf.copy(workerRestoreConf =
+            Some(
+              StateRestoreConfig(
+                readFrom = readLocation,
+                replayDestination = ChannelMarkerIdentity(replayInfo.interaction),
+                readOnlyState = replayInfo.readOnlyState
               )
             )
-          }
-      }
+          )
+        }
     }
 
     val execution = new WorkflowExecutionService(

@@ -157,6 +157,13 @@ export type ExecutionDurationUpdateEvent = Readonly<{
   isRunning: boolean;
 }>;
 
+export type WorkflowCheckpointStatusEvent = Readonly<{
+  id:string;
+  status:string;
+  elapsedMs:number;
+  checkpointSize:number;
+}>
+
 export type ClusterStatusUpdateEvent = Readonly<{
   numWorkers: number;
 }>;
@@ -220,6 +227,7 @@ export type TexeraWebsocketEventTypeMap = {
   ModifyLogicResponse: ModifyLogicResponse;
   ModifyLogicCompletedEvent: ModifyLogicCompletedEvent;
   ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
+  WorkflowCheckpointStatusEvent: WorkflowCheckpointStatusEvent;
   ClusterStatusUpdateEvent: ClusterStatusUpdateEvent;
 };
 
