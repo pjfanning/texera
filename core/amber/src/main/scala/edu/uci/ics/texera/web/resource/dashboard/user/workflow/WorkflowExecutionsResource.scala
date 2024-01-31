@@ -73,6 +73,7 @@ object WorkflowExecutionsResource {
   case class WorkflowExecutionEntry(
       eId: UInteger,
       vId: UInteger,
+      environmentEid: UInteger,
       userName: String,
       status: Byte,
       result: String,

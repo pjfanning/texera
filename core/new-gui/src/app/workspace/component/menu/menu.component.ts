@@ -191,71 +191,28 @@ export class MenuComponent implements OnInit {
           icon: "play-circle",
           disable: false,
           onClick: () => {
-            // check if there is a selected environment
+            const retrievingEnvironmentErrorMessage = `Error when retrieving the runtime environment of current workflow.`;
+            // fetch the environment id of current workflow before running the workflow
             if (this.workflowId) {
-              this.workflowEnvironmentService.doesWorkflowHaveEnvironment(this.workflowId).subscribe(hasEnvironment => {
-                if (hasEnvironment) {
-                  console.log("have environment")
-                  // @ts-ignore
-                  this.workflowEnvironmentService.retrieveEnvironmentIdOfWorkflow(this.workflowId).subscribe(eid => {
-                    console.log("execute the workflow in environment", eid)
-                    this.executeWorkflowService.executeWorkflow(this.currentExecutionName, eid)
-                  })
-                } else {
-                  console.log("does not have environment")
-
-                  // open the runtime environment selection dashboard
-                  const modalRef = this.modalService.open(NgbdModalWorkflowEnvironmentSelectComponent, {
-                    backdrop: 'static',  // ensures the background is not clickable
-                    keyboard: false      // ensures the modal cannot be closed with the keyboard
-                  });
-
-                  modalRef.componentInstance.isEditingWorkflow = false;
-
-                  modalRef.result.then(
-                    (selectedEnvironmentID: number | null) => {
-                      if (selectedEnvironmentID == null) {
-                        // If an environment was not selected, create a new one and relate it
-                        // Here, you can perform further actions with the selected environment
-                        this.environmentService.createEnvironment(
-                          {
-                            eid: undefined,
-                            uid: undefined,
-                            name: "Untitled Environment",
-                            description: "Some description",
-                            creationTime: undefined
-                          }
-                        ).subscribe(env => {
-                          const wid = this.workflowId;
-                          const eid = env.environment.eid;
-                          if (wid && eid) {
-                            this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, eid).subscribe(res => {
-                              console.log(`bind with new env, wid: ${wid}, eid: ${env.environment.eid}`)
-                              this.executeWorkflowService.executeWorkflow(this.currentExecutionName, eid)
-                            });
-                          }
-                        })
-
+              this.workflowPersistService.retrieveWorkflowEnvironment(this.workflowId)
+                  .subscribe({
+                    next: env => {
+                      const envId = env.eid;
+                      if (envId) {
+                        this.executeWorkflowService.executeWorkflow(this.currentExecutionName, envId);
                       } else {
-                        // user choose a existing environment
-                        const wid = this.workflowId;
-                        if (wid) {
-                          this.workflowEnvironmentService.bindWorkflowWithEnvironment(wid, selectedEnvironmentID).subscribe(res => {
-                            console.log(`bind with new env, wid: ${wid}, eid: ${selectedEnvironmentID}`)
-                            this.executeWorkflowService.executeWorkflow(this.currentExecutionName, selectedEnvironmentID)
-                          });
-                        }
+                        this.notificationService.error(retrievingEnvironmentErrorMessage)
                       }
                     },
-                    (reason) => {
-                      console.log('Modal was dismissed.', reason);
+                    error: err => {
+                      this.notificationService.error(retrievingEnvironmentErrorMessage)
                     }
-                  )
-                }
-              })
+                  })
+            } else {
+              this.notificationService.error(retrievingEnvironmentErrorMessage);
             }
           }
-        };
+        }
       case ExecutionState.Initializing:
         return {
           text: "Submitting",
