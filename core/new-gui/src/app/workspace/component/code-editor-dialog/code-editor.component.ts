@@ -20,10 +20,7 @@ import { WorkflowWebsocketService } from "../../service/workflow-websocket/workf
 import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
 import { BreakpointManager, UdfDebugService } from "../../service/operator-debug/udf-debug.service";
 import { isDefined } from "../../../common/util/predicate";
-import { ConsoleMessage, ConsoleUpdateEvent } from "../../types/workflow-common.interface";
-import { RingBuffer } from "ring-buffer-ts";
-import { CONSOLE_BUFFER_SIZE } from "../../service/workflow-console/workflow-console.service";
-
+import { ConsoleUpdateEvent } from "../../types/workflow-common.interface";
 
 /**
  * CodeEditorComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.

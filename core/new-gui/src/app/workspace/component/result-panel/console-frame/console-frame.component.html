@@ -163,9 +163,12 @@
     </span>
   </button>
   <button
-    (click)="onClickStepOver()"
+    (click)="onClickStep()"
     nz-button
-    title="Step Over">
+    nzSize="small"
+    nz-tooltip
+    nzTooltipTitle="Step"
+    title="Step">
     <i
       nz-icon
       nzTheme="outline"
@@ -174,6 +177,9 @@
   <button
     (click)="onClickContinue()"
     nz-button
+    nz-tooltip
+    nzTooltipTitle="Continue"
+    nzSize="small"
     title="Continue">
     <i
       nz-icon

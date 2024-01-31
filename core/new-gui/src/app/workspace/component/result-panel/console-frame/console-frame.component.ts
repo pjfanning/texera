@@ -1,6 +1,6 @@
 import { Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChild } from "@angular/core";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
-import { BreakpointTriggerInfo, ConsoleMessage } from "../../../types/workflow-common.interface";
+import {  ConsoleMessage } from "../../../types/workflow-common.interface";
 import { ExecutionState } from "src/app/workspace/types/execute-workflow.interface";
 import { WorkflowConsoleService } from "../../../service/workflow-console/workflow-console.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -171,13 +171,13 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
     }
   }
 
-  public onClickStepOver(): void {
+  public onClickStep(): void {
     this.udfDebugService.initManager(this.operatorId)?.setHitLineNum(0);
     for (let worker of this.workerIds) {
       this.workflowWebsocketService.send("DebugCommandRequest", {
         operatorId: this.operatorId,
         workerId: worker,
-        cmd: "n",
+        cmd: "next",
       });
     }
   }
@@ -188,7 +188,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
       this.workflowWebsocketService.send("DebugCommandRequest", {
         operatorId: this.operatorId,
         workerId: worker,
-        cmd: "c",
+        cmd: "continue",
       });
     }
   }
