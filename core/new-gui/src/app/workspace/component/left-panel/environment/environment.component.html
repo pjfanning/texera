@@ -17,7 +17,7 @@
                 class="link-dataset-btn"
                 nz-button
                 nzType="primary"
-                (click)="onClickOpenLinkDatasetWindow()"
+                (click)="onClickOpenDatasetLinkModal()"
         >
             Link Dataset
         </button>
@@ -39,7 +39,7 @@
         </nz-collapse>
 
         <!-- Link Datasets Modal -->
-        <nz-modal [(nzVisible)]="showDatasetLinkModal" nzTitle="Link a new Dataset to the Environment" (nzOnCancel)="handleCancelLinkDataset()" (nzOnOk)="handleConfirmLinkDataset()">
+        <nz-modal [(nzVisible)]="showDatasetLinkModal" nzTitle="Link a new Dataset to the Environment" (nzOnCancel)="handleCancelLinkDataset()">
             <ng-container *nzModalContent>
             <div class="link-new-dataset-area">
                 <input
@@ -50,7 +50,18 @@
                         name="datasetName"
                         placeholder="Enter Dataset Name"
                         [nzAutocomplete]="auto"/>
-                <nz-autocomplete [nzDataSource]="filteredLinkingDatasetsName" nzBackfill #auto>
+                <nz-autocomplete #auto>
+                    <nz-auto-option
+                            *ngFor="let dataset of filteredLinkingDatasets"
+                            [nzLabel]="dataset.name">
+                        <div class="auto-option-content">
+                            <div class="dataset-id-container">
+                                {{dataset.did?.toString()}}
+                            </div>
+                            <span class="dataset-name">{{ dataset.name }}</span>
+                            <button nz-button nzType="primary" class="dataset-option-link-btn">Link</button>
+                        </div>
+                    </nz-auto-option>
                 </nz-autocomplete>
             </div>
             </ng-container>
