@@ -177,7 +177,8 @@ class WorkflowService(
               Some(
                 StateRestoreConfig(
                   readFrom = readLocation,
-                  replayDestination = ChannelMarkerIdentity(replayInfo.interaction)
+                  replayDestination = ChannelMarkerIdentity(replayInfo.interaction),
+                  readOnlyState = replayInfo.readOnlyState
                 )
               )
             )

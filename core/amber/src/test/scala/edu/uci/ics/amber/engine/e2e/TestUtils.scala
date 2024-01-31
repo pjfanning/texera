@@ -20,7 +20,7 @@ object TestUtils {
       context
     )
     workflowCompiler.compile(
-      LogicalPlanPojo(operators, links, List(), List(), List()),
+      new LogicalPlanPojo(operators, links, List(), List(), List()),
       resultStorage,
       None,
       new ExecutionStateStore(),

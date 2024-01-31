@@ -24,17 +24,19 @@ object ReplayLogGenerator {
       case s: ProcessingStep =>
         steps.enqueue(s)
       case MessageContent(message) =>
+        var messageToAdd = message
         message.payload match {
           case a: ControlPayload =>
             a match {
-              case b @ AsyncRPCClient.ControlInvocation(commandID, cmd: TakeGlobalCheckpoint) =>
-                if(additionalCheckpoints.contains(cmd.checkpointId)){
-                  messages.enqueue(message.copy(payload = b.copy(command = cmd.copy(estimationOnly = false))))
+              case b@AsyncRPCClient.ControlInvocation(commandID, cmd: TakeGlobalCheckpoint) =>
+                if (additionalCheckpoints.contains(cmd.checkpointId)) {
+                  messageToAdd = message.copy(payload = b.copy(command = cmd.copy(estimationOnly = false)))
                 }
-              case _ => messages.enqueue(message)
+              case _ => //skip
             }
-          case _ => messages.enqueue(message)
+          case _ => //skip
         }
+        messages.enqueue(messageToAdd)
       case ReplayDestination(id) =>
         if (id == replayTo) {
           // we only need log record upto this point

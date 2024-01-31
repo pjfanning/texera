@@ -90,8 +90,7 @@ class ExecutionRuntimeService(
       }else{
         ChannelMarkerIdentity(s"RetrieveState_${UUID.randomUUID().toString}")
       }
-      val uri = logConf.get.writeTo.resolve(checkpointId.toString)
-      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, uri))
+      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, logConf.get.writeTo))
     }
   }))
 

@@ -67,6 +67,7 @@ object WorkflowWorker {
   final case class StateRestoreConfig(
       readFrom: URI,
       replayDestination: ChannelMarkerIdentity,
+      readOnlyState: Boolean,
       additionalCheckpoints: List[ChannelMarkerIdentity] = List()
   )
 
@@ -113,7 +114,9 @@ class WorkflowWorker(
     }
     // dp is ready
     dpThread = new DPThread(workerConfig.workerId, dp, logManager, inputQueue)
-    dpThread.start()
+    if(!isReadOnlyState) {
+      dpThread.start()
+    }
   }
 
   def handleDirectInvocation: Receive = {

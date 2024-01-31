@@ -126,6 +126,10 @@ class Controller(
   }
 
   def processMessages(): Unit = {
+    if(isReadOnlyState){
+      logger.info("controller is in read only state")
+      return
+    }
     var waitingForInput = false
     while (!waitingForInput) {
       cp.inputGateway.tryPickChannel match {

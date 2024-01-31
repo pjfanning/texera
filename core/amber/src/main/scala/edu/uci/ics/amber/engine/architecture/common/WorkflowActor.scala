@@ -72,6 +72,8 @@ abstract class WorkflowActor(
     with Stash
     with AmberLogging {
 
+  var isReadOnlyState:Boolean = false
+
   //
   // Akka related components:
   //
@@ -192,6 +194,7 @@ abstract class WorkflowActor(
       )
       val chkpt = chkptStorage.getReader(getLogName).mkRecordIterator().next()
       initFromCheckpoint(chkpt)
+      isReadOnlyState = replayConf.readOnlyState
     } else {
       // do replay from scratch
       val (processSteps, messages) =

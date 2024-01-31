@@ -186,6 +186,7 @@ class ExecutionStatsService(
       client
         .registerCallback[WorkflowRecoveryStatus]((evt: WorkflowRecoveryStatus) => {
           stateStore.metadataStore.updateState { metadataStore =>
+            logger.info(s"isRecoverying = ${evt.isRecovering}")
             metadataStore.withIsRecovering(evt.isRecovering)
           }
         })

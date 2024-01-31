@@ -144,12 +144,12 @@ export class TimeTravelComponent implements OnInit, OnDestroy {
       .pipe(untilDestroyed(this))
       .subscribe(workflow => {
         this.workflowVersionService.displayReadonlyWorkflow(workflow);
-        let replayExecutionInfo = { eid: eid, interaction: interaction };
+        let interactions = this.interactionHistories[eid];
+        let last = interactions[interactions.length-1];
+        let replayExecutionInfo = { eid: eid, interaction: interaction,  readOnlyState: interaction != last};
         this.revertedToInteraction = replayExecutionInfo;
         this.notificationService.info(`start replay to interaction ${interaction} at execution ${eid}`);
         this.executeWorkflowService.executeWorkflowAmberTexeraWithReplay(replayExecutionInfo);
       });
   }
-
-  protected readonly requestIdleCallback = requestIdleCallback;
 }

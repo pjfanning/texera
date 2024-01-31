@@ -1,25 +1,20 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.workflow
 
-import akka.persistence.RecoveryCompleted
+import edu.uci.ics.amber.engine.architecture.controller.Controller.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayDestination, ReplayLogRecord}
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
+import edu.uci.ics.amber.engine.architecture.logreplay.{MessageContent, ReplayDestination, ReplayLogRecord}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.StateRestoreConfig
+import edu.uci.ics.amber.engine.common.CheckpointState
+import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ChannelMarkerIdentity,
-  ExecutionIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity, WorkflowIdentity}
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.{SqlServer, TexeraWebApplication}
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
-  USER,
-  WORKFLOW_EXECUTIONS,
-  WORKFLOW_RUNTIME_STATISTICS,
-  WORKFLOW_VERSION
-}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW_EXECUTIONS, WORKFLOW_RUNTIME_STATISTICS, WORKFLOW_VERSION}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowExecutionsDao
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowExecutions
 import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
@@ -192,9 +187,10 @@ class WorkflowExecutionsResource {
         SequentialRecordStorage.getStorage[ReplayLogRecord](Some(new URI(logLocation)))
       val result = new mutable.ArrayBuffer[ChannelMarkerIdentity]()
       storage.getReader("CONTROLLER").mkRecordIterator().foreach {
-        case destination: ReplayDestination =>
-          if (destination.id.id.contains("RetrieveState_")) {
-            result.append(destination.id)
+        case MessageContent(WorkflowFIFOMessage(_, _, _ @ ControlInvocation(id, cmd: TakeGlobalCheckpoint))) =>
+          val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(cmd.destination))
+          if(!storage.containsFolder(cmd.checkpointId.toString)){
+            result.append(cmd.checkpointId)
           }
         case _ =>
       }
@@ -203,12 +199,14 @@ class WorkflowExecutionsResource {
       List()
     }
     val srConf =
-      StateRestoreConfig(new URI(logLocation), ChannelMarkerIdentity(""), additionalCheckpoints)
+      StateRestoreConfig(new URI(logLocation), ChannelMarkerIdentity(""), false, additionalCheckpoints)
     controllerConfig = controllerConfig.copy(workerRestoreConf = Some(srConf))
     val waitFuture = new CompletableFuture[Unit]()
     val amberClient = new AmberClient(system, workflowObj, controllerConfig, err => {})
-    amberClient.registerCallback[RecoveryCompleted] { evt =>
-      waitFuture.complete(())
+    amberClient.registerCallback[WorkflowRecoveryStatus] { evt =>
+      if(!evt.isRecovering){
+        waitFuture.complete(())
+      }
     }
     waitFuture.get()
     "completed"

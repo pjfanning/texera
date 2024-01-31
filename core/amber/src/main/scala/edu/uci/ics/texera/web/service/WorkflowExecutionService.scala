@@ -70,6 +70,7 @@ class WorkflowExecutionService(
         if (newState.isRecovering && newState.state != COMPLETED) {
           outputEvents.append(WorkflowStateEvent("Recovering"))
         } else {
+          logger.info(s"old State: ${oldState.isRecovering} new State: ${newState.isRecovering}, ${newState.state}")
           outputEvents.append(WorkflowStateEvent(Utils.aggregatedStateToString(newState.state)))
         }
       }

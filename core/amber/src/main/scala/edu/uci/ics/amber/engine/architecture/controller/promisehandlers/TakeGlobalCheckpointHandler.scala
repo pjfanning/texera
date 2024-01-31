@@ -25,51 +25,60 @@ trait TakeGlobalCheckpointHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
   registerHandler { (msg: TakeGlobalCheckpoint, sender) =>
-    var totalSize = 0L
-    val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
-    execute(
-      PropagateChannelMarker(
-        cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
-        msg.checkpointId,
-        NoAlignment,
-        cp.workflow.physicalPlan,
-        physicalOpToTakeCheckpoint,
-        PrepareCheckpoint(msg.estimationOnly)
-      ),
-      sender
-    ).flatMap { ret =>
-      Future
-        .collect(ret.map {
-          case (workerId, _) =>
-            send(FinalizeCheckpoint(msg.checkpointId, msg.destination), workerId).map { size =>
-              totalSize += size
+    logger.info(s"before checking: ${System.currentTimeMillis()}")
+    @transient val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
+    if (storage.containsFolder(msg.checkpointId.toString)) {
+      logger.info("skip checkpoint since its already taken")
+      Future(0L) // prevent making duplicated checkpoints
+    } else {
+      logger.info(s"after checking: ${System.currentTimeMillis()}")
+      var totalSize = 0L
+      val physicalOpToTakeCheckpoint = cp.workflow.physicalPlan.operators.map(_.id)
+      execute(
+        PropagateChannelMarker(
+          cp.executionState.getAllOperatorExecutions.map(_._1).toSet,
+          msg.checkpointId,
+          NoAlignment,
+          cp.workflow.physicalPlan,
+          physicalOpToTakeCheckpoint,
+          PrepareCheckpoint(msg.estimationOnly)
+        ),
+        sender
+      ).flatMap { ret =>
+        val uri = msg.destination.resolve(msg.checkpointId.toString)
+        Future
+          .collect(ret.map {
+            case (workerId, _) =>
+              send(FinalizeCheckpoint(msg.checkpointId, uri), workerId).map { size =>
+                totalSize += size
+              }
+          })
+          .map { _ =>
+            logger.info("Start to take checkpoint")
+            val chkpt = new CheckpointState()
+            totalSize += chkpt.size()
+            if (!msg.estimationOnly) {
+              // serialize CP state
+              try {
+                chkpt.save(SerializedState.CP_STATE_KEY, this.cp)
+              } catch {
+                case e: Throwable => logger.error("Failed to serialize controller state", e)
+              }
+              logger.info(s"Serialized CP state, current workflow state = ${cp.executionState.getState}")
+              // get all output messages from cp.transferService
+              chkpt.save(
+                SerializedState.OUTPUT_MSG_KEY,
+                this.cp.transferService.getAllUnAckedMessages.toArray
+              )
+              val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
+              val writer = storage.getWriter(actorId.name)
+              writer.writeRecord(chkpt)
+              writer.flush()
             }
-        })
-        .map { _ =>
-          logger.info("Start to take checkpoint")
-          val chkpt = new CheckpointState()
-          totalSize += chkpt.size()
-          if (!msg.estimationOnly) {
-            // serialize CP state
-            try {
-              chkpt.save(SerializedState.CP_STATE_KEY, this.cp)
-            } catch {
-              case e: Throwable => logger.error("Failed to serialize controller state", e)
-            }
-            logger.info("Serialized CP state")
-            // get all output messages from cp.transferService
-            chkpt.save(
-              SerializedState.OUTPUT_MSG_KEY,
-              this.cp.transferService.getAllUnAckedMessages.toArray
-            )
-            val storage = SequentialRecordStorage.getStorage[CheckpointState](Some(msg.destination))
-            val writer = storage.getWriter(actorId.name)
-            writer.writeRecord(chkpt)
-            writer.flush()
+            logger.info(s"global checkpoint finalized, total size = $totalSize")
+            totalSize
           }
-          logger.info(s"global checkpoint finalized, total size = $totalSize")
-          totalSize
-        }
+      }
     }
   }
 }

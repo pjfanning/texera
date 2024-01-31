@@ -8,7 +8,8 @@ import edu.uci.ics.texera.workflow.common.workflow.{BreakpointInfo, LogicalLink}
 case class ReplayExecutionInfo(
     @JsonDeserialize(contentAs = classOf[java.lang.Long])
     eid: Long,
-    interaction: String
+    interaction: String,
+    readOnlyState: Boolean
 )
 
 case class WorkflowExecuteRequest(

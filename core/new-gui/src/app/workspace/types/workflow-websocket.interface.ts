@@ -39,6 +39,7 @@ export interface ReplayExecutionInfo
   extends Readonly<{
     eid: number;
     interaction: string;
+    readOnlyState: boolean;
   }> {}
 
 export interface RegisterWIdEvent
