@@ -29,7 +29,7 @@ export class WorkflowWebsocketService {
   private websocket?: WebSocketSubject<TexeraWebsocketEvent | TexeraWebsocketRequest>;
   private wsWithReconnectSubscription?: Subscription;
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
-
+  public operatorStateMap = new Map<String, String>()
   constructor() {
     // setup heartbeat
     interval(WS_HEARTBEAT_INTERVAL_MS).subscribe(_ => this.send("HeartBeatRequest", {}));
@@ -101,6 +101,8 @@ export class WorkflowWebsocketService {
         this.numWorkers = evt.numWorkers;
       }else if(evt.type === "RegisterWorkflowIdResponse"){
         this.supportFaultTolerance = evt.supportFaultTolerance;
+      }else if(evt.type === "OperatorStateEvent"){
+        this.operatorStateMap.set(evt.opId, evt.state)
       }
       this.isConnected = true;
     });

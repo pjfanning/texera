@@ -59,6 +59,7 @@ import QuillCursors from "quill-cursors";
 import * as Y from "yjs";
 import { CollabWrapperComponent } from "../../../../common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
 import { OperatorSchema } from "src/app/workspace/types/operator-schema.interface";
+import {WorkflowWebsocketService} from "../../../service/workflow-websocket/workflow-websocket.service";
 
 export type PropertyDisplayComponent = TypeCastingDisplayComponent;
 
@@ -151,7 +152,8 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     private workflowVersionService: WorkflowVersionService,
     private userFileService: UserFileService,
     private workflowGrantAccessService: ShareAccessService,
-    private workflowStatusSerivce: WorkflowStatusService
+    private workflowStatusSerivce: WorkflowStatusService,
+    public workflowWebsocketService: WorkflowWebsocketService
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -684,6 +686,12 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
       } catch (e) {
         this.notificationService.error(e);
       }
+    }
+  }
+
+  getOperatorState(){
+    if(this.currentOperatorId){
+      this.workflowWebsocketService.send("OperatorStateRequest", {opId: this.currentOperatorId})
     }
   }
 

@@ -9,9 +9,9 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlob
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.FaultToleranceConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
-import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowCheckpointStatusEvent}
+import edu.uci.ics.texera.web.model.websocket.event.{OperatorStateEvent, TexeraWebSocketEvent, WorkflowCheckpointStatusEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.request.{SkipTupleRequest, WorkflowInteractionRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.request.{OperatorStateRequest, SkipTupleRequest, WorkflowInteractionRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
@@ -92,6 +92,13 @@ class ExecutionRuntimeService(
           sendEvtFunc(WorkflowCheckpointStatusEvent(checkpointId.id, "Success", System.currentTimeMillis() - startTime, ret))
       }
     }
+  }))
+
+  // Receive Interaction
+  addSubscription(wsInput.subscribe((req: OperatorStateRequest, uidOpt) => {
+    client.retrieveStateFromOperator(req.opId).onSuccess(ret =>{
+      sendEvtFunc(OperatorStateEvent(ret.asInstanceOf[String]))
+    })
   }))
 
 }

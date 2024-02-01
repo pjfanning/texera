@@ -2,34 +2,22 @@ package edu.uci.ics.amber.engine.common.client
 
 import akka.actor.{Actor, ActorRef}
 import akka.pattern.StatusReply.Ack
+import akka.pattern.ask
+import akka.util.Timeout
 import com.twitter.util.Promise
-import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{
-  CreditRequest,
-  CreditResponse,
-  NetworkAck,
-  NetworkMessage
-}
-import edu.uci.ics.amber.engine.architecture.controller.Controller.WorkflowRecoveryStatus
+import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.{CreditRequest, CreditResponse, NetworkAck, NetworkMessage}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{RetrieveOperatorState, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ControlPayload,
-  DataPayload,
-  WorkflowFIFOMessage,
-  WorkflowRecoveryMessage
-}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ControlPayload, DataPayload, WorkflowFIFOMessage, WorkflowRecoveryMessage}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 
 import scala.collection.mutable
+import scala.concurrent.duration.DurationInt
 
 // TODO: Rename or refactor it since it has mixed duties (send/receive messages, execute callbacks)
 private[client] object ClientActor {
@@ -45,7 +33,7 @@ private[client] class ClientActor extends Actor with AmberLogging {
   var controlId = 0L
   val promiseMap = new mutable.LongMap[Promise[Any]]()
   var handlers: PartialFunction[Any, Unit] = PartialFunction.empty
-
+  implicit val timeout: Timeout = 5.minutes
   private def getQueuedCredit(channelId: ChannelIdentity): Long = {
     0L // client does not have queued credits
   }
@@ -77,6 +65,12 @@ private[client] class ClientActor extends Actor with AmberLogging {
     case req: ObservableRequest =>
       handlers = req.pf orElse handlers
       sender ! scala.runtime.BoxedUnit.UNIT
+    case req: RetrieveOperatorState =>
+      val localSender = sender()
+      (controller ? req).map{
+        ret =>
+        localSender ! ret
+      }(context.dispatcher)
     case NetworkMessage(
           mId,
           fifoMsg @ WorkflowFIFOMessage(_, _, payload)

@@ -15,6 +15,7 @@ import edu.uci.ics.texera.web.model.websocket.request.python.{
     new Type(value = classOf[EditingTimeCompilationRequest]),
     new Type(value = classOf[HeartBeatRequest]),
     new Type(value = classOf[ModifyLogicRequest]),
+    new Type(value = classOf[OperatorStateRequest]),
     new Type(value = classOf[RemoveBreakpointRequest]),
     new Type(value = classOf[ResultExportRequest]),
     new Type(value = classOf[ResultPaginationRequest]),

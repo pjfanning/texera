@@ -168,6 +168,11 @@ export type ClusterStatusUpdateEvent = Readonly<{
   numWorkers: number;
 }>;
 
+export type OperatorStateEvent = Readonly<{
+  opId:string;
+  state:string;
+}>;
+
 export type ModifyLogicResponse = Readonly<{
   opId: string;
   isValid: boolean;
@@ -205,6 +210,7 @@ export type TexeraWebsocketRequestTypeMap = {
   WorkflowResumeRequest: {};
   PythonExpressionEvaluateRequest: PythonExpressionEvaluateRequest;
   DebugCommandRequest: DebugCommandRequest;
+  OperatorStateRequest: {opId: string}
 };
 
 export type TexeraWebsocketEventTypeMap = {
@@ -229,6 +235,7 @@ export type TexeraWebsocketEventTypeMap = {
   ExecutionDurationUpdateEvent: ExecutionDurationUpdateEvent;
   WorkflowCheckpointStatusEvent: WorkflowCheckpointStatusEvent;
   ClusterStatusUpdateEvent: ClusterStatusUpdateEvent;
+  OperatorStateEvent: OperatorStateEvent;
 };
 
 // helper type definitions to generate the request and event types

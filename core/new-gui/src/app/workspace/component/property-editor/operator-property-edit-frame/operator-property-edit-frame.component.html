@@ -122,6 +122,24 @@
   Confirm Change
 </button>
 
+
+<button
+  (click)="getOperatorState()"
+  *ngIf="
+		currentOperatorId !== undefined &&
+		(this.executeWorkflowService.getExecutionState().state ===
+			ExecutionState.Paused)"
+  nz-button>
+  Ask for state
+  <i
+    nz-icon
+    nzTheme="outline"
+    nzType="info-circle"></i>
+</button>
+<p *ngIf = "currentOperatorId !== undefined && this.workflowWebsocketService.operatorStateMap.has(currentOperatorId!)">
+{{this.workflowWebsocketService.operatorStateMap.get(currentOperatorId!)}}
+</p>
+
 <div class="operator-version">
   <span>Operator Version: {{ operatorVersion }}</span>
 </div>

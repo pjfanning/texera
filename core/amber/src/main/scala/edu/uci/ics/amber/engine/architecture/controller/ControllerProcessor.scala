@@ -55,4 +55,11 @@ class ControllerProcessor(
   def setupLogManager(logManager: ReplayLogManager): Unit = {
     this.logManager = logManager
   }
+
+  @transient var globalReplayManager: GlobalReplayManager = _
+
+  def setupReplayManager(globalReplayManager: GlobalReplayManager): Unit = {
+    this.globalReplayManager = globalReplayManager
+  }
+
 }

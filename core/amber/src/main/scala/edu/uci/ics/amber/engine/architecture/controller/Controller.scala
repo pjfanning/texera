@@ -1,13 +1,14 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
 import akka.actor.SupervisorStrategy.Stop
+import akka.pattern.ask
 import akka.actor.{AllForOneStrategy, Props, SupervisorStrategy}
+import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, RetrieveOperatorState, WorkflowRecoveryStatus}
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkflowPaused, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, ControlPayload, WorkflowFIFOMessage}
@@ -52,6 +53,7 @@ object Controller {
 
   final case class ReplayStatusUpdate(id: ActorVirtualIdentity, status: Boolean)
   final case class WorkflowRecoveryStatus(isRecovering: Boolean)
+  final case class RetrieveOperatorState(opId:String)
 }
 
 class Controller(
@@ -61,7 +63,7 @@ class Controller(
       controllerConfig.workerLoggingConf,
       CONTROLLER
     ) {
-
+  implicit val timeout: Timeout = 5.minutes
   actorRefMappingService.registerActorRef(CLIENT, context.parent)
   val controllerTimerService = new ControllerTimerService(controllerConfig, actorService)
   var cp = new ControllerProcessor(
@@ -134,6 +136,15 @@ class Controller(
   }
 
   def handleDirectInvocation: Receive = {
+    case req: RetrieveOperatorState =>
+      val localSender = sender()
+      val worker = cp.executionState.getAllBuiltWorkers.find( w =>
+        w.name.contains(req.opId)).get
+      val ref = actorRefMappingService.actorRefMapping(worker)
+      (ref ? req).map {
+        ret =>
+          localSender ! ret
+      }(context.dispatcher)
     case c: ControlInvocation =>
       // only client and self can send direction invocations
       val source = if (sender == self) {
@@ -179,6 +190,7 @@ class Controller(
     cp.setupTimerService(controllerTimerService)
     cp.setupActorRefService(actorRefMappingService)
     cp.setupLogManager(logManager)
+    cp.setupReplayManager(globalReplayManager)
     cp.setupTransferService(transferService)
   }
 
@@ -190,7 +202,9 @@ class Controller(
     initControllerProcessor()
     // revive all workers.
     val builtPhysicalOps = cp.executionState.getAllBuiltWorkers
-      .map(workerId => VirtualIdentityUtils.getPhysicalOpId(workerId))
+      .map(workerId => {
+        VirtualIdentityUtils.getPhysicalOpId(workerId)
+      })
       .toSet
     builtPhysicalOps.foreach { opId =>
       val op = workflow.physicalPlan.getOperator(opId)
@@ -203,8 +217,10 @@ class Controller(
         dummyExecution,
         region.get.resourceConfig.get.operatorConfigs(opId),
         controllerConfig.workerRestoreConf,
-        controllerConfig.workerLoggingConf
+        controllerConfig.workerLoggingConf,
+        globalReplayManager
       )
+
     }
     outputMessages.foreach(transferService.send)
     logger.info(s"restored workflow state = ${cp.executionState.getState}")

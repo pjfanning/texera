@@ -3,29 +3,18 @@ package edu.uci.ics.amber.engine.architecture.worker
 import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
-import edu.uci.ics.amber.engine.architecture.controller.Controller.ReplayStatusUpdate
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, RetrieveOperatorState}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.scheduling.config.{OperatorConfig, WorkerConfig}
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  ActorCommandElement,
-  DPInputQueueElement,
-  FIFOMessageElement,
-  MainThreadDelegate,
-  TimerBasedControlElement,
-  WorkerReplayInitialization
-}
-import edu.uci.ics.amber.engine.common.{CheckpointState, SerializedState, VirtualIdentityUtils}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{ActorCommandElement, DPInputQueueElement, FIFOMessageElement, MainThreadDelegate, TimerBasedControlElement, WorkerReplayInitialization}
+import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState, VirtualIdentityUtils}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  ChannelMarkerIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, ChannelMarkerIdentity}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 
 import java.net.URI
@@ -120,6 +109,12 @@ class WorkflowWorker(
   }
 
   def handleDirectInvocation: Receive = {
+    case req: RetrieveOperatorState =>
+      sender() ! (dp.operator match {
+        case x:CheckpointSupport =>
+          x.getState
+        case _ => "No State"
+      })
     case c: ControlInvocation =>
       inputQueue.put(TimerBasedControlElement(c))
   }

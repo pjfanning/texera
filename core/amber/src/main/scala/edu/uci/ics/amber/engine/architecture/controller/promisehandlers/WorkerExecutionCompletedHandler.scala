@@ -52,7 +52,8 @@ trait WorkerExecutionCompletedHandler {
                 cp.workflow,
                 cp.actorRefService,
                 cp.actorService,
-                sender
+                sender,
+                cp.globalReplayManager
               )
               .flatMap(_ => Future.Unit)
           }

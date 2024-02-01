@@ -3,13 +3,10 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import com.twitter.util.Future
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.common.{AkkaActorRefMappingService, AkkaActorService}
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkerAssignmentUpdate,
-  WorkflowStatusUpdate
-}
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{WorkerAssignmentUpdate, WorkflowStatusUpdate}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkWorkersHandler.LinkWorkers
-import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, Workflow}
+import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, ExecutionState, GlobalReplayManager, Workflow}
 import edu.uci.ics.amber.engine.architecture.pythonworker.promisehandlers.InitializeOperatorLogicHandler.InitializeOperatorLogic
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.scheduling.policies.SchedulingPolicy
@@ -54,38 +51,42 @@ class WorkflowScheduler(
   def startWorkflow(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
-      akkaActorService: AkkaActorService
+      akkaActorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.startWorkflow(workflow)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService, globalReplayManager)
   }
 
   def onWorkerCompletion(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
-      workerId: ActorVirtualIdentity
+      workerId: ActorVirtualIdentity,
+      globalReplayManager: GlobalReplayManager
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule =
       schedulingPolicy.onWorkerCompletion(workflow, executionState, workerId)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService, globalReplayManager)
   }
 
   def onLinkCompletion(
       workflow: Workflow,
       akkaActorRefMappingService: AkkaActorRefMappingService,
       akkaActorService: AkkaActorService,
-      link: PhysicalLink
+      link: PhysicalLink,
+      globalReplayManager: GlobalReplayManager
   ): Future[Seq[Unit]] = {
     val nextRegionsToSchedule = schedulingPolicy.onLinkCompletion(workflow, executionState, link)
-    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService)
+    doSchedulingWork(workflow, nextRegionsToSchedule, akkaActorService, globalReplayManager)
   }
 
   def onTimeSlotExpired(
       workflow: Workflow,
       timeExpiredRegions: Set[Region],
       akkaActorRefMappingService: AkkaActorRefMappingService,
-      akkaActorService: AkkaActorService
+      akkaActorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Future[Seq[Unit]] = {
     val nextRegions = schedulingPolicy.onTimeSlotExpired(workflow)
     var regionsToPause: Set[Region] = Set()
@@ -93,7 +94,7 @@ class WorkflowScheduler(
       regionsToPause = timeExpiredRegions
     }
 
-    doSchedulingWork(workflow, nextRegions, akkaActorService)
+    doSchedulingWork(workflow, nextRegions, akkaActorService, globalReplayManager)
       .flatMap(_ => {
         val pauseFutures = new ArrayBuffer[Future[Unit]]()
         regionsToPause.foreach(stoppingRegion => {
@@ -117,11 +118,12 @@ class WorkflowScheduler(
   private def doSchedulingWork(
       workflow: Workflow,
       regions: Set[Region],
-      actorService: AkkaActorService
+      actorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Future[Seq[Unit]] = {
     if (regions.nonEmpty) {
       Future.collect(
-        regions.toArray.map(r => scheduleRegion(workflow, r, actorService))
+        regions.toArray.map(r => scheduleRegion(workflow, r, actorService, globalReplayManager))
       )
     } else {
       Future(Seq())
@@ -131,7 +133,8 @@ class WorkflowScheduler(
   private def constructRegion(
       workflow: Workflow,
       region: Region,
-      akkaActorService: AkkaActorService
+      akkaActorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Unit = {
     val builtOpsInRegion = new mutable.HashSet[PhysicalOpIdentity]()
     val resourceConfig = region.resourceConfig.get
@@ -143,7 +146,8 @@ class WorkflowScheduler(
             workflow,
             physicalOpId,
             resourceConfig.operatorConfigs(physicalOpId),
-            akkaActorService
+            akkaActorService,
+            globalReplayManager
           )
           builtPhysicalOpIds.add(physicalOpId)
         }
@@ -165,7 +169,8 @@ class WorkflowScheduler(
       workflow: Workflow,
       physicalOpId: PhysicalOpIdentity,
       operatorConfig: OperatorConfig,
-      controllerActorService: AkkaActorService
+      controllerActorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Unit = {
     val physicalOp = workflow.physicalPlan.getOperator(physicalOpId)
     val opExecution = executionState.initOperatorState(physicalOpId, operatorConfig)
@@ -174,7 +179,8 @@ class WorkflowScheduler(
       opExecution,
       operatorConfig,
       controllerConfig.workerRestoreConf,
-      controllerConfig.workerLoggingConf
+      controllerConfig.workerLoggingConf,
+      globalReplayManager
     )
   }
   private def initializePythonOperators(region: Region): Future[Seq[Unit]] = {
@@ -343,7 +349,8 @@ class WorkflowScheduler(
   private def scheduleRegion(
       workflow: Workflow,
       region: Region,
-      actorService: AkkaActorService
+      actorService: AkkaActorService,
+      globalReplayManager: GlobalReplayManager
   ): Future[Unit] = {
     if (constructingRegions.contains(region.id)) {
       return Future(())
@@ -351,7 +358,7 @@ class WorkflowScheduler(
     if (!startedRegions.contains(region.id)) {
       constructingRegions.add(region.id)
 
-      constructRegion(workflow, region, actorService)
+      constructRegion(workflow, region, actorService, globalReplayManager)
       prepareAndStartRegion(workflow, region, actorService).rescue {
         case err: Throwable =>
           // this call may come from client or worker(by execution completed)

@@ -31,7 +31,8 @@ trait LinkCompletedHandler {
             cp.workflow,
             cp.actorRefService,
             cp.actorService,
-            msg.link
+            msg.link,
+            cp.globalReplayManager
           )
           .flatMap(_ => Future.Unit)
       } else {

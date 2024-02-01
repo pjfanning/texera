@@ -26,7 +26,8 @@ trait StartWorkflowHandler {
           .startWorkflow(
             cp.workflow,
             cp.actorRefService,
-            cp.actorService
+            cp.actorService,
+            cp.globalReplayManager
           )
           .map(_ => {
             cp.controllerTimerService.enableStatusUpdate()

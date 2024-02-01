@@ -19,7 +19,7 @@ class AkkaActorRefMappingService(actorService: AkkaActorService) extends AmberLo
 
   implicit val self: ActorRef = actorService.self
 
-  private val actorRefMapping: mutable.HashMap[ActorVirtualIdentity, ActorRef] = mutable.HashMap()
+  val actorRefMapping: mutable.HashMap[ActorVirtualIdentity, ActorRef] = mutable.HashMap()
   private val queriedActorVirtualIdentities = new mutable.HashSet[ActorVirtualIdentity]()
   private val toNotifyOnRegistration =
     new mutable.HashMap[ActorVirtualIdentity, mutable.Set[ActorRef]]()

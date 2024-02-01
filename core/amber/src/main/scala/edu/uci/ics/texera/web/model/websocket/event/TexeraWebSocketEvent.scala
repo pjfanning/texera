@@ -27,7 +27,8 @@ import edu.uci.ics.texera.web.model.websocket.response.{
     new Type(value = classOf[PythonExpressionEvaluateResponse]),
     new Type(value = classOf[WorkerAssignmentUpdateEvent]),
     new Type(value = classOf[WorkflowCheckpointStatusEvent]),
-    new Type(value = classOf[ModifyLogicResponse])
+    new Type(value = classOf[ModifyLogicResponse]),
+    new Type(value = classOf[OperatorStateEvent])
   )
 )
 trait TexeraWebSocketEvent {}
