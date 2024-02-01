@@ -48,6 +48,26 @@ object EnvironmentResource {
     getEnvironmentByEid(ctx, environmentOfWorkflow.get(0).getEid)
   }
 
+  def doesWorkflowHaveEnvironment(ctx: DSLContext, wid: UInteger): Boolean = {
+    val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
+    val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
+
+    environmentOfWorkflow != null && !environmentOfWorkflow.isEmpty
+  }
+
+  def createEnvironment(ctx: DSLContext, uid: UInteger, name: String, description: String): Environment = {
+    val environment = new Environment()
+    environment.setUid(uid)
+    environment.setName(name)
+    environment.setDescription(description)
+
+    ctx
+      .insertInto(ENVIRONMENT)
+      .set(ctx.newRecord(ENVIRONMENT, environment))
+      .returning()
+      .fetchOne()
+      .into(classOf[Environment])
+  }
 
   private def getEnvironmentByEid(ctx: DSLContext, eid: UInteger): Environment = {
     val environmentDao: EnvironmentDao = new EnvironmentDao(ctx.configuration())
@@ -184,13 +204,9 @@ class EnvironmentResource {
       {
         withTransaction(context) { ctx =>
           {
-            environment.setUid(user.getUid)
+            val uid = environment.getUid
 
-            val createdEnvironment = ctx
-              .insertInto(ENVIRONMENT)
-              .set(ctx.newRecord(ENVIRONMENT, environment))
-              .returning()
-              .fetchOne()
+            val createdEnvironment = EnvironmentResource.createEnvironment(ctx, uid, environment.getName, environment.getDescription)
 
             DashboardEnvironment(
               new Environment(

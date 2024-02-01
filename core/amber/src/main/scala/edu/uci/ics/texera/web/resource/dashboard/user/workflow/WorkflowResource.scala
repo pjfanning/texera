@@ -5,11 +5,11 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentDao, EnvironmentOfWorkflowDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.DashboardEnvironment
-import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, createEnvironment, doesWorkflowHaveEnvironment}
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.{hasReadAccess, hasWriteAccess}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
 import org.jooq.{Condition, TableField}
@@ -44,7 +44,7 @@ object WorkflowResource {
     context.configuration()
   )
   final private lazy val workflowOfProjectDao = new WorkflowOfProjectDao(context.configuration)
-  final private lazy val environmentDao = new EnvironmentDao(context.configuration)
+  final private lazy val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(context.configuration)
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -72,10 +72,6 @@ object WorkflowResource {
         .newRecord(WORKFLOW_OF_PROJECT.WID, WORKFLOW_OF_PROJECT.PID)
         .values(wid, pid)
     )
-  }
-
-  private def environmentExists(eid: UInteger): Boolean = {
-    environmentDao.existsById(eid)
   }
 
   case class DashboardWorkflow(
@@ -443,6 +439,7 @@ class WorkflowResource extends LazyLogging {
   @Path("/persist")
   def persistWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): Workflow = {
     val user = sessionUser.getUser
+    val uid = user.getUid
 
     if (workflowOfUserExists(workflow.getWid, user.getUid)) {
       WorkflowVersionResource.insertVersion(workflow, insertNewFlag = false)
@@ -462,7 +459,22 @@ class WorkflowResource extends LazyLogging {
         throw new ForbiddenException("No sufficient access privilege.")
       }
     }
-    workflowDao.fetchOneByWid(workflow.getWid)
+
+    val wid = workflow.getWid
+    // check if the runtime environment of this workflow exists, if not, create one
+    if (!doesWorkflowHaveEnvironment(context, wid)) {
+      // create an environment, and associate this environment to this workflow
+      val createdEnvironment = createEnvironment(
+        context,
+        uid,
+        "Environment of Workflow #%d %s".format(wid.intValue(), workflow.getName),
+        "Runtime Environment of Workflow #%d %s".format(wid.intValue(), workflow.getName)
+      )
+
+      environmentOfWorkflowDao.insert(
+        new EnvironmentOfWorkflow(createdEnvironment.getEid, wid))
+    }
+    workflowDao.fetchOneByWid(wid)
 
   }
 
@@ -755,7 +767,10 @@ class WorkflowResource extends LazyLogging {
     ): Environment = {
 
     val uid = user.getUid
+    if (!hasReadAccess(wid, uid)) {
+      throw new ForbiddenException("current user has no read access to this workflow and its environment")
+    }
+
     EnvironmentResource.getEnvironmentByWid(context, uid, wid)
   }
-
 }

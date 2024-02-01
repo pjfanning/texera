@@ -19,9 +19,9 @@ import {map} from "rxjs/operators";
     styleUrls: ["environment.component.scss"],
 })
 export class EnvironmentComponent implements OnInit {
-    @Output()
-    environment: EventEmitter<Environment> = new EventEmitter<Environment>();
 
+    // this input is for other components,
+    // e.g. environment viewer, that already have the eid to use
     @Input()
     eid : number | undefined;
 
@@ -54,14 +54,13 @@ export class EnvironmentComponent implements OnInit {
         private modalService: NgbModal) {}
 
     ngOnInit(): void {
-        // initilize the environment info
+        // initialize the environment info
         if (this.eid) {
             // used by the environment editor directly
             this.environmentService.retrieveEnvironmentByEid(this.eid)
                 .pipe(untilDestroyed(this))
                 .subscribe({
                     next: env => {
-                        this.environment.emit(env.environment);
                         this.loadDatasetsOfEnvironment();
                     },
                     error: err => {
@@ -76,12 +75,12 @@ export class EnvironmentComponent implements OnInit {
                     .pipe(untilDestroyed(this))
                     .subscribe({
                         next: env => {
-                            this.environment.emit(env);
                             this.eid = env.eid;
                             this.loadDatasetsOfEnvironment();
                         },
                         error: err => {
-                            this.notificationService.error(`Runtime environment loading error!`)
+                            this.notificationService.warning(`Runtime environment of current workflow not found.
+                            Please save current workflow, so that the environment will be created automatically.`)
                         }
                     })
             }
