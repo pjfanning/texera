@@ -40,7 +40,7 @@ class TimeDiffOpDesc extends LogicalOp{
     Schema
       .newBuilder()
       .add(
-        "category",
+        "action",
           AttributeType.STRING
       ).add("diff", AttributeType.LONG)
       .build()
