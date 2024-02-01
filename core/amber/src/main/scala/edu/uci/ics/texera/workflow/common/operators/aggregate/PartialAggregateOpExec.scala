@@ -1,8 +1,10 @@
 package edu.uci.ics.texera.workflow.common.operators.aggregate
 
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
-import edu.uci.ics.amber.engine.common.InputExhausted
+import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, InputExhausted}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.operators.aggregate.PartialAggregateOpExec.internalAggObjKey
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -22,7 +24,7 @@ class PartialAggregateOpExec(
     val aggFuncs: List[DistributedAggregation[Object]],
     val groupByKeys: List[String],
     val inputSchema: Schema
-) extends OperatorExecutor {
+) extends OperatorExecutor with CheckpointSupport {
 
   var schema: Schema = Schema
     .newBuilder()
@@ -71,4 +73,25 @@ class PartialAggregateOpExec(
     }
   }
 
+  override def serializeState(currentIteratorState: Iterator[(ITuple, Option[PortIdentity])], checkpoint: CheckpointState): Iterator[(ITuple, Option[PortIdentity])] ={
+    checkpoint.save("partialObjectsPerKey", partialObjectsPerKey)
+    val arr = currentIteratorState.toArray
+    checkpoint.save("currentIter", arr)
+    arr.toIterator
+  }
+
+  override def deserializeState(checkpoint: CheckpointState): Iterator[(ITuple, Option[PortIdentity])] = {
+    partialObjectsPerKey = checkpoint.load("partialObjectsPerKey")
+    checkpoint.load("currentIter").asInstanceOf[Array[(ITuple, Option[PortIdentity])]].toIterator
+  }
+
+  override def getEstimatedCheckpointCost: Long = 0L
+
+  override def getState: String = {
+    s"action,sum\n"+
+    partialObjectsPerKey.map{
+      case (keys, values) =>
+      s"${keys.head},${values.head} minutes"
+    }.mkString("\n")
+  }
 }

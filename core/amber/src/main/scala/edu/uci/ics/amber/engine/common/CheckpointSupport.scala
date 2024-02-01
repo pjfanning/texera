@@ -15,6 +15,6 @@ trait CheckpointSupport {
 
   def getEstimatedCheckpointCost: Long
 
-  def getState:String = ""
+  def getState:String = "State\nEmpty"
 
 }

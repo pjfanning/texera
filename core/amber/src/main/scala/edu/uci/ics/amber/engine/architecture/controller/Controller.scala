@@ -139,7 +139,7 @@ class Controller(
     case req: RetrieveOperatorState =>
       val localSender = sender()
       val worker = cp.executionState.getAllBuiltWorkers.find( w =>
-        w.name.contains(req.opId)).get
+        w.name.contains(req.opId) && !w.name.contains("globalAgg")).get
       val ref = actorRefMappingService.actorRefMapping(worker)
       (ref ? req).map {
         ret =>

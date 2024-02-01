@@ -84,7 +84,20 @@ class ExecutionState(workflow: Workflow) {
   }
 
   def getWorkflowStatus: Map[String, OperatorRuntimeStats] = {
-    operatorExecutions.map(op => (op._1.logicalOpId.id, op._2.getOperatorStatistics)).toMap
+    val ret = mutable.HashMap[String, OperatorRuntimeStats]()
+
+    operatorExecutions.foreach(op => {
+      if(op._1.layerName.contains("localAgg")){
+        val stats = ret.getOrElseUpdate(op._1.logicalOpId.id, op._2.getOperatorStatistics)
+        ret(op._1.logicalOpId.id) = stats.copy(inputCount = op._2.getInputRowCount)
+      }else if(op._1.layerName.contains("globalAgg")){
+        val stats = ret.getOrElseUpdate(op._1.logicalOpId.id, op._2.getOperatorStatistics)
+        ret(op._1.logicalOpId.id) = stats.copy(outputCount = op._2.getOutputRowCount)
+      }else{
+        ret(op._1.logicalOpId.id) = op._2.getOperatorStatistics
+      }
+    })
+    ret.toMap
   }
 
   def isCompleted: Boolean =

@@ -25,7 +25,7 @@ class ExecutionRuntimeService(
     breakpointService: ExecutionBreakpointService,
     reconfigurationService: ExecutionReconfigurationService,
     logConf: Option[FaultToleranceConfig],
-    sendEvtFunc: TexeraWebSocketEvent => Unit
+    sendEvtFunc: ()=> (TexeraWebSocketEvent => Unit)
 ) extends SubscriptionManager
     with LazyLogging {
 
@@ -46,7 +46,15 @@ class ExecutionRuntimeService(
     stateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(PAUSING, metadataStore)
     )
-    client.sendAsync(PauseWorkflow())
+    client.sendAsync(PauseWorkflow()).onSuccess{
+      ret =>
+        val startTime = System.currentTimeMillis()
+        val id = ChannelMarkerIdentity(s"RetrieveState_${UUID.randomUUID().toString}")
+        client.sendAsync(TakeGlobalCheckpoint(estimationOnly = true, id, logConf.get.writeTo)).foreach {
+          ret =>
+            sendEvtFunc()(WorkflowCheckpointStatusEvent(id.id, "Success", System.currentTimeMillis() - startTime, ret))
+        }
+    }
   }))
 
   // Receive Resume
@@ -89,7 +97,7 @@ class ExecutionRuntimeService(
       }
       client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, logConf.get.writeTo)).foreach{
         ret =>
-          sendEvtFunc(WorkflowCheckpointStatusEvent(checkpointId.id, "Success", System.currentTimeMillis() - startTime, ret))
+          sendEvtFunc()(WorkflowCheckpointStatusEvent(checkpointId.id, "Success", System.currentTimeMillis() - startTime, ret))
       }
     }
   }))
@@ -97,7 +105,7 @@ class ExecutionRuntimeService(
   // Receive Interaction
   addSubscription(wsInput.subscribe((req: OperatorStateRequest, uidOpt) => {
     client.retrieveStateFromOperator(req.opId).onSuccess(ret =>{
-      sendEvtFunc(OperatorStateEvent(ret.asInstanceOf[String]))
+      sendEvtFunc()(OperatorStateEvent(req.opId, ret.asInstanceOf[String]))
     })
   }))
 

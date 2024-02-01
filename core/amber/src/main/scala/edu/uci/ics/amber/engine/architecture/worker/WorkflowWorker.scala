@@ -113,7 +113,7 @@ class WorkflowWorker(
       sender() ! (dp.operator match {
         case x:CheckpointSupport =>
           x.getState
-        case _ => "No State"
+        case _ => "State\nNot available"
       })
     case c: ControlInvocation =>
       inputQueue.put(TimerBasedControlElement(c))

@@ -32,3 +32,38 @@
     }
   }
 }
+
+#styledTable {
+  width: auto;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-family: Arial, sans-serif;
+  font-size: 0.9em;
+}
+
+#styledTable thead tr {
+  background-color: #009879;
+  color: #ffffff;
+  text-align: left;
+}
+
+#styledTable th,
+#styledTable td {
+  padding: 12px 15px;
+}
+
+#styledTable tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+#styledTable tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+#styledTable tbody tr:last-of-type {
+  border-bottom: 2px solid #009879;
+}
+
+#styledTable tbody tr:hover {
+  background-color: #f1f1f1;
+}

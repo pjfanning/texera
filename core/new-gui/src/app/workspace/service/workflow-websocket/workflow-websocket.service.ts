@@ -1,6 +1,6 @@
-import { Injectable } from "@angular/core";
-import { interval, Observable, Subject, Subscription, timer } from "rxjs";
-import { webSocket, WebSocketSubject } from "rxjs/webSocket";
+import {Injectable} from "@angular/core";
+import {interval, Observable, Subject, Subscription, timer} from "rxjs";
+import {webSocket, WebSocketSubject} from "rxjs/webSocket";
 import {
   TexeraWebsocketEvent,
   TexeraWebsocketEventTypeMap,
@@ -9,10 +9,10 @@ import {
   TexeraWebsocketRequestTypeMap,
   TexeraWebsocketRequestTypes,
 } from "../../types/workflow-websocket.interface";
-import { delayWhen, filter, map, retryWhen, tap } from "rxjs/operators";
-import { environment } from "../../../../environments/environment";
-import { AuthService } from "../../../common/service/user/auth.service";
-import { getWebsocketUrl } from "src/app/common/util/url";
+import {delayWhen, filter, map, retryWhen, tap} from "rxjs/operators";
+import {environment} from "../../../../environments/environment";
+import {AuthService} from "../../../common/service/user/auth.service";
+import {getWebsocketUrl} from "src/app/common/util/url";
 
 export const WS_HEARTBEAT_INTERVAL_MS = 10000;
 export const WS_RECONNECT_INTERVAL_MS = 3000;
@@ -29,7 +29,7 @@ export class WorkflowWebsocketService {
   private websocket?: WebSocketSubject<TexeraWebsocketEvent | TexeraWebsocketRequest>;
   private wsWithReconnectSubscription?: Subscription;
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
-  public operatorStateMap = new Map<String, String>()
+  public operatorStateMap = new Map<String, String[][]>()
   constructor() {
     // setup heartbeat
     interval(WS_HEARTBEAT_INTERVAL_MS).subscribe(_ => this.send("HeartBeatRequest", {}));
@@ -102,10 +102,18 @@ export class WorkflowWebsocketService {
       }else if(evt.type === "RegisterWorkflowIdResponse"){
         this.supportFaultTolerance = evt.supportFaultTolerance;
       }else if(evt.type === "OperatorStateEvent"){
-        this.operatorStateMap.set(evt.opId, evt.state)
+        this.operatorStateMap.set(evt.opId, this.parseCsv(evt.state))
       }
       this.isConnected = true;
     });
+  }
+
+  parseCsv(csvString: string): string[][] {
+    // Split the input string into rows using the newline character.
+    const rows = csvString.split("\n");
+
+    // Map each row into an array of its cells by splitting on the comma character.
+    return rows.map(row => row.split(","));
   }
 
   public reopenWebsocket(wId: number) {

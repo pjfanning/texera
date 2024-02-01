@@ -103,4 +103,8 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
   }
 
   override def getEstimatedCheckpointCost: Long = 0L
+
+  override def getState: String = {
+    s"numRowGenerated\n$numRowGenerated"
+  }
 }

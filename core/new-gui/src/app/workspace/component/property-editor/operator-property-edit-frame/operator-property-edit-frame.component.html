@@ -136,9 +136,21 @@
     nzTheme="outline"
     nzType="info-circle"></i>
 </button>
-<p *ngIf = "currentOperatorId !== undefined && this.workflowWebsocketService.operatorStateMap.has(currentOperatorId!)">
-{{this.workflowWebsocketService.operatorStateMap.get(currentOperatorId!)}}
-</p>
+<div *ngIf = "currentOperatorId !== undefined && this.workflowWebsocketService.operatorStateMap.has(currentOperatorId!)">
+<table id="styledTable">
+  <thead>
+  <tr>
+    <th *ngFor="let header of this.workflowWebsocketService.operatorStateMap.get(currentOperatorId!)![0]">{{ header }}</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor="let row of this.workflowWebsocketService.operatorStateMap.get(currentOperatorId!)?.slice(1)">
+    <td *ngFor="let elem of row">{{ elem }}</td>
+  </tr>
+  </tbody>
+</table>
+
+</div>
 
 <div class="operator-version">
   <span>Operator Version: {{ operatorVersion }}</span>
