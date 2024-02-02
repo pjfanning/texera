@@ -10,7 +10,10 @@ case class RegionPlan(
     regions.map(region => region.id -> region).toMap
 
   def getUpstreamRegions(region: Region): Set[Region] = {
-    regionLinks.filter(link => link.toRegionId == region.id).map(_.fromRegionId).map(regionId=> regionMapping(regionId))
+    regionLinks
+      .filter(link => link.toRegionId == region.id)
+      .map(_.fromRegionId)
+      .map(regionId => regionMapping(regionId))
   }
 
   def getRegionOfPhysicalLink(link: PhysicalLink): Region = {
