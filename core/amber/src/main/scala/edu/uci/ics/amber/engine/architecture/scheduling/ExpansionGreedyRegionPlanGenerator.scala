@@ -72,10 +72,15 @@ class ExpansionGreedyRegionPlanGenerator(
   private val executionClusterInfo = new ExecutionClusterInfo()
 
   /**
-    * Create RegionLinks between the regions of operators `upstreamOpId` and `downstreamOpId`.
-    * The links are to be added to the region DAG separately.
+    * Takes in a pair of operatorIds, `upstreamOpId` and `downstreamOpId`, finds all regions they each
+    * belong to, and creates the order relationships between the Region of upstreamOpId,
+    * with the Regions of downstreamOpId. The relation ship can be N to M.
+    *
+    * This method does not consider ports.
+    *
+    * Returns pairs of (upstreamRegion, downstreamRegion) indicating the order from upstreamRegion to downstreamRegion.
     */
-  private def createLinks(
+  private def toRegionOrderPairs(
       upstreamOpId: PhysicalOpIdentity,
       downstreamOpId: PhysicalOpIdentity,
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
@@ -177,7 +182,7 @@ class ExpansionGreedyRegionPlanGenerator(
       .foreach {
         case List(prevLink, nextLink) =>
           // Create edges between regions
-          val regionLinks = createLinks(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
+          val regionLinks = toRegionOrderPairs(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
           // Attempt to add edges to regionDAG
           try {
             regionLinks.foreach {
@@ -232,7 +237,7 @@ class ExpansionGreedyRegionPlanGenerator(
     try {
       matReaderWriterPairs.foreach {
         case (writer, reader) =>
-          createLinks(writer, reader, regionDAG).foreach {
+          toRegionOrderPairs(writer, reader, regionDAG).foreach {
             case (fromRegion, toRegion) =>
               regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
           }
