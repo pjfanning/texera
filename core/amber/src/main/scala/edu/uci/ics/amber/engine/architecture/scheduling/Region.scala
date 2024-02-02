@@ -27,9 +27,7 @@ case class Region(
   @transient lazy val dag: DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge] = {
     val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, DefaultEdge](classOf[DefaultEdge])
     getOperators.foreach(op => jgraphtDag.addVertex(op.id))
-    getLinks
-      .filter(link => getOperators.map(_.id).contains(link.fromOpId))
-      .foreach(link => jgraphtDag.addEdge(link.fromOpId, link.toOpId))
+    getLinks.foreach(link => jgraphtDag.addEdge(link.fromOpId, link.toOpId))
     jgraphtDag
   }
   def topologicalIterator(): Iterator[PhysicalOpIdentity] = {
@@ -39,14 +37,14 @@ case class Region(
 
   def getLinks: Set[PhysicalLink] = physicalLinks
 
-  def getPorts: Set[GlobalPortIdentity] = physicalLinks
-    .filter(link => physicalOps.map(_.id).contains(link.fromOpId))
-    .flatMap(link =>
-    List(
-      GlobalPortIdentity(link.fromOpId, link.fromPortId, input = false),
-      GlobalPortIdentity(link.toOpId, link.toPortId, input = true)
-    )
-  )
+  def getPorts: Set[GlobalPortIdentity] =
+    getLinks
+      .flatMap(link =>
+        List(
+          GlobalPortIdentity(link.fromOpId, link.fromPortId, input = false),
+          GlobalPortIdentity(link.toOpId, link.toPortId, input = true)
+        )
+      )
 
   def getOperator(physicalOpId: PhysicalOpIdentity): PhysicalOp = {
     operators(physicalOpId)

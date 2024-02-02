@@ -107,10 +107,12 @@ class ExpansionGreedyRegionPlanGenerator(
     ).getConnectedComponents.toSet.zipWithIndex.map {
       case (connectedSubDAG, idx) =>
         val operatorIds = connectedSubDAG.vertexSet().toSet
-        val links = operatorIds.flatMap(operatorId => {
-          physicalPlan.getUpstreamPhysicalLinks(operatorId) ++ physicalPlan
-            .getDownstreamPhysicalLinks(operatorId)
-        })
+        val links = operatorIds
+          .flatMap(operatorId => {
+            physicalPlan.getUpstreamPhysicalLinks(operatorId) ++ physicalPlan
+              .getDownstreamPhysicalLinks(operatorId)
+          })
+          .filter(link => operatorIds.contains(link.fromOpId))
         val operators = operatorIds.map(operatorId => physicalPlan.getOperator(operatorId))
         Region(
           id = RegionIdentity(idx),
@@ -307,7 +309,8 @@ class ExpansionGreedyRegionPlanGenerator(
         case (region, links) =>
           val newRegion = region.copy(
             physicalLinks = region.physicalLinks ++ links,
-            physicalOps = region.getOperators ++ links.map(_.toOpId).map(id => physicalPlan.getOperator(id)),
+            physicalOps =
+              region.getOperators ++ links.map(_.toOpId).map(id => physicalPlan.getOperator(id))
           )
           replaceVertex(regionDAG, region, newRegion)
       }
