@@ -81,3 +81,20 @@
 .table-value {
   width: 70%; /* Allocate 70% of the width to values */
 }
+
+.file-renderer {
+  min-width: 300px; /* Adjust minimum width as needed */
+  max-width: 600px; /* Adjust maximum width as needed */
+  min-height: 200px; /* Adjust minimum height as needed */
+  max-height: 400px; /* Adjust maximum height as needed */
+  /* Ensure the component content respects these bounds */
+  overflow: auto; /* Add scrollbars within the component if content overflows */
+}
+
+.file-display-modal .ant-modal-body {
+  min-width: 300px; /* Adjust minimum width as needed */
+  max-width: 600px; /* Adjust maximum width as needed */
+  min-height: 200px; /* Adjust minimum height as needed */
+  max-height: 400px; /* Adjust maximum height as needed */
+  overflow: auto; /* Add scrollbars within the modal if content overflows */
+}

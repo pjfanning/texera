@@ -120,12 +120,13 @@
                 [nzFooter]="null"
                 [nzMaskClosable]="true"
         >
-            <ng-container *nzModalContent>
+            <ng-container
+                    *nzModalContent>
                 <texera-user-dataset-file-renderer
                         [did]="selectedDatasetFileDid"
                         [dvid]="selectedDatasetFileDvid"
                         [filePath]="selectedDatasetFilename"
-                        class="file-renderer">
+                        [isMaximized]="true">
                 </texera-user-dataset-file-renderer>
             </ng-container>
         </nz-modal>

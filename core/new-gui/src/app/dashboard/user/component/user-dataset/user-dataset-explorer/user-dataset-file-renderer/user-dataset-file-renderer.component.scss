@@ -4,6 +4,24 @@
   margin: auto;
 }
 
+.file-display-container {
+  padding-top: 15px;
+  margin-left: 2%;
+  width: 95%;
+  max-width: 600px;
+  max-height: 600px;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.file-display-container.maximized {
+  height: 100%;
+}
+
+.file-display-container.not-maximized {
+  height: 80%;
+}
+
 /* CSS styles */
 .image-modal {
   position: fixed;

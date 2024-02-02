@@ -1,7 +1,5 @@
-<div
-  [ngStyle]="!isMaximized ? {'padding-top': '15px', 'margin-left': '30px', 'width': '100%', 'height': '80%', 'overflow-y': 'scroll'}:
-                                {'padding-top': '15px', 'margin-left': '30px', 'width': '100%', 'height': '100%', 'overflow-y': 'scroll'}">
-  <div class="file-display-area">
+<div [class]="isMaximized ? 'file-display-container maximized' : 'file-display-container not-maximized'">
+<div class="file-display-area">
     <div *ngIf="isLoading">
       <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
     </div>
@@ -10,13 +8,17 @@
       [src]="fileURL"
       [render-text]="true"
       [original-size]="false"
-      style="width: 90%; height: 90%; margin: auto">
+      style="width: 100%; height: 100%; margin: auto">
     </pdf-viewer>
 
     <!-- Display Table(CSV / XLSX) -->
     <nz-table
-      *ngIf="displayCSV || displayXlsx"
-      #basicTable>
+            [nzFrontPagination]="true"
+            [nzShowPagination]="true"
+            [nzPageSize]="10"
+            [nzData]="tableContent"
+          *ngIf="displayCSV || displayXlsx"
+      >
       <thead>
         <tr>
           <th *ngFor="let column of tableDataHeader">{{ column }}</th>
@@ -68,7 +70,7 @@
       </video>
     </div>
 
-    <<!-- Display MP3 -->>
+    <!-- Display MP3 -->
     <div *ngIf="displayMP3 && safeFileURL">
       <audio
         controls
