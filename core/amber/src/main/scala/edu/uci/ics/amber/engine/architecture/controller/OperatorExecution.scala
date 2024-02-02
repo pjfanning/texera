@@ -25,9 +25,6 @@ class OperatorExecution(
     physicalOpId: PhysicalOpIdentity,
     numWorkers: Int
 ) extends Serializable {
-  /*
-   * Variables related to runtime information
-   */
 
   // workers of this operator
   private val workers =
@@ -46,8 +43,7 @@ class OperatorExecution(
       WorkerInfo(
         id,
         UNINITIALIZED,
-        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0),
-        mutable.HashSet(ChannelIdentity(CONTROLLER, id, isControl = true))
+        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0)
       )
     )
   }
