@@ -180,8 +180,9 @@ class ExpansionGreedyRegionPlanGenerator(
           val regionLinks = createLinks(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
           // Attempt to add edges to regionDAG
           try {
-            regionLinks.foreach{
-              case (fromRegion, toRegion) => regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+            regionLinks.foreach {
+              case (fromRegion, toRegion) =>
+                regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
             }
           } catch {
             case e: IllegalArgumentException =>
@@ -231,8 +232,8 @@ class ExpansionGreedyRegionPlanGenerator(
     try {
       matReaderWriterPairs.foreach {
         case (writer, reader) =>
-          createLinks(writer, reader, regionDAG).foreach{
-            case (fromRegion, toRegion)=>
+          createLinks(writer, reader, regionDAG).foreach {
+            case (fromRegion, toRegion) =>
               regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
           }
       }
