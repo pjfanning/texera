@@ -182,15 +182,15 @@ class ExpansionGreedyRegionPlanGenerator(
       .foreach {
         case List(prevLink, nextLink) =>
           // Create edges between regions
-          val regionLinks = toRegionOrderPairs(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
+          val regionOrderPairs = toRegionOrderPairs(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
           // Attempt to add edges to regionDAG
           try {
-            regionLinks.foreach {
+            regionOrderPairs.foreach {
               case (fromRegion, toRegion) =>
                 regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
             }
           } catch {
-            case e: IllegalArgumentException =>
+            case _: IllegalArgumentException =>
               // adding the edge causes cycle. return the link for materialization replacement
               return Some(Set(nextLink))
           }
