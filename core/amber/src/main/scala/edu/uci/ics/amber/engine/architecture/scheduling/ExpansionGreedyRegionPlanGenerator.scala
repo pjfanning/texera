@@ -73,12 +73,13 @@ class ExpansionGreedyRegionPlanGenerator(
 
   /**
     * Takes in a pair of operatorIds, `upstreamOpId` and `downstreamOpId`, finds all regions they each
-    * belong to, and creates the order relationships between the Region of upstreamOpId,
-    * with the Regions of downstreamOpId. The relation ship can be N to M.
+    * belong to, and creates the order relationships between the Regions of upstreamOpId, with the Regions
+    * of downstreamOpId. The relation ship can be N to M.
     *
     * This method does not consider ports.
     *
-    * Returns pairs of (upstreamRegion, downstreamRegion) indicating the order from upstreamRegion to downstreamRegion.
+    * Returns pairs of (upstreamRegion, downstreamRegion) indicating the order from
+    * upstreamRegion to downstreamRegion.
     */
   private def toRegionOrderPairs(
       upstreamOpId: PhysicalOpIdentity,
