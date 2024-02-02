@@ -1,14 +1,20 @@
-package edu.uci.ics.texera.workflow.common.operators
+package edu.uci.ics.texera.workflow.operators.loop
 
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.EndOfIteration
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
+import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
-import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
-trait OperatorExecutor extends IOperatorExecutor {
+import scala.collection.mutable
+
+class LoopStartOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecutor {
+  var count = 0
+  var buffer = new mutable.ArrayBuffer[ITuple]
 
   override def processTuple(
       tuple: Either[ITuple, InputExhausted],
@@ -16,22 +22,22 @@ trait OperatorExecutor extends IOperatorExecutor {
       pauseManager: PauseManager,
       asyncRPCClient: AsyncRPCClient
   ): Iterator[(ITuple, Option[PortIdentity])] = {
-    if (tuple.isLeft && tuple.left.get.isInstanceOf[EndOfIteration]) {
-      return Iterator((tuple.left.get, Option.empty))
+    tuple match {
+      case Left(t) =>
+        buffer.append(t)
+        Iterator((t, None))
+      case Right(_) => Iterator((EndOfIteration(workerId), None))
     }
-    processTexeraTuple(
-      tuple.asInstanceOf[Either[Tuple, InputExhausted]],
-      input,
-      pauseManager,
-      asyncRPCClient
-    ).map(t => (t, Option.empty))
   }
 
-  def processTexeraTuple(
+  override def open(): Unit = {}
+
+  override def close(): Unit = {}
+
+  override def processTexeraTuple(
       tuple: Either[Tuple, InputExhausted],
       input: Int,
       pauseManager: PauseManager,
       asyncRPCClient: AsyncRPCClient
-  ): Iterator[Tuple]
-
+  ): Iterator[Tuple] = ???
 }

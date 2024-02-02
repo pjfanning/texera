@@ -3,6 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.common.AmberProcessor
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ConsoleMessageHandler.ConsoleMessageTriggered
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ForLoopHandler.IterationCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkCompletedHandler.LinkCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
@@ -16,6 +17,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, Work
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
   DPOutputIterator,
+  EndOfIteration,
   FinalizeLink,
   FinalizeOperator
 }
@@ -44,6 +46,7 @@ import edu.uci.ics.amber.engine.common.{
   VirtualIdentityUtils
 }
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
+import edu.uci.ics.texera.workflow.operators.loop.LoopStartOpExec
 
 import scala.collection.mutable
 
@@ -60,6 +63,7 @@ object DataProcessor {
   }
   case class FinalizeLink(link: PhysicalLink) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
+  case class EndOfIteration(workerId: ActorVirtualIdentity) extends SpecialDataTuple
 
   class DPOutputIterator extends Iterator[(ITuple, Option[PortIdentity])] {
     val queue = new mutable.Queue[(ITuple, Option[PortIdentity])]
@@ -261,6 +265,8 @@ class DataProcessor(
     if (outputTuple == null) return
 
     outputTuple match {
+      case EndOfIteration(workerId) =>
+        asyncRPCClient.send(IterationCompleted(workerId), CONTROLLER)
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
@@ -341,6 +347,10 @@ class DataProcessor(
         initBatch(channelId, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
+        if (operator.isInstanceOf[LoopStartOpExec]) {
+          processInputTuple(Right(InputExhausted()))
+          return
+        }
         val currentLink = upstreamLinkStatus.getInputLink(channelId.fromWorkerId)
         upstreamLinkStatus.markWorkerEOF(channelId.fromWorkerId)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {
