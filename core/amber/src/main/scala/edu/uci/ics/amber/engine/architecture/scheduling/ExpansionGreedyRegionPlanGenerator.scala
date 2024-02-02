@@ -111,9 +111,12 @@ class ExpansionGreedyRegionPlanGenerator(
           physicalPlan.getUpstreamPhysicalLinks(operatorId) ++ physicalPlan
             .getDownstreamPhysicalLinks(operatorId)
         })
-        val portIds = links.filter(link=>operatorIds.contains(link.fromOpId)).flatMap(link => List(GlobalPortIdentity(link.fromOpId, link.fromPortId, input=false), GlobalPortIdentity(link.toOpId, link.toPortId, input = true)))
         val operators = operatorIds.map(operatorId => physicalPlan.getOperator(operatorId))
-        Region(id=RegionIdentity(idx), physicalOps = operators, portIds= portIds, physicalLinks = links)
+        Region(
+          id = RegionIdentity(idx),
+          physicalOps = operators,
+          physicalLinks = links
+        )
     }
   }
 
@@ -276,7 +279,7 @@ class ExpansionGreedyRegionPlanGenerator(
   ): Set[Region] = {
     regionDAG
       .vertexSet()
-      .filter(region => region.physicalOps.map(_.id).contains(physicalOpId))
+      .filter(region => region.getOperators.map(_.id).contains(physicalOpId))
       .toSet
   }
 
@@ -303,9 +306,8 @@ class ExpansionGreedyRegionPlanGenerator(
       .foreach {
         case (region, links) =>
           val newRegion = region.copy(
-            downstreamLinks = links,
-            downstreamOps = links.map(_.toOpId).map(id => physicalPlan.getOperator(id)),
-            portIds = region.portIds ++ links.flatMap(link => List(GlobalPortIdentity(link.fromOpId, link.fromPortId, input=false), GlobalPortIdentity(link.toOpId, link.toPortId, input = true)))
+            physicalLinks = region.physicalLinks ++ links,
+            physicalOps = region.getOperators ++ links.map(_.toOpId).map(id => physicalPlan.getOperator(id)),
           )
           replaceVertex(regionDAG, region, newRegion)
       }

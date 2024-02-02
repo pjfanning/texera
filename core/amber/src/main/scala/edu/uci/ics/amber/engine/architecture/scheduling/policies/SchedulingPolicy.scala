@@ -37,19 +37,13 @@ abstract class SchedulingPolicy(
   // regions currently running
   protected val runningRegions = new mutable.HashSet[Region]()
 
-  val completedPortIdsOfRegion
+  private val completedPortIdsOfRegion
       : mutable.HashMap[RegionIdentity, mutable.HashSet[GlobalPortIdentity]] = mutable.HashMap()
   protected def isRegionCompleted(
       executionState: ExecutionState,
       region: Region
   ): Boolean = {
-    println("expected:", region.portIds)
-    println("completed:", completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet()))
-    println(
-      "diff: ",
-      region.portIds -- completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet())
-    )
-    region.portIds.subsetOf(completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet()))
+    region.getPorts.subsetOf(completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet()))
   }
 
   protected def checkRegionCompleted(
@@ -67,14 +61,14 @@ abstract class SchedulingPolicy(
       workerId: ActorVirtualIdentity
   ): Set[Region] = {
     val operator = workflow.physicalPlan.getPhysicalOpByWorkerId(workerId)
-    runningRegions.filter(r => r.physicalOps.contains(operator)).toSet
+    runningRegions.filter(r => r.getOperators.contains(operator)).toSet
   }
 
   /**
     * A link's region is the region of the source operator of the link.
     */
   protected def getRegions(link: PhysicalLink): Set[Region] = {
-    runningRegions.filter(r => r.physicalOps.map(_.id).contains(link.fromOpId)).toSet
+    runningRegions.filter(r => r.getOperators.map(_.id).contains(link.fromOpId)).toSet
   }
 
   // gets the ready regions that is not currently running
