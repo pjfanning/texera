@@ -191,7 +191,6 @@ class ExpansionGreedyRegionPlanGenerator(
             }
           } catch {
             case e: IllegalArgumentException =>
-              logger.warn("got error", e)
               // adding the edge causes cycle. return the link for materialization replacement
               return Some(Set(nextLink))
           }
