@@ -7,7 +7,7 @@ import {Component, EventEmitter, Input, OnInit, Output} from "@angular/core";
 import {WorkflowPersistService} from "../../../../common/service/workflow-persist/workflow-persist.service";
 import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
 import {WorkflowActionService} from "../../../service/workflow-graph/model/workflow-action.service";
-import {DatasetVersionFileTreeNode} from "../../../../common/type/datasetVersionFileTree";
+import {DatasetVersionFileTreeNode, getFullPathFromFileTreeNode} from "../../../../common/type/datasetVersionFileTree";
 import {DatasetService} from "../../../../dashboard/user/service/user-dataset/dataset.service";
 import {DashboardDataset} from "../../../../dashboard/user/type/dashboard-dataset.interface";
 import {map} from "rxjs/operators";
@@ -34,6 +34,8 @@ export class EnvironmentComponent implements OnInit {
 
     // [did] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
     datasetsOfEnvironment: Map<number, [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]> = new Map();
+
+    // [did, datasetName, DatasetVersionFileTreeNode[]]
     datasetFileTrees: [number, string, DatasetVersionFileTreeNode[]][] = [];
 
     // dataset link related control
@@ -45,6 +47,12 @@ export class EnvironmentComponent implements OnInit {
     // dataset details related control
     showDatasetDetails: boolean = false;
     showingDataset: DatasetOfEnvironmentDetails | undefined;
+
+    // dataset file display related control
+    showDatasetFile: boolean = false;
+    showingDatasetFile: DatasetVersionFileTreeNode | undefined;
+    showingDatasetFileDid: number | undefined;
+    showingDatasetFileDvid: number | undefined;
 
     constructor(
         private router: Router,
@@ -228,16 +236,43 @@ export class EnvironmentComponent implements OnInit {
         return ""
     }
 
-    get showingDatasetVersionDvid(): string {
-        const did = this.showingDataset?.version.dvid;
-        if (did) {
-            return did.toString();
-        }
-        return '';
-    }
-
     handleCancelDatasetDetails() {
         this.showDatasetDetails = false;
     }
 
+    // controls for displaying dataset file
+    displayDatasetFileContent(node: DatasetVersionFileTreeNode, did: number) {
+        const datasetDetails = this.datasetsOfEnvironment.get(did);
+        if (datasetDetails) {
+            this.showDatasetFile = true;
+            this.showingDatasetFile = node;
+            this.showingDatasetFileDid = did;
+            this.showingDatasetFileDvid = datasetDetails[0].version.dvid;
+        }
+    }
+
+    get selectedDatasetFileDid(): number {
+        if (this.showingDatasetFileDid) {
+            return this.showingDatasetFileDid;
+        }
+        return 0;
+    }
+
+    get selectedDatasetFileDvid(): number {
+        if (this.showingDatasetFileDvid) {
+            return this.showingDatasetFileDvid;
+        }
+        return 0;
+    }
+
+    get selectedDatasetFilename(): string {
+        if (this.showingDatasetFile) {
+            return getFullPathFromFileTreeNode(this.showingDatasetFile);
+        }
+        return "";
+    }
+
+    handleCancelDatasetFileDisplay() {
+        this.showDatasetFile = false;
+    }
 }

@@ -36,6 +36,7 @@
                     <texera-user-dataset-version-filetree
                             [fileTreeNodeList]="datasetFileTree[2]"
                             [isFileTreeNodeDeletable]="false"
+                            (selectedTreeNode)="displayDatasetFileContent($event, datasetFileTree[0])"
                     >
                     </texera-user-dataset-version-filetree>
                 </div>
@@ -112,6 +113,22 @@
             </ng-container>
         </nz-modal>
 
+        <nz-modal
+                [(nzVisible)]="showDatasetFile"
+                (nzOnCancel)="handleCancelDatasetFileDisplay()"
+                [nzTitle]="selectedDatasetFilename"
+                [nzFooter]="null"
+                [nzMaskClosable]="true"
+        >
+            <ng-container *nzModalContent>
+                <texera-user-dataset-file-renderer
+                        [did]="selectedDatasetFileDid"
+                        [dvid]="selectedDatasetFileDvid"
+                        [filePath]="selectedDatasetFilename"
+                        class="file-renderer">
+                </texera-user-dataset-file-renderer>
+            </ng-container>
+        </nz-modal>
 
     </div>
 

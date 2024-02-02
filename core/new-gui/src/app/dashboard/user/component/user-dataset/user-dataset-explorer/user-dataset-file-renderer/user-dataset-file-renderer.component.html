@@ -12,6 +12,8 @@
       [original-size]="false"
       style="width: 90%; height: 90%; margin: auto">
     </pdf-viewer>
+
+    <!-- Display Table(CSV / XLSX) -->
     <nz-table
       *ngIf="displayCSV || displayXlsx"
       #basicTable>
@@ -27,6 +29,7 @@
       </tbody>
     </nz-table>
 
+    <!-- Display Image -->
     <div *ngIf="displayImage && safeFileURL">
       <img
         [src]="safeFileURL"
@@ -45,12 +48,18 @@
         alt="{{filePath}}"
         class="full-size-image" />
     </div>
+
+    <!-- Display Markdown -->
     <div *ngIf="displayMarkdown">
       <markdown [data]="textContent"></markdown>
     </div>
+
+    <!-- Display JSON -->
     <div *ngIf="displayJson">
       <ngx-json-viewer [json]="textContent"></ngx-json-viewer>
     </div>
+
+    <!-- Display MP4 Video -->
     <div *ngIf="displayMP4 && safeFileURL">
       <video
         controls
@@ -58,6 +67,8 @@
         Your browser does not support the video tag.
       </video>
     </div>
+
+    <<!-- Display MP3 -->>
     <div *ngIf="displayMP3 && safeFileURL">
       <audio
         controls
@@ -65,10 +76,16 @@
         Your browser does not support the audio element.
       </audio>
     </div>
+
+    <!-- Display Plain Text -->
     <div *ngIf="displayPlainText">{{ textContent }}</div>
+
+    <!-- File Loading Error -->
     <div *ngIf="isFileLoadingError">
       <h3>File loading encounters error</h3>
     </div>
+
+    <!-- File Size Too Large -->
     <div *ngIf="!isFileSizeLoadable">
       <h3>File is too large to be loaded</h3>
     </div>
