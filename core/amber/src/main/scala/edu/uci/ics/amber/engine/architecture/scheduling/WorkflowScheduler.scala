@@ -250,7 +250,7 @@ class WorkflowScheduler(
                 .send(StartWorker(), worker)
                 .map(ret =>
                   // update worker state
-                  opExecution.getWorkerInfo(worker).state = ret
+                  opExecution.getWorkerExecution(worker).state = ret
                 )
             )
         }

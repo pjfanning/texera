@@ -26,32 +26,34 @@ class OperatorExecution(
     numWorkers: Int
 ) extends Serializable {
 
-  // workers of this operator
-  private val workers =
-    new util.concurrent.ConcurrentHashMap[ActorVirtualIdentity, WorkerInfo]()
-
-  var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
+  //reshape-related:
   var workerToWorkloadInfo = new mutable.HashMap[ActorVirtualIdentity, WorkerWorkloadInfo]()
 
-  def states: Array[WorkerState] = workers.values.asScala.map(_.state).toArray
+  // breakpoint-related:
+  var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
 
-  def statistics: Array[WorkerStatistics] = workers.values.asScala.map(_.stats).toArray
+  // workerExecutions of this operator
+  private val workerExecutions = new mutable.HashMap[ActorVirtualIdentity, WorkerExecution]()
 
-  def initializeWorkerInfo(id: ActorVirtualIdentity): Unit = {
-    workers.put(
+  def states: Array[WorkerState] = workerExecutions.values.map(_.state).toArray
+
+  def statistics: Array[WorkerStatistics] = workerExecutions.values.map(_.statistics).toArray
+
+  def initializeWorkerExecution(id: ActorVirtualIdentity): Unit = {
+    workerExecutions.put(
       id,
-      WorkerInfo(
-        id,
+      WorkerExecution(
         UNINITIALIZED,
         WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0)
       )
     )
   }
-  def getWorkerInfo(id: ActorVirtualIdentity): WorkerInfo = {
-    if (!workers.containsKey(id)) {
-      initializeWorkerInfo(id)
+
+  def getWorkerExecution(id: ActorVirtualIdentity): WorkerExecution = {
+    if (!workerExecutions.contains(id)) {
+      initializeWorkerExecution(id)
     }
-    workers.get(id)
+    workerExecutions(id)
   }
 
   def getWorkerWorkloadInfo(id: ActorVirtualIdentity): WorkerWorkloadInfo = {
@@ -73,22 +75,18 @@ class OperatorExecution(
 
   def getIdleTime: Long = statistics.map(_.idleTime).sum
 
-  def getBuiltWorkerIds: Array[ActorVirtualIdentity] = workers.values.asScala.map(_.id).toArray
+  def getBuiltWorkerIds: Array[ActorVirtualIdentity] = workerExecutions.keys.toArray
 
   def assignBreakpoint(breakpoint: GlobalBreakpoint[_]): Array[ActorVirtualIdentity] = {
     getBuiltWorkerIds
   }
 
   def setAllWorkerState(state: WorkerState): Unit = {
-    (0 until numWorkers).foreach { i =>
-      getWorkerInfo(
-        VirtualIdentityUtils.createWorkerIdentity(workflowId, physicalOpId, i)
-      ).state = state
-    }
+    workerExecutions.values.foreach(workerExecution => workerExecution.state = state)
   }
 
   def getState: WorkflowAggregatedState = {
-    val workerStates = getAllWorkerStates
+    val workerStates = workerExecutions.values.map(workerExecution => workerExecution.state)
     if (workerStates.isEmpty) {
       return WorkflowAggregatedState.UNINITIALIZED
     }

@@ -4,6 +4,7 @@ import edu.uci.ics.amber.engine.architecture.scheduling.config.{LinkConfig, Oper
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
+import edu.uci.ics.texera.workflow.common.WorkflowContext
 
 import scala.collection.mutable
 
@@ -32,10 +33,16 @@ class RegionExecution {
   def getAllLinkExecutions(): List[(PhysicalLink, LinkExecution)] = linkExecutions.toList
 
   def initOperatorExecution(
+      workflowContext: WorkflowContext,
       physicalOpId: PhysicalOpIdentity,
       operatorConfig: OperatorConfig
   ): OperatorExecution = {
-    operatorExecutions += physicalOpId -> new OperatorExecution()
+    operatorExecutions += physicalOpId -> new OperatorExecution(
+      workflowContext.workflowId,
+      workflowContext.executionId,
+      physicalOpId,
+      numWorkers = operatorConfig.workerConfigs.length
+    )
     operatorExecutions(physicalOpId)
   }
 
