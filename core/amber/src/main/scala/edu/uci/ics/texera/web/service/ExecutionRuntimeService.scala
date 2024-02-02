@@ -29,6 +29,8 @@ class ExecutionRuntimeService(
 ) extends SubscriptionManager
     with LazyLogging {
 
+  var interactionSeq = 0L
+
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
     throw new RuntimeException("skipping tuple is temporarily disabled")
@@ -48,8 +50,9 @@ class ExecutionRuntimeService(
     )
     client.sendAsync(PauseWorkflow()).onSuccess{
       ret =>
+        interactionSeq += 1
         val startTime = System.currentTimeMillis()
-        val id = ChannelMarkerIdentity(s"RetrieveState_${UUID.randomUUID().toString}")
+        val id = ChannelMarkerIdentity(s"Pause_$interactionSeq")
         client.sendAsync(TakeGlobalCheckpoint(estimationOnly = true, id, logConf.get.writeTo)).foreach {
           ret =>
             sendEvtFunc()(WorkflowCheckpointStatusEvent(id.id, "Success", System.currentTimeMillis() - startTime, ret))
@@ -89,11 +92,12 @@ class ExecutionRuntimeService(
         "Fault tolerance log folder is not established. Unable to take a global checkpoint."
       )
     } else{
+      interactionSeq += 1
       val startTime = System.currentTimeMillis()
       val checkpointId = if(req.toCheckpoint){
-        ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+        ChannelMarkerIdentity(s"Checkpoint_${interactionSeq}")
       }else{
-        ChannelMarkerIdentity(s"RetrieveState_${UUID.randomUUID().toString}")
+        ChannelMarkerIdentity(s"Pause_${interactionSeq}")
       }
       client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, logConf.get.writeTo)).foreach{
         ret =>

@@ -100,6 +100,7 @@ class Controller(
           globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = false)
         }
       )
+      context.parent ! WorkflowRecoveryStatus(true)
       processMessages()
     }
   }

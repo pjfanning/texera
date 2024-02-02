@@ -100,7 +100,7 @@ export class MenuComponent implements OnInit {
 
     workflowWebsocketService.subscribeToEvent("WorkflowCheckpointStatusEvent").pipe(untilDestroyed(this)).subscribe(
       event => {
-        if(event.id.startsWith("RetrieveState_")){
+        if(event.id.startsWith("Pause_")){
           this.notificationService.info(`Interaction ${event.id} is registered! Elapsed time: ${event.elapsedMs} ms`)
         }else{
           this.notificationService.info(`${event.id} is taken! Elapsed time: ${event.elapsedMs} ms. Overhead: ${event.checkpointSize/1000/1000} MB`)

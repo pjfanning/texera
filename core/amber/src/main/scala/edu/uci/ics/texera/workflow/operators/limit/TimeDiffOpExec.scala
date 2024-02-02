@@ -27,11 +27,11 @@ class TimeDiffOpExec(schema:Schema) extends OperatorExecutor with CheckpointSupp
           Thread.sleep(10)
           val builder = Tuple.newBuilder(schema)
           val diff = Duration.between(lastTimestamp(key)._2.toInstant, currentTime.toInstant)
-          val ret = builder.add("action", AttributeType.STRING,lastTimestamp(key)._1).add("diff",AttributeType.LONG,diff.toMinutes).build()
           lastTimestamp(key) = (currentStatus, currentTime)
-          if(currentStatus == "watch"){
+          if(currentStatus.toLowerCase == "start watching"){
             Iterator.empty
           }else{
+            val ret = builder.add("action", AttributeType.STRING, "watching").add("diff", AttributeType.LONG, diff.toMinutes).build()
             Iterator(ret)
           }
         }else{
