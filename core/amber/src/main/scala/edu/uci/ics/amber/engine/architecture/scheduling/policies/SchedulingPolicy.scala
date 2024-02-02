@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling.policies
 
 import edu.uci.ics.amber.engine.architecture.common.AkkaActorService
 import edu.uci.ics.amber.engine.architecture.controller.{ExecutionState, Workflow}
-import edu.uci.ics.amber.engine.architecture.scheduling.Region
+import edu.uci.ics.amber.engine.architecture.scheduling.{GlobalPortIdentity, Region, RegionIdentity}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
@@ -36,25 +36,20 @@ abstract class SchedulingPolicy(
   protected val completedRegions = new mutable.HashSet[Region]()
   // regions currently running
   protected val runningRegions = new mutable.HashSet[Region]()
-  protected val completedLinksOfRegion =
-    new mutable.HashMap[Region, mutable.Set[PhysicalLink]]
-      with mutable.MultiMap[Region, PhysicalLink]
 
+  val completedPortIdsOfRegion
+      : mutable.HashMap[RegionIdentity, mutable.HashSet[GlobalPortIdentity]] = mutable.HashMap()
   protected def isRegionCompleted(
       executionState: ExecutionState,
       region: Region
   ): Boolean = {
-
-    region.downstreamLinks
-      .subsetOf(
-        completedLinksOfRegion.getOrElse(region, new mutable.HashSet[PhysicalLink]())
-      ) &&
-    region.physicalOps
-      .forall(operator =>
-        executionState
-          .getOperatorExecution(operator.id)
-          .getState == WorkflowAggregatedState.COMPLETED
-      )
+    println("expected:", region.portIds)
+    println("completed:", completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet()))
+    println(
+      "diff: ",
+      region.portIds -- completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet())
+    )
+    region.portIds.subsetOf(completedPortIdsOfRegion.getOrElse(region.id, mutable.HashSet()))
   }
 
   protected def checkRegionCompleted(
@@ -111,7 +106,13 @@ abstract class SchedulingPolicy(
       link: PhysicalLink
   ): Set[Region] = {
     val regions = getRegions(link)
-    regions.foreach(region => completedLinksOfRegion.addBinding(region, link))
+    regions.foreach(region => {
+      val portIds =
+        completedPortIdsOfRegion.getOrElse(region.id, new mutable.HashSet[GlobalPortIdentity]())
+      portIds.add(GlobalPortIdentity(link.fromOpId, link.fromPortId, input = false))
+      portIds.add(GlobalPortIdentity(link.toOpId, link.toPortId, input = true))
+      completedPortIdsOfRegion(region.id) = portIds
+    })
     regions.foreach(region => checkRegionCompleted(executionState, region))
     getNextSchedulingWork(workflow)
   }

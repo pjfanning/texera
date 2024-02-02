@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.scheduling
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.config.ResourceConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
-import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
+import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
@@ -13,14 +13,16 @@ case class RegionLink(fromRegionId: RegionIdentity, toRegionId: RegionIdentity)
 
 case class RegionIdentity(id: Long)
 
+case class GlobalPortIdentity(opId: PhysicalOpIdentity, portId: PortIdentity, input: Boolean)
 case class Region(
-    id: RegionIdentity,
-    physicalOps: Set[PhysicalOp],
-    physicalLinks: Set[PhysicalLink],
-    resourceConfig: Option[ResourceConfig] = None,
-    // operators and links in part of the downstream region.
-    downstreamOps: Set[PhysicalOp] = Set.empty,
-    downstreamLinks: Set[PhysicalLink] = Set.empty
+                   id: RegionIdentity,
+                   physicalOps: Set[PhysicalOp],
+                   portIds: Set[GlobalPortIdentity] = Set.empty,
+                   physicalLinks: Set[PhysicalLink],
+                   resourceConfig: Option[ResourceConfig] = None,
+                   // operators and links in part of the downstream region.
+                   downstreamOps: Set[PhysicalOp] = Set.empty,
+                   downstreamLinks: Set[PhysicalLink] = Set.empty
 ) {
 
   private val operators: Map[PhysicalOpIdentity, PhysicalOp] =
