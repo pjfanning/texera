@@ -42,16 +42,16 @@ object ExpansionGreedyRegionPlanGenerator {
       .toList
       .foreach(oldEdge => {
         val dest = graph.getEdgeTarget(oldEdge)
-        graph.addEdge(newVertex, dest, RegionLink(newVertex, dest))
         graph.removeEdge(oldEdge)
+        graph.addEdge(newVertex, dest, RegionLink(newVertex.id, dest.id))
       })
     graph
       .incomingEdgesOf(oldVertex)
       .toList
       .foreach(oldEdge => {
         val source = graph.getEdgeSource(oldEdge)
-        graph.addEdge(source, newVertex, RegionLink(source, newVertex))
         graph.removeEdge(oldEdge)
+        graph.addEdge(source, newVertex, RegionLink(source.id, newVertex.id))
       })
     graph.removeVertex(oldVertex)
   }
@@ -79,7 +79,7 @@ class ExpansionGreedyRegionPlanGenerator(
       upstreamOpId: PhysicalOpIdentity,
       downstreamOpId: PhysicalOpIdentity,
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
-  ): Set[RegionLink] = {
+  ): Set[(Region, Region)] = {
 
     val upstreamRegions = getRegions(upstreamOpId, regionDAG)
     val downstreamRegions = getRegions(downstreamOpId, regionDAG)
@@ -87,7 +87,7 @@ class ExpansionGreedyRegionPlanGenerator(
     upstreamRegions.flatMap { upstreamRegion =>
       downstreamRegions
         .filterNot(regionDAG.getDescendants(upstreamRegion).contains(_))
-        .map(downstreamRegion => RegionLink(upstreamRegion, downstreamRegion))
+        .map(downstreamRegion => (upstreamRegion, downstreamRegion))
     }
   }
 
@@ -180,9 +180,12 @@ class ExpansionGreedyRegionPlanGenerator(
           val regionLinks = createLinks(prevLink.fromOpId, nextLink.fromOpId, regionDAG)
           // Attempt to add edges to regionDAG
           try {
-            regionLinks.foreach(link => regionDAG.addEdge(link.fromRegion, link.toRegion, link))
+            regionLinks.foreach{
+              case (fromRegion, toRegion) => regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+            }
           } catch {
-            case _: IllegalArgumentException =>
+            case e: IllegalArgumentException =>
+              logger.warn("got error", e)
               // adding the edge causes cycle. return the link for materialization replacement
               return Some(Set(nextLink))
           }
@@ -228,9 +231,10 @@ class ExpansionGreedyRegionPlanGenerator(
     try {
       matReaderWriterPairs.foreach {
         case (writer, reader) =>
-          createLinks(writer, reader, regionDAG).foreach(link =>
-            regionDAG.addEdge(link.fromRegion, link.toRegion, link)
-          )
+          createLinks(writer, reader, regionDAG).foreach{
+            case (fromRegion, toRegion)=>
+              regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+          }
       }
     } catch {
       case _: IllegalArgumentException =>
