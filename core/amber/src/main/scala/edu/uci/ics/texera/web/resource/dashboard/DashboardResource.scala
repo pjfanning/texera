@@ -16,15 +16,16 @@ import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentRes
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileResource.DashboardFile
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
+
+import javax.ws.rs._
+import javax.ws.rs.core.MediaType
 import org.jooq.Condition
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.{falseCondition, groupConcatDistinct, noCondition}
 import org.jooq.types.UInteger
 
 import java.sql.Timestamp
-import javax.ws.rs._
-import javax.ws.rs.core.MediaType
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 /**
   * This file handles various requests that need to interact with multiple tables.
@@ -96,7 +97,7 @@ class DashboardResource {
       @QueryParam("orderBy") @DefaultValue("EditTimeDesc") orderBy: String = "EditTimeDesc"
   ): DashboardSearchResult = {
     // make sure keywords don't contain "+-()<>~*\"", these are reserved for SQL full-text boolean operator
-    val splitKeywords = keywords.flatMap(word => word.split("[+\\-()<>~*@\"]+"))
+    val splitKeywords = keywords.asScala.flatMap(word => word.split("[+\\-()<>~*@\"]+"))
     var workflowMatchQuery: Condition = noCondition()
     var projectMatchQuery: Condition = noCondition()
     var fileMatchQuery: Condition = noCondition()
@@ -168,7 +169,7 @@ class DashboardResource {
       .and(
         // these filters are not available in project. If any of them exists, the query should return 0 project
         if (
-          modifiedStartDate.nonEmpty || modifiedEndDate.nonEmpty || workflowIDs.nonEmpty || operators.nonEmpty
+          modifiedStartDate.nonEmpty || modifiedEndDate.nonEmpty || !workflowIDs.isEmpty || !operators.isEmpty
         ) falseCondition()
         else noCondition()
       )
@@ -180,7 +181,7 @@ class DashboardResource {
       .and(
         // these filters are not available in file. If any of them exists, the query should return 0 file
         if (
-          modifiedStartDate.nonEmpty || modifiedEndDate.nonEmpty || workflowIDs.nonEmpty || operators.nonEmpty || projectIds.nonEmpty
+          modifiedStartDate.nonEmpty || modifiedEndDate.nonEmpty || !workflowIDs.isEmpty || !operators.isEmpty || !projectIds.isEmpty
         ) falseCondition()
         else noCondition()
       )
@@ -685,7 +686,7 @@ class DashboardResource {
       }
     val moreRecords = clickableFileEntry.size() > count
     DashboardSearchResult(
-      results = clickableFileEntry
+      results = clickableFileEntry.asScala
         .take(count)
         .map(record => {
           val resourceType = record.get("resourceType", classOf[String])

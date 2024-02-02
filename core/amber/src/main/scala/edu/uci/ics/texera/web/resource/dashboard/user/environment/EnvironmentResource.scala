@@ -9,19 +9,16 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfEnvironmentDao, DatasetVersionDao, EnvironmentDao, EnvironmentOfWorkflowDao}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDoseNotExistMessage, DatasetOfEnvironmentDetails, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
-import io.dropwizard.servlets.assets.ResourceNotFoundException
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.{MediaType, Response}
-import javax.ws.rs.{DELETE, GET, InternalServerErrorException, POST, Path, PathParam, Produces}
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
-import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.asScalaBufferConverter
+import javax.ws.rs.{GET, InternalServerErrorException, POST, Path, PathParam, Produces}
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object EnvironmentResource {
   private def withExceptionHandling[T](block: () => T): T = {
@@ -284,7 +281,9 @@ class EnvironmentResource {
         }
         val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
         val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
-        datasetsOfEnvironment.toList
+        datasetsOfEnvironment.
+          asScala.
+          toList
       }
     })
   }
@@ -303,9 +302,9 @@ class EnvironmentResource {
         }
         val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
         val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
-        datasetsOfEnvironment.toList
+        datasetsOfEnvironment.asScala.toList
 
-        retrieveDatasetsAndVersions(ctx, uid, datasetsOfEnvironment.toList)
+        retrieveDatasetsAndVersions(ctx, uid, datasetsOfEnvironment.asScala.toList)
       }
     })
   }
