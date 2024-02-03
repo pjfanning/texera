@@ -46,7 +46,7 @@ class OperatorExecution(
       WorkerInfo(
         id,
         UNINITIALIZED,
-        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0),
+        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0, 0),
         mutable.HashSet(ChannelIdentity(CONTROLLER, id, isControl = true))
       )
     )
@@ -122,6 +122,7 @@ class OperatorExecution(
       numWorkers,
       getDataProcessingTime,
       getControlProcessingTime,
-      getIdleTime
+      getIdleTime,
+      statistics.map(_.loopI).sum
     )
 }

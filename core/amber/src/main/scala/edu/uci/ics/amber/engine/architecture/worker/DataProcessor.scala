@@ -8,45 +8,24 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.LinkComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionStartedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
-  OpExecInitInfoWithCode,
-  OpExecInitInfoWithFunc
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfoWithCode, OpExecInitInfoWithFunc}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  DPOutputIterator,
-  EndOfIteration,
-  FinalizeLink,
-  FinalizeOperator
-}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{DPOutputIterator, EndOfIteration, FinalizeLink, FinalizeOperator}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  PAUSED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeLoopHandler
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF, SOURCE_STARTER_OP}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
-import edu.uci.ics.amber.engine.common.{
-  IOperatorExecutor,
-  ISinkOperatorExecutor,
-  InputExhausted,
-  VirtualIdentityUtils
-}
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, ISinkOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.operators.loop.LoopStartOpExec
+import edu.uci.ics.texera.workflow.operators.loop.{LoopEndOpExec, LoopStartOpExec}
 
 import scala.collection.mutable
 
@@ -125,7 +104,11 @@ class DataProcessor(
           PhysicalLink(SOURCE_STARTER_OP, PortIdentity(), physicalOp.id, PortIdentity())
         ) // special case for source operator
       } else {
-        physicalOp.getInputLinks().toSet
+        val additionalLinks = mutable.HashSet[PhysicalLink]()
+        if(this.operator.isInstanceOf[LoopStartOpExec]){
+          additionalLinks.add(ResumeLoopHandler.loopToSelfLink)
+        }
+        (additionalLinks ++ physicalOp.getInputLinks()).toSet
       }
     )
     this.outputIterator.setTupleOutput(currentOutputIterator)
@@ -206,13 +189,22 @@ class DataProcessor(
       case _ =>
         outputTupleCount
     }
+    var loopI = 0
+    operator match {
+      case exec: LoopStartOpExec =>
+        loopI = exec.iteration
+      case exec: LoopEndOpExec =>
+        loopI = exec.iteration
+      case _ => //do nothing
+    }
     WorkerStatistics(
       stateManager.getCurrentState,
       inputTupleCount,
       displayOut,
       dataProcessingTime,
       controlProcessingTime,
-      totalExecutionTime - dataProcessingTime - controlProcessingTime
+      totalExecutionTime - dataProcessingTime - controlProcessingTime,
+      loopI
     )
   }
 
@@ -231,7 +223,8 @@ class DataProcessor(
           asyncRPCClient
         )
       )
-      if (tuple.isLeft) {
+      // logger.info(s"$tuple, $inputTupleCount, $outputTupleCount")
+      if (tuple.isLeft && !tuple.left.get.isInstanceOf[EndOfIteration]) {
         inputTupleCount += 1
       }
     } catch safely {
@@ -347,10 +340,10 @@ class DataProcessor(
         initBatch(channelId, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
-        if (operator.isInstanceOf[LoopStartOpExec]) {
-          processInputTuple(Right(InputExhausted()))
-          return
-        }
+//        if (operator.isInstanceOf[LoopStartOpExec]) {
+//          processInputTuple(Right(InputExhausted()))
+//          return
+//        }
         val currentLink = upstreamLinkStatus.getInputLink(channelId.fromWorkerId)
         upstreamLinkStatus.markWorkerEOF(channelId.fromWorkerId)
         if (upstreamLinkStatus.isLinkEOF(currentLink)) {

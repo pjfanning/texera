@@ -12,10 +12,9 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable
 
-class LoopStartOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecutor {
-  var count = 0
+class LoopStartOpExec(val workerId: ActorVirtualIdentity, val i: Int) extends OperatorExecutor {
+  var iteration = 0
   var buffer = new mutable.ArrayBuffer[ITuple]
-
   override def processTuple(
       tuple: Either[ITuple, InputExhausted],
       input: Int,
@@ -23,10 +22,17 @@ class LoopStartOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecut
       asyncRPCClient: AsyncRPCClient
   ): Iterator[(ITuple, Option[PortIdentity])] = {
     tuple match {
-      case Left(t) =>
+      case Left(t: EndOfIteration) =>
+        iteration += 1
+        Iterator((t, None))
+      case Left(t) if iteration == 0 =>
         buffer.append(t)
         Iterator((t, None))
-      case Right(_) => Iterator((EndOfIteration(workerId), None))
+      case Right(_) if iteration == 0 =>
+        iteration += 1
+        Iterator((EndOfIteration(workerId), None))
+      case Right(_) =>
+        Iterator.empty
     }
   }
 

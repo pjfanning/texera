@@ -27,7 +27,7 @@ class LoopStartOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _, operatorConfig) => {
-          new LoopStartOpExec(operatorConfig.workerConfigs.head.workerId)
+          new LoopStartOpExec(operatorConfig.workerConfigs.head.workerId, i)
         })
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
