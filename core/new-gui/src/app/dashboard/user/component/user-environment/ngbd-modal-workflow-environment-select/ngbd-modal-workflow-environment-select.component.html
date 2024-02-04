@@ -5,10 +5,24 @@
   <div class="form-group">
     <!-- Dropdown for selecting from existing environments -->
     <label>From existing environments:</label>
-    <select class="form-control" [(ngModel)]="selectedEnvironmentId">
-      <option value="null" selected>Create a new environment</option>
-      <option *ngFor="let env of environments" [value]="env.environment.eid">{{env.environment.eid}}: {{env.environment.name}}</option>
+    <select
+      class="form-control"
+      [(ngModel)]="selectedEnvironmentId">
+      <option
+        value="null"
+        selected>
+        Create a new environment
+      </option>
+      <option
+        *ngFor="let env of environments"
+        [value]="env.environment.eid">
+        {{env.environment.eid}}: {{env.environment.name}}
+      </option>
     </select>
   </div>
-  <button class="btn btn-primary" (click)="goToWorkflow()">{{goButtonText}}</button>
+  <button
+    class="btn btn-primary"
+    (click)="goToWorkflow()">
+    {{goButtonText}}
+  </button>
 </div>

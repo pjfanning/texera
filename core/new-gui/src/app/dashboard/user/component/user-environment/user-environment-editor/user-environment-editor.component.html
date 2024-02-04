@@ -1,16 +1,13 @@
 <div>
   <nz-card>
-    <h2 class="environment-title">Environment: {{environmentName}} </h2>
+    <h2 class="environment-title">Environment: {{environmentName}}</h2>
     <nz-card-meta
-            style="padding-top: 10px"
-            nzDescription="Created at: {{environmentCreationTime}}"></nz-card-meta>
+      style="padding-top: 10px"
+      nzDescription="Created at: {{environmentCreationTime}}"></nz-card-meta>
     <nz-card-meta
-            style="padding-top: 20px"
-            nzDescription="{{environmentDescription}}"></nz-card-meta>
+      style="padding-top: 20px"
+      nzDescription="{{environmentDescription}}"></nz-card-meta>
   </nz-card>
 </div>
 
-<texera-environment
-  [eid]="eid"
->
-</texera-environment>
+<texera-environment [eid]="eid"> </texera-environment>

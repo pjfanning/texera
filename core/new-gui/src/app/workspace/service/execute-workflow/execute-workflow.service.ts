@@ -200,8 +200,8 @@ export class ExecuteWorkflowService {
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     this.sendExecutionRequest(
       `Replay run of ${replayExecutionInfo.eid} to ${replayExecutionInfo.interaction}`,
-        environmentEid,
-        logicalPlan,
+      environmentEid,
+      logicalPlan,
       replayExecutionInfo
     );
   }

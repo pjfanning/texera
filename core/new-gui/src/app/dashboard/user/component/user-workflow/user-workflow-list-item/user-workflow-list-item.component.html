@@ -18,10 +18,12 @@
     <!-- editable name of saved workflow -->
     <nz-list-item-meta-title class="meta-title-container">
       <div class="workflow-item-meta-title">
-        <a *ngIf="!editingName; else customWorkflowTitle"
-           [routerLink]="ROUTER_WORKFLOW_BASE_URL + '/' + workflow.wid"
-           class="workflow-name"
-        >{{ workflow.name }}</a>
+        <a
+          *ngIf="!editingName; else customWorkflowTitle"
+          [routerLink]="ROUTER_WORKFLOW_BASE_URL + '/' + workflow.wid"
+          class="workflow-name"
+          >{{ workflow.name }}</a
+        >
 
         <ng-template #customWorkflowTitle>
           <input

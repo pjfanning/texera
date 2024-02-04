@@ -18,8 +18,8 @@ import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.compon
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
-import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
-import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
+import { UserEnvironmentComponent } from "./dashboard/user/component/user-environment/user-environment.component";
+import { UserEnvironmentEditorComponent } from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path

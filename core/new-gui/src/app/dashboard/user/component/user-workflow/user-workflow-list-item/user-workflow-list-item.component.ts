@@ -1,21 +1,21 @@
-import {Component, EventEmitter, Input, Output} from "@angular/core";
-import {environment} from "src/environments/environment";
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
-import {NgbdModalWorkflowExecutionsComponent} from "../ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
+import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { environment } from "src/environments/environment";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgbdModalWorkflowExecutionsComponent } from "../ngbd-modal-workflow-executions/ngbd-modal-workflow-executions.component";
 import {
   DEFAULT_WORKFLOW_NAME,
   WorkflowPersistService,
 } from "src/app/common/service/workflow-persist/workflow-persist.service";
-import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
-import {ShareAccessComponent} from "../../share-access/share-access.component";
-import {Workflow} from "src/app/common/type/workflow";
-import {FileSaverService} from "../../../service/user-file/file-saver.service";
-import {DashboardProject} from "../../../type/dashboard-project.interface";
-import {UserProjectService} from "../../../service/user-project/user-project.service";
-import {DashboardEntry} from "../../../type/dashboard-entry";
-import {firstValueFrom} from "rxjs";
-import {EnvironmentService} from "../../../service/user-environment/environment.service";
-import {WorkflowEnvironmentService} from "../../../../../common/service/workflow-environment/workflow-environment.service";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { ShareAccessComponent } from "../../share-access/share-access.component";
+import { Workflow } from "src/app/common/type/workflow";
+import { FileSaverService } from "../../../service/user-file/file-saver.service";
+import { DashboardProject } from "../../../type/dashboard-project.interface";
+import { UserProjectService } from "../../../service/user-project/user-project.service";
+import { DashboardEntry } from "../../../type/dashboard-entry";
+import { firstValueFrom } from "rxjs";
+import { EnvironmentService } from "../../../service/user-environment/environment.service";
+import { WorkflowEnvironmentService } from "../../../../../common/service/workflow-environment/workflow-environment.service";
 
 @UntilDestroy()
 @Component({
@@ -66,7 +66,7 @@ export class UserWorkflowListItemComponent {
     private fileSaverService: FileSaverService,
     private userProjectService: UserProjectService,
     private environmentService: EnvironmentService,
-    private workflowEnvironmentService: WorkflowEnvironmentService,
+    private workflowEnvironmentService: WorkflowEnvironmentService
   ) {
     this.userProjectService
       .getProjectList()
@@ -142,7 +142,7 @@ export class UserWorkflowListItemComponent {
           };
           const workflowJson = JSON.stringify(workflowCopy.content);
           const fileName = workflowCopy.name + ".json";
-          this.fileSaverService.saveAs(new Blob([workflowJson], {type: "text/plain;charset=utf-8"}), fileName);
+          this.fileSaverService.saveAs(new Blob([workflowJson], { type: "text/plain;charset=utf-8" }), fileName);
         });
     }
   }

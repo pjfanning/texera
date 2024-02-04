@@ -2,7 +2,7 @@ import { DashboardFile } from "./dashboard-file.interface";
 import { DashboardWorkflow } from "./dashboard-workflow.interface";
 import { DashboardProject } from "./dashboard-project.interface";
 import { DashboardDataset } from "./dashboard-dataset.interface";
-import {DashboardEnvironment} from "./environment";
+import { DashboardEnvironment } from "./environment";
 
 export class DashboardEntry {
   checked = false;
@@ -100,5 +100,7 @@ export class DashboardEntry {
     return this.value;
   }
 
-  constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardEnvironment) {}
+  constructor(
+    public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset | DashboardEnvironment
+  ) {}
 }

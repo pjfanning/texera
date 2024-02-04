@@ -72,6 +72,28 @@ public class GitSystemCall {
     return fileTree;
   }
 
+  public static List<String> convertFileTreeToList(Map<String, Object> fileTree) {
+    List<String> paths = new ArrayList<>();
+    buildPaths(fileTree, "", paths);
+    return paths;
+  }
+
+  private static void buildPaths(Map<String, Object> node, String currentPath, List<String> paths) {
+    for (String key : node.keySet()) {
+      Object value = node.get(key);
+      String newPath = currentPath + "/" + key;
+      if (value instanceof Map) {
+        // If the current node is a directory, recurse into it
+//        @SuppressWarnings("unchecked")
+        Map<String, Object> nextNode = (Map<String, Object>) value;
+        buildPaths(nextNode, newPath, paths);
+      } else {
+        // If the current node is a file, add the path to the list
+        paths.add(newPath);
+      }
+    }
+  }
+
   private static void addToFileTree(Map<String, Object> tree, String[] pathParts, int index) {
     if (index == pathParts.length - 1) {
       // It's a file, add it to the map

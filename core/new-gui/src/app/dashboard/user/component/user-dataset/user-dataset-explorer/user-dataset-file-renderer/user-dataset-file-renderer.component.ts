@@ -135,7 +135,7 @@ export class UserDatasetFileRendererComponent implements OnInit, OnChanges {
     this.turnOffAllDisplay();
 
     if (this.did && this.dvid && this.filePath != "") {
-      console.log("given parameter: ", this.did, this.dvid, this.filePath)
+      console.log("given parameter: ", this.did, this.dvid, this.filePath);
       this.datasetService
         .retrieveDatasetVersionSingleFile(this.did, this.dvid, this.filePath)
         .pipe()

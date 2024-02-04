@@ -28,10 +28,10 @@ import { CoeditorPresenceService } from "../../service/workflow-graph/model/coed
 import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { HttpErrorResponse } from "@angular/common/http";
-import {EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
-import {WorkflowEnvironmentService} from "../../../common/service/workflow-environment/workflow-environment.service";
-import {EnvironmentService} from "../../../dashboard/user/service/user-environment/environment.service";
-import {NgbModal} from "@ng-bootstrap/ng-bootstrap";
+import { EnvironmentEditorService } from "../../../dashboard/user/service/environment-editor/environment-editor.service";
+import { WorkflowEnvironmentService } from "../../../common/service/workflow-environment/workflow-environment.service";
+import { EnvironmentService } from "../../../dashboard/user/service/user-environment/environment.service";
+import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -190,28 +190,27 @@ export class MenuComponent implements OnInit {
           icon: "play-circle",
           disable: false,
           onClick: () => {
-            const retrievingEnvironmentErrorMessage = `Error when retrieving the runtime environment of current workflow.`;
+            const retrievingEnvironmentErrorMessage = "Error when retrieving the runtime environment of current workflow.";
             // fetch the environment id of current workflow before running the workflow
             if (this.workflowId) {
-              this.workflowPersistService.retrieveWorkflowEnvironment(this.workflowId)
-                  .subscribe({
-                    next: env => {
-                      const envId = env.eid;
-                      if (envId) {
-                        this.executeWorkflowService.executeWorkflow(this.currentExecutionName, envId);
-                      } else {
-                        this.notificationService.error(retrievingEnvironmentErrorMessage)
-                      }
-                    },
-                    error: err => {
-                      this.notificationService.error(retrievingEnvironmentErrorMessage)
-                    }
-                  })
+              this.workflowPersistService.retrieveWorkflowEnvironment(this.workflowId).subscribe({
+                next: env => {
+                  const envId = env.eid;
+                  if (envId) {
+                    this.executeWorkflowService.executeWorkflow(this.currentExecutionName, envId);
+                  } else {
+                    this.notificationService.error(retrievingEnvironmentErrorMessage);
+                  }
+                },
+                error: (err: unknown) => {
+                  this.notificationService.error(retrievingEnvironmentErrorMessage);
+                },
+              });
             } else {
               this.notificationService.error(retrievingEnvironmentErrorMessage);
             }
-          }
-        }
+          },
+        };
       case ExecutionState.Initializing:
         return {
           text: "Submitting",
@@ -372,7 +371,6 @@ export class MenuComponent implements OnInit {
       .map(op => op.operatorID);
     this.workflowActionService.deleteOperatorsAndLinks(allOperatorIDs, []);
   }
-
 
   public onClickImportWorkflow = (file: NzUploadFile): boolean => {
     const reader = new FileReader();

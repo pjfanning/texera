@@ -22,7 +22,7 @@
           *ngIf="!editingName; else customEnvironmentTitle "
           [routerLink]="ROUTER_ENVIRONMENT_BASE_URL + '/' + environment.eid"
           class="environment-name"
-        >{{ environment.name }}</a
+          >{{ environment.name }}</a
         >
         <ng-template #customEnvironmentTitle>
           <input

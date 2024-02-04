@@ -8,7 +8,7 @@ import { DashboardWorkflow } from "../../../dashboard/user/type/dashboard-workfl
 import { WorkflowUtilService } from "../../../workspace/service/workflow-graph/util/workflow-util.service";
 import { NotificationService } from "../notification/notification.service";
 import { SearchFilterParameters, toQueryStrings } from "src/app/dashboard/user/type/search-filter-parameters";
-import {DashboardEnvironment, Environment} from "../../../dashboard/user/type/environment";
+import { DashboardEnvironment, Environment } from "../../../dashboard/user/type/environment";
 
 export const WORKFLOW_BASE_URL = "workflow";
 export const WORKFLOW_PERSIST_URL = WORKFLOW_BASE_URL + "/persist";
@@ -96,7 +96,9 @@ export class WorkflowPersistService {
   }
 
   public retrieveWorkflowEnvironment(wid: number): Observable<Environment> {
-      return this.http.get<Environment>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${wid}/${WORKFLOW_ENVIRONMENT}`).pipe();
+    return this.http
+      .get<Environment>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/${wid}/${WORKFLOW_ENVIRONMENT}`)
+      .pipe();
   }
 
   private makeRequestAndFormatWorkflowResponse(url: string): Observable<DashboardWorkflow[]> {

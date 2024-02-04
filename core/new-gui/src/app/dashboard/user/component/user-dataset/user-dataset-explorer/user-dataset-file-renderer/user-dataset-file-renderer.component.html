@@ -1,5 +1,5 @@
 <div [class]="isMaximized ? 'file-display-container maximized' : 'file-display-container not-maximized'">
-<div class="file-display-area">
+  <div class="file-display-area">
     <div *ngIf="isLoading">
       <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
     </div>
@@ -13,12 +13,11 @@
 
     <!-- Display Table(CSV / XLSX) -->
     <nz-table
-            [nzFrontPagination]="true"
-            [nzShowPagination]="true"
-            [nzPageSize]="10"
-            [nzData]="tableContent"
-          *ngIf="displayCSV || displayXlsx"
-      >
+      [nzFrontPagination]="true"
+      [nzShowPagination]="true"
+      [nzPageSize]="10"
+      [nzData]="tableContent"
+      *ngIf="displayCSV || displayXlsx">
       <thead>
         <tr>
           <th *ngFor="let column of tableDataHeader">{{ column }}</th>

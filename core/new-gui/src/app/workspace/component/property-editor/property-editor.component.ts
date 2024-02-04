@@ -7,7 +7,10 @@ import { DynamicComponentConfig } from "../../../common/type/dynamic-component-c
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { filter } from "rxjs/operators";
 import { PortPropertyEditFrameComponent } from "./port-property-edit-frame/port-property-edit-frame.component";
-import {DISPLAY_ENVIRONMENT_EDITOR_EVENT, EnvironmentEditorService} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
+import {
+  DISPLAY_ENVIRONMENT_EDITOR_EVENT,
+  EnvironmentEditorService,
+} from "../../../dashboard/user/service/environment-editor/environment-editor.service";
 
 export type PropertyEditFrameComponent =
   | OperatorPropertyEditFrameComponent
@@ -71,7 +74,7 @@ export class PropertyEditorComponent implements OnInit {
       this.workflowActionService.getJointGraphWrapper().getJointCommentBoxUnhighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointPortHighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointPortUnhighlightStream(),
-      this.environmentEditorService.environmentEditorDisplayObservable(),
+      this.environmentEditorService.environmentEditorDisplayObservable()
     )
       .pipe(
         filter(() => this.workflowActionService.getTexeraGraph().getSyncTexeraGraph()),

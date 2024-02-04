@@ -7,14 +7,14 @@ import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivil
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao, UserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.User.USER
-import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetUserAccess.DATASET_USER_ACCESS
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, getOwner, userHasReadAccess, userHasWriteAccess, userOwnDataset}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionFileTree, DatasetVersions, context, getDashboardDataset, getDatasetByID, getDatasetLatestVersion, getDatasetVersionHashByID, persistNewVersion, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.error.{DatasetVersionNotFoundException, ResourceNotExistsException, UserHasNoAccessToDatasetException}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.storage.{LocalFileStorage, PathUtils}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitVersionControl
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.{GitSystemCall, GitVersionControl}
 import io.dropwizard.auth.Auth
 import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
 import org.jooq.{DSLContext, EnumType}
@@ -199,6 +199,29 @@ object DatasetResource {
       // Release the lock
       lock.unlock()
     }
+  }
+
+  def retrieveDatasetVersionFileTree(ctx: DSLContext, uid: UInteger, did: UInteger, dvid: UInteger): util.Map[String, AnyRef] = {
+    // fetch the dataset first
+    val targetDataset = getDatasetByID(ctx, did, uid)
+
+    // get the version hash
+    val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
+    val version = datasetVersionDao.fetchOneByDvid(dvid)
+    if (version == null) {
+      throw new ResourceNotExistsException("dataset version")
+    }
+    val versionCommitHash = version.getVersionHash
+
+    val targetDatasetStoragePath = targetDataset.getStoragePath
+    val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
+
+    gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
+  }
+
+  def retrieveDatasetVersionFileList(ctx: DSLContext, uid: UInteger, did: UInteger, dvid: UInteger): List[String] = {
+    val fileTree = retrieveDatasetVersionFileTree(ctx, uid, did, dvid)
+    GitSystemCall.convertFileTreeToList(fileTree).asScala.toList
   }
 
   case class DashboardDataset(
@@ -527,12 +550,7 @@ class DatasetResource {
     withExceptionHandling({ () =>
     {
       withTransaction(context)(ctx => {
-        val targetDataset = getDatasetByID(ctx, did, uid)
-        val targetDatasetStoragePath = targetDataset.getStoragePath
-        val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
-        val gitVersionControl = new GitVersionControl(targetDatasetStoragePath)
-
-        val fileTree = gitVersionControl.retrieveFileTreeOfVersion(versionCommitHash)
+        val fileTree = DatasetResource.retrieveDatasetVersionFileTree(ctx, uid, did, dvid)
         DatasetVersionFileTree(fileTree)
       })
     }

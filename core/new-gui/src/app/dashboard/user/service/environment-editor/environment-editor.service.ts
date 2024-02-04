@@ -1,8 +1,8 @@
-import {Observable, Subject} from "rxjs";
-import {WorkflowActionService} from "../../../../workspace/service/workflow-graph/model/workflow-action.service";
-import {Injectable} from "@angular/core";
-import {EnvironmentService} from "../user-environment/environment.service";
-import {WorkflowEnvironmentService} from "../../../../common/service/workflow-environment/workflow-environment.service";
+import { Observable, Subject } from "rxjs";
+import { WorkflowActionService } from "../../../../workspace/service/workflow-graph/model/workflow-action.service";
+import { Injectable } from "@angular/core";
+import { EnvironmentService } from "../user-environment/environment.service";
+import { WorkflowEnvironmentService } from "../../../../common/service/workflow-environment/workflow-environment.service";
 
 export const DISPLAY_ENVIRONMENT_EDITOR_EVENT = "display_environment_editor_event";
 
@@ -12,10 +12,7 @@ export const DISPLAY_ENVIRONMENT_EDITOR_EVENT = "display_environment_editor_even
 export class EnvironmentEditorService {
   private environmentEditorObservable = new Subject<readonly string[]>();
 
-  constructor(
-    private workflowActionService: WorkflowActionService,
-    private environmentService: EnvironmentService,
-  ) {}
+  constructor(private workflowActionService: WorkflowActionService, private environmentService: EnvironmentService) {}
 
   public clickDisplayEnvironmentEditor(wid: number, eid?: number): void {
     // unhighlight all the current highlighted operators/groups/links

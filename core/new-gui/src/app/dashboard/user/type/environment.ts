@@ -1,18 +1,18 @@
-import {Dataset, DatasetVersion} from "../../../common/type/dataset";
+import { Dataset, DatasetVersion } from "../../../common/type/dataset";
 
 export interface DashboardEnvironment {
-  environment: Environment,
-  isEditable: boolean | undefined,
-  datasets: string[] | undefined,
-  outputs: string[] | undefined,
+  environment: Environment;
+  isEditable: boolean | undefined;
+  datasets: string[] | undefined;
+  outputs: string[] | undefined;
 }
 
 export interface Environment {
-  eid: number | undefined,
-  uid: number | undefined,
-  name: string,
-  description: string,
-  creationTime: number | undefined,
+  eid: number | undefined;
+  uid: number | undefined;
+  name: string;
+  description: string;
+  creationTime: number | undefined;
 }
 
 export interface DatasetOfEnvironment {
@@ -22,6 +22,6 @@ export interface DatasetOfEnvironment {
 }
 
 export interface DatasetOfEnvironmentDetails {
-  dataset: Dataset,
-  version: DatasetVersion
+  dataset: Dataset;
+  version: DatasetVersion;
 }

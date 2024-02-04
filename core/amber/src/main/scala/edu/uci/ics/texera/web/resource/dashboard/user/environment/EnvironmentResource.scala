@@ -8,16 +8,20 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMEN
 import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.ENVIRONMENT_OF_WORKFLOW
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfEnvironmentDao, DatasetVersionDao, EnvironmentDao, EnvironmentOfWorkflowDao}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.retrieveDatasetVersionFileList
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitSystemCall
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, retrieveDatasetsOfEnvironmentFileList, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
 
+import java.net.URLDecoder
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs.core.{MediaType, Response}
 import javax.ws.rs.{GET, InternalServerErrorException, POST, Path, PathParam, Produces}
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object EnvironmentResource {
@@ -139,7 +143,10 @@ object EnvironmentResource {
     false
   }
 
-  private def retrieveDatasetsAndVersions(ctx: DSLContext, uid: UInteger, datasetsOfEnvironment: List[DatasetOfEnvironment]): List[DatasetOfEnvironmentDetails] = {
+  private def retrieveDatasetsAndVersions(ctx: DSLContext, uid: UInteger, eid: UInteger): List[DatasetOfEnvironmentDetails] = {
+    val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
+    val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid).asScala
+
     datasetsOfEnvironment.map { datasetOfEnvironment =>
       val did = datasetOfEnvironment.getDid
       val dvid = datasetOfEnvironment.getDvid
@@ -161,7 +168,18 @@ object EnvironmentResource {
       }
 
       DatasetOfEnvironmentDetails(dataset, datasetVersion)
-    }
+    }.toList
+  }
+
+  private def retrieveDatasetsOfEnvironmentFileList(ctx: DSLContext, uid: UInteger, datasetsOfEnv: List[DatasetOfEnvironmentDetails]): List[String] = {
+    datasetsOfEnv.flatMap(entry => {
+      val did = entry.dataset.getDid
+      val dvid = entry.version.getDvid
+      val datasetName = entry.dataset.getName
+      val versionName = entry.version.getName
+      val fileList = retrieveDatasetVersionFileList(ctx, uid, did, dvid)
+      fileList.map(file => s"/$datasetName:$did/$versionName:$dvid$file")
+    })
   }
 
 
@@ -300,11 +318,7 @@ class EnvironmentResource {
         if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
           throw new Exception(UserNoPermissionExceptionMessage)
         }
-        val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
-        val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid)
-        datasetsOfEnvironment.asScala.toList
-
-        retrieveDatasetsAndVersions(ctx, uid, datasetsOfEnvironment.asScala.toList)
+        retrieveDatasetsAndVersions(ctx, uid, eid)
       }
     })
   }
@@ -430,4 +444,30 @@ class EnvironmentResource {
       })
     })
   }
+
+  @GET
+  @Path("/{eid}/files/{query:.*}")
+  def getDatasetsFileList(@Auth user: SessionUser, @PathParam("eid") eid: UInteger, @PathParam("query") q: String): List[String] = {
+    val query = URLDecoder.decode(q, "UTF-8")
+    val uid = user.getUid
+
+    withExceptionHandling(() => {
+      withTransaction(context)(ctx => {
+        if (!userHasReadAccessToEnvironment(ctx, eid, uid)) {
+          throw new Exception(UserNoPermissionExceptionMessage)
+        }
+        val datasetsOfEnv = retrieveDatasetsAndVersions(ctx, uid, eid)
+
+        val result = ArrayBuffer[String]()
+        val fileList = retrieveDatasetsOfEnvironmentFileList(ctx, uid, datasetsOfEnv)
+
+        // Filter fileList based on query
+        val filteredList = fileList.filter(filePath => query.isEmpty || filePath.contains(query))
+        result ++= filteredList
+
+        result.toList
+      })
+    })
+  }
+
 }

@@ -25,7 +25,7 @@ import { NzAutocompleteModule } from "ng-zorro-antd/auto-complete";
 import { NzIconModule } from "ng-zorro-antd/icon";
 import { NzInputModule } from "ng-zorro-antd/input";
 import { NzPopoverModule } from "ng-zorro-antd/popover";
-import {NzListComponent, NzListModule} from "ng-zorro-antd/list";
+import { NzListComponent, NzListModule } from "ng-zorro-antd/list";
 import { NzCalendarModule } from "ng-zorro-antd/calendar";
 import { NzMenuModule } from "ng-zorro-antd/menu";
 import { NzMessageModule } from "ng-zorro-antd/message";
@@ -147,12 +147,12 @@ import { UserDatasetVersionFiletreeComponent } from "./dashboard/user/component/
 import { UserDatasetVersionCreator } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-version-creator/user-dataset-version-creator.component";
 import { PdfViewerModule } from "ng2-pdf-viewer";
 import { ImageViewerModule } from "ngx-image-viewer";
-import {UserEnvironmentListItemComponent} from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
-import {UserEnvironmentComponent} from "./dashboard/user/component/user-environment/user-environment.component";
-import {UserEnvironmentEditorComponent} from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
+import { UserEnvironmentListItemComponent } from "./dashboard/user/component/user-environment/user-environment-list-item/user-environment-list-item.component";
+import { UserEnvironmentComponent } from "./dashboard/user/component/user-environment/user-environment.component";
+import { UserEnvironmentEditorComponent } from "./dashboard/user/component/user-environment/user-environment-editor/user-environment-editor.component";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
-import {EnvironmentComponent} from "./workspace/component/left-panel/environment/environment.component";
+import { EnvironmentComponent } from "./workspace/component/left-panel/environment/environment.component";
 
 registerLocaleData(en);
 
