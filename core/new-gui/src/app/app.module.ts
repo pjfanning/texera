@@ -85,7 +85,6 @@ import { DynamicModule } from "ng-dynamic-component";
 import { RowModalComponent } from "./workspace/component/result-panel/result-panel-modal.component";
 import { OperatorPropertyEditFrameComponent } from "./workspace/component/property-editor/operator-property-edit-frame/operator-property-edit-frame.component";
 import { BreakpointPropertyEditFrameComponent } from "./workspace/component/property-editor/breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
-import { NotificationComponent } from "./common/component/notification/notification/notification.component";
 import { NzTabsModule } from "ng-zorro-antd/tabs";
 import { NzTreeViewModule } from "ng-zorro-antd/tree-view";
 import { VersionsListComponent } from "./workspace/component/left-panel/versions-list/versions-list.component";
@@ -136,6 +135,7 @@ import { ErrorFrameComponent } from "./workspace/component/result-panel/error-fr
 import { NzResizableModule } from "ng-zorro-antd/resizable";
 import { WorkflowRuntimeStatisticsComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-runtime-statistics/workflow-runtime-statistics.component";
 import { TimeTravelComponent } from "./workspace/component/left-panel/time-travel/time-travel.component";
+import { NzMessageService } from "ng-zorro-antd/message";
 
 registerLocaleData(en);
 
@@ -184,7 +184,6 @@ registerLocaleData(en);
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
-    NotificationComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
     BreakpointPropertyEditFrameComponent,
@@ -283,6 +282,7 @@ registerLocaleData(en);
     NzResizableModule,
   ],
   providers: [
+    NzMessageService,
     AuthGuardService,
     AdminGuardService,
     DatePipe,

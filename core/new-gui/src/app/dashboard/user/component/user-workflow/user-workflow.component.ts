@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, Input, NgModule, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, Input, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
 import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
 import { firstValueFrom } from "rxjs";
@@ -358,7 +358,7 @@ export class UserWorkflowComponent implements AfterViewInit {
           }
         }
       } catch (e) {
-        this.notificationService.error(`Workflow download failed. ${e instanceof Error ? e.message : ""}`);
+        this.notificationService.error(`Workflow download failed. ${(e as Error).message}`);
       }
       let dateTime = new Date();
       let filename = "workflowExports-" + dateTime.toISOString() + ".zip";
