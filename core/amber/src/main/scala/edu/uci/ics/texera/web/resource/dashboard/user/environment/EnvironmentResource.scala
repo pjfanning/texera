@@ -13,6 +13,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.dataset.version.GitSystemC
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, EnvironmentNotFoundMessage, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, retrieveDatasetsOfEnvironmentFileList, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment, withExceptionHandling}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
+import edu.uci.ics.texera.workflow.operators.source.DatasetFileDesc
 import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
 import org.jooq.types.UInteger
@@ -73,32 +74,32 @@ object EnvironmentResource {
   }
 
   // return the dataset path, the file path relative to the dataset, and the version hash
-  def getEnvironmentDatasetFilePathAndVersion(uid: UInteger, eid: UInteger, fileName: String): (String, String, String) = {
+  def getEnvironmentDatasetFilePathAndVersion(uid: UInteger, eid: UInteger, fileName: String): DatasetFileDesc = {
     withTransaction(context) {ctx => {
-      val didPattern: Regex = """\d+""".r
+      val didPattern: Regex = """.*-(\d+)/.*""".r
 
-      // Extract the first sequence of digits as 'did'
-      val did = didPattern.findFirstIn(fileName).getOrElse("0") // Default or handle error
+      // Extract 'did' using the pattern
+      val did = didPattern.findFirstMatchIn(fileName) match {
+        case Some(matched) => matched.group(1) // Extract the first group which is 'did'
+        case None => throw new RuntimeException("The fileName format is not correct") // Default value or handle error
+      }
+
       // Find the index of the second slash
-      val index = path.indexOf('/', 1)
-      val filePath = if (index != -1) path.substring(index) else ""
 
+      val filePath = fileName.substring(fileName.indexOf(s"-$did/") + s"-$did/".length)
       val datasetsOfEnvironment = retrieveDatasetsAndVersions(ctx, uid, eid)
 
-      datasetsOfEnvironment.foreach(datasetAndVersion => {
-        if (datasetAndVersion.dataset.getDid.intValue() == did.toInt) {
-          // we found the dataset containing that file, we need to get the commit hash of certain version
-        }
-      })
-
+      var datasetFileDesc: Option[DatasetFileDesc] = None
       for (datasetAndVersion <- datasetsOfEnvironment) {
         if (datasetAndVersion.dataset.getDid.intValue() == did.toInt) {
-          return(datasetAndVersion.dataset.getStoragePath,
-            filePath, datasetAndVersion.version.getVersionHash)
+          datasetFileDesc = Some(new DatasetFileDesc(filePath, datasetAndVersion.dataset.getStoragePath, datasetAndVersion.version.getVersionHash))
         }
       }
 
-      return ("","","")
+      datasetFileDesc match {
+        case Some(desc) => desc
+        case None => throw new RuntimeException("Given file is not found in the environment")
+      }
     }}
   }
 

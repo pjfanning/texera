@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyD
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.OutputPort
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.getEnvironmentDatasetFilePathAndVersion
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileAccessResource
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
@@ -30,9 +31,6 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   @JsonSchemaTitle("File Encoding")
   @JsonPropertyDescription("decoding charset to use on input")
   var fileEncoding: FileDecodingMethod = FileDecodingMethod.UTF_8
-
-  @JsonIgnore
-  var fileDescriptor: Option[DatasetFileDesc] = None
 
   @JsonIgnore
   var filePath: Option[String] = None
@@ -69,15 +67,17 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
       // if context has a valid user ID, the fileName will be in the following format:
       //    ownerName/fileName
       // resolve fileName to be the actual file path.
-      val splitNames = fileName.get.split("/")
-      filePath = UserFileAccessResource
-        .getFilePath(
-          email = splitNames.apply(0),
-          fileName = splitNames.apply(1),
-          getContext.userId.get,
-          UInteger.valueOf(getContext.workflowId.id)
-        )
-
+//      val splitNames = fileName.get.split("/")
+//      filePath = UserFileAccessResource
+//        .getFilePath(
+//          email = splitNames.apply(0),
+//          fileName = splitNames.apply(1),
+//          getContext.userId.get,
+//          UInteger.valueOf(getContext.workflowId.id)
+//        )
+      val envId = getContext.environmentId.id
+      val datasetFileDescriptor = getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, UInteger.valueOf(envId), fileName.get)
+      filePath = Some(datasetFileDescriptor.tempFilePath())
     } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
       filePath = fileName

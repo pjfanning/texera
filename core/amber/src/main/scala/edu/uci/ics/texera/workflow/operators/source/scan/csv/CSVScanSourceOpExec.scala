@@ -53,7 +53,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
 
   override def open(): Unit = {
     inputReader = new InputStreamReader(
-      new FileInputStream(new File(desc.filePath.get)),
+      new FileInputStream(desc.filePath.get),
       desc.fileEncoding.getCharset
     )
 
