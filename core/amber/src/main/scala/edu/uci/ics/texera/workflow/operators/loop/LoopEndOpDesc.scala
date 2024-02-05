@@ -11,12 +11,6 @@ import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 class LoopEndOpDesc extends LogicalOp {
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Iteration")
-  @JsonPropertyDescription("the max number of iterations")
-  var i: Int = _
-
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
@@ -26,7 +20,7 @@ class LoopEndOpDesc extends LogicalOp {
         workflowId,
         executionId,
         operatorIdentifier,
-        OpExecInitInfo((_, _, _) => new LoopEndOpExec(i))
+        OpExecInitInfo((_, _, _) => new LoopEndOpExec())
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
       .withOutputPorts(operatorInfo.outputPorts, outputPortToSchemaMapping)

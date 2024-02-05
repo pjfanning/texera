@@ -8,8 +8,8 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable
 
-class LoopEndOpExec(val iteration: Int) extends OperatorExecutor {
-  var i = 0
+class LoopEndOpExec extends OperatorExecutor {
+  var iteration = 0
   var buffer = new mutable.ArrayBuffer[Tuple]
 
   override def open(): Unit = {}

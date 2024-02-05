@@ -15,7 +15,7 @@ class LoopStartOpDesc extends LogicalOp {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Iteration")
   @JsonPropertyDescription("the max number of iterations")
-  var i: Int = _
+  var termination: Int = _
 
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
@@ -27,7 +27,7 @@ class LoopStartOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _, operatorConfig) => {
-          new LoopStartOpExec(operatorConfig.workerConfigs.head.workerId, i)
+          new LoopStartOpExec(operatorConfig.workerConfigs.head.workerId, termination)
         })
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
