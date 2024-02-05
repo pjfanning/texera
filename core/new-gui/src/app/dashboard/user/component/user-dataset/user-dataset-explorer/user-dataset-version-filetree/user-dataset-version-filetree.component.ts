@@ -1,7 +1,8 @@
 import { UntilDestroy } from "@ngneat/until-destroy";
 import { Component, EventEmitter, Input, OnInit, Output } from "@angular/core";
 import { ITreeOptions, TREE_ACTIONS } from "@circlon/angular-tree-component";
-import { DatasetVersionFileTreeNode } from "../../../../../../common/type/datasetVersionFileTree";
+import {DatasetVersionFileTreeNode, getFullPathFromFileTreeNode} from "../../../../../../common/type/datasetVersionFileTree";
+import {NotificationService} from "../../../../../../common/service/notification/notification.service";
 
 @UntilDestroy()
 @Component({
@@ -16,11 +17,23 @@ export class UserDatasetVersionFiletreeComponent implements OnInit {
   @Input()
   public isFileTreeNodeDeletable: boolean = false;
 
+  @Input()
+  public isFileTreeNodePathCopyable: boolean = false;
+
+  @Input()
+  public did: number | undefined;
+
+  @Input()
+  public datasetName: string | undefined;
+
   @Output()
   public selectedTreeNode = new EventEmitter<DatasetVersionFileTreeNode>();
 
   @Output()
   public deletedTreeNode = new EventEmitter<DatasetVersionFileTreeNode>();
+
+  constructor(private notificationService: NotificationService) {
+  }
 
   public fileTreeDisplayOptions: ITreeOptions = {
     displayField: "displayableName",
@@ -40,7 +53,25 @@ export class UserDatasetVersionFiletreeComponent implements OnInit {
 
   ngOnInit(): void {}
 
-  deleteFileTreeNode(node: DatasetVersionFileTreeNode) {
+  deleteFileTreeNode(node: DatasetVersionFileTreeNode, $event: MouseEvent) {
     this.deletedTreeNode.emit(node);
+    $event.stopPropagation();
+  }
+
+  copyFileTreeNodePath(node: DatasetVersionFileTreeNode, $event: MouseEvent) {
+    if (this.isFileTreeNodePathCopyable && this.did && this.datasetName) {
+      $event.stopPropagation();
+      const filePath = `/${this.datasetName}-${this.did}${getFullPathFromFileTreeNode(node)}`;
+
+      // Copying filePath to the clipboard
+      navigator.clipboard.writeText(filePath).then(() => {
+        // Notification on successful copying
+        this.notificationService.success(`File path copied to the clipboard`);
+      }).catch(err => {
+        // Notification in case of an error during copying
+        console.error('Failed to copy the file path to the clipboard', err);
+        this.notificationService.error(`Failed to copy the file path`);
+      });
+    }
   }
 }

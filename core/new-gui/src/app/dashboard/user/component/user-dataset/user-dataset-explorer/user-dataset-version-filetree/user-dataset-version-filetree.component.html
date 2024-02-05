@@ -24,11 +24,23 @@
           nzType="link"
           *ngIf="isFileTreeNodeDeletable"
           class="delete-button"
-          (click)="deleteFileTreeNode(node.data)">
+          (click)="deleteFileTreeNode(node.data, $event)">
           <i
             nz-icon
             nzType="delete"
             nzTheme="outline"></i>
+        </button>
+
+        <button
+                nz-button
+                nzType="link"
+                *ngIf="isFileTreeNodePathCopyable"
+                class="copypath-button"
+                (click)="copyFileTreeNodePath(node.data, $event)">
+          <i
+                  nz-icon
+                  nzType="copy"
+                  nzTheme="outline"></i>
         </button>
       </span>
     </ng-template>

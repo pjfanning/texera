@@ -50,6 +50,9 @@
           <texera-user-dataset-version-filetree
             [fileTreeNodeList]="datasetFileTree[2]"
             [isFileTreeNodeDeletable]="false"
+            [isFileTreeNodePathCopyable]="true"
+            [did]="datasetFileTree[0]"
+            [datasetName]="datasetFileTree[1]"
             (selectedTreeNode)="displayDatasetFileContent($event, datasetFileTree[0])">
           </texera-user-dataset-version-filetree>
         </div>
