@@ -9,10 +9,11 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 import scala.collection.mutable
 
-class LoopStartOpExec(val workerId: ActorVirtualIdentity, val termination: Int) extends OperatorExecutor {
+class LoopStartOpExec(val outputSchema: Schema, val workerId: ActorVirtualIdentity, val termination: Int) extends OperatorExecutor {
   var iteration = 0
   var buffer = new mutable.ArrayBuffer[ITuple]
   override def processTuple(
@@ -25,16 +26,23 @@ class LoopStartOpExec(val workerId: ActorVirtualIdentity, val termination: Int) 
       case Left(t) =>
         t match {
           case t: EndOfIteration =>
-            iteration += 1;
+            iteration += 1
+            Iterator((t, None))
           case t =>
             if(iteration == 0){
               buffer.append(t)
             }
+            if (outputSchema.containsAttribute("Iteration")) {
+              Iterator((Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration).add(t.asInstanceOf[Tuple]).build, None))
+            }
+            else {
+              Iterator((t, None))
+            }
         }
-        Iterator((t, None))
+
       case Right(_) =>
         if(iteration == 0) {
-          iteration += 1;
+          iteration += 1
           Iterator((EndOfIteration(workerId), None))
         }else{
           Iterator.empty
