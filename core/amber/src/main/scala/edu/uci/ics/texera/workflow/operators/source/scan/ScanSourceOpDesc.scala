@@ -9,6 +9,7 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.operators.source.DatasetFileDesc
 import org.apache.commons.lang3.builder.EqualsBuilder
 import org.jooq.types.UInteger
 
@@ -29,6 +30,9 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   @JsonSchemaTitle("File Encoding")
   @JsonPropertyDescription("decoding charset to use on input")
   var fileEncoding: FileDecodingMethod = FileDecodingMethod.UTF_8
+
+  @JsonIgnore
+  var fileDescriptor: Option[DatasetFileDesc] = None
 
   @JsonIgnore
   var filePath: Option[String] = None

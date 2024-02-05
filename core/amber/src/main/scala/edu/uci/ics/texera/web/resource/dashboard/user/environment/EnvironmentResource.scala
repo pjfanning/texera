@@ -23,6 +23,8 @@ import javax.ws.rs.core.{MediaType, Response}
 import javax.ws.rs.{GET, InternalServerErrorException, POST, Path, PathParam, Produces}
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.reflect.internal.util.NoSourceFile.path
+import scala.util.matching.Regex
 
 object EnvironmentResource {
   private def withExceptionHandling[T](block: () => T): T = {
@@ -68,6 +70,36 @@ object EnvironmentResource {
       .returning()
       .fetchOne()
       .into(classOf[Environment])
+  }
+
+  // return the dataset path, the file path relative to the dataset, and the version hash
+  def getEnvironmentDatasetFilePathAndVersion(uid: UInteger, eid: UInteger, fileName: String): (String, String, String) = {
+    withTransaction(context) {ctx => {
+      val didPattern: Regex = """\d+""".r
+
+      // Extract the first sequence of digits as 'did'
+      val did = didPattern.findFirstIn(fileName).getOrElse("0") // Default or handle error
+      // Find the index of the second slash
+      val index = path.indexOf('/', 1)
+      val filePath = if (index != -1) path.substring(index) else ""
+
+      val datasetsOfEnvironment = retrieveDatasetsAndVersions(ctx, uid, eid)
+
+      datasetsOfEnvironment.foreach(datasetAndVersion => {
+        if (datasetAndVersion.dataset.getDid.intValue() == did.toInt) {
+          // we found the dataset containing that file, we need to get the commit hash of certain version
+        }
+      })
+
+      for (datasetAndVersion <- datasetsOfEnvironment) {
+        if (datasetAndVersion.dataset.getDid.intValue() == did.toInt) {
+          return(datasetAndVersion.dataset.getStoragePath,
+            filePath, datasetAndVersion.version.getVersionHash)
+        }
+      }
+
+      return ("","","")
+    }}
   }
 
   private def getEnvironmentByEid(ctx: DSLContext, eid: UInteger): Environment = {
@@ -178,7 +210,7 @@ object EnvironmentResource {
       val datasetName = entry.dataset.getName
       val versionName = entry.version.getName
       val fileList = retrieveDatasetVersionFileList(ctx, uid, did, dvid)
-      fileList.map(file => s"/$datasetName:$did/$versionName:$dvid$file")
+      fileList.map(file => s"/$datasetName-$did$file")
     })
   }
 

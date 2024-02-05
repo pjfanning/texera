@@ -18,6 +18,10 @@ message ExecutionIdentity {
   int64 id = 1;
 }
 
+message EnvironmentIdentity {
+  int64 id = 1;
+}
+
 message ActorVirtualIdentity {
   string name = 1;
 }

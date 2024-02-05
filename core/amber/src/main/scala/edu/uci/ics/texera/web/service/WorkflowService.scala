@@ -2,16 +2,9 @@ package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  WorkerReplayLoggingConfig,
-  WorkerStateRestoreConfig
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{WorkerReplayLoggingConfig, WorkerStateRestoreConfig}
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ChannelMarkerIdentity,
-  ExecutionIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, EnvironmentIdentity, ExecutionIdentity, WorkflowIdentity}
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
@@ -134,9 +127,10 @@ class WorkflowService(
   }
 
   private[this] def createWorkflowContext(
+      envId: UInteger, // environment ID
       uidOpt: Option[UInteger]
   ): WorkflowContext = {
-    new WorkflowContext(uidOpt, workflowId)
+    new WorkflowContext(uidOpt, workflowId, EnvironmentIdentity(envId.longValue()))
   }
 
   def initExecutionService(req: WorkflowExecuteRequest, uidOpt: Option[UInteger]): Unit = {
@@ -144,7 +138,7 @@ class WorkflowService(
       //unsubscribe all
       executionService.getValue.unsubscribeAll()
     }
-    val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
+    val workflowContext: WorkflowContext = createWorkflowContext(req.environmentEid, uidOpt)
     var controllerConf = ControllerConfig.default
 
     workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(
