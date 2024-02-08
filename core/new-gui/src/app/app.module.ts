@@ -6,7 +6,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { BrowserModule } from "@angular/platform-browser";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { RouterModule } from "@angular/router";
-import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
 import { FormlyModule } from "@ngx-formly/core";
 import { FormlyMaterialModule } from "@ngx-formly/material";
 import { NzButtonModule } from "ng-zorro-antd/button";
@@ -213,7 +212,6 @@ registerLocaleData(en);
       },
     }),
     BrowserAnimationsModule,
-    NgbModule,
     RouterModule.forRoot([]),
     FileUploadModule,
     FormsModule,
