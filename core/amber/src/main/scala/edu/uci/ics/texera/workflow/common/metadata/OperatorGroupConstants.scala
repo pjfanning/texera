@@ -8,6 +8,7 @@ object OperatorGroupConstants {
   final val UTILITY_GROUP = "Utilities"
   final val UDF_GROUP = "User-defined Functions"
   final val VISUALIZATION_GROUP = "Visualization"
+  //final val MACHINELEARNING_GROUP = "MachineLearning"
 
   /**
     * The order of the groups to show up in the frontend operator panel.
