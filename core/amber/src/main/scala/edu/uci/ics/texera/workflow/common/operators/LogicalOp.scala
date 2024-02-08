@@ -80,8 +80,13 @@ import edu.uci.ics.texera.workflow.operators.visualization.ImageViz.ImageVisuali
 import edu.uci.ics.texera.workflow.operators.visualization.hierarchychart.HierarchyChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.DumbbellPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.Scatter3DChart.Scatter3dChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.KNN.KNNOpDesc
+
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
+
 
 import java.util.UUID
 import scala.collection.mutable
@@ -165,8 +170,12 @@ trait StateTransferFunc
     new Type(value = classOf[ImageVisualizerOpDesc], name = "ImageVisualizer"),
     new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart"),
     new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot"),
-    new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot")
-  )
+    new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3dChart"),
+    new Type(value = classOf[ScatterMatrixOpDesc], name = "ScatterMatrix"),
+    new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
+    new Type(value = classOf[KNNOpDesc], name = "KNN")
+
+)
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
 
