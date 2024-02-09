@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.visualization.KNN
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNN
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
@@ -7,33 +7,25 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttribute
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
-import edu.uci.ics.texera.workflow.operators.visualization.{VisualizationConstants, VisualizationOperator}
+import edu.uci.ics.texera.workflow.operators.visualization.{
+  VisualizationConstants,
+  VisualizationOperator
+}
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
 class KNNOpDesc extends PythonOperatorDescriptor {
 
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("K")
+  @JsonPropertyDescription("Specify how many nearest neighbours")
+  var k: Int = Int.box(1)
 
-    @JsonProperty(required = true)
-    @JsonSchemaTitle("K")
-    @JsonPropertyDescription("Specify how many nearest neighbours")
-    var k: Int = Int.box(1)
-
-    @JsonProperty(required = true)
-    @JsonSchemaTitle("label Column")
-    @JsonPropertyDescription("Specify the attribute to be predicted")
-    @AutofillAttributeName
-    var label: String = ""
-
-    @JsonProperty
-    @JsonSchemaTitle("name of the predicted column(s)")
-    @JsonPropertyDescription(
-      "Name of the newly added output columns that the UDF will produce, if any"
-    )
-    var outputColumn: Attribute = new Attribute("y_pred", AttributeType.STRING)
-
-
-
-
+  @JsonProperty
+  @JsonSchemaTitle("name of the predict column(s)")
+  @JsonPropertyDescription(
+    "Name of the newly added output columns that the UDF will produce, if any"
+  )
+  var outputColumns: List[Attribute] = List()
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     //    Preconditions.checkArgument(schemas.length == 1)
@@ -42,38 +34,24 @@ class KNNOpDesc extends PythonOperatorDescriptor {
     // keep the same schema from input
     outputSchemaBuilder.add(inputSchema)
     // for any pythonUDFType, it can add custom output columns (attributes).
-    val outputColumns: List[Attribute] = List(outputColumn)
 
     for (column <- outputColumns) {
-          if (inputSchema.containsAttribute(column.getName))
-            throw new RuntimeException("Column name " + column.getName + " already exists!")
-        }
-      outputSchemaBuilder.add(outputColumns.asJava).build
+      if (inputSchema.containsAttribute(column.getName))
+        throw new RuntimeException("Column name " + column.getName + " already exists!")
     }
+    outputSchemaBuilder.add(outputColumns.asJava).build
+  }
 
-
-    override def operatorInfo: OperatorInfo =
-      OperatorInfo(
-        "KNN",
-        "KNN classification",
-        OperatorGroupConstants.VISUALIZATION_GROUP,
-        inputPorts = List(InputPort()),
-        outputPorts = List(OutputPort())
-      )
-
-    //  def manipulateTable(): String = {
-    //    assert(value.nonEmpty)
-    //    s"""
-    //       |        table.dropna(subset = ['$value', '$name'], inplace = True) #remove missing values
-    //       |""".stripMargin
-    //  }
-
-
-
-
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
+      "KNN",
+      "KNN classification",
+      OperatorGroupConstants.ML_GROUP,
+      inputPorts = List(InputPort()),
+      outputPorts = List(OutputPort())
+    )
 
   override def generatePythonCode(): String = {
-    val att = outputColumn.getName()
     val finalcode =
       s"""
          |from pytexera import *
@@ -88,10 +66,10 @@ class KNNOpDesc extends PythonOperatorDescriptor {
          |
          |  @overrides
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |    k =$k
+         |    k =3
          |
-         |    y_train = table["$label"]
-         |    X_train = table.drop(["$label"], axis=1)
+         |    y_train = table["variety"]
+         |    X_train = table.drop(["variety"], axis=1)
          |
          |    knn = KNeighborsClassifier(n_neighbors=k)
          |    knn.fit(X_train, y_train)
@@ -103,4 +81,4 @@ class KNNOpDesc extends PythonOperatorDescriptor {
     finalcode
   }
 
-  }
+}

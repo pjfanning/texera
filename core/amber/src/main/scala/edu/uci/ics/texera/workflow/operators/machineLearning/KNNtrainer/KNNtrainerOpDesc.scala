@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.visualization.KNNtrainer
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
@@ -39,7 +39,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
       OperatorInfo(
         "KNNtrainer",
         "Train a KNN classifier",
-        OperatorGroupConstants.VISUALIZATION_GROUP,
+        OperatorGroupConstants.ML_GROUP,
         inputPorts = List(InputPort()),
         outputPorts = List(OutputPort())
       )
