@@ -82,7 +82,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.Dumbbell
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.Scatter3DChart.Scatter3dChartOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.KNN.KNNOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNN.KNNOpDesc
 
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
