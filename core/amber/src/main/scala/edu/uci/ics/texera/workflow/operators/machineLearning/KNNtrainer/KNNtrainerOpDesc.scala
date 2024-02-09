@@ -8,7 +8,6 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-import scala.jdk.CollectionConverters.IterableHasAsJava
 
 class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
