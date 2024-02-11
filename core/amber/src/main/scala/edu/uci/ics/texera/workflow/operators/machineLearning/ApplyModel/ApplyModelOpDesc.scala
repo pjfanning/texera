@@ -6,13 +6,12 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIden
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
+
 import scala.jdk.CollectionConverters.IterableHasAsJava
 import com.google.common.base.Preconditions
 
-
 class ApplyModelOpDesc extends PythonOperatorDescriptor {
-
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("label Column")
@@ -20,31 +19,10 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeName
   var label: String = ""
 
-  @JsonProperty
-  @JsonSchemaTitle("Extra output column(s)")
-  @JsonPropertyDescription(
-    "Name of the newly added output columns that the UDF will produce, if any"
-  )
-  var outputColumns: List[Attribute] = List()
-
-
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Preconditions.checkArgument(schemas.length == 2)
-    val inputSchema = schemas(0)
-    val outputSchemaBuilder = Schema.newBuilder
-    // keep the same schema from input
-    outputSchemaBuilder.add(inputSchema)
-    // for any pythonUDFType, it can add custom output columns (attributes).
-
-    for (column <- outputColumns) {
-      if (inputSchema.containsAttribute(column.getName))
-        throw new RuntimeException("Column name " + column.getName + " already exists!")
-    }
-    outputSchemaBuilder.add(outputColumns.asJava).build
-  }
-
-
-
+  @JsonProperty(required = true, defaultValue = "y_pred")
+  @JsonSchemaTitle("Predict Column")
+  @JsonPropertyDescription("Specify the table name of the predict data")
+  var y_pred: String = ""
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -59,16 +37,31 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
           dependencies = List(PortIdentity(1))
         ),
         InputPort(PortIdentity(1), displayName = "model", allowMultiLinks = true)
-
       ),
       outputPorts = List(OutputPort())
     )
 
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+    Preconditions.checkArgument(schemas.length == 2)
+    val inputSchema = schemas(0)
+    val outputSchemaBuilder = Schema.newBuilder
+    outputSchemaBuilder.add(inputSchema)
+    var outputColumns: List[Attribute] = getPredictTableName(inputSchema)
+    for (column <- outputColumns) {
+      if (inputSchema.containsAttribute(column.getName))
+        throw new RuntimeException("Column name " + column.getName + " already exists!")
+    }
+    outputSchemaBuilder.add(outputColumns.asJava).build
+  }
 
-
+  private def getPredictTableName(inputSchema: Schema): List[Attribute] = {
+    val attrType = inputSchema.getAttribute(label).getType
+    val y_pred_list: List[Attribute] = List(new Attribute(y_pred, attrType))
+    y_pred_list
+  }
 
   override def generatePythonCode(): String = {
-    val finalcode =
+    val finalCode =
       s"""
          |from pytexera import *
          |
@@ -83,23 +76,18 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |    global s
          |    if port == 1:
-         |      #print("port1")
-         |      #print(table)
          |      s = table["model"].values[0]
          |
          |    if port ==0:
-         |      #print("port0")
-         |      #print(table)
          |      y_test = table["$label"]
          |      X_test = table.drop(["$label"], axis=1)
-         |      #print(s)
          |      model = pickle.loads(s)
-         |      y_p = model.predict(X_test)
-         |      table["y_pred"] = y_p
+         |      y_predict = model.predict(X_test)
+         |      table["$y_pred"] = y_predict
          |      yield table
          |
          |""".stripMargin
-    finalcode
+    finalCode
   }
 
 }
