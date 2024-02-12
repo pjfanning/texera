@@ -28,7 +28,7 @@ class KNNOpDesc extends PythonOperatorDescriptor {
   var outputColumns: List[Attribute] = List()
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    //    Preconditions.checkArgument(schemas.length == 1)
+    //  Preconditions.checkArgument(schemas.length == 1)
     val inputSchema = schemas(0)
     val outputSchemaBuilder = Schema.newBuilder
     // keep the same schema from input
@@ -66,7 +66,7 @@ class KNNOpDesc extends PythonOperatorDescriptor {
          |
          |  @overrides
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |    k =3
+         |    k = 3
          |
          |    y_train = table["variety"]
          |    X_train = table.drop(["variety"], axis=1)

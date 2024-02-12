@@ -12,8 +12,6 @@ import com.google.common.base.Preconditions
 
 
 class ApplyModelOpDesc extends PythonOperatorDescriptor {
-
-
   @JsonProperty(required = true)
   @JsonSchemaTitle("label Column")
   @JsonPropertyDescription("Specify the attribute to be predicted")
@@ -26,7 +24,6 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     "Name of the newly added output columns that the UDF will produce, if any"
   )
   var outputColumns: List[Attribute] = List()
-
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Preconditions.checkArgument(schemas.length == 2)
@@ -42,9 +39,6 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     }
     outputSchemaBuilder.add(outputColumns.asJava).build
   }
-
-
-
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -63,9 +57,6 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
       ),
       outputPorts = List(OutputPort())
     )
-
-
-
 
   override def generatePythonCode(): String = {
     val finalcode =
@@ -87,7 +78,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      #print(table)
          |      s = table["model"].values[0]
          |
-         |    if port ==0:
+         |    if port == 0:
          |      #print("port0")
          |      #print(table)
          |      y_test = table["$label"]
@@ -101,5 +92,4 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |""".stripMargin
     finalcode
   }
-
 }
