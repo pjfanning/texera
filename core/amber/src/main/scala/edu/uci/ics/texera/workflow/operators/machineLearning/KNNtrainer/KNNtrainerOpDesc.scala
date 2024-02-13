@@ -38,7 +38,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     override def operatorInfo: OperatorInfo =
       OperatorInfo(
-        "KNNtrainer",
+        "KNNTrainer",
         "Train a KNN classifier",
         OperatorGroupConstants.ML_GROUP,
         inputPorts = List(
@@ -54,7 +54,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
       )
 
     override def generatePythonCode(): String = {
-      var truthy = ""
+      var truthy = "False"
       if (is_loop) truthy = "True"
       val finalcode =
         s"""
@@ -77,12 +77,16 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      print(table)
            |      if ($truthy):
            |        k = table['$loop_k'][1]
+           |        print(f'table{table}')
+           |        print(f'k{k}')
            |
            |    if port == 0:
            |      print("port1")
            |      print(table)
            |      if not ($truthy):
            |        k = $k
+           |        print(f'table{table}')
+           |        print(f'k{k}')
            |      y_train = table["$label"]
            |      X_train = table.drop(["$label"], axis=1)
            |      knn = KNeighborsClassifier(n_neighbors=k+1)
@@ -90,8 +94,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      s = pickle.dumps(knn)
            |      yield {"model":s}
            |
-           |    print(f'table{table}')
-           |    print(f'k{k}')
+
            |
            |""".stripMargin
       finalcode

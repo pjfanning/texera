@@ -160,7 +160,7 @@ trait StateTransferFunc
     new Type(value = classOf[ScatterMatrixOpDesc], name = "ScatterMatrix"),
     new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
     new Type(value = classOf[KNNOpDesc], name = "KNN"),
-    new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
+    new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModels"),
     new Type(value = classOf[KNNtrainerOpDesc], name = "KNNTrainer"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
 
