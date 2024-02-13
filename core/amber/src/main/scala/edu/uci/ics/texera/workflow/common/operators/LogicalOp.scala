@@ -28,7 +28,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.loop.{LoopEndOpDesc, LoopStartOpDesc}
+import edu.uci.ics.texera.workflow.operators.loop.{GeneratorOpDesc, LoopEndOpDesc, LoopStartOpDesc}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -140,6 +140,7 @@ trait StateTransferFunc
     new Type(value = classOf[TypeCastingOpDesc], name = "TypeCasting"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
     new Type(value = classOf[LoopStartOpDesc], name = "LoopStart"),
+    new Type(value = classOf[GeneratorOpDesc], name = "Generator"),
     new Type(value = classOf[LoopEndOpDesc], name = "LoopEnd"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),

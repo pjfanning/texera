@@ -6,14 +6,21 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, Workf
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
 
-class GeneratorOpDesc extends LogicalOp {
+
+class AttributeUnit {
+    def getOriginalAttribute: String = ???
+}
+
+class GeneratorOpDesc extends SourceOperatorDescriptor {
+
+  var attributes: List[AttributeUnit] = List()
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
-  ): PhysicalOp = {
-    PhysicalOp
+  ): PhysicalOp = PhysicalOp
       .oneToOnePhysicalOp(
         workflowId,
         executionId,
@@ -23,18 +30,26 @@ class GeneratorOpDesc extends LogicalOp {
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
       .withOutputPorts(operatorInfo.outputPorts, outputPortToSchemaMapping)
       .withSuggestedWorkerNum(1)
-  }
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Generator",
       "Generator",
       OperatorGroupConstants.CONTROL_GROUP,
-      inputPorts = List(InputPort()),
+      inputPorts = List.empty,
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
-
+  override def sourceSchema(): Schema = Schema.newBuilder.add(
+      attributes
+        .map(attribute =>
+          new Attribute(
+            attribute.getAlias,
+            schemas(0).getAttribute(attribute.getOriginalAttribute).getType
+          )
+        )
+        .asJava
+    )
+    .build()
 }
