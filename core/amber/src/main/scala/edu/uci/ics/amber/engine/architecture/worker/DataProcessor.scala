@@ -13,7 +13,7 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  EndOfIteration.
+  EndOfIteration,
   DPOutputIterator,
   FinalizeOperator,
   FinalizePort
@@ -329,9 +329,6 @@ class DataProcessor(
 //          processInputTuple(Right(InputExhausted()))
 //          return
 //        }
-        val currentLink = upstreamLinkStatus.getInputLink(channelId.fromWorkerId)
-        upstreamLinkStatus.markWorkerEOF(channelId.fromWorkerId)
-        if (upstreamLinkStatus.isLinkEOF(currentLink)) {
         val channel = this.inputGateway.getChannel(channelId)
         val portId = channel.getPortId
 
