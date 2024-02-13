@@ -21,6 +21,11 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeName
   var predictValue: String = ""
 
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("scorer")
+  @JsonPropertyDescription("multiple score functions")
+  var scorer: ScorerFunction = _
+
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Scorer",
@@ -45,9 +50,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |       y_true = table['$actualValue']
          |       y_pred = table['$predictValue']
          |
-         |       correct_predictions = accuracy_score(y_true, y_pred)
-         |       # table = pd.DataFrame()
-         |       # table['Accuracy'] = correct_predictions
+         |       scorer = "$scorer"
+         |       if scorer == "Accuracy":
+         |          correct_predictions = accuracy_score(y_true, y_pred)
          |
          |       yield {"Accuracy":correct_predictions}
          |
