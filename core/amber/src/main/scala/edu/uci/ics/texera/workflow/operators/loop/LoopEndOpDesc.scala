@@ -31,7 +31,7 @@ class LoopEndOpDesc extends LogicalOp {
     OperatorInfo(
       "LoopEnd",
       "Limit the number of output rows",
-      OperatorGroupConstants.UTILITY_GROUP,
+      OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
