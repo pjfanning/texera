@@ -18,12 +18,5 @@ trait OpenOperatorHandler {
   this: DataProcessorRPCHandlerInitializer =>
   registerHandler { (openOperator: OpenOperator, sender) =>
     dp.operator.open()
-    dp.operator match {
-      case executor: LoopStartOpExec => dp.registerInput(
-        ResumeLoopHandler.loopSelf,
-        ResumeLoopHandler.loopToSelfLink
-      )
-      case _ => // skip
-    }
   }
 }
