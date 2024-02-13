@@ -19,7 +19,7 @@ class ControllerAsyncRPCHandlerInitializer(
     with QueryWorkerStatisticsHandler
     with ResumeHandler
     with StartWorkflowHandler
-    with LinkCompletedHandler
+    with PortCompletedHandler
     with FatalErrorHandler
     with ConsoleMessageHandler
     with RetryWorkflowHandler
@@ -27,7 +27,6 @@ class ControllerAsyncRPCHandlerInitializer(
     with EvaluatePythonExpressionHandler
     with MonitoringHandler
     with SkewDetectionHandler
-    with RegionsTimeSlotExpiredHandler
     with DebugCommandHandler
     with ChannelMarkerHandler
     with RetrieveWorkflowStateHandler {
