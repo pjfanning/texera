@@ -48,7 +48,7 @@ class OperatorExecution(
       WorkerExecution(
         id,
         UNINITIALIZED,
-        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0, 0),
+        WorkerStatistics(UNINITIALIZED, 0, 0, 0, 0, 0, 0)
       )
     )
   }

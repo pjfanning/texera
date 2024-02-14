@@ -1,31 +1,56 @@
 package edu.uci.ics.texera.workflow.operators.loop
 
+import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
+import edu.uci.ics.amber.engine.common.workflow.OutputPort
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import scala.jdk.CollectionConverters.IterableHasAsJava
 
+class RangeAttribute {
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Name")
+  @JsonPropertyDescription("Attribute name in the schema")
+  var name: String = ""
 
-class AttributeUnit {
-    def getOriginalAttribute: String = ???
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Start")
+  @JsonPropertyDescription("Start of the range")
+  var start: Int = 0
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Step")
+  @JsonPropertyDescription("Step of the range")
+  var step: Int = 1
 }
 
 class GeneratorOpDesc extends SourceOperatorDescriptor {
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Iteration")
+  @JsonPropertyDescription("Number of iteration")
+  var iteration: Int = 0
 
-  var attributes: List[AttributeUnit] = List()
+  var attributes: List[RangeAttribute] = List()
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
-  ): PhysicalOp = PhysicalOp
+  ): PhysicalOp =
+    PhysicalOp
       .oneToOnePhysicalOp(
         workflowId,
         executionId,
         operatorIdentifier,
-        OpExecInitInfo((_, _, _) => new LoopEndOpExec())
+        OpExecInitInfo((_, _, _) =>
+          new GeneratorOpExec(
+            iteration,
+            attributes,
+            outputPortToSchemaMapping(operatorInfo.outputPorts.head.id)
+          )
+        )
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
       .withOutputPorts(operatorInfo.outputPorts, outputPortToSchemaMapping)
@@ -40,16 +65,8 @@ class GeneratorOpDesc extends SourceOperatorDescriptor {
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )
-
-  override def sourceSchema(): Schema = Schema.newBuilder.add(
-      attributes
-        .map(attribute =>
-          new Attribute(
-            attribute.getAlias,
-            schemas(0).getAttribute(attribute.getOriginalAttribute).getType
-          )
-        )
-        .asJava
-    )
-    .build()
+  override def sourceSchema(): Schema =
+    Schema.newBuilder
+      .add(attributes.map(attribute => new Attribute(attribute.name, AttributeType.INTEGER)).asJava)
+      .build()
 }

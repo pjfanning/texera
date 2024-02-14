@@ -52,7 +52,8 @@ class LoopStartOpDesc extends LogicalOp {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     if (append) {
-      Schema.newBuilder()
+      Schema
+        .newBuilder()
         .add("Iteration", AttributeType.INTEGER)
         .add(schemas(0))
         .build()
