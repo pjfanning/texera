@@ -36,14 +36,14 @@ trait ResumeLoopHandler {
   registerHandler { (_: ResumeLoop, _) =>
     {
       val ls = dp.operator.asInstanceOf[LoopStartOpExec]
-      if (ls.iteration < ls.termination) {
-        dp.processDataPayload(
-          loopToSelfChannelId,
-          DataFrame(ls.buffer.toArray ++ Array(EndOfIteration(dp.actorId)))
-        )
-      } else {
-        dp.processDataPayload(loopToSelfChannelId, EndOfUpstream())
-      }
+      //if (ls.iteration < ls.termination) {
+       // dp.processDataPayload(
+        //  loopToSelfChannelId,
+        //  DataFrame(ls.buffer.toArray ++ Array(EndOfIteration(dp.actorId)))
+      //  )
+      //} else {
+       // dp.processDataPayload(loopToSelfChannelId, EndOfUpstream())
+     // }
     }
   }
 }

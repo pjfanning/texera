@@ -5,21 +5,15 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
 
 class LoopStartOpDesc extends LogicalOp {
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Iteration")
-  @JsonPropertyDescription("the max number of iterations")
-  var termination: Int = _
-
   @JsonProperty(defaultValue = "false")
-  @JsonSchemaTitle("Append Iteration Number")
-  var append: Boolean = false
+  @JsonSchemaTitle("Attach Control to Data")
+  var attach: Boolean = false
 
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
@@ -32,7 +26,7 @@ class LoopStartOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _, operatorConfig) => {
-          new LoopStartOpExec(outputSchema, operatorConfig.workerConfigs.head.workerId, termination)
+          new LoopStartOpExec(outputSchema, operatorConfig.workerConfigs.head.workerId)
         })
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
@@ -45,21 +39,23 @@ class LoopStartOpDesc extends LogicalOp {
       "LoopStart",
       "Limit the number of output rows",
       OperatorGroupConstants.CONTROL_GROUP,
-      inputPorts = List(InputPort()),
+      inputPorts = List(
+        InputPort(PortIdentity(0), displayName = "Control", dependencies = List(PortIdentity(1))),
+        InputPort(PortIdentity(1), displayName = "Data")
+      ),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    if (append) {
+  override def getOutputSchema(schemas: Array[Schema]): Schema =
+    if (attach) {
       Schema
         .newBuilder()
         .add("Iteration", AttributeType.INTEGER)
         .add(schemas(0))
+        .add(schemas(1))
         .build()
     } else {
-      schemas(0)
+      schemas(1)
     }
-  }
-
 }

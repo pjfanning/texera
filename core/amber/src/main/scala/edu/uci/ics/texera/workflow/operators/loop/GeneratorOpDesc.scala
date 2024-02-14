@@ -15,14 +15,14 @@ class RangeAttribute {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Name")
   @JsonPropertyDescription("Attribute name in the schema")
-  var name: String = ""
+  var name: String = "Iteration"
 
-  @JsonProperty(required = true)
+  @JsonProperty(defaultValue = "0", required = true)
   @JsonSchemaTitle("Start")
   @JsonPropertyDescription("Start of the range")
   var start: Double = 0
 
-  @JsonProperty(required = true)
+  @JsonProperty(defaultValue = "1", required = true)
   @JsonSchemaTitle("Step")
   @JsonPropertyDescription("Step of the range")
   var step: Double = 1
@@ -65,8 +65,7 @@ class GeneratorOpDesc extends SourceOperatorDescriptor {
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )
-  override def sourceSchema(): Schema =
-    Schema.newBuilder
+  override def sourceSchema(): Schema = Schema.newBuilder
       .add(attributes.map(attribute => new Attribute(attribute.name, AttributeType.DOUBLE)).asJava)
       .build()
 }
