@@ -3,6 +3,7 @@ package edu.uci.ics.texera.workflow.operators.loop
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import scala.math.BigDecimal.double2bigDecimal
 
 class GeneratorOpExec(
     val iteration: Int,
@@ -12,15 +13,15 @@ class GeneratorOpExec(
   override def produceTexeraTuple(): Iterator[Tuple] = {
     attributes
       .map(attribute =>
-        (attribute.start until attribute.start + attribute.step * iteration by attribute.step).map(
-          i => (outputSchema.getAttribute(attribute.name), i)
+        (attribute.start until BigDecimal(attribute.start + attribute.step * iteration) by attribute.step).map(
+          i => (outputSchema.getAttribute(attribute.name), i.toDouble)
         )
       )
       .transpose
-      .map(x => {
-        val b = Tuple.newBuilder(outputSchema)
-        x.map(y => b.add(y._1, y._2))
-        b.build()
+      .map(row => {
+        val builder = Tuple.newBuilder(outputSchema)
+        row.map(col => builder.add(col._1, col._2))
+        builder.build()
       })
       .iterator
   }

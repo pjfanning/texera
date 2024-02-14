@@ -20,12 +20,12 @@ class RangeAttribute {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Start")
   @JsonPropertyDescription("Start of the range")
-  var start: Int = 0
+  var start: Double = 0
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Step")
   @JsonPropertyDescription("Step of the range")
-  var step: Int = 1
+  var step: Double = 1
 }
 
 class GeneratorOpDesc extends SourceOperatorDescriptor {
@@ -67,6 +67,6 @@ class GeneratorOpDesc extends SourceOperatorDescriptor {
     )
   override def sourceSchema(): Schema =
     Schema.newBuilder
-      .add(attributes.map(attribute => new Attribute(attribute.name, AttributeType.INTEGER)).asJava)
+      .add(attributes.map(attribute => new Attribute(attribute.name, AttributeType.DOUBLE)).asJava)
       .build()
 }
