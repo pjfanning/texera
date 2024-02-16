@@ -188,7 +188,6 @@ class DataProcessor(
           asyncRPCClient
         )
       )
-      // logger.info(s"$tuple, $inputTupleCount, $outputTupleCount")
       if (tuple.isLeft) {
         statisticsManager.increaseInputTupleCount()
       }
