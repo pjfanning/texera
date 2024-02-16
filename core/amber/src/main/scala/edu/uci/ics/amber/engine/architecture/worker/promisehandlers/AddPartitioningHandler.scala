@@ -6,9 +6,10 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartition
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 object AddPartitioningHandler {
-  final case class AddPartitioning(tag: PhysicalLink, partitioning: Partitioning)
+  final case class AddPartitioning(tag: PhysicalLink, partitioning: Partitioning, schema:Schema)
       extends ControlCommand[Unit]
 }
 
@@ -17,7 +18,7 @@ trait AddPartitioningHandler {
 
   registerHandler { (msg: AddPartitioning, sender) =>
     dp.stateManager.assertState(READY, RUNNING, PAUSED)
-    dp.outputManager.addPartitionerWithPartitioning(msg.tag, msg.partitioning)
+    dp.outputManager.addPartitionerWithPartitioning(msg.tag, msg.partitioning, msg.schema)
   }
 
 }

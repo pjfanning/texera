@@ -1,12 +1,19 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
+  getBatchSize,
+  toPartitioner
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SeqTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.jooq.exception.MappingException
 
 import scala.collection.mutable
@@ -54,7 +61,7 @@ class OutputManager(
     dataOutputPort: NetworkOutputGateway
 ) {
 
-  val partitioners = mutable.HashMap[PortIdentity, Partitioner]()
+  val partitioners = mutable.HashMap[PortIdentity, (Partitioner, Schema)]()
 
   val networkOutputBuffers =
     mutable.HashMap[ActorVirtualIdentity, NetworkOutputBuffer]()
@@ -64,11 +71,12 @@ class OutputManager(
     * @param partitioning Partitioning, describes how and whom to send to.
     */
   def addPartitionerWithPartitioning(
-      portId:PortIdentity,
-      partitioning: Partitioning
+      portId: PortIdentity,
+      partitioning: Partitioning,
+      schema: Schema
   ): Unit = {
     val partitioner = toPartitioner(partitioning)
-    partitioners.update(portId, partitioner)
+    partitioners.update(portId, (partitioner, schema))
     partitioner.allReceivers.foreach(receiver => {
       val buffer = new NetworkOutputBuffer(receiver, dataOutputPort, getBatchSize(partitioning))
       networkOutputBuffers.update(receiver, buffer)
@@ -79,18 +87,41 @@ class OutputManager(
   /**
     * Push one tuple to the downstream, will be batched by each transfer partitioning.
     * Should ONLY be called by DataProcessor.
-    * @param tuple ITuple to be passed.
+    * @param tupleLike ITuple to be passed.
     */
   def passTupleToDownstream(
-      tuple: ITuple,
+      tupleLike: TupleLike,
       outputPort: PortIdentity
   ): Unit = {
-    val partitioner =
+    val (partitioner, schema) =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
-    val it = partitioner.getBucketIndex(tuple)
+    val outputTuple: Tuple = tupleLike match {
+      case tTuple: Tuple => {
+        assert(tTuple.getSchema == schema)
+        tTuple
+      }
+      case map: MapTupleLike => {
+        val builder = Tuple.newBuilder(schema)
+        map.fieldMappings.foreach {
+          case (str, value) =>
+            builder.add(schema.getAttribute(str), value)
+        }
+        builder.build()
+      }
+      case seq: SeqTupleLike => {
+        val builder = Tuple.newBuilder(schema)
+        val fieldAttrs = schema.getAttributes
+        seq.fieldArray.indices.foreach { i =>
+          builder.add(fieldAttrs.get(i), seq.fieldArray(i))
+        }
+        builder.build()
+      }
+      case _ => throw new RuntimeException("invalid tuple type, cannot enforce schema")
+    }
+    val it = partitioner.getBucketIndex(outputTuple)
     it.foreach(bucketIndex => {
       val destActor = partitioner.allReceivers(bucketIndex)
-      networkOutputBuffers(destActor).addTuple(tuple)
+      networkOutputBuffers(destActor).addTuple(outputTuple)
     })
   }
 

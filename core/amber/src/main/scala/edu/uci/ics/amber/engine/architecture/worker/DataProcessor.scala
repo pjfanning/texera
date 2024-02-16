@@ -37,6 +37,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
 }
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
@@ -63,11 +64,11 @@ object DataProcessor {
   case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
 
-  class DPOutputIterator extends Iterator[(ITuple, Option[PortIdentity])] {
-    val queue = new mutable.Queue[(ITuple, Option[PortIdentity])]
-    @transient var outputIter: Iterator[(ITuple, Option[PortIdentity])] = Iterator.empty
+  class DPOutputIterator extends Iterator[(TupleLike, Option[PortIdentity])] {
+    val queue = new mutable.Queue[(TupleLike, Option[PortIdentity])]
+    @transient var outputIter: Iterator[(TupleLike, Option[PortIdentity])] = Iterator.empty
 
-    def setTupleOutput(outputIter: Iterator[(ITuple, Option[PortIdentity])]): Unit = {
+    def setTupleOutput(outputIter: Iterator[(TupleLike, Option[PortIdentity])]): Unit = {
       if (outputIter != null) {
         this.outputIter = outputIter
       } else {
@@ -77,7 +78,7 @@ object DataProcessor {
 
     override def hasNext: Boolean = outputIter.hasNext || queue.nonEmpty
 
-    override def next(): (ITuple, Option[PortIdentity]) = {
+    override def next(): (TupleLike, Option[PortIdentity]) = {
       if (outputIter.hasNext) {
         outputIter.next()
       } else {
@@ -108,7 +109,7 @@ class DataProcessor(
       workerIdx: Int,
       physicalOp: PhysicalOp,
       operatorConfig: OperatorConfig,
-      currentOutputIterator: Iterator[(ITuple, Option[PortIdentity])]
+      currentOutputIterator: Iterator[(TupleLike, Option[PortIdentity])]
   ): Unit = {
     this.workerIdx = workerIdx
     this.operator = physicalOp.opExecInitInfo match {
@@ -196,7 +197,7 @@ class DataProcessor(
     */
   private[this] def outputOneTuple(): Unit = {
     adaptiveBatchingMonitor.startAdaptiveBatching()
-    var out: (ITuple, Option[PortIdentity]) = null
+    var out: (TupleLike, Option[PortIdentity]) = null
     try {
       out = outputIterator.next()
     } catch safely {
@@ -259,7 +260,7 @@ class DataProcessor(
     if (inputBatch == null) {
       null
     } else if (inputBatch.isEmpty) {
-      ITuple("Input Exhausted")
+      null // TODO: this should be InputExhausted
     } else {
       inputBatch(currentInputIdx)
     }
