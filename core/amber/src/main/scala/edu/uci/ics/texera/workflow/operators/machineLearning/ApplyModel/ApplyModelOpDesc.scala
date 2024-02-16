@@ -31,7 +31,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
       inputPorts = List(
         InputPort(
           PortIdentity(0),
-          displayName = "tuples",
+          displayName = "dataset",
           allowMultiLinks = true,
           dependencies = List(PortIdentity(1))
         ),

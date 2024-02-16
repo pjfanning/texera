@@ -41,6 +41,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |from pytexera import *
          |
          |from sklearn.metrics import accuracy_score
+         |from sklearn.metrics import precision_score
          |import pandas as pd
          |import numpy as np
          |
@@ -52,16 +53,18 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |
          |       scorer = "$scorer"
          |       if scorer == "Accuracy":
-         |          correct_predictions = accuracy_score(y_true, y_pred)
+         |          predictions = accuracy_score(y_true, y_pred)
+         |       elif scorer == "Precision_score":
+         |          predictions = precision_score(y_true, y_pred,average='macro')
          |
-         |       yield {"Accuracy":correct_predictions}
+         |       yield {scorer:predictions}
          |
          |""".stripMargin
     finalcode
   }
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema.newBuilder.add(new Attribute("Accuracy", AttributeType.DOUBLE)).build
+    Schema.newBuilder.add(new Attribute(scorer.toString, AttributeType.DOUBLE)).build
   }
 
 }

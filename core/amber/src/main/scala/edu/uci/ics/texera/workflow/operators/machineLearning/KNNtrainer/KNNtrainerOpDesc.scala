@@ -31,7 +31,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
     )
     var k: Int = Int.box(1)
 
-    @JsonProperty(value = "loop_k", required = false, defaultValue = "k")
+    @JsonProperty(value = "loop_k", required = false)
     @JsonSchemaTitle("Optimise k from loop")
     @JsonPropertyDescription("Specify how many nearest neighbours")
     @JsonSchemaInject(
@@ -61,7 +61,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
             allowMultiLinks = true,
             dependencies = List(PortIdentity(1))
           ),
-          InputPort(PortIdentity(1), displayName = "loop", allowMultiLinks = true),
+          InputPort(PortIdentity(1), displayName = "optimization", allowMultiLinks = true),
         ),
         outputPorts = List(OutputPort())
       )
@@ -86,8 +86,6 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |    global k
            |
            |    if port == 1:
-           |      print("port0")
-           |      print(table)
            |      if ($truthy):
            |        k = table['$loop_k'][1]
            |
