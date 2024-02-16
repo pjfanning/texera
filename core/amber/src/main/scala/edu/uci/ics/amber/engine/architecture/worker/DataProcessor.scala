@@ -165,6 +165,10 @@ class DataProcessor(
     adaptiveBatchingMonitor.resumeAdaptiveBatching()
   }
 
+  /** provide API for actor to get stats of this operator
+   *
+   * @return (input tuple count, output tuple count)
+   */
 
   def collectStatistics(): WorkerStatistics =
     statisticsManager.getStatistics(stateManager.getCurrentState, operator)
@@ -185,8 +189,6 @@ class DataProcessor(
         )
       )
       // logger.info(s"$tuple, $inputTupleCount, $outputTupleCount")
-      if (tuple.isLeft && !tuple.left.get.isInstanceOf[EndOfIteration]) {
-        inputTupleCount += 1
       if (tuple.isLeft) {
         statisticsManager.increaseInputTupleCount()
       }
