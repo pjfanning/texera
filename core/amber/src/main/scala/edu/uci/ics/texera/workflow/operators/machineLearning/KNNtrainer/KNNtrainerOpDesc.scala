@@ -1,35 +1,48 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNtrainerOpDesc extends PythonOperatorDescriptor {
-    @JsonProperty(required = true)
-    @JsonSchemaTitle("K")
-    @JsonPropertyDescription("Specify how many nearest neighbours")
-    var k: Int = Int.box(1)
-
-    @JsonProperty(value = "loop_k", required = false, defaultValue = "k")
-    @JsonSchemaTitle("If use loop")
-    @JsonPropertyDescription("K from Loop")
-    @AutofillAttributeNameOnPort1
-    var loop_k: String = ""
-
     @JsonProperty(defaultValue = "false")
-    @JsonSchemaTitle("Loop K")
-    @JsonPropertyDescription("Do you need to use Loop K")
-    var is_loop: Boolean = Boolean.box(false)
+    @JsonSchemaTitle("Using optimized K")
+    @JsonSchemaInject(json = """{"toggleHidden" : ["loop_k"]}""")
+    var is_loop: Boolean = false
 
     @JsonProperty(required = true)
     @JsonSchemaTitle("label Column")
-    @JsonPropertyDescription("Specify the attribute to be predicted")
     @AutofillAttributeName
     var label: String = ""
+
+    @JsonProperty(required = true,defaultValue = "3")
+    @JsonSchemaTitle("Custom K")
+    @JsonPropertyDescription("Specify the nearest neighbours")
+    @JsonSchemaInject(
+      strings = Array(
+        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+        new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+        new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
+      )
+    )
+    var k: Int = Int.box(1)
+
+    @JsonProperty(value = "loop_k", required = false, defaultValue = "k")
+    @JsonSchemaTitle("Optimise k from loop")
+    @JsonPropertyDescription("Specify how many nearest neighbours")
+    @JsonSchemaInject(
+      strings = Array(
+        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+        new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+        new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
+      )
+    )
+    @AutofillAttributeNameOnPort1
+    var loop_k: String = ""
 
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
       Schema.newBuilder.add(new Attribute("model", AttributeType.BINARY)).build
@@ -77,16 +90,11 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      print(table)
            |      if ($truthy):
            |        k = table['$loop_k'][1]
-           |        print(f'table{table}')
-           |        print(f'k{k}')
            |
            |    if port == 0:
-           |      print("port1")
-           |      print(table)
            |      if not ($truthy):
            |        k = $k
-           |        print(f'table{table}')
-           |        print(f'k{k}')
+           |        print(f'k={k}')
            |      y_train = table["$label"]
            |      X_train = table.drop(["$label"], axis=1)
            |      knn = KNeighborsClassifier(n_neighbors=k+1)
@@ -94,7 +102,6 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      s = pickle.dumps(knn)
            |      yield {"model":s}
            |
-
            |
            |""".stripMargin
       finalcode
