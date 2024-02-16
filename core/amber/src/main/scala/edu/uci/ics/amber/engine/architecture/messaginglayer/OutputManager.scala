@@ -1,15 +1,12 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
-  getBatchSize,
-  toPartitioner
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
-import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
+import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import org.jooq.exception.MappingException
 
 import scala.collection.mutable
@@ -57,24 +54,24 @@ class OutputManager(
     dataOutputPort: NetworkOutputGateway
 ) {
 
-  val partitioners = mutable.HashMap[PhysicalLink, Partitioner]()
+  val partitioners = mutable.HashMap[PortIdentity, Partitioner]()
 
   val networkOutputBuffers =
-    mutable.HashMap[(PhysicalLink, ActorVirtualIdentity), NetworkOutputBuffer]()
+    mutable.HashMap[ActorVirtualIdentity, NetworkOutputBuffer]()
 
   /**
     * Add down stream operator and its corresponding Partitioner.
     * @param partitioning Partitioning, describes how and whom to send to.
     */
   def addPartitionerWithPartitioning(
-      link: PhysicalLink,
+      portId:PortIdentity,
       partitioning: Partitioning
   ): Unit = {
     val partitioner = toPartitioner(partitioning)
-    partitioners.update(link, partitioner)
+    partitioners.update(portId, partitioner)
     partitioner.allReceivers.foreach(receiver => {
       val buffer = new NetworkOutputBuffer(receiver, dataOutputPort, getBatchSize(partitioning))
-      networkOutputBuffers.update((link, receiver), buffer)
+      networkOutputBuffers.update(receiver, buffer)
       dataOutputPort.addOutputChannel(ChannelIdentity(selfID, receiver, isControl = false))
     })
   }
@@ -86,14 +83,15 @@ class OutputManager(
     */
   def passTupleToDownstream(
       tuple: ITuple,
-      outputPort: PhysicalLink
+      outputPort: PortIdentity
   ): Unit = {
     val partitioner =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
     val it = partitioner.getBucketIndex(tuple)
-    it.foreach(bucketIndex =>
-      networkOutputBuffers((outputPort, partitioner.allReceivers(bucketIndex))).addTuple(tuple)
-    )
+    it.foreach(bucketIndex => {
+      val destActor = partitioner.allReceivers(bucketIndex)
+      networkOutputBuffers(destActor).addTuple(tuple)
+    })
   }
 
   /**
@@ -111,7 +109,7 @@ class OutputManager(
       case Some(channelIds) =>
         networkOutputBuffers
           .filter(out => {
-            val channel = ChannelIdentity(selfID, out._1._2, isControl = false)
+            val channel = ChannelIdentity(selfID, out._1, isControl = false)
             channelIds.contains(channel)
           })
           .values
