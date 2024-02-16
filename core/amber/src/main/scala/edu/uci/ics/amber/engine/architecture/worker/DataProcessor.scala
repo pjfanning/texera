@@ -165,37 +165,7 @@ class DataProcessor(
     adaptiveBatchingMonitor.resumeAdaptiveBatching()
   }
 
-  /** provide API for actor to get stats of this operator
-    *
-    * @return (input tuple count, output tuple count)
-    */
-  def collectStatistics(): WorkerStatistics = {
-    // sink operator doesn't output to downstream so internal count is 0
-    // but for user-friendliness we show its input count as output count
-    val displayOut = operator match {
-      case sink: ISinkOperatorExecutor =>
-        inputTupleCount
-      case _ =>
-        outputTupleCount
-    }
-    var loopI = 0
-    operator match {
-      case exec: LoopStartOpExec =>
-        loopI = exec.iteration
-      case exec: LoopEndOpExec =>
-        loopI = exec.iteration
-      case _ => //do nothing
-    }
-    WorkerStatistics(
-      stateManager.getCurrentState,
-      inputTupleCount,
-      displayOut,
-      dataProcessingTime,
-      controlProcessingTime,
-      totalExecutionTime - dataProcessingTime - controlProcessingTime,
-      loopI
-    )
-  }
+
   def collectStatistics(): WorkerStatistics =
     statisticsManager.getStatistics(stateManager.getCurrentState, operator)
 
