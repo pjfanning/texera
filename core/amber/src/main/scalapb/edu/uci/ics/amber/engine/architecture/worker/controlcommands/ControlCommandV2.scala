@@ -1003,7 +1003,7 @@ object AssignPortV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.
 
 @SerialVersionUID(0L)
 final case class AddPartitioningV2(
-    tag: edu.uci.ics.amber.engine.common.workflow.PortIdentity,
+    tag: edu.uci.ics.amber.engine.common.workflow.PhysicalLink,
     partitioning: edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning
     ) extends scalapb.GeneratedMessage with edu.uci.ics.amber.engine.architecture.worker.controlcommands.ControlCommandV2.NonEmpty with scalapb.lenses.Updatable[AddPartitioningV2] {
     @transient
@@ -1013,7 +1013,7 @@ final case class AddPartitioningV2(
       
       {
         val __value = tag
-        if (__value != edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance) {
+        if (__value != edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance) {
           __size += 1 + _root_.com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag(__value.serializedSize) + __value.serializedSize
         }
       };
@@ -1037,7 +1037,7 @@ final case class AddPartitioningV2(
     def writeTo(`_output__`: _root_.com.google.protobuf.CodedOutputStream): _root_.scala.Unit = {
       {
         val __v = tag
-        if (__v != edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance) {
+        if (__v != edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance) {
           _output__.writeTag(1, 2)
           _output__.writeUInt32NoTag(__v.serializedSize)
           __v.writeTo(_output__)
@@ -1052,13 +1052,13 @@ final case class AddPartitioningV2(
         }
       };
     }
-    def withTag(__v: edu.uci.ics.amber.engine.common.workflow.PortIdentity): AddPartitioningV2 = copy(tag = __v)
+    def withTag(__v: edu.uci.ics.amber.engine.common.workflow.PhysicalLink): AddPartitioningV2 = copy(tag = __v)
     def withPartitioning(__v: edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning): AddPartitioningV2 = copy(partitioning = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
           val __t = tag
-          if (__t != edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance) __t else null
+          if (__t != edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance) __t else null
         }
         case 2 => {
           val __t = edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2._typemapper_partitioning.toBase(partitioning)
@@ -1081,7 +1081,7 @@ final case class AddPartitioningV2(
 object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2] {
   implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2] = this
   def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2 = {
-    var __tag: _root_.scala.Option[edu.uci.ics.amber.engine.common.workflow.PortIdentity] = _root_.scala.None
+    var __tag: _root_.scala.Option[edu.uci.ics.amber.engine.common.workflow.PhysicalLink] = _root_.scala.None
     var __partitioning: _root_.scala.Option[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage] = _root_.scala.None
     var _done__ = false
     while (!_done__) {
@@ -1089,14 +1089,14 @@ object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.a
       _tag__ match {
         case 0 => _done__ = true
         case 10 =>
-          __tag = _root_.scala.Some(__tag.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.common.workflow.PortIdentity](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
+          __tag = _root_.scala.Some(__tag.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.common.workflow.PhysicalLink](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
         case 18 =>
           __partitioning = _root_.scala.Some(__partitioning.fold(_root_.scalapb.LiteParser.readMessage[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage](_input__))(_root_.scalapb.LiteParser.readMessage(_input__, _)))
         case tag => _input__.skipField(tag)
       }
     }
     edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2(
-        tag = __tag.getOrElse(edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance),
+        tag = __tag.getOrElse(edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance),
         partitioning = edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2._typemapper_partitioning.toCustom(__partitioning.getOrElse(edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage.defaultInstance))
     )
   }
@@ -1104,7 +1104,7 @@ object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.a
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
       edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2(
-        tag = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[edu.uci.ics.amber.engine.common.workflow.PortIdentity]).getOrElse(edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance),
+        tag = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[edu.uci.ics.amber.engine.common.workflow.PhysicalLink]).getOrElse(edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance),
         partitioning = edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2._typemapper_partitioning.toCustom(__fieldsMap.get(scalaDescriptor.findFieldByNumber(2).get).map(_.as[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage]).getOrElse(edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage.defaultInstance))
       )
     case _ => throw new RuntimeException("Expected PMessage")
@@ -1114,7 +1114,7 @@ object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.a
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = {
     var __out: _root_.scalapb.GeneratedMessageCompanion[_] = null
     (__number: @_root_.scala.unchecked) match {
-      case 1 => __out = edu.uci.ics.amber.engine.common.workflow.PortIdentity
+      case 1 => __out = edu.uci.ics.amber.engine.common.workflow.PhysicalLink
       case 2 => __out = edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage
     }
     __out
@@ -1122,11 +1122,11 @@ object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.a
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
   lazy val defaultInstance = edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2(
-    tag = edu.uci.ics.amber.engine.common.workflow.PortIdentity.defaultInstance,
+    tag = edu.uci.ics.amber.engine.common.workflow.PhysicalLink.defaultInstance,
     partitioning = edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2._typemapper_partitioning.toCustom(edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage.defaultInstance)
   )
   implicit class AddPartitioningV2Lens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2](_l) {
-    def tag: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.workflow.PortIdentity] = field(_.tag)((c_, f_) => c_.copy(tag = f_))
+    def tag: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.workflow.PhysicalLink] = field(_.tag)((c_, f_) => c_.copy(tag = f_))
     def partitioning: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning] = field(_.partitioning)((c_, f_) => c_.copy(partitioning = f_))
   }
   final val TAG_FIELD_NUMBER = 1
@@ -1134,7 +1134,7 @@ object AddPartitioningV2 extends scalapb.GeneratedMessageCompanion[edu.uci.ics.a
   @transient
   private[controlcommands] val _typemapper_partitioning: _root_.scalapb.TypeMapper[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage, edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning] = implicitly[_root_.scalapb.TypeMapper[edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.PartitioningMessage, edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning]]
   def of(
-    tag: edu.uci.ics.amber.engine.common.workflow.PortIdentity,
+    tag: edu.uci.ics.amber.engine.common.workflow.PhysicalLink,
     partitioning: edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.Partitioning
   ): _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2 = _root_.edu.uci.ics.amber.engine.architecture.worker.controlcommands.AddPartitioningV2(
     tag,

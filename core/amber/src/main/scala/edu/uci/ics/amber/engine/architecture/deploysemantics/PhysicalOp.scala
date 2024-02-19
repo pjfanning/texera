@@ -365,19 +365,20 @@ case class PhysicalOp(
     )
   }
 
-  /**
-    * returns all output links. Optionally, if a specific portId is provided, returns the links connected to that portId.
-    */
-  def getOutputLinks(portIdOpt: Option[PortIdentity] = None): List[PhysicalLink] = {
+  def getAllOutputLinks: List[PhysicalLink] = {
     outputPorts.values
       .flatMap(_._2)
       .toList
-      .filter(link =>
-        portIdOpt match {
-          case Some(portId) => link.fromPortId == portId
-          case None         => true
-        }
-      )
+  }
+
+  /**
+    * returns all output links. Optionally, if a specific portId is provided, returns the links connected to that portId.
+    */
+  def getOutputLinks(portId: PortIdentity): List[PhysicalLink] = {
+    outputPorts.values
+      .flatMap(_._2)
+      .filter(link => link.fromPortId == portId)
+      .toList
   }
 
   /**

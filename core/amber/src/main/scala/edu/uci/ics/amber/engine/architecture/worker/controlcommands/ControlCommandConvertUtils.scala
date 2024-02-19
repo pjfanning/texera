@@ -25,7 +25,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddInputChan
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AssignPortHandler.AssignPort
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 
 import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.ListHasAsScala
@@ -45,7 +45,7 @@ object ControlCommandConvertUtils {
         OpenOperatorV2()
       case AssignPort(portId, input) =>
         AssignPortV2(portId, input)
-      case AddPartitioning(tag: PortIdentity, partitioning: Partitioning) =>
+      case AddPartitioning(tag: PhysicalLink, partitioning: Partitioning) =>
         AddPartitioningV2(tag, partitioning)
       case AddInputChannel(channelId, portId) =>
         AddInputChannelV2(channelId, portId)

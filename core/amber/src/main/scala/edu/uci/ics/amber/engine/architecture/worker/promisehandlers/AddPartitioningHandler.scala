@@ -5,10 +5,10 @@ import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerIniti
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.AddPartitioningHandler.AddPartitioning
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{PAUSED, READY, RUNNING}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 
 object AddPartitioningHandler {
-  final case class AddPartitioning(tag: PortIdentity, partitioning: Partitioning)
+  final case class AddPartitioning(tag: PhysicalLink, partitioning: Partitioning)
       extends ControlCommand[Unit]
 }
 

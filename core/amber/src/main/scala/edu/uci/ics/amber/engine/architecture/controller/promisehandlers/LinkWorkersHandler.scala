@@ -33,10 +33,7 @@ trait LinkWorkersHandler {
         .flatMap(channelId => {
           linkExecution.initChannelExecution(channelId)
           Seq(
-            send(
-              AddPartitioning(msg.link.fromPortId, linkConfig.partitioning),
-              channelId.fromWorkerId
-            ),
+            send(AddPartitioning(msg.link, linkConfig.partitioning), channelId.fromWorkerId),
             send(
               AddInputChannel(channelId, msg.link.toPortId),
               channelId.toWorkerId

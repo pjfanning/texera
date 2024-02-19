@@ -46,7 +46,7 @@ class LoggingSpec
   private val mockPolicy = OneToOnePartitioning(10, Seq(identifier2))
   val payloadToLog: Array[WorkflowFIFOMessagePayload] = Array(
     ControlInvocation(0, StartWorker()),
-    ControlInvocation(0, AddPartitioning(mockLink.toPortId, mockPolicy)),
+    ControlInvocation(0, AddPartitioning(mockLink, mockPolicy)),
     ControlInvocation(0, PauseWorker()),
     ControlInvocation(0, ResumeWorker()),
     DataFrame((0 to 400).map(i => ITuple(i, i.toString, i.toDouble)).toArray),
