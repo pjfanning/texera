@@ -85,7 +85,7 @@ class OutputManager(
   /**
     * Push one tuple to the downstream, will be batched by each transfer partitioning.
     * Should ONLY be called by DataProcessor.
-    * @param tupleLike ITuple to be passed.
+    * @param tupleLike TupleLike to be passed.
     */
   def passTupleToDownstream(
       tupleLike: TupleLike,
@@ -94,7 +94,28 @@ class OutputManager(
   ): Unit = {
     val partitioner =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
-    val outputTuple: Tuple = tupleLike match {
+    val outputTuple: ITuple = if (schema != null) {
+      enforceSchema(tupleLike, schema)
+    } else {
+      ITuple(tupleLike)
+    }
+    val it = partitioner.getBucketIndex(outputTuple)
+    it.foreach(bucketIndex => {
+      val destActor = partitioner.allReceivers(bucketIndex)
+      networkOutputBuffers(destActor).addTuple(outputTuple)
+    })
+  }
+
+  /**
+    * Transforms a TupleLike object to a Tuple that conforms to a given Schema.
+    *
+    * @param tupleLike The TupleLike object to be transformed.
+    * @param schema The Schema to which the tupleLike object must conform.
+    * @return A Tuple that matches the specified schema.
+    * @throws RuntimeException if the tupleLike object type is unsupported or invalid for schema enforcement.
+    */
+  def enforceSchema(tupleLike: TupleLike, schema: Schema): Tuple = {
+    tupleLike match {
       case tTuple: Tuple =>
         assert(tTuple.getSchema == schema)
         tTuple
@@ -121,11 +142,6 @@ class OutputManager(
         builder.build()
       case _ => throw new RuntimeException("invalid tuple type, cannot enforce schema")
     }
-    val it = partitioner.getBucketIndex(outputTuple)
-    it.foreach(bucketIndex => {
-      val destActor = partitioner.allReceivers(bucketIndex)
-      networkOutputBuffers(destActor).addTuple(outputTuple)
-    })
   }
 
   /**

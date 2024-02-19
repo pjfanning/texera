@@ -259,7 +259,7 @@ class DataProcessor(
     if (inputBatch == null) {
       null
     } else if (inputBatch.isEmpty) {
-      null // TODO: this should be InputExhausted
+      ITuple("Input Exhausted")
     } else {
       inputBatch(currentInputIdx)
     }

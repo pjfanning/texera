@@ -1,14 +1,23 @@
 package edu.uci.ics.amber.engine.common.tuple
 
-import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
+import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SeqTupleLike, TupleLike}
 
 import scala.util.hashing.MurmurHash3
 
 object ITuple {
+  def apply(tupleLike: TupleLike): ITuple = {
+    tupleLike match {
+      case tuple: ITuple      => tuple
+      case like: MapTupleLike => apply(like.fieldMappings.values)
+      case like: SeqTupleLike => apply(like.fieldArray)
+      case _                  => ???
+    }
+  }
   def apply(values: Any*): ITuple =
     new ITuple {
       private val data = values
 
+      // dummy value, will reflect real size in Tuple.
       override def inMemSize: Long = 200L
 
       override def length: Int = data.length
