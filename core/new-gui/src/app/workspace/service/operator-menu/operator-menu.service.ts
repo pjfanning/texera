@@ -295,7 +295,6 @@ export class OperatorMenuService {
             !elementsInClipboard.has("operatorPositions") &&
             !elementsInClipboard.has("links") &&
             !elementsInClipboard.has("groups") &&
-            !elementsInClipboard.has("breakpoints") &&
             !elementsInClipboard.has("commentBoxes")
           ) {
             throw new Error("You haven't copied any element yet.");

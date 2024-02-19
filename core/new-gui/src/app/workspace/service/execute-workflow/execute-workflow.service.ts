@@ -236,7 +236,7 @@ export class ExecuteWorkflowService {
   }
 
   public resumeWorkflow(): void {
-    if (!(this.currentState.state === ExecutionState.Paused)) {
+    if (this.currentState.state !== ExecutionState.Paused) {
       throw new Error("cannot resume workflow, the current execution state is " + this.currentState.state);
     }
     this.workflowWebsocketService.send("WorkflowResumeRequest", {});
