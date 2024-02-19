@@ -139,24 +139,13 @@ class DataProcessor(
 
   // inner dependencies
   private val initializer = new DataProcessorRPCHandlerInitializer(this)
-  // 1. pause manager
   val pauseManager: PauseManager = wire[PauseManager]
-  // 2. state manager
   val stateManager: WorkerStateManager = new WorkerStateManager()
-  // 3. batch producer
   val outputManager: OutputManager = new OutputManager(actorId, outputGateway)
-  // 4. epoch manager
   val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(actorId, inputGateway)
 
   def getQueuedCredit(channelId: ChannelIdentity): Long = {
     inputGateway.getChannel(channelId).getQueuedCredit
-  }
-  def onInterrupt(): Unit = {
-    adaptiveBatchingMonitor.pauseAdaptiveBatching()
-  }
-
-  def onContinue(): Unit = {
-    adaptiveBatchingMonitor.resumeAdaptiveBatching()
   }
 
   /** provide API for actor to get stats of this operator
