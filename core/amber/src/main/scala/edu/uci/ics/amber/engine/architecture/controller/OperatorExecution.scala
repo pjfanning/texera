@@ -1,6 +1,5 @@
 package edu.uci.ics.amber.engine.architecture.controller
 
-import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.WorkerExecution
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState._
 import edu.uci.ics.amber.engine.architecture.worker.statistics.{WorkerState, WorkerStatistics}
@@ -15,7 +14,6 @@ import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.web.workflowruntimestate.{OperatorRuntimeStats, WorkflowAggregatedState}
 
 import java.util
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 
 class OperatorExecution(
@@ -30,8 +28,6 @@ class OperatorExecution(
 
   private val workerExecutions =
     new util.concurrent.ConcurrentHashMap[ActorVirtualIdentity, WorkerExecution]()
-
-  var attachedBreakpoints = new mutable.HashMap[String, GlobalBreakpoint[_]]()
 
   def states: Array[WorkerState] = workerExecutions.values.asScala.map(_.state).toArray
 
@@ -76,10 +72,6 @@ class OperatorExecution(
 
   def getBuiltWorkerIds: Array[ActorVirtualIdentity] =
     workerExecutions.values.asScala.map(_.id).toArray
-
-  def assignBreakpoint(breakpoint: GlobalBreakpoint[_]): Array[ActorVirtualIdentity] = {
-    getBuiltWorkerIds
-  }
 
   def setAllWorkerState(state: WorkerState): Unit = {
     (0 until numWorkers).foreach { i =>
