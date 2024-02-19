@@ -365,12 +365,6 @@ case class PhysicalOp(
     )
   }
 
-  def getAllOutputLinks: List[PhysicalLink] = {
-    outputPorts.values
-      .flatMap(_._2)
-      .toList
-  }
-
   /**
     * returns all output links. Optionally, if a specific portId is provided, returns the links connected to that portId.
     */
