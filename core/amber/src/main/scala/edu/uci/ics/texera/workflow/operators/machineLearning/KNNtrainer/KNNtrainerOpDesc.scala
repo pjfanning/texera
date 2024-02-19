@@ -21,7 +21,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     @JsonProperty(required = true,defaultValue = "3")
     @JsonSchemaTitle("Custom K")
-    @JsonPropertyDescription("Specify the nearest neighbours")
+    @JsonPropertyDescription("Specify the number of nearest neighbours")
     @JsonSchemaInject(
       strings = Array(
         new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
@@ -33,7 +33,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     @JsonProperty(value = "loop_k", required = false)
     @JsonSchemaTitle("Optimise k from loop")
-    @JsonPropertyDescription("Specify how many nearest neighbours")
+    @JsonPropertyDescription("Specify which attribute indicates the value of K")
     @JsonSchemaInject(
       strings = Array(
         new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),

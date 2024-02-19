@@ -71,6 +71,9 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer.KNNtrain
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNN.KNNOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop.ApplyModel_LoopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -162,6 +165,9 @@ trait StateTransferFunc
     new Type(value = classOf[KNNOpDesc], name = "KNN"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModels"),
     new Type(value = classOf[KNNtrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[SVCtrainerOpDesc], name = "SVCtrainer"),
+    new Type(value = classOf[ApplyModel_LoopOpDesc], name = "ApplyModel_Loop"),
+    new Type(value = classOf[Scorer_LoopOpDesc], name = "Scorer_Loop"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
 
 
