@@ -4,6 +4,19 @@ import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 
 import scala.util.hashing.MurmurHash3
 
+object ITuple {
+  def apply(values: Any*): ITuple =
+    new ITuple {
+      private val data = values
+
+      override def inMemSize: Long = 200L
+
+      override def length: Int = data.length
+
+      override def get(i: Int): Any = data(i)
+    }
+}
+
 trait ITuple extends Serializable with TupleLike {
   def inMemSize: Long
   def size: Int = length

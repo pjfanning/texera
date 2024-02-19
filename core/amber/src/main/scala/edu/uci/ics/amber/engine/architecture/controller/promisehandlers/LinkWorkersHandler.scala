@@ -29,6 +29,7 @@ trait LinkWorkersHandler {
         .resourceConfig
         .get
       val linkConfig = resourceConfig.linkConfigs(msg.link)
+      val fromOp = cp.workflow.physicalPlan.getOperator(msg.link.fromOpId)
 
       val futures = linkConfig.channelConfigs
         .map(_.channelId)
@@ -40,7 +41,10 @@ trait LinkWorkersHandler {
           cp.executionState.builtChannels
             .add(channelId)
           Seq(
-            send(AddPartitioning(msg.link, linkConfig.partitioning), channelId.fromWorkerId),
+            send(
+              AddPartitioning(msg.link.fromPortId, linkConfig.partitioning),
+              channelId.fromWorkerId
+            ),
             send(
               AddInputChannel(channelId, msg.link.toPortId),
               channelId.toWorkerId

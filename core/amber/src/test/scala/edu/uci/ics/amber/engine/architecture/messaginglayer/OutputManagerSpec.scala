@@ -56,11 +56,11 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
     val fakeReceiver = Array[ActorVirtualIdentity](fakeID)
 
     outputManager.addPartitionerWithPartitioning(
-      fakeLink,
+      fakeLink.toPortId,
       OneToOnePartitioning(10, fakeReceiver.toSeq)
     )
     tuples.foreach { t =>
-      outputManager.passTupleToDownstream(t, fakeLink)
+      outputManager.passTupleToDownstream(t, fakeLink.toPortId, null)
     }
     outputManager.emitEndOfUpstream()
   }
@@ -72,7 +72,7 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
     val fakeLink = PhysicalLink(physicalOpId(), PortIdentity(), physicalOpId(), PortIdentity())
     assertThrows[Exception] {
       tuples.foreach { t =>
-        outputManager.passTupleToDownstream(t, fakeLink)
+        outputManager.passTupleToDownstream(t, fakeLink.toPortId, null)
       }
       outputManager.emitEndOfUpstream()
     }

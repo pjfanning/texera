@@ -68,13 +68,6 @@ public class Tuple implements ITuple, Serializable {
         return fields.get(i);
     }
 
-    @Override
-    @JsonIgnore
-    public Object[] toArray() {
-        Object[] array = new Object[0];
-        return fields.toArray(array);
-    }
-
     @JsonProperty(value = "schema")
     public Schema getSchema() {
         return schema;

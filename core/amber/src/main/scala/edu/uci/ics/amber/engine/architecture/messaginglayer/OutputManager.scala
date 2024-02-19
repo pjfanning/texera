@@ -6,12 +6,10 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
 }
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SeqTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.jooq.exception.MappingException
@@ -61,7 +59,7 @@ class OutputManager(
     dataOutputPort: NetworkOutputGateway
 ) {
 
-  val partitioners = mutable.HashMap[PortIdentity, (Partitioner, Schema)]()
+  val partitioners = mutable.HashMap[PortIdentity, Partitioner]()
 
   val networkOutputBuffers =
     mutable.HashMap[ActorVirtualIdentity, NetworkOutputBuffer]()
@@ -72,11 +70,10 @@ class OutputManager(
     */
   def addPartitionerWithPartitioning(
       portId: PortIdentity,
-      partitioning: Partitioning,
-      schema: Schema
+      partitioning: Partitioning
   ): Unit = {
     val partitioner = toPartitioner(partitioning)
-    partitioners.update(portId, (partitioner, schema))
+    partitioners.update(portId, partitioner)
     partitioner.allReceivers.foreach(receiver => {
       val buffer = new NetworkOutputBuffer(receiver, dataOutputPort, getBatchSize(partitioning))
       networkOutputBuffers.update(receiver, buffer)
@@ -91,9 +88,10 @@ class OutputManager(
     */
   def passTupleToDownstream(
       tupleLike: TupleLike,
-      outputPort: PortIdentity
+      outputPort: PortIdentity,
+      schema: Schema
   ): Unit = {
-    val (partitioner, schema) =
+    val partitioner =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
     val outputTuple: Tuple = tupleLike match {
       case tTuple: Tuple => {

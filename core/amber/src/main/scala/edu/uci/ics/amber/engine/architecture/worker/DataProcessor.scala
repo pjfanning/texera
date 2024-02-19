@@ -57,8 +57,6 @@ object DataProcessor {
 
     override def get(i: Int): Any = null
 
-    override def toArray(): Array[Any] = Array.empty
-
     override def inMemSize: Long = 0
   }
   case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialDataTuple
@@ -230,8 +228,18 @@ class DataProcessor(
         asyncRPCClient.send(PortCompleted(portId, input), CONTROLLER)
       case _ =>
         statisticsManager.increaseOutputTupleCount()
-        val outLinks = physicalOp.getOutputLinks(outputPortOpt)
-        outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link))
+        outputPortOpt match {
+          case Some(port) =>
+            outputManager.passTupleToDownstream(outputTuple, port, physicalOp.outputPorts(port)._3)
+          case None =>
+            physicalOp.outputPorts.keys.foreach(port =>
+              outputManager.passTupleToDownstream(
+                outputTuple,
+                port,
+                physicalOp.outputPorts(port)._3
+              )
+            )
+        }
     }
   }
 
