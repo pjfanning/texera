@@ -7,6 +7,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SeqTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
@@ -94,26 +95,30 @@ class OutputManager(
     val partitioner =
       partitioners.getOrElse(outputPort, throw new MappingException("output port not found"))
     val outputTuple: Tuple = tupleLike match {
-      case tTuple: Tuple => {
+      case tTuple: Tuple =>
         assert(tTuple.getSchema == schema)
         tTuple
-      }
-      case map: MapTupleLike => {
+      case map: MapTupleLike =>
         val builder = Tuple.newBuilder(schema)
         map.fieldMappings.foreach {
           case (str, value) =>
             builder.add(schema.getAttribute(str), value)
         }
         builder.build()
-      }
-      case seq: SeqTupleLike => {
+      case seq: SeqTupleLike =>
         val builder = Tuple.newBuilder(schema)
         val fieldAttrs = schema.getAttributes
         seq.fieldArray.indices.foreach { i =>
           builder.add(fieldAttrs.get(i), seq.fieldArray(i))
         }
         builder.build()
-      }
+      case iTuple: ITuple =>
+        val builder = Tuple.newBuilder(schema)
+        val fieldAttrs = schema.getAttributes
+        iTuple.toSeq.indices.foreach { i =>
+          builder.add(fieldAttrs.get(i), iTuple.get(i))
+        }
+        builder.build()
       case _ => throw new RuntimeException("invalid tuple type, cannot enforce schema")
     }
     val it = partitioner.getBucketIndex(outputTuple)
