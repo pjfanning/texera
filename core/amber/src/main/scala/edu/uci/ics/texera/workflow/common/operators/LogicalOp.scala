@@ -24,7 +24,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.loop.{LoopEndOpDesc, LoopStartOpDesc}
+import edu.uci.ics.texera.workflow.operators.loop.{GeneratorOpDesc, LoopEndOpDesc, LoopStartOpDesc}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -58,15 +58,15 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatterplot.Scatterpl
 import edu.uci.ics.texera.workflow.operators.visualization.ganttChart.GanttChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.urlviz.UrlVizOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.DotPlot.DotPlotOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.{WordCloudOpDesc, WordCloudV2OpDesc}
+import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.filledAreaPlot.FilledAreaPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.bubbleChart.BubbleChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ImageViz.ImageVisualizerOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.hierarchychart.HierarchyChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.DumbbellPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.heatMap.HeatMapOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
-import edu.uci.ics.texera.workflow.operators.visualization.Scatter3DChart.Scatter3dChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer.KNNtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNN.KNNOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
@@ -74,6 +74,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop.ApplyModel_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -120,7 +121,6 @@ trait StateTransferFunc
     new Type(value = classOf[BarChartOpDesc], name = "BarChart"),
     new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
     new Type(value = classOf[WordCloudOpDesc], name = "WordCloud"),
-    new Type(value = classOf[WordCloudV2OpDesc], name = "WordCloudV2"),
     new Type(value = classOf[HtmlVizOpDesc], name = "HTMLVisualizer"),
     new Type(value = classOf[UrlVizOpDesc], name = "URLVisualizer"),
     new Type(value = classOf[ScatterplotOpDesc], name = "Scatterplot"),
@@ -133,6 +133,7 @@ trait StateTransferFunc
     new Type(value = classOf[TypeCastingOpDesc], name = "TypeCasting"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
     new Type(value = classOf[LoopStartOpDesc], name = "LoopStart"),
+    new Type(value = classOf[GeneratorOpDesc], name = "Generator"),
     new Type(value = classOf[LoopEndOpDesc], name = "LoopEnd"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
@@ -159,9 +160,7 @@ trait StateTransferFunc
     new Type(value = classOf[ImageVisualizerOpDesc], name = "ImageVisualizer"),
     new Type(value = classOf[HierarchyChartOpDesc], name = "HierarchyChart"),
     new Type(value = classOf[DumbbellPlotOpDesc], name = "DumbbellPlot"),
-    new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3dChart"),
     new Type(value = classOf[ScatterMatrixOpDesc], name = "ScatterMatrix"),
-    new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
     new Type(value = classOf[KNNOpDesc], name = "KNN"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModels"),
     new Type(value = classOf[KNNtrainerOpDesc], name = "KNNTrainer"),
@@ -169,9 +168,10 @@ trait StateTransferFunc
     new Type(value = classOf[ApplyModel_LoopOpDesc], name = "ApplyModel_Loop"),
     new Type(value = classOf[Scorer_LoopOpDesc], name = "Scorer_Loop"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
-
-
-)
+    new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
+    new Type(value = classOf[HeatMapOpDesc], name = "HeatMap"),
+    new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3DChart")
+  )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
 

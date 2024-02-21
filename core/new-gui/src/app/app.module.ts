@@ -69,8 +69,6 @@ import { ResultTableFrameComponent } from "./workspace/component/result-panel/re
 import { DynamicModule } from "ng-dynamic-component";
 import { RowModalComponent } from "./workspace/component/result-panel/result-panel-modal.component";
 import { OperatorPropertyEditFrameComponent } from "./workspace/component/property-editor/operator-property-edit-frame/operator-property-edit-frame.component";
-import { BreakpointPropertyEditFrameComponent } from "./workspace/component/property-editor/breakpoint-property-edit-frame/breakpoint-property-edit-frame.component";
-import { NotificationComponent } from "./common/component/notification/notification/notification.component";
 import { NzTabsModule } from "ng-zorro-antd/tabs";
 import { VersionsListComponent } from "./workspace/component/left-panel/versions-list/versions-list.component";
 import { NzPaginationModule } from "ng-zorro-antd/pagination";
@@ -124,6 +122,7 @@ import { NzModalModule } from "ng-zorro-antd/modal";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { MatInputModule } from "@angular/material/input";
 import { MatTabsModule } from "@angular/material/tabs";
+import { HighlightSearchTermsPipe } from "./dashboard/user/component/user-workflow/user-workflow-list-item/highlight-search-terms.pipe";
 
 registerLocaleData(en);
 
@@ -171,11 +170,8 @@ registerLocaleData(en);
     ErrorFrameComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
-    BreakpointPropertyEditFrameComponent,
-    NotificationComponent,
     ResultTableFrameComponent,
     OperatorPropertyEditFrameComponent,
-    BreakpointPropertyEditFrameComponent,
     UserProjectComponent,
     UserProjectSectionComponent,
     NgbdModalAddProjectWorkflowComponent,
@@ -201,6 +197,7 @@ registerLocaleData(en);
     PortPropertyEditFrameComponent,
     WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
+    HighlightSearchTermsPipe,
   ],
   imports: [
     BrowserModule,

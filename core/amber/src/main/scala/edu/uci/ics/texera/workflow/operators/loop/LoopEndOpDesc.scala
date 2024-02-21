@@ -1,7 +1,5 @@
 package edu.uci.ics.texera.workflow.operators.loop
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
@@ -31,7 +29,7 @@ class LoopEndOpDesc extends LogicalOp {
     OperatorInfo(
       "LoopEnd",
       "Limit the number of output rows",
-      OperatorGroupConstants.UTILITY_GROUP,
+      OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true

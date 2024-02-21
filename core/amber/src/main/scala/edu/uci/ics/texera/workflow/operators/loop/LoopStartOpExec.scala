@@ -9,13 +9,16 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 import scala.collection.mutable
 
-class LoopStartOpExec(val outputSchema: Schema, val workerId: ActorVirtualIdentity, val termination: Int) extends OperatorExecutor {
+class LoopStartOpExec(
+    val outputSchema: Schema,
+    val workerId: ActorVirtualIdentity
+) extends OperatorExecutor {
   var iteration = 0
-  var buffer = new mutable.ArrayBuffer[ITuple]
+  var data = new mutable.ArrayBuffer[ITuple]
   override def processTuple(
       tuple: Either[ITuple, InputExhausted],
       input: Int,
@@ -24,29 +27,26 @@ class LoopStartOpExec(val outputSchema: Schema, val workerId: ActorVirtualIdenti
   ): Iterator[(ITuple, Option[PortIdentity])] = {
     tuple match {
       case Left(t) =>
-        t match {
-          case t: EndOfIteration =>
+        input match {
+          case 0 =>
             iteration += 1
-            Iterator((t, None))
-          case t =>
-            if(iteration == 0){
-              buffer.append(t)
-            }
             if (outputSchema.containsAttribute("Iteration")) {
-              Iterator((Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration).add(t.asInstanceOf[Tuple]).build, None))
+              data.iterator.map(dt => (
+                Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration-1)
+                    .add(dt.asInstanceOf[Tuple])
+                    .add(t.asInstanceOf[Tuple]).build
+                ,
+                None
+              ))
+            } else {
+              data.iterator.map(t => (t, None))
             }
-            else {
-              Iterator((t, None))
-            }
+          case 1 =>
+            data.append(t)
+            Iterator.empty
         }
-
-      case Right(_) =>
-        if(iteration == 0) {
-          iteration += 1
-          Iterator((EndOfIteration(workerId), None))
-        }else{
-          Iterator.empty
-        }
+      case Right(_) => Iterator.empty
+      //Iterator((EndOfIteration(workerId), None))
     }
   }
 
