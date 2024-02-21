@@ -147,57 +147,64 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     val list_features = selectedFeatures.map(word => s""""$word"""").mkString(",")
     val finalcode =
       s"""
-           |from pytexera import *
-           |
-           |import pandas as pd
-           |import numpy as np
-           |from sklearn.svm import SVC
-           |import pickle
-           |
-           |class ProcessTableOperator(UDFTableOperator):
-           |
-           |  @overrides
-           |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-           |    global para
-           |
-           |    if port == 1:
-           |      print("port0")
-           |      print(table)
-           |      if ($truthy):
-           |        para = table
-           |
-           |    if port == 0:
-           |      if not ($truthy):
-           |        c = $c
-           |        c = [c]
-           |        c = pd.DataFrame({"para":c})
-           |        c = c["para"]
-           |      if ($truthy):
-           |        c = para["$loop_c"]
-           |      y_train = table["$label"]
-           |      features = [$list_features]
-           |      X_train = table[features]
-           |      model_list = []
-           |      para_list = []
-           |      for i in range(c.shape[0]):
-           |        kernal = "$kernal"
-           |        C= c[i]
-           |        para_str = "kernal = '$kernal';C= {}".format(c[i])
-           |        para_list.append(para_str)
-           |        model = SVC(kernel=kernal,C=C)
-           |        model.fit(X_train, y_train)
-           |        model_p = pickle.dumps(model)
-           |        model_list.append(model_p)
-           |      data = dict()
-           |      data["model"]= model_list
-           |      data["para"] = para_list
-           |      data["features"]= [features]*c.shape[0]
-           |
-           |      df = pd.DataFrame(data)
-           |      yield df
-           |
-           |
-           |""".stripMargin
+         |from pytexera import *
+         |
+         |import pandas as pd
+         |import numpy as np
+         |from sklearn.svm import SVC
+         |import pickle
+         |global para
+         |
+         |class ProcessTableOperator(UDFTableOperator):
+         |
+         |  @overrides
+         |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
+         |    global para
+         |
+         |    if port == 1:
+         |      print("port0")
+         |      print(table)
+         |      if ($truthy):
+         |        para = table
+         |
+         |    if port == 0:
+         |      if not ($truthy):
+         |        c = $c
+         |        c = [c]
+         |        c = pd.DataFrame({"para":c})
+         |        c = c["para"]
+         |        kernal_list = ["$kernal"]
+         |        kernal_list = pd.DataFrame({"para":kernal_list})
+         |        kernal_list = kernal_list["para"]
+         |
+         |      if ($truthy):
+         |        c = para["$loop_c"]
+         |        kernal_list = para["$loop_kernal"]
+         |      y_train = table["$label"]
+         |      features = [$list_features]
+         |      X_train = table[features]
+         |      model_list = []
+         |      para_list = []
+         |      for i in range(c.shape[0]):
+         |        C= c[i]
+         |        kernal  = kernal_list[i]
+         |
+         |        para_str = "kernal = '{}';C= {}".format(kernal,C)
+         |        para_list.append(para_str)
+         |        model = SVC(kernel=kernal,C=C)
+         |        model.fit(X_train, y_train)
+         |        model_p = pickle.dumps(model)
+         |        model_list.append(model_p)
+         |      data = dict()
+         |      data["model"]= model_list
+         |      data["para"] = para_list
+         |      data["features"]= [features]*c.shape[0]
+         |
+         |      df = pd.DataFrame(data)
+         |      yield df
+         |
+         |
+         |""".stripMargin
     finalcode
   }
 

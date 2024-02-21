@@ -45,7 +45,6 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |from sklearn.metrics import confusion_matrix
          |import pandas as pd
          |import json
-         |import pickle
          |
          |class ProcessTableOperator(UDFTableOperator):
          |   @overrides
