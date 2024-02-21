@@ -10,7 +10,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
 
-class LoopStartOpDesc extends LogicalOp {
+class LoopStartV2OpDesc extends LogicalOp {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Attach Control to Data")
   var attach: Boolean = false
@@ -26,7 +26,7 @@ class LoopStartOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _, operatorConfig) => {
-          new LoopStartOpExec(outputSchema, operatorConfig.workerConfigs.head.workerId)
+          new LoopStartV2OpExec(outputSchema, operatorConfig.workerConfigs.head.workerId)
         })
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
@@ -36,7 +36,7 @@ class LoopStartOpDesc extends LogicalOp {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "LoopStart",
+      "LoopStartV2",
       "Limit the number of output rows",
       OperatorGroupConstants.CONTROL_GROUP,
       inputPorts = List(

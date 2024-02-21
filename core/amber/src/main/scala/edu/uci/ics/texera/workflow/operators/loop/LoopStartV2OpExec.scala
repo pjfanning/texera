@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.loop
 
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.EndOfIteration
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
 import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
@@ -12,7 +13,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 import scala.collection.mutable
 
-class LoopStartOpExec(
+class LoopStartV2OpExec(
     val outputSchema: Schema,
     val workerId: ActorVirtualIdentity
 ) extends OperatorExecutor {
