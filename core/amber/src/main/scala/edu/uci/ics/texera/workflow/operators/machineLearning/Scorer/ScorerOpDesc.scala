@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.Scorer
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
@@ -22,9 +22,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   var predictValue: String = ""
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("scorer")
-  @JsonPropertyDescription("multiple score functions")
-  var scorer: ScorerFunction = _
+  @JsonSchemaTitle("Scorer Functions")
+  @JsonPropertyDescription("Select multiple score functions")
+  var scorers: List[ScorerFunction] = List()
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -42,8 +42,10 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |
          |from sklearn.metrics import accuracy_score
          |from sklearn.metrics import precision_score
+         |from sklearn.metrics import confusion_matrix
          |import pandas as pd
-         |import numpy as np
+         |import json
+         |import pickle
          |
          |class ProcessTableOperator(UDFTableOperator):
          |   @overrides
@@ -51,20 +53,56 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |       y_true = table['$actualValue']
          |       y_pred = table['$predictValue']
          |
-         |       scorer = "$scorer"
-         |       if scorer == "Accuracy":
-         |          predictions = accuracy_score(y_true, y_pred)
-         |       elif scorer == "Precision_score":
-         |          predictions = precision_score(y_true, y_pred,average='macro')
+         |       scorerList = [${getSelectedScorers()}]
+         |       # print(scorerList)
+         |       result = dict()
          |
-         |       yield {scorer:predictions}
+         |       for scorer in scorerList:
+         |           prediction = None
+         |           if scorer == 'Accuracy':
+         |               prediction = accuracy_score(y_true, y_pred)
+         |               result['Accuracy'] = prediction
+         |               # print('Accuracy', prediction)
+         |           elif scorer == 'Precision Score':
+         |               prediction = precision_score(y_true, y_pred, average = 'macro')
+         |               result['Precision Score'] = prediction
+         |               # print('Precision Score', prediction)
+         |           elif scorer == 'Confusion Matrix':
+         |               column_set = set(y_true)
+         |               labels = list(column_set)
+         |               prediction = confusion_matrix(y_true, y_pred, labels = labels)
+         |               # print('''Confusion Matrix
+         |               # ''', prediction)
+         |               prediction = json.dumps(prediction.tolist(), indent = 4)
+         |               result['Confusion Matrix'] = prediction
+         |
+         |       df = pd.DataFrame(result, index=[0])
+         |       yield df
          |
          |""".stripMargin
     finalcode
   }
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema.newBuilder.add(new Attribute(scorer.toString, AttributeType.DOUBLE)).build
+    val outputSchemaBuilder = Schema.newBuilder
+    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
+      {
+        if (scorer == "Confusion Matrix") {
+          outputSchemaBuilder.add(new Attribute(scorer, AttributeType.STRING))
+        } else {
+          outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+        }
+      }
+    )
+    outputSchemaBuilder.build
+  }
+  private def getEachScorerName(scorer: ScorerFunction): String = {
+    // Directly return the name of the scorer using the getName() method
+    scorer.getName()
+  }
+  private def getSelectedScorers(): String = {
+    // Return a string of scorers using the getEachScorerName() method
+    scorers.map(scorer => getEachScorerName(scorer)).mkString("'", "','", "'")
   }
 
 }
