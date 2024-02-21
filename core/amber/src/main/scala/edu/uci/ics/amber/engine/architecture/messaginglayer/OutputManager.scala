@@ -16,6 +16,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.jooq.exception.MappingException
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object OutputManager {
 
@@ -117,31 +118,45 @@ class OutputManager(
   def enforceSchema(tupleLike: TupleLike, schema: Schema): Tuple = {
     tupleLike match {
       case tTuple: Tuple =>
-        assert(tTuple.getSchema == schema)
+        assert(
+          tTuple.getSchema == schema,
+          s"output tuple schema does not match the expected schema! " +
+            s"output schema: ${tTuple.getSchema}, " +
+            s"expected schema: $schema"
+        )
         tTuple
       case map: MapTupleLike =>
-        val builder = Tuple.newBuilder(schema)
-        map.fieldMappings.foreach {
-          case (str, value) =>
-            builder.add(schema.getAttribute(str), value)
-        }
-        builder.build()
+        val seq = reorderFields(map.fieldMappings, schema)
+        buildTupleWithSchema(seq, schema)
       case seq: SeqTupleLike =>
-        val builder = Tuple.newBuilder(schema)
-        val fieldAttrs = schema.getAttributes
-        seq.fieldArray.indices.foreach { i =>
-          builder.add(fieldAttrs.get(i), seq.fieldArray(i))
-        }
-        builder.build()
+        buildTupleWithSchema(seq.fieldArray, schema)
       case iTuple: ITuple =>
-        val builder = Tuple.newBuilder(schema)
-        val fieldAttrs = schema.getAttributes
-        iTuple.toSeq.indices.foreach { i =>
-          builder.add(fieldAttrs.get(i), iTuple.get(i))
-        }
-        builder.build()
+        buildTupleWithSchema(iTuple.toSeq, schema)
       case _ => throw new RuntimeException("invalid tuple type, cannot enforce schema")
     }
+  }
+
+  private def reorderFields(fieldMappings: Map[String, Any], schema: Schema): Seq[Any] = {
+    val result = Array.fill[Any](schema.getAttributes.size())(null)
+    fieldMappings.foreach {
+      case (name, value) =>
+        result(schema.getIndex(name)) = value
+    }
+    result
+  }
+
+  private def buildTupleWithSchema(fields: Seq[Any], schema: Schema): Tuple = {
+    assert(
+      fields.size == schema.getAttributes.size,
+      s"the size of the output: ${fields.mkString(",")} does not match to the size of schema"
+    )
+    val attributes = schema.getAttributes.asScala
+    val builder = Tuple.newBuilder(schema)
+    attributes.zipWithIndex.foreach {
+      case (attr, i) =>
+        builder.add(attr, fields(i))
+    }
+    builder.build()
   }
 
   /**
