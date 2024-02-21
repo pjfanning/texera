@@ -136,15 +136,40 @@ class OutputManager(
     }
   }
 
+  /**
+    * Reorders fields to match the schema's required order,
+    * asserting no fields are missing. If a field in `fieldMappings`
+    * is not found in the schema (extra field), an exception
+    * will be thrown.
+    *
+    * @param fieldMappings Map of field names to values.
+    * @param schema        Schema defining order and required fields.
+    * @return Ordered sequence of values as per schema.
+    */
   private def reorderFields(fieldMappings: Map[String, Any], schema: Schema): Seq[Any] = {
     val result = Array.fill[Any](schema.getAttributes.size())(null)
     fieldMappings.foreach {
       case (name, value) =>
         result(schema.getIndex(name)) = value
     }
+    val missingFieldIdx = result.indexOf(null)
+    assert(
+      missingFieldIdx == -1,
+      s"missing field found! please provide value for ${schema.getAttributes.get(missingFieldIdx)}"
+    )
     result
   }
 
+  /**
+    * Constructs a Tuple object from a sequence of field values
+    * according to the specified schema. It asserts that the number
+    * of provided fields matches the schema's requirement, every
+    * field must also satisfy the field type.
+    *
+    * @param fields Sequence of field values.
+    * @param schema Schema for Tuple construction.
+    * @return Tuple constructed according to the schema.
+    */
   private def buildTupleWithSchema(fields: Seq[Any], schema: Schema): Tuple = {
     assert(
       fields.size == schema.getAttributes.size,
