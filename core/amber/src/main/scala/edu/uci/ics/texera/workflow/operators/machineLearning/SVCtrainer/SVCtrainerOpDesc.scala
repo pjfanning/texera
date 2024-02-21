@@ -172,7 +172,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
            |        c = [c]
            |        c = pd.DataFrame({"para":c})
            |        c = c["para"]
-           |
            |      if ($truthy):
            |        c = para["$loop_c"]
            |      y_train = table["$label"]
