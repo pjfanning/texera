@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum KernalFunction {
     rbf("rbf"),
-    linear ("linear");
+    linear ("linear"),
+    poly ("poly"),
+    sigmod ("sigmod");
 
     private final String name;
     KernalFunction(String name) {
