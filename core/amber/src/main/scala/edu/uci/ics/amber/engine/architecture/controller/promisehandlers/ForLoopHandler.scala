@@ -7,13 +7,12 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object ForLoopHandler {
-  final case class IterationCompleted(workerId: ActorVirtualIdentity) extends ControlCommand[Unit]
+  final case class IterationCompleted(startWorkerId: ActorVirtualIdentity, endWorkerId: ActorVirtualIdentity) extends ControlCommand[Unit]
 }
 
 trait ForLoopHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
-
   registerHandler { (msg: IterationCompleted, _) =>
-    send(ResumeLoop(), msg.workerId)
+    send(ResumeLoop(msg.startWorkerId, msg.endWorkerId), msg.startWorkerId)
   }
 }

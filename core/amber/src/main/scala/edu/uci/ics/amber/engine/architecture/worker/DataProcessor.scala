@@ -65,7 +65,9 @@ object DataProcessor {
   }
   case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
-  case class EndOfIteration(workerId: ActorVirtualIdentity) extends SpecialDataTuple
+
+  case class StartOfIteration(workerId: ActorVirtualIdentity) extends SpecialDataTuple
+  case class EndOfIteration(startWorkerId: ActorVirtualIdentity, endWorkerId: ActorVirtualIdentity) extends SpecialDataTuple
 
   class DPOutputIterator extends Iterator[(ITuple, Option[PortIdentity])] {
     val queue = new mutable.Queue[(ITuple, Option[PortIdentity])]
@@ -208,8 +210,8 @@ class DataProcessor(
     if (outputTuple == null) return
 
     outputTuple match {
-      case EndOfIteration(workerId) =>
-        asyncRPCClient.send(IterationCompleted(workerId), CONTROLLER)
+      case EndOfIteration(startWorkerId, endWorkerId) =>
+        asyncRPCClient.send(IterationCompleted(startWorkerId, endWorkerId), CONTROLLER)
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
@@ -282,10 +284,6 @@ class DataProcessor(
         initBatch(channelId, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
-//        if (operator.isInstanceOf[LoopStartOpExec]) {
-//          processInputTuple(Right(InputExhausted()))
-//          return
-//        }
         val channel = this.inputGateway.getChannel(channelId)
         val portId = channel.getPortId
 
@@ -303,7 +301,9 @@ class DataProcessor(
             .foreach(outputPortId =>
               outputIterator.appendSpecialTupleToEnd(FinalizePort(outputPortId, input = false))
             )
-          outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
+          if(!operator.isInstanceOf[LoopStartOpExec]){
+            outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
+          }
         }
     }
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
