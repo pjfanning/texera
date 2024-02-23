@@ -16,7 +16,7 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
-  @JsonPropertyDescription("Specify the table name of the predict data")
+  @JsonPropertyDescription("Specify the name of the predicted data")
   var y_pred: String = ""
 
   override def operatorInfo: OperatorInfo =

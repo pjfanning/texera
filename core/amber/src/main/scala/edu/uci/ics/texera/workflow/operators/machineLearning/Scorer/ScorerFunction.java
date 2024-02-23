@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ScorerFunction {
     Accuracy("Accuracy"),
-    Precision_score ("Precision score");
+    Precision_score ("Precision Score"),
+    Confusion_matrix("Confusion Matrix");
+
 
     private final String name;
     ScorerFunction(String name) {

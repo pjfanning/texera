@@ -80,7 +80,7 @@ class ScatterMatrixOpDesc extends VisualizationOperator with PythonOperatorDescr
          |
          |class ProcessTableOperator(UDFTableOperator):
          |    def render_error(self, error_msg):
-         |        return '''<h1>PieChart is not available.</h1>
+         |        return '''<h1>ScatterMatrix is not available.</h1>
          |                  <p>Reason is: {} </p>
          |               '''.format(error_msg)
          |
