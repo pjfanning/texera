@@ -56,6 +56,6 @@ class LoopStartOpDesc extends LogicalOp {
         .add(schemas(1))
         .build()
     } else {
-      schemas(0)
+      schemas(1)
     }
 }

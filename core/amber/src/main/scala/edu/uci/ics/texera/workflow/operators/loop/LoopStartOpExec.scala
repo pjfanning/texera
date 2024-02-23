@@ -1,6 +1,10 @@
 package edu.uci.ics.texera.workflow.operators.loop
 
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{EndOfIteration, FinalizeOperator, StartOfIteration}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
+  EndOfIteration,
+  FinalizeOperator,
+  StartOfIteration
+}
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
 import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
@@ -26,46 +30,44 @@ class LoopStartOpExec(
       pauseManager: PauseManager,
       asyncRPCClient: AsyncRPCClient
   ): Iterator[(ITuple, Option[PortIdentity])] = {
-        input match {
-          case 0 =>
-            tuple match {
-              case Left(t) =>
-                t match {
-                  case t: StartOfIteration =>
-                    if(iteration == buffer.length){
-                      return Iterator((FinalizeOperator(), None))
-                    }
-                    val ret = Iterator((buffer(iteration), None), (StartOfIteration(workerId), None))
-                    iteration += 1
-                    ret
-                  case t =>
-                    buffer.append(t)
-                    Iterator.empty
+    input match {
+      case 0 =>
+        tuple match {
+          case Left(t) =>
+            t match {
+              case t: StartOfIteration =>
+                {
+                  if (iteration == buffer.length) {
+                    return Iterator((FinalizeOperator(), None))
+                  }
+                  iteration += 1
+                  if (outputSchema.containsAttribute("Iteration")) {
+                    data.iterator.map(dt => (
+                      Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration-1)
+                        .add(dt.asInstanceOf[Tuple])
+                        .add(buffer(iteration-1).asInstanceOf[Tuple]).build
+                      ,
+                      None
+                    ))
+                  } else {
+                    data.iterator.map(t => (t, None))
+                  }
+                } ++ Iterator((StartOfIteration(workerId), None))
 
-                  //              iteration += 1
-                  //              if (outputSchema.containsAttribute("Iteration")) {
-                  //                data.iterator.map(dt => (
-                  //                  Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration-1)
-                  //                    .add(dt.asInstanceOf[Tuple])
-                  //                    .add(t.asInstanceOf[Tuple]).build
-                  //                  ,
-                  //                  None
-                  //                ))
-                  //              } else {
-                  //                data.iterator.map(t => (t, None))
-                  //              }
-                }
-              case Right(_) =>
-                iteration += 1
-                Iterator((buffer(0), None), (StartOfIteration(workerId), None))
+              case t =>
+                buffer.append(t)
+                Iterator.empty
             }
-          case 1 =>
-            tuple match {
-              case Left(t) => data.append(t)
-              case Right(_) =>
-            }
-            Iterator.empty
+          case Right(_) =>
+            Iterator((StartOfIteration(workerId), None))
         }
+      case 1 =>
+        tuple match {
+          case Left(t)  => data.append(t)
+          case Right(_) =>
+        }
+        Iterator.empty
+    }
   }
 
   override def open(): Unit = {}
