@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
@@ -44,8 +44,17 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
     @AutofillAttributeNameOnPort1
     var loop_k: String = ""
 
+    @JsonProperty(value = "Selected Features", required = true)
+    @JsonSchemaTitle("Selected Features")
+    @JsonPropertyDescription("Features used to train the model")
+    @AutofillAttributeNameList
+    var selectedFeatures: List[String] = _
+
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
-      Schema.newBuilder.add(new Attribute("model", AttributeType.BINARY)).build
+      val outputSchemaBuilder = Schema.newBuilder
+      outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
+      outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
+      outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
     }
 
 
@@ -61,7 +70,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
             allowMultiLinks = true,
             dependencies = List(PortIdentity(1))
           ),
-          InputPort(PortIdentity(1), displayName = "optimization", allowMultiLinks = true),
+          InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true),
         ),
         outputPorts = List(OutputPort())
       )
@@ -69,6 +78,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
     override def generatePythonCode(): String = {
       var truthy = "False"
       if (is_loop) truthy = "True"
+      val list_features = selectedFeatures.map(word => s""""$word"""").mkString(",")
       val finalcode =
         s"""
            |from pytexera import *
@@ -83,23 +93,50 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |
            |  @overrides
            |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-           |    global k
+           |    global param
+           |    model_list = []
+           |    para_list = []
+           |    features_list = []
            |
            |    if port == 1:
            |      if ($truthy):
-           |        k = table['$loop_k'][1]
+           |        param = table
            |
            |    if port == 0:
-           |      if not ($truthy):
-           |        k = $k
-           |        print(f'k={k}')
            |      y_train = table["$label"]
            |      X_train = table.drop(["$label"], axis=1)
-           |      knn = KNeighborsClassifier(n_neighbors=k+1)
-           |      knn.fit(X_train, y_train)
-           |      s = pickle.dumps(knn)
-           |      yield {"model":s}
            |
+           |      if not ($truthy):
+           |        k = $k
+           |        knn = KNeighborsClassifier(n_neighbors=k)
+           |        knn.fit(X_train, y_train)
+           |        para_str = "K = '{}'".format(k)
+           |        model_str = pickle.dumps(knn)
+           |        model_list.append(model_str)
+           |        para_list.append(para_str)
+           |        features_list.append([$list_features])
+           |
+           |      if ($truthy):
+           |        k = param["$loop_k"][0]
+           |        for i in range(0, k):
+           |          knn = KNeighborsClassifier(n_neighbors=i+1)
+           |          knn.fit(X_train, y_train)
+           |          para_str = "K = '{}'".format(i+1)
+           |          model_str = pickle.dumps(knn)
+           |          model_list.append(model_str)
+           |          para_list.append(para_str)
+           |          features_list.append([$list_features])
+           |
+           |      data = dict({})
+           |      data["model"]= model_list
+           |      # print(model_list)
+           |      data["para"] = para_list
+           |      # print(para_list)
+           |      data["features"]= features_list
+           |      # print(features_list)
+           |
+           |      df = pd.DataFrame(data)
+           |      yield df
            |
            |""".stripMargin
       finalcode
