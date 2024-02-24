@@ -1,14 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
-  getBatchSize,
-  toPartitioner
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SeqTupleLike, TupleLike}
+import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SchemaEnforceable, SeqTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -89,19 +85,14 @@ class OutputManager(
     * @param tupleLike TupleLike to be passed.
     */
   def passTupleToDownstream(
-      tupleLike: TupleLike,
+      tupleLike: SchemaEnforceable,
       outputLink: PhysicalLink,
       schema: Schema
   ): Unit = {
     val partitioner =
       partitioners.getOrElse(outputLink, throw new MappingException("output port not found"))
-    val outputTuple: ITuple = if (schema != null) {
-      enforceSchema(tupleLike, schema)
-    } else {
-      ITuple(tupleLike)
-    }
-    val it = partitioner.getBucketIndex(outputTuple)
-    it.foreach(bucketIndex => {
+    val outputTuple: Tuple = enforceSchema(tupleLike, schema)
+    partitioner.getBucketIndex(outputTuple).foreach(bucketIndex => {
       val destActor = partitioner.allReceivers(bucketIndex)
       networkOutputBuffers((outputLink, destActor)).addTuple(outputTuple)
     })
@@ -115,7 +106,7 @@ class OutputManager(
     * @return A Tuple that matches the specified schema.
     * @throws RuntimeException if the tupleLike object type is unsupported or invalid for schema enforcement.
     */
-  def enforceSchema(tupleLike: TupleLike, schema: Schema): Tuple = {
+  private def enforceSchema(tupleLike: SchemaEnforceable, schema: Schema): Tuple = {
     tupleLike match {
       case tTuple: Tuple =>
         assert(
@@ -126,38 +117,31 @@ class OutputManager(
         )
         tTuple
       case map: MapTupleLike =>
-        val seq = reorderFields(map.fieldMappings, schema)
-        buildTupleWithSchema(seq, schema)
+        buildTupleWithSchema(map, schema)
       case seq: SeqTupleLike =>
-        buildTupleWithSchema(seq.fieldArray, schema)
-      case iTuple: ITuple =>
-        buildTupleWithSchema(iTuple.toSeq, schema)
-      case _ => throw new RuntimeException("invalid tuple type, cannot enforce schema")
+        buildTupleWithSchema(seq, schema)
+      case _ =>
+        throw new RuntimeException("invalid tuple type, cannot enforce schema")
     }
   }
 
   /**
-    * Reorders fields to match the schema's required order,
-    * asserting no fields are missing. If a field in `fieldMappings`
-    * is not found in the schema (extra field), an exception
-    * will be thrown.
-    *
-    * @param fieldMappings Map of field names to values.
-    * @param schema        Schema defining order and required fields.
-    * @return Ordered sequence of values as per schema.
-    */
-  private def reorderFields(fieldMappings: Map[String, Any], schema: Schema): Seq[Any] = {
-    val result = Array.fill[Any](schema.getAttributes.size())(null)
-    fieldMappings.foreach {
+   * Constructs a `Tuple` object based on a given schema and a map of field mappings.
+   *
+   * This method iterates over the field mappings provided by the `tupleLike` object, adding each field to the `Tuple` builder
+   * based on the corresponding attribute in the `schema`. The `schema` defines the structure and types of fields allowed in the `Tuple`.
+   *
+   * @param tupleLike The source of field mappings, where each entry maps a field name to its value.
+   * @param schema    The schema defining the structure and types of the `Tuple` to be built.
+   * @return A `Tuple` instance that matches the provided schema and contains the data from `tupleLike`.
+   */
+  private def buildTupleWithSchema(tupleLike:MapTupleLike, schema: Schema): Tuple = {
+    val builder = Tuple.newBuilder(schema)
+    tupleLike.fieldMappings.foreach {
       case (name, value) =>
-        result(schema.getIndex(name)) = value
+        builder.add(schema.getAttribute(name), value)
     }
-    val missingFieldIdx = result.indexOf(null)
-    assert(
-      missingFieldIdx == -1,
-      s"missing field found! please provide value for ${schema.getAttributes.get(missingFieldIdx)}"
-    )
-    result
+    builder.build()
   }
 
   /**
@@ -166,20 +150,16 @@ class OutputManager(
     * of provided fields matches the schema's requirement, every
     * field must also satisfy the field type.
     *
-    * @param fields Sequence of field values.
+    * @param tupleLike Sequence of field values.
     * @param schema Schema for Tuple construction.
     * @return Tuple constructed according to the schema.
     */
-  private def buildTupleWithSchema(fields: Seq[Any], schema: Schema): Tuple = {
-    assert(
-      fields.size == schema.getAttributes.size,
-      s"the size of the output: ${fields.mkString(",")} does not match to the size of schema"
-    )
-    val attributes = schema.getAttributes.asScala
+  private def buildTupleWithSchema(tupleLike: SeqTupleLike, schema: Schema): Tuple = {
+    val attributes = schema.getAttributes
     val builder = Tuple.newBuilder(schema)
-    attributes.zipWithIndex.foreach {
-      case (attr, i) =>
-        builder.add(attr, fields(i))
+    tupleLike.fields.zipWithIndex.foreach {
+      case (value, i) =>
+        builder.add(attributes.get(i), value)
     }
     builder.build()
   }

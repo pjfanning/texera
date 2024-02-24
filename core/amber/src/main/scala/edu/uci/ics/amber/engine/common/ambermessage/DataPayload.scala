@@ -1,12 +1,13 @@
 package edu.uci.ics.amber.engine.common.ambermessage
 
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 sealed trait DataPayload extends WorkflowFIFOMessagePayload {}
 
 final case class EndOfUpstream() extends DataPayload
 
-final case class DataFrame(frame: Array[ITuple]) extends DataPayload {
+final case class DataFrame(frame: Array[TupleLike]) extends DataPayload {
   val inMemSize: Long = {
     frame.map(_.inMemSize).sum
   }
