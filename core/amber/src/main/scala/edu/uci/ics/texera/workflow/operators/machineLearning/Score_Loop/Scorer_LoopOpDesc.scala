@@ -43,8 +43,37 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |import numpy as np
          |from sklearn.metrics import accuracy_score
          |from sklearn.metrics import precision_score
-         |from sklearn.metrics import confusion_matrix
+         |from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+         |import matplotlib.pyplot as plt
+         |import plotly.express as px
+         |import plotly.graph_objects as go
+         |import plotly.io
+         |
          |import json
+         |
+         |def drawConfusionMatrixImage(prediction, labels):
+         |
+         |  text = [[str(value) for value in row] for row in prediction]
+         |
+         |  fig = go.Figure(data=go.Heatmap(
+         |    z=prediction,
+         |    x=labels,
+         |    y=labels,
+         |    text=text,
+         |    texttemplate="%{text}",
+         |    hoverongaps=False,
+         |    colorscale='Viridis',
+         |    showscale=True))
+         |
+         |  fig.update_layout(
+         |    title='Confusion Matrix',
+         |    xaxis_title="Predicted Label",
+         |    yaxis_title="True Label")
+         |
+         |  html = plotly.io.to_html(fig, include_plotlyjs='cdn', auto_play=False)
+         |
+         |  return html
+         |
          |
          |class ProcessTableOperator(UDFTableOperator):
          |
@@ -66,6 +95,7 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |            if scorer == 'Accuracy':
          |              prediction = accuracy_score(y_true, y_pred)
          |              result['Accuracy'][i]=prediction
+         |              if best_accuracy_model
          |               # print('Accuracy', prediction)
          |            elif scorer == 'Precision Score':
          |               prediction = precision_score(y_true, y_pred, average = 'macro')
@@ -77,8 +107,11 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |               prediction = confusion_matrix(y_true, y_pred, labels = labels)
          |               # print('''Confusion Matrix
          |               # ''', prediction)
-         |               prediction = json.dumps(prediction.tolist(), indent = 4)
-         |               result['Confusion Matrix'][i]=prediction
+         |               prediction_json = json.dumps(prediction.tolist(), indent = 4)
+         |               result['Confusion Matrix'][i]=prediction_json
+         |
+         |               html = drawConfusionMatrixImage(prediction,labels)
+         |               result['Best Confusion Matrix Chart']=html
          |
          |        result["model"]=model
          |        result["para"] = para
@@ -93,6 +126,7 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
     {
       if (scorer == "Confusion Matrix") {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.STRING))
+        outputSchemaBuilder.add(new Attribute("Best Confusion Matrix Chart", AttributeType.STRING))
       } else {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       }
@@ -100,8 +134,6 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
     )
     outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY)).build
-
-
   }
 
 
