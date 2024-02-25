@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common
 
 import edu.uci.ics.amber.engine.architecture.worker.PauseManager
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 
@@ -14,7 +15,7 @@ trait IOperatorExecutor {
   def close(): Unit
 
   def processTuple(
-      tuple: Either[TupleLike, InputExhausted],
+      tuple: Either[ITuple, InputExhausted],
       input: Int,
       pauseManager: PauseManager,
       asyncRPCClient: AsyncRPCClient

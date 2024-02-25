@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.sink.managed
 
-import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.{ISinkOperatorExecutor, InputExhausted}
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode._
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -19,8 +19,8 @@ class ProgressiveSinkOpExec(
   override def close(): Unit = storage.close()
 
   override def consume(
-                        tuple: Either[TupleLike, InputExhausted],
-                        input: Int
+      tuple: Either[ITuple, InputExhausted],
+      input: Int
   ): Unit = {
     tuple match {
       case Left(t) =>

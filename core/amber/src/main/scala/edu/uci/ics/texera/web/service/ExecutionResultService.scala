@@ -8,6 +8,7 @@ import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.Workflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.IncrementalOutputMode.{SET_DELTA, SET_SNAPSHOT}
 import edu.uci.ics.texera.web.model.websocket.event.{
@@ -43,10 +44,10 @@ object ExecutionResultService {
   // convert Tuple from engine's format to JSON format
   def webDataFromTuple(
       mode: WebOutputMode,
-      table: List[Tuple],
+      table: List[ITuple],
       chartType: Option[String]
   ): WebDataUpdate = {
-    val tableInJson = table.map(t => t.asKeyValuePairJson())
+    val tableInJson = table.map(t => t.asInstanceOf[Tuple].asKeyValuePairJson())
     WebDataUpdate(mode, tableInJson, chartType)
   }
 
@@ -55,10 +56,10 @@ object ExecutionResultService {
     */
   private def tuplesToWebData(
       mode: WebOutputMode,
-      table: List[Tuple],
+      table: List[ITuple],
       chartType: Option[String]
   ): WebDataUpdate = {
-    val tableInJson = table.map(t => t.asKeyValuePairJson())
+    val tableInJson = table.map(t => t.asInstanceOf[Tuple].asKeyValuePairJson())
     WebDataUpdate(mode, tableInJson, chartType)
   }
 

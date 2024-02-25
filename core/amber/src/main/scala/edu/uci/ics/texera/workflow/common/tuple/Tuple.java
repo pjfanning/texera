@@ -6,9 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import edu.uci.ics.amber.engine.common.tuple.amber.SchemaEnforceable;
-import edu.uci.ics.amber.engine.common.tuple.amber.SeqTupleLike;
-import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike;
+import edu.uci.ics.amber.engine.common.tuple.ITuple;
 import edu.uci.ics.texera.Utils;
 import edu.uci.ics.texera.workflow.common.tuple.exception.TupleBuildingException;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
@@ -16,7 +14,6 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import org.bson.Document;
 import org.ehcache.sizeof.SizeOf;
-import scala.collection.immutable.Seq;
 
 import java.io.Serializable;
 import java.util.*;
@@ -24,7 +21,7 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Tuple implements SeqTupleLike, Serializable, SchemaEnforceable {
+public class Tuple implements ITuple, Serializable {
 
     private final Schema schema;
     private final List<Object> fields;
@@ -207,11 +204,6 @@ public class Tuple implements SeqTupleLike, Serializable, SchemaEnforceable {
 
     public static Tuple.BuilderV2 newBuilder(Schema schema) {
         return new Tuple.BuilderV2(schema);
-    }
-
-    @Override
-    public Object[] fields() {
-        return fields.toArray();
     }
 
     /**
