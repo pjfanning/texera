@@ -21,7 +21,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.KernalFu
 
 class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
-  @JsonSchemaTitle("Using optimized C")
+  @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal"]}""")
   var is_loop: Boolean = false
 
@@ -144,7 +144,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     var truthy = "False"
     if (is_loop) truthy = "True"
     assert(selectedFeatures.nonEmpty)
-    val list_features = selectedFeatures.map(word => s""""$word"""").mkString(",")
+    val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
     val finalcode =
       s"""
          |from pytexera import *
@@ -191,7 +191,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |        para_str = "kernal = '{}';C= {}".format(kernal,C)
          |        para_list.append(para_str)
-         |        model = SVC(kernel=kernal,C=C)
+         |        model = SVC(kernel=kernal,C=C,probability=True)
          |        model.fit(X_train, y_train)
          |        model_p = pickle.dumps(model)
          |        model_list.append(model_p)

@@ -119,7 +119,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      if ($truthy):
            |        k = param["$loop_k"][0]
            |        for i in range(0, k):
-           |          knn = KNeighborsClassifier(n_neighbors=i+1)
+           |          knn = KNeighborsClassifier(n_neighbors=i+1,probability=True)
            |          knn.fit(X_train, y_train)
            |          para_str = "K = '{}'".format(i+1)
            |          model_str = pickle.dumps(knn)
