@@ -13,8 +13,7 @@ case class RangeBasedShufflePartitioner(partitioning: RangeBasedShufflePartition
 
   override def getBucketIndex(tuple: Tuple): Iterator[Int] = {
     // Do range partitioning only on the first attribute in `rangeColumnIndices`.
-    val fieldType = tuple
-      .getSchema
+    val fieldType = tuple.getSchema
       .getAttributes()
       .get(partitioning.rangeColumnIndices(0))
       .getType

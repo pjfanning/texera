@@ -9,24 +9,24 @@ object ITuple {
     tupleLike match {
       case tuple: ITuple      => tuple
       case like: MapTupleLike => apply(like.fieldMappings.values)
-      case like: SeqTupleLike => apply(like.fieldArray)
+      case like: SeqTupleLike => apply(like.fields)
       case _                  => ???
     }
   }
   def apply(values: Any*): ITuple =
     new ITuple {
-      private val data = values
+      override val fields: Array[Any] = values.toArray
 
       // dummy value, will reflect real size in Tuple.
       override def inMemSize: Long = 200L
 
-      override def length: Int = data.length
+      override def length: Int = fields.length
 
-      override def get(i: Int): Any = data(i)
+      override def get(i: Int): Any = fields(i)
     }
 }
 
-trait ITuple extends Serializable with TupleLike {
+trait ITuple extends Serializable with SeqTupleLike {
   def inMemSize: Long
   def size: Int = length
 

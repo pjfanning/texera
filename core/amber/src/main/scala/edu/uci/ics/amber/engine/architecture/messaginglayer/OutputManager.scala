@@ -1,10 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
+  getBatchSize,
+  toPartitioner
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SchemaEnforceable, SeqTupleLike, TupleLike}
+import edu.uci.ics.amber.engine.common.tuple.amber.{MapTupleLike, SchemaEnforceable, SeqTupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -12,7 +15,6 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.jooq.exception.MappingException
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object OutputManager {
 
@@ -92,10 +94,12 @@ class OutputManager(
     val partitioner =
       partitioners.getOrElse(outputLink, throw new MappingException("output port not found"))
     val outputTuple: Tuple = enforceSchema(tupleLike, schema)
-    partitioner.getBucketIndex(outputTuple).foreach(bucketIndex => {
-      val destActor = partitioner.allReceivers(bucketIndex)
-      networkOutputBuffers((outputLink, destActor)).addTuple(outputTuple)
-    })
+    partitioner
+      .getBucketIndex(outputTuple)
+      .foreach(bucketIndex => {
+        val destActor = partitioner.allReceivers(bucketIndex)
+        networkOutputBuffers((outputLink, destActor)).addTuple(outputTuple)
+      })
   }
 
   /**
@@ -126,16 +130,16 @@ class OutputManager(
   }
 
   /**
-   * Constructs a `Tuple` object based on a given schema and a map of field mappings.
-   *
-   * This method iterates over the field mappings provided by the `tupleLike` object, adding each field to the `Tuple` builder
-   * based on the corresponding attribute in the `schema`. The `schema` defines the structure and types of fields allowed in the `Tuple`.
-   *
-   * @param tupleLike The source of field mappings, where each entry maps a field name to its value.
-   * @param schema    The schema defining the structure and types of the `Tuple` to be built.
-   * @return A `Tuple` instance that matches the provided schema and contains the data from `tupleLike`.
-   */
-  private def buildTupleWithSchema(tupleLike:MapTupleLike, schema: Schema): Tuple = {
+    * Constructs a `Tuple` object based on a given schema and a map of field mappings.
+    *
+    * This method iterates over the field mappings provided by the `tupleLike` object, adding each field to the `Tuple` builder
+    * based on the corresponding attribute in the `schema`. The `schema` defines the structure and types of fields allowed in the `Tuple`.
+    *
+    * @param tupleLike The source of field mappings, where each entry maps a field name to its value.
+    * @param schema    The schema defining the structure and types of the `Tuple` to be built.
+    * @return A `Tuple` instance that matches the provided schema and contains the data from `tupleLike`.
+    */
+  private def buildTupleWithSchema(tupleLike: MapTupleLike, schema: Schema): Tuple = {
     val builder = Tuple.newBuilder(schema)
     tupleLike.fieldMappings.foreach {
       case (name, value) =>

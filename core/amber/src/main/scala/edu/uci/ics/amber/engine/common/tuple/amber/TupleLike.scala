@@ -1,12 +1,11 @@
 package edu.uci.ics.amber.engine.common.tuple.amber
 
-
-sealed trait FieldArray{
+sealed trait FieldArray {
   def fields: Array[Any]
 }
 
-sealed trait TupleLike extends FieldArray{
-  def inMemSize:Long = 0L
+sealed trait TupleLike extends FieldArray {
+  def inMemSize: Long = 0L
 }
 
 trait SchemaEnforceable
@@ -18,7 +17,7 @@ trait SeqTupleLike extends TupleLike with SchemaEnforceable
 trait MapTupleLike extends SeqTupleLike with SchemaEnforceable {
   def fieldMappings: Map[String, Any]
 
-  override def fields: Seq[Any] = fieldMappings.values.toSeq
+  override val fields: Array[Any] = fieldMappings.values.toArray
 }
 
 object TupleLike {

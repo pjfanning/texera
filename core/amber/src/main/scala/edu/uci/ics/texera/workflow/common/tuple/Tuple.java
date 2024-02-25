@@ -206,6 +206,11 @@ public class Tuple implements ITuple, Serializable {
         return new Tuple.BuilderV2(schema);
     }
 
+    @Override
+    public Object[] fields() {
+        return fields.toArray();
+    }
+
     /**
      * {@link Tuple.BuilderV2} is a helper class for creating immutable Tuple instances.
      * <p>
