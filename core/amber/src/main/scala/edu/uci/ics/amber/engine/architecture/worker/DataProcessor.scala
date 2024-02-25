@@ -7,60 +7,35 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PortComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerStateUpdatedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
-  OpExecInitInfoWithCode,
-  OpExecInitInfoWithFunc
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfoWithCode, OpExecInitInfoWithFunc}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  DPOutputIterator,
-  FinalizeOperator,
-  FinalizePort
-}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{DPOutputIterator, FinalizeOperator, FinalizePort}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, READY, RUNNING}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
-import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelMarkerPayload,
-  DataFrame,
-  DataPayload,
-  EndOfUpstream,
-  RequireAlignment,
-  WorkflowFIFOMessage
-}
+import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, DataFrame, DataPayload, EndOfUpstream, RequireAlignment, WorkflowFIFOMessage}
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
+import edu.uci.ics.amber.engine.common.tuple.amber.{FieldArray, SchemaEnforceable, SeqTupleLike, SpecialTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable
 
 object DataProcessor {
 
-  class SpecialDataTuple extends ITuple {
-    override def length: Int = 0
-
-    override def get(i: Int): Any = null
-
-    override def inMemSize: Long = 0
+  case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialTupleLike{
+    override def fields: Array[Any] = Array("FinalizePort")
   }
-  case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialDataTuple
-  case class FinalizeOperator() extends SpecialDataTuple
+  case class FinalizeOperator() extends SpecialTupleLike{
+    override def fields: Array[Any] = Array("FinalizeOperator")
+  }
 
   class DPOutputIterator extends Iterator[(TupleLike, Option[PortIdentity])] {
     val queue = new mutable.Queue[(TupleLike, Option[PortIdentity])]
@@ -84,7 +59,7 @@ object DataProcessor {
       }
     }
 
-    def appendSpecialTupleToEnd(tuple: ITuple): Unit = {
+    def appendSpecialTupleToEnd(tuple: TupleLike): Unit = {
       queue.enqueue((tuple, None))
     }
   }
@@ -123,7 +98,7 @@ class DataProcessor(
 
   var outputIterator: DPOutputIterator = new DPOutputIterator()
 
-  var inputBatch: Array[ITuple] = _
+  var inputBatch: Array[TupleLike] = _
   var currentInputIdx: Int = -1
   var currentChannelId: ChannelIdentity = _
 
@@ -159,7 +134,7 @@ class DataProcessor(
     *
     * @return an iterator of output tuples
     */
-  private[this] def processInputTuple(tuple: Either[ITuple, InputExhausted]): Unit = {
+  private[this] def processInputTuple(tuple: Either[TupleLike, InputExhausted]): Unit = {
     try {
       outputIterator.setTupleOutput(
         operator.processTuple(
@@ -217,20 +192,22 @@ class DataProcessor(
         asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
       case FinalizePort(portId, input) =>
         asyncRPCClient.send(PortCompleted(portId, input), CONTROLLER)
-      case _ =>
+      case schemaEnforceable:SchemaEnforceable =>
         statisticsManager.increaseOutputTupleCount()
         outputPortOpt match {
           case Some(port) =>
-            pushTupleToPort(outputTuple, port)
+            pushTupleToPort(schemaEnforceable, port)
           case None =>
+            // push to all output ports if not specified.
             physicalOp.outputPorts.keys.foreach(port => {
-              pushTupleToPort(outputTuple, port)
+              pushTupleToPort(schemaEnforceable, port)
             })
         }
+      case other => // skip for now
     }
   }
 
-  private def pushTupleToPort(outputTuple: TupleLike, port: PortIdentity): Unit = {
+  private def pushTupleToPort(outputTuple: SchemaEnforceable, port: PortIdentity): Unit = {
     physicalOp.getOutputLinks(port).foreach { out =>
       outputManager.passTupleToDownstream(
         outputTuple,
@@ -255,17 +232,17 @@ class DataProcessor(
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
   }
 
-  private[this] def initBatch(channelId: ChannelIdentity, batch: Array[ITuple]): Unit = {
+  private[this] def initBatch(channelId: ChannelIdentity, batch: Array[TupleLike]): Unit = {
     currentChannelId = channelId
     inputBatch = batch
     currentInputIdx = 0
   }
 
-  def getCurrentInputTuple: ITuple = {
+  def getCurrentInputTuple: FieldArray = {
     if (inputBatch == null) {
       null
     } else if (inputBatch.isEmpty) {
-      ITuple("Input Exhausted")
+      TupleLike("Input Exhausted")
     } else {
       inputBatch(currentInputIdx)
     }
@@ -369,7 +346,7 @@ class DataProcessor(
     *
     * @param iterator
     */
-  def setCurrentOutputIterator(iterator: Iterator[ITuple]): Unit = {
+  def setCurrentOutputIterator(iterator: Iterator[TupleLike]): Unit = {
     outputIterator.setTupleOutput(iterator.map(t => (t, Option.empty)))
   }
 

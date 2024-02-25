@@ -1,31 +1,50 @@
 package edu.uci.ics.amber.engine.common.tuple.amber
 
-trait TupleLike
 
-trait MapTupleLike extends TupleLike {
-  def fieldMappings: Map[String, Any]
+sealed trait FieldArray{
+  def fields: Array[Any]
 }
 
-trait SeqTupleLike extends TupleLike {
-  def fieldArray: Seq[Any]
+sealed trait TupleLike extends FieldArray{
+  def inMemSize:Long = 0L
+}
+
+trait SchemaEnforceable
+
+trait SpecialTupleLike extends TupleLike
+
+trait SeqTupleLike extends TupleLike with SchemaEnforceable
+
+trait MapTupleLike extends SeqTupleLike with SchemaEnforceable {
+  def fieldMappings: Map[String, Any]
+
+  override def fields: Seq[Any] = fieldMappings.values.toSeq
 }
 
 object TupleLike {
 
-  def apply(fields: Map[String, Any]): MapTupleLike = {
+  def apply(mappings: Map[String, Any]): MapTupleLike = {
     new MapTupleLike {
-      override def fieldMappings: Map[String, Any] = fields
+
+      override def inMemSize: Long = ???
+
+      override def fieldMappings: Map[String, Any] = mappings
     }
   }
-  def apply(fields: (String, Any)*): MapTupleLike = {
+  def apply(mappings: (String, Any)*): MapTupleLike = {
     new MapTupleLike {
-      override def fieldMappings: Map[String, Any] = fields.toMap
+      override def fieldMappings: Map[String, Any] = mappings.toMap
+
+      override def inMemSize: Long = ???
     }
   }
 
-  def apply(fields: Any*): SeqTupleLike = {
+  def apply(fieldSeq: Any*): SeqTupleLike = {
     new SeqTupleLike {
-      override def fieldArray: Seq[Any] = fields
+
+      override def inMemSize: Long = ???
+
+      override def fields: Array[Any] = fieldSeq.toArray
     }
   }
 }
