@@ -95,8 +95,6 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |            if scorer == 'Accuracy':
          |              prediction = accuracy_score(y_true, y_pred)
          |              result['Accuracy'][i]=prediction
-         |              if best_accuracy_model
-         |               # print('Accuracy', prediction)
          |            elif scorer == 'Precision Score':
          |               prediction = precision_score(y_true, y_pred, average = 'macro')
          |               result['Precision Score'][i]=prediction

@@ -22,10 +22,10 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.KernalFu
 class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal"]}""")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
   var is_loop: Boolean = false
 
-  @JsonProperty("Selected Features")
+  @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
   @JsonPropertyDescription("Features used to train the model")
   @AutofillAttributeNameList
@@ -50,7 +50,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(value = "loop_c", required = false)
   @JsonSchemaTitle("Optimise c from loop")
-  @JsonPropertyDescription("Specify which attribute indicates the value of c")
+  @JsonPropertyDescription("Specify which attribute is 'c'")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
@@ -63,7 +63,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(value = "loop_kernal", required = false)
   @JsonSchemaTitle("Optimise kernal from loop")
-  @JsonPropertyDescription("Specify which attribute indicates the value of kernal")
+  @JsonPropertyDescription("Specify which attribute is 'kernal'")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
@@ -73,6 +73,32 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_kernal: String = ""
+
+  @JsonProperty(value = "loop_gamma", required = false)
+  @JsonSchemaTitle("Optimise gamma from loop")
+  @JsonPropertyDescription("Specify which attribute is 'gamma'")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
+    )
+  )
+  @AutofillAttributeNameOnPort1
+  var loop_gamma: String = ""
+
+  @JsonProperty(value = "loop_coef", required = false)
+  @JsonSchemaTitle("Optimise coef from loop")
+  @JsonPropertyDescription("Specify which attribute is 'coef'")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
+    )
+  )
+  @AutofillAttributeNameOnPort1
+  val loop_coef: String = ""
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Kernal Function")
@@ -86,7 +112,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   var kernal: KernalFunction = KernalFunction.rbf
 
-  @JsonProperty(required = true)
+  @JsonProperty("gamma for SVC")
   @JsonSchemaTitle("gamma for SVC")
   @JsonPropertyDescription("gamma for SVC")
   @JsonSchemaInject(
@@ -101,20 +127,20 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   var gamma: String = _
 
-  @JsonProperty(required = true)
+  @JsonProperty(value="coef for SVC",required = false, defaultValue = "1")
   @JsonSchemaTitle("coef for SVC")
   @JsonPropertyDescription("coef for SVC")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmod$")
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$")
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
     )
   )
-  var coef: String = _
+  val coef: Float = Float.box(1.0f)
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
@@ -169,36 +195,36 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |    if port == 0:
          |      if not ($truthy):
-         |        c = $c
-         |        c = [c]
-         |        c = pd.DataFrame({"para":c})
-         |        c = c["para"]
-         |        kernal_list = ["$kernal"]
-         |        kernal_list = pd.DataFrame({"para":kernal_list})
-         |        kernal_list = kernal_list["para"]
+         |        c_list = pd.DataFrame({"para":[$c]})["para"]
+         |        kernal_list = pd.DataFrame({"para":["$kernal"]})["para"]
+         |        gamma_list = pd.DataFrame({"para":["$gamma"]})["para"]
+         |        coef_list = pd.DataFrame({"para":["$coef"]})["para"]
          |
          |      if ($truthy):
-         |        c = para["$loop_c"]
+         |        c_list = para["$loop_c"]
          |        kernal_list = para["$loop_kernal"]
+         |        gamma_list = para["$loop_gamma"]
+         |        coef_list = para["$loop_coef"]
          |      y_train = table["$label"]
          |      features = [$list_features]
          |      X_train = table[features]
          |      model_list = []
          |      para_list = []
-         |      for i in range(c.shape[0]):
-         |        C= c[i]
-         |        kernal  = kernal_list[i]
-         |
-         |        para_str = "kernal = '{}';C= {}".format(kernal,C)
+         |      for i in range(c_list.shape[0]):
+         |        c_value= c_list[i]
+         |        kernal_value  = kernal_list[i]
+         |        gamma_value = gamma_list[i]
+         |        coef_value = coef_list[i]
+         |        para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
          |        para_list.append(para_str)
-         |        model = SVC(kernel=kernal,C=C,probability=True)
+         |        model = SVC(kernel=kernal_value,C=c_value,gamma=gamma_value,coef0=float(coef_value),probability=True)
          |        model.fit(X_train, y_train)
          |        model_p = pickle.dumps(model)
          |        model_list.append(model_p)
          |      data = dict()
          |      data["model"]= model_list
          |      data["para"] = para_list
-         |      data["features"]= [features]*c.shape[0]
+         |      data["features"]= [features]*c_list.shape[0]
          |
          |      df = pd.DataFrame(data)
          |      yield df

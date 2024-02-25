@@ -6,7 +6,7 @@ public enum KernalFunction {
     rbf("rbf"),
     linear ("linear"),
     poly ("poly"),
-    sigmod ("sigmod");
+    sigmoid ("sigmoid");
 
     private final String name;
     KernalFunction(String name) {
