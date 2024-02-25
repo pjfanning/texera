@@ -3,13 +3,14 @@ package edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.tuple.amber.{SchemaEnforceable, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable.ArrayBuffer
 
 trait Partitioner extends Serializable {
-  def getBucketIndex(tuple: ITuple): Iterator[Int]
+  def getBucketIndex(tuple: Tuple): Iterator[Int]
 
   def allReceivers: Seq[ActorVirtualIdentity]
 }
@@ -20,9 +21,9 @@ class NetworkOutputBuffer(
     val batchSize: Int = AmberConfig.defaultBatchSize
 ) {
 
-  var buffer = new ArrayBuffer[ITuple]()
+  var buffer = new ArrayBuffer[TupleLike]()
 
-  def addTuple(tuple: ITuple): Unit = {
+  def addTuple(tuple: TupleLike): Unit = {
     buffer.append(tuple)
     if (buffer.size >= batchSize) {
       flush()
@@ -37,7 +38,7 @@ class NetworkOutputBuffer(
   def flush(): Unit = {
     if (buffer.nonEmpty) {
       dataOutputPort.sendTo(to, DataFrame(buffer.toArray))
-      buffer = new ArrayBuffer[ITuple]()
+      buffer = new ArrayBuffer[TupleLike]()
     }
   }
 
