@@ -10,7 +10,7 @@ import com.google.api.services.drive.Drive
 import com.google.api.services.drive.model.{File, FileList, Permission}
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.{Spreadsheet, SpreadsheetProperties, ValueRange}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.Utils.retry
 import edu.uci.ics.texera.web.model.websocket.request.ResultExportRequest
@@ -116,7 +116,7 @@ class ResultExportService(opResultStorage: OpResultStorage, wId: UInteger) {
   private def handleGoogleSheetRequest(
       exportCache: mutable.HashMap[String, String],
       request: ResultExportRequest,
-      results: Iterable[ITuple],
+      results: Iterable[Tuple],
       header: List[String]
   ): ResultExportResponse = {
     // create google sheet
@@ -240,12 +240,12 @@ class ResultExportService(opResultStorage: OpResultStorage, wId: UInteger) {
   private def uploadResult(
       sheetService: Sheets,
       sheetId: String,
-      result: Iterable[ITuple]
+      result: Iterable[TupleLike]
   ): Unit = {
     val content: util.List[util.List[AnyRef]] =
       Lists.newArrayListWithCapacity(UPLOAD_BATCH_ROW_COUNT)
     // use for loop to avoid copying the whole result at the same time
-    for (tuple: ITuple <- result) {
+    for (tuple: TupleLike <- result) {
 
       val tupleContent: util.List[AnyRef] =
         tuple
