@@ -34,7 +34,7 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
     )
   )
-  var y_prob: String = ""
+  var y_prob: String = "y_prob"
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(

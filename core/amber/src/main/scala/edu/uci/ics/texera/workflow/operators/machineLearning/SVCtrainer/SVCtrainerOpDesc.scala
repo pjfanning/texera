@@ -195,10 +195,10 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |    if port == 0:
          |      if not ($truthy):
-         |        c_list = pd.DataFrame({"para":[$c]})["para"]
-         |        kernal_list = pd.DataFrame({"para":["$kernal"]})["para"]
-         |        gamma_list = pd.DataFrame({"para":["$gamma"]})["para"]
-         |        coef_list = pd.DataFrame({"para":["$coef"]})["para"]
+         |        c_list = np.array([$c])
+         |        kernal_list = np.array(["$kernal"])
+         |        gamma_list = np.array([$gamma])
+         |        coef_list = np.array([$coef])
          |
          |      if ($truthy):
          |        c_list = para["$loop_c"]
