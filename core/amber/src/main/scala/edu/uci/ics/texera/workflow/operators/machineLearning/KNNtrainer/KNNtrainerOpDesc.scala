@@ -78,7 +78,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
     override def generatePythonCode(): String = {
       var truthy = "False"
       if (is_loop) truthy = "True"
-      val list_features = selectedFeatures.map(word => s""""$word"""").mkString(",")
+      val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
       val finalcode =
         s"""
            |from pytexera import *
@@ -97,6 +97,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |    model_list = []
            |    para_list = []
            |    features_list = []
+           |    features = [$list_features]
            |
            |    if port == 1:
            |      if ($truthy):
@@ -104,28 +105,27 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |
            |    if port == 0:
            |      y_train = table["$label"]
-           |      X_train = table.drop(["$label"], axis=1)
-           |
+           |      X_train = table[features]
            |      if not ($truthy):
            |        k = $k
-           |        knn = KNeighborsClassifier(n_neighbors=k,probability=True)
+           |        knn = KNeighborsClassifier(n_neighbors=k)
            |        knn.fit(X_train, y_train)
            |        para_str = "K = '{}'".format(k)
            |        model_str = pickle.dumps(knn)
            |        model_list.append(model_str)
            |        para_list.append(para_str)
-           |        features_list.append([$list_features])
+           |        features_list.append(features)
            |
            |      if ($truthy):
-           |        k = param["$loop_k"][0]
-           |        for i in range(0, k):
-           |          knn = KNeighborsClassifier(n_neighbors=i+1,probability=True)
+           |        k = param["$loop_k"].values
+           |        for i in k:
+           |          knn = KNeighborsClassifier(n_neighbors=i+1)
            |          knn.fit(X_train, y_train)
            |          para_str = "K = '{}'".format(i+1)
            |          model_str = pickle.dumps(knn)
            |          model_list.append(model_str)
            |          para_list.append(para_str)
-           |          features_list.append([$list_features])
+           |          features_list.append(features)
            |
            |      data = dict({})
            |      data["model"]= model_list
