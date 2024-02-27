@@ -323,16 +323,34 @@
           <span> {{ runButtonText }} </span>
         </button>
         <button
-          *ngIf="userSystemEnabled"
-          (click)="handleInteraction()"
-          title="add interaction"
-          [disabled]="!userSystemEnabled || executionState !== ExecutionState.Paused"
-          id="interaction-button"
+          (click)="handleInteraction(1)"
+          title="ECM"
+          id="interaction-button1"
           nz-button
           nzType="primary">
           <i
             nz-icon
             nzType="audit"></i>
+        </button>
+        <button
+                (click)="handleInteraction(2)"
+                title="Hybrid"
+                id="interaction-button2"
+                nz-button
+                nzType="primary">
+          <i
+                  nz-icon
+                  nzType="audit"></i>
+        </button>
+        <button
+                (click)="handleInteraction(3)"
+                title="inflight message"
+                id="interaction-button3"
+                nz-button
+                nzType="primary">
+          <i
+                  nz-icon
+                  nzType="audit"></i>
         </button>
         <ng-template #execution_name>
           <input

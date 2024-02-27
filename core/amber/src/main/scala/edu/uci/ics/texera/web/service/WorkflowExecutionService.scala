@@ -87,6 +87,7 @@ class WorkflowExecutionService(
       new ExecutionReconfigurationService(client, executionStateStore, workflow)
     executionStatsService = new ExecutionStatsService(client, executionStateStore, workflowContext)
     executionRuntimeService = new ExecutionRuntimeService(
+      workflow.physicalPlan,
       client,
       executionStateStore,
       wsInput,

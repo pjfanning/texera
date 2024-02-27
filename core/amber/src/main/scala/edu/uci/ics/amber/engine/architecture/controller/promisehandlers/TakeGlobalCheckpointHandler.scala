@@ -45,7 +45,7 @@ trait TakeGlobalCheckpointHandler {
       Future
         .collect(ret.map {
           case (workerId, _) =>
-            send(FinalizeCheckpoint(msg.checkpointId, uri), workerId)
+            send(FinalizeCheckpoint(msg.checkpointId, uri, msg.estimationOnly), workerId)
               .onSuccess { size =>
                 totalSize += size
               }

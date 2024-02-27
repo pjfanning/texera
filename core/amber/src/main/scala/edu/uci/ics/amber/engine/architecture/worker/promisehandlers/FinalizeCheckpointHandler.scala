@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture
 import scala.collection.mutable.ArrayBuffer
 
 object FinalizeCheckpointHandler {
-  final case class FinalizeCheckpoint(checkpointId: ChannelMarkerIdentity, writeTo: URI)
+  final case class FinalizeCheckpoint(checkpointId: ChannelMarkerIdentity, writeTo: URI, estimation:Boolean)
       extends ControlCommand[Long]
 }
 
@@ -24,7 +24,7 @@ trait FinalizeCheckpointHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
   registerHandler { (msg: FinalizeCheckpoint, sender) =>
-    if (dp.channelMarkerManager.checkpoints.contains(msg.checkpointId)) {
+    if (!msg.estimation) {
       val waitFuture = new CompletableFuture[Unit]()
       val chkpt = dp.channelMarkerManager.checkpoints(msg.checkpointId)
       val closure = (worker: WorkflowWorker) => {
@@ -53,11 +53,27 @@ trait FinalizeCheckpointHandler {
       chkpt.size()
     } else {
       logger.info(s"Checkpoint is estimation-only. report estimated size.")
-      dp.operator match {
-        case support: CheckpointSupport =>
-          support.getEstimatedCheckpointCost
-        case _ => 0L
-      } // for estimation
+      val chkpt = dp.channelMarkerManager.checkpoints(msg.checkpointId)
+      val waitFuture = new CompletableFuture[Unit]()
+      val closure = (worker: WorkflowWorker) => {
+        logger.info(s"Main thread: start to serialize recorded messages.")
+        chkpt.save(
+          SerializedState.IN_FLIGHT_MSG_KEY,
+          worker.recordedInputs.getOrElse(msg.checkpointId, new ArrayBuffer())
+        )
+        worker.recordedInputs.remove(msg.checkpointId)
+        logger.info(s"Main thread: recorded messages serialized.")
+        waitFuture.complete(())
+        ()
+      }
+      // TODO: find a way to skip logging for the following output?
+      dp.outputHandler(
+        Left(MainThreadDelegateMessage(closure))
+      ) //this will create duplicate log records!
+      waitFuture.get()
+      val ret = chkpt.size()
+      dp.channelMarkerManager.checkpoints.remove(msg.checkpointId)
+      ret
     }
   }
 }

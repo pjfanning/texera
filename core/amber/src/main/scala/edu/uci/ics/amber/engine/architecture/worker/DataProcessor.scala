@@ -324,10 +324,14 @@ class DataProcessor(
     }
     if (channelMarkerManager.isMarkerAligned(channelId, marker)) {
       logManager.markAsReplayDestination(markerId)
+      // unblock input channels
+      if (marker.markerType == RequireAlignment) {
+        pauseManager.resume(EpochMarkerPause(markerId))
+      }
       // invoke the control command carried with the epoch marker
       logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")
       if (command.isDefined) {
-        asyncRPCServer.receive(command.get, channelId.fromWorkerId)
+        asyncRPCServer.receive(command.get, CONTROLLER)
       }
       // if this operator is not the final destination of the marker, pass it downstream
       val downstreamChannelsInScope = marker.scope.filter(_.fromWorkerId == actorId)
@@ -341,10 +345,6 @@ class DataProcessor(
             outputGateway.sendTo(activeChannelId, marker)
           }
         }
-      }
-      // unblock input channels
-      if (marker.markerType == RequireAlignment) {
-        pauseManager.resume(EpochMarkerPause(markerId))
       }
     }
   }

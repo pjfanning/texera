@@ -29,7 +29,34 @@ trait PrepareCheckpointHandler {
         serializeWorkerState(msg.checkpointId)
       }
     } else {
-      logger.info(s"Checkpoint is estimation-only. do nothing.")
+      logger.info(s"Checkpoint is estimation-only.")
+      val waitFuture = new CompletableFuture[Unit]()
+      val closure = (worker: WorkflowWorker) => {
+        val chkpt = new CheckpointState()
+        // 1. serialize DP state
+        chkpt.save(SerializedState.DP_STATE_KEY, this.dp)
+        // checkpoint itself should not be serialized, thus we register it after serialization
+        dp.channelMarkerManager.checkpoints(msg.checkpointId) = chkpt
+        val queuedMsgs = mutable.ArrayBuffer[WorkflowFIFOMessage]()
+        worker.inputQueue.forEach {
+          case WorkflowWorker.FIFOMessageElement(msg) => queuedMsgs.append(msg)
+          case WorkflowWorker.TimerBasedControlElement(control) => // skip
+          case WorkflowWorker.ActorCommandElement(cmd) => // skip
+        }
+        chkpt.save(SerializedState.DP_QUEUED_MSG_KEY, queuedMsgs)
+        // get all output messages from worker.transferService
+        chkpt.save(
+          SerializedState.OUTPUT_MSG_KEY,
+          worker.transferService.getAllUnAckedMessages.toArray
+        )
+        // start to record input messages on main thread
+        worker.recordedInputs(msg.checkpointId) = new mutable.ArrayBuffer[WorkflowFIFOMessage]()
+        logger.info("Main thread: start recording for input messages from now on.")
+        waitFuture.complete(())
+        ()
+      }
+      dp.outputHandler(Left(MainThreadDelegateMessage(closure)))
+      waitFuture.get()
     }
   }
 

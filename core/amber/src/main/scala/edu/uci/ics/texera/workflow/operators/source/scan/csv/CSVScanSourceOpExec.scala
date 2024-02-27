@@ -28,6 +28,7 @@ class CSVScanSourceOpExec private[csv] (val desc: CSVScanSourceOpDesc)
       }
 
       override def next(): Array[String] = {
+        Thread.sleep(30)
         val ret = nextRow
         nextRow = null
         ret
