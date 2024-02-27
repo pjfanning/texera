@@ -6,23 +6,23 @@ import com.google.common.base.Preconditions.checkNotNull
 import scala.collection.mutable
 
 case class Schema @JsonCreator() (
-    @JsonProperty(value = "attributes", required = true) attributes: List[Attribute]
+    @JsonProperty(value = "attributes", required = true) attributes: List[Attribute[_]]
 ) extends Serializable {
 
   require(attributes != null, "Attributes cannot be null")
 
   val attributeIndex: Map[String, Int] =
-    attributes.view.map(_.getName.toLowerCase).zipWithIndex.toMap
+    attributes.view.map(_.attributeName.toLowerCase).zipWithIndex.toMap
 
-  def this(attrs: Attribute*) = {
+  def this(attrs: Attribute[_]*) = {
     this(attrs.toList)
   }
 
   @JsonProperty(value = "attributes")
-  def getAttributes: List[Attribute] = attributes
+  def getAttributes: List[Attribute[_]] = attributes
 
   @JsonIgnore
-  def getAttributeNames: List[String] = attributes.map(_.getName)
+  def getAttributeNames: List[String] = attributes.map(_.attributeName)
 
   def getIndex(attributeName: String): Int = {
     if (!containsAttribute(attributeName)) {
@@ -31,7 +31,7 @@ case class Schema @JsonCreator() (
     attributeIndex(attributeName.toLowerCase)
   }
 
-  def getAttribute(attributeName: String): Attribute = attributes(getIndex(attributeName))
+  def getAttribute(attributeName: String): Attribute[_] = attributes(getIndex(attributeName))
 
   @JsonIgnore
   def containsAttribute(attributeName: String): Boolean =
@@ -63,28 +63,28 @@ case class Schema @JsonCreator() (
 object Schema {
   def builder(): Builder = Builder()
 
-  case class Builder(private var attributes: List[Attribute] = List.empty) {
+  case class Builder(private var attributes: List[Attribute[_]] = List.empty) {
     private val attributeNames: mutable.Set[String] = mutable.Set.empty
 
-    def add(attribute: Attribute): Builder = {
+    def add(attribute: Attribute[_]): Builder = {
       require(attribute != null, "Attribute cannot be null")
-      checkAttributeNotExists(attribute.getName)
+      checkAttributeNotExists(attribute.attributeName)
       attributes ::= attribute
-      attributeNames += attribute.getName.toLowerCase
+      attributeNames += attribute.attributeName.toLowerCase
       this
     }
 
-    def add(attributeName: String, attributeType: AttributeType): Builder = {
-      add(new Attribute(attributeName, attributeType))
+    def add[T](attributeName: String): Builder = {
+      add(Attribute(attributeName))
       this
     }
 
-    def add(attributes: Iterable[Attribute]): Builder = {
+    def add(attributes: Iterable[Attribute[_]]): Builder = {
       attributes.foreach(add)
       this
     }
 
-    def add(attributes: Attribute*): Builder = {
+    def add(attributes: Attribute[_]*): Builder = {
       attributes.foreach(add)
       this
     }
@@ -105,7 +105,7 @@ object Schema {
       */
     def removeIfExists(attribute: String): Builder = {
       checkNotNull(attribute)
-      attributes = attributes.filter((attr: Attribute) => !attr.getName.equalsIgnoreCase(attribute))
+      attributes = attributes.filter((attr: Attribute[_]) => !attr.attributeName.equalsIgnoreCase(attribute))
       attributeNames.remove(attribute.toLowerCase)
       this
     }

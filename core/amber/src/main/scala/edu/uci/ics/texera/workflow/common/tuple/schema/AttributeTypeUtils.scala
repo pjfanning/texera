@@ -18,28 +18,21 @@ object AttributeTypeUtils extends Serializable {
     * we need this loop to keep the order the same as the original
     * @param schema schema of data
     * @param attribute selected attribute
-    * @param resultType casting type
     * @return schema of data
     */
   def SchemaCasting(
       schema: Schema,
-      attribute: String,
-      resultType: AttributeType
+      attribute: Attribute[_]
   ): Schema = {
     // need a builder to maintain the order of original schema
     val builder = Schema.builder()
-    val attributes: List[Attribute] = schema.getAttributes
+    val attributes: List[Attribute[_]] = schema.getAttributes
     // change the schema when meet selected attribute else remain the same
     for (i <- attributes.indices) {
-      if (attributes.apply(i).getName.equals(attribute)) {
-        resultType match {
-          case STRING | INTEGER | DOUBLE | LONG | BOOLEAN | TIMESTAMP | BINARY =>
-            builder.add(attribute, resultType)
-          case ANY | _ =>
-            builder.add(attribute, attributes.apply(i).getType)
-        }
+      if (attributes(i).attributeName.equals(attribute.attributeName)) {
+        builder.add(attribute)
       } else {
-        builder.add(attributes.apply(i).getName, attributes.apply(i).getType)
+        builder.add(attributes(i))
       }
     }
     builder.build()
@@ -65,7 +58,7 @@ object AttributeTypeUtils extends Serializable {
     TupleLike(
       tuple.getSchema.getAttributes.map { attr =>
         val targetType = typeCastingUnits
-          .find(_.attribute == attr.getName)
+          .find(_.attribute == attr.attributeName)
           .map(_.resultType)
           .getOrElse(attr.getType)
 

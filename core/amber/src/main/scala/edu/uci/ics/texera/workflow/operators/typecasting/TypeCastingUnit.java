@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName;
-import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 
 @JsonSchemaInject(json = 
 "{" +
