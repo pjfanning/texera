@@ -13,7 +13,7 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
   @JsonSchemaTitle("Actual Value")
   @JsonPropertyDescription("Specify the label column")
   @AutofillAttributeName
-  var actualValue: String = ""
+  var actualValueColumn: String = ""
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Predicted Value")
@@ -34,8 +34,11 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
         InputPort(
         PortIdentity(0),
         displayName = "GroundTruth",
-      ),
-        InputPort(PortIdentity(1), displayName = "PredictValue")),
+        ),
+        InputPort(
+          PortIdentity(1),
+          displayName = "PredictValue",
+          dependencies = List(PortIdentity(0)))),
       outputPorts = List(OutputPort())
     )
 
@@ -48,7 +51,6 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |from sklearn.metrics import accuracy_score
          |from sklearn.metrics import precision_score
          |from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-         |import matplotlib.pyplot as plt
          |import plotly.express as px
          |import plotly.graph_objects as go
          |import plotly.io
@@ -83,42 +85,57 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |        y_true = table["$actualValue"]
-         |        print(y_true)
-         |        y_p_list = table["$predictValue"][0]
-         |        print(y_p_list)
-         |        para = table["para"][0]
-         |        model = table["model"][0]
+         |        global groundTruthTable
+         |        global predictValueTable
          |
-         |        scorerList = [${getSelectedScorers()}]
-         |        result = dict()
-         |        for scorer in scorerList:
-         |          result[scorer] = [None]*len(y_p_list)
+         |        if port == 0:
+         |            groundTruthTable = table
+         |            print(groundTruthTable.columns)
          |
-         |        for i in range(len(y_p_list)):
-         |          for scorer in scorerList:
-         |            y_pred = y_p_list[i]
-         |            prediction = None
-         |            if scorer == 'Accuracy':
-         |              prediction = accuracy_score(y_true, y_pred)
-         |              result['Accuracy'][i]=prediction
-         |            elif scorer == 'Precision Score':
-         |               prediction = precision_score(y_true, y_pred, average = 'macro')
-         |               result['Precision Score'][i]=prediction
-         |            elif scorer == 'Confusion Matrix':
-         |               column_set = set(y_true)
-         |               labels = list(column_set)
-         |               prediction = confusion_matrix(y_true, y_pred, labels = labels)
-         |               prediction_json = json.dumps(prediction.tolist(), indent = 4)
-         |               result['Confusion Matrix'][i]=prediction_json
+         |        if port == 1:
+         |            predictValueTable = table
+         |            print(predictValueTable.columns)
          |
-         |               html = drawConfusionMatrixImage(prediction,labels)
-         |               result['Best Confusion Matrix Chart']=html
+         |            if 'y_prob' in predictValueTable.columns:
+         |              print("'y_prob' in predictValueTable.columns")
+         |            else:
+         |              print("'y_prob' not in predictValueTable.columns")
          |
-         |        result["model"] = model
-         |        result["para"] = para
-         |        df = pd.DataFrame(result)
-         |        yield df
+         |            optimizationTimes = len(predictValueTable['model'])
+         |            y_true = groundTruthTable['$actualValueColumn']
+         |
+         |            scorerList = [${getSelectedScorers()}]
+         |            result = dict()
+         |
+         |            for scorer in scorerList:
+         |              result[ scorer ] = [ None ] * optimizationTimes
+         |
+         |            for i in range (optimizationTimes):
+         |              for scorer in scorerList:
+         |                y_pred = predictValueTable['$predictValue'][i] # list of predicted values by model i
+
+         |                prediction = None
+         |                if scorer == 'Accuracy':
+         |                  prediction = accuracy_score(y_true, y_pred)
+         |                  result['Accuracy'][i]=prediction
+         |                elif scorer == 'Precision Score':
+         |                  prediction = precision_score(y_true, y_pred, average = 'macro')
+         |                  result['Precision Score'][i]=prediction
+         |                elif scorer == 'Confusion Matrix':
+         |                  column_set = set(y_true)
+         |                  labels = list(column_set)
+         |                  prediction = confusion_matrix(y_true, y_pred, labels = labels)
+         |                  prediction_json = json.dumps(prediction.tolist(), indent = 4)
+         |                  result['Confusion Matrix'][i] = prediction_json
+         |
+         |                  html = drawConfusionMatrixImage(prediction,labels)
+         |                  result['Best Confusion Matrix Chart'] = html
+         |
+         |            result['model'] = predictValueTable['model'].tolist()
+         |            result['para'] = predictValueTable['para'].tolist()
+         |
+         |            df = pd.DataFrame(result)
+         |            yield df
          |
          |""".stripMargin
     finalcode
