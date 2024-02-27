@@ -101,9 +101,9 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
          |            y_proba = model.predict_proba(x_test)
          |            y_prob.append(y_proba)
          |      result = dict()
-         |      result['y_pred'] = y_pred
+         |      result['$y_pred'] = y_pred
          |      if $flag_prob:
-         |        result['y_prob'] = y_prob
+         |        result['$y_prob'] = y_prob
          |      res  = pd.DataFrame(result)
          |      res["model"] = s["model"]
          |      res["para"] =  s["para"]
