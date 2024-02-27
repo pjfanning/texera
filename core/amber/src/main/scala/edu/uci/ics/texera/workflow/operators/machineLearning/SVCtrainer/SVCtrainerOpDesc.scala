@@ -36,9 +36,9 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeName
   var label: String = ""
 
-  @JsonProperty(required = true, defaultValue = "1")
+  @JsonProperty(required = false, defaultValue = "1")
   @JsonSchemaTitle("Custom C")
-  @JsonPropertyDescription("Specify the number of nearest neighbours")
+  @JsonPropertyDescription("Specify the value of 'c'")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
@@ -100,7 +100,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   val loop_coef: String = ""
 
-  @JsonProperty(required = true)
+  @JsonProperty(value = "Kernal Function", required = false,defaultValue ="linear")
   @JsonSchemaTitle("Kernal Function")
   @JsonPropertyDescription("multiple kernal functions")
   @JsonSchemaInject(
@@ -110,9 +110,9 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
     )
   )
-  var kernal: KernalFunction = KernalFunction.rbf
+  var kernal: KernalFunction = KernalFunction.linear
 
-  @JsonProperty("gamma for SVC")
+  @JsonProperty(value = "gamma for SVC")
   @JsonSchemaTitle("gamma for SVC")
   @JsonPropertyDescription("gamma for SVC")
   @JsonSchemaInject(
@@ -188,7 +188,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |    global para
          |
          |    if port == 1:
-         |      print("port0")
          |      print(table)
          |      if ($truthy):
          |        para = table
@@ -197,8 +196,11 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      if not ($truthy):
          |        c_list = np.array([$c])
          |        kernal_list = np.array(["$kernal"])
-         |        gamma_list = np.array([$gamma])
-         |        coef_list = np.array([$coef])
+         |        kernal_type = "$kernal"
+         |        if kernal_type in ['poly', 'rbf', 'sigmoid']:
+         |          gamma_list = np.array([$gamma])
+         |        if kernal_type in ['poly', 'rbf']:
+         |          coef_list = np.array([$coef])
          |
          |      if ($truthy):
          |        c_list = para["$loop_c"]
@@ -213,14 +215,23 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      for i in range(c_list.shape[0]):
          |        c_value= c_list[i]
          |        kernal_value  = kernal_list[i]
-         |        gamma_value = gamma_list[i]
-         |        coef_value = coef_list[i]
-         |        para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
-         |        para_list.append(para_str)
-         |        model = SVC(kernel=kernal_value,C=c_value,gamma=gamma_value,coef0=float(coef_value),probability=True)
+         |        if kernal_value in ['poly', 'rbf']:
+         |          gamma_value = gamma_list[i]
+         |          coef_value = coef_list[i]
+         |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
+         |        elif kernal_value in ['sigmoid']:
+         |          gamma_value = gamma_list[i]
+         |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
+         |        elif kernal_value in ['linear']:
+         |          para_str = "kernal_value = '{}';c_value= {}".format(kernal_value,c_value)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),probability=True)
          |        model.fit(X_train, y_train)
          |        model_p = pickle.dumps(model)
          |        model_list.append(model_p)
+         |        para_list.append(para_str)
+         |
          |      data = dict()
          |      data["model"]= model_list
          |      data["para"] = para_list
