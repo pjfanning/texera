@@ -72,7 +72,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   var loop_kernal: String = ""
 
-  @JsonProperty(value = "loop_kernal", required = false)
   @JsonProperty(value = "loop_gamma", required = false)
   @JsonSchemaTitle("Optimise gamma from loop")
   @JsonPropertyDescription("Specify which attribute is 'gamma'")
