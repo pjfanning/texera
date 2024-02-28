@@ -226,6 +226,39 @@ class TableOperator(TupleOperatorV2):
         yield
 
 
+class IterationTableOperator(TupleOperatorV2):
+    """
+    Base class for table-oriented operators. A concrete implementation must
+    be provided upon using.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.__internal_is_source: bool = False
+        self.__table_data: Mapping[int, Mapping[int, List[Tuple]]] = defaultdict(lambda: defaultdict(list))
+
+    @overrides.final
+    def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
+        self.__table_data[port][tuple_["Iteration"]].append(tuple_)
+        yield
+
+    def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
+        for table in self.__table_data[port].values():
+            yield from self.process_table(Table(table), port)
+
+    @abstractmethod
+    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
+        """
+        Process an input Table from the given link. The Table is represented as a
+        pandas.DataFrame.
+
+        :param table: Table, a table to be processed.
+        :param port: int, input port index of the current Tuple.
+        :return: Iterator[Optional[TableLike]], producing one TableLike object at a
+            time, or None.
+        """
+        yield
+
 @deprecated(reason="Use TupleOperatorV2 instead")
 class TupleOperator(Operator):
     """
