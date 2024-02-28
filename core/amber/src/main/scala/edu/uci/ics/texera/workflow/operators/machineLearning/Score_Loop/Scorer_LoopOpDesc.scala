@@ -119,6 +119,10 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |            predictValueTable = table
          |            print(predictValueTable.columns)
          |
+         |            bestAccuracy = 0
+         |            bestPredict = None
+         |            bestLabels = None
+         |
          |            if 'y_prob' in predictValueTable.columns:
          |              print("'y_prob' in predictValueTable.columns")
          |            else:
@@ -157,8 +161,14 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |                  prediction_json = json.dumps(prediction.tolist(), indent = 4)
          |                  result['Confusion Matrix'][i] = prediction_json
          |
-         |                  html = drawConfusionMatrixImage(prediction,labels)
-         |                  result['Best Confusion Matrix Chart'] = html
+         |                  prediction_accuracy = accuracy_score(y_true, y_pred)
+         |                  if bestAccuracy < prediction_accuracy:
+         |                    bestAccuracy = prediction_accuracy
+         |                    bestPredict = prediction
+         |                    bestLabels = labels
+         |
+         |            html = drawConfusionMatrixImage(bestPredict, bestLabels)
+         |            result['Best Confusion Matrix Chart'] = html
          |
          |            result['model'] = predictValueTable['model'].tolist()
          |            result['para'] = predictValueTable['para'].tolist()
