@@ -1,5 +1,4 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer
-
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{
   JsonSchemaBool,
@@ -18,19 +17,16 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.KernalFunction
-
 class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
   var is_loop: Boolean = false
-
   @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
   @JsonPropertyDescription("Features used to train the model")
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
-
   @JsonProperty(required = true)
   @JsonSchemaTitle("label Column")
   @AutofillAttributeName
@@ -47,7 +43,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     )
   )
   val c: Float = Float.box(1.0f)
-
   @JsonProperty(value = "loop_c", required = false)
   @JsonSchemaTitle("Optimise c from loop")
   @JsonPropertyDescription("Specify which attribute is 'c'")
@@ -60,7 +55,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_c: String = ""
-
   @JsonProperty(value = "loop_kernal", required = false)
   @JsonSchemaTitle("Optimise kernal from loop")
   @JsonPropertyDescription("Specify which attribute is 'kernal'")
@@ -73,7 +67,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_kernal: String = ""
-
   @JsonProperty(value = "loop_gamma", required = false)
   @JsonSchemaTitle("Optimise gamma from loop")
   @JsonPropertyDescription("Specify which attribute is 'gamma'")
@@ -86,7 +79,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_gamma: String = ""
-
   @JsonProperty(value = "loop_coef", required = false)
   @JsonSchemaTitle("Optimise coef from loop")
   @JsonPropertyDescription("Specify which attribute is 'coef'")
@@ -126,7 +118,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     )
   )
   var gamma: String = _
-
   @JsonProperty(value="coef for SVC",required = false, defaultValue = "1")
   @JsonSchemaTitle("coef for SVC")
   @JsonPropertyDescription("coef for SVC")
@@ -134,21 +125,19 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$")
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf")
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
     )
   )
   val coef: Float = Float.box(1.0f)
-
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
   }
-
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "SVCTrainer",
@@ -165,7 +154,6 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
       ),
       outputPorts = List(OutputPort())
     )
-
   override def generatePythonCode(): String = {
     var truthy = "False"
     if (is_loop) truthy = "True"
@@ -215,15 +203,19 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      for i in range(c_list.shape[0]):
          |        c_value= c_list[i]
          |        kernal_value  = kernal_list[i]
-         |        if kernal_value in ['poly', 'rbf']:
+         |        if kernal_value in ['poly']:
          |          gamma_value = gamma_list[i]
          |          coef_value = coef_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
+         |        elif kernal_value in ['rbf']:
+         |          coef_value = coef_list[i]
+         |          para_str = "kernal_value = '{}';c_value= {};coef0=float(coef_value)".format(kernal_value,c_value,gamma_value)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),coef0=float(coef_value),probability=True)
          |        elif kernal_value in ['sigmoid']:
          |          gamma_value = gamma_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
-         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,probability=True)
          |        elif kernal_value in ['linear']:
          |          para_str = "kernal_value = '{}';c_value= {}".format(kernal_value,c_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),probability=True)
@@ -244,5 +236,4 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |""".stripMargin
     finalcode
   }
-
 }
