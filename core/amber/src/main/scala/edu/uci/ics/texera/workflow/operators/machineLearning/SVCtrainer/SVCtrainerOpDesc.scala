@@ -22,11 +22,13 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
   var is_loop: Boolean = false
+
   @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
   @JsonPropertyDescription("Features used to train the model")
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
+
   @JsonProperty(required = true)
   @JsonSchemaTitle("label Column")
   @AutofillAttributeName
@@ -43,6 +45,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     )
   )
   val c: Float = Float.box(1.0f)
+
   @JsonProperty(value = "loop_c", required = false)
   @JsonSchemaTitle("Optimise c from loop")
   @JsonPropertyDescription("Specify which attribute is 'c'")
@@ -54,6 +57,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     )
   )
   @AutofillAttributeNameOnPort1
+
   var loop_c: String = ""
   @JsonProperty(value = "loop_kernal", required = false)
   @JsonSchemaTitle("Optimise kernal from loop")
@@ -67,6 +71,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_kernal: String = ""
+
   @JsonProperty(value = "loop_gamma", required = false)
   @JsonSchemaTitle("Optimise gamma from loop")
   @JsonPropertyDescription("Specify which attribute is 'gamma'")
@@ -79,6 +84,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   )
   @AutofillAttributeNameOnPort1
   var loop_gamma: String = ""
+
   @JsonProperty(value = "loop_coef", required = false)
   @JsonSchemaTitle("Optimise coef from loop")
   @JsonPropertyDescription("Specify which attribute is 'coef'")
