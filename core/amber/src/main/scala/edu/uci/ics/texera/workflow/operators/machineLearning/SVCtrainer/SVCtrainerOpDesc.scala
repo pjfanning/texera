@@ -98,7 +98,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   val loop_coef: String = ""
 
-  @JsonProperty(value = "Kernal Function", required = false,defaultValue ="linear")
+  @JsonProperty(required = false)
   @JsonSchemaTitle("Kernal Function")
   @JsonPropertyDescription("multiple kernal functions")
   @JsonSchemaInject(
@@ -124,6 +124,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     )
   )
   var gamma: String = _
+
   @JsonProperty(value="coef for SVC",required = false, defaultValue = "1")
   @JsonSchemaTitle("coef for SVC")
   @JsonPropertyDescription("coef for SVC")
@@ -131,13 +132,14 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf")
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf$")
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
     )
   )
   val coef: Float = Float.box(1.0f)
+
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
@@ -216,7 +218,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
          |        elif kernal_value in ['rbf']:
          |          coef_value = coef_list[i]
-         |          para_str = "kernal_value = '{}';c_value= {};coef0=float(coef_value)".format(kernal_value,c_value,gamma_value)
+         |          para_str = "kernal_value = '{}';c_value= {};coef_value= {}".format(kernal_value,c_value,coef_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),coef0=float(coef_value),probability=True)
          |        elif kernal_value in ['sigmoid']:
          |          gamma_value = gamma_list[i]
