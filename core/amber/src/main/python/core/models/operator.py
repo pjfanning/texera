@@ -45,7 +45,7 @@ class Operator(ABC):
     @output_schema.setter
     @overrides.final
     def output_schema(
-        self, raw_output_schema: Union[Schema, Mapping[str, str]]
+            self, raw_output_schema: Union[Schema, Mapping[str, str]]
     ) -> None:
         self.__internal_output_schema = (
             raw_output_schema
@@ -147,8 +147,8 @@ class BatchOperator(TupleOperatorV2):
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
         self.__batch_data[port].append(tuple_)
         if (
-            self.BATCH_SIZE is not None
-            and len(self.__batch_data[port]) >= self.BATCH_SIZE
+                self.BATCH_SIZE is not None
+                and len(self.__batch_data[port]) >= self.BATCH_SIZE
         ):
             yield from self._process_batch(port)
 
@@ -234,39 +234,6 @@ class TableOperator(TupleOperatorV2):
         yield
 
 
-class IterationTableOperator(TupleOperatorV2):
-    """
-    Base class for table-oriented operators. A concrete implementation must
-    be provided upon using.
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.__internal_is_source: bool = False
-
-
-    @overrides.final
-    def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
-
-        yield
-
-    def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
-        for table in self.__table_data[port].values():
-            yield from self.process_table(Table(table), port)
-
-    @abstractmethod
-    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-        """
-        Process an input Table from the given link. The Table is represented as a
-        pandas.DataFrame.
-
-        :param table: Table, a table to be processed.
-        :param port: int, input port index of the current Tuple.
-        :return: Iterator[Optional[TableLike]], producing one TableLike object at a
-            time, or None.
-        """
-        yield
-
 @deprecated(reason="Use TupleOperatorV2 instead")
 class TupleOperator(Operator):
     """
@@ -276,7 +243,7 @@ class TupleOperator(Operator):
 
     @abstractmethod
     def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
+            self, tuple_: Union[Tuple, InputExhausted], input_: int
     ) -> Iterator[Optional[TupleLike]]:
         """
         Process an input Tuple from the given link.

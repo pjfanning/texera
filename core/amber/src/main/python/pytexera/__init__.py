@@ -7,7 +7,6 @@ from .udf.udf_operator import (
     UDFOperator,
     UDFOperatorV2,
     UDFTableOperator,
-    UDFIterationTableOperator,
     UDFBatchOperator,
     UDFSourceOperator,
 )
@@ -23,7 +22,6 @@ __all__ = [
     "Batch",
     "BatchLike",
     "UDFTableOperator",
-    "UDFIterationTableOperator",
     "UDFBatchOperator",
     "UDFSourceOperator",
     # export external tools to be used
