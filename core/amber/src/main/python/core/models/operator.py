@@ -202,15 +202,23 @@ class TableOperator(TupleOperatorV2):
         super().__init__()
         self.__internal_is_source: bool = False
         self.__table_data: Mapping[int, List[Tuple]] = defaultdict(list)
+        self.__it_table_data: Mapping[int, Mapping[int, List[Tuple]]] = defaultdict(lambda: defaultdict(list))
+        self.__internal_is_it: bool = False
 
     @overrides.final
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
+        if "Iteration" in tuple_:
+            self.__internal_is_it = True
+            self.__it_table_data[port][tuple_["Iteration"]].append(tuple_)
         self.__table_data[port].append(tuple_)
         yield
 
     def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
-        table = Table(self.__table_data[port])
-        yield from self.process_table(table, port)
+        if self.__internal_is_it:
+            for table in self.__it_table_data[port].values():
+                yield from self.process_table(Table(table), port)
+        else:
+            yield from self.process_table(Table(self.__table_data[port]), port)
 
     @abstractmethod
     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
@@ -235,11 +243,11 @@ class IterationTableOperator(TupleOperatorV2):
     def __init__(self):
         super().__init__()
         self.__internal_is_source: bool = False
-        self.__table_data: Mapping[int, Mapping[int, List[Tuple]]] = defaultdict(lambda: defaultdict(list))
+
 
     @overrides.final
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
-        self.__table_data[port][tuple_["Iteration"]].append(tuple_)
+
         yield
 
     def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
