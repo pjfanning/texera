@@ -18,7 +18,7 @@ class LoopEndOpDesc extends LogicalOp {
         workflowId,
         executionId,
         operatorIdentifier,
-        OpExecInitInfo((_, _, _) => new LoopEndOpExec())
+        OpExecInitInfo((_, _, operatorConfig) => new LoopEndOpExec(operatorConfig.workerConfigs.head.workerId))
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
       .withOutputPorts(operatorInfo.outputPorts, outputPortToSchemaMapping)

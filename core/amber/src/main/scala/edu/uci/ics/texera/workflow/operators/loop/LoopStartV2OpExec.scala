@@ -46,7 +46,6 @@ class LoopStartV2OpExec(
             Iterator.empty
         }
       case Right(_) => Iterator.empty
-      //Iterator((EndOfIteration(workerId), None))
     }
   }
 

@@ -16,10 +16,11 @@ import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.messaginglayer.{OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  EndOfIteration,
   DPOutputIterator,
+  EndOfIteration,
   FinalizeOperator,
-  FinalizePort
+  FinalizePort,
+  StartOfIteration
 }
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
@@ -65,7 +66,10 @@ object DataProcessor {
   }
   case class FinalizePort(portId: PortIdentity, input: Boolean) extends SpecialDataTuple
   case class FinalizeOperator() extends SpecialDataTuple
-  case class EndOfIteration(workerId: ActorVirtualIdentity) extends SpecialDataTuple
+
+  case class StartOfIteration(workerId: ActorVirtualIdentity) extends SpecialDataTuple
+  case class EndOfIteration(startWorkerId: ActorVirtualIdentity, endWorkerId: ActorVirtualIdentity)
+      extends SpecialDataTuple
 
   class DPOutputIterator extends Iterator[(ITuple, Option[PortIdentity])] {
     val queue = new mutable.Queue[(ITuple, Option[PortIdentity])]
@@ -152,9 +156,9 @@ class DataProcessor(
   }
 
   /** provide API for actor to get stats of this operator
-   *
-   * @return (input tuple count, output tuple count)
-   */
+    *
+    * @return (input tuple count, output tuple count)
+    */
 
   def collectStatistics(): WorkerStatistics =
     statisticsManager.getStatistics(stateManager.getCurrentState, operator)
@@ -174,7 +178,7 @@ class DataProcessor(
           asyncRPCClient
         )
       )
-      if (tuple.isLeft) {
+      if (tuple.isLeft && !tuple.left.get.isInstanceOf[StartOfIteration]) {
         statisticsManager.increaseInputTupleCount()
       }
     } catch safely {
@@ -208,8 +212,8 @@ class DataProcessor(
     if (outputTuple == null) return
 
     outputTuple match {
-      case EndOfIteration(workerId) =>
-        asyncRPCClient.send(IterationCompleted(workerId), CONTROLLER)
+      case EndOfIteration(startWorkerId, endWorkerId) =>
+        asyncRPCClient.send(IterationCompleted(startWorkerId, endWorkerId), CONTROLLER)
       case FinalizeOperator() =>
         outputManager.emitEndOfUpstream()
         // Send Completed signal to worker actor.
@@ -225,7 +229,9 @@ class DataProcessor(
       case FinalizePort(portId, input) =>
         asyncRPCClient.send(PortCompleted(portId, input), CONTROLLER)
       case _ =>
-        statisticsManager.increaseOutputTupleCount()
+        if (!outputTuple.isInstanceOf[StartOfIteration]) {
+          statisticsManager.increaseOutputTupleCount()
+        }
         val outLinks = physicalOp.getOutputLinks(outputPortOpt)
         outLinks.foreach(link => outputManager.passTupleToDownstream(outputTuple, link))
     }
@@ -282,10 +288,6 @@ class DataProcessor(
         initBatch(channelId, tuples)
         processInputTuple(Left(inputBatch(currentInputIdx)))
       case EndOfUpstream() =>
-//        if (operator.isInstanceOf[LoopStartOpExec]) {
-//          processInputTuple(Right(InputExhausted()))
-//          return
-//        }
         val channel = this.inputGateway.getChannel(channelId)
         val portId = channel.getPortId
 
@@ -303,7 +305,9 @@ class DataProcessor(
             .foreach(outputPortId =>
               outputIterator.appendSpecialTupleToEnd(FinalizePort(outputPortId, input = false))
             )
-          outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
+          if (!operator.isInstanceOf[LoopStartOpExec]) {
+            outputIterator.appendSpecialTupleToEnd(FinalizeOperator())
+          }
         }
     }
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)

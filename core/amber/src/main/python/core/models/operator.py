@@ -45,7 +45,7 @@ class Operator(ABC):
     @output_schema.setter
     @overrides.final
     def output_schema(
-        self, raw_output_schema: Union[Schema, Mapping[str, str]]
+            self, raw_output_schema: Union[Schema, Mapping[str, str]]
     ) -> None:
         self.__internal_output_schema = (
             raw_output_schema
@@ -147,8 +147,8 @@ class BatchOperator(TupleOperatorV2):
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
         self.__batch_data[port].append(tuple_)
         if (
-            self.BATCH_SIZE is not None
-            and len(self.__batch_data[port]) >= self.BATCH_SIZE
+                self.BATCH_SIZE is not None
+                and len(self.__batch_data[port]) >= self.BATCH_SIZE
         ):
             yield from self._process_batch(port)
 
@@ -202,15 +202,23 @@ class TableOperator(TupleOperatorV2):
         super().__init__()
         self.__internal_is_source: bool = False
         self.__table_data: Mapping[int, List[Tuple]] = defaultdict(list)
+        self.__it_table_data: Mapping[int, Mapping[int, List[Tuple]]] = defaultdict(lambda: defaultdict(list))
+        self.__internal_is_it: bool = False
 
     @overrides.final
     def process_tuple(self, tuple_: Tuple, port: int) -> Iterator[Optional[TupleLike]]:
+        if "Iteration" in tuple_:
+            self.__internal_is_it = True
+            self.__it_table_data[port][tuple_["Iteration"]].append(tuple_)
         self.__table_data[port].append(tuple_)
         yield
 
     def on_finish(self, port: int) -> Iterator[Optional[TableLike]]:
-        table = Table(self.__table_data[port])
-        yield from self.process_table(table, port)
+        if self.__internal_is_it:
+            for table in self.__it_table_data[port].values():
+                yield from self.process_table(Table(table), port)
+        else:
+            yield from self.process_table(Table(self.__table_data[port]), port)
 
     @abstractmethod
     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
@@ -235,7 +243,7 @@ class TupleOperator(Operator):
 
     @abstractmethod
     def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
+            self, tuple_: Union[Tuple, InputExhausted], input_: int
     ) -> Iterator[Optional[TupleLike]]:
         """
         Process an input Tuple from the given link.
