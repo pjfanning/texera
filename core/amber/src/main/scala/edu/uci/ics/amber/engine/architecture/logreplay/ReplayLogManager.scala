@@ -26,7 +26,7 @@ object ReplayLogManager {
         new EmptyReplayLogManagerImpl(handler)
       case other =>
         val manager = new ReplayLogManagerImpl(handler)
-        manager.setupWriter(other.getWriter(logFileName))
+        manager.setupWriter(() => other.getWriter(logFileName))
         manager
     }
   }
@@ -36,7 +36,7 @@ trait ReplayLogManager {
 
   protected val cursor = new ProcessingStepCursor()
 
-  def setupWriter(logWriter: SequentialRecordWriter[ReplayLogRecord]): Unit
+  def setupWriter(logWriterGen: () => SequentialRecordWriter[ReplayLogRecord]): Unit
 
   def sendCommitted(msg: Either[MainThreadDelegateMessage, WorkflowFIFOMessage]): Unit
 
@@ -66,7 +66,7 @@ class EmptyReplayLogManagerImpl(
     handler: Either[MainThreadDelegateMessage, WorkflowFIFOMessage] => Unit
 ) extends ReplayLogManager {
   override def setupWriter(
-      logWriter: SequentialRecordStorage.SequentialRecordWriter[ReplayLogRecord]
+      logWriterGen: () => SequentialRecordStorage.SequentialRecordWriter[ReplayLogRecord]
   ): Unit = {}
 
   override def sendCommitted(msg: Either[MainThreadDelegateMessage, WorkflowFIFOMessage]): Unit = {
@@ -97,8 +97,8 @@ class ReplayLogManagerImpl(handler: Either[MainThreadDelegateMessage, WorkflowFI
     replayLogger.markAsReplayDestination(id)
   }
 
-  override def setupWriter(logWriter: SequentialRecordWriter[ReplayLogRecord]): Unit = {
-    writer = new AsyncReplayLogWriter(handler, logWriter)
+  override def setupWriter(logWriterGen: () => SequentialRecordWriter[ReplayLogRecord]): Unit = {
+    writer = new AsyncReplayLogWriter(handler, logWriterGen)
     writer.start()
   }
 

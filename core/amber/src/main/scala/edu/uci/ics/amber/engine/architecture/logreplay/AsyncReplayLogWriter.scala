@@ -13,7 +13,7 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 
 class AsyncReplayLogWriter(
     handler: Either[MainThreadDelegateMessage, WorkflowFIFOMessage] => Unit,
-    writer: SequentialRecordWriter[ReplayLogRecord]
+    writerGen: () => SequentialRecordWriter[ReplayLogRecord]
 ) extends Thread {
   private val drained =
     new util.ArrayList[
@@ -27,6 +27,7 @@ class AsyncReplayLogWriter(
   private val logInterval =
     AmberConfig.faultToleranceLogFlushIntervalInMs
   private val gracefullyStopped = new CompletableFuture[Unit]()
+  private var writer:SequentialRecordWriter[ReplayLogRecord] = _
 
   def putLogRecords(records: Array[ReplayLogRecord]): Unit = {
     assert(!stopped)
@@ -48,6 +49,7 @@ class AsyncReplayLogWriter(
 
   override def run(): Unit = {
     var internalStop = false
+    writer = writerGen()
     while (!internalStop) {
       if (logInterval > 0) {
         Thread.sleep(logInterval)

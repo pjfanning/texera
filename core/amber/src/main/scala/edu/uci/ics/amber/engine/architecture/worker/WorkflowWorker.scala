@@ -156,6 +156,7 @@ class WorkflowWorker(
     timerService.stopAdaptiveBatching()
     dpThread.stop()
     logManager.terminate()
+    logger.info(s"$actorId terminated.")
   }
 
   override def handleBackpressure(isBackpressured: Boolean): Unit = {

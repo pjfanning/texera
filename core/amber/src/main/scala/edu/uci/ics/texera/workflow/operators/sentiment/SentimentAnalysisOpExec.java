@@ -28,7 +28,8 @@ public class SentimentAnalysisOpExec extends MapOpExec {
     }
 
     public TupleLike sentimentAnalysis(Tuple t) {
-        String text = t.getField(attributeName).toString();
+        String baseText = t.getField(attributeName).toString();
+        String text = baseText.substring(0,Math.min(50, baseText.length()));
         Annotation documentAnnotation = new Annotation(text);
         coreNlp.get().annotate(documentAnnotation);
 

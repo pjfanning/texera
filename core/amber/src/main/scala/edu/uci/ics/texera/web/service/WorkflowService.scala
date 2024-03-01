@@ -159,7 +159,6 @@ class WorkflowService(
       convertToJson(req.engineVersion)
     )
 
-    if (AmberConfig.isUserSystemEnabled) {
       // enable only if we have mysql
       if (AmberConfig.faultToleranceLogRootFolder.isDefined) {
         val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
@@ -187,7 +186,6 @@ class WorkflowService(
               )
             )
           }
-      }
     }
 
     val executionStateStore = new ExecutionStateStore()

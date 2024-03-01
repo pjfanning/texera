@@ -35,7 +35,6 @@ class CSVScanSourceOpExec private[csv] (
       }
 
       override def next(): Array[String] = {
-        Thread.sleep(30)
         val ret = nextRow
         nextRow = null
         ret
