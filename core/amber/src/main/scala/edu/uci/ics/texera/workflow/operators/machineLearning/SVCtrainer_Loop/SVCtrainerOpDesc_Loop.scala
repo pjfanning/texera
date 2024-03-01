@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{
   JsonSchemaBool,
@@ -17,7 +17,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.KernalFunction
-class SVCtrainerOpDesc extends PythonOperatorDescriptor {
+class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
@@ -148,7 +148,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   }
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVCTrainer",
+      "SVCTrainer_Loop",
       "Train a SVM classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
@@ -208,7 +208,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      X_train = table[features]
          |      model_list = []
          |      para_list = []
-         |      for i in range(c_list.shape[0]):
+         |      for i in range(1):
          |        c_value= c_list[i]
          |        kernal_value  = kernal_list[i]
          |        if kernal_value in ['poly']:
