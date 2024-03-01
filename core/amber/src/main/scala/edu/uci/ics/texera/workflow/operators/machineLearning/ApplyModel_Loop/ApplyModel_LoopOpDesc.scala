@@ -109,6 +109,7 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
          |      res["para"] =  s["para"]
          |      res["features"] = s["features"]
          |
+         |
          |      yield res
          |
          |""".stripMargin

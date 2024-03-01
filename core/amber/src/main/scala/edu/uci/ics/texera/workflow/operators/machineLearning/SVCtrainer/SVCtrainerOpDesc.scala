@@ -142,6 +142,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
+    outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -155,10 +156,10 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
         InputPort(
           PortIdentity(0),
           displayName = "dataset",
-          allowMultiLinks = true,
-          dependencies = List(PortIdentity(1))
+          allowMultiLinks = true
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true)
+        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
+          dependencies = List(PortIdentity(0)))
       ),
       outputPorts = List(OutputPort())
     )
@@ -181,14 +182,15 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |  @overrides
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |    global para
-         |
-         |    if port == 1:
-         |      print(table)
-         |      if ($truthy):
-         |        para = table
+         |    global dataset
          |
          |    if port == 0:
+         |      print("port1")
+         |      print(table)
+         |      dataset = table
+         |
+         |    if port == 1:
+         |      print("port0")
          |      if not ($truthy):
          |        c_list = np.array([$c])
          |        kernal_list = np.array(["$kernal"])
@@ -199,10 +201,12 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |          coef_list = np.array([$coef])
          |
          |      if ($truthy):
+         |        para = table.head(1)
          |        c_list = para["$loop_c"]
          |        kernal_list = para["$loop_kernal"]
          |        gamma_list = para["$loop_gamma"]
          |        coef_list = para["$loop_coef"]
+         |      table = dataset
          |      y_train = table["$label"]
          |      features = [$list_features]
          |      X_train = table[features]
@@ -237,7 +241,10 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      data["para"] = para_list
          |      data["features"]= [features]*c_list.shape[0]
          |
+         |
          |      df = pd.DataFrame(data)
+         |      df["Iteration"]= para["Iteration"]
+         |
          |      yield df
          |
          |

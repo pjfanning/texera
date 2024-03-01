@@ -117,6 +117,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |        features_list.append(features)
            |
            |      if ($truthy):
+           |        param = param.head(1)
            |        k = param["$loop_k"].values
            |        for i in k:
            |          k = int(i)
