@@ -18,6 +18,7 @@ import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.KernalFunction
 class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
+
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
@@ -98,7 +99,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   val loop_coef: String = ""
 
-  @JsonProperty(required = false)
+  @JsonProperty(value = "Kernal Function", required = false,defaultValue ="linear")
   @JsonSchemaTitle("Kernal Function")
   @JsonPropertyDescription("multiple kernal functions")
   @JsonSchemaInject(
@@ -195,7 +196,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
          |        kernal_type = "$kernal"
          |        if kernal_type in ['poly', 'rbf', 'sigmoid']:
          |          gamma_list = np.array([$gamma])
-         |        if kernal_type in ['poly', 'rbf']:
+         |        if kernal_type in ['poly']:
          |          coef_list = np.array([$coef])
          |
          |      if ($truthy):
@@ -208,7 +209,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
          |      X_train = table[features]
          |      model_list = []
          |      para_list = []
-         |      for i in range(1):
+         |      for i in range(c_list.shape[0]):
          |        c_value= c_list[i]
          |        kernal_value  = kernal_list[i]
          |        if kernal_value in ['poly']:
@@ -216,11 +217,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
          |          coef_value = coef_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
-         |        elif kernal_value in ['rbf']:
-         |          coef_value = coef_list[i]
-         |          para_str = "kernal_value = '{}';c_value= {};coef_value= {}".format(kernal_value,c_value,coef_value)
-         |          model = SVC(kernel=kernal_value,C=float(c_value),coef0=float(coef_value),probability=True)
-         |        elif kernal_value in ['sigmoid']:
+         |        elif kernal_value in ['sigmoid','rbf']:
          |          gamma_value = gamma_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,probability=True)
