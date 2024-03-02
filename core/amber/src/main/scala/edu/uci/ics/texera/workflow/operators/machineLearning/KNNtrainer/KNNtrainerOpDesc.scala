@@ -52,6 +52,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
       val outputSchemaBuilder = Schema.newBuilder
+      outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
       outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -67,10 +68,10 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
           InputPort(
             PortIdentity(0),
             displayName = "dataset",
-            allowMultiLinks = true,
-            dependencies = List(PortIdentity(1))
+            allowMultiLinks = true
           ),
-          InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true),
+          InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
+            dependencies = List(PortIdentity(0))),
         ),
         outputPorts = List(OutputPort())
       )
@@ -93,17 +94,19 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |
            |  @overrides
            |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-           |    global param
+           |    global dataset
            |    model_list = []
            |    para_list = []
            |    features_list = []
            |    features = [$list_features]
            |
-           |    if port == 1:
-           |      if ($truthy):
-           |        param = table
-           |
            |    if port == 0:
+           |      if ($truthy):
+           |        dataset = table
+           |
+           |    if port == 1:
+           |      param = table
+           |      table = dataset
            |      y_train = table["$label"]
            |      X_train = table[features]
            |      if not ($truthy):
@@ -138,6 +141,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      # print(features_list)
            |
            |      df = pd.DataFrame(data)
+           |      df["Iteration"]= param["Iteration"]
            |      yield df
            |
            |""".stripMargin
