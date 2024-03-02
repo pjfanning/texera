@@ -167,9 +167,10 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |                    bestPredict = prediction
          |                    bestLabels = labels
          |
-         |            if  bestPredict and bestLabels:
+         |            if bestPredict is not None and bestLabels is not None:
          |              html = drawConfusionMatrixImage(bestPredict, bestLabels)
          |              result['Best Confusion Matrix Chart'] = html
+         |
          |
          |            result['model'] = predictValueTable['model'].tolist()
          |            result['para'] = predictValueTable['para'].tolist()
