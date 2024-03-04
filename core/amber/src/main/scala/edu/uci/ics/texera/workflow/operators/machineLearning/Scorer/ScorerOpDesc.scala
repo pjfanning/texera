@@ -160,7 +160,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                  prediction = confusion_matrix(y_true, y_pred, labels = labels)
          |                  prediction_json = json.dumps(prediction.tolist(), indent = 4)
          |                  result['Confusion Matrix'][i] = prediction_json
-         |
+         |            result['para'] = predictValueTable['para'].tolist()
+         |            predictValueTable = predictValueTable.drop(["para"], axis=1)
          |            df2 = pd.DataFrame(result)
          |            df = pd.concat([predictValueTable, df2], axis=1)
          |            yield df
@@ -172,6 +173,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(1)
     outputSchemaBuilder.add(inputSchema)
+    outputSchemaBuilder.removeIfExists("para")
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
     {
       if (scorer == "Confusion Matrix") {
