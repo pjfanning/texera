@@ -142,7 +142,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    if (is_loop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -243,7 +243,8 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |
          |      df = pd.DataFrame(data)
-         |      df["Iteration"]= para["Iteration"]
+         |      if ($truthy):
+         |        df["Iteration"]= para["Iteration"]
          |
          |      yield df
          |

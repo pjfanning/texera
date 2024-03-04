@@ -161,21 +161,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                  prediction_json = json.dumps(prediction.tolist(), indent = 4)
          |                  result['Confusion Matrix'][i] = prediction_json
          |
-         |                  prediction_accuracy = accuracy_score(y_true, y_pred)
-         |                  if bestAccuracy < prediction_accuracy:
-         |                    bestAccuracy = prediction_accuracy
-         |                    bestPredict = prediction
-         |                    bestLabels = labels
-         |
-         |            if  bestPredict and bestLabels:
-         |              html = drawConfusionMatrixImage(bestPredict, bestLabels)
-         |              result['Best Confusion Matrix Chart'] = html
-         |
-         |            result['model'] = predictValueTable['model'].tolist()
-         |            result['para'] = predictValueTable['para'].tolist()
-         |
-         |            df = pd.DataFrame(result)
-         |            df["Iteration"] = table["Iteration"]
+         |            df2 = pd.DataFrame(result)
+         |            df = pd.concat([predictValueTable, df2], axis=1)
          |            yield df
          |
          |""".stripMargin
@@ -183,19 +170,18 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   }
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    val inputSchema = schemas(1)
+    outputSchemaBuilder.add(inputSchema)
     scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
     {
       if (scorer == "Confusion Matrix") {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.STRING))
-        outputSchemaBuilder.add(new Attribute("Best Confusion Matrix Chart", AttributeType.STRING))
       } else {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       }
     }
     )
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
-    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY)).build
+    outputSchemaBuilder.build
   }
 
 

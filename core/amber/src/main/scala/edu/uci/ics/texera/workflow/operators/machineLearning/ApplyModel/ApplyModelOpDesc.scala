@@ -57,10 +57,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     Preconditions.checkArgument(schemas.length == 2)
 
     val outputSchemaBuilder = Schema.newBuilder
-    outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
+    val inputSchema = schemas(1)
+    outputSchemaBuilder.add(inputSchema)
     if (is_prob)  outputSchemaBuilder.add(new Attribute(y_prob, AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute(y_pred, AttributeType.BINARY)).build
 
@@ -111,7 +109,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      res["model"] = s["model"]
          |      res["para"] =  s["para"]
          |      res["features"] = s["features"]
-         |      res["Iteration"] = s["Iteration"]
+         |      if "Iteration" in s.columns:
+         |        res["Iteration"] = s["Iteration"]
          |
          |
          |      yield res
