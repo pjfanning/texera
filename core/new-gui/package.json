@@ -53,8 +53,9 @@
     "jszip": "3.10.1",
     "lodash-es": "4.17.21",
     "marked": "^4.3.0",
-    "monaco-editor": "0.36.1",
-    "monaco-languageclient": "5.0.1",
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.85.0 <1.86.0",
+    "monaco-languageclient": "~7.3.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@~1.85.0",
     "ng-dynamic-component": "10.7.0",
     "ng-zorro-antd": "16.2.2",
     "ng2-file-upload": "5.0.0",
@@ -76,7 +77,6 @@
     "tinyqueue": "2.0.3",
     "tslib": "2.3.1",
     "uuid": "8.3.2",
-    "vscode": "npm:@codingame/monaco-vscode-api@~1.76.6",
     "vscode-ws-jsonrpc": "3.1.0",
     "y-monaco": "0.1.5",
     "y-protocols": "1.0.5",
@@ -133,11 +133,19 @@
     "prettier": "3.2.5",
     "prettier-eslint-cli": "8.0.1",
     "rxjs-marbles": "7.0.1",
+    "shx": "~0.3.4",
     "sass": "1.71.1",
     "ts-node": "4.1.0",
     "typescript": "5.1.6",
     "webpack-bundle-analyzer": "4.5.0",
     "style-loader": "~3.3.3"
+  },"overrides": {
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.85.0 <1.86.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@>=1.85.0 <1.86.0"
+  },
+  "resolutions": {
+    "monaco-editor": "npm:@codingame/monaco-editor-treemended@>=1.85.0 <1.86.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@>=1.85.0 <1.86.0"
   },
   "browserslist": [
     "defaults",
