@@ -74,6 +74,8 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.SVCtrainerOpDesc_Loop
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop.ApplyModel_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
@@ -175,7 +177,9 @@ trait StateTransferFunc
     new Type(value = classOf[ModelSelectionOpDesc], name = "ModelSelection"),
     new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
     new Type(value = classOf[HeatMapOpDesc], name = "HeatMap"),
-    new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3DChart")
+    new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3DChart"),
+    new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrixChart"),
+    new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
