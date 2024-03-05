@@ -123,7 +123,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |""".stripMargin
     finalcode
   }
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {// TODO: 好像要跟著前面的schema 請更改用ranran的方法
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(1)
     outputSchemaBuilder.add(inputSchema)
