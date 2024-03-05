@@ -79,6 +79,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOp
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.PredictionVisualization.PredictionVisualizationOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -180,6 +181,8 @@ trait StateTransferFunc
     new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3DChart"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrixChart"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
+    new Type(value = classOf[PredictionVisualizationOpDesc], name = "PredictionVisualization"),
+
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
