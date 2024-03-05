@@ -73,6 +73,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyMod
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.SVCtrainerOpDesc_Loop
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop.ApplyModel_LoopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
@@ -171,6 +172,7 @@ trait StateTransferFunc
     new Type(value = classOf[ApplyModel_LoopOpDesc], name = "ApplyModel_Loop"),
     new Type(value = classOf[Scorer_LoopOpDesc], name = "Scorer_Loop"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
+    new Type(value = classOf[ModelSelectionOpDesc], name = "ModelSelection"),
     new Type(value = classOf[BoxPlotOpDesc], name = "BoxPlot"),
     new Type(value = classOf[HeatMapOpDesc], name = "HeatMap"),
     new Type(value = classOf[Scatter3dChartOpDesc], name = "Scatter3DChart")
