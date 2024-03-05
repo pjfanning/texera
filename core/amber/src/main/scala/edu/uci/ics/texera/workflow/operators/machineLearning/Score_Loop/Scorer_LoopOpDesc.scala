@@ -140,7 +140,6 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
          |            for i in range (optimizationTimes):
          |              for scorer in scorerList:
          |                y_pred = predictValueTable['$predictValue'][i] # list of predicted values by model i
-
          |                prediction = None
          |                if scorer == 'Accuracy':
          |                  prediction = accuracy_score(y_true, y_pred)

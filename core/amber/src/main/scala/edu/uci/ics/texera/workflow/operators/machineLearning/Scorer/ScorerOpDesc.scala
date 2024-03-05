@@ -21,26 +21,23 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   var predictValue: String = ""
 
-  //  @JsonProperty(defaultValue = "false")
-  //  @JsonSchemaTitle("Using probability?")
-  //  @JsonSchemaInject(json = """{"toggleHidden" : ["probabilityValue"]}""")
-  //  var is_prob: Boolean = _
-  //
-  //  @JsonProperty()
-  //  @JsonSchemaTitle("Probability Column")
-  //  @JsonPropertyDescription("Specify the name of the predicted probability")
-  //  @JsonSchemaInject(
-  //    strings = Array(
-  //      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_prob"),
-  //      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-  //      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
-  //    )
-  //  )
-  //  @AutofillAttributeNameOnPort1
-  //  var probabilityValue: String = ""
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Using probability?")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["probabilityValue"]}""")
+  var is_prob: Boolean = _
 
-  // 我要怎麼知道前一個operator有選y_prob這個選項呢？
-  // 如果我在這裡加 可能user前面沒選y_prob 但這裡有選擇probabilityValue會有問題
+  @JsonProperty()
+  @JsonSchemaTitle("Probability Column")
+  @JsonPropertyDescription("Specify the name of the predicted probability")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_prob"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
+    )
+  )
+  @AutofillAttributeNameOnPort1
+  var probabilityValue: String = ""
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Scorer Functions")
@@ -71,37 +68,28 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |import numpy as np
          |from sklearn.metrics import accuracy_score
          |from sklearn.metrics import precision_score
-         |from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+         |from sklearn.metrics import confusion_matrix
          |from sklearn.metrics import recall_score
          |from sklearn.metrics import f1_score
-         |import plotly.express as px
-         |import plotly.graph_objects as go
-         |import plotly.io
-         |
          |import json
          |
-         |def drawConfusionMatrixImage(prediction, labels):
          |
-         |  text = [[str(value) for value in row] for row in prediction]
+         |def label_confusion_matrix(y_true, y_pred, label):
+         |    labelCM = [None] * len(label)
+         |    cm = confusion_matrix(y_true, y_pred, labels = label)
          |
-         |  fig = go.Figure(data=go.Heatmap(
-         |    z=prediction,
-         |    x=labels,
-         |    y=labels,
-         |    text=text,
-         |    texttemplate="%{text}",
-         |    hoverongaps=False,
-         |    colorscale='Viridis',
-         |    showscale=True))
+         |    for i in range(len(cm)):
+         |        tp = cm[i, i]
+         |        fp = np.sum(cm[:, i]) - tp
+         |        fn = np.sum(cm[i, :]) - tp
+         |        tn = np.sum(cm) - tp - fp - fn
+         |        f1 = f1_score(y_true, y_pred, average = None, labels = [label[i]])
+         |        precision = precision_score(y_true, y_pred, average = None, labels = [label[i]])
+         |        recall = recall_score(y_true, y_pred, average = None, labels = [label[i]])
          |
-         |  fig.update_layout(
-         |    title='Confusion Matrix',
-         |    xaxis_title="Predicted Label",
-         |    yaxis_title="True Label")
+         |        labelCM[i] = [label[i], tp, fp, fn, tn, f1[0], precision[0], recall[0]]
          |
-         |  html = plotly.io.to_html(fig, include_plotlyjs='cdn', auto_play=False)
-         |
-         |  return html
+         |    return labelCM
          |
          |
          |class ProcessTableOperator(UDFTableOperator):
@@ -113,57 +101,51 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |
          |        if port == 0:
          |            groundTruthTable = table
-         |            print(groundTruthTable.columns)
          |
          |        if port == 1:
          |            predictValueTable = table
-         |            print(predictValueTable.columns)
-         |
-         |            bestAccuracy = 0
-         |            bestPredict = None
-         |            bestLabels = None
-         |
-         |            if 'y_prob' in predictValueTable.columns:
-         |              print("'y_prob' in predictValueTable.columns")
-         |            else:
-         |              print("'y_prob' not in predictValueTable.columns")
-         |
-         |            optimizationTimes = len(predictValueTable['model'])
-         |            y_true = groundTruthTable['$actualValueColumn']
-         |
-         |            scorerList = [${getSelectedScorers()}]
          |            result = dict()
          |
-         |            for scorer in scorerList:
-         |              result[ scorer ] = [ None ] * optimizationTimes
+         |            if '$probabilityValue' != '':
+         |              if predictValueTable['$probabilityValue'][0].dtype not in [float, 'float64', 'float32']:
+         |                print("Probability Column not correct")
+         |              else:
+         |                result['$probabilityValue'] = predictValueTable['$probabilityValue'].tolist()
          |
-         |            for i in range (optimizationTimes):
-         |              for scorer in scorerList:
-         |                y_pred = predictValueTable['$predictValue'][i] # list of predicted values by model i
+         |
+         |            y_true = groundTruthTable['$actualValueColumn']
+         |            y_pred = predictValueTable['$predictValue'][0]
+         |            labels = list(set(y_true))
+         |
+         |            scorerList = [${getSelectedScorers()}]
+         |
+         |            for scorer in scorerList:
+         |              prediction = None
+         |              if scorer == 'Accuracy':
+         |                prediction = accuracy_score(y_true, y_pred)
+         |                result['Accuracy'] = prediction
+         |              elif scorer == 'Precision Score':
+         |                prediction = precision_score(y_true, y_pred, average = 'macro')
+         |                result['Precision Score'] = prediction
+         |              elif scorer == 'Recall Score':
+         |                prediction = recall_score(y_true, y_pred, average = 'macro')
+         |                result['Recall Score'] = prediction
+         |              elif scorer == 'F1 Score':
+         |                prediction = f1_score(y_true, y_pred, average = 'macro')
+         |                result['F1 Score'] = prediction
+         |              elif scorer == 'Confusion Matrix':
+         |                prediction = confusion_matrix(y_true, y_pred, labels = labels)
+         |                prediction_json = json.dumps(prediction.tolist(), indent = 4)
+         |                result['Confusion Matrix'] = prediction_json
 
-         |                prediction = None
-         |                if scorer == 'Accuracy':
-         |                  prediction = accuracy_score(y_true, y_pred)
-         |                  result['Accuracy'][i]=prediction
-         |                elif scorer == 'Precision Score':
-         |                  prediction = precision_score(y_true, y_pred, average = 'macro')
-         |                  result['Precision Score'][i]=prediction
-         |                elif scorer == 'Recall Score':
-         |                  prediction = recall_score(y_true, y_pred, average = 'macro')
-         |                  result['Recall Score'][i]=prediction
-         |                elif scorer == 'F1 Score':
-         |                  prediction = f1_score(y_true, y_pred, average = 'macro')
-         |                  result['F1 Score'][i]=prediction
-         |                elif scorer == 'Confusion Matrix':
-         |                  column_set = set(y_true)
-         |                  labels = list(column_set)
-         |                  prediction = confusion_matrix(y_true, y_pred, labels = labels)
-         |                  prediction_json = json.dumps(prediction.tolist(), indent = 4)
-         |                  result['Confusion Matrix'][i] = prediction_json
+         |
+         |            print(label_confusion_matrix(y_true, y_pred, labels))
+         |            result['Label_CM'] = str(label_confusion_matrix(y_true, y_pred, labels)) # 2D List 好像不能直接傳？
+         |            result['model'] = predictValueTable['model'].tolist()
          |            result['para'] = predictValueTable['para'].tolist()
-         |            predictValueTable = predictValueTable.drop(["para"], axis=1)
-         |            df2 = pd.DataFrame(result)
-         |            df = pd.concat([predictValueTable, df2], axis=1)
+         |
+         |            df = pd.DataFrame(result, index=[0])
+         |            df['Iteration'] = table['Iteration']
          |            yield df
          |
          |""".stripMargin
@@ -171,10 +153,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   }
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    val inputSchema = schemas(1)
-    outputSchemaBuilder.add(inputSchema)
-    outputSchemaBuilder.removeIfExists("para")
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+    outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    outputSchemaBuilder.add(new Attribute("Label_CM", AttributeType.STRING))
     scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
     {
       if (scorer == "Confusion Matrix") {
@@ -184,6 +164,12 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       }
     }
     )
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
+    if(is_prob) {
+      outputSchemaBuilder.add(new Attribute(probabilityValue, AttributeType.BINARY))
+    }
+
     outputSchemaBuilder.build
   }
 
