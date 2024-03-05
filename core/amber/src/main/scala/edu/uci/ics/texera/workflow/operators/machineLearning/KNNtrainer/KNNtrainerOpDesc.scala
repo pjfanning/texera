@@ -52,7 +52,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
       val outputSchemaBuilder = Schema.newBuilder
-      outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+      if (is_loop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
       outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -101,8 +101,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |    features = [$list_features]
            |
            |    if port == 0:
-           |      if ($truthy):
-           |        dataset = table
+           |      dataset = table
            |
            |    if port == 1:
            |      param = table
@@ -141,7 +140,8 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |      # print(features_list)
            |
            |      df = pd.DataFrame(data)
-           |      df["Iteration"]= param["Iteration"]
+           |      if ($truthy):
+           |        df["Iteration"]= param["Iteration"]
            |      yield df
            |
            |""".stripMargin

@@ -137,7 +137,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                prediction = confusion_matrix(y_true, y_pred, labels = labels)
          |                prediction_json = json.dumps(prediction.tolist(), indent = 4)
          |                result['Confusion Matrix'] = prediction_json
-         |
+
          |
          |            print(label_confusion_matrix(y_true, y_pred, labels))
          |            result['Label_CM'] = str(label_confusion_matrix(y_true, y_pred, labels)) # 2D List 好像不能直接傳？
@@ -169,6 +169,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     if(is_prob) {
       outputSchemaBuilder.add(new Attribute(probabilityValue, AttributeType.BINARY))
     }
+
     outputSchemaBuilder.build
   }
 
