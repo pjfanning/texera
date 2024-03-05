@@ -100,11 +100,11 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        y_pred.append(y_predict)
          |        if $flag_prob:
          |            y_proba = model.predict_proba(x_test)
-         |            y_prob.append(y_proba)
+         |            y_prob.append([y_proba,model.classes_])
          |      result = dict()
          |      result['$y_pred'] = y_pred
          |      if $flag_prob:
-         |        result['$y_prob'] = (y_prob,model.classes_)
+         |        result['$y_prob'] = y_prob
          |      res  = pd.DataFrame(result)
          |      res["model"] = s["model"]
          |      res["para"] =  s["para"]
