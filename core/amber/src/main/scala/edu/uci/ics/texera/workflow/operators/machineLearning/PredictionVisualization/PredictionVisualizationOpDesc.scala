@@ -91,7 +91,7 @@ class PredictionVisualizationOpDesc extends PythonOperatorDescriptor {
          |        if "Iteration" in table.columns:
          |            df["Iteration"] = float(table["Iteration"])
          |        else:
-         |            df["Iteration"] = 0
+         |            df["Iteration"] = 0.1
          |
          |        if $flag_prob:
          |            cs =table["$y_prob"][0][1]
