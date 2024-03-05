@@ -143,7 +143,7 @@ trait StateTransferFunc
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
-    new Type(value = classOf[DistinctOpDesc], name = "Distinct"),
+    new Type(value = classOf[DistinctOpDesxc], name = "Distinct"),
     new Type(value = classOf[IntersectOpDesc], name = "Intersect"),
     new Type(value = classOf[SymmetricDifferenceOpDesc], name = "SymmetricDifference"),
     new Type(value = classOf[DifferenceOpDesc], name = "Difference"),
