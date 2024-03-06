@@ -35,6 +35,5 @@ class LoopEndOpDesc extends LogicalOp {
       supportReconfiguration = true
     )
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
-
+  override def getOutputSchema(schemas: Array[Schema]): Schema = new Schema.Builder(schemas(0)).removeIfExists("Iteration").build()
 }
