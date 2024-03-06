@@ -93,31 +93,60 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            y_pred = predictValueTable['$predictValueColumn'][0]
          |            labels = list(set(y_true))
          |
+         |            labels.append('Overall')
+         |
          |            scorerList = [${getSelectedScorers()}]
          |
+         |            for scorer in scorerList:
+         |              result[scorer] = [ None ] * len(labels)
+         |
+         |            result['Label'] = labels
          |            for scorer in scorerList:
          |              prediction = None
          |              if scorer == 'Accuracy':
          |                prediction = accuracy_score(y_true, y_pred)
-         |                result['Accuracy'] = prediction
-         |              elif scorer == 'Precision Score':
-         |                prediction = precision_score(y_true, y_pred, average = 'macro')
-         |                result['Precision Score'] = prediction
-         |              elif scorer == 'Recall Score':
-         |                prediction = recall_score(y_true, y_pred, average = 'macro')
-         |                result['Recall Score'] = prediction
-         |              elif scorer == 'F1 Score':
-         |                prediction = f1_score(y_true, y_pred, average = 'macro')
-         |                result['F1 Score'] = prediction
+         |                result['Accuracy'][len(labels) - 1] = prediction
          |
-         |            print(label_confusion_matrix(y_true, y_pred, labels))
-         |            result['label_metrics'] = str(label_confusion_matrix(y_true, y_pred, labels)) # 2D List 好像不能直接傳？
-         |            result['para'] = predictValueTable['para'].tolist()
+         |              elif scorer == 'Precision Score':
+         |                for i in range(len(labels)):
+         |                  if labels[i] != 'Overall':
+         |                    prediction = precision_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                    result['Precision Score'][i] = prediction[0]
+         |                  else:
+         |                    result['Precision Score'][i] = precision_score(y_true, y_pred, average = 'macro')
+         |
+         |              elif scorer == 'Recall Score':
+         |                for i in range(len(labels)):
+         |                  if labels[i] != 'Overall':
+         |                    prediction = recall_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                    result['Recall Score'][i] = prediction[0]
+         |                  else:
+         |                    result['Recall Score'][i] = recall_score(y_true, y_pred, average = 'macro')
+         |
+         |              elif scorer == 'F1 Score':
+         |                for i in range(len(labels)):
+         |                   if labels[i] != 'Overall':
+         |                    prediction = f1_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                    result['F1 Score'][i] = prediction[0]
+         |                   else:
+         |                    result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
+         |
+         |            paraStrSeries = pd.Series(predictValueTable['para'].tolist())
          |            predictValueTable = predictValueTable.drop(['para'], axis=1)
-         |            print(result['para'])
+         |            predictValueTable['para'] = paraStrSeries
          |
          |            resultDf = pd.DataFrame(result)
-         |            df = pd.concat([predictValueTable, resultDf], axis=1)
+         |            df = pd.concat([resultDf, predictValueTable], axis=1)
+         |
+         |            for column in df.columns:
+         |              if pd.api.types.is_numeric_dtype(df[column]):
+         |                df[column] = df[column].fillna(df[column][0])
+         |              elif pd.api.types.is_string_dtype(df[column]):
+         |                df[column] = df[column].fillna('NaN')
+         |
+         |            if "Iteration" in df.columns:
+         |              df['Iteration'] = df['Iteration'].astype(int)
+         |
          |            yield df
          |
          |""".stripMargin
@@ -129,7 +158,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     outputSchemaBuilder.add(inputSchema)
     outputSchemaBuilder.removeIfExists("para")
     outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
-    outputSchemaBuilder.add(new Attribute("label_metrics", AttributeType.STRING))
+    outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
     scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
     {
       outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
