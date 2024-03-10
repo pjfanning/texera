@@ -3,10 +3,7 @@ package edu.uci.ics.amber.engine.architecture.pythonworker
 import com.google.common.primitives.Longs
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
-  controlInvocationToV1,
-  returnInvocationToV1
-}
+import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{controlInvocationToV1, returnInvocationToV1}
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
@@ -20,6 +17,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
+import edu.uci.ics.texera.workflow.common.EndOfUpstream
 
 import java.nio.charset.Charset
 
@@ -106,7 +104,7 @@ private class AmberProducer(
     if (isEnd) {
       // EndOfUpstream
       assert(root.getRowCount == 0)
-      outputPort.sendTo(to, EndOfUpstream())
+      outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
     } else {
       // normal data batches
       val queue = mutable.Queue[Tuple]()

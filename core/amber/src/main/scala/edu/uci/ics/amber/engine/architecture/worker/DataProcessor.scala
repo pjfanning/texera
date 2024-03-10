@@ -7,32 +7,21 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PortComp
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerExecutionCompletedHandler.WorkerExecutionCompleted
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.WorkerStateUpdatedHandler.WorkerStateUpdated
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
-import edu.uci.ics.amber.engine.architecture.messaginglayer.{
-  InputManager,
-  OutputManager,
-  WorkerTimerService
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.{InputManager, OutputManager, WorkerTimerService}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeOperator, FinalizePort}
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PauseHandler.PauseWorker
-import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{
-  COMPLETED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{COMPLETED, READY, RUNNING}
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.statetransition.WorkerStateManager
 import edu.uci.ics.amber.engine.common.tuple.amber.{SchemaEnforceable, SpecialTupleLike, TupleLike}
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ActorVirtualIdentity,
-  ChannelIdentity,
-  PhysicalOpIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, PhysicalOpIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, Marker}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 object DataProcessor {
@@ -196,20 +185,25 @@ class DataProcessor(
         )
         inputManager.initBatch(channelId, tuples)
         processInputTuple(inputManager.getNextTuple)
-      case EndOfUpstream() =>
-        val channel = this.inputGateway.getChannel(channelId)
-        val portId = channel.getPortId
+      case MarkerFrame(marker) =>
+        marker match {
+          case EndOfUpstream() =>
+            val channel = this.inputGateway.getChannel(channelId)
+            val portId = channel.getPortId
 
-        this.inputManager.getPort(portId).channels(channelId) = true
+            this.inputManager.getPort(portId).channels(channelId) = true
 
-        if (inputManager.isPortCompleted(portId)) {
-          inputManager.initBatch(channelId, Array.empty)
-          processInputExhausted()
-          outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
-        }
-        if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
-          // assuming all the output ports finalize after all input ports are finalized.
-          outputManager.finalizeOutput()
+            if (inputManager.isPortCompleted(portId)) {
+              inputManager.initBatch(channelId, Array.empty)
+              processInputExhausted()
+              outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
+            }
+            if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
+              // assuming all the output ports finalize after all input ports are finalized.
+              outputManager.finalizeOutput()
+            }
+          case _ =>
+            logger.error(s"unsupported marker type: $marker")
         }
     }
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
