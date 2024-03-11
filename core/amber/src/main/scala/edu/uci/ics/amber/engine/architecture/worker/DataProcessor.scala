@@ -21,7 +21,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Ch
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, Marker}
+import edu.uci.ics.texera.workflow.common.EndOfUpstream
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 object DataProcessor {
