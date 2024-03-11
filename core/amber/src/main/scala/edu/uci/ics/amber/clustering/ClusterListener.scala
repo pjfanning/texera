@@ -21,7 +21,7 @@ class ClusterListener extends Actor with AmberLogging {
 
   /**
     *   subscribe to cluster changes, re-subscribe when restart
-     */
+    */
 
   override def preStart(): Unit = {
     cluster.subscribe(
@@ -44,7 +44,7 @@ class ClusterListener extends Actor with AmberLogging {
   }
 
   private def getComputationNodeAddrs: Iterable[Address] = {
-    cluster.state.members.map(_.address).filterNot {_ == AmberConfig.masterNodeAddr}
+    cluster.state.members.map(_.address).filterNot { _ == AmberConfig.masterNodeAddr }
   }
   private def updateClusterStatus(): Unit = {
     numWorkerNodesInCluster = getComputationNodeAddrs.size

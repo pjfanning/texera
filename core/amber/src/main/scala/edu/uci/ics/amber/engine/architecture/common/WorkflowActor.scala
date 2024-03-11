@@ -2,8 +2,18 @@ package edu.uci.ics.amber.engine.architecture.common
 
 import akka.actor.{Actor, ActorRef, Stash}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor._
-import edu.uci.ics.amber.engine.architecture.logreplay.{ReplayLogGenerator, ReplayLogManager, ReplayLogRecord, ReplayOrderEnforcer}
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, MainThreadDelegateMessage, StateRestoreConfig, TriggerSend}
+import edu.uci.ics.amber.engine.architecture.logreplay.{
+  ReplayLogGenerator,
+  ReplayLogManager,
+  ReplayLogRecord,
+  ReplayOrderEnforcer
+}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  FaultToleranceConfig,
+  MainThreadDelegateMessage,
+  StateRestoreConfig,
+  TriggerSend
+}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage

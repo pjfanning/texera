@@ -4,12 +4,22 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{Address, AllForOneStrategy, Props, SupervisorStrategy}
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor
 import edu.uci.ics.amber.engine.architecture.common.WorkflowActor.NetworkAck
-import edu.uci.ics.amber.engine.architecture.controller.Controller.{ReplayStatusUpdate, WorkflowRecoveryStatus}
+import edu.uci.ics.amber.engine.architecture.controller.Controller.{
+  ReplayStatusUpdate,
+  WorkflowRecoveryStatus
+}
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  FaultToleranceConfig,
+  StateRestoreConfig
+}
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
-import edu.uci.ics.amber.engine.common.ambermessage.{ChannelMarkerPayload, ControlPayload, WorkflowFIFOMessage}
+import edu.uci.ics.amber.engine.common.ambermessage.{
+  ChannelMarkerPayload,
+  ControlPayload,
+  WorkflowFIFOMessage
+}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
@@ -22,7 +32,7 @@ import scala.concurrent.duration.DurationInt
 object ControllerConfig {
   def default: ControllerConfig =
     ControllerConfig(
-      availableNodeAddresses= Array(),
+      availableNodeAddresses = Array(),
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
       stateRestoreConfOpt = None,
       faultToleranceConfOpt = None
