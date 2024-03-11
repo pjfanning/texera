@@ -87,7 +87,7 @@ class PredictionVisualizationOpDesc extends PythonOperatorDescriptor {
          |
          |        pred  = pred.reshape(-1, 1)
          |        c = np.vstack((head,pred))
-         |        df = pd.DataFrame(c, columns=["y_pred"])
+         |        df = pd.DataFrame(c, columns=["$predictValue"])
          |        if "Iteration" in table.columns:
          |            df["Iteration"] = float(table["Iteration"])
          |        else:

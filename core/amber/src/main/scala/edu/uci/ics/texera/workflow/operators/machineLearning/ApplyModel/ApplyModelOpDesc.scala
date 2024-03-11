@@ -24,6 +24,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   @JsonSchemaInject(json = """{"toggleHidden" : ["y_prob"]}""")
   var is_prob: Boolean = false
 
+
+
   @JsonProperty(value = "y_prob", required = false,defaultValue = "y_prob")
   @JsonSchemaTitle("Probability Column")
   @JsonPropertyDescription("Specify the name of the predicted probability")
@@ -35,6 +37,26 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     )
   )
   var y_prob: String = "y_prob"
+
+
+  @JsonProperty(value = "is_ground_truth",defaultValue = "false")
+  @JsonSchemaTitle("Ground truth in datasets")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["y_true"]}""")
+  var is_ground_truth: Boolean = false
+
+
+  @JsonProperty(value = "y_true", required = false)
+  @JsonSchemaTitle("Ground truth label")
+  @JsonPropertyDescription("Specify the label column")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_ground_truth"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
+    )
+  )
+  @AutofillAttributeName
+  var y_true: String = ""
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -59,6 +81,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(1)
     outputSchemaBuilder.add(inputSchema)
+    if (is_ground_truth)  outputSchemaBuilder.add(new Attribute(y_true, AttributeType.BINARY))
     if (is_prob)  outputSchemaBuilder.add(new Attribute(y_prob, AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute(y_pred, AttributeType.BINARY)).build
 
@@ -70,6 +93,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   override def generatePythonCode(): String = {
     var flag_prob = "False"
     if (is_prob)  flag_prob = "True"
+    var flag_gt = "False"
+    if (is_ground_truth)  flag_gt = "True"
     val finalCode =
       s"""
          |from pytexera import *
@@ -90,6 +115,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      y_pred = []
          |      if $flag_prob:
          |        y_prob = []
+         |      if $flag_prob:
+         |        y_true = []
          |      s = table
          |      table = dataset
          |      for i in range(s.shape[0]):
@@ -98,6 +125,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        model = pickle.loads(s["model"][i])
          |        y_predict = model.predict(x_test)
          |        y_pred.append(y_predict)
+         |        if $flag_gt:
+         |            y_true.append(table["$y_true"])
          |        if $flag_prob:
          |            y_proba = model.predict_proba(x_test)
          |            y_prob.append([y_proba,model.classes_])
@@ -105,6 +134,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      result['$y_pred'] = y_pred
          |      if $flag_prob:
          |        result['$y_prob'] = y_prob
+         |      if $flag_prob:
+         |        result['$y_true'] = y_true
          |      res  = pd.DataFrame(result)
          |      res["model"] = s["model"]
          |      res["para"] =  s["para"]

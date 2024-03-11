@@ -134,20 +134,18 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            paraStrSeries = pd.Series(predictValueTable['para'].tolist())
          |            predictValueTable = predictValueTable.drop(['para'], axis=1)
          |            predictValueTable['para'] = paraStrSeries
+         |            #print(predictValueTable)
          |
          |            resultDf = pd.DataFrame(result)
-         |            df = pd.concat([resultDf, predictValueTable], axis=1)
+         |            for column in predictValueTable.columns:
+         |              resultDf[column] = 0
+         |              for row in range(resultDf.shape[0]):
+         |                resultDf[column][row] = predictValueTable[column][0]
+         |            #print(resultDf)
+         |            if "Iteration" in resultDf.columns:
+         |              resultDf['Iteration'] = resultDf['Iteration'].astype(int)
          |
-         |            for column in df.columns:
-         |              if pd.api.types.is_numeric_dtype(df[column]):
-         |                df[column] = df[column].fillna(df[column][0])
-         |              elif pd.api.types.is_string_dtype(df[column]):
-         |                df[column] = df[column].fillna('NaN')
-         |
-         |            if "Iteration" in df.columns:
-         |              df['Iteration'] = df['Iteration'].astype(int)
-         |
-         |            yield df
+         |            yield resultDf
          |
          |""".stripMargin
     finalcode
