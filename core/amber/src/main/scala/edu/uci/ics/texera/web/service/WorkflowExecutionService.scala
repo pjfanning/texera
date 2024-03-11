@@ -1,29 +1,24 @@
 package edu.uci.ics.texera.web.service
 
+import akka.actor.Address
+import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.model.websocket.event.{
-  TexeraWebSocketEvent,
-  WorkflowErrorEvent,
-  WorkflowStateEvent
-}
+import edu.uci.ics.texera.web.model.websocket.event.{TexeraWebSocketEvent, WorkflowErrorEvent, WorkflowStateEvent}
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{
-  COMPLETED,
-  FAILED,
-  READY,
-  RUNNING
-}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED, READY, RUNNING}
 import edu.uci.ics.texera.web.{SubscriptionManager, TexeraWebApplication, WebsocketInput}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 
 import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 
 class WorkflowExecutionService(
     controllerConfig: ControllerConfig,
@@ -76,6 +71,8 @@ class WorkflowExecutionService(
   var executionConsoleService: ExecutionConsoleService = _
 
   def startWorkflow(): Unit = {
+
+
     client = TexeraWebApplication.createAmberRuntime(
       workflowContext,
       workflow.physicalPlan,

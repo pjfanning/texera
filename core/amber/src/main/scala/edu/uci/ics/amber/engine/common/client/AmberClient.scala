@@ -4,15 +4,11 @@ import akka.actor.{ActorSystem, Address, PoisonPill, Props}
 import akka.pattern._
 import akka.util.Timeout
 import com.twitter.util.{Future, Promise}
+import edu.uci.ics.amber.clustering.ClusterListener.FetchAllComputationNodeAddrs
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
 import edu.uci.ics.amber.engine.common.FutureBijection._
 import edu.uci.ics.amber.engine.common.ambermessage.{NotifyFailedNode, WorkflowRecoveryMessage}
-import edu.uci.ics.amber.engine.common.client.ClientActor.{
-  ClosureRequest,
-  CommandRequest,
-  InitializeRequest,
-  ObservableRequest
-}
+import edu.uci.ics.amber.engine.common.client.ClientActor.{ClosureRequest, CommandRequest, InitializeRequest, ObservableRequest}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 import edu.uci.ics.texera.workflow.common.WorkflowContext
@@ -41,13 +37,22 @@ class AmberClient(
   private val registeredObservables = new mutable.HashMap[Class[_], Observable[_]]()
   @volatile private var isActive = true
 
-  Await.result(
+  Await.result({
+    implicit val timeout: Timeout = 5.seconds
+    val addresses = Await
+      .result(
+        system.actorSelection("/user/cluster-info") ? FetchAllComputationNodeAddrs(),
+        5.seconds
+      )
+      .asInstanceOf[Array[Address]]
+    val newControllerConfig = controllerConfig.copy(availableNodeAddresses = addresses)
     clientActor ? InitializeRequest(
       workflowContext,
       physicalPlan,
       opResultStorage,
-      controllerConfig
-    ),
+      newControllerConfig
+    )
+  },
     10.seconds
   )
 

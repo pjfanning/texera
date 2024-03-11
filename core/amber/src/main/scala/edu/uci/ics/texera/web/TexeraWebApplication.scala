@@ -90,10 +90,10 @@ object TexeraWebApplication {
       workflowContext: WorkflowContext,
       physicalPlan: PhysicalPlan,
       opResultStorage: OpResultStorage,
-      conf: ControllerConfig,
+      controllerConfig: ControllerConfig,
       errorHandler: Throwable => Unit
   ): AmberClient = {
-    new AmberClient(actorSystem, workflowContext, physicalPlan, opResultStorage, conf, errorHandler)
+    new AmberClient(actorSystem, workflowContext, physicalPlan, opResultStorage, controllerConfig, errorHandler)
   }
 
   def scheduleCallThroughActorSystem(delay: FiniteDuration)(call: => Unit): Cancellable = {

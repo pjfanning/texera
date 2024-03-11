@@ -2,17 +2,12 @@ package edu.uci.ics.texera.web.service
 
 import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
+import edu.uci.ics.amber.clustering.ClusterListener
+import edu.uci.ics.amber.clustering.ClusterListener.FetchAllComputationNodeAddrs
 import edu.uci.ics.amber.engine.architecture.controller.ControllerConfig
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  FaultToleranceConfig,
-  StateRestoreConfig
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig}
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ChannelMarkerIdentity,
-  ExecutionIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, ExecutionIdentity, WorkflowIdentity}
 import edu.uci.ics.texera.web.model.websocket.event.TexeraWebSocketEvent
 import edu.uci.ics.texera.web.model.websocket.request.WorkflowExecuteRequest
 import edu.uci.ics.texera.web.service.WorkflowService.mkWorkflowStateId
@@ -152,6 +147,7 @@ class WorkflowService(
     val workflowContext: WorkflowContext = createWorkflowContext(uidOpt)
     var controllerConf = ControllerConfig.default
 
+
     workflowContext.executionId = ExecutionsMetadataPersistService.insertNewExecution(
       workflowContext.workflowId,
       workflowContext.userId,
@@ -165,6 +161,7 @@ class WorkflowService(
         val writeLocation = AmberConfig.faultToleranceLogRootFolder.get.resolve(
           s"${workflowContext.workflowId}/${workflowContext.executionId}"
         )
+
         ExecutionsMetadataPersistService.tryUpdateExistingExecution(workflowContext.executionId) {
           execution => execution.setLogLocation(writeLocation.toString)
         }
