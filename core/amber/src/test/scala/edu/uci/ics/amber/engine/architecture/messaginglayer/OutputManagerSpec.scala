@@ -4,7 +4,12 @@ import com.softwaremill.macwire.wire
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings.OneToOnePartitioning
 import edu.uci.ics.amber.engine.common.ambermessage._
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, OperatorIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  ChannelIdentity,
+  OperatorIdentity,
+  PhysicalOpIdentity
+}
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.EndOfUpstream
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
@@ -61,7 +66,9 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
       (mockHandler.apply _).expects(
         mkDataMessage(fakeID, identifier, 2, DataFrame(tuples.slice(20, 21)))
       )
-      (mockHandler.apply _).expects(mkDataMessage(fakeID, identifier, 3, MarkerFrame(EndOfUpstream())))
+      (mockHandler.apply _).expects(
+        mkDataMessage(fakeID, identifier, 3, MarkerFrame(EndOfUpstream()))
+      )
     }
     val fakeLink = PhysicalLink(physicalOpId(), mockPortId, physicalOpId(), mockPortId)
     val fakeReceiver = Array[ActorVirtualIdentity](fakeID)
