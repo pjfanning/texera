@@ -23,8 +23,20 @@ import { SchemaPropagationService } from "../service/dynamic-schema/schema-propa
 import { WorkflowConsoleService } from "../service/workflow-console/workflow-console.service";
 import { OperatorReuseCacheStatusService } from "../service/workflow-status/operator-reuse-cache-status.service";
 import { CodeEditorService } from "../service/code-editor/code-editor.service";
+import {UserProjectService} from "../../dashboard/user/service/user-project/user-project.service";
+import {OperatorPredicate, Point} from "../types/workflow-common.interface";
+import {WorkflowUtilService} from "../service/workflow-graph/util/workflow-util.service";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 300;
+
+interface ServerResponse {
+  message: string;
+}
+
+interface ChatMessage {
+  type: 'user' | 'server';
+  content: string;
+}
 
 @UntilDestroy()
 @Component({
@@ -40,6 +52,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public pid?: number = undefined;
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
+  public isChatboxVisible: boolean = true;
+  public msgChat: string = '';
+  public msgs: ChatMessage[] = [];
   userSystemEnabled = environment.userSystemEnabled;
   @ViewChild("codeEditor", { read: ViewContainerRef }) vc!: ViewContainerRef;
   constructor(
@@ -61,7 +76,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private message: NzMessageService,
     private router: Router,
     private notificationService: NotificationService,
-    private codeEditorService: CodeEditorService
+    private codeEditorService: CodeEditorService,
+    private userProjectService: UserProjectService,
+    private workflowUtilService: WorkflowUtilService
   ) {}
 
   ngOnInit() {
@@ -282,4 +299,54 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
         this.workflowWebsocketService.reopenWebsocket(wid);
       });
   }
+
+  toggleChatboxVisibility(): void {
+    this.isChatboxVisible = !this.isChatboxVisible;
+  }
+
+displayMessage() {
+  if (this.msgChat.trim()) { // Only add non-empty messages
+
+    this.msgs.push({
+      type: 'user',
+      content: this.msgChat.trim()
+    });
+
+    this.userProjectService.getExample(this.msgChat.trim())
+      .pipe(untilDestroyed(this))
+      .subscribe(
+        (response: ServerResponse) => {
+          const parsedMessage = JSON.parse(response.message);
+          this.msgs.push({
+            type: 'server',
+            content: parsedMessage.server_message
+          });
+          console.log("message is ", response.message);
+          // const operatorsAndPositions: { op: OperatorPredicate; pos: Point }[] = [];
+
+          // const opID=parsedMessage.operatorType + "-" + this.workflowUtilService.getOperatorRandomUUID();
+          // const op1: OperatorPredicate={
+          //   inputPorts: [{"portID":"input-0","displayName":"","allowMultiInputs":false,"isDynamicPort":false}],
+          //   operatorID: opID,
+          //   operatorProperties: parsedMessage.operatorProperties,
+          //   operatorType: parsedMessage.operatorType,
+          //   operatorVersion: "f82d0affafcba93dada5e3d1e9f3367e5b53d037",
+          //   outputPorts: [{"portID":"output-0","displayName":"","allowMultiInputs":false,"isDynamicPort":false}],
+          //   showAdvanced: false
+          // };
+          // const pos1: Point={"x":500,"y":300};
+          // operatorsAndPositions.push({ op: op1, pos: pos1 });
+          // this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions);
+          // Clear the input after adding the user message
+          this.msgChat = '';
+        },
+        error => {
+          console.error("Error receiving server message:", error);
+        }
+      );
+  }
+  else{
+    console.log("no msg typed")
+  }
+}
 }

@@ -14,6 +14,10 @@ export const CREATE_PROJECT_URL = `${USER_PROJECT_BASE_URL}/create`;
 export const USER_FILE_BASE_URL = `${AppSettings.getApiEndpoint()}/user/file`;
 export const USER_FILE_DELETE_URL = `${USER_FILE_BASE_URL}/delete`;
 
+interface ServerResponse {
+  message: string;
+}
+
 @Injectable({
   providedIn: "root",
 })
@@ -147,5 +151,21 @@ export class UserProjectService {
    */
   public static isInvalidColorFormat(color: string) {
     return color == null || (color.length != 6 && color.length != 3) || !/^([0-9A-Fa-f]{3}){1,2}$/.test(color);
+  }
+
+  public postExample(message: string): Observable<ServerResponse> {
+    const payload = {
+      prompt: message,
+      n_predict: 128
+    };
+    return this.http.post<ServerResponse>(`http://kiwi2.ics.uci.edu:5000/completion/`, JSON.stringify(payload));
+  }
+
+  public getExample(message: string): Observable<ServerResponse> {
+    // const payload = {
+    //   prompt: message,
+    //   n_predict: 128
+    // };
+    return this.http.get<ServerResponse>(`http://kiwi2.ics.uci.edu:5000/`);
   }
 }
