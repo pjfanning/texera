@@ -45,14 +45,7 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
       "Visualize ROC in a ROC Chart",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
-        InputPort(
-          PortIdentity(0),
-          displayName = "GroundTruth",
-        ),
-        InputPort(
-          PortIdentity(1),
-          displayName = "PredictValue",
-          dependencies = List(PortIdentity(0)))
+        InputPort()
       ),
       outputPorts = List(OutputPort())
     )
@@ -76,62 +69,71 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
          |class ProcessTableOperator(UDFTableOperator):
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |        global groundTruthTable
          |        global predictValueTable
          |
-         |        if port == 0:
-         |            groundTruthTable = table
-         |            print(groundTruthTable.columns)
+         |        if table.empty:
+         |            yield {"html-content": self.render_error("input table is empty.")}
+         |            return
          |
-         |        if port == 1:
-         |            if table.empty:
-         |                  yield {'html-content': self.render_error("input table is empty.")}
-         |                  return
+         |        predictValueTable = table
+         |        print(predictValueTable.columns)
          |
-         |            predictValueTable = table
-         |            print(predictValueTable.columns)
+         |        y_true = predictValueTable["$actualValueColumn"][0]
+         |        y_prob = predictValueTable["$predictValueColumn"][0][0]
+         |        labels = predictValueTable["$predictValueColumn"][0][1]
          |
-         |            y_true = groundTruthTable['$actualValueColumn'].values
-         |            y_prob = predictValueTable['$predictValueColumn'][0][0]
-         |            labels = predictValueTable['$predictValueColumn'][0][1]
+         |        print(y_true, y_prob, labels)
          |
-         |            print(y_true, y_prob, labels)
+         |        label_encoder = LabelEncoder()
+         |        y = label_encoder.fit_transform(y_true)
          |
-         |            label_encoder = LabelEncoder()
-         |            y = label_encoder.fit_transform(y_true)
+         |        y_bin = label_binarize(y_true, classes=labels)
+         |        n_classes = y_bin.shape[1]
          |
-         |            y_bin = label_binarize(y_true, classes=labels)
-         |            n_classes = y_bin.shape[1]
+         |        fpr = dict()
+         |        tpr = dict()
+         |        roc_auc = dict()
          |
-         |            fpr = dict()
-         |            tpr = dict()
-         |            roc_auc = dict()
+         |        for i in range(n_classes):
+         |            fpr[i], tpr[i], _ = metrics.roc_curve(y_bin[:, i], y_prob[:, i])
+         |            roc_auc[i] = metrics.auc(fpr[i], tpr[i])
          |
-         |            for i in range(n_classes):
-         |                fpr[i], tpr[i], _ = metrics.roc_curve(y_bin[:, i], y_prob[:, i])
-         |                roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+         |        fig = go.Figure()
          |
-         |            fig = go.Figure()
+         |        colors = px.colors.qualitative.Plotly[:n_classes]
+         |        for i, color in zip(range(n_classes), colors):
+         |            fig.add_trace(
+         |                go.Scatter(
+         |                    x=fpr[i],
+         |                    y=tpr[i],
+         |                    mode="lines",
+         |                    name=f"{labels[i]} (area = {roc_auc[i]:0.2f})",
+         |                    line=dict(color=color),
+         |                )
+         |            )
          |
-         |            colors = px.colors.qualitative.Plotly[:n_classes]
-         |            for i, color in zip(range(n_classes), colors):
-         |                fig.add_trace(go.Scatter(x=fpr[i], y=tpr[i], mode='lines',
-         |                    name=f'{labels[i]} (area = {roc_auc[i]:0.2f})',
-         |                    line=dict(color=color)))
+         |        fig.add_trace(
+         |            go.Scatter(
+         |                x=[0, 1],
+         |                y=[0, 1],
+         |                mode="lines",
+         |                name="Chance",
+         |                line=dict(color="navy", dash="dash"),
+         |            )
+         |        )
          |
-         |            fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1], mode='lines', name='Chance', line=dict(color='navy', dash='dash')))
+         |        fig.update_layout(
+         |            title="$title",
+         |            xaxis_title="False Positive Rate",
+         |            yaxis_title="True Positive Rate",
+         |            xaxis=dict(scaleanchor="x", scaleratio=1),
+         |            yaxis=dict(constrain="domain"),
+         |            margin=dict(l=20, r=20, t=40, b=20),
+         |        )
          |
-         |            fig.update_layout(
-         |                  title='$title',
-         |                  xaxis_title='False Positive Rate',
-         |                  yaxis_title='True Positive Rate',
-         |                  xaxis=dict(scaleanchor="x", scaleratio=1),
-         |                  yaxis=dict(constrain="domain"),
-         |                  margin=dict(l=20, r=20, t=40, b=20))
-         |
-         |            # convert fig to html content
-         |            html = plotly.io.to_html(fig, include_plotlyjs='cdn', auto_play=False)
-         |            yield {'html-content': html}
+         |        # convert fig to html content
+         |        html = plotly.io.to_html(fig, include_plotlyjs="cdn", auto_play=False)
+         |        yield {"html-content": html}
          |
          |""".stripMargin
     finalcode
