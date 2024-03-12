@@ -38,8 +38,7 @@ class LoopEndOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecutor
             if (schema.containsAttribute("Iteration")){
               val s = new Schema.Builder(schema).removeIfExists("Iteration").build()
               buffer.append((Tuple.newBuilder(s).addSequentially(
-                s.getAttributesScala.map(attr =>  t.asInstanceOf[Tuple].getField[AnyRef](attr.getName)).toArray).build(), None))
-
+                s.getAttributesScala.map(attr =>  t.asInstanceOf[Tuple].getField[Object](attr.getName)).toArray).build(), None))
             } else {
               buffer.append((t, None))
             }
