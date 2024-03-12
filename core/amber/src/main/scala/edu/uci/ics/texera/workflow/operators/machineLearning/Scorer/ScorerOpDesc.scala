@@ -70,6 +70,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
+         |            result = dict()
+         |
          |            y_true = table['$actualValueColumn'][0]
          |            y_pred = table['$predictValueColumn'][0]
          |            labels = list(set(y_true))
