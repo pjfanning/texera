@@ -138,15 +138,14 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
-    outputSchemaBuilder.add(inputSchema)
-    outputSchemaBuilder.removeIfExists("para")
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
-    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
-    {
+    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
       outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
     }
     )
+    outputSchemaBuilder.add(inputSchema)
+    outputSchemaBuilder.removeIfExists("para")
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     outputSchemaBuilder.build
   }
 
