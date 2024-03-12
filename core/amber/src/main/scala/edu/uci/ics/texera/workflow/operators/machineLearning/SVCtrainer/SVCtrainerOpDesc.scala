@@ -221,9 +221,9 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
          |        elif kernal_value in ['rbf']:
-         |          coef_value = coef_list[i]
-         |          para_str = "kernal_value = '{}';c_value= {};coef_value= {}".format(kernal_value,c_value,coef_value)
-         |          model = SVC(kernel=kernal_value,C=float(c_value),coef0=float(coef_value),probability=True)
+         |          gamma_value = gamma_list[i]
+         |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
+         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,probability=True)
          |        elif kernal_value in ['sigmoid']:
          |          gamma_value = gamma_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
