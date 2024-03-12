@@ -51,15 +51,15 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor{
          |    keys_list = list(table.keys())
          |    print(keys_list)
          |    data = dict({})
-         |    max_result=0
-         |    for index in range(len(table["model"])):
-         |      result = table["$evaluation"][index]
+         |    best_result=0
+         |    table = table[table["Label"]=="Overall"]
+         |    for _, value in enumerate(table["$evaluation"]):
+         |      result = value
          |      print("result",result)
-         |      print("max_result",max_result)
-         |      if result > max_result:
-         |        max_result = result
-         |        for schema in keys_list:
-         |          data[schema]= table[schema][index]
+         |      print("best_result",best_result)
+         |      if result > best_result:
+         |        best_result = result
+         |    data = table[table["$evaluation"]==best_result]
          |    print(data)
          |    yield data
          |

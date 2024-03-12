@@ -134,7 +134,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      result['$y_pred'] = y_pred
          |      if $flag_prob:
          |        result['$y_prob'] = y_prob
-         |      if $flag_prob:
+         |      if $flag_gt:
          |        result['$y_true'] = y_true
          |      res  = pd.DataFrame(result)
          |      res["model"] = s["model"]

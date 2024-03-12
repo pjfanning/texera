@@ -44,14 +44,7 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
       "Visualize confusion matrix in a Confusion Matrix Chart",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
-        InputPort(
-          PortIdentity(0),
-          displayName = "GroundTruth",
-        ),
-        InputPort(
-          PortIdentity(1),
-          displayName = "PredictValue",
-          dependencies = List(PortIdentity(0)))
+        InputPort()
       ),
       outputPorts = List(OutputPort())
     )
@@ -72,54 +65,51 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
          |class ProcessTableOperator(UDFTableOperator):
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |        global groundTruthTable
          |        global predictValueTable
          |
-         |        if port == 0:
-         |            groundTruthTable = table
-         |            print(groundTruthTable.columns)
+         |        if table.empty:
+         |            yield {"html-content": self.render_error("input table is empty.")}
+         |            return
          |
-         |        if port == 1:
-         |            if table.empty:
-         |                  yield {'html-content': self.render_error("input table is empty.")}
-         |                  return
+         |        predictValueTable = table
+         |        print(predictValueTable.columns)
          |
-         |            predictValueTable = table
-         |            print(predictValueTable.columns)
+         |        y_true = predictValueTable["$actualValueColumn"][0]
+         |        y_pred = predictValueTable["$predictValueColumn"][0]
          |
-         |            y_true = groundTruthTable['$actualValueColumn']
-         |            y_pred = predictValueTable['$predictValueColumn'][0]
+         |        column_set = set(y_true)
+         |        labels = list(column_set)
          |
-         |            column_set = set(y_true)
-         |            labels = list(column_set)
+         |        prediction = confusion_matrix(y_true, y_pred, labels=labels)
          |
-         |            prediction = confusion_matrix(y_true, y_pred, labels = labels)
+         |        print("prediction", prediction)
+         |        print("labels", labels)
          |
-         |            print('prediction', prediction)
-         |            print('labels', labels)
+         |        text = [[str(value) for value in row] for row in prediction]
          |
-         |            text = [[str(value) for value in row] for row in prediction]
+         |        print("text", text)
          |
-         |            print('text', text)
-         |
-         |            fig = go.Figure(data=go.Heatmap(
+         |        fig = go.Figure(
+         |            data=go.Heatmap(
          |                z=prediction,
          |                x=labels,
          |                y=labels,
          |                text=text,
          |                texttemplate="%{text}",
          |                hoverongaps=False,
-         |                colorscale='Viridis',
-         |                showscale=True))
+         |                colorscale="Viridis",
+         |                showscale=True,
+         |            )
+         |        )
          |
-         |            fig.update_layout(
-         |                title='$title',
-         |                xaxis_title="Predicted Label",
-         |                yaxis_title="True Label")
+         |        fig.update_layout(
+         |            title="$title", xaxis_title="Predicted Label", yaxis_title="True Label"
+         |        )
          |
-         |            # convert fig to html content
-         |            html = plotly.io.to_html(fig, include_plotlyjs='cdn', auto_play=False)
-         |            yield {'html-content': html}
+         |        # convert fig to html content
+         |        html = plotly.io.to_html(fig, include_plotlyjs="cdn", auto_play=False)
+         |        yield {"html-content": html}
+         |
          |
          |""".stripMargin
     finalcode
