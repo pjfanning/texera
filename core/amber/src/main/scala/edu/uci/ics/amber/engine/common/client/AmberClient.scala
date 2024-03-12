@@ -44,19 +44,11 @@ class AmberClient(
 
   Await.result(
     {
-      implicit val timeout: Timeout = 5.seconds
-      val addresses = Await
-        .result(
-          system.actorSelection("/user/cluster-info") ? FetchAllComputationNodeAddrs(),
-          5.seconds
-        )
-        .asInstanceOf[Array[Address]]
-      val newControllerConfig = controllerConfig.copy(availableNodeAddresses = addresses)
       clientActor ? InitializeRequest(
         workflowContext,
         physicalPlan,
         opResultStorage,
-        newControllerConfig
+        controllerConfig
       )
     },
     10.seconds
