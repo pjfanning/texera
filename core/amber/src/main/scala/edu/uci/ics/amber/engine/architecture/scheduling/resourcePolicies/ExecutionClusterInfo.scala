@@ -1,3 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.scheduling.resourcePolicies
 
-class ExecutionClusterInfo() {}
+import edu.uci.ics.amber.engine.architecture.scheduling.Region
+
+class ExecutionClusterInfo() {
+  def getAvailableNumOfWorkers(region: Region) = 12
+}

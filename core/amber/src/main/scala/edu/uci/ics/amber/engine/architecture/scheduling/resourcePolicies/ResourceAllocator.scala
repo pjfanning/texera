@@ -17,66 +17,6 @@ import scala.collection.mutable
 
 trait ResourceAllocator {
   def allocate(region: Region): (Region, Double)
-}
-class DefaultResourceAllocator(
-    physicalPlan: PhysicalPlan,
-    executionClusterInfo: ExecutionClusterInfo
-) extends ResourceAllocator {
-
-  // a map of a physical link to the partition info of the upstream/downstream of this link
-  private val linkPartitionInfos = new mutable.HashMap[PhysicalLink, PartitionInfo]()
-
-  private val operatorConfigs = new mutable.HashMap[PhysicalOpIdentity, OperatorConfig]()
-  private val linkConfigs = new mutable.HashMap[PhysicalLink, LinkConfig]()
-
-  /**
-    * Allocates resources for a given region and its operators.
-    *
-    * This method calculates and assigns worker configurations for each operator
-    * in the region. For the operators that are parallelizable, it respects the
-    * suggested worker number if provided. Otherwise, it falls back to a default
-    * value. Non-parallelizable operators are assigned a single worker.
-    *
-    * @param region The region for which to allocate resources.
-    * @return A tuple containing:
-    *         1) A new Region instance with new resource configuration.
-    *         2) An estimated cost of the workflow with the new resource configuration,
-    *         represented as a Double value (currently set to 0, but will be
-    *         updated in the future).
-    */
-  def allocate(
-      region: Region
-  ): (Region, Double) = {
-
-    val opToOperatorConfigMapping = region.getOperators
-      .map(physicalOp => physicalOp.id -> OperatorConfig(generateWorkerConfigs(physicalOp)))
-      .toMap
-
-    operatorConfigs ++= opToOperatorConfigMapping
-
-    propagatePartitionRequirement(region)
-
-    val linkToLinkConfigMapping = region.getLinks.map { physicalLink =>
-      physicalLink -> LinkConfig(
-        generateChannelConfigs(
-          operatorConfigs(physicalLink.fromOpId).workerConfigs.map(_.workerId),
-          operatorConfigs(physicalLink.toOpId).workerConfigs.map(_.workerId),
-          toPortId = physicalLink.toPortId,
-          linkPartitionInfos(physicalLink)
-        ),
-        toPartitioning(
-          operatorConfigs(physicalLink.toOpId).workerConfigs.map(_.workerId),
-          linkPartitionInfos(physicalLink)
-        )
-      )
-    }.toMap
-
-    linkConfigs ++= linkToLinkConfigMapping
-
-    val resourceConfig = ResourceConfig(opToOperatorConfigMapping, linkToLinkConfigMapping)
-
-    (region.copy(resourceConfig = Some(resourceConfig)), 0)
-  }
 
   /**
     * This method propagates partitioning requirements in the PhysicalPlan DAG.
@@ -84,13 +24,19 @@ class DefaultResourceAllocator(
     * This method is invoked once for each region, and only propagate partitioning requirements within
     * the region. For example, suppose we have the following physical Plan:
     *
-    *     A ->
-    *           HJ
-    *     B ->
+    * A ->
+    * HJ
+    * B ->
     * The link A->HJ will be propagated in the first region. The link B->HJ will be propagated in the second region.
     * The output partition info of HJ will be derived after both links are propagated, which is in the second region.
     */
-  private def propagatePartitionRequirement(region: Region): Unit = {
+  def propagatePartitionRequirement(
+      region: Region,
+      physicalPlan: PhysicalPlan,
+      linkPartitionInfos: mutable.HashMap[PhysicalLink, PartitionInfo],
+      operatorConfigs: mutable.HashMap[PhysicalOpIdentity, OperatorConfig],
+      linkConfigs: mutable.HashMap[PhysicalLink, LinkConfig]
+  ): Unit = {
     region
       .topologicalIterator()
       .foreach(physicalOpId => {
@@ -142,5 +88,71 @@ class DefaultResourceAllocator(
             )
         }
       })
+  }
+}
+class DefaultResourceAllocator(
+    physicalPlan: PhysicalPlan,
+    executionClusterInfo: ExecutionClusterInfo
+) extends ResourceAllocator {
+
+  // a map of a physical link to the partition info of the upstream/downstream of this link
+  private val linkPartitionInfos = new mutable.HashMap[PhysicalLink, PartitionInfo]()
+
+  private val operatorConfigs = new mutable.HashMap[PhysicalOpIdentity, OperatorConfig]()
+  private val linkConfigs = new mutable.HashMap[PhysicalLink, LinkConfig]()
+
+  /**
+    * Allocates resources for a given region and its operators.
+    *
+    * This method calculates and assigns worker configurations for each operator
+    * in the region. For the operators that are parallelizable, it respects the
+    * suggested worker number if provided. Otherwise, it falls back to a default
+    * value. Non-parallelizable operators are assigned a single worker.
+    *
+    * @param region The region for which to allocate resources.
+    * @return A tuple containing:
+    *         1) A new Region instance with new resource configuration.
+    *         2) An estimated cost of the workflow with the new resource configuration,
+    *         represented as a Double value (currently set to 0, but will be
+    *         updated in the future).
+    */
+  def allocate(
+      region: Region
+  ): (Region, Double) = {
+
+    val opToOperatorConfigMapping = region.getOperators
+      .map(physicalOp => physicalOp.id -> OperatorConfig(generateWorkerConfigs(physicalOp)))
+      .toMap
+
+    operatorConfigs ++= opToOperatorConfigMapping
+
+    propagatePartitionRequirement(
+      region,
+      physicalPlan,
+      linkPartitionInfos,
+      operatorConfigs,
+      linkConfigs
+    )
+
+    val linkToLinkConfigMapping = region.getLinks.map { physicalLink =>
+      physicalLink -> LinkConfig(
+        generateChannelConfigs(
+          operatorConfigs(physicalLink.fromOpId).workerConfigs.map(_.workerId),
+          operatorConfigs(physicalLink.toOpId).workerConfigs.map(_.workerId),
+          toPortId = physicalLink.toPortId,
+          linkPartitionInfos(physicalLink)
+        ),
+        toPartitioning(
+          operatorConfigs(physicalLink.toOpId).workerConfigs.map(_.workerId),
+          linkPartitionInfos(physicalLink)
+        )
+      )
+    }.toMap
+
+    linkConfigs ++= linkToLinkConfigMapping
+
+    val resourceConfig = ResourceConfig(opToOperatorConfigMapping, linkToLinkConfigMapping)
+
+    (region.copy(resourceConfig = Some(resourceConfig)), 0)
   }
 }

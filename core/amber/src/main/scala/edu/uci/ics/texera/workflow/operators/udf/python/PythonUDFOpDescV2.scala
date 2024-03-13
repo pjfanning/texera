@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.workflow.operators.udf.python
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
@@ -45,10 +46,16 @@ class PythonUDFOpDescV2 extends LogicalOp {
   @JsonPropertyDescription("Input your code here")
   var code: String = ""
 
-  @JsonProperty(required = true)
+  @JsonProperty(required = true, defaultValue = "true")
+  @JsonSchemaTitle("Parallelizable")
+  @JsonPropertyDescription("Does this operator parallelizable?")
+  var parallelizable: Boolean = Boolean.box(true)
+
+  @JsonProperty()
   @JsonSchemaTitle("Worker count")
-  @JsonPropertyDescription("Specify how many parallel workers to lunch")
-  var workers: Int = Int.box(1)
+  @JsonPropertyDescription("Specify how many parallel workers to launch")
+  @JsonDeserialize(contentAs = classOf[Int])
+  var workers: Option[Int] = None
 
   @JsonProperty(required = true, defaultValue = "true")
   @JsonSchemaTitle("Retain input columns")
@@ -66,7 +73,6 @@ class PythonUDFOpDescV2 extends LogicalOp {
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
   ): PhysicalOp = {
-    Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.", Array())
     val opInfo = this.operatorInfo
     val partitionRequirement: List[Option[PartitionInfo]] = if (inputPorts != null) {
       inputPorts.map(p => Option(p.partitionRequirement))
@@ -94,23 +100,40 @@ class PythonUDFOpDescV2 extends LogicalOp {
       Map(operatorInfo.outputPorts.head.id -> outputSchemaBuilder.build())
     }
 
-    if (workers > 1)
-      PhysicalOp
-        .oneToOnePhysicalOp(
-          workflowId,
-          executionId,
-          operatorIdentifier,
-          OpExecInitInfo(code, "python")
-        )
-        .withDerivePartition(_ => UnknownPartition())
-        .withInputPorts(operatorInfo.inputPorts)
-        .withOutputPorts(operatorInfo.outputPorts)
-        .withPartitionRequirement(partitionRequirement)
-        .withIsOneToManyOp(true)
-        .withParallelizable(true)
-        .withSuggestedWorkerNum(workers)
-        .withPropagateSchema(SchemaPropagationFunc(propagateSchema))
-    else
+    if (parallelizable) {
+      if (workers.isDefined) {
+        PhysicalOp
+          .oneToOnePhysicalOp(
+            workflowId,
+            executionId,
+            operatorIdentifier,
+            OpExecInitInfo(code, "python")
+          )
+          .withDerivePartition(_ => UnknownPartition())
+          .withInputPorts(operatorInfo.inputPorts)
+          .withOutputPorts(operatorInfo.outputPorts)
+          .withPartitionRequirement(partitionRequirement)
+          .withIsOneToManyOp(true)
+          .withParallelizable(true)
+          .withSuggestedWorkerNum(workers.get)
+          .withPropagateSchema(SchemaPropagationFunc(propagateSchema))
+      } else {
+        PhysicalOp
+          .oneToOnePhysicalOp(
+            workflowId,
+            executionId,
+            operatorIdentifier,
+            OpExecInitInfo(code, "python")
+          )
+          .withDerivePartition(_ => UnknownPartition())
+          .withInputPorts(operatorInfo.inputPorts)
+          .withOutputPorts(operatorInfo.outputPorts)
+          .withPartitionRequirement(partitionRequirement)
+          .withIsOneToManyOp(true)
+          .withParallelizable(true)
+          .withPropagateSchema(SchemaPropagationFunc(propagateSchema))
+      }
+    } else
       PhysicalOp
         .manyToOnePhysicalOp(
           workflowId,

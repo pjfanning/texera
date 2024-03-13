@@ -2,6 +2,7 @@ package edu.uci.ics.texera.workflow.operators.udf.python.source;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp;
@@ -24,6 +25,7 @@ import scala.collection.immutable.Map;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.Collections.singletonList;
@@ -46,10 +48,15 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     @JsonPropertyDescription("Input your code here")
     public String code;
 
-    @JsonProperty(required = true)
+    @JsonProperty(required = true, defaultValue = "true")
+    @JsonSchemaTitle("Parallelizable")
+    @JsonPropertyDescription("Does this operator parallelizable?")
+    public Boolean parallelizable = true;
+
+    @JsonProperty()
     @JsonSchemaTitle("Worker count")
-    @JsonPropertyDescription("Specify how many parallel workers to lunch")
-    public Integer workers = 1;
+    @JsonPropertyDescription("Specify how many parallel workers to launch")
+    public Integer workers = null;
 
     @JsonProperty()
     @JsonSchemaTitle("Columns")
@@ -59,7 +66,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
         OpExecInitInfo exec = OpExecInitInfo.apply(code, "python");
-        Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
+//        Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
         SchemaPropagationFunc func = SchemaPropagationFunc.apply((Function<Map<PortIdentity, Schema>, Map<PortIdentity, Schema>> & Serializable) inputSchemas -> {
             // Initialize a Java HashMap
             java.util.Map<PortIdentity, Schema> javaMap = new java.util.HashMap<>();
@@ -82,10 +89,15 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
                 .withLocationPreference(Option.empty());
 
 
-        if (workers > 1) {
-            return physicalOp
-                    .withParallelizable(true)
-                    .withSuggestedWorkerNum(workers);
+        if (parallelizable) {
+            if (workers != null) {
+                return physicalOp
+                        .withParallelizable(true)
+                        .withSuggestedWorkerNum(workers);
+            } else {
+                return physicalOp
+                        .withParallelizable(true);
+            }
         } else {
             return physicalOp.withParallelizable(false);
         }
