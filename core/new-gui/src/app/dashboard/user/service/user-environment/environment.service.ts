@@ -64,6 +64,11 @@ export class EnvironmentService {
   }
 
   public getDatasetsFileList(eid: number, query: String): Observable<ReadonlyArray<string>> {
+    if (query == "") {
+      return this.http.get<ReadonlyArray<string>>(
+        `${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_GET_DATASETS_FILELIST}`
+      );
+    }
     return this.http.get<ReadonlyArray<string>>(
       `${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/${ENVIRONMENT_GET_DATASETS_FILELIST}/${query}`
     );

@@ -6,6 +6,7 @@ import { FileUploadItem } from "../../../../type/dashboard-file.interface";
 import { Dataset, DatasetVersion } from "../../../../../../common/type/dataset";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NotificationService } from "../../../../../../common/service/notification/notification.service";
+import sanitize from "sanitize-filename"
 
 @UntilDestroy()
 @Component({
@@ -35,6 +36,9 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
   fields: FormlyFieldConfig[] = [];
   isDatasetPublic: boolean = true;
 
+  // used when creating the dataset
+  isDatasetNameSanitized: boolean = false;
+
   constructor(
     private datasetService: DatasetService,
     private notificationService: NotificationService,
@@ -43,6 +47,7 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
 
   ngOnInit() {
     this.setFormFields();
+    this.isDatasetNameSanitized = false;
   }
 
   private setFormFields() {
@@ -91,6 +96,14 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
     return Object.keys(this.form.controls);
   }
 
+  datasetNameSanitization(datasetName: string): string {
+    const sanitizedDatasetName = sanitize(datasetName);
+    if (sanitizedDatasetName != datasetName) {
+      this.isDatasetNameSanitized = true;
+    }
+    return sanitizedDatasetName;
+  }
+
   private triggerValidation() {
     Object.keys(this.form.controls).forEach(field => {
       const control = this.form.get(field);
@@ -133,7 +146,7 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
         });
     } else {
       const ds: Dataset = {
-        name: this.form.get("name")?.value,
+        name: this.datasetNameSanitization(this.form.get("name")?.value),
         description: this.form.get("description")?.value,
         isPublic: this.isDatasetPublic ? 1 : 0,
         did: undefined,
@@ -142,12 +155,18 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
         versionHierarchy: undefined,
       };
       const initialVersionName = this.form.get("versionName")?.value;
+
+      // do the name sanitization
+
+
       this.datasetService
         .createDataset(ds, initialVersionName, this.newUploadFiles)
         .pipe(untilDestroyed(this))
         .subscribe({
           next: res => {
-            this.notificationService.success(`Dataset '${ds.name}' Created`);
+
+            this.notificationService.success(
+              `Dataset '${ds.name}' Created. ${this.isDatasetNameSanitized? "We have sanitized your provided dataset name for the compatibility reason" : ""}`);
             this.datasetOrVersionCreationID.emit(res.dataset.did);
           },
           error: (res: unknown) => {
