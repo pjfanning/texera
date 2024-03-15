@@ -61,6 +61,7 @@ abstract class RegionPlanGenerator(
   def allocateResource(
       regionDAG: DirectedAcyclicGraph[Region, RegionLink]
   ): Unit = {
+    executionClusterInfo.setNumOfRegions(regionDAG.vertexSet().size())
     val resourceAllocator = new NaiveResourceAllocator(physicalPlan, executionClusterInfo)
     // generate the resource configs
     new TopologicalOrderIterator(regionDAG).asScala

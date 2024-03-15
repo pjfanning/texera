@@ -153,20 +153,6 @@ class NaiveResourceAllocator(physicalPlan: PhysicalPlan, executionClusterInfo: E
       val numWorkers =
         allocateWorkers(speeds, executionClusterInfo.getAvailableNumOfWorkers(region))
 
-      import java.io.{BufferedWriter, FileWriter}
-
-      val file = new BufferedWriter(new FileWriter("history.txt"))
-
-      try {
-        numWorkers.foreach { key =>
-          file.write(key._1.id.logicalOpId.id)
-          file.write(" ")
-          file.write(key._2.toString)
-          file.newLine()
-        }
-      } finally {
-        file.close()
-      }
       // calculate estimated cost
       for (i <- region.getOperators) {
         if (numWorkers.contains(i))
