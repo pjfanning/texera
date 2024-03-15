@@ -5,7 +5,11 @@ import edu.uci.ics.amber.engine.architecture.scheduling.Region
 import edu.uci.ics.amber.engine.architecture.scheduling.config.ChannelConfig.generateChannelConfigs
 import edu.uci.ics.amber.engine.architecture.scheduling.config.LinkConfig.toPartitioning
 import edu.uci.ics.amber.engine.architecture.scheduling.config.WorkerConfig.generateWorkerConfigs
-import edu.uci.ics.amber.engine.architecture.scheduling.config.{LinkConfig, OperatorConfig, ResourceConfig}
+import edu.uci.ics.amber.engine.architecture.scheduling.config.{
+  LinkConfig,
+  OperatorConfig,
+  ResourceConfig
+}
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowRuntimeStatistics
@@ -52,38 +56,23 @@ class NaiveResourceAllocator(physicalPlan: PhysicalPlan, executionClusterInfo: E
     if (executionHistory.isEmpty || executionHistory.length <= threshold)
       return (0, 0)
 
-    val filteredList = executionHistory.filter(stats => Option(stats.getStatus).contains(1.toByte))
-    val filteredResult = filteredList
-      .foldLeft((List.empty[WorkflowRuntimeStatistics], Option.empty[Int], true, false)) {
-        case ((acc, prevX, isFirstX, shouldAdd), record) =>
-          val currentX = record.getExecutionId.intValue()
-          val isNewX = prevX.isEmpty || prevX.get != currentX
+    val recordsByExecutionId: Map[Int, List[WorkflowRuntimeStatistics]] =
+      executionHistory
+        .filter(stats => Option(stats.getStatus).contains(1.toByte))
+        .groupBy(_.getExecutionId.intValue())
+        .view
+        .mapValues(_.toList)
+        .toMap
 
-          if (isNewX) {
-            // New execution records encountered; reset flags and skip this element
-            (
-              acc,
-              Some(currentX),
-              true,
-              record.getInputTupleCnt.intValue() != 0 || record.getOutputTupleCnt.intValue() != 0
-            )
-          } else if (
-            isFirstX && (record.getInputTupleCnt.intValue() == 0 && record.getOutputTupleCnt
-              .intValue() == 0)
-          ) {
-            // Skip initial (0, 0) pairs for the execution records value
-            (acc, Some(currentX), false, shouldAdd)
-          } else if (
-            shouldAdd || record.getInputTupleCnt.intValue() != 0 || record.getOutputTupleCnt
-              .intValue() != 0
-          ) {
-            (record :: acc, Some(currentX), false, true)
-          } else {
-            (acc, Some(currentX), false, shouldAdd)
-          }
-      }
-      ._1
-      .reverse
+    def trimLeadingZeroPairs(
+        records: List[WorkflowRuntimeStatistics]
+    ): List[WorkflowRuntimeStatistics] =
+      records.dropWhile(record =>
+        record.getInputTupleCnt.intValue() == 0 && record.getOutputTupleCnt.intValue() == 0
+      )
+
+    val filteredResult: List[WorkflowRuntimeStatistics] =
+      recordsByExecutionId.values.toList.flatMap(trimLeadingZeroPairs)
 
     val workingTime = if (filteredResult.nonEmpty) {
       filteredResult
@@ -112,11 +101,8 @@ class NaiveResourceAllocator(physicalPlan: PhysicalPlan, executionClusterInfo: E
   private def avgHistory(region: Region): Map[PhysicalOp, Double] = {
     var parallelizableOperators =
       region.getOperators.filter(op =>
-        op.parallelizable && op.suggestedWorkerNum.isEmpty
+        op.parallelizable && (op.suggestedWorkerNum.isEmpty || op.suggestedWorkerNum.get == 0)
       )
-    parallelizableOperators =
-      parallelizableOperators.filter(op => !op.id.logicalOpId.id.contains("sink"))
-
     parallelizableOperators.map(op => op -> avgHistoryPerOperator(op.id)._1).toMap
   }
 
@@ -162,7 +148,7 @@ class NaiveResourceAllocator(physicalPlan: PhysicalPlan, executionClusterInfo: E
       operators = region.getOperators.map { op =>
         numWorkers.get(op) match {
           case Some(workerNum) => op.withSuggestedWorkerNum(workerNum)
-          case None => op
+          case None            => op
         }
       }
     }

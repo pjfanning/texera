@@ -2,7 +2,11 @@ package edu.uci.ics.amber.engine.architecture.scheduling.resourcePolicies
 
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.texera.web.SqlServer
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowExecutionsDao, WorkflowRuntimeStatisticsDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  WorkflowDao,
+  WorkflowExecutionsDao,
+  WorkflowRuntimeStatisticsDao
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowRuntimeStatistics
 import org.jooq.DSLContext
 
