@@ -128,7 +128,7 @@ object TestOperators {
 
   def pythonOpDesc(): PythonUDFOpDescV2 = {
     val udf = new PythonUDFOpDescV2()
-    udf.workers = 1
+    udf.workers = None
     udf.code = """
         |from pytexera import *
         |
