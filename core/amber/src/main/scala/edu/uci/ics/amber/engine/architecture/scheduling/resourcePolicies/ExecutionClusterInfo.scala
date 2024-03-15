@@ -9,9 +9,6 @@ class ExecutionClusterInfo() {
     this.numOfRegion = numOfRegion
   }
 
-  def getNumOfRegions: Int = {
-     this.numOfRegion
-  }
   def getAvailableNumOfWorkers(region: Region): Int = {
     val numberOfProcessors = Runtime.getRuntime.availableProcessors()
     numberOfProcessors * 2 / numOfRegion

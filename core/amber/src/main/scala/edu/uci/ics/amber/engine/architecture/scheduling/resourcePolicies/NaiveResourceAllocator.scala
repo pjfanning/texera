@@ -99,7 +99,7 @@ class NaiveResourceAllocator(physicalPlan: PhysicalPlan, executionClusterInfo: E
   }
 
   private def avgHistory(region: Region): Map[PhysicalOp, Double] = {
-    var parallelizableOperators =
+    val parallelizableOperators =
       region.getOperators.filter(op =>
         op.parallelizable && (op.suggestedWorkerNum.isEmpty || op.suggestedWorkerNum.get == 0)
       )
