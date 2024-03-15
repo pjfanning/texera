@@ -63,26 +63,30 @@ export class EnvironmentComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // initialize the environment info
-    this.wid = this.workflowActionService.getWorkflowMetadata()?.wid;
-    if (this.wid) {
-      // use wid to fetch the eid first
-      this.workflowPersistService
-        .retrieveWorkflowEnvironment(this.wid)
-        .pipe(untilDestroyed(this))
-        .subscribe({
-          next: env => {
-            this.environment = env;
-            this.eid = env.eid;
-            this.loadDatasetsOfEnvironment();
-            this.setEnvironmentTooltip();
-          },
-          error: (err: unknown) => {
-            this.notificationService.warning(`Runtime environment of current workflow not found.
+    this.workflowActionService
+      .workflowMetaDataChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(metadata => {
+        this.wid = metadata.wid
+        if (this.wid) {
+          // use wid to fetch the eid first
+          this.workflowPersistService
+            .retrieveWorkflowEnvironment(this.wid)
+            .pipe(untilDestroyed(this))
+            .subscribe({
+              next: env => {
+                this.environment = env;
+                this.eid = env.eid;
+                this.loadDatasetsOfEnvironment();
+                this.setEnvironmentTooltip();
+              },
+              error: (err: unknown) => {
+                this.notificationService.warning(`Runtime environment of current workflow not found.
                           Please save current workflow, so that the environment will be created automatically.`);
-          },
-        });
-    }
+              },
+            });
+        }
+      })
   }
 
   private setEnvironmentTooltip() {
