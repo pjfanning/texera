@@ -75,7 +75,7 @@ object EnvironmentResource {
                                              ): DatasetFileDesc = {
     withTransaction(context) { ctx => {
       // Adjust the pattern to match the new fileName format
-      val datasetNamePattern: Regex = """/([^/]+)/.*""".r
+      val datasetNamePattern: Regex = """([^/]+).*""".r
 
       // Extract 'datasetName' using the pattern
       val datasetName = datasetNamePattern.findFirstMatchIn(fileName) match {
@@ -83,12 +83,12 @@ object EnvironmentResource {
         case None =>
           throw new RuntimeException(
             "The fileName format is not correct"
-          ) // Default value or handle error
+          ) // Handle error
       }
 
       // Extract the file path
       val filePath = Paths.get(
-        fileName.substring(fileName.indexOf(s"/$datasetName/") + s"/$datasetName/".length)
+        fileName.substring(fileName.indexOf(s"$datasetName/") + s"$datasetName/".length)
       )
       val datasetsOfEnvironment = retrieveDatasetsAndVersions(ctx, uid, eid)
 
@@ -247,7 +247,7 @@ object EnvironmentResource {
       val datasetName = entry.dataset.getName
       val fileList = retrieveDatasetVersionFilePaths(ctx, uid, did, dvid)
       val resList: ListBuffer[String] = new ListBuffer[String]
-      fileList.forEach(file => resList.append(s"/$datasetName/$file"))
+      fileList.forEach(file => resList.append(s"$datasetName/$file"))
       resList.toList
     })
   }

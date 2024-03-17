@@ -29,8 +29,6 @@ export class EnvironmentComponent implements OnInit {
   selectedMenu: "datasets" = "datasets";
 
   environment: Environment | undefined;
-  environmentTooltip: string =
-    "Environment manages the workflow related information, including the datasets visible to current workflow.\n";
 
   // [did] => [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]
   datasetsOfEnvironment: Map<number, [DatasetOfEnvironmentDetails, DatasetVersionFileTreeNode[]]> = new Map();
@@ -78,7 +76,6 @@ export class EnvironmentComponent implements OnInit {
                 this.environment = env;
                 this.eid = env.eid;
                 this.loadDatasetsOfEnvironment();
-                this.setEnvironmentTooltip();
               },
               error: (err: unknown) => {
                 this.notificationService.warning(`Runtime environment of current workflow not found.
@@ -87,12 +84,6 @@ export class EnvironmentComponent implements OnInit {
             });
         }
       })
-  }
-
-  private setEnvironmentTooltip() {
-    if (this.environment) {
-      this.environmentTooltip += `Name: ${this.environment.name}\n` + `Description: ${this.environment.description}\n`;
-    }
   }
 
   private loadDatasetsOfEnvironment() {
