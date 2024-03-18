@@ -127,7 +127,7 @@ public class GitVersionControlLocalFileStorage {
    * @throws GitAPIException If the operation is interrupted.
    */
   public static void retrieveFileContentOfVersion(Path baseRepoPath, String commitHash, Path filePath, OutputStream outputStream) throws IOException, GitAPIException {
-    JGitVersionControl.readFileContentOfCommit(baseRepoPath, commitHash, filePath, outputStream);
+    JGitVersionControl.readFileContentOfCommitAsOutputStream(baseRepoPath, commitHash, filePath, outputStream);
   }
 
   /**

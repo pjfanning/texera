@@ -34,10 +34,13 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
   public form: FormGroup = new FormGroup({});
   model: any = {};
   fields: FormlyFieldConfig[] = [];
-  isDatasetPublic: boolean = true;
+  isDatasetPublic: boolean = false;
 
   // used when creating the dataset
   isDatasetNameSanitized: boolean = false;
+
+  // boolean to control if is uploading
+  isUploading: boolean = false;
 
   constructor(
     private datasetService: DatasetService,
@@ -130,6 +133,7 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
       return;
     }
 
+    this.isUploading = true;
     if (this.isCreatingVersion && this.baseVersion) {
       const versionName = this.form.get("name")?.value;
       this.datasetService
@@ -139,9 +143,11 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
           next: res => {
             this.notificationService.success(`Version '${versionName}' Created`);
             this.datasetOrVersionCreationID.emit(res.dvid);
+            this.isUploading = false;
           },
           error: (res: unknown) => {
             this.notificationService.error("Version creation failed");
+            this.isUploading = false;
           },
         });
     } else {
@@ -167,10 +173,12 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
               `Dataset '${ds.name}' Created. ${this.isDatasetNameSanitized ? "We have sanitized your provided dataset name for the compatibility reason" : ""}`
             );
             this.datasetOrVersionCreationID.emit(res.dataset.did);
+            this.isUploading = false;
           },
           error: (res: unknown) => {
             this.notificationService.error(`Dataset ${ds.name} creation failed`);
-          },
+            this.isUploading = false;
+            },
         });
     }
   }
