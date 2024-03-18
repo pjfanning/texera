@@ -11,7 +11,7 @@ import {
 import { DatasetService } from "../../../../dashboard/user/service/user-dataset/dataset.service";
 import { DashboardDataset } from "../../../../dashboard/user/type/dashboard-dataset.interface";
 import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/type/environment";
-import {DatasetVersion} from "../../../../common/type/dataset";
+import { DatasetVersion } from "../../../../common/type/dataset";
 
 @UntilDestroy()
 @Component({
@@ -66,7 +66,7 @@ export class EnvironmentComponent implements OnInit {
       .workflowMetaDataChanged()
       .pipe(untilDestroyed(this))
       .subscribe(metadata => {
-        this.wid = metadata.wid
+        this.wid = metadata.wid;
         if (this.wid) {
           // use wid to fetch the eid first
           this.workflowPersistService
@@ -84,7 +84,7 @@ export class EnvironmentComponent implements OnInit {
               },
             });
         }
-      })
+      });
   }
 
   private loadDatasetsOfEnvironment() {
@@ -129,13 +129,11 @@ export class EnvironmentComponent implements OnInit {
         .pipe(untilDestroyed(this))
         .subscribe(versions => {
           this.showingDatasetVersions = versions;
-          this.selectedShowingDatasetVersion = this.showingDatasetVersions.find(
-            (version, i, versions) => {
-              return versions[i].dvid == this.showingDataset?.version.dvid
-            });
+          this.selectedShowingDatasetVersion = this.showingDatasetVersions.find((version, i, versions) => {
+            return versions[i].dvid == this.showingDataset?.version.dvid;
+          });
           this.showDatasetDetails = true;
         });
-
     }
   }
 
@@ -178,19 +176,22 @@ export class EnvironmentComponent implements OnInit {
   handleVersionChange(newVersion: DatasetVersion) {
     const previousVersion = this.selectedShowingDatasetVersion;
     if (this.eid && newVersion.dvid) {
-      this.environmentService.updateDatasetVersionInEnvironment(this.eid, newVersion.did, newVersion.dvid)
+      this.environmentService
+        .updateDatasetVersionInEnvironment(this.eid, newVersion.did, newVersion.dvid)
         .pipe(untilDestroyed(this))
         .subscribe({
-          next: res => {
-            this.notificationService.success(`The workflow are now binding with Dataset ${this.showingDatasetName} Version ${newVersion.name}`)
+          next: (res: Response) => {
+            this.notificationService.success(
+              `The workflow are now binding with Dataset ${this.showingDatasetName} Version ${newVersion.name}`
+            );
             this.selectedShowingDatasetVersion = newVersion;
             this.loadDatasetsOfEnvironment();
           },
-          error: err => {
-            this.notificationService.error(`Failed to bind with different version of the dataset.`)
+          error: (err: unknown) => {
+            this.notificationService.error("Failed to bind with different version of the dataset.");
             this.selectedShowingDatasetVersion = previousVersion;
-          }
-        })
+          },
+        });
     }
   }
   handleCancelLinkDataset() {
@@ -255,7 +256,7 @@ export class EnvironmentComponent implements OnInit {
 
   get showingDatasetVersion(): DatasetVersion {
     if (this.showingDataset?.version) {
-      return this.showingDataset?.version
+      return this.showingDataset?.version;
     }
     return {
       did: 1,
@@ -264,8 +265,8 @@ export class EnvironmentComponent implements OnInit {
       name: "",
       versionHash: "",
       creationTime: Date.now(),
-      versionFileTreeNodes: undefined
-    }
+      versionFileTreeNodes: undefined,
+    };
   }
 
   get showingDatasetDescription(): string {
@@ -318,15 +319,18 @@ export class EnvironmentComponent implements OnInit {
 
   onConfirmRemoveDatasetFromEnvironment() {
     if (this.eid) {
-      this.environmentService.removeDatasetFromEnvironment(this.eid, Number(this.showingDatasetDid))
+      this.environmentService
+        .removeDatasetFromEnvironment(this.eid, Number(this.showingDatasetDid))
         .pipe(untilDestroyed(this))
         .subscribe({
           next: res => {
-            this.notificationService.success(`Dataset ${this.showingDatasetName} has been removed from current environment`)
+            this.notificationService.success(
+              `Dataset ${this.showingDatasetName} has been removed from current environment`
+            );
             this.showDatasetDetails = false;
             this.loadDatasetsOfEnvironment();
-          }
-        })
+          },
+        });
     }
   }
 }

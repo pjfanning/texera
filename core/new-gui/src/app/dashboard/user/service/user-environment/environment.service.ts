@@ -19,7 +19,7 @@ export const ENVIRONMENT_DATASET_DETAILS_RETRIEVAL_URL = ENVIRONMENT_DATASET_RET
 export const ENVIRONMENT_DATASET_ADD_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/add";
 
 export const ENVIRONMENT_DATASET_REMOVE_URL = ENVIRONMENT_DATASET_RETRIEVAL_URL + "/remove";
-export const ENVIRONMENT_DATASET_VERSION_UPDATE = "/updateVersion"
+export const ENVIRONMENT_DATASET_VERSION_UPDATE = "/updateVersion";
 
 @Injectable({
   providedIn: "root",
@@ -47,8 +47,9 @@ export class EnvironmentService {
 
   updateDatasetVersionInEnvironment(eid: number, did: number, dvid: number): Observable<Response> {
     return this.http.post<Response>(
-      `${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/dataset/${did}${ENVIRONMENT_DATASET_VERSION_UPDATE}`,{
-        dvid: dvid
+      `${AppSettings.getApiEndpoint()}/${ENVIRONMENT_BASE_URL}/${eid}/dataset/${did}${ENVIRONMENT_DATASET_VERSION_UPDATE}`,
+      {
+        dvid: dvid,
       }
     );
   }

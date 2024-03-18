@@ -35,7 +35,7 @@ object ExecutionsMetadataPersistService extends LazyLogging {
       workflowId: WorkflowIdentity,
       uid: Option[UInteger],
       executionName: String,
-      environmentVersion: String,
+      environmentVersion: String
   ): ExecutionIdentity = {
     if (!AmberConfig.isUserSystemEnabled) return DEFAULT_EXECUTION_ID
     // first retrieve the latest version of this workflow
