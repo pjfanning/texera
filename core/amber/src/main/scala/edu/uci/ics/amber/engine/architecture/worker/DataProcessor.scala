@@ -108,7 +108,7 @@ class DataProcessor(
     * process end of an input port with Executor.onFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processInputExhausted(): Unit = {
+  private[this] def processEndOfUpstream(): Unit = {
     try {
       outputManager.outputIterator.setTupleOutput(
         operator.onFinishMultiPort(
@@ -159,6 +159,7 @@ class DataProcessor(
         )
         asyncRPCClient.send(WorkerExecutionCompleted(), CONTROLLER)
       case FinalizePort(portId, input) =>
+        operator.onOutputFinish(portId.id)
         asyncRPCClient.send(PortCompleted(portId, input), CONTROLLER)
       case schemaEnforceable: SchemaEnforceable =>
         statisticsManager.increaseOutputTupleCount()
@@ -207,7 +208,7 @@ class DataProcessor(
 
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
-              processInputExhausted()
+              processEndOfUpstream()
               outputManager.outputIterator.appendSpecialTupleToEnd(
                 FinalizePort(portId, input = true)
               )

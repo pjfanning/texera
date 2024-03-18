@@ -3,6 +3,7 @@ package edu.uci.ics.texera.workflow.common.operators
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.texera.workflow.common.{Marker, State}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 trait OperatorExecutor extends IOperatorExecutor {
@@ -24,5 +25,7 @@ trait OperatorExecutor extends IOperatorExecutor {
     onFinish(port).map(t => (t, None))
   }
   def onFinish(port: Int): Iterator[TupleLike] = Iterator.empty
+
+  override def onOutputFinish(port: Int): Iterator[State] = Iterator.empty
 
 }

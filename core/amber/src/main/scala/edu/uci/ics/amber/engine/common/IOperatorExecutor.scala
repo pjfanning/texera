@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common
 
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.texera.workflow.common.State
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 trait IOperatorExecutor {
@@ -14,4 +15,5 @@ trait IOperatorExecutor {
 
   def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])]
 
+  def onOutputFinish(port: Int): Iterator[State]
 }
