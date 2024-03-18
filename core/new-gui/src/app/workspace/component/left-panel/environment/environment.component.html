@@ -109,7 +109,11 @@
           </tr>
           <tr>
             <td class="table-label">Version Name</td>
-            <td class="table-value">{{showingDatasetVersionName}}</td>
+            <td class="table-value">
+              <nz-select [(ngModel)]="selectedShowingDatasetVersion" (ngModelChange)="handleVersionChange($event)">
+                <nz-option *ngFor="let version of showingDatasetVersions" [nzValue]="version" [nzLabel]="version.name"></nz-option>
+              </nz-select>
+            </td>
           </tr>
           </tbody>
         </table>

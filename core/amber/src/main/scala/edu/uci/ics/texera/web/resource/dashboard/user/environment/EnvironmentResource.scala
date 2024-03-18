@@ -11,7 +11,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, Data
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.retrieveDatasetVersionFilePaths
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, EnvironmentIDs, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, retrieveDatasetsOfEnvironmentFileList, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, DatasetVersionID, EnvironmentIDs, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, retrieveDatasetsOfEnvironmentFileList, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import org.jooq.DSLContext
@@ -265,6 +265,8 @@ object EnvironmentResource {
   case class EnvironmentIDs(eids: List[UInteger])
 
   case class DatasetID(did: UInteger)
+
+  case class DatasetVersionID(dvid: UInteger)
   case class WorkflowLink(wid: UInteger)
 
   // error handling
@@ -422,6 +424,48 @@ class EnvironmentResource {
   }
 
   @POST
+  @Path("/{eid}/dataset/{did}/updateVersion")
+  def updateDatasetVersionInEnvironment(
+                                         @PathParam("eid") eid: UInteger,
+                                         @PathParam("did") did: UInteger,
+                                         @Auth user: SessionUser,
+                                         datasetVersion: DatasetVersionID
+                                       ): Response = {
+    val uid = user.getUid
+    withTransaction(context)(ctx => {
+      if (!userHasWriteAccessToEnvironment(ctx, eid, uid)) {
+        return Response
+          .status(Response.Status.FORBIDDEN)
+          .entity(UserNoPermissionExceptionMessage)
+          .build()
+      }
+      // Lookup the DATASET_OF_ENVIRONMENT table for the given eid and did
+      val exists = Option(ctx.selectFrom(DATASET_OF_ENVIRONMENT)
+        .where(DATASET_OF_ENVIRONMENT.EID.eq(eid)
+          .and(DATASET_OF_ENVIRONMENT.DID.eq(did)))
+        .fetchOne()) // fetchOne returns null if the record does not exist, Option converts it safely to None
+
+      exists match {
+        case Some(record) =>
+          // Update the dvid of the existing record
+          ctx.update(DATASET_OF_ENVIRONMENT)
+            .set(DATASET_OF_ENVIRONMENT.DVID, datasetVersion.dvid)
+            .where(DATASET_OF_ENVIRONMENT.EID.eq(eid)
+              .and(DATASET_OF_ENVIRONMENT.DID.eq(did)))
+            .execute()
+          Response.ok().build() // Return HTTP OK response
+
+        case None =>
+          // Throw an error if the eid and did combination does not exist
+          Response
+          .status(Response.Status.BAD_REQUEST)
+          .entity("No such dataset and environment combination exists")
+          .build()
+      }
+    })
+  }
+
+  @POST
   @Path("/{eid}/dataset/remove")
   def removeDatasetForEnvironment(
       @PathParam("eid") eid: UInteger,
@@ -459,8 +503,8 @@ class EnvironmentResource {
     })
   }
   @POST
-  @Path("/{eid}/linkWorkflow")
-  def linkWorkflowToEnvironment(
+  @Path("/{eid}/bindWorkflow")
+  def bindWorkflowToEnvironment(
       @PathParam("eid") eid: UInteger,
       @Auth user: SessionUser,
       workflowLink: WorkflowLink

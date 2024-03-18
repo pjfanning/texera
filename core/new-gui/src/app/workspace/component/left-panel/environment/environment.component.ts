@@ -11,6 +11,7 @@ import {
 import { DatasetService } from "../../../../dashboard/user/service/user-dataset/dataset.service";
 import { DashboardDataset } from "../../../../dashboard/user/type/dashboard-dataset.interface";
 import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/type/environment";
+import {DatasetVersion} from "../../../../common/type/dataset";
 
 @UntilDestroy()
 @Component({
@@ -19,8 +20,6 @@ import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/typ
   styleUrls: ["environment.component.scss"],
 })
 export class EnvironmentComponent implements OnInit {
-  // this input is for other components,
-  // e.g. environment viewer, that already have the eid to use
   @Input()
   eid: number | undefined;
 
@@ -45,6 +44,8 @@ export class EnvironmentComponent implements OnInit {
   // dataset details related control
   showDatasetDetails: boolean = false;
   showingDataset: DatasetOfEnvironmentDetails | undefined;
+  showingDatasetVersions: DatasetVersion[] = [];
+  selectedShowingDatasetVersion: DatasetVersion | undefined;
 
   // dataset file display related control
   showDatasetFile: boolean = false;
@@ -123,7 +124,18 @@ export class EnvironmentComponent implements OnInit {
     const selectedEntry = this.datasetsOfEnvironment.get(did);
     if (selectedEntry) {
       this.showingDataset = selectedEntry[0];
-      this.showDatasetDetails = true;
+      this.datasetService
+        .retrieveDatasetVersionList(Number(this.showingDatasetDid))
+        .pipe(untilDestroyed(this))
+        .subscribe(versions => {
+          this.showingDatasetVersions = versions;
+          this.selectedShowingDatasetVersion = this.showingDatasetVersions.find(
+            (version, i, versions) => {
+              return versions[i].dvid == this.showingDataset?.version.dvid
+            });
+          this.showDatasetDetails = true;
+        });
+
     }
   }
 
@@ -163,6 +175,24 @@ export class EnvironmentComponent implements OnInit {
       });
   }
 
+  handleVersionChange(newVersion: DatasetVersion) {
+    const previousVersion = this.selectedShowingDatasetVersion;
+    if (this.eid && newVersion.dvid) {
+      this.environmentService.updateDatasetVersionInEnvironment(this.eid, newVersion.did, newVersion.dvid)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: res => {
+            this.notificationService.success(`The workflow are now binding with Dataset ${this.showingDatasetName} Version ${newVersion.name}`)
+            this.selectedShowingDatasetVersion = newVersion;
+            this.loadDatasetsOfEnvironment();
+          },
+          error: err => {
+            this.notificationService.error(`Failed to bind with different version of the dataset.`)
+            this.selectedShowingDatasetVersion = previousVersion;
+          }
+        })
+    }
+  }
   handleCancelLinkDataset() {
     this.showDatasetLinkModal = false;
   }
@@ -221,6 +251,21 @@ export class EnvironmentComponent implements OnInit {
       return versionName;
     }
     return "";
+  }
+
+  get showingDatasetVersion(): DatasetVersion {
+    if (this.showingDataset?.version) {
+      return this.showingDataset?.version
+    }
+    return {
+      did: 1,
+      dvid: 1,
+      creatorUid: 1,
+      name: "",
+      versionHash: "",
+      creationTime: Date.now(),
+      versionFileTreeNodes: undefined
+    }
   }
 
   get showingDatasetDescription(): string {
