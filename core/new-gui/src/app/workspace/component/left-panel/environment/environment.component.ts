@@ -88,6 +88,7 @@ export class EnvironmentComponent implements OnInit {
 
   private loadDatasetsOfEnvironment() {
     this.datasetFileTrees = [];
+    this.datasetsOfEnvironment = new Map();
     if (this.eid) {
       const eid = this.eid;
       this.environmentService
@@ -268,5 +269,19 @@ export class EnvironmentComponent implements OnInit {
 
   handleCancelDatasetFileDisplay() {
     this.showDatasetFile = false;
+  }
+
+  onConfirmRemoveDatasetFromEnvironment() {
+    if (this.eid) {
+      this.environmentService.removeDatasetFromEnvironment(this.eid, Number(this.showingDatasetDid))
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: res => {
+            this.notificationService.success(`Dataset ${this.showingDatasetName} has been removed from current environment`)
+            this.showDatasetDetails = false;
+            this.loadDatasetsOfEnvironment();
+          }
+        })
+    }
   }
 }
