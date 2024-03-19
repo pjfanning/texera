@@ -1,14 +1,11 @@
 package edu.uci.ics.texera.workflow.operators.source.scan
 
 import com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
-import com.kjetland.jackson.jsonSchema.annotations.{
-  JsonSchemaInject,
-  JsonSchemaString,
-  JsonSchemaTitle
-}
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.workflow.common.metadata.annotations.HideAnnotation
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.text.TextSourceOpDesc
@@ -46,7 +43,8 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
-  ): PhysicalOp =
+  ): PhysicalOp = {
+    val (filepath, fileDesc) = determineFilePathOrDesc()
     PhysicalOp
       .sourcePhysicalOp(
         workflowId,
@@ -54,7 +52,8 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
         operatorIdentifier,
         OpExecInitInfo((_, _) =>
           new FileScanSourceOpExec(
-            filePath.get,
+            filepath,
+            fileDesc,
             attributeType,
             encoding,
             extract,
@@ -69,6 +68,7 @@ class FileScanSourceOpDesc extends ScanSourceOpDesc with TextSourceOpDesc {
       .withPropagateSchema(
         SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
       )
+  }
 
   override def inferSchema(): Schema = {
     val builder = Schema.builder()

@@ -75,7 +75,6 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
       val environmentEid = WorkflowResource.getEnvironmentEidOfWorkflow(
         UInteger.valueOf(workflowContext.workflowId.id)
       )
-//      filePath = Some(datasetFileDescriptor.tempFilePath().toString)
       datasetFileDesc = Some(getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get))
     } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
@@ -95,6 +94,18 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   }
 
   def inferSchema(): Schema
+
+  // resolve the file path based on whether the user system is enabled
+  // it will check for the presence of the given filePath/Desc
+  def determineFilePathOrDesc(): (String, DatasetFileDesc) = {
+    if (getContext.userId.isDefined) {
+      val fileDesc = datasetFileDesc.getOrElse(throw new RuntimeException("Dataset file descriptor is not provided."))
+      (null, fileDesc)
+    } else {
+      val filepath = filePath.getOrElse(throw new RuntimeException("File path is not provided."))
+      (filepath, null)
+    }
+  }
 
   override def equals(that: Any): Boolean =
     EqualsBuilder.reflectionEquals(this, that, "context", "filePath")

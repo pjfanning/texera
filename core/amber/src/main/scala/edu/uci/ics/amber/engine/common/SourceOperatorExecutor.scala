@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.common
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
+
+import java.io.{FileInputStream, InputStream}
 
 trait SourceOperatorExecutor extends OperatorExecutor {
   override def open(): Unit = {}
@@ -25,4 +28,16 @@ trait SourceOperatorExecutor extends OperatorExecutor {
     produceTuple().map(t => (t, Option.empty))
   }
 
+  // this function create
+  def createInputStream(filePath: String, fileDesc: DatasetFileDesc): InputStream = {
+    if (filePath != null && fileDesc != null) {
+      throw new RuntimeException("File Path and Dataset File Descriptor cannot present at the same time.")
+    }
+    if (filePath != null) {
+      new FileInputStream(filePath)
+    } else {
+      // create stream from dataset file desc
+      fileDesc.fileInputStream()
+    }
+  }
 }

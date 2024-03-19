@@ -7,6 +7,7 @@ import com.univocity.parsers.csv.{CsvFormat, CsvParser, CsvParserSettings}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.inferSchemaFromRows
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.ScanSourceOpDesc
@@ -37,34 +38,30 @@ class CSVScanSourceOpDesc extends ScanSourceOpDesc {
     if (customDelimiter.isEmpty || customDelimiter.get.isEmpty)
       customDelimiter = Option(",")
 
-    filePath match {
-      case Some(path) =>
-        PhysicalOp
-          .sourcePhysicalOp(
-            workflowId,
-            executionId,
-            operatorIdentifier,
-            OpExecInitInfo((_, _) =>
-              new CSVScanSourceOpExec(
-                path,
-                fileEncoding,
-                limit,
-                offset,
-                customDelimiter,
-                hasHeader,
-                schemaFunc = () => sourceSchema()
-              )
-            )
+    val (filepath, fileDesc) = determineFilePathOrDesc()
+    PhysicalOp
+      .sourcePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        OpExecInitInfo((_, _) =>
+          new CSVScanSourceOpExec(
+            filepath,
+            fileDesc,
+            fileEncoding,
+            limit,
+            offset,
+            customDelimiter,
+            hasHeader,
+            schemaFunc = () => sourceSchema()
           )
-          .withInputPorts(operatorInfo.inputPorts)
-          .withOutputPorts(operatorInfo.outputPorts)
-          .withPropagateSchema(
-            SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
-          )
-      case None =>
-        throw new RuntimeException("File path is not provided.")
-    }
-
+        )
+      )
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withPropagateSchema(
+        SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
+      )
   }
 
   /**
