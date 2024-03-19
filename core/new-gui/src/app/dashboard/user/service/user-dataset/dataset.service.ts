@@ -51,8 +51,7 @@ export class DatasetService {
     formData.append("initialVersionName", initialVersionName);
 
     filesToBeUploaded.forEach(file => {
-      const sanitizedFilePath = UserFileUploadService.sanitizeFilePath(file.name);
-      formData.append(`file:upload:${sanitizedFilePath}`, file.file);
+      formData.append(`file:upload:${file.name}`, file.file);
     });
 
     return this.http.post<DashboardDataset>(`${AppSettings.getApiEndpoint()}/${DATASET_CREATE_URL}`, formData);
@@ -93,8 +92,7 @@ export class DatasetService {
     }
 
     filesToBeUploaded.forEach(file => {
-      const sanitizedFilePath = UserFileUploadService.sanitizeFilePath(file.name);
-      formData.append(`file:upload:${sanitizedFilePath}`, file.file);
+      formData.append(`file:upload:${file.name}`, file.file);
     });
 
     return this.http
