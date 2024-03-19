@@ -37,32 +37,64 @@ class CSVOldScanSourceOpDesc extends ScanSourceOpDesc {
     if (customDelimiter.get.isEmpty)
       customDelimiter = Option(",")
 
-    filePath match {
-      case Some(path) =>
-        PhysicalOp
-          .sourcePhysicalOp(
-            workflowId,
-            executionId,
-            operatorIdentifier,
-            OpExecInitInfo((_, _) =>
-              new CSVOldScanSourceOpExec(
-                path,
-                fileEncoding,
-                limit,
-                offset,
-                customDelimiter,
-                hasHeader,
-                schemaFunc = () => sourceSchema()
+    if (getContext.userId.isDefined) {
+      // when use system is defined, use datasetFileDesc
+      // for CSVOldScanSourceOpDesc, it requires the full File presence when execute, so use temp file here
+      datasetFileDesc match {
+        case Some(fileDesc) =>
+          PhysicalOp
+            .sourcePhysicalOp(
+              workflowId,
+              executionId,
+              operatorIdentifier,
+              OpExecInitInfo((_, _) =>
+                new CSVOldScanSourceOpExec(
+                  fileDesc.tempFilePath(),
+                  fileEncoding,
+                  limit,
+                  offset,
+                  customDelimiter,
+                  hasHeader,
+                  schemaFunc = () => sourceSchema()
+                )
               )
             )
-          )
-          .withInputPorts(operatorInfo.inputPorts)
-          .withOutputPorts(operatorInfo.outputPorts)
-          .withPropagateSchema(
-            SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
-          )
-      case None =>
-        throw new RuntimeException("File path is not provided.")
+            .withInputPorts(operatorInfo.inputPorts)
+            .withOutputPorts(operatorInfo.outputPorts)
+            .withPropagateSchema(
+              SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
+            )
+        case None =>
+          throw new RuntimeException("Dataset File Descriptor is not provided")
+      }
+    } else {
+      filePath match {
+        case Some(path) =>
+          PhysicalOp
+            .sourcePhysicalOp(
+              workflowId,
+              executionId,
+              operatorIdentifier,
+              OpExecInitInfo((_, _) =>
+                new CSVOldScanSourceOpExec(
+                  path,
+                  fileEncoding,
+                  limit,
+                  offset,
+                  customDelimiter,
+                  hasHeader,
+                  schemaFunc = () => sourceSchema()
+                )
+              )
+            )
+            .withInputPorts(operatorInfo.inputPorts)
+            .withOutputPorts(operatorInfo.outputPorts)
+            .withPropagateSchema(
+              SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
+            )
+        case None =>
+          throw new RuntimeException("File path is not provided.")
+      }
     }
 
   }

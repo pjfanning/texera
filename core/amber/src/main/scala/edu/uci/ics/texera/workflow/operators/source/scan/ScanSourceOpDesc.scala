@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyD
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.OutputPort
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.getEnvironmentDatasetFilePathAndVersion
 import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileAccessResource
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource
@@ -34,6 +35,9 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
 
   @JsonIgnore
   var filePath: Option[String] = None
+
+  @JsonIgnore
+  var datasetFileDesc: Option[DatasetFileDesc] = None
 
   @JsonIgnore
   var fileTypeName: Option[String] = None
@@ -71,10 +75,8 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
       val environmentEid = WorkflowResource.getEnvironmentEidOfWorkflow(
         UInteger.valueOf(workflowContext.workflowId.id)
       )
-      val datasetFileDescriptor =
-        getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get)
-      filePath = Some(datasetFileDescriptor.tempFilePath().toString)
-
+//      filePath = Some(datasetFileDescriptor.tempFilePath().toString)
+      datasetFileDesc = Some(getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get))
     } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
       filePath = fileName

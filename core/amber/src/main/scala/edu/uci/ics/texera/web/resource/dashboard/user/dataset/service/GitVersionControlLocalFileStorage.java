@@ -5,6 +5,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.JGitVersionC
 import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -128,6 +129,10 @@ public class GitVersionControlLocalFileStorage {
    */
   public static void retrieveFileContentOfVersion(Path baseRepoPath, String commitHash, Path filePath, OutputStream outputStream) throws IOException, GitAPIException {
     JGitVersionControl.readFileContentOfCommitAsOutputStream(baseRepoPath, commitHash, filePath, outputStream);
+  }
+
+  public static InputStream retrieveFileContentOfVersionAsInputStream(Path baseRepoPath, String commitHash, Path filePath) throws IOException {
+    return JGitVersionControl.readFileContentOfCommitAsInputStream(baseRepoPath, commitHash, filePath);
   }
 
   /**
