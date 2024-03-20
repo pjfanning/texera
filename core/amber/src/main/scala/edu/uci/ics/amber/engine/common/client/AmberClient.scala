@@ -43,14 +43,12 @@ class AmberClient(
   @volatile private var isActive = true
 
   Await.result(
-    {
-      clientActor ? InitializeRequest(
-        workflowContext,
-        physicalPlan,
-        opResultStorage,
-        controllerConfig
-      )
-    },
+    clientActor ? InitializeRequest(
+      workflowContext,
+      physicalPlan,
+      opResultStorage,
+      controllerConfig
+    ),
     10.seconds
   )
 
