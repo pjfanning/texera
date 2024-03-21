@@ -2,7 +2,6 @@ package edu.uci.ics.texera.workflow.operators.source.scan.csv
 
 import edu.uci.ics.amber.engine.common.SourceOperatorExecutor
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.workflow.common.scanner.BufferedBlockReader
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeTypeUtils, Schema}
 import org.tukaani.xz.SeekableFileInputStream

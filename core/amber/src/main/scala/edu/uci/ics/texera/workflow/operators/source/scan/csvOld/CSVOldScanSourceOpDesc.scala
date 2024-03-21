@@ -11,7 +11,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.inferS
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.ScanSourceOpDesc
 
-import java.io.{File, FileInputStream, IOException}
+import java.io.{File, IOException}
 
 class CSVOldScanSourceOpDesc extends ScanSourceOpDesc {
 

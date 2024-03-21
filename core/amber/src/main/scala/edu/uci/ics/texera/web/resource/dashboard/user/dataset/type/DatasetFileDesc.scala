@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`
 
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.service.GitVersionControlLocalFileStorage
 
-import java.io.{FileInputStream, InputStream}
+import java.io.InputStream
 import java.nio.file.Path
 
 // This file
@@ -16,7 +16,11 @@ class DatasetFileDesc(val fileName: Path, val datasetPath: Path, val versionHash
   }
 
   def fileInputStream(): InputStream = {
-    GitVersionControlLocalFileStorage.retrieveFileContentOfVersionAsInputStream(datasetPath, versionHash, datasetPath.resolve(fileName))
+    GitVersionControlLocalFileStorage.retrieveFileContentOfVersionAsInputStream(
+      datasetPath,
+      versionHash,
+      datasetPath.resolve(fileName)
+    )
   }
 
   override def toString: String =

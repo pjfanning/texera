@@ -31,7 +31,9 @@ trait SourceOperatorExecutor extends OperatorExecutor {
   // this function create
   def createInputStream(filePath: String, fileDesc: DatasetFileDesc): InputStream = {
     if (filePath != null && fileDesc != null) {
-      throw new RuntimeException("File Path and Dataset File Descriptor cannot present at the same time.")
+      throw new RuntimeException(
+        "File Path and Dataset File Descriptor cannot present at the same time."
+      )
     }
     if (filePath != null) {
       new FileInputStream(filePath)

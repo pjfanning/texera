@@ -6,7 +6,6 @@ import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.OutputPort
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFileDesc
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.getEnvironmentDatasetFilePathAndVersion
-import edu.uci.ics.texera.web.resource.dashboard.user.file.UserFileAccessResource
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
@@ -70,7 +69,9 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
       val environmentEid = WorkflowResource.getEnvironmentEidOfWorkflow(
         UInteger.valueOf(workflowContext.workflowId.id)
       )
-      datasetFileDesc = Some(getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get))
+      datasetFileDesc = Some(
+        getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get)
+      )
     } else {
       // otherwise, the fileName will be inputted by user, which is the filePath.
       filePath = fileName
@@ -94,7 +95,9 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   // it will check for the presence of the given filePath/Desc
   def determineFilePathOrDesc(): (String, DatasetFileDesc) = {
     if (getContext.userId.isDefined) {
-      val fileDesc = datasetFileDesc.getOrElse(throw new RuntimeException("Dataset file descriptor is not provided."))
+      val fileDesc = datasetFileDesc.getOrElse(
+        throw new RuntimeException("Dataset file descriptor is not provided.")
+      )
       (null, fileDesc)
     } else {
       val filepath = filePath.getOrElse(throw new RuntimeException("File path is not provided."))

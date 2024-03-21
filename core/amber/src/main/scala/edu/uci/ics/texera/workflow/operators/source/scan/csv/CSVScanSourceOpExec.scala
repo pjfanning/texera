@@ -9,7 +9,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.DatasetFile
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeTypeUtils, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.FileDecodingMethod
 
-import java.io.{File, FileInputStream, InputStreamReader}
+import java.io.InputStreamReader
 import scala.collection.immutable.ArraySeq
 
 class CSVScanSourceOpExec private[csv] (
