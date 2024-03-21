@@ -38,44 +38,44 @@ class JSONLScanSourceOpDesc extends ScanSourceOpDesc {
       executionId: ExecutionIdentity
   ): PhysicalOp = {
     val (filepath, fileDesc) = determineFilePathOrDesc()
-    val is = createInputStream(filepath, fileDesc)
-      // count lines and partition the task to each worker
-      val reader = new BufferedReader(
-        new InputStreamReader(is, fileEncoding.getCharset)
-      )
-      val offsetValue = offset.getOrElse(0)
-      var lines = reader.lines().iterator().asScala.drop(offsetValue)
-      if (limit.isDefined) lines = lines.take(limit.get)
-      val count: Int = lines.map(_ => 1).sum
-      reader.close()
+    val stream = createInputStream(filepath, fileDesc)
+    // count lines and partition the task to each worker
+    val reader = new BufferedReader(
+      new InputStreamReader(stream, fileEncoding.getCharset)
+    )
+    val offsetValue = offset.getOrElse(0)
+    var lines = reader.lines().iterator().asScala.drop(offsetValue)
+    if (limit.isDefined) lines = lines.take(limit.get)
+    val count: Int = lines.map(_ => 1).sum
+    reader.close()
 
-      PhysicalOp
-        .sourcePhysicalOp(
-          workflowId,
-          executionId,
-          operatorIdentifier,
-          OpExecInitInfo((idx, workerCount) => {
-            val startOffset: Int = offsetValue + count / workerCount * idx
-            val endOffset: Int =
-              offsetValue + (if (idx != workerCount - 1) count / workerCount * (idx + 1)
-                             else count)
-            new JSONLScanSourceOpExec(
-              filepath,
-              fileDesc,
-              fileEncoding,
-              startOffset,
-              endOffset,
-              flatten,
-              schemaFunc = () => inferSchema()
-            )
-          })
-        )
-        .withInputPorts(operatorInfo.inputPorts)
-        .withOutputPorts(operatorInfo.outputPorts)
-        .withParallelizable(true)
-        .withPropagateSchema(
-          SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
-        )
+    PhysicalOp
+      .sourcePhysicalOp(
+        workflowId,
+        executionId,
+        operatorIdentifier,
+        OpExecInitInfo((idx, workerCount) => {
+          val startOffset: Int = offsetValue + count / workerCount * idx
+          val endOffset: Int =
+            offsetValue + (if (idx != workerCount - 1) count / workerCount * (idx + 1)
+                           else count)
+          new JSONLScanSourceOpExec(
+            filepath,
+            fileDesc,
+            fileEncoding,
+            startOffset,
+            endOffset,
+            flatten,
+            schemaFunc = () => inferSchema()
+          )
+        })
+      )
+      .withInputPorts(operatorInfo.inputPorts)
+      .withOutputPorts(operatorInfo.outputPorts)
+      .withParallelizable(true)
+      .withPropagateSchema(
+        SchemaPropagationFunc(_ => Map(operatorInfo.outputPorts.head.id -> inferSchema()))
+      )
   }
 
   /**
@@ -85,9 +85,9 @@ class JSONLScanSourceOpDesc extends ScanSourceOpDesc {
     */
   @Override
   def inferSchema(): Schema = {
-    val reader = new BufferedReader(
-      new InputStreamReader(new FileInputStream(filePath.get), fileEncoding.getCharset)
-    )
+    val (filepath, fileDesc) = determineFilePathOrDesc()
+    val stream = createInputStream(filepath, fileDesc)
+    val reader = new BufferedReader(new InputStreamReader(stream, fileEncoding.getCharset))
     var fieldNames = Set[String]()
 
     val allFields: ArrayBuffer[Map[String, String]] = ArrayBuffer()

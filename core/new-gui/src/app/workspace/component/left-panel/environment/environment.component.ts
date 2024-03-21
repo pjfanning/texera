@@ -12,6 +12,7 @@ import { DatasetService } from "../../../../dashboard/user/service/user-dataset/
 import { DashboardDataset } from "../../../../dashboard/user/type/dashboard-dataset.interface";
 import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/type/environment";
 import { DatasetVersion } from "../../../../common/type/dataset";
+import {map, Observable, of} from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -59,14 +60,16 @@ export class EnvironmentComponent implements OnInit {
     private workflowPersistService: WorkflowPersistService,
     private workflowActionService: WorkflowActionService,
     private datasetService: DatasetService
-  ) {}
+  ) {
+    console.log("constructor is called!!")
+  }
 
   ngOnInit(): void {
-    this.workflowActionService
-      .workflowMetaDataChanged()
+    console.log("ng init is called!!")
+    this.getWid()
       .pipe(untilDestroyed(this))
-      .subscribe(metadata => {
-        this.wid = metadata.wid;
+      .subscribe(wid => {
+        this.wid = wid;
         if (this.wid) {
           // use wid to fetch the eid first
           this.workflowPersistService
@@ -331,6 +334,21 @@ export class EnvironmentComponent implements OnInit {
             this.loadDatasetsOfEnvironment();
           },
         });
+    }
+  }
+
+  public getWid(): Observable<number | undefined> {
+    // First, check if wid is already available.
+    const initialWid = this.workflowActionService.getWorkflowMetadata()?.wid;
+    if (initialWid) {
+      return of(initialWid); // If wid is available, immediately return it as an Observable.
+    } else {
+      // If wid is not initially available, listen for changes.
+      // Here we assume workflowMetaDataChanged emits the latest metadata when it changes.
+      return this.workflowActionService.workflowMetaDataChanged().pipe(
+          map(metadata => metadata.wid), // Transform the emitted metadata to just the wid
+          untilDestroyed(this), // Ensure unsubscription when the component/service is destroyed.
+      );
     }
   }
 }

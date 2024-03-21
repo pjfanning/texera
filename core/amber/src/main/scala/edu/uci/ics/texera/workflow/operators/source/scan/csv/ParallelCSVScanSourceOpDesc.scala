@@ -86,14 +86,18 @@ class ParallelCSVScanSourceOpDesc extends ScanSourceOpDesc {
     if (customDelimiter.isEmpty) {
       return null
     }
-    if (filePath.isEmpty) {
-      return null
-    }
+    val (filepath, fileDesc) = determineFilePathOrDesc()
+    val file =
+      if (filepath == null) {
+        fileDesc.tempFilePath().toFile
+      } else {
+        new File(filepath)
+      }
     implicit object CustomFormat extends DefaultCSVFormat {
       override val delimiter: Char = customDelimiter.get.charAt(0)
 
     }
-    var reader: CSVReader = CSVReader.open(filePath.get)(CustomFormat)
+    var reader: CSVReader = CSVReader.open(file)(CustomFormat)
     val firstRow: Array[String] = reader.iterator.next().toArray
     reader.close()
 

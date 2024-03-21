@@ -11,7 +11,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeTypeUtils.inferS
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 import edu.uci.ics.texera.workflow.operators.source.scan.ScanSourceOpDesc
 
-import java.io.IOException
+import java.io.{File, FileInputStream, IOException}
 
 class CSVOldScanSourceOpDesc extends ScanSourceOpDesc {
 
@@ -81,14 +81,18 @@ class CSVOldScanSourceOpDesc extends ScanSourceOpDesc {
     if (customDelimiter.isEmpty) {
       return null
     }
-    if (filePath.isEmpty) {
-      return null
-    }
+    val (filepath, fileDesc) = determineFilePathOrDesc()
+    val file =
+      if (filepath != null) {
+        new File(filepath)
+      } else {
+        fileDesc.tempFilePath().toFile
+      }
     implicit object CustomFormat extends DefaultCSVFormat {
       override val delimiter: Char = customDelimiter.get.charAt(0)
     }
     var reader: CSVReader =
-      CSVReader.open(filePath.get, fileEncoding.getCharset.name())(CustomFormat)
+      CSVReader.open(file, fileEncoding.getCharset.name())(CustomFormat)
     val firstRow: Array[String] = reader.iterator.next().toArray
     reader.close()
 

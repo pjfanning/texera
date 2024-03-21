@@ -55,9 +55,8 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
   var offset: Option[Int] = None
 
   override def sourceSchema(): Schema = {
-    if (filePath.isEmpty) return null
+    if (filePath.isEmpty && datasetFileDesc.isEmpty) return null
     inferSchema()
-
   }
 
   override def setContext(workflowContext: WorkflowContext): Unit = {
@@ -68,10 +67,6 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
     }
 
     if (getContext.userId.isDefined) {
-      // if context has a valid user ID, the fileName will be in the following format:
-      //    /datasetName/fileName
-      // resolve fileName to be the actual file path.
-      // fetch the environment id that workflow is in
       val environmentEid = WorkflowResource.getEnvironmentEidOfWorkflow(
         UInteger.valueOf(workflowContext.workflowId.id)
       )
