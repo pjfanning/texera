@@ -246,28 +246,29 @@ object EnvironmentResource {
     val datasetOfEnvironmentDao = new DatasetOfEnvironmentDao(ctx.configuration())
     val datasetsOfEnvironment = datasetOfEnvironmentDao.fetchByEid(eid).asScala
 
-    datasetsOfEnvironment.map { datasetOfEnvironment =>
-      val did = datasetOfEnvironment.getDid
-      val dvid = datasetOfEnvironment.getDvid
+    datasetsOfEnvironment
+      .map { datasetOfEnvironment =>
+        val did = datasetOfEnvironment.getDid
+        val dvid = datasetOfEnvironment.getDvid
 
-      // Check for read access to the dataset
-      if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)) {
-        throw new Exception(UserNoPermissionExceptionMessage)
+        // Check for read access to the dataset
+        if (!DatasetAccessResource.userHasReadAccess(ctx, did, uid)) {
+          throw new Exception(UserNoPermissionExceptionMessage)
+        }
+
+        val datasetDao = new DatasetDao(ctx.configuration())
+        val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
+
+        // Retrieve the Dataset and DatasetVersion
+        val dataset = datasetDao.fetchOneByDid(did)
+        val datasetVersion = datasetVersionDao.fetchOneByDvid(dvid)
+
+        if (dataset == null || datasetVersion == null) {
+          throw new Exception(EnvironmentNotFoundMessage) // Dataset or its version not found
+        }
+
+        DatasetOfEnvironmentDetails(dataset, datasetVersion)
       }
-
-      val datasetDao = new DatasetDao(ctx.configuration())
-      val datasetVersionDao = new DatasetVersionDao(ctx.configuration())
-
-      // Retrieve the Dataset and DatasetVersion
-      val dataset = datasetDao.fetchOneByDid(did)
-      val datasetVersion = datasetVersionDao.fetchOneByDvid(dvid)
-
-      if (dataset == null || datasetVersion == null) {
-        throw new Exception(EnvironmentNotFoundMessage) // Dataset or its version not found
-      }
-
-      DatasetOfEnvironmentDetails(dataset, datasetVersion)
-    }
       .toList
       .sortBy(_.dataset.getName)
   }
