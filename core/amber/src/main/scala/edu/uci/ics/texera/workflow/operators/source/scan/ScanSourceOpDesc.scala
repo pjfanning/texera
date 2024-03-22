@@ -69,6 +69,7 @@ abstract class ScanSourceOpDesc extends SourceOperatorDescriptor {
       val environmentEid = WorkflowResource.getEnvironmentEidOfWorkflow(
         UInteger.valueOf(workflowContext.workflowId.id)
       )
+      // if user system is defined, a datasetFileDesc will be initialized, which is the handle of reading file from the dataset
       datasetFileDesc = Some(
         getEnvironmentDatasetFilePathAndVersion(getContext.userId.get, environmentEid, fileName.get)
       )

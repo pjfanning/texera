@@ -28,7 +28,9 @@ trait SourceOperatorExecutor extends OperatorExecutor {
     produceTuple().map(t => (t, Option.empty))
   }
 
-  // this function create
+  // this function create the input stream accordingly:
+  // - if filePath is set, create the stream from the file
+  // - if fileDesc is set, create the stream via JGit call
   def createInputStream(filePath: String, fileDesc: DatasetFileDesc): InputStream = {
     if (filePath != null && fileDesc != null) {
       throw new RuntimeException(
