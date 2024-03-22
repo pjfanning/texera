@@ -142,9 +142,10 @@ object EnvironmentResource {
         }
 
         // Check if datasetFileDesc is set, if not, throw an exception
-        datasetFileDesc.getOrElse(
+        if (datasetFileDesc.isEmpty) {
           throw new RuntimeException("Given file is not found in the environment")
-        )
+        }
+        datasetFileDesc.get
       }
     }
   }
@@ -266,7 +267,9 @@ object EnvironmentResource {
       }
 
       DatasetOfEnvironmentDetails(dataset, datasetVersion)
-    }.toList
+    }
+      .toList
+      .sortBy(_.dataset.getName)
   }
 
   private def retrieveDatasetsOfEnvironmentFileList(

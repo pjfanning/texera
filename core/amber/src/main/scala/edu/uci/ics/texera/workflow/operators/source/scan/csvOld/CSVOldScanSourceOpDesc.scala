@@ -97,7 +97,7 @@ class CSVOldScanSourceOpDesc extends ScanSourceOpDesc {
     reader.close()
 
     // reopen the file to read from the beginning
-    reader = CSVReader.open(filePath.get, fileEncoding.getCharset.name())(CustomFormat)
+    reader = CSVReader.open(file, fileEncoding.getCharset.name())(CustomFormat)
 
     val startOffset = offset.getOrElse(0) + (if (hasHeader) 1 else 0)
     val endOffset =

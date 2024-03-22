@@ -60,12 +60,9 @@ export class EnvironmentComponent implements OnInit {
     private workflowPersistService: WorkflowPersistService,
     private workflowActionService: WorkflowActionService,
     private datasetService: DatasetService
-  ) {
-    console.log("constructor is called!!")
-  }
+  ) {}
 
   ngOnInit(): void {
-    console.log("ng init is called!!")
     this.getWid()
       .pipe(untilDestroyed(this))
       .subscribe(wid => {
