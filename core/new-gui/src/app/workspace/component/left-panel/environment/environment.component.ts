@@ -13,6 +13,7 @@ import { DashboardDataset } from "../../../../dashboard/user/type/dashboard-data
 import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/type/environment";
 import { DatasetVersion } from "../../../../common/type/dataset";
 import { map, Observable, of } from "rxjs";
+import { ActivatedRoute } from "@angular/router";
 
 @UntilDestroy()
 @Component({
@@ -61,36 +62,40 @@ export class EnvironmentComponent implements OnInit {
     private notificationService: NotificationService,
     private workflowPersistService: WorkflowPersistService,
     private workflowActionService: WorkflowActionService,
-    private datasetService: DatasetService
+    private datasetService: DatasetService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     this.isLoading = true;
-    this.getWid()
-      .pipe(untilDestroyed(this))
-      .subscribe(wid => {
-        console.log("wid: ", wid);
-        this.wid = wid;
-        if (this.wid) {
-          // use wid to fetch the eid first
-          this.workflowPersistService
-            .retrieveWorkflowEnvironment(this.wid)
-            .pipe(untilDestroyed(this))
-            .subscribe({
-              next: env => {
-                this.isLoading = false;
-                this.environment = env;
-                this.eid = env.eid;
-                this.loadDatasetsOfEnvironment();
-              },
-              error: (err: unknown) => {
-                this.isLoading = false;
-                this.notificationService.warning(`Runtime environment of current workflow not found.
+    this.wid = this.route.snapshot.params.id;
+    if (this.wid) {
+      this.loadEnvironment();
+    } else {
+      this.isLoading = false;
+      this.notificationService.error("Encounter issues when loading the environment of current workflow");
+    }
+  }
+
+  private loadEnvironment() {
+    if (this.wid) {
+      this.workflowPersistService
+        .retrieveWorkflowEnvironment(this.wid)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: env => {
+            this.isLoading = false;
+            this.environment = env;
+            this.eid = env.eid;
+            this.loadDatasetsOfEnvironment();
+          },
+          error: (err: unknown) => {
+            this.isLoading = false;
+            this.notificationService.warning(`Runtime environment of current workflow not found.
                           Please save current workflow, so that the environment will be created automatically.`);
-              },
-            });
-        }
-      });
+          },
+        });
+    }
   }
 
   private loadDatasetsOfEnvironment() {
@@ -337,21 +342,6 @@ export class EnvironmentComponent implements OnInit {
             this.loadDatasetsOfEnvironment();
           },
         });
-    }
-  }
-
-  public getWid(): Observable<number | undefined> {
-    // First, check if wid is already available.
-    const initialWid = this.workflowActionService.getWorkflowMetadata()?.wid;
-    if (initialWid) {
-      return of(initialWid); // If wid is available, immediately return it as an Observable.
-    } else {
-      // If wid is not initially available, listen for changes.
-      // Here we assume workflowMetaDataChanged emits the latest metadata when it changes.
-      return this.workflowActionService.workflowMetaDataChanged().pipe(
-        map(metadata => metadata.wid), // Transform the emitted metadata to just the wid
-        untilDestroyed(this) // Ensure unsubscription when the component/service is destroyed.
-      );
     }
   }
 }
