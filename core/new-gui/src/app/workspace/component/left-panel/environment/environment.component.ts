@@ -12,7 +12,7 @@ import { DatasetService } from "../../../../dashboard/user/service/user-dataset/
 import { DashboardDataset } from "../../../../dashboard/user/type/dashboard-dataset.interface";
 import { DatasetOfEnvironmentDetails, Environment } from "../../../../common/type/environment";
 import { DatasetVersion } from "../../../../common/type/dataset";
-import {map, Observable, of} from "rxjs";
+import { map, Observable, of } from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -343,8 +343,8 @@ export class EnvironmentComponent implements OnInit {
       // If wid is not initially available, listen for changes.
       // Here we assume workflowMetaDataChanged emits the latest metadata when it changes.
       return this.workflowActionService.workflowMetaDataChanged().pipe(
-          map(metadata => metadata.wid), // Transform the emitted metadata to just the wid
-          untilDestroyed(this), // Ensure unsubscription when the component/service is destroyed.
+        map(metadata => metadata.wid), // Transform the emitted metadata to just the wid
+        untilDestroyed(this) // Ensure unsubscription when the component/service is destroyed.
       );
     }
   }

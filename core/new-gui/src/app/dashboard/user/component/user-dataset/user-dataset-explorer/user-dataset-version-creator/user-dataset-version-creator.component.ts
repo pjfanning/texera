@@ -178,7 +178,7 @@ export class UserDatasetVersionCreatorComponent implements OnInit {
           error: (res: unknown) => {
             this.notificationService.error(`Dataset ${ds.name} creation failed`);
             this.isUploading = false;
-            },
+          },
         });
     }
   }

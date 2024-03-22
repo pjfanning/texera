@@ -80,18 +80,18 @@ export class UserDatasetComponent implements OnInit {
       resultDatasetArray = datasetArray.slice();
     }
     // apply the filter condition
-    if (this.selectedMenu === 'Your Datasets') {
-      resultDatasetArray = resultDatasetArray.filter((dataset) => {
-        return dataset.isOwner
-      })
-    } else if (this.selectedMenu === 'Shared with you' ) {
-      resultDatasetArray = resultDatasetArray.filter((dataset) => {
+    if (this.selectedMenu === "Your Datasets") {
+      resultDatasetArray = resultDatasetArray.filter(dataset => {
+        return dataset.isOwner;
+      });
+    } else if (this.selectedMenu === "Shared with you") {
+      resultDatasetArray = resultDatasetArray.filter(dataset => {
         return !dataset.isOwner && !dataset.dataset.isPublic;
-      })
-    } else if (this.selectedMenu === 'Public Datasets') {
-      resultDatasetArray = resultDatasetArray.filter((dataset) => {
+      });
+    } else if (this.selectedMenu === "Public Datasets") {
+      resultDatasetArray = resultDatasetArray.filter(dataset => {
         return dataset.dataset.isPublic;
-      })
+      });
     }
     return resultDatasetArray;
   }
