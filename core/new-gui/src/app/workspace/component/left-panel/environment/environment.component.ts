@@ -54,6 +54,8 @@ export class EnvironmentComponent implements OnInit {
   showingDatasetFileDid: number | undefined;
   showingDatasetFileDvid: number | undefined;
 
+  isLoading: boolean = false;
+
   constructor(
     private environmentService: EnvironmentService,
     private notificationService: NotificationService,
@@ -63,9 +65,11 @@ export class EnvironmentComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.isLoading = true;
     this.getWid()
       .pipe(untilDestroyed(this))
       .subscribe(wid => {
+        console.log("wid: ", wid);
         this.wid = wid;
         if (this.wid) {
           // use wid to fetch the eid first
@@ -74,11 +78,13 @@ export class EnvironmentComponent implements OnInit {
             .pipe(untilDestroyed(this))
             .subscribe({
               next: env => {
+                this.isLoading = false;
                 this.environment = env;
                 this.eid = env.eid;
                 this.loadDatasetsOfEnvironment();
               },
               error: (err: unknown) => {
+                this.isLoading = false;
                 this.notificationService.warning(`Runtime environment of current workflow not found.
                           Please save current workflow, so that the environment will be created automatically.`);
               },
