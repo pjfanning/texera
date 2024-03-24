@@ -1,7 +1,5 @@
 package edu.uci.ics.texera.web.service
 
-import akka.actor.Address
-import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.StartWorkflowHandler.StartWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.{ControllerConfig, Workflow}
@@ -26,8 +24,6 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.workflow.{LogicalPlan, WorkflowCompiler}
 
 import scala.collection.mutable
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
 
 class WorkflowExecutionService(
     controllerConfig: ControllerConfig,
