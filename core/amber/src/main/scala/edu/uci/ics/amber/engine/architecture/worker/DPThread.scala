@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelMarkerPayload,
+  EmbeddedControlMessagePayload,
   ControlPayload,
   DataPayload,
   WorkflowFIFOMessage
@@ -184,8 +184,8 @@ class DPThread(
                   dp.processControlPayload(msg.channelId, payload)
                 case payload: DataPayload =>
                   dp.processDataPayload(msg.channelId, payload)
-                case payload: ChannelMarkerPayload =>
-                  dp.processChannelMarker(msg.channelId, payload, logManager)
+                case payload: EmbeddedControlMessagePayload =>
+                  dp.processECM(msg.channelId, payload, logManager)
               }
           }
         }

@@ -5,14 +5,14 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDel
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage.SequentialRecordWriter
 import edu.uci.ics.amber.engine.common.storage.{EmptyRecordStorage, SequentialRecordStorage}
-import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelIdentity, ChannelMarkerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelIdentity, EmbeddedControlMessageIdentity}
 
 //In-mem formats:
 sealed trait ReplayLogRecord
 
 case class MessageContent(message: WorkflowFIFOMessage) extends ReplayLogRecord
 case class ProcessingStep(channelId: ChannelIdentity, step: Long) extends ReplayLogRecord
-case class ReplayDestination(id: ChannelMarkerIdentity) extends ReplayLogRecord
+case class ReplayDestination(id: EmbeddedControlMessageIdentity) extends ReplayLogRecord
 case object TerminateSignal extends ReplayLogRecord
 
 object ReplayLogManager {
@@ -44,7 +44,7 @@ trait ReplayLogManager {
 
   def getStep: Long = cursor.getStep
 
-  def markAsReplayDestination(id: ChannelMarkerIdentity): Unit
+  def markAsReplayDestination(id: EmbeddedControlMessageIdentity): Unit
 
   def withFaultTolerant(
       channelId: ChannelIdentity,
@@ -75,7 +75,7 @@ class EmptyReplayLogManagerImpl(
 
   override def terminate(): Unit = {}
 
-  override def markAsReplayDestination(id: ChannelMarkerIdentity): Unit = {}
+  override def markAsReplayDestination(id: EmbeddedControlMessageIdentity): Unit = {}
 }
 
 class ReplayLogManagerImpl(handler: Either[MainThreadDelegateMessage, WorkflowFIFOMessage] => Unit)
@@ -93,7 +93,7 @@ class ReplayLogManagerImpl(handler: Either[MainThreadDelegateMessage, WorkflowFI
     super.withFaultTolerant(channelId, message)(code)
   }
 
-  override def markAsReplayDestination(id: ChannelMarkerIdentity): Unit = {
+  override def markAsReplayDestination(id: EmbeddedControlMessageIdentity): Unit = {
     replayLogger.markAsReplayDestination(id)
   }
 

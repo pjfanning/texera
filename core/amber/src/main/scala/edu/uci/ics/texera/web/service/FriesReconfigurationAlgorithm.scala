@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.web.service
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EmbeddedControlMessageHandler.PropagateEmbeddedControlMessage
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.scheduling.{Region, WorkflowExecutionCoordinator}
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateExecutorHandler.{
@@ -8,7 +8,7 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.UpdateExecut
   UpdateMultipleExecutors
 }
 import edu.uci.ics.amber.engine.common.ambermessage.RequireAlignment
-import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelMarkerIdentity, PhysicalOpIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{EmbeddedControlMessageIdentity, PhysicalOpIdentity}
 import edu.uci.ics.texera.workflow.common.operators.StateTransferFunc
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import org.jgrapht.alg.connectivity.ConnectivityInspector
@@ -27,7 +27,7 @@ object FriesReconfigurationAlgorithm {
       workflowExecutionCoordinator: WorkflowExecutionCoordinator,
       reconfigurations: List[(PhysicalOp, Option[StateTransferFunc])],
       epochMarkerId: String
-  ): Set[PropagateChannelMarker] = {
+  ): Set[PropagateEmbeddedControlMessage] = {
     // independently schedule reconfigurations for each region:
     workflowExecutionCoordinator.getExecutingRegions
       .flatMap(region => computeMCS(region, reconfigurations, epochMarkerId))
@@ -37,7 +37,7 @@ object FriesReconfigurationAlgorithm {
       region: Region,
       reconfigurations: List[(PhysicalOp, Option[StateTransferFunc])],
       epochMarkerId: String
-  ): List[PropagateChannelMarker] = {
+  ): List[PropagateEmbeddedControlMessage] = {
 
     // add all reconfiguration operators to M
     val reconfigOps = reconfigurations.map(reconfigOp => reconfigOp._1.id).toSet
@@ -86,7 +86,7 @@ object FriesReconfigurationAlgorithm {
 
     // find the MCS components,
     // for each component, send an epoch marker to each of its source operators
-    val epochMarkers = new ArrayBuffer[PropagateChannelMarker]()
+    val epochMarkers = new ArrayBuffer[PropagateEmbeddedControlMessage]()
 
     val connectedSets = new ConnectivityInspector(mcsPlan.dag).connectedSets()
     connectedSets.forEach(component => {
@@ -102,9 +102,9 @@ object FriesReconfigurationAlgorithm {
 
       // find the source operators of the component
       val sources = componentSet.intersect(mcsPlan.getSourceOperatorIds)
-      epochMarkers += PropagateChannelMarker(
+      epochMarkers += PropagateEmbeddedControlMessage(
         sources,
-        ChannelMarkerIdentity(epochMarkerId),
+        EmbeddedControlMessageIdentity(epochMarkerId),
         RequireAlignment,
         componentPlan,
         reconfigurations.map(_._1.id).toSet,

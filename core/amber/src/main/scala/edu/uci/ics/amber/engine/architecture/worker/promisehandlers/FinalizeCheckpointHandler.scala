@@ -9,14 +9,14 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeChec
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity
 
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 import scala.collection.mutable.ArrayBuffer
 
 object FinalizeCheckpointHandler {
-  final case class FinalizeCheckpoint(checkpointId: ChannelMarkerIdentity, writeTo: URI)
+  final case class FinalizeCheckpoint(checkpointId: EmbeddedControlMessageIdentity, writeTo: URI)
       extends ControlCommand[Long]
 }
 
@@ -24,9 +24,9 @@ trait FinalizeCheckpointHandler {
   this: DataProcessorRPCHandlerInitializer =>
 
   registerHandler { (msg: FinalizeCheckpoint, sender) =>
-    if (dp.channelMarkerManager.checkpoints.contains(msg.checkpointId)) {
+    if (dp.ecmManager.checkpoints.contains(msg.checkpointId)) {
       val waitFuture = new CompletableFuture[Unit]()
-      val chkpt = dp.channelMarkerManager.checkpoints(msg.checkpointId)
+      val chkpt = dp.ecmManager.checkpoints(msg.checkpointId)
       val closure = (worker: WorkflowWorker) => {
         logger.info(s"Main thread: start to serialize recorded messages.")
         chkpt.save(

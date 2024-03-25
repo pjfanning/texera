@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHa
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.FaultToleranceConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
 import edu.uci.ics.texera.web.model.websocket.request.{
   SkipTupleRequest,
@@ -85,7 +85,7 @@ class ExecutionRuntimeService(
       logConf.nonEmpty,
       "Fault tolerance log folder is not established. Unable to take a global checkpoint."
     )
-    val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+    val checkpointId = EmbeddedControlMessageIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
     val uri = logConf.get.writeTo.resolve(checkpointId.toString)
     client.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri))
   }))

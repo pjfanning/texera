@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EmbeddedControlMessageHandler.PropagateEmbeddedControlMessage
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.FinalizeCheckpointHandler.FinalizeCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PrepareCheckpointHandler.PrepareCheckpoint
@@ -10,15 +10,15 @@ import edu.uci.ics.amber.engine.common.{CheckpointState, SerializedState}
 import edu.uci.ics.amber.engine.common.ambermessage.NoAlignment
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.storage.SequentialRecordStorage
-import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity
 
 import java.net.URI
 
 object TakeGlobalCheckpointHandler {
   final case class TakeGlobalCheckpoint(
-      estimationOnly: Boolean,
-      checkpointId: ChannelMarkerIdentity,
-      destination: URI
+                                         estimationOnly: Boolean,
+                                         checkpointId: EmbeddedControlMessageIdentity,
+                                         destination: URI
   ) extends ControlCommand[Long] // return the total size
 }
 trait TakeGlobalCheckpointHandler {
@@ -36,7 +36,7 @@ trait TakeGlobalCheckpointHandler {
     var totalSize = 0L
     val physicalOpIdsToTakeCheckpoint = cp.workflowScheduler.physicalPlan.operators.map(_.id)
     execute(
-      PropagateChannelMarker(
+      PropagateEmbeddedControlMessage(
         cp.workflowExecution.getAllRegionExecutions
           .flatMap(_.getAllOperatorExecutions.map(_._1))
           .toSet,

@@ -25,7 +25,7 @@ import edu.uci.ics.amber.engine.common.{
 import edu.uci.ics.amber.engine.common.SerializedState.{CP_STATE_KEY, DP_STATE_KEY}
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ChannelMarkerIdentity,
+  EmbeddedControlMessageIdentity,
   ExecutionIdentity,
   WorkflowIdentity
 }
@@ -131,7 +131,7 @@ class CheckpointSpec extends AnyFlatSpecLike with BeforeAndAfterAll {
     Await.result(client1.sendAsync(StartWorkflow()))
     Thread.sleep(100)
     Await.result(client1.sendAsync(PauseWorkflow()))
-    val checkpointId = ChannelMarkerIdentity(s"Checkpoint_test_1")
+    val checkpointId = EmbeddedControlMessageIdentity(s"Checkpoint_test_1")
     val uri = new URI("ram:///recovery-logs/tmp/")
     Await.result(
       client1.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri)),

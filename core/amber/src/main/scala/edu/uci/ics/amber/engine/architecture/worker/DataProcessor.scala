@@ -63,7 +63,7 @@ class DataProcessor(
   val stateManager: WorkerStateManager = new WorkerStateManager()
   val inputManager: InputManager = new InputManager(actorId)
   val outputManager: OutputManager = new OutputManager(actorId, outputGateway)
-  val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(actorId, inputGateway)
+  val ecmManager: EmbeddedControlMessageManager = new EmbeddedControlMessageManager(actorId, inputGateway)
   val serializationManager: SerializationManager = new SerializationManager(actorId)
   def getQueuedCredit(channelId: ChannelIdentity): Long = {
     inputGateway.getChannel(channelId).getQueuedCredit
@@ -209,10 +209,10 @@ class DataProcessor(
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
   }
 
-  def processChannelMarker(
-      channelId: ChannelIdentity,
-      marker: ChannelMarkerPayload,
-      logManager: ReplayLogManager
+  def processECM(
+                            channelId: ChannelIdentity,
+                            marker: EmbeddedControlMessagePayload,
+                            logManager: ReplayLogManager
   ): Unit = {
     val markerId = marker.id
     val command = marker.commandMapping.get(actorId)
@@ -220,7 +220,7 @@ class DataProcessor(
     if (marker.markerType == RequireAlignment) {
       pauseManager.pauseInputChannel(EpochMarkerPause(markerId), List(channelId))
     }
-    if (channelMarkerManager.isMarkerAligned(channelId, marker)) {
+    if (ecmManager.isECMAligned(channelId, marker)) {
       logManager.markAsReplayDestination(markerId)
       // invoke the control command carried with the epoch marker
       logger.info(s"process marker from $channelId, id = ${marker.id}, cmd = ${command}")

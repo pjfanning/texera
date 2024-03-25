@@ -2,37 +2,37 @@ package edu.uci.ics.amber.engine.architecture.controller.promisehandlers
 
 import com.twitter.util.Future
 import edu.uci.ics.amber.engine.architecture.controller.ControllerAsyncRPCHandlerInitializer
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ChannelMarkerHandler.PropagateChannelMarker
+import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.EmbeddedControlMessageHandler.PropagateEmbeddedControlMessage
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
-import edu.uci.ics.amber.engine.common.ambermessage.ChannelMarkerType
+import edu.uci.ics.amber.engine.common.ambermessage.EmbeddedControlMessageType
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   ChannelIdentity,
-  ChannelMarkerIdentity,
+  EmbeddedControlMessageIdentity,
   PhysicalOpIdentity
 }
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-object ChannelMarkerHandler {
+object EmbeddedControlMessageHandler {
 
-  final case class PropagateChannelMarker(
-      sourceOpToStartProp: Set[PhysicalOpIdentity],
-      id: ChannelMarkerIdentity,
-      markerType: ChannelMarkerType,
-      scope: PhysicalPlan,
-      targetOps: Set[PhysicalOpIdentity],
-      markerCommand: ControlCommand[_]
+  final case class PropagateEmbeddedControlMessage(
+                                           sourceOpToStartProp: Set[PhysicalOpIdentity],
+                                           id: EmbeddedControlMessageIdentity,
+                                           markerType: EmbeddedControlMessageType,
+                                           scope: PhysicalPlan,
+                                           targetOps: Set[PhysicalOpIdentity],
+                                           markerCommand: ControlCommand[_]
   ) extends ControlCommand[Seq[(ActorVirtualIdentity, _)]]
 
 }
 
-trait ChannelMarkerHandler {
+trait EmbeddedControlMessageHandler {
   this: ControllerAsyncRPCHandlerInitializer =>
 
-  registerHandler[PropagateChannelMarker, Seq[(ActorVirtualIdentity, _)]] { (msg, sender) =>
+  registerHandler[PropagateEmbeddedControlMessage, Seq[(ActorVirtualIdentity, _)]] { (msg, sender) =>
     {
       // step1: create separate control commands for each target actor.
       val inputSet = msg.targetOps.flatMap { target =>
@@ -79,7 +79,7 @@ trait ChannelMarkerHandler {
       // step 4: start prop, send marker through control channel with the compound command from sources.
       msg.sourceOpToStartProp.foreach { source =>
         cp.workflowExecution.getLatestOperatorExecution(source).getWorkerIds.foreach { worker =>
-          sendChannelMarker(
+          sendECM(
             msg.id,
             msg.markerType,
             finalScope.toSet,

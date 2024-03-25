@@ -7,8 +7,8 @@ import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelMarkerPayload,
-  ChannelMarkerType,
+  EmbeddedControlMessagePayload,
+  EmbeddedControlMessageType,
   ControlPayload
 }
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.{
   ActorVirtualIdentity,
   ChannelIdentity,
-  ChannelMarkerIdentity
+  EmbeddedControlMessageIdentity
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CLIENT
 
@@ -74,17 +74,17 @@ class AsyncRPCClient(
     p
   }
 
-  def sendChannelMarker(
-      markerId: ChannelMarkerIdentity,
-      markerType: ChannelMarkerType,
-      scope: Set[ChannelIdentity],
-      cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
-      channelId: ChannelIdentity
+  def sendECM(
+               ecmId: EmbeddedControlMessageIdentity,
+               ecmType: EmbeddedControlMessageType,
+               scope: Set[ChannelIdentity],
+               cmdMapping: Map[ActorVirtualIdentity, ControlInvocation],
+               channelId: ChannelIdentity
   ): Unit = {
-    logger.debug(s"send marker: $markerId to $channelId")
+    logger.debug(s"send marker: $ecmId to $channelId")
     outputGateway.sendTo(
       channelId,
-      ChannelMarkerPayload(markerId, markerType, scope, cmdMapping)
+      EmbeddedControlMessagePayload(ecmId, ecmType, scope, cmdMapping)
     )
   }
 

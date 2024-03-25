@@ -16,7 +16,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
 }
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.ambermessage.{
-  ChannelMarkerPayload,
+  EmbeddedControlMessagePayload,
   ControlPayload,
   WorkflowFIFOMessage
 }
@@ -135,7 +135,7 @@ class Controller(
           logManager.withFaultTolerant(msg.channelId, msgToLog) {
             msg.payload match {
               case payload: ControlPayload      => cp.processControlPayload(msg.channelId, payload)
-              case marker: ChannelMarkerPayload => // skip marker
+              case marker: EmbeddedControlMessagePayload => // skip marker
               case p                            => throw new RuntimeException(s"controller cannot handle $p")
             }
           }

@@ -9,7 +9,7 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
 }
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ChannelMarkerIdentity,
+  EmbeddedControlMessageIdentity,
   ExecutionIdentity,
   WorkflowIdentity
 }
@@ -182,7 +182,7 @@ class WorkflowService(
               Some(
                 StateRestoreConfig(
                   readFrom = readLocation,
-                  replayDestination = ChannelMarkerIdentity(replayInfo.interaction)
+                  replayDestination = EmbeddedControlMessageIdentity(replayInfo.interaction)
                 )
               )
             )

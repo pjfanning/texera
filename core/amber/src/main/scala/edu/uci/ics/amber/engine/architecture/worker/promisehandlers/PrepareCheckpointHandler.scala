@@ -9,13 +9,13 @@ import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.PrepareCheck
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.{CheckpointState, CheckpointSupport, SerializedState}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
+import edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity
 
 import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 
 object PrepareCheckpointHandler {
-  final case class PrepareCheckpoint(checkpointId: ChannelMarkerIdentity, estimationOnly: Boolean)
+  final case class PrepareCheckpoint(checkpointId: EmbeddedControlMessageIdentity, estimationOnly: Boolean)
       extends ControlCommand[Unit]
 }
 
@@ -33,12 +33,12 @@ trait PrepareCheckpointHandler {
     }
   }
 
-  private def serializeWorkerState(checkpointId: ChannelMarkerIdentity): Unit = {
+  private def serializeWorkerState(checkpointId: EmbeddedControlMessageIdentity): Unit = {
     val chkpt = new CheckpointState()
     // 1. serialize DP state
     chkpt.save(SerializedState.DP_STATE_KEY, this.dp)
     // checkpoint itself should not be serialized, thus we register it after serialization
-    dp.channelMarkerManager.checkpoints(checkpointId) = chkpt
+    dp.ecmManager.checkpoints(checkpointId) = chkpt
     logger.info("Serialized DP state")
     // 2. serialize operator state
     dp.executor match {

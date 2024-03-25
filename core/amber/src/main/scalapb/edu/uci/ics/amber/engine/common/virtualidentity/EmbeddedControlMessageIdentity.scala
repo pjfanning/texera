@@ -6,9 +6,9 @@
 package edu.uci.ics.amber.engine.common.virtualidentity
 
 @SerialVersionUID(0L)
-final case class ChannelMarkerIdentity(
+final case class EmbeddedControlMessageIdentity(
     id: _root_.scala.Predef.String
-    ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[ChannelMarkerIdentity] {
+    ) extends scalapb.GeneratedMessage with scalapb.lenses.Updatable[EmbeddedControlMessageIdentity] {
     @transient
     private[this] var __serializedSizeCachedValue: _root_.scala.Int = 0
     private[this] def __computeSerializedValue(): _root_.scala.Int = {
@@ -38,7 +38,7 @@ final case class ChannelMarkerIdentity(
         }
       };
     }
-    def withId(__v: _root_.scala.Predef.String): ChannelMarkerIdentity = copy(id = __v)
+    def withId(__v: _root_.scala.Predef.String): EmbeddedControlMessageIdentity = copy(id = __v)
     def getFieldByNumber(__fieldNumber: _root_.scala.Int): _root_.scala.Any = {
       (__fieldNumber: @_root_.scala.unchecked) match {
         case 1 => {
@@ -54,13 +54,13 @@ final case class ChannelMarkerIdentity(
       }
     }
     def toProtoString: _root_.scala.Predef.String = _root_.scalapb.TextFormat.printToSingleLineUnicodeString(this)
-    def companion = edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
-    // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.common.ChannelMarkerIdentity])
+    def companion = edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity
+    // @@protoc_insertion_point(GeneratedMessage[edu.uci.ics.amber.engine.common.EmbeddedControlMessageIdentity])
 }
 
-object ChannelMarkerIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity] {
-  implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity] = this
-  def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity = {
+object EmbeddedControlMessageIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity] {
+  implicit def messageCompanion: scalapb.GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity] = this
+  def parseFrom(`_input__`: _root_.com.google.protobuf.CodedInputStream): edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity = {
     var __id: _root_.scala.Predef.String = ""
     var _done__ = false
     while (!_done__) {
@@ -72,14 +72,14 @@ object ChannelMarkerIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.i
         case tag => _input__.skipField(tag)
       }
     }
-    edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity(
+    edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity(
         id = __id
     )
   }
-  implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity] = _root_.scalapb.descriptors.Reads{
+  implicit def messageReads: _root_.scalapb.descriptors.Reads[edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity] = _root_.scalapb.descriptors.Reads{
     case _root_.scalapb.descriptors.PMessage(__fieldsMap) =>
       _root_.scala.Predef.require(__fieldsMap.keys.forall(_.containingMessage eq scalaDescriptor), "FieldDescriptor does not match message type.")
-      edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity(
+      edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity(
         id = __fieldsMap.get(scalaDescriptor.findFieldByNumber(1).get).map(_.as[_root_.scala.Predef.String]).getOrElse("")
       )
     case _ => throw new RuntimeException("Expected PMessage")
@@ -89,17 +89,17 @@ object ChannelMarkerIdentity extends scalapb.GeneratedMessageCompanion[edu.uci.i
   def messageCompanionForFieldNumber(__number: _root_.scala.Int): _root_.scalapb.GeneratedMessageCompanion[_] = throw new MatchError(__number)
   lazy val nestedMessagesCompanions: Seq[_root_.scalapb.GeneratedMessageCompanion[_ <: _root_.scalapb.GeneratedMessage]] = Seq.empty
   def enumCompanionForFieldNumber(__fieldNumber: _root_.scala.Int): _root_.scalapb.GeneratedEnumCompanion[_] = throw new MatchError(__fieldNumber)
-  lazy val defaultInstance = edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity(
+  lazy val defaultInstance = edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity(
     id = ""
   )
-  implicit class ChannelMarkerIdentityLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity](_l) {
+  implicit class EmbeddedControlMessageIdentityLens[UpperPB](_l: _root_.scalapb.lenses.Lens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity]) extends _root_.scalapb.lenses.ObjectLens[UpperPB, edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity](_l) {
     def id: _root_.scalapb.lenses.Lens[UpperPB, _root_.scala.Predef.String] = field(_.id)((c_, f_) => c_.copy(id = f_))
   }
   final val ID_FIELD_NUMBER = 1
   def of(
     id: _root_.scala.Predef.String
-  ): _root_.edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity = _root_.edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity(
+  ): _root_.edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity = _root_.edu.uci.ics.amber.engine.common.virtualidentity.EmbeddedControlMessageIdentity(
     id
   )
-  // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.ChannelMarkerIdentity])
+  // @@protoc_insertion_point(GeneratedMessageCompanion[edu.uci.ics.amber.engine.common.EmbeddedControlMessageIdentity])
 }

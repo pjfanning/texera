@@ -14,7 +14,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowMessage.getInMemSize
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.util.CONTROLLER
-import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelIdentity, ChannelMarkerIdentity}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ChannelIdentity, EmbeddedControlMessageIdentity}
 
 import java.net.URI
 import java.util.concurrent.LinkedBlockingQueue
@@ -46,7 +46,7 @@ object WorkflowWorker {
       restoreConfOpt: Option[StateRestoreConfig] = None,
       faultToleranceConfOpt: Option[FaultToleranceConfig] = None
   )
-  final case class StateRestoreConfig(readFrom: URI, replayDestination: ChannelMarkerIdentity)
+  final case class StateRestoreConfig(readFrom: URI, replayDestination: EmbeddedControlMessageIdentity)
 
   final case class FaultToleranceConfig(writeTo: URI)
 }
@@ -63,7 +63,7 @@ class WorkflowWorker(
   var dpThread: DPThread = _
 
   val recordedInputs =
-    new mutable.HashMap[ChannelMarkerIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
+    new mutable.HashMap[EmbeddedControlMessageIdentity, mutable.ArrayBuffer[WorkflowFIFOMessage]]()
 
   override def initState(): Unit = {
     dp.initTimerService(timerService)
