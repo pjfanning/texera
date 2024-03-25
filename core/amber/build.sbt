@@ -177,6 +177,11 @@ libraryDependencies ++= Seq(
 // For ScalaPB 0.11.x:
 libraryDependencies += "com.thesamet.scalapb" %% "scalapb-json4s" % "0.12.0"
 
+libraryDependencies ++= Seq(
+  "io.grpc" % "grpc-netty" % scalapb.compiler.Version.grpcJavaVersion,
+  "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion
+)
+
 // enable protobuf compilation in Test
 Test / PB.protoSources += PB.externalSourcePath.value
 
