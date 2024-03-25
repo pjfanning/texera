@@ -33,6 +33,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.engine.e2e.TestOperators
 import edu.uci.ics.amber.engine.e2e.TestUtils.buildWorkflow
+import edu.uci.ics.texera.web.TexeraWebApplication
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, PAUSED}
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
@@ -120,12 +121,15 @@ class CheckpointSpec extends AnyFlatSpecLike with BeforeAndAfterAll {
   }
 
   "Workflow " should "take global checkpoint, reload and continue" in {
+    var controllerConfig = ControllerConfig.default.copy(availableNodeAddresses =
+      TexeraWebApplication.getAvailableComputationNodeAddresses
+    )
     val client1 = new AmberClient(
       system,
       workflow.context,
       workflow.physicalPlan,
       resultStorage,
-      ControllerConfig.default,
+      controllerConfig,
       error => {}
     )
     Await.result(client1.sendAsync(StartWorkflow()))
@@ -139,7 +143,7 @@ class CheckpointSpec extends AnyFlatSpecLike with BeforeAndAfterAll {
     )
     client1.shutdown()
     Thread.sleep(100)
-    var controllerConfig = ControllerConfig.default
+
     controllerConfig =
       controllerConfig.copy(stateRestoreConfOpt = Some(StateRestoreConfig(uri, checkpointId)))
     val completableFuture = new CompletableFuture[Unit]()
