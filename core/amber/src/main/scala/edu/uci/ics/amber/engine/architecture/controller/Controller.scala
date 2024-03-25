@@ -25,6 +25,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.ControlInvocation
 import edu.uci.ics.amber.engine.common.virtualidentity.util.{CLIENT, CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.{AmberConfig, CheckpointState, SerializedState}
+import edu.uci.ics.texera.web.TexeraWebApplication
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
@@ -34,7 +35,7 @@ import scala.concurrent.duration.DurationInt
 object ControllerConfig {
   def default: ControllerConfig =
     ControllerConfig(
-      availableNodeAddresses = Array(),
+      availableNodeAddresses = TexeraWebApplication.getAvailableComputationNodeAddresses,
       statusUpdateIntervalMs = Option(AmberConfig.getStatusUpdateIntervalInMs),
       stateRestoreConfOpt = None,
       faultToleranceConfOpt = None

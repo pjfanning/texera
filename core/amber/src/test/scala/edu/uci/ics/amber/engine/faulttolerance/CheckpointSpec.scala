@@ -121,9 +121,7 @@ class CheckpointSpec extends AnyFlatSpecLike with BeforeAndAfterAll {
   }
 
   "Workflow " should "take global checkpoint, reload and continue" in {
-    var controllerConfig = ControllerConfig.default.copy(availableNodeAddresses =
-      TexeraWebApplication.getAvailableComputationNodeAddresses
-    )
+    var controllerConfig = ControllerConfig.default
     val client1 = new AmberClient(
       system,
       workflow.context,
