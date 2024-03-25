@@ -20,6 +20,8 @@ trait OperatorExecutor {
 
   def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike]
 
+  def processMarker(marker: State, port: Int): Iterator[State] = Iterator.empty
+
   def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))
   }
