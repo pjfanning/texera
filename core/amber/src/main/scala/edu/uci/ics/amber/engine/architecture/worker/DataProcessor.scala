@@ -63,6 +63,7 @@ class DataProcessor(
   val stateManager: WorkerStateManager = new WorkerStateManager()
   val inputManager: InputManager = new InputManager(actorId)
   val outputManager: OutputManager = new OutputManager(actorId, outputGateway)
+  val tupleProcessingManager: TupleProcessingManager = new TupleProcessingManager(actorId)
   val channelMarkerManager: ChannelMarkerManager = new ChannelMarkerManager(actorId, inputGateway)
   val serializationManager: SerializationManager = new SerializationManager(actorId)
   def getQueuedCredit(channelId: ChannelIdentity): Long = {
@@ -82,7 +83,7 @@ class DataProcessor(
     */
   private[this] def processInputTuple(tuple: Tuple): Unit = {
     try {
-      outputManager.outputIterator.setTupleOutput(
+      tupleProcessingManager.outputIterator.setTupleOutput(
         executor.processTupleMultiPort(
           tuple,
           this.inputGateway.getChannel(inputManager.currentChannelId).getPortId.id
@@ -103,7 +104,7 @@ class DataProcessor(
     */
   private[this] def processInputExhausted(): Unit = {
     try {
-      outputManager.outputIterator.setTupleOutput(
+      tupleProcessingManager.outputIterator.setTupleOutput(
         executor.onFinishMultiPort(
           this.inputGateway.getChannel(inputManager.currentChannelId).getPortId.id
         )
@@ -122,13 +123,13 @@ class DataProcessor(
     adaptiveBatchingMonitor.startAdaptiveBatching()
     var out: (TupleLike, Option[PortIdentity]) = null
     try {
-      out = outputManager.outputIterator.next()
+      out = tupleProcessingManager.outputIterator.next()
     } catch safely {
       case e =>
         // invalidate current output tuple
         out = null
         // also invalidate outputIterator
-        outputManager.outputIterator.setTupleOutput(Iterator.empty)
+        tupleProcessingManager.outputIterator.setTupleOutput(Iterator.empty)
         // forward input tuple to the user and pause DP thread
         handleExecutorException(e)
     }
@@ -163,7 +164,7 @@ class DataProcessor(
 
   def continueDataProcessing(): Unit = {
     val dataProcessingStartTime = System.nanoTime()
-    if (outputManager.hasUnfinishedOutput) {
+    if (tupleProcessingManager.hasUnfinishedOutput) {
       outputOneTuple()
     } else {
       processInputTuple(inputManager.getNextTuple)
@@ -199,11 +200,11 @@ class DataProcessor(
         if (inputManager.isPortCompleted(portId)) {
           inputManager.initBatch(channelId, Array.empty)
           processInputExhausted()
-          outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
+          tupleProcessingManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
         }
         if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
           // assuming all the output ports finalize after all input ports are finalized.
-          outputManager.finalizeOutput()
+          tupleProcessingManager.finalizeOutput(outputManager.getAllPortIds)
         }
     }
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
