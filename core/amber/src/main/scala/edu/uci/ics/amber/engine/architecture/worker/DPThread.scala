@@ -140,7 +140,7 @@ class DPThread(
       var channelId: Option[ChannelIdentity] = None
       var msg: Option[WorkflowFIFOMessage] = None
       if (
-        dp.tupleProcessingManager.hasUnfinishedInput || dp.tupleProcessingManager.hasUnfinishedOutput || dp.pauseManager.isPaused
+        dp.tupleProcessingManager.inputIterator.hasNext || dp.tupleProcessingManager.outputIterator.hasNext || dp.pauseManager.isPaused
       ) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>

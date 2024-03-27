@@ -1,32 +1,64 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeExecutor, FinalizePort}
-import edu.uci.ics.amber.engine.architecture.worker.TupleProcessingManager.DPOutputIterator
+import edu.uci.ics.amber.engine.architecture.worker.TupleProcessingManager.{OutputTupleIterator, InputTupleIterator}
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
-import scala.collection.mutable
+import scala.collection.{AbstractIterator, mutable}
 
 object TupleProcessingManager {
-  class DPOutputIterator extends Iterator[(TupleLike, Option[PortIdentity])] {
-    val queue = new mutable.ListBuffer[(TupleLike, Option[PortIdentity])]
-    @transient var outputIter: Iterator[(TupleLike, Option[PortIdentity])] = Iterator.empty
+  class InputTupleIterator extends AbstractIterator[(Tuple, PortIdentity)] {
+    private var inputBatch: Array[Tuple] = Array.empty
+    private var currentPortId: Option[PortIdentity] = None
 
-    def setTupleOutput(outputIter: Iterator[(TupleLike, Option[PortIdentity])]): Unit = {
-      if (outputIter != null) {
-        this.outputIter = outputIter
+    // Set the batch of tuples for processing. Resets the iterator to the start of the new batch.
+    def setBatch(portId: PortIdentity, batch: Array[Tuple]): Unit = {
+      currentPortId = Some(portId)
+      inputBatch = batch
+      currentIndex = 0 // Reset index to the start for the new batch
+    }
+
+    private var currentIndex: Int = 0
+
+    // Retrieves the current tuple without advancing the index.
+    def getCurrentTuple: Option[Tuple] = {
+      if (inputBatch.nonEmpty && currentIndex > 0 && currentIndex <= inputBatch.length) {
+        Some(inputBatch(currentIndex - 1))
       } else {
-        this.outputIter = Iterator.empty
+        None
       }
     }
 
-    override def hasNext: Boolean = outputIter.hasNext || queue.nonEmpty
+    // Check if there are more tuples in the batch to process.
+    override def hasNext: Boolean = currentIndex < inputBatch.length
+
+    // Advances to the next tuple in the batch and returns it.
+    override def next(): (Tuple, PortIdentity) = {
+      if (!hasNext) throw new NoSuchElementException("No more tuples in the batch")
+      val tuple = inputBatch(currentIndex)
+      currentIndex += 1
+      (tuple, currentPortId.getOrElse(throw new IllegalStateException("Port ID is not set")))
+    }
+  }
+  class OutputTupleIterator extends AbstractIterator[(TupleLike, Option[PortIdentity])] {
+    val queue = new mutable.ListBuffer[(TupleLike, Option[PortIdentity])]
+    @transient private var internalIter: Iterator[(TupleLike, Option[PortIdentity])] =
+      Iterator.empty
+
+    def setInternalIter(outputIter: Iterator[(TupleLike, Option[PortIdentity])]): Unit = {
+      this.internalIter = Option(outputIter).getOrElse(Iterator.empty)
+    }
+
+    def getInternalIter: Iterator[(TupleLike, Option[PortIdentity])] = internalIter
+
+    override def hasNext: Boolean = internalIter.hasNext || queue.nonEmpty
 
     override def next(): (TupleLike, Option[PortIdentity]) = {
-      if (outputIter.hasNext) {
-        outputIter.next()
+      if (internalIter.hasNext) {
+        internalIter.next()
       } else {
         queue.remove(0)
       }
@@ -38,52 +70,10 @@ object TupleProcessingManager {
   }
 }
 class TupleProcessingManager(val actorId: ActorVirtualIdentity) {
-  // Holds the current batch of tuples for processing.
-  private var inputBatch: Option[Array[Tuple]] = None
 
-  // Tracks the index of the currently processed tuple in the input batch.
-  private var currentInputIdx: Int = -1
+  val inputIterator: InputTupleIterator = new InputTupleIterator()
 
-  // Identifier for the current port being processed.
-  private var currentPortId: Option[PortIdentity] = None
-
-  // Checks if there are more tuples in the batch to process.
-  def hasUnfinishedInput: Boolean =
-    inputBatch match {
-      case Some(batch) => currentInputIdx < batch.length - 1
-      case None        => false
-    }
-
-  // Advances to the next tuple in the batch and returns it.
-  def next: (Tuple, PortIdentity) = {
-    if (hasUnfinishedInput) {
-      currentInputIdx += 1
-      (inputBatch.get(currentInputIdx), currentPortId.get)
-    } else {
-      throw new NoSuchElementException()
-    }
-  }
-
-  // Retrieves the current tuple without advancing the index.
-  def getCurrentTuple: Option[Tuple] = {
-    inputBatch match {
-      case Some(batch)
-          if batch.nonEmpty && currentInputIdx >= 0 && currentInputIdx < batch.length =>
-        Some(batch(currentInputIdx))
-      case _ =>
-        None // Input batch is not initialized, empty, or index is out of bounds.
-    }
-  }
-
-  // Set the batch of tuples for processing and resets the index.
-  def setBatch(portId: PortIdentity, batch: Array[Tuple]): Unit = {
-    currentPortId = Some(portId)
-    inputBatch = Some(batch)
-    currentInputIdx = -1
-  }
-
-  val outputIterator: DPOutputIterator = new DPOutputIterator()
-  def hasUnfinishedOutput: Boolean = outputIterator.hasNext
+  val outputIterator: OutputTupleIterator = new OutputTupleIterator()
 
   def finalizeOutput(portIds: Set[PortIdentity]): Unit = {
     portIds
