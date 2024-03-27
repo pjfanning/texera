@@ -188,7 +188,10 @@ class DataProcessor(
           }
         )
 
-        tupleProcessingManager.inputIterator.setBatch(inputGateway.getChannel(channelId).getPortId, tuples)
+        tupleProcessingManager.inputIterator.setBatch(
+          inputGateway.getChannel(channelId).getPortId,
+          tuples
+        )
         val (tuple, portId) = tupleProcessingManager.inputIterator.next()
         processInputTuple(tuple, portId)
       case EndOfUpstream() =>

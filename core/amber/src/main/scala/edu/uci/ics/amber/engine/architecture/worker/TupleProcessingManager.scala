@@ -1,7 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeExecutor, FinalizePort}
-import edu.uci.ics.amber.engine.architecture.worker.TupleProcessingManager.{OutputTupleIterator, InputTupleIterator}
+import edu.uci.ics.amber.engine.architecture.worker.TupleProcessingManager.{
+  OutputTupleIterator,
+  InputTupleIterator
+}
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
