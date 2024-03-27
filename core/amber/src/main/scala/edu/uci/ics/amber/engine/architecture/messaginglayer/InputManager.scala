@@ -9,8 +9,6 @@ import scala.collection.mutable
 
 class InputManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
 
-
-
   private val ports: mutable.HashMap[PortIdentity, WorkerPort] = mutable.HashMap()
   def getAllPorts: Set[PortIdentity] = {
     this.ports.keys.toSet
@@ -33,6 +31,5 @@ class InputManager(val actorId: ActorVirtualIdentity) extends AmberLogging {
     }
     this.ports(portId).channels.values.forall(completed => completed)
   }
-
 
 }

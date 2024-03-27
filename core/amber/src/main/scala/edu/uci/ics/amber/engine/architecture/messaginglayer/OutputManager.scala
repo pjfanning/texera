@@ -47,7 +47,6 @@ object OutputManager {
     }
   }
 
-
 }
 
 /** This class is a container of all the transfer partitioners.
@@ -59,7 +58,6 @@ class OutputManager(
     val actorId: ActorVirtualIdentity,
     outputGateway: NetworkOutputGateway
 ) extends AmberLogging {
-
 
   private val partitioners: mutable.Map[PhysicalLink, Partitioner] =
     mutable.HashMap[PhysicalLink, Partitioner]()
@@ -156,9 +154,6 @@ class OutputManager(
 
   def getPort(portId: PortIdentity): WorkerPort = ports(portId)
 
-
-
   def getAllPortIds: Set[PortIdentity] = this.ports.keySet.toSet
-
 
 }

@@ -81,12 +81,12 @@ class DataProcessor(
     * process currentInputTuple through executor logic.
     * this function is only called by the DP thread.
     */
-  private[this] def processInputTuple(tuple: Tuple): Unit = {
+  private[this] def processInputTuple(tuple: Tuple, portId: PortIdentity): Unit = {
     try {
       tupleProcessingManager.outputIterator.setTupleOutput(
         executor.processTupleMultiPort(
           tuple,
-          this.inputGateway.getChannel(tupleProcessingManager.currentChannelId).getPortId.id
+          portId.id
         )
       )
       statisticsManager.increaseInputTupleCount()
@@ -102,13 +102,10 @@ class DataProcessor(
     * process end of an input port with Executor.onFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processInputExhausted(): Unit = {
+  private[this] def processOnFinish(portId: PortIdentity): Unit = {
     try {
-      tupleProcessingManager.outputIterator.setTupleOutput(
-        executor.onFinishMultiPort(
-          this.inputGateway.getChannel(tupleProcessingManager.currentChannelId).getPortId.id
-        )
-      )
+      val output = executor.onFinishMultiPort(portId.id)
+      tupleProcessingManager.outputIterator.setTupleOutput(output)
     } catch safely {
       case e =>
         // forward input tuple to the user and pause DP thread
@@ -167,7 +164,8 @@ class DataProcessor(
     if (tupleProcessingManager.hasUnfinishedOutput) {
       outputOneTuple()
     } else {
-      processInputTuple(tupleProcessingManager.getNextTuple)
+      val (tuple, portId) = tupleProcessingManager.next
+      processInputTuple(tuple, portId)
     }
     statisticsManager.increaseDataProcessingTime(System.nanoTime() - dataProcessingStartTime)
   }
@@ -189,8 +187,10 @@ class DataProcessor(
             )
           }
         )
-        tupleProcessingManager.initBatch(channelId, tuples)
-        processInputTuple(tupleProcessingManager.getNextTuple)
+
+        tupleProcessingManager.setBatch(inputGateway.getChannel(channelId).getPortId, tuples)
+        val (tuple, portId) = tupleProcessingManager.next
+        processInputTuple(tuple, portId)
       case EndOfUpstream() =>
         val channel = this.inputGateway.getChannel(channelId)
         val portId = channel.getPortId
@@ -198,9 +198,11 @@ class DataProcessor(
         this.inputManager.getPort(portId).channels(channelId) = true
 
         if (inputManager.isPortCompleted(portId)) {
-          tupleProcessingManager.initBatch(channelId, Array.empty)
-          processInputExhausted()
-          tupleProcessingManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
+          tupleProcessingManager.setBatch(portId, Array.empty)
+          processOnFinish(portId)
+          tupleProcessingManager.outputIterator.appendSpecialTupleToEnd(
+            FinalizePort(portId, input = true)
+          )
         }
         if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
           // assuming all the output ports finalize after all input ports are finalized.
