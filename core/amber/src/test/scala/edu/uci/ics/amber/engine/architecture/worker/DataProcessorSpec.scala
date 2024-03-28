@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker
 import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.FlushNetworkBuffer
 import edu.uci.ics.amber.engine.architecture.messaginglayer.WorkerTimerService
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.MainThreadDelegateMessage
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenOperatorHandler.OpenOperator
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.OpenExecutorHandler.OpenExecutor
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.READY
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, MarkerFrame, WorkflowFIFOMessage}
@@ -42,7 +42,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     0
   )
 
-  private val operator = mock[OperatorExecutor]
+  private val executor = mock[OperatorExecutor]
   private val inputPortId = PortIdentity()
   private val outputPortId = PortIdentity()
   private val outputHandler = mock[Either[MainThreadDelegateMessage, WorkflowFIFOMessage] => Unit]
@@ -65,23 +65,23 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
 
   "data processor" should "process data messages" in {
     val dp = mkDataProcessor
-    dp.operator = operator
+    dp.executor = executor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).once()
-    (operator.open _).expects().once()
+    (executor.open _).expects().once()
     tuples.foreach { x =>
       (
           (
               tuple: Tuple,
               input: Int
-          ) => operator.processTupleMultiPort(tuple, input)
+          ) => executor.processTupleMultiPort(tuple, input)
       )
         .expects(x, 0)
     }
     (
         (
           input: Int
-        ) => operator.onFinishMultiPort(input)
+        ) => executor.onFinishMultiPort(input)
     )
       .expects(
         0
@@ -89,7 +89,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     (adaptiveBatchingMonitor.startAdaptiveBatching _).expects().anyNumberOfTimes()
     (dp.asyncRPCClient.send[Unit] _).expects(*, *).anyNumberOfTimes()
     (adaptiveBatchingMonitor.stopAdaptiveBatching _).expects().once()
-    (operator.close _).expects().once()
+    (executor.close _).expects().once()
     dp.inputManager.addPort(inputPortId, schema)
     dp.inputGateway
       .getChannel(ChannelIdentity(senderWorkerId, testWorkerId, isControl = false))
@@ -97,7 +97,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     dp.outputManager.addPort(outputPortId, schema)
     dp.processControlPayload(
       ChannelIdentity(CONTROLLER, testWorkerId, isControl = true),
-      ControlInvocation(0, OpenOperator())
+      ControlInvocation(0, OpenExecutor())
     )
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
@@ -117,23 +117,23 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
 
   "data processor" should "process control messages during data processing" in {
     val dp = mkDataProcessor
-    dp.operator = operator
+    dp.executor = executor
     dp.stateManager.transitTo(READY)
     (outputHandler.apply _).expects(*).anyNumberOfTimes()
-    (operator.open _).expects().once()
+    (executor.open _).expects().once()
     tuples.foreach { x =>
       (
           (
               tuple: Tuple,
               input: Int
-          ) => operator.processTupleMultiPort(tuple, input)
+          ) => executor.processTupleMultiPort(tuple, input)
       )
         .expects(x, 0)
     }
     (
         (
           input: Int
-        ) => operator.onFinishMultiPort(input)
+        ) => executor.onFinishMultiPort(input)
     )
       .expects(0)
     (adaptiveBatchingMonitor.startAdaptiveBatching _).expects().anyNumberOfTimes()
@@ -145,7 +145,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
     dp.outputManager.addPort(outputPortId, schema)
     dp.processControlPayload(
       ChannelIdentity(CONTROLLER, testWorkerId, isControl = true),
-      ControlInvocation(0, OpenOperator())
+      ControlInvocation(0, OpenExecutor())
     )
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
@@ -159,7 +159,7 @@ class DataProcessorSpec extends AnyFlatSpec with MockFactory with BeforeAndAfter
       dp.continueDataProcessing()
     }
     (adaptiveBatchingMonitor.stopAdaptiveBatching _).expects().once()
-    (operator.close _).expects().once()
+    (executor.close _).expects().once()
     dp.processDataPayload(
       ChannelIdentity(senderWorkerId, testWorkerId, isControl = false),
       MarkerFrame(EndOfUpstream())
