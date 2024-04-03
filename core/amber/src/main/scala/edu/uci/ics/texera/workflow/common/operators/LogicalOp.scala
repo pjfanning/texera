@@ -69,6 +69,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOp
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer.KNNtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_loop.KNNtrainer_loopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_regression.KNNtrainer_regressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.SVCtrainerOpDesc_Loop
@@ -78,6 +79,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.Mode
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVRtrainer.SVRtrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.PredictionVisualization.PredictionVisualizationOpDesc
@@ -171,8 +173,10 @@ trait StateTransferFunc
     new Type(value = classOf[KNNtrainer_loopOpDesc], name = "KNN"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModels"),
     new Type(value = classOf[KNNtrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[KNNtrainer_regressionOpDesc], name = "KNNTrainer_regression"),
     new Type(value = classOf[SVCtrainerOpDesc_Loop], name = "SVCtrainer_Loop"),
     new Type(value = classOf[SVCtrainerOpDesc], name = "SVCtrainer"),
+    new Type(value = classOf[SVRtrainerOpDesc], name = "SVRtrainer"),
     new Type(value = classOf[ApplyModel_LoopOpDesc], name = "ApplyModel_Loop"),
     new Type(value = classOf[Scorer_LoopOpDesc], name = "Scorer_Loop"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),

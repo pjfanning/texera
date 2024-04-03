@@ -61,7 +61,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Apply Model",
-      "Apply Machine learning classifier (scikit-learn)",
+      "Apply Machine learning model(scikit-learn)",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
         InputPort(
@@ -115,7 +115,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      y_pred = []
          |      if $flag_prob:
          |        y_prob = []
-         |      if $flag_prob:
+         |      if $flag_gt:
          |        y_true = []
          |      s = table
          |      table = dataset
