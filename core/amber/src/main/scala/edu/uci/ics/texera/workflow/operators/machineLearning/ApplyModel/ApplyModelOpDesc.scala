@@ -115,7 +115,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      y_pred = []
          |      if $flag_prob:
          |        y_prob = []
-         |      if $flag_prob:
+         |      if $flag_gt:
          |        y_true = []
          |      s = table
          |      table = dataset
