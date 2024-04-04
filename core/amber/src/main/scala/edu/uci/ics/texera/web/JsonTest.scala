@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.web
 
+import edu.uci.ics.amber.engine.common.{AmberUtils, SerializedState}
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
@@ -7,15 +8,11 @@ import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNI
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
-    val a = RUNNING
-    val om = Utils.objectMapper
-
-    val str = om.writeValueAsString(a)
-    println(str)
-
-    val des = om.readValue(str, classOf[WorkflowAggregatedState])
-    println(des)
-
+    AmberUtils.startActorWorker(None)
+    val a = Map(1 -> 2, 3 -> "1231234")
+    val s = SerializedState.fromObjectToString(a)
+    val b: AnyRef = SerializedState.stringToObject(s)
+    println(b)
   }
 }
 
