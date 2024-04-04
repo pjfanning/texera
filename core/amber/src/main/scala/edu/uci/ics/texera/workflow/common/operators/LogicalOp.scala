@@ -80,6 +80,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrain
 import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.PredictionVisualization.PredictionVisualizationOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -182,6 +183,7 @@ trait StateTransferFunc
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrixChart"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
     new Type(value = classOf[PredictionVisualizationOpDesc], name = "PredictionVisualization"),
+    new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScorer")
 
   )
 )
