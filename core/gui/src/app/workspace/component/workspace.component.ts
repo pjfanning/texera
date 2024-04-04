@@ -41,7 +41,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
   public gitCommitHash: string = Version.raw;
   public showResultPanel: boolean = false;
   userSystemEnabled = environment.userSystemEnabled;
-  @ViewChild("codeEditor", { read: ViewContainerRef }) vc!: ViewContainerRef;
+  @ViewChild("codeEditor", { read: ViewContainerRef }) codeEditorViewRef!: ViewContainerRef;
   constructor(
     private userService: UserService,
     private resultPanelToggleService: ResultPanelToggleService,
@@ -115,7 +115,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
 
     this.registerResultPanelToggleHandler();
 
-    this.codeEditorService.vc = this.vc;
+    this.codeEditorService.vc = this.codeEditorViewRef;
   }
 
   @HostListener("window:beforeunload")
@@ -124,10 +124,10 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
       const workflow = this.workflowActionService.getWorkflow();
       this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
     }
-    this.workflowActionService.setWorkflowMetadata(undefined);
-    this.workflowActionService.destroySharedModel();
+
+    this.codeEditorViewRef.clear();
     this.workflowWebsocketService.closeWebsocket();
-    this.vc.clear();
+    this.workflowActionService.clearWorkflow();
   }
 
   registerResultPanelToggleHandler() {

@@ -787,6 +787,14 @@ export class WorkflowActionService {
     this.setWorkflowMetadata({ ...this.workflowMetadata, name: newName });
   }
 
+  public clearWorkflow() : void {
+
+    this.destroySharedModel();
+    this.setWorkflowMetadata(undefined);
+    this.reloadWorkflow(undefined);
+
+  }
+
   /**
    * Need to quit shared-editing room at first.
    */
