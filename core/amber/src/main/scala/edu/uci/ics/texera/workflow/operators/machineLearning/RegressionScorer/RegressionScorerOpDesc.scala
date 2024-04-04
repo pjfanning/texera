@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class RegressionScorerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(required = true)
@@ -67,7 +67,17 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
            |        elif scorer == "R2":
            |          result["R2"] = r2_score(y_true, y_pred)
            |
-           |      resultDf = pd.DataFrame(result)
+           |      paraStrSeries = pd.Series(table['para'].tolist())
+           |      table = table.drop(['para'], axis=1)
+           |      table['para'] = paraStrSeries
+           |
+           |
+           |      resultDf = pd.DataFrame(result, index=[0])
+           |
+           |      resultDf = pd.concat([resultDf, table], axis=1)
+           |
+           |      if "Iteration" in resultDf.columns:
+           |        resultDf['Iteration'] = resultDf['Iteration'].astype(int)
            |
            |      yield resultDf
            |
@@ -77,6 +87,14 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
+    val inputSchema = schemas(0)
+    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
+      outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+    }
+    )
+    outputSchemaBuilder.add(inputSchema)
+    outputSchemaBuilder.removeIfExists("para")
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     outputSchemaBuilder.build
   }
   private def getEachScorerName(scorer: RegressionScorerFunction): String = {
