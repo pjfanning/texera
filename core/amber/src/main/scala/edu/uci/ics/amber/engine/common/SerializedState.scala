@@ -19,12 +19,12 @@ object SerializedState {
 
   def fromObjectToString[T <: AnyRef](obj:T):String = {
     val serializedObj = fromObject(obj, AmberUtils.serde)
-    s"${serializedObj.manifest}amber_serialization${serializedObj.serializerId}amber_serialization" + new String(serializedObj.bytes, "UTF-8")
+    s"${serializedObj.manifest}amber_serialization${serializedObj.serializerId}amber_serialization" + (serializedObj.bytes.map(_.toChar)).mkString
   }
 
   def stringToObject(str:String):AnyRef = {
     val fields = str.split("amber_serialization")
-    SerializedState(fields(2).getBytes("UTF-8"),fields(1).toInt,fields(0)).toObject[AnyRef](AmberUtils.serde)
+    SerializedState(fields(2).map(_.toByte).toArray,fields(1).toInt,fields(0)).toObject[AnyRef](AmberUtils.serde)
   }
 }
 
