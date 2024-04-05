@@ -67,13 +67,18 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
            |        elif scorer == "R2":
            |          result["R2"] = r2_score(y_true, y_pred)
            |
+           |      # para column binary to string
            |      paraStrSeries = pd.Series(table['para'].tolist())
            |      table = table.drop(['para'], axis=1)
            |      table['para'] = paraStrSeries
            |
-           |
+           |      # convert list/dict to dataframe
+           |      label = ['Overall']
+           |      labelDf = pd.DataFrame(label, columns=['Label'])
            |      resultDf = pd.DataFrame(result, index=[0])
            |
+           |      # concat the dataframes
+           |      resultDf = pd.concat([labelDf, resultDf], axis=1)
            |      resultDf = pd.concat([resultDf, table], axis=1)
            |
            |      if "Iteration" in resultDf.columns:
@@ -88,6 +93,7 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
+    outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
     scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
       outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
     }
