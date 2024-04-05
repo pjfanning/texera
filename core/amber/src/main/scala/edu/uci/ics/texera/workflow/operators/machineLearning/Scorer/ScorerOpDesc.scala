@@ -82,7 +82,6 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            for scorer in scorerList:
          |              result[scorer] = [ None ] * len(labels)
          |
-         |            result['Label'] = labels
          |            for scorer in scorerList:
          |              prediction = None
          |              if scorer == 'Accuracy':
@@ -116,6 +115,18 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            paraStrSeries = pd.Series(table['para'].tolist())
          |            table = table.drop(['para'], axis=1)
          |            table['para'] = paraStrSeries
+         |
+         |            label_show = []
+         |
+         |            for item in labels:
+         |              if type(item) != str:
+         |                 label_show.append('class_' + str(item))
+         |              else:
+         |                 label_show.append(item)
+         |
+         |            print(label_show)
+         |
+         |            result['Label'] = label_show
          |
          |            resultDf = pd.DataFrame(result)
          |
