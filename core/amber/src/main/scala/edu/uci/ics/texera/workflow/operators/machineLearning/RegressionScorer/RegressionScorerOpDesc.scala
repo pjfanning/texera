@@ -28,7 +28,7 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-    "RegressionScorer",
+    "Regression Scorer",
     "Scorer for machine learning regression",
     OperatorGroupConstants.ML_GROUP,
     inputPorts = List(InputPort()),

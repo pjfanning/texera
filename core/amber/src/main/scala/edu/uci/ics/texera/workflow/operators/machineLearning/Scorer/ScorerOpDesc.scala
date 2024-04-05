@@ -27,7 +27,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   var scorers: List[ScorerFunction] = List()
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Scorer",
+      "Classification Scorer",
       "Scorer for machine learning classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(InputPort()),

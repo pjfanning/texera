@@ -140,7 +140,7 @@ class SVRtrainerOpDesc extends PythonOperatorDescriptor {
   }
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVRTrainer",
+      "SVR Trainer",
       "Train a SVM Regressor",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(

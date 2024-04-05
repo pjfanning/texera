@@ -149,7 +149,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
   }
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVCTrainer_Loop",
+      "SVC Trainer Loop",
       "Train a SVM classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(

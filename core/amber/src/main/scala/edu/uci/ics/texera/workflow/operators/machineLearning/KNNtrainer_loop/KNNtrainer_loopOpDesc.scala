@@ -63,7 +63,7 @@ class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNNTrainer_loop",
+      "KNN Trainer Loop",
       "Train a KNN classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(

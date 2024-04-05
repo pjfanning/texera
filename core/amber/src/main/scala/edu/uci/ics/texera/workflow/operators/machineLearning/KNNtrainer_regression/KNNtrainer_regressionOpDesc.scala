@@ -61,7 +61,7 @@ class KNNtrainer_regressionOpDesc extends PythonOperatorDescriptor{
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNNTrainer_Regression",
+      "KNN Trainer Regression",
       "Train a KNN regression",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(

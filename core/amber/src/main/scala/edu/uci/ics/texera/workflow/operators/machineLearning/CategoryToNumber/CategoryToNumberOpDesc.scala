@@ -18,7 +18,7 @@ class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "CategoryToNumber",
+      "Category To Number",
       "Category To Number",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(InputPort()),

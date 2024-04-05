@@ -48,7 +48,7 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
   var scorers: List[Scorer_LoopFunction] = List()
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Scorer_Loop",
+      "Scorer Loop",
       "Scorer for machine learning classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
