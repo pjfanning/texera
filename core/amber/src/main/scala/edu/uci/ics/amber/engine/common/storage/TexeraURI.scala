@@ -2,6 +2,7 @@ package edu.uci.ics.amber.engine.common.storage
 import java.net.{URI, URISyntaxException}
 
 object TexeraURI {
+
   val FILE_SCHEMA = "file"
 
   private val supportedSchemas = Set(FILE_SCHEMA)
@@ -10,7 +11,7 @@ object TexeraURI {
     if (!supportedSchemas.contains(schema)) {
       throw new RuntimeException("Given schema is not supported")
     }
-    new TexeraURI(new URI(schema + uriBody))
+    new TexeraURI(new URI(schema + "://" + uriBody))
   }
 }
 
