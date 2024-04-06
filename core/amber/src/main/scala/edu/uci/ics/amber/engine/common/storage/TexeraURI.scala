@@ -21,5 +21,15 @@ class TexeraURI private (val uri: URI) {
   def getPath: String = uri.getPath
   def getHost: String = uri.getHost
   def getURI: URI = uri
+  def containsChildPath(other: TexeraURI): Boolean = {
+    getScheme == other.getScheme && other.getPath != getPath && other.getPath.startsWith(getPath)
+  }
   override def toString: String = uri.toString
+
+  override def equals(other: Any): Boolean = other match {
+    case that: TexeraURI => this.uri == that.uri
+    case _ => false
+  }
+
+  override def hashCode(): Int = uri.hashCode()
 }
