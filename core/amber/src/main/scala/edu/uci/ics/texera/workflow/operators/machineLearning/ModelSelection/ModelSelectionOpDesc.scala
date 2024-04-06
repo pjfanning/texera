@@ -53,12 +53,11 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor{
          |    data = dict({})
          |    best_result=0
          |    table = table[table["Label"]=="Overall"]
-         |    for _, value in enumerate(table["$evaluation"]):
-         |      result = value
-         |      print("result",result)
-         |      print("best_result",best_result)
-         |      if result > best_result:
-         |        best_result = result
+         |    if "$evaluation" in ("MSE","MAE","RMSE"):
+         |      best_result = table["$evaluation"].min()
+         |    else:
+         |      best_result = table["$evaluation"].max()
+         |
          |    data = table[table["$evaluation"]==best_result]
          |    print(data)
          |    yield data
