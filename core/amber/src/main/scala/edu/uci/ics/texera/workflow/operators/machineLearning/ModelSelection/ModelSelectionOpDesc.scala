@@ -1,12 +1,12 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 
 @JsonSchemaInject(json = """
@@ -21,6 +21,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType
 class ModelSelectionOpDesc extends PythonOperatorDescriptor{
   @JsonProperty(required = true,defaultValue = "Accuracy")
   @JsonSchemaTitle("Evaluation")
+  @JsonPropertyDescription("Choose The Evaluation")
   @AutofillAttributeName
   var evaluation: String = ""
 
@@ -49,17 +50,15 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor{
          |class ProcessTableOperator(UDFTableOperator):
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |    keys_list = list(table.keys())
-         |    print(keys_list)
          |    data = dict({})
-         |    best_result=0
-         |    table = table[table["Label"]=="Overall"]
-         |    if "$evaluation" in ("MSE","MAE","RMSE"):
+         |    best_result = 0
+         |    table = table[table["Label"] == "Overall"]
+         |    if "$evaluation" in ("MSE", "MAE", "RMSE"):
          |      best_result = table["$evaluation"].min()
          |    else:
          |      best_result = table["$evaluation"].max()
          |
          |    data = table[table["$evaluation"]==best_result]
-         |    print(data)
          |    yield data
          |
          |""".stripMargin
