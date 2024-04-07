@@ -9,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNTrainerOpDesc extends PythonOperatorDescriptor {
-    @JsonProperty(defaultValue = "false")
+    @JsonProperty(defaultValue = "false",required = false)
     @JsonSchemaTitle("Using Optimized K")
     @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
     @JsonPropertyDescription("Tune the parameter")

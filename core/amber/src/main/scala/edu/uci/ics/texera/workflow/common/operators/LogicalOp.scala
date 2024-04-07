@@ -68,19 +68,19 @@ import edu.uci.ics.texera.workflow.operators.visualization.heatMap.HeatMapOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainer.KNNTrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_loop.KNNtrainer_loopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerLoop.KNNtrainer_loopOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression.KNNTrainerRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.SVCtrainerOpDesc_Loop
-import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop.ApplyModel_LoopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerLoop.SVCtrainerOpDesc_Loop
+import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModelLoop.ApplyModel_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.CategoryToNumber.CategoryToNumberOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer.SVCtrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVRtrainer.SVRtrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop.Scorer_LoopOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.SVCTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ScorerLoop.Scorer_LoopOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatter3dChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.PredictionVisualization.PredictionVisualizationOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
@@ -176,8 +176,8 @@ trait StateTransferFunc
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
     new Type(value = classOf[KNNTrainerRegressionOpDesc], name = "KNNTrainer_regression"),
 //    new Type(value = classOf[SVCtrainerOpDesc_Loop], name = "SVCtrainer_Loop"),
-    new Type(value = classOf[SVCtrainerOpDesc], name = "SVCtrainer"),
-    new Type(value = classOf[SVRtrainerOpDesc], name = "SVRtrainer"),
+    new Type(value = classOf[SVCTrainerOpDesc], name = "SVCtrainer"),
+    new Type(value = classOf[SVRTrainerOpDesc], name = "SVRtrainer"),
 //    new Type(value = classOf[ApplyModel_LoopOpDesc], name = "ApplyModel_Loop"),
 //    new Type(value = classOf[Scorer_LoopOpDesc], name = "Scorer_Loop"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),

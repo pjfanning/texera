@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_loop
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerLoop
 
 
 import scala.jdk.CollectionConverters.IterableHasAsJava
@@ -12,7 +12,7 @@ import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
-  @JsonProperty(defaultValue = "false")
+  @JsonProperty(defaultValue = "false",required = false)
   @JsonSchemaTitle("Using optimized K")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_k"]}""")
   var is_loop: Boolean = false

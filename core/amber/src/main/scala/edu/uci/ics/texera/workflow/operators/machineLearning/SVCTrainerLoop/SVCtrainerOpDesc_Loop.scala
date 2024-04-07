@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerLoop
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{
   JsonSchemaBool,
@@ -16,8 +16,9 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.{
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.KernalFunction
-class SVCtrainerOpDesc extends PythonOperatorDescriptor {
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerLoop.KernalFunction
+class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
+
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
@@ -98,7 +99,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   val loop_coef: String = ""
 
-  @JsonProperty(required = false)
+  @JsonProperty(value = "Kernal Function", required = false,defaultValue ="linear")
   @JsonSchemaTitle("Kernal Function")
   @JsonPropertyDescription("multiple kernal functions")
   @JsonSchemaInject(
@@ -142,24 +143,23 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    if (is_loop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
   }
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVC Trainer",
+      "SVC Trainer Loop",
       "Train a SVM classifier",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),
           displayName = "dataset",
-          allowMultiLinks = true
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(1))
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
-          dependencies = List(PortIdentity(0)))
+        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true)
       ),
       outputPorts = List(OutputPort())
     )
@@ -182,31 +182,28 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |
          |  @overrides
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |    global dataset
-         |
-         |    if port == 0:
-         |      print("port1")
-         |      print(table)
-         |      dataset = table
+         |    global para
          |
          |    if port == 1:
-         |      print("port0")
+         |      print(table)
+         |      if ($truthy):
+         |        para = table
+         |
+         |    if port == 0:
          |      if not ($truthy):
          |        c_list = np.array([$c])
          |        kernal_list = np.array(["$kernal"])
          |        kernal_type = "$kernal"
          |        if kernal_type in ['poly', 'rbf', 'sigmoid']:
          |          gamma_list = np.array([$gamma])
-         |        if kernal_type in ['poly', 'rbf']:
+         |        if kernal_type in ['poly']:
          |          coef_list = np.array([$coef])
          |
          |      if ($truthy):
-         |        para = table.head(1)
          |        c_list = para["$loop_c"]
          |        kernal_list = para["$loop_kernal"]
          |        gamma_list = para["$loop_gamma"]
          |        coef_list = para["$loop_coef"]
-         |      table = dataset
          |      y_train = table["$label"]
          |      features = [$list_features]
          |      X_train = table[features]
@@ -220,11 +217,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |          coef_value = coef_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {};coef_value= {}".format(kernal_value,c_value,gamma_value,coef_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,coef0=float(coef_value),probability=True)
-         |        elif kernal_value in ['rbf']:
-         |          gamma_value = gamma_list[i]
-         |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
-         |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,probability=True)
-         |        elif kernal_value in ['sigmoid']:
+         |        elif kernal_value in ['sigmoid','rbf']:
          |          gamma_value = gamma_list[i]
          |          para_str = "kernal_value = '{}';c_value= {};gamma_value= {}".format(kernal_value,c_value,gamma_value)
          |          model = SVC(kernel=kernal_value,C=float(c_value),gamma=gamma_value,probability=True)
@@ -241,11 +234,7 @@ class SVCtrainerOpDesc extends PythonOperatorDescriptor {
          |      data["para"] = para_list
          |      data["features"]= [features]*c_list.shape[0]
          |
-         |
          |      df = pd.DataFrame(data)
-         |      if ($truthy):
-         |        df["Iteration"]= para["Iteration"]
-         |
          |      yield df
          |
          |
