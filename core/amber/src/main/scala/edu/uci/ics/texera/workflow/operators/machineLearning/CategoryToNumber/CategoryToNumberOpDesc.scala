@@ -19,7 +19,7 @@ class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Category To Number",
-      "Category To Number",
+      "Convert category to number",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
@@ -54,11 +54,11 @@ class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |
-         |      attributeList = [${getSelectedList()}]
+         |      attribute_list = [${getSelectedList()}]
          |
-         |      labelModel = []
+         |      label_model = []
          |
-         |      for item in attributeList:
+         |      for item in attribute_list:
          |        le = LabelEncoder()
          |        le.fit(table[item].values)
          |        result = le.transform(table[item].values)
@@ -67,11 +67,9 @@ class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
          |        model = {}
          |        model['name'] = item
          |        model['label_encoder'] = le
-         |        labelModel.append(model)
+         |        label_model.append(model)
          |
-         |      print(labelModel)
-         |
-         |      table["label_encoder"] = pickle.dumps(labelModel)
+         |      table["label_encoder"] = pickle.dumps(label_model)
          |
          |      yield table
          |

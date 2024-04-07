@@ -65,29 +65,23 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
          |class ProcessTableOperator(UDFTableOperator):
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |        global predictValueTable
+         |        global predict_value_table
          |
          |        if table.empty:
          |            yield {"html-content": self.render_error("input table is empty.")}
          |            return
          |
-         |        predictValueTable = table
-         |        print(predictValueTable.columns)
+         |        predict_value_table = table
          |
-         |        y_true = predictValueTable["$actualValueColumn"][0]
-         |        y_pred = predictValueTable["$predictValueColumn"][0]
+         |        y_true = predict_value_table["$actualValueColumn"][0]
+         |        y_pred = predict_value_table["$predictValueColumn"][0]
          |
          |        column_set = set(y_true)
          |        labels = list(column_set)
          |
          |        prediction = confusion_matrix(y_true, y_pred, labels=labels)
          |
-         |        print("prediction", prediction)
-         |        print("labels", labels)
-         |
          |        text = [[str(value) for value in row] for row in prediction]
-         |
-         |        print("text", text)
          |
          |        fig = go.Figure(
          |            data=go.Heatmap(
