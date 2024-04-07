@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
@@ -8,41 +8,43 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class KNNtrainerOpDesc extends PythonOperatorDescriptor {
+class KNNTrainerOpDesc extends PythonOperatorDescriptor {
     @JsonProperty(defaultValue = "false")
-    @JsonSchemaTitle("Using optimized K")
-    @JsonSchemaInject(json = """{"toggleHidden" : ["loop_k"]}""")
-    var is_loop: Boolean = false
+    @JsonSchemaTitle("Using Optimized K")
+    @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
+    @JsonPropertyDescription("Tune the parameter")
+    var isLoop: Boolean = false
 
     @JsonProperty(required = true)
-    @JsonSchemaTitle("label Column")
+    @JsonSchemaTitle("Label Column")
+    @JsonPropertyDescription("Label")
     @AutofillAttributeName
     var label: String = ""
 
-    @JsonProperty(required = true,defaultValue = "3")
+    @JsonProperty(required = true, defaultValue = "3")
     @JsonSchemaTitle("Custom K")
     @JsonPropertyDescription("Specify the number of nearest neighbours")
     @JsonSchemaInject(
       strings = Array(
-        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
         new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
         new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
       )
     )
     var k: Int = Int.box(1)
 
-    @JsonProperty(value = "loop_k", required = false)
+    @JsonProperty(required = false, value = "loopK")
     @JsonSchemaTitle("Optimise k from loop")
     @JsonPropertyDescription("Specify which attribute indicates the value of K")
     @JsonSchemaInject(
       strings = Array(
-        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_loop"),
+        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
         new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
         new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
       )
     )
     @AutofillAttributeNameOnPort1
-    var loop_k: String = ""
+    var loopK: String = ""
 
     @JsonProperty(value = "Selected Features", required = true)
     @JsonSchemaTitle("Selected Features")
@@ -52,7 +54,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     override def getOutputSchema(schemas: Array[Schema]): Schema = {
       val outputSchemaBuilder = Schema.newBuilder
-      if (is_loop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+      if (isLoop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
       outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -78,7 +80,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
 
     override def generatePythonCode(): String = {
       var truthy = "False"
-      if (is_loop) truthy = "True"
+      if (isLoop) truthy = "True"
       val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
       val finalcode =
         s"""
@@ -120,7 +122,7 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |
            |      if ($truthy):
            |        param = param.head(1)
-           |        k = param["$loop_k"].values
+           |        k = param["$loopK"].values
            |        for i in k:
            |          k = int(i)
            |          knn = KNeighborsClassifier(n_neighbors=k)
@@ -133,11 +135,8 @@ class KNNtrainerOpDesc extends PythonOperatorDescriptor {
            |
            |      data = dict({})
            |      data["model"]= model_list
-           |      # print(model_list)
            |      data["para"] = para_list
-           |      # print(para_list)
            |      data["features"]= features_list
-           |      # print(features_list)
            |
            |      df = pd.DataFrame(data)
            |      if ($truthy):

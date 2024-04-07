@@ -67,9 +67,9 @@ import edu.uci.ics.texera.workflow.operators.visualization.dumbbellPlot.Dumbbell
 import edu.uci.ics.texera.workflow.operators.visualization.heatMap.HeatMapOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrix.ScatterMatrixOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer.KNNtrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainer.KNNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_loop.KNNtrainer_loopOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNtrainer_regression.KNNtrainer_regressionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression.KNNTrainerRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer_Loop.SVCtrainerOpDesc_Loop
@@ -173,8 +173,8 @@ trait StateTransferFunc
     new Type(value = classOf[ScatterMatrixOpDesc], name = "ScatterMatrix"),
 //    new Type(value = classOf[KNNtrainer_loopOpDesc], name = "KNN"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModels"),
-    new Type(value = classOf[KNNtrainerOpDesc], name = "KNNTrainer"),
-    new Type(value = classOf[KNNtrainer_regressionOpDesc], name = "KNNTrainer_regression"),
+    new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[KNNTrainerRegressionOpDesc], name = "KNNTrainer_regression"),
 //    new Type(value = classOf[SVCtrainerOpDesc_Loop], name = "SVCtrainer_Loop"),
     new Type(value = classOf[SVCtrainerOpDesc], name = "SVCtrainer"),
     new Type(value = classOf[SVRtrainerOpDesc], name = "SVRtrainer"),
