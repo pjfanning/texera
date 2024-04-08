@@ -16,4 +16,8 @@ abstract class TexeraDocument[T >: Null <: AnyRef] {
   def writeWithStream(inputStream: InputStream): Unit = throw new UnsupportedOperationException("writeWithStream method is not supported")
 
   def writeItem(item: T): Unit = throw new UnsupportedOperationException("writeItem method is not supported")
+
+  def getURI: TexeraURI
+
+  def delete(): Unit
 }
