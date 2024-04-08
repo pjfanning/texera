@@ -44,22 +44,15 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor{
       s"""
          |from pytexera import *
          |
-         |import pickle
-         |
          |class ProcessTableOperator(UDFTableOperator):
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |    keys_list = list(table.keys())
-         |    print(keys_list)
-         |    data = dict({})
-         |    best_result=0
          |    table = table[table["Label"]=="Overall"]
          |    if "$evaluation" in ("MSE","MAE","RMSE"):
          |      best_result = table["$evaluation"].min()
          |    else:
          |      best_result = table["$evaluation"].max()
-         |
          |    data = table[table["$evaluation"]==best_result]
-         |    print(data)
          |    yield data
          |
          |""".stripMargin
