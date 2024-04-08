@@ -16,47 +16,49 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
-  @JsonPropertyDescription("Specify the name of the predicted data")
-  var y_pred: String = ""
+  @JsonPropertyDescription("Specify the name of the predicted data column")
+  var yPred: String = ""
 
   @JsonProperty(defaultValue = "false")
-  @JsonSchemaTitle("Predict probability for each class")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["y_prob"]}""")
-  var is_prob: Boolean = false
+  @JsonSchemaTitle("Predict Probability For Each Class")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["yProb"]}""")
+  @JsonPropertyDescription("Choose to calculate the probabilities of one dataset belongs to each class")
+  var isProb: Boolean = false
 
 
 
-  @JsonProperty(value = "y_prob", required = false,defaultValue = "y_prob")
+  @JsonProperty(value = "yProb", required = false,defaultValue = "y_prob")
   @JsonSchemaTitle("Probability Column")
-  @JsonPropertyDescription("Specify the name of the predicted probability")
+  @JsonPropertyDescription("Specify the name of the predicted probability column")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_prob"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isProb"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
     )
   )
-  var y_prob: String = "y_prob"
+  var yProb: String = "y_prob"
 
 
   @JsonProperty(value = "is_ground_truth",defaultValue = "false")
-  @JsonSchemaTitle("Ground truth in datasets")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["y_true"]}""")
-  var is_ground_truth: Boolean = false
+  @JsonSchemaTitle("Ground Truth In Datasets")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["yTrue"]}""")
+  @JsonPropertyDescription("Choose to pass the ground truth value through this operator")
+  var isGroundTruth: Boolean = false
 
 
-  @JsonProperty(value = "y_true", required = false)
-  @JsonSchemaTitle("Ground truth label")
-  @JsonPropertyDescription("Specify the label column")
+  @JsonProperty(value = "yTrue", required = false)
+  @JsonSchemaTitle("Ground Truth Label")
+  @JsonPropertyDescription("Specify the name of label column")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "is_ground_truth"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isGroundTruth"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
     )
   )
   @AutofillAttributeName
-  var y_true: String = ""
+  var yTrue: String = ""
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -81,9 +83,9 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(1)
     outputSchemaBuilder.add(inputSchema)
-    if (is_ground_truth)  outputSchemaBuilder.add(new Attribute(y_true, AttributeType.BINARY))
-    if (is_prob)  outputSchemaBuilder.add(new Attribute(y_prob, AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute(y_pred, AttributeType.BINARY)).build
+    if (isGroundTruth)  outputSchemaBuilder.add(new Attribute(yTrue, AttributeType.BINARY))
+    if (isProb)  outputSchemaBuilder.add(new Attribute(yProb, AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute(yPred, AttributeType.BINARY)).build
 
 
   }
@@ -91,10 +93,10 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
 
 
   override def generatePythonCode(): String = {
-    var flag_prob = "False"
-    if (is_prob)  flag_prob = "True"
-    var flag_gt = "False"
-    if (is_ground_truth)  flag_gt = "True"
+    var flagProb = "False"
+    if (isProb)  flagProb = "True"
+    var flagGroundTruth = "False"
+    if (isGroundTruth)  flagGroundTruth = "True"
     val finalCode =
       s"""
          |from pytexera import *
@@ -114,9 +116,9 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |
          |    if port ==1:
          |      y_pred = []
-         |      if $flag_prob:
+         |      if $flagProb:
          |        y_prob = []
-         |      if $flag_gt:
+         |      if $flagGroundTruth:
          |        y_true = []
          |      model_config = table
          |      for i in range(model_config.shape[0]):
@@ -125,17 +127,17 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        model = pickle.loads(model_config["model"][i])
          |        y_predict = model.predict(x_test)
          |        y_pred.append(y_predict)
-         |        if $flag_gt:
-         |            y_true.append(dataset["$y_true"])
-         |        if $flag_prob:
+         |        if $flagGroundTruth:
+         |            y_true.append(dataset["$yTrue"])
+         |        if $flagProb:
          |            y_proba = model.predict_proba(x_test)
          |            y_prob.append([y_proba,model.classes_])
          |      result = dict()
-         |      result['$y_pred'] = y_pred
-         |      if $flag_prob:
-         |        result['$y_prob'] = y_prob
-         |      if $flag_gt:
-         |        result['$y_true'] = y_true
+         |      result['$yPred'] = y_pred
+         |      if $flagProb:
+         |        result['$yProb'] = y_prob
+         |      if $flagGroundTruth:
+         |        result['$yTrue'] = y_true
          |      result_df  = pd.DataFrame(result)
          |      result_df["model"] = model_config["model"]
          |      result_df["para"] =  model_config["para"]
