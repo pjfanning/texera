@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel_Loop
+package edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModelLoop
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions

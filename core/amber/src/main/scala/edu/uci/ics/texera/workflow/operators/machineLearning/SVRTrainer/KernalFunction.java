@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCtrainer;
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

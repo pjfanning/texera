@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.Score_Loop;
+package edu.uci.ics.texera.workflow.operators.machineLearning.ScorerLoop;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 

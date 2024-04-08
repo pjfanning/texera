@@ -69,18 +69,18 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
          |class ProcessTableOperator(UDFTableOperator):
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-         |        global predictValueTable
+         |        global predict_value_table
          |
          |        if table.empty:
          |            yield {"html-content": self.render_error("input table is empty.")}
          |            return
          |
-         |        predictValueTable = table
-         |        print(predictValueTable.columns)
+         |        predict_value_table = table
+         |        print(predict_value_table.columns)
          |
-         |        y_true = predictValueTable["$actualValueColumn"][0]
-         |        y_prob = predictValueTable["$predictValueColumn"][0][0]
-         |        labels = predictValueTable["$predictValueColumn"][0][1]
+         |        y_true = predict_value_table["$actualValueColumn"][0]
+         |        y_prob = predict_value_table["$predictValueColumn"][0][0]
+         |        labels = predict_value_table["$predictValueColumn"][0][1]
          |
          |        print(y_true, y_prob, labels)
          |
