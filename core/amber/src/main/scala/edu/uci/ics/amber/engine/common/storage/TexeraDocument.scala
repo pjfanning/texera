@@ -19,5 +19,5 @@ abstract class TexeraDocument[T >: Null <: AnyRef] {
 
   def getURI: TexeraURI
 
-  def delete(): Unit
+  def rm(): Unit
 }
