@@ -147,6 +147,37 @@ public class JGitVersionControl {
     return rootNodes;
   }
 
+  /**
+   * Checks if the given commit hash exists in the repository.
+   *
+   * @param repoPath The path to the repository.
+   * @param commitHash The commit hash to check.
+   * @return true if the commit exists, false otherwise.
+   * @throws IOException If an I/O error occurs.
+   */
+  public static boolean isCommitInRepo(Path repoPath, String commitHash) throws IOException {
+    try (Repository repository = new FileRepositoryBuilder()
+        .setGitDir(repoPath.resolve(".git").toFile())
+        .build();
+         RevWalk revWalk = new RevWalk(repository)) {
+
+      // Try to resolve the given commit hash to an ObjectId
+      ObjectId commitId = ObjectId.fromString(commitHash);
+      if (commitId == null) {
+        return false;
+      }
+
+      // Try to parse the commit. If the commit does not exist, this will throw an exception.
+      try {
+        revWalk.parseCommit(commitId);
+        return true; // The commit exists
+      } catch (IOException e) {
+        // The commit does not exist or is invalid
+        return false;
+      }
+    }
+  }
+
   private static FileNode createOrGetNode(Map<String, FileNode> map, Path repoPath, Path path) {
     return map.computeIfAbsent(path.toString(), k -> new FileNode(repoPath, path));
   }

@@ -2,10 +2,10 @@ package edu.uci.ics.amber.engine.common.storage.file
 
 import edu.uci.ics.amber.engine.common.storage.TexeraCollection
 
-abstract class VersionControlledCollection extends TexeraCollection{
+abstract class VersionControlledCollection extends TexeraCollection with FSTreeNode {
 // init current collection as a empty version store
   def initVersionStore(): Unit
 
-  def withCreateVersion(versionName: String)(operations: => Unit): Unit
+  def withCreateVersion(versionName: String)(operations: => Unit): String
 
 }
