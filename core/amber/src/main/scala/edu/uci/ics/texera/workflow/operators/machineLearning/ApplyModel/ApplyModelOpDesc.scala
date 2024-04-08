@@ -102,12 +102,13 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |import numpy as np
          |import pickle
          |
-         |global s
+         |global model_config
          |class ApplyModelOperator(UDFTableOperator):
          |
          |  @overrides
          |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |    global dataset
+         |    global model_config
          |    if port == 0:
          |      dataset = table
          |
@@ -117,16 +118,15 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        y_prob = []
          |      if $flag_gt:
          |        y_true = []
-         |      s = table
-         |      table = dataset
-         |      for i in range(s.shape[0]):
-         |        f = s["features"][i]
-         |        x_test = table[f]
-         |        model = pickle.loads(s["model"][i])
+         |      model_config = table
+         |      for i in range(model_config.shape[0]):
+         |        feature = model_config["features"][i]
+         |        x_test = dataset[feature]
+         |        model = pickle.loads(model_config["model"][i])
          |        y_predict = model.predict(x_test)
          |        y_pred.append(y_predict)
          |        if $flag_gt:
-         |            y_true.append(table["$y_true"])
+         |            y_true.append(dataset["$y_true"])
          |        if $flag_prob:
          |            y_proba = model.predict_proba(x_test)
          |            y_prob.append([y_proba,model.classes_])
@@ -136,15 +136,15 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        result['$y_prob'] = y_prob
          |      if $flag_gt:
          |        result['$y_true'] = y_true
-         |      res  = pd.DataFrame(result)
-         |      res["model"] = s["model"]
-         |      res["para"] =  s["para"]
-         |      res["features"] = s["features"]
-         |      if "Iteration" in s.columns:
-         |        res["Iteration"] = s["Iteration"]
+         |      result_df  = pd.DataFrame(result)
+         |      result_df["model"] = model_config["model"]
+         |      result_df["para"] =  model_config["para"]
+         |      result_df["features"] = model_config["features"]
+         |      if "Iteration" in model_config.columns:
+         |        result_df["Iteration"] = model_config["Iteration"]
          |
          |
-         |      yield res
+         |      yield result_df
          |
          |""".stripMargin
     finalCode

@@ -20,8 +20,8 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 """)
 class ModelSelectionOpDesc extends PythonOperatorDescriptor{
   @JsonProperty(required = true,defaultValue = "Accuracy")
-  @JsonSchemaTitle("Evaluation")
-  @JsonPropertyDescription("Choose The Evaluation")
+  @JsonSchemaTitle("Metric")
+  @JsonPropertyDescription("Choose The Metric")
   @AutofillAttributeName
   var evaluation: String = ""
 
@@ -34,7 +34,7 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor{
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Model Selection",
-      "Selection the evaluation",
+      "Select the best models based on a chosen metric",
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
