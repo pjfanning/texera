@@ -21,7 +21,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 class ModelSelectionOpDesc extends PythonOperatorDescriptor{
   @JsonProperty(required = true,defaultValue = "Accuracy")
   @JsonSchemaTitle("Metric")
-  @JsonPropertyDescription("Choose The Metric")
+  @JsonPropertyDescription("Choose the metric to optimize")
   @AutofillAttributeName
   var evaluation: String = ""
 
