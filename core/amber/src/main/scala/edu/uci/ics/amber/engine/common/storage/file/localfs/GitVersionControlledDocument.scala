@@ -1,13 +1,10 @@
 package edu.uci.ics.amber.engine.common.storage.file.localfs
-
-import edu.uci.ics.amber.engine.common.storage.file.FSTreeNode
 import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.JGitVersionControl
 
 import java.io.{InputStream, OutputStream}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 
-class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: TexeraURI, val commitHash: Option[String]) extends TexeraDocument[AnyRef] with FSTreeNode{
+class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: TexeraURI, val commitHash: Option[String]) extends TexeraDocument[AnyRef] {
   require(gitRepoRootURI.getScheme == TexeraURI.FILE_SCHEMA,
     "Given URI should be a File URI")
   require(uri.getScheme == TexeraURI.FILE_SCHEMA,
@@ -20,12 +17,20 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
   private val readonly: Boolean = commitHash.isDefined
 
   override def getURI: TexeraURI = uri
+
   override def writeWithStream(inputStream: InputStream): Unit = {
     if (readonly) {
       throw new RuntimeException("File is read-only")
     }
+
+    // Ensure the parent directory exists before copying the file
+    val parentDir = path.getParent
+    if (parentDir != null) {
+      Files.createDirectories(parentDir)
+    }
+
     Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING)
-    JGitVersionControl.add(gitRepoPath, path)
+    JGitVersionControlUtils.add(gitRepoPath, path)
   }
 
   override def readAsOutputStream(outputStream: OutputStream): Unit = {
@@ -33,7 +38,7 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
       throw new RuntimeException("File is write-only")
     }
 
-    JGitVersionControl.readFileContentOfCommitAsOutputStream(gitRepoPath, commitHash.get, path, outputStream)
+    JGitVersionControlUtils.readFileContentOfCommitAsOutputStream(gitRepoPath, commitHash.get, path, outputStream)
   }
 
   override def readAsInputStream(): InputStream = {
@@ -41,16 +46,14 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
       throw new RuntimeException("File is write-only")
     }
 
-    JGitVersionControl.readFileContentOfCommitAsInputStream(gitRepoPath, commitHash.get, path)
+    JGitVersionControlUtils.readFileContentOfCommitAsInputStream(gitRepoPath, commitHash.get, path)
   }
 
-  override def delete(): Unit = {
-    JGitVersionControl.rm(gitRepoPath, path)
+  override def rm(): Unit = {
+    if (Files.isDirectory(path))
+      throw new IllegalArgumentException("Provided path is a directory, not a file: " + path)
+
+    Files.delete(path)
+    JGitVersionControlUtils.rm(gitRepoPath, path)
   }
-
-  override def getAbsolutePath: Path = path
-
-  override def getRelativePath: Path = gitRepoPath.relativize(path)
-
-  override def getChildren: List[FSTreeNode] = List()
 }
