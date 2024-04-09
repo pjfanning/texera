@@ -1,9 +1,9 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.environment
 
-import edu.uci.ics.amber.engine.common.storage.TexeraURI
+import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
 import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
 import edu.uci.ics.amber.engine.common.storage.file.FileTreeNode
-import edu.uci.ics.amber.engine.common.storage.file.localfs.GitVersionControlledCollection
+import edu.uci.ics.amber.engine.common.storage.file.localfs.{GitVersionControlledCollection, GitVersionControlledDocument}
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
@@ -12,7 +12,6 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMEN
 import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.ENVIRONMENT_OF_WORKFLOW
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfEnvironmentDao, DatasetVersionDao, EnvironmentDao, EnvironmentOfWorkflowDao}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.{DatasetFileDesc}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.PathUtils
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetFileNodes, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, DatasetVersionID, EnvironmentIDs, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment}
@@ -71,11 +70,11 @@ object EnvironmentResource {
 
   // return the descriptor of the target file.
   // The filename is passed from the frontend, the did is contained in the filename in the format of /{dataset-name}/{filepath}
-  def getEnvironmentDatasetFilePathAndVersion(
+  def getDatasetFileDocument(
       uid: UInteger,
       eid: UInteger,
       fileName: String
-  ): DatasetFileDesc = {
+  ): TexeraDocument[_] = {
     withTransaction(context) { ctx =>
       {
         // Adjust the pattern to match the new fileName format
@@ -97,26 +96,30 @@ object EnvironmentResource {
         val datasetsOfEnvironment = retrieveDatasetsAndVersions(ctx, uid, eid)
 
         // Initialize datasetFileDesc as None
-        var datasetFileDesc: Option[DatasetFileDesc] = None
+        var datasetFileDocument: Option[TexeraDocument[_]] = None
 
         // Iterate over datasetsOfEnvironment to find a match based on datasetName
         datasetsOfEnvironment.foreach { datasetAndVersion =>
           if (datasetAndVersion.dataset.getName == datasetName) {
-            datasetFileDesc = Some(
-              new DatasetFileDesc(
-                filePath,
-                PathUtils.getDatasetPath(datasetAndVersion.dataset.getDid),
-                datasetAndVersion.version.getVersionHash
+            val datasetPath = PathUtils.getDatasetPath(datasetAndVersion.dataset.getDid)
+            val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
+            val fileURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.resolve(filePath).toString)
+
+            datasetFileDocument = Some(
+              new GitVersionControlledDocument(
+                datasetURI,
+                fileURI,
+                Some(datasetAndVersion.version.getVersionHash)
               )
             )
           }
         }
 
         // Check if datasetFileDesc is set, if not, throw an exception
-        if (datasetFileDesc.isEmpty) {
+        if (datasetFileDocument.isEmpty) {
           throw new RuntimeException("Given file is not found in the environment")
         }
-        datasetFileDesc.get
+        datasetFileDocument.get
       }
     }
   }

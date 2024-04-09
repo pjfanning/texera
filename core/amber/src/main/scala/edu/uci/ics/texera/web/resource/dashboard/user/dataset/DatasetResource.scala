@@ -168,7 +168,7 @@ object DatasetResource {
       // for file:remove, the value would be filepath1,filepath2
       val fields = multiPart.getFields().keySet().iterator()
       val datasetRepo: VersionControlledCollection = getDatasetCollection(did)
-      val commitHash = datasetRepo.withCreateVersion(versionName)(() => {
+      val commitHash = datasetRepo.withCreateVersion(versionName)({
         while (fields.hasNext) {
           val fieldName = fields.next()
           val bodyPart = multiPart.getField(fieldName)

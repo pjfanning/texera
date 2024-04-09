@@ -1,5 +1,5 @@
 package edu.uci.ics.amber.engine.common.storage
-import java.net.{URI, URISyntaxException}
+import java.net.URI
 
 object TexeraURI {
 

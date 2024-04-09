@@ -1,4 +1,5 @@
 package edu.uci.ics.amber.engine.common.storage.file.localfs
+import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
 import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
 
 import java.io.{InputStream, OutputStream}
@@ -47,6 +48,25 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
     }
 
     JGitVersionControlUtils.readFileContentOfCommitAsInputStream(gitRepoPath, commitHash.get, path)
+  }
+
+  override def copy(to: Option[TexeraURI]): TexeraURI = {
+    to match {
+      case Some(targetUri) =>
+        // Extract the path from the target URI and copy the file content to it
+        val targetPath = Paths.get(targetUri.getURI)
+        Files.createDirectories(targetPath.getParent) // Ensure target directory exists
+        Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING)
+        targetUri // Return the target URI as copying was to a specified location
+
+      case None =>
+        // Generate a temporary file and copy the content to it
+        val tempFile = Files.createTempFile("copy", ".tmp")
+        Files.copy(path, tempFile, StandardCopyOption.REPLACE_EXISTING)
+
+        // Create a new TexeraURI for the temporary file and return it
+        TexeraURI.apply(FILE_SCHEMA, tempFile.toString)
+    }
   }
 
   override def rm(): Unit = {

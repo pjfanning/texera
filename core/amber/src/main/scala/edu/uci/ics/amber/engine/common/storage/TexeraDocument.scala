@@ -17,6 +17,8 @@ abstract class TexeraDocument[T >: Null <: AnyRef] {
 
   def writeItem(item: T): Unit = throw new UnsupportedOperationException("writeItem method is not supported")
 
+  def copy(to: Option[TexeraURI] = None): TexeraURI = throw new UnsupportedOperationException("copy is not supported")
+
   def getURI: TexeraURI
 
   def rm(): Unit
