@@ -1,51 +1,21 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 
+import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
+import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
+import edu.uci.ics.amber.engine.common.storage.file.{FileTreeNode, VersionControlledCollection}
+import edu.uci.ics.amber.engine.common.storage.file.localfs.{GitVersionControlledCollection, GitVersionControlledDocument}
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  DatasetDao,
-  DatasetUserAccessDao,
-  DatasetVersionDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
-  Dataset,
-  DatasetUserAccess,
-  DatasetVersion
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource.SearchQueryParams
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
-  getDatasetUserAccessPrivilege,
-  userHasReadAccess,
-  userHasWriteAccess,
-  userOwnDataset
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
-  DATASET_IS_PRIVATE,
-  DATASET_IS_PUBLIC,
-  DashboardDataset,
-  DashboardDatasetVersion,
-  DatasetDescriptionModification,
-  DatasetIDs,
-  DatasetNameModification,
-  DatasetVersionRootFileNodes,
-  DatasetVersions,
-  ERR_DATASET_CREATION_FAILED_MESSAGE,
-  ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE,
-  context,
-  createNewDatasetVersion,
-  getDashboardDataset,
-  getDatasetByID,
-  getDatasetLatestVersion,
-  getDatasetVersionHashByID,
-  retrievePublicDatasets
-}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.`type`.FileNode
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.service.GitVersionControlLocalFileStorage
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess, userOwnDataset}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DATASET_IS_PRIVATE, DATASET_IS_PUBLIC, DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionRootFileNodes, DatasetVersions, ERR_DATASET_CREATION_FAILED_MESSAGE, ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE, context, createNewDatasetVersion, getDashboardDataset, getDatasetByID, getDatasetCollection, getDatasetFileDocument, getDatasetLatestVersion, getDatasetVersionHashByID, retrievePublicDatasets}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.PathUtils
 import io.dropwizard.auth.Auth
 import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
@@ -59,18 +29,7 @@ import java.nio.file.Paths
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{
-  BadRequestException,
-  Consumes,
-  ForbiddenException,
-  GET,
-  NotFoundException,
-  POST,
-  Path,
-  PathParam,
-  Produces,
-  QueryParam
-}
+import javax.ws.rs.{BadRequestException, Consumes, ForbiddenException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -91,6 +50,19 @@ object DatasetResource {
   val ERR_DATASET_VERSION_NOT_FOUND_MESSAGE = "The version of the dataset not found"
   val ERR_DATASET_CREATION_FAILED_MESSAGE =
     "Dataset creation is failed. Please make sure to upload files in order to create the initial version of dataset"
+
+  private def getDatasetCollection(did: UInteger, commitHash: Option[String] = None): VersionControlledCollection = {
+    val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
+    val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
+    new GitVersionControlledCollection(datasetURI, datasetURI, None)
+  }
+
+  private def getDatasetFileDocument(did: UInteger, filePath: String, commitHash: Option[String] = None): TexeraDocument[_] = {
+    val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
+    val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
+    val fileURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.resolve(filePath).toString)
+    new GitVersionControlledDocument(datasetURI, fileURI, commitHash)
+  }
 
   // this function get the dataset from DB identified by did,
   // read access will be checked
@@ -187,7 +159,7 @@ object DatasetResource {
     lock.lock()
     try {
       val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
-
+      val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
       // this is used to check if file operation happens
       var fileOperationHappens = false
       // for multipart, each file-related operation's key starts with file:
@@ -195,39 +167,29 @@ object DatasetResource {
       // for file:upload, the file path will be suffixed to it, e.g. file:upload:a/b/c.csv The value will be the file content
       // for file:remove, the value would be filepath1,filepath2
       val fields = multiPart.getFields().keySet().iterator()
+      val datasetRepo: VersionControlledCollection = getDatasetCollection(did)
+      val commitHash = datasetRepo.withCreateVersion(versionName)(() => {
+        while (fields.hasNext) {
+          val fieldName = fields.next()
+          val bodyPart = multiPart.getField(fieldName)
 
-      val commitHash = GitVersionControlLocalFileStorage.withCreateVersion(
-        datasetPath,
-        versionName,
-        () => {
-          while (fields.hasNext) {
-            val fieldName = fields.next()
-            val bodyPart = multiPart.getField(fieldName)
-
-            if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
-              //        val contentDisposition = bodyPart.getContentDisposition
-              //        val contentType = bodyPart.getMediaType.toString
-              val filePath =
-                datasetPath.resolve(fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length))
-              // TODO: be careful with the string operation here
-              val value: InputStream = bodyPart.getValueAs(classOf[InputStream])
-              GitVersionControlLocalFileStorage.writeFileToRepo(datasetPath, filePath, value)
-              fileOperationHappens = true
-            } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
-              val filePathsValue = bodyPart.getValueAs(classOf[String])
-              val filePaths = filePathsValue.split(",")
-              filePaths.foreach { filePath =>
-                val normalizedFilePath = filePath.stripPrefix("/")
-                GitVersionControlLocalFileStorage.removeFileFromRepo(
-                  datasetPath,
-                  datasetPath.resolve(normalizedFilePath)
-                )
-              }
-              fileOperationHappens = true
+          if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
+            val fileName = fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length)
+            val fileDoc: TexeraDocument[_] = datasetRepo.createDocument(fileName)
+            val fileInputStream: InputStream = bodyPart.getValueAs(classOf[InputStream])
+            fileDoc.writeWithStream(fileInputStream)
+            fileOperationHappens = true
+          } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
+            val filePathsValue = bodyPart.getValueAs(classOf[String])
+            val filePaths = filePathsValue.split(",")
+            filePaths.foreach { filePath =>
+              val rmFileDoc: TexeraDocument[_] = getDatasetFileDocument(did, filePath)
+              rmFileDoc.rm()
             }
+            fileOperationHappens = true
           }
         }
-      )
+      })
 
       if (!fileOperationHappens) {
         return None
@@ -250,29 +212,13 @@ object DatasetResource {
             .returning() // Assuming ID is the primary key column
             .fetchOne()
             .into(classOf[DatasetVersion]),
-          GitVersionControlLocalFileStorage.retrieveRootFileNodesOfVersion(datasetPath, commitHash)
+          datasetRepo.getFileTreeNodes
         )
       )
     } finally {
       // Release the lock
       lock.unlock()
     }
-  }
-
-  def retrieveDatasetVersionFilePaths(
-      ctx: DSLContext,
-      uid: UInteger,
-      did: UInteger,
-      dvid: UInteger
-  ): util.List[String] = {
-    val versionHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
-
-    val fileNodes = GitVersionControlLocalFileStorage.retrieveRootFileNodesOfVersion(
-      PathUtils.getDatasetPath(did),
-      versionHash
-    )
-
-    FileNode.getAllFileRelativePaths(fileNodes)
   }
 
   def retrievePublicDatasets(ctx: DSLContext): util.List[Dataset] = {
@@ -286,13 +232,13 @@ object DatasetResource {
       isOwner: Boolean
   )
 
-  case class DatasetVersionRootFileNodes(fileNodes: util.Set[FileNode])
+  case class DatasetVersionRootFileNodes(fileNodes: List[FileTreeNode])
 
   case class DatasetVersions(versions: List[DatasetVersion])
 
   case class DashboardDatasetVersion(
       datasetVersion: DatasetVersion,
-      fileNodes: util.Set[FileNode]
+      fileNodes: List[FileTreeNode]
   )
 
   case class DatasetIDs(dids: List[UInteger])
@@ -336,7 +282,7 @@ class DatasetResource {
         .fetchOne()
 
       val did = createdDataset.getDid
-      val datasetPath = PathUtils.getDatasetPath(did)
+      val datasetRepo: VersionControlledCollection = getDatasetCollection(did)
 
       val datasetUserAccess = new DatasetUserAccess()
       datasetUserAccess.setDid(createdDataset.getDid)
@@ -345,7 +291,7 @@ class DatasetResource {
       datasetOfUserDao.insert(datasetUserAccess)
 
       // initialize the dataset directory
-      GitVersionControlLocalFileStorage.initRepo(datasetPath)
+      datasetRepo.initVersionStore()
 
       // create the initial version of the dataset
       val createdVersion = createNewDatasetVersion(ctx, did, uid, initialVersionName, files)
@@ -383,8 +329,9 @@ class DatasetResource {
           // throw the exception that user has no access to certain dataset
           throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
         }
+        val datasetRepo: VersionControlledCollection = getDatasetCollection(did)
         // delete the dataset repo from the filesystem
-        GitVersionControlLocalFileStorage.deleteRepo(PathUtils.getDatasetPath(did))
+        datasetRepo.rm()
 
         // delete the dataset from the DB
         datasetDao.deleteById(did)
@@ -572,14 +519,11 @@ class DatasetResource {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
       val latestVersion = getDatasetLatestVersion(ctx, did, uid)
-      val datasetPath = PathUtils.getDatasetPath(did)
+      val datasetRepo: VersionControlledCollection = getDatasetCollection(did, Some(latestVersion.getVersionHash))
 
       DashboardDatasetVersion(
         latestVersion,
-        GitVersionControlLocalFileStorage.retrieveRootFileNodesOfVersion(
-          datasetPath,
-          latestVersion.getVersionHash
-        )
+        datasetRepo.getFileTreeNodes
       )
     })
   }
@@ -597,15 +541,10 @@ class DatasetResource {
       if (!userHasReadAccess(ctx, did, uid)) {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
-
-      val targetDatasetPath = PathUtils.getDatasetPath(did)
       val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
+      val datasetRepo: VersionControlledCollection = getDatasetCollection(did, Some(versionCommitHash))
 
-      val fileTree = GitVersionControlLocalFileStorage.retrieveRootFileNodesOfVersion(
-        targetDatasetPath,
-        versionCommitHash
-      )
-      DatasetVersionRootFileNodes(fileTree)
+      DatasetVersionRootFileNodes(datasetRepo.getFileTreeNodes)
     })
   }
 
@@ -623,22 +562,18 @@ class DatasetResource {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
 
-      val decodedPath = URLDecoder.decode(path, StandardCharsets.UTF_8.name()).stripPrefix("/")
-      val targetDatasetPath = PathUtils.getDatasetPath(did)
+      val decodedFilePath = URLDecoder.decode(path, StandardCharsets.UTF_8.name()).stripPrefix("/")
       val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
+
+      val fileDoc: TexeraDocument[_] = getDatasetFileDocument(did, decodedFilePath, Some(versionCommitHash))
 
       val streamingOutput = new StreamingOutput() {
         override def write(output: OutputStream): Unit = {
-          GitVersionControlLocalFileStorage.retrieveFileContentOfVersion(
-            targetDatasetPath,
-            versionCommitHash,
-            targetDatasetPath.resolve(decodedPath),
-            output
-          )
+          fileDoc.readAsOutputStream(output)
         }
       }
 
-      val contentType = decodedPath.split("\\.").lastOption.map(_.toLowerCase) match {
+      val contentType = decodedFilePath.split("\\.").lastOption.map(_.toLowerCase) match {
         case Some("jpg") | Some("jpeg") => "image/jpeg"
         case Some("png")                => "image/png"
         case Some("csv")                => "text/csv"
