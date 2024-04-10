@@ -35,7 +35,7 @@ object TexeraURI {
 
 /**
   * TexeraURI uniquely identifies each resource(either TexeraDocument or TexeraCollection) in Texera system.
-  * Implementation-wise, it acts as a wrapper over java URI, providing better capabilities of restricting the schema URI, and providing cleaner way of creating a URI
+  * Implementation-wise, it acts as a wrapper over java URI, providing better capabilities of restricting the schema of URI, and providing more native way of creating a URI
   * @param uri
   */
 class TexeraURI private (val uri: URI) {
