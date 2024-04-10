@@ -13,6 +13,9 @@ import java.nio.file.{Files, Path}
 import scala.collection.mutable
 import scala.util.Using
 
+/**
+  * JGitVersionControlUtils provide utilities for doing git version control using JGit library
+  */
 object JGitVersionControlUtils {
   def initRepo(path: Path): Option[String] = {
     val gitDir = path.resolve(".git").toFile
@@ -32,7 +35,11 @@ object JGitVersionControlUtils {
     }
   }
 
-  def readFileContentOfCommitAsInputStream(repoPath: Path, commitHash: String, filePath: Path): InputStream = {
+  def readFileContentOfCommitAsInputStream(
+      repoPath: Path,
+      commitHash: String,
+      filePath: Path
+  ): InputStream = {
     if (!filePath.startsWith(repoPath)) {
       throw new IllegalArgumentException("File path must be under the repository path.")
     }
@@ -42,13 +49,16 @@ object JGitVersionControlUtils {
     }
 
     Using.Manager { use =>
-      val repository = use(new FileRepositoryBuilder()
-        .setGitDir(repoPath.resolve(".git").toFile)
-        .build())
+      val repository = use(
+        new FileRepositoryBuilder()
+          .setGitDir(repoPath.resolve(".git").toFile)
+          .build()
+      )
       val revWalk = use(new RevWalk(repository))
 
       val commit = revWalk.parseCommit(repository.resolve(commitHash))
-      val treeWalk = use(TreeWalk.forPath(repository, repoPath.relativize(filePath).toString, commit.getTree))
+      val treeWalk =
+        use(TreeWalk.forPath(repository, repoPath.relativize(filePath).toString, commit.getTree))
 
       if (treeWalk == null) {
         throw new IOException("File not found in commit: " + filePath)
@@ -60,7 +70,12 @@ object JGitVersionControlUtils {
     }.get
   }
 
-  def readFileContentOfCommitAsOutputStream(repoPath: Path, commitHash: String, filePath: Path, outputStream: OutputStream): Unit = {
+  def readFileContentOfCommitAsOutputStream(
+      repoPath: Path,
+      commitHash: String,
+      filePath: Path,
+      outputStream: OutputStream
+  ): Unit = {
     if (!filePath.startsWith(repoPath)) {
       throw new IllegalArgumentException("File path must be under the repository path.")
     }
@@ -70,13 +85,16 @@ object JGitVersionControlUtils {
     }
 
     Using.Manager { use =>
-      val repository = use(new FileRepositoryBuilder()
-        .setGitDir(repoPath.resolve(".git").toFile)
-        .build())
+      val repository = use(
+        new FileRepositoryBuilder()
+          .setGitDir(repoPath.resolve(".git").toFile)
+          .build()
+      )
       val revWalk = use(new RevWalk(repository))
 
       val commit = revWalk.parseCommit(repository.resolve(commitHash))
-      val treeWalkOption = Option(TreeWalk.forPath(repository, repoPath.relativize(filePath).toString, commit.getTree))
+      val treeWalkOption =
+        Option(TreeWalk.forPath(repository, repoPath.relativize(filePath).toString, commit.getTree))
 
       treeWalkOption match {
         case Some(treeWalk) =>
@@ -104,12 +122,13 @@ object JGitVersionControlUtils {
   }
 
   def commit(repoPath: Path, commitMessage: String): String = {
-    Using.resource(new FileRepositoryBuilder()
-      .setGitDir(repoPath.resolve(".git").toFile)
-      .readEnvironment() // Scan environment GIT_* variables
-      .findGitDir() // Scan up the file system tree
-      .build()) { repository =>
-
+    Using.resource(
+      new FileRepositoryBuilder()
+        .setGitDir(repoPath.resolve(".git").toFile)
+        .readEnvironment() // Scan environment GIT_* variables
+        .findGitDir() // Scan up the file system tree
+        .build()
+    ) { repository =>
       Using.resource(new Git(repository)) { git =>
         // Commit the changes that have been staged
         val commit: RevCommit = git.commit.setMessage(commitMessage).call()
@@ -121,10 +140,11 @@ object JGitVersionControlUtils {
   }
 
   def discardUncommittedChanges(repoPath: Path): Unit = {
-    Using.resource(new FileRepositoryBuilder()
-      .setGitDir(repoPath.resolve(".git").toFile)
-      .build()) { repository =>
-
+    Using.resource(
+      new FileRepositoryBuilder()
+        .setGitDir(repoPath.resolve(".git").toFile)
+        .build()
+    ) { repository =>
       Using.resource(new Git(repository)) { git =>
         // Reset hard to discard changes in tracked files
         git.reset.setMode(ResetCommand.ResetType.HARD).call()
@@ -136,12 +156,13 @@ object JGitVersionControlUtils {
   }
 
   def hasUncommittedChanges(repoPath: Path): Boolean = {
-    Using.resource(new FileRepositoryBuilder()
-      .setGitDir(repoPath.resolve(".git").toFile)
-      .readEnvironment()
-      .findGitDir()
-      .build()) { repository =>
-
+    Using.resource(
+      new FileRepositoryBuilder()
+        .setGitDir(repoPath.resolve(".git").toFile)
+        .readEnvironment()
+        .findGitDir()
+        .build()
+    ) { repository =>
       Using.resource(new Git(repository)) { git =>
         val status = git.status.call()
         !status.isClean
@@ -149,11 +170,20 @@ object JGitVersionControlUtils {
     }
   }
 
-  private def createOrGetNode(map: mutable.Map[String, FileTreeNode], repoPath: Path, path: Path): FileTreeNode = {
+  private def createOrGetNode(
+      map: mutable.Map[String, FileTreeNode],
+      repoPath: Path,
+      path: Path
+  ): FileTreeNode = {
     map.getOrElseUpdate(path.toString, new FileTreeNode(repoPath, path))
   }
 
-  private def ensureParentChildLink(map: mutable.Map[String, FileTreeNode], repoPath: Path, childPath: Path, childNode: FileTreeNode): Unit = {
+  private def ensureParentChildLink(
+      map: mutable.Map[String, FileTreeNode],
+      repoPath: Path,
+      childPath: Path,
+      childNode: FileTreeNode
+  ): Unit = {
     val parentPath = childPath.getParent
     if (parentPath != null && parentPath != repoPath) {
       val parentNode = createOrGetNode(map, repoPath, parentPath)
@@ -164,31 +194,32 @@ object JGitVersionControlUtils {
   def getFileTreeNodesOfCommit(repoPath: Path, commitHash: String): List[FileTreeNode] = {
     val pathToFileNodeMap = mutable.Map[String, FileTreeNode]()
 
-    Using.resource(new FileRepositoryBuilder().setGitDir(repoPath.resolve(".git").toFile).build()) { repository =>
-      Using.resource(new RevWalk(repository)) { revWalk =>
-        val commitId = repository.resolve(commitHash)
-        val commit = revWalk.parseCommit(commitId)
+    Using.resource(new FileRepositoryBuilder().setGitDir(repoPath.resolve(".git").toFile).build()) {
+      repository =>
+        Using.resource(new RevWalk(repository)) { revWalk =>
+          val commitId = repository.resolve(commitHash)
+          val commit = revWalk.parseCommit(commitId)
 
-        Using.resource(new TreeWalk(repository)) { treeWalk =>
-          treeWalk.addTree(commit.getTree)
-          treeWalk.setRecursive(false)
+          Using.resource(new TreeWalk(repository)) { treeWalk =>
+            treeWalk.addTree(commit.getTree)
+            treeWalk.setRecursive(false)
 
-          while (treeWalk.next()) {
-            val fullPath = repoPath.resolve(treeWalk.getPathString)
-            val currentNode = createOrGetNode(pathToFileNodeMap, repoPath, fullPath)
+            while (treeWalk.next()) {
+              val fullPath = repoPath.resolve(treeWalk.getPathString)
+              val currentNode = createOrGetNode(pathToFileNodeMap, repoPath, fullPath)
 
-            if (treeWalk.isSubtree) {
-              treeWalk.enterSubtree()
-            } else {
-              ensureParentChildLink(pathToFileNodeMap, repoPath, fullPath, currentNode)
-            }
+              if (treeWalk.isSubtree) {
+                treeWalk.enterSubtree()
+              } else {
+                ensureParentChildLink(pathToFileNodeMap, repoPath, fullPath, currentNode)
+              }
 
-            if (currentNode.isDirectory) {
-              ensureParentChildLink(pathToFileNodeMap, repoPath, fullPath, currentNode)
+              if (currentNode.isDirectory) {
+                ensureParentChildLink(pathToFileNodeMap, repoPath, fullPath, currentNode)
+              }
             }
           }
         }
-      }
     }
 
     pathToFileNodeMap.values.filter(node => node.getAbsolutePath.getParent == repoPath).toList

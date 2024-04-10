@@ -1,29 +1,31 @@
 package edu.uci.ics.amber.engine.common.storage.file.localfs
-import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
 import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
 
 import java.io.{InputStream, OutputStream}
 import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 
-class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: TexeraURI, val commitHash: Option[String]) extends TexeraDocument[AnyRef] {
-  require(gitRepoRootURI.getScheme == TexeraURI.FILE_SCHEMA,
+/**
+  * GitVersionControlledDocument supports the version control over a file on local file system
+  * - the version control features are based on JGit
+  * - this collection can only be used for the file in local file system
+  * - operations in this implementation are THREAD-UNSAFE
+  * @param gitRepoURI the uri of the git repo
+  * @param uri the uri of the file, must be the child directory under the git repo
+  * @param commitHash which version does this file locate. It is optional, as when you want to create a new version(commit), you have no version to specify
+  */
+class GitVersionControlledDocument(val gitRepoURI: TexeraURI, val uri: TexeraURI, val commitHash: Option[String]) extends TexeraDocument[AnyRef] {
+  require(gitRepoURI.getScheme == TexeraURI.FILE_SCHEMA,
     "Given URI should be a File URI")
   require(uri.getScheme == TexeraURI.FILE_SCHEMA,
     "Given URI should be a File URI")
-  require(gitRepoRootURI.containsChildPath(uri),
+  require(gitRepoURI.containsChildPath(uri),
     "Given git repo URI must be the parent of document uri")
 
-  private val gitRepoPath: Path = Paths.get(gitRepoRootURI.getURI)
+  private val gitRepoPath: Path = Paths.get(gitRepoURI.getURI)
   private val path: Path = Paths.get(uri.getURI)
-  private val readonly: Boolean = commitHash.isDefined
-
   override def getURI: TexeraURI = uri
 
   override def writeWithStream(inputStream: InputStream): Unit = {
-    if (readonly) {
-      throw new RuntimeException("File is read-only")
-    }
-
     // Ensure the parent directory exists before copying the file
     val parentDir = path.getParent
     if (parentDir != null) {
@@ -35,18 +37,10 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
   }
 
   override def readAsOutputStream(outputStream: OutputStream): Unit = {
-    if (!readonly) {
-      throw new RuntimeException("File is write-only")
-    }
-
     JGitVersionControlUtils.readFileContentOfCommitAsOutputStream(gitRepoPath, commitHash.get, path, outputStream)
   }
 
   override def readAsInputStream(): InputStream = {
-    if (!readonly) {
-      throw new RuntimeException("File is write-only")
-    }
-
     JGitVersionControlUtils.readFileContentOfCommitAsInputStream(gitRepoPath, commitHash.get, path)
   }
 
@@ -65,7 +59,7 @@ class GitVersionControlledDocument(val gitRepoRootURI: TexeraURI, val uri: Texer
         Files.copy(path, tempFile, StandardCopyOption.REPLACE_EXISTING)
 
         // Create a new TexeraURI for the temporary file and return it
-        TexeraURI.apply(FILE_SCHEMA, tempFile.toString)
+        TexeraURI(tempFile)
     }
   }
 

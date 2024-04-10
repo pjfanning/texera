@@ -1,20 +1,54 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.environment
 
 import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
-import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
 import edu.uci.ics.amber.engine.common.storage.file.FileTreeNode
-import edu.uci.ics.amber.engine.common.storage.file.localfs.{GitVersionControlledCollection, GitVersionControlledDocument}
+import edu.uci.ics.amber.engine.common.storage.file.localfs.{
+  GitVersionControlledCollection,
+  GitVersionControlledDocument
+}
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetOfEnvironment, DatasetVersion, Environment}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetOfEnvironment,
+  DatasetVersion,
+  Environment
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Environment.ENVIRONMENT
 import edu.uci.ics.texera.web.model.jooq.generated.tables.EnvironmentOfWorkflow.ENVIRONMENT_OF_WORKFLOW
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetOfEnvironment.DATASET_OF_ENVIRONMENT
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetOfEnvironmentDao, DatasetVersionDao, EnvironmentDao, EnvironmentOfWorkflowDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetOfEnvironmentDao,
+  DatasetVersionDao,
+  EnvironmentDao,
+  EnvironmentOfWorkflowDao
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.PathUtils
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{DatasetAccessResource, DatasetResource}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{DashboardEnvironment, DatasetFileNodes, DatasetID, DatasetOfEnvironmentAlreadyExistsMessage, DatasetOfEnvironmentDetails, DatasetOfEnvironmentDoseNotExistMessage, DatasetVersionID, EnvironmentIDs, UserNoPermissionExceptionMessage, WorkflowLink, context, doesDatasetExistInEnvironment, doesUserOwnEnvironment, getEnvironmentByEid, retrieveDatasetsAndVersions, userHasReadAccessToEnvironment, userHasWriteAccessToEnvironment}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.{
+  DatasetAccessResource,
+  DatasetResource
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
+  DashboardEnvironment,
+  DatasetFileNodes,
+  DatasetID,
+  DatasetOfEnvironmentAlreadyExistsMessage,
+  DatasetOfEnvironmentDetails,
+  DatasetOfEnvironmentDoseNotExistMessage,
+  DatasetVersionID,
+  EnvironmentIDs,
+  UserNoPermissionExceptionMessage,
+  WorkflowLink,
+  context,
+  doesDatasetExistInEnvironment,
+  doesUserOwnEnvironment,
+  getEnvironmentByEid,
+  retrieveDatasetsAndVersions,
+  userHasReadAccessToEnvironment,
+  userHasWriteAccessToEnvironment
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource
 import io.dropwizard.auth.Auth
 import org.jooq.{Configuration, DSLContext}
@@ -102,8 +136,8 @@ object EnvironmentResource {
         datasetsOfEnvironment.foreach { datasetAndVersion =>
           if (datasetAndVersion.dataset.getName == datasetName) {
             val datasetPath = PathUtils.getDatasetPath(datasetAndVersion.dataset.getDid)
-            val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
-            val fileURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.resolve(filePath).toString)
+            val datasetURI = TexeraURI(datasetPath)
+            val fileURI = TexeraURI(datasetPath.resolve(filePath))
 
             datasetFileDocument = Some(
               new GitVersionControlledDocument(
@@ -177,17 +211,6 @@ object EnvironmentResource {
     val countVal = count.getValue(0, classOf[Int]) // Get the count value from the record
     countVal > 0
   }
-
-  private def fetchEnvironmentIdOfWorkflow(ctx: DSLContext, wid: UInteger): Option[UInteger] = {
-    val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
-    val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
-    if (environmentOfWorkflow.isEmpty) {
-      None
-    } else {
-      Some(environmentOfWorkflow.get(0).getEid)
-    }
-  }
-
   private def fetchWorkflowIdsOfEnvironment(ctx: DSLContext, eid: UInteger): List[UInteger] = {
     val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(ctx.configuration())
     val envOfWorkflows = environmentOfWorkflowDao.fetchByEid(eid)
@@ -592,8 +615,9 @@ class EnvironmentResource {
       datasetsOfEnv.foreach(entry => {
         val did = entry.dataset.getDid
         val datasetVersionHash = entry.version.getVersionHash
-        val datasetURI = TexeraURI.apply(FILE_SCHEMA, PathUtils.getDatasetPath(did).toString)
-        val datasetRepo = new GitVersionControlledCollection(datasetURI, datasetURI, Some(datasetVersionHash))
+        val datasetURI = TexeraURI(PathUtils.getDatasetPath(did))
+        val datasetRepo =
+          new GitVersionControlledCollection(datasetURI, datasetURI, Some(datasetVersionHash))
         val datasetName = entry.dataset.getName
         result += DatasetFileNodes(datasetName, datasetRepo.getFileTreeNodes)
       })

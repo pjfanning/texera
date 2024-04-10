@@ -1,21 +1,58 @@
 package edu.uci.ics.texera.web.resource.dashboard.user.dataset
 
 import edu.uci.ics.amber.engine.common.storage.{TexeraDocument, TexeraURI}
-import edu.uci.ics.amber.engine.common.storage.TexeraURI.FILE_SCHEMA
 import edu.uci.ics.amber.engine.common.storage.file.{FileTreeNode, VersionControlledCollection}
-import edu.uci.ics.amber.engine.common.storage.file.localfs.{GitVersionControlledCollection, GitVersionControlledDocument}
+import edu.uci.ics.amber.engine.common.storage.file.localfs.{
+  GitVersionControlledCollection,
+  GitVersionControlledDocument
+}
 import edu.uci.ics.texera.Utils.withTransaction
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.enums.DatasetUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{DatasetDao, DatasetUserAccessDao, DatasetVersionDao}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Dataset, DatasetUserAccess, DatasetVersion}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  DatasetDao,
+  DatasetUserAccessDao,
+  DatasetVersionDao
+}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{
+  Dataset,
+  DatasetUserAccess,
+  DatasetVersion
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.Dataset.DATASET
 import edu.uci.ics.texera.web.model.jooq.generated.tables.DatasetVersion.DATASET_VERSION
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource.SearchQueryParams
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{getDatasetUserAccessPrivilege, userHasReadAccess, userHasWriteAccess, userOwnDataset}
-import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{DATASET_IS_PRIVATE, DATASET_IS_PUBLIC, DashboardDataset, DashboardDatasetVersion, DatasetDescriptionModification, DatasetIDs, DatasetNameModification, DatasetVersionRootFileNodes, DatasetVersions, ERR_DATASET_CREATION_FAILED_MESSAGE, ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE, context, createNewDatasetVersion, getDashboardDataset, getDatasetByID, getDatasetCollection, getDatasetFileDocument, getDatasetLatestVersion, getDatasetVersionHashByID, retrievePublicDatasets}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetAccessResource.{
+  getDatasetUserAccessPrivilege,
+  userHasReadAccess,
+  userHasWriteAccess,
+  userOwnDataset
+}
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.{
+  DATASET_IS_PRIVATE,
+  DATASET_IS_PUBLIC,
+  DashboardDataset,
+  DashboardDatasetVersion,
+  DatasetDescriptionModification,
+  DatasetIDs,
+  DatasetNameModification,
+  DatasetVersionRootFileNodes,
+  DatasetVersions,
+  ERR_DATASET_CREATION_FAILED_MESSAGE,
+  ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE,
+  context,
+  createNewDatasetVersion,
+  decodeUserProvidedFileName,
+  getDashboardDataset,
+  getDatasetByID,
+  getDatasetCollection,
+  getDatasetFileDocument,
+  getDatasetLatestVersion,
+  getDatasetVersionHashByID,
+  retrievePublicDatasets
+}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.PathUtils
 import io.dropwizard.auth.Auth
 import org.glassfish.jersey.media.multipart.{FormDataMultiPart, FormDataParam}
@@ -25,11 +62,21 @@ import org.jooq.types.UInteger
 import java.io.{InputStream, OutputStream}
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 import javax.annotation.security.RolesAllowed
-import javax.ws.rs.{BadRequestException, Consumes, ForbiddenException, GET, NotFoundException, POST, Path, PathParam, Produces, QueryParam}
+import javax.ws.rs.{
+  BadRequestException,
+  Consumes,
+  ForbiddenException,
+  GET,
+  NotFoundException,
+  POST,
+  Path,
+  PathParam,
+  Produces,
+  QueryParam
+}
 import javax.ws.rs.core.{MediaType, Response, StreamingOutput}
 import scala.jdk.CollectionConverters._
 
@@ -51,16 +98,27 @@ object DatasetResource {
   val ERR_DATASET_CREATION_FAILED_MESSAGE =
     "Dataset creation is failed. Please make sure to upload files in order to create the initial version of dataset"
 
-  private def getDatasetCollection(did: UInteger, commitHash: Option[String] = None): VersionControlledCollection = {
-    val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
-    val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
-    new GitVersionControlledCollection(datasetURI, datasetURI, None)
+  def decodeUserProvidedFileName(userProvidedFilename: String): String = {
+    URLDecoder.decode(userProvidedFilename, StandardCharsets.UTF_8.name()).stripPrefix("/")
   }
 
-  private def getDatasetFileDocument(did: UInteger, filePath: String, commitHash: Option[String] = None): TexeraDocument[_] = {
-    val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
-    val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
-    val fileURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.resolve(filePath).toString)
+  private def getDatasetCollection(
+      did: UInteger,
+      commitHash: Option[String] = None
+  ): VersionControlledCollection = {
+    val datasetPath = PathUtils.getDatasetPath(did)
+    val datasetURI = TexeraURI(datasetPath)
+    new GitVersionControlledCollection(datasetURI, datasetURI, commitHash)
+  }
+
+  private def getDatasetFileDocument(
+      did: UInteger,
+      filePath: String,
+      commitHash: Option[String] = None
+  ): TexeraDocument[_] = {
+    val datasetPath = PathUtils.getDatasetPath(did)
+    val datasetURI = TexeraURI(datasetPath)
+    val fileURI = TexeraURI(datasetPath.resolve(filePath))
     new GitVersionControlledDocument(datasetURI, fileURI, commitHash)
   }
 
@@ -158,8 +216,6 @@ object DatasetResource {
     }
     lock.lock()
     try {
-      val datasetPath = Paths.get(PathUtils.getDatasetPath(did).toString)
-      val datasetURI = TexeraURI.apply(FILE_SCHEMA, datasetPath.toString)
       // this is used to check if file operation happens
       var fileOperationHappens = false
       // for multipart, each file-related operation's key starts with file:
@@ -174,16 +230,18 @@ object DatasetResource {
           val bodyPart = multiPart.getField(fieldName)
 
           if (fieldName.startsWith(FILE_OPERATION_UPLOAD_PREFIX)) {
-            val fileName = fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length)
-            val fileDoc: TexeraDocument[_] = datasetRepo.createDocument(fileName)
+            val fileName =
+              decodeUserProvidedFileName(fieldName.substring(FILE_OPERATION_UPLOAD_PREFIX.length))
+            val fileDoc: TexeraDocument[_] = datasetRepo.getDocument(fileName)
             val fileInputStream: InputStream = bodyPart.getValueAs(classOf[InputStream])
             fileDoc.writeWithStream(fileInputStream)
             fileOperationHappens = true
           } else if (fieldName.startsWith(FILE_OPERATION_REMOVE_PREFIX)) {
             val filePathsValue = bodyPart.getValueAs(classOf[String])
-            val filePaths = filePathsValue.split(",")
-            filePaths.foreach { filePath =>
-              val rmFileDoc: TexeraDocument[_] = getDatasetFileDocument(did, filePath)
+            val fileNames = filePathsValue.split(",")
+            fileNames.foreach { fileName =>
+              val rmFileDoc: TexeraDocument[_] =
+                getDatasetFileDocument(did, decodeUserProvidedFileName(fileName))
               rmFileDoc.rm()
             }
             fileOperationHappens = true
@@ -203,6 +261,8 @@ object DatasetResource {
       datasetVersion.setCreatorUid(uid)
       datasetVersion.setVersionHash(commitHash)
 
+      val datasetOfNewVersionRepo: VersionControlledCollection =
+        getDatasetCollection(did, Some(commitHash))
       Some(
         DashboardDatasetVersion(
           // insert the dataset version into DB, and fetch the newly-inserted one.
@@ -212,7 +272,7 @@ object DatasetResource {
             .returning() // Assuming ID is the primary key column
             .fetchOne()
             .into(classOf[DatasetVersion]),
-          datasetRepo.getFileTreeNodes
+          datasetOfNewVersionRepo.getFileTreeNodes
         )
       )
     } finally {
@@ -519,7 +579,8 @@ class DatasetResource {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
       val latestVersion = getDatasetLatestVersion(ctx, did, uid)
-      val datasetRepo: VersionControlledCollection = getDatasetCollection(did, Some(latestVersion.getVersionHash))
+      val datasetRepo: VersionControlledCollection =
+        getDatasetCollection(did, Some(latestVersion.getVersionHash))
 
       DashboardDatasetVersion(
         latestVersion,
@@ -542,7 +603,8 @@ class DatasetResource {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
       val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
-      val datasetRepo: VersionControlledCollection = getDatasetCollection(did, Some(versionCommitHash))
+      val datasetRepo: VersionControlledCollection =
+        getDatasetCollection(did, Some(versionCommitHash))
 
       DatasetVersionRootFileNodes(datasetRepo.getFileTreeNodes)
     })
@@ -562,10 +624,11 @@ class DatasetResource {
         throw new ForbiddenException(ERR_USER_HAS_NO_ACCESS_TO_DATASET_MESSAGE)
       }
 
-      val decodedFilePath = URLDecoder.decode(path, StandardCharsets.UTF_8.name()).stripPrefix("/")
+      val decodedFilePath = decodeUserProvidedFileName(path)
       val versionCommitHash = getDatasetVersionHashByID(ctx, did, dvid, uid)
 
-      val fileDoc: TexeraDocument[_] = getDatasetFileDocument(did, decodedFilePath, Some(versionCommitHash))
+      val fileDoc: TexeraDocument[_] =
+        getDatasetFileDocument(did, decodedFilePath, Some(versionCommitHash))
 
       val streamingOutput = new StreamingOutput() {
         override def write(output: OutputStream): Unit = {
