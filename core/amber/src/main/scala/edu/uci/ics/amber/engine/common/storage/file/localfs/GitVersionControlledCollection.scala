@@ -17,9 +17,9 @@ import scala.util.Using
   * @param commitHash which version does this directory locate. It is optional, as when you want to create a new version(commit), you have no version to specify
   */
 class GitVersionControlledCollection(
-                                      val gitRepoURI: TexeraURI,
-                                      val uri: TexeraURI,
-                                      val commitHash: Option[String]
+    val gitRepoURI: TexeraURI,
+    val uri: TexeraURI,
+    val commitHash: Option[String]
 ) extends VersionControlledCollection {
   require(gitRepoURI.getScheme == TexeraURI.FILE_SCHEMA, "Given URI should be a File URI")
   require(uri.getScheme == TexeraURI.FILE_SCHEMA, "Given URI should be a File URI")

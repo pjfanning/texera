@@ -13,13 +13,17 @@ import java.nio.file.{Files, Path, Paths, StandardCopyOption}
   * @param uri the uri of the file, must be the child directory under the git repo
   * @param commitHash which version does this file locate. It is optional, as when you want to create a new version(commit), you have no version to specify
   */
-class GitVersionControlledDocument(val gitRepoURI: TexeraURI, val uri: TexeraURI, val commitHash: Option[String]) extends TexeraDocument[AnyRef] {
-  require(gitRepoURI.getScheme == TexeraURI.FILE_SCHEMA,
-    "Given URI should be a File URI")
-  require(uri.getScheme == TexeraURI.FILE_SCHEMA,
-    "Given URI should be a File URI")
-  require(gitRepoURI.containsChildPath(uri),
-    "Given git repo URI must be the parent of document uri")
+class GitVersionControlledDocument(
+    val gitRepoURI: TexeraURI,
+    val uri: TexeraURI,
+    val commitHash: Option[String]
+) extends TexeraDocument[AnyRef] {
+  require(gitRepoURI.getScheme == TexeraURI.FILE_SCHEMA, "Given URI should be a File URI")
+  require(uri.getScheme == TexeraURI.FILE_SCHEMA, "Given URI should be a File URI")
+  require(
+    gitRepoURI.containsChildPath(uri),
+    "Given git repo URI must be the parent of document uri"
+  )
 
   private val gitRepoPath: Path = Paths.get(gitRepoURI.getURI)
   private val path: Path = Paths.get(uri.getURI)
@@ -37,7 +41,12 @@ class GitVersionControlledDocument(val gitRepoURI: TexeraURI, val uri: TexeraURI
   }
 
   override def readAsOutputStream(outputStream: OutputStream): Unit = {
-    JGitVersionControlUtils.readFileContentOfCommitAsOutputStream(gitRepoPath, commitHash.get, path, outputStream)
+    JGitVersionControlUtils.readFileContentOfCommitAsOutputStream(
+      gitRepoPath,
+      commitHash.get,
+      path,
+      outputStream
+    )
   }
 
   override def readAsInputStream(): InputStream = {

@@ -9,7 +9,10 @@ import scala.collection.mutable.ListBuffer
   * @param path the path of the actual file/directory node under the rootDirectory
   */
 class FileTreeNode(rootDirectoryPath: Path, path: Path) {
-  require(path.startsWith(rootDirectoryPath), "Given file path must be the children of root directory")
+  require(
+    path.startsWith(rootDirectoryPath),
+    "Given file path must be the children of root directory"
+  )
 
   private val absoluteFilePath: Path = path
   private val relativeFilePath: Path = rootDirectoryPath.relativize(absoluteFilePath)
