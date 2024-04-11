@@ -35,61 +35,6 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
     outputPorts = List(OutputPort())
     )
 
-    override def generatePythonCode(): String = {
-      val finalcode =
-        s"""
-           |from pytexera import *
-           |import pandas as pd
-           |import numpy as np
-           |from sklearn.metrics import mean_squared_error
-           |from sklearn.metrics import root_mean_squared_error
-           |from sklearn.metrics import mean_absolute_error
-           |from sklearn.metrics import r2_score
-           |
-           |
-           |class ProcessTableOperator(UDFTableOperator):
-           |
-           |    @overrides
-           |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
-           |      result = dict()
-           |      y_true = table['$actualValueColumn'][0]
-           |      y_pred = table['$predictValueColumn'][0]
-           |
-           |      scorerList = [${getSelectedScorers()}]
-           |
-           |      for scorer in scorerList:
-           |        if scorer == "MSE":
-           |          result["MSE"] = mean_squared_error(y_true, y_pred)
-           |        elif scorer == "RMSE":
-           |          result["RMSE"] = root_mean_squared_error(y_true, y_pred)
-           |        elif scorer == "MAE":
-           |          result["MAE"] = mean_absolute_error(y_true, y_pred)
-           |        elif scorer == "R2":
-           |          result["R2"] = r2_score(y_true, y_pred)
-           |
-           |      # para column binary to string
-           |      paraStrSeries = pd.Series(table['para'].tolist())
-           |      table = table.drop(['para'], axis=1)
-           |      table['para'] = paraStrSeries
-           |
-           |      # convert list/dict to dataframe
-           |      label = ['Overall']
-           |      labelDf = pd.DataFrame(label, columns=['Label'])
-           |      resultDf = pd.DataFrame(result, index=[0])
-           |
-           |      # concat the dataframes
-           |      resultDf = pd.concat([labelDf, resultDf], axis=1)
-           |      resultDf = pd.concat([resultDf, table], axis=1)
-           |
-           |      if "Iteration" in resultDf.columns:
-           |        resultDf['Iteration'] = resultDf['Iteration'].astype(int)
-           |
-           |      yield resultDf
-           |
-           |""".stripMargin
-      finalcode
-    }
-
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
@@ -111,6 +56,61 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
   private def getSelectedScorers(): String = {
     // Return a string of scorers using the getEachScorerName() method
     scorers.map(scorer => getEachScorerName(scorer)).mkString("'", "','", "'")
+  }
+
+  override def generatePythonCode(): String = {
+    val finalcode =
+      s"""
+         |from pytexera import *
+         |import pandas as pd
+         |import numpy as np
+         |from sklearn.metrics import mean_squared_error
+         |from sklearn.metrics import root_mean_squared_error
+         |from sklearn.metrics import mean_absolute_error
+         |from sklearn.metrics import r2_score
+         |
+         |
+         |class ProcessTableOperator(UDFTableOperator):
+         |
+         |    @overrides
+         |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
+         |      result = dict()
+         |      y_true = table['$actualValueColumn'][0]
+         |      y_pred = table['$predictValueColumn'][0]
+         |
+         |      scorer_list = [${getSelectedScorers()}]
+         |
+         |      for scorer in scorer_list:
+         |        if scorer == "MSE":
+         |          result["MSE"] = mean_squared_error(y_true, y_pred)
+         |        elif scorer == "RMSE":
+         |          result["RMSE"] = root_mean_squared_error(y_true, y_pred)
+         |        elif scorer == "MAE":
+         |          result["MAE"] = mean_absolute_error(y_true, y_pred)
+         |        elif scorer == "R2":
+         |          result["R2"] = r2_score(y_true, y_pred)
+         |
+         |      # para column binary to string
+         |      paraStrSeries = pd.Series(table['para'].tolist())
+         |      table = table.drop(['para'], axis=1)
+         |      table['para'] = paraStrSeries
+         |
+         |      # convert list/dict to dataframe
+         |      label = ['Overall']
+         |      label_df = pd.DataFrame(label, columns=['Label'])
+         |      result_df = pd.DataFrame(result, index=[0])
+         |
+         |      # concat the dataframes
+         |      result_df = pd.concat([label_df, result_df], axis=1)
+         |      result_df = pd.concat([result_df, table], axis=1)
+         |
+         |      if "Iteration" in result_df.columns:
+         |        result_df['Iteration'] = result_df['Iteration'].astype(int)
+         |
+         |      yield result_df
+         |
+         |""".stripMargin
+    finalcode
   }
 
 }

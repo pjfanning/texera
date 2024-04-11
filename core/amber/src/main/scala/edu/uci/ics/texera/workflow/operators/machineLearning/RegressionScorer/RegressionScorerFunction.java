@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum RegressionScorerFunction {
 
-    MSE("MSE"),
-    RMSE("RMSE"),
-    MAE("MAE"),
-    R2("R2"),;
+    mse("MSE"),
+    rmse("RMSE"),
+    mae("MAE"),
+    r2("R2"),;
 
     private final String name;
     RegressionScorerFunction(String name) {

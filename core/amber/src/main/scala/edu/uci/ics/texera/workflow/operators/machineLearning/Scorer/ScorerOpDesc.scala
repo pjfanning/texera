@@ -33,6 +33,28 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+    val outputSchemaBuilder = Schema.newBuilder
+    val inputSchema = schemas(0)
+    outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
+    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
+      outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+    }
+    )
+    outputSchemaBuilder.add(inputSchema)
+    outputSchemaBuilder.removeIfExists("para")
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+    outputSchemaBuilder.build
+  }
+
+  private def getEachScorerName(scorer: ScorerFunction): String = {
+    // Directly return the name of the scorer using the getName() method
+    scorer.getName()
+  }
+  private def getSelectedScorers(): String = {
+    // Return a string of scorers using the getEachScorerName() method
+    scorers.map(scorer => getEachScorerName(scorer)).mkString("'", "','", "'")
+  }
 
   override def generatePythonCode(): String = {
     val finalcode =
@@ -49,7 +71,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |
          |
          |def label_confusion_matrix(y_true, y_pred, label):
-         |    labelCM = [None] * len(label)
+         |    label_cm = [None] * len(label)
          |    cm = confusion_matrix(y_true, y_pred, labels = label)
          |
          |    for i in range(len(cm)):
@@ -61,9 +83,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |        precision = precision_score(y_true, y_pred, average = None, labels = [label[i]])
          |        recall = recall_score(y_true, y_pred, average = None, labels = [label[i]])
          |
-         |        labelCM[i] = [label[i], tp, fp, fn, tn, f1[0], precision[0], recall[0]]
+         |        label_cm[i] = [label[i], tp, fp, fn, tn, f1[0], precision[0], recall[0]]
          |
-         |    return labelCM
+         |    return label_cm
          |
          |
          |class ProcessTableOperator(UDFTableOperator):
@@ -77,12 +99,12 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            labels = list(set(y_true))
          |            labels.append('Overall')
          |
-         |            scorerList = [${getSelectedScorers()}]
+         |            scorer_list = [${getSelectedScorers()}]
          |
-         |            for scorer in scorerList:
+         |            for scorer in scorer_list:
          |              result[scorer] = [ None ] * len(labels)
          |
-         |            for scorer in scorerList:
+         |            for scorer in scorer_list:
          |              prediction = None
          |              if scorer == 'Accuracy':
          |                prediction = accuracy_score(y_true, y_pred)
@@ -112,9 +134,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                   else:
          |                    result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
          |
-         |            paraStrSeries = pd.Series(table['para'].tolist())
+         |            para_str_series = pd.Series(table['para'].tolist())
          |            table = table.drop(['para'], axis=1)
-         |            table['para'] = paraStrSeries
+         |            table['para'] = para_str_series
          |
          |            label_show = []
          |
@@ -124,51 +146,25 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |              else:
          |                 label_show.append(item)
          |
-         |            print(label_show)
-         |
          |            result['Label'] = label_show
          |
-         |            resultDf = pd.DataFrame(result)
+         |            result_df = pd.DataFrame(result)
          |
-         |            rowDiff = len(resultDf) - len(table) # make two table have same row number
-         |            if rowDiff > 0:
-         |              fill_data = {col: [table[col][0]] * rowDiff for col in table.columns}
+         |            row_diff = len(result_df) - len(table) # make two table have same row number
+         |            if row_diff > 0:
+         |              fill_data = {col: [table[col][0]] * row_diff for col in table.columns}
          |              fill_df = pd.DataFrame(fill_data)
          |              table = pd.concat([table, fill_df], ignore_index=True)
          |
-         |            resultDf = pd.concat([resultDf, table], axis=1)
+         |            result_df = pd.concat([result_df, table], axis=1)
          |
-         |            if "Iteration" in resultDf.columns:
-         |              resultDf['Iteration'] = resultDf['Iteration'].astype(int)
+         |            if "Iteration" in result_df.columns:
+         |              result_df['Iteration'] = result_df['Iteration'].astype(int)
          |
-         |            yield resultDf
+         |            yield result_df
          |
          |""".stripMargin
     finalcode
   }
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    val outputSchemaBuilder = Schema.newBuilder
-    val inputSchema = schemas(0)
-    outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
-    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
-      outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
-    }
-    )
-    outputSchemaBuilder.add(inputSchema)
-    outputSchemaBuilder.removeIfExists("para")
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
-    outputSchemaBuilder.build
-  }
-
-
-  private def getEachScorerName(scorer: ScorerFunction): String = {
-    // Directly return the name of the scorer using the getName() method
-    scorer.getName()
-  }
-  private def getSelectedScorers(): String = {
-    // Return a string of scorers using the getEachScorerName() method
-    scorers.map(scorer => getEachScorerName(scorer)).mkString("'", "','", "'")
-  }
-
 
 }
