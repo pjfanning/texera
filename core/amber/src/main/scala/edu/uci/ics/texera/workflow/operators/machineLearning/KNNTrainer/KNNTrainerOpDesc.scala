@@ -1,89 +1,101 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNTrainerOpDesc extends PythonOperatorDescriptor {
-    @JsonProperty(defaultValue = "false",required = false)
-    @JsonSchemaTitle("Using Optimized K")
-    @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
-    @JsonPropertyDescription("Tune the parameter")
-    var isLoop: Boolean = false
+  @JsonProperty(defaultValue = "false", required = false)
+  @JsonSchemaTitle("Using Optimized K")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
+  @JsonPropertyDescription("Tune the parameter")
+  var isLoop: Boolean = false
 
-    @JsonProperty(required = true)
-    @JsonSchemaTitle("Label Column")
-    @JsonPropertyDescription("Label")
-    @AutofillAttributeName
-    var label: String = ""
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Label Column")
+  @JsonPropertyDescription("Label")
+  @AutofillAttributeName
+  var label: String = ""
 
-    @JsonProperty(required = true, defaultValue = "3")
-    @JsonSchemaTitle("Custom K")
-    @JsonPropertyDescription("Specify the number of nearest neighbours")
-    @JsonSchemaInject(
-      strings = Array(
-        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
-        new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-        new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
-      )
+  @JsonProperty(required = true, defaultValue = "3")
+  @JsonSchemaTitle("Custom K")
+  @JsonPropertyDescription("Specify the number of nearest neighbours")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
     )
-    var k: Int = Int.box(1)
+  )
+  var k: Int = Int.box(1)
 
-    @JsonProperty(required = false, value = "loopK")
-    @JsonSchemaTitle("Optimise k from loop")
-    @JsonPropertyDescription("Specify which attribute indicates the value of K")
-    @JsonSchemaInject(
-      strings = Array(
-        new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
-        new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-        new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
-      )
+  @JsonProperty(required = false, value = "loopK")
+  @JsonSchemaTitle("Optimise k from loop")
+  @JsonPropertyDescription("Specify which attribute indicates the value of K")
+  @JsonSchemaInject(
+    strings = Array(
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
+      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
+      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
     )
-    @AutofillAttributeNameOnPort1
-    var loopK: String = ""
+  )
+  @AutofillAttributeNameOnPort1
+  var loopK: String = ""
 
-    @JsonProperty(value = "Selected Features", required = true)
-    @JsonSchemaTitle("Selected Features")
-    @JsonPropertyDescription("Features used to train the model")
-    @AutofillAttributeNameList
-    var selectedFeatures: List[String] = _
+  @JsonProperty(value = "Selected Features", required = true)
+  @JsonSchemaTitle("Selected Features")
+  @JsonPropertyDescription("Features used to train the model")
+  @AutofillAttributeNameList
+  var selectedFeatures: List[String] = _
 
-    override def getOutputSchema(schemas: Array[Schema]): Schema = {
-      val outputSchemaBuilder = Schema.newBuilder
-      if (isLoop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
-      outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
-      outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
-      outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
-    }
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+    val outputSchemaBuilder = Schema.newBuilder
+    if (isLoop) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
+  }
 
-
-    override def operatorInfo: OperatorInfo =
-      OperatorInfo(
-        "KNN Trainer",
-        "Train a KNN classifier",
-        OperatorGroupConstants.ML_GROUP,
-        inputPorts = List(
-          InputPort(
-            PortIdentity(0),
-            displayName = "dataset",
-            allowMultiLinks = true
-          ),
-          InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
-            dependencies = List(PortIdentity(0))),
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
+      "KNN Trainer",
+      "Train a KNN classifier",
+      OperatorGroupConstants.ML_GROUP,
+      inputPorts = List(
+        InputPort(
+          PortIdentity(0),
+          displayName = "dataset",
+          allowMultiLinks = true
         ),
-        outputPorts = List(OutputPort())
-      )
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
+      ),
+      outputPorts = List(OutputPort())
+    )
 
-    override def generatePythonCode(): String = {
-      var truthy = "False"
-      if (isLoop) truthy = "True"
-      val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
-      val finalcode =
-        s"""
+  override def generatePythonCode(): String = {
+    var truthy = "False"
+    if (isLoop) truthy = "True"
+    val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
+    val finalcode =
+      s"""
            |from pytexera import *
            |
            |import pandas as pd
@@ -144,7 +156,7 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
            |      yield df
            |
            |""".stripMargin
-      finalcode
-    }
+    finalcode
+  }
 
 }

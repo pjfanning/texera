@@ -8,7 +8,6 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttribute
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
-
 @JsonSchemaInject(json = """
 {
   "attributeTypeRules": {
@@ -18,8 +17,8 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
     }
 }
 """)
-class ModelSelectionOpDesc extends PythonOperatorDescriptor{
-  @JsonProperty(required = true,defaultValue = "Accuracy")
+class ModelSelectionOpDesc extends PythonOperatorDescriptor {
+  @JsonProperty(required = true, defaultValue = "Accuracy")
   @JsonSchemaTitle("Metric")
   @JsonPropertyDescription("Choose the metric to optimize")
   @AutofillAttributeName

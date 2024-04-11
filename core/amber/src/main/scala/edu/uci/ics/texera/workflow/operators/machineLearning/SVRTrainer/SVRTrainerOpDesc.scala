@@ -1,9 +1,19 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaBool, JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaBool,
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
@@ -118,14 +128,17 @@ class SVRTrainerOpDesc extends PythonOperatorDescriptor {
   )
   var gamma: String = _
 
-  @JsonProperty(value="Coef for SVR",required = false, defaultValue = "1")
+  @JsonProperty(value = "Coef for SVR", required = false, defaultValue = "1")
   @JsonSchemaTitle("Coef for SVR")
   @JsonPropertyDescription("Coef for SVR")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf$")
+      new JsonSchemaString(
+        path = HideAnnotation.hideExpectedValue,
+        value = "^linear$|^sigmoid$|^rbf$"
+      )
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
@@ -135,7 +148,7 @@ class SVRTrainerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    if (isLoop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    if (isLoop) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -151,8 +164,12 @@ class SVRTrainerOpDesc extends PythonOperatorDescriptor {
           displayName = "dataset",
           allowMultiLinks = true
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
-          dependencies = List(PortIdentity(0)))
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
       ),
       outputPorts = List(OutputPort())
     )

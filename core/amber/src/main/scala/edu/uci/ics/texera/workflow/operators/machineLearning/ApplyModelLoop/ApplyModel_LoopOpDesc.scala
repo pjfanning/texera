@@ -2,17 +2,18 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModelLoop
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.HideAnnotation
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-import scala.jdk.CollectionConverters.IterableHasAsJava
-
 class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
-
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
@@ -24,7 +25,7 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
   @JsonSchemaInject(json = """{"toggleHidden" : ["y_prob"]}""")
   var is_prob: Boolean = false
 
-  @JsonProperty(value = "y_prob", required = false,defaultValue = "y_prob")
+  @JsonProperty(value = "y_prob", required = false, defaultValue = "y_prob")
   @JsonSchemaTitle("Probability Column")
   @JsonPropertyDescription("Specify the name of the predicted probability")
   @JsonSchemaInject(
@@ -60,17 +61,14 @@ class ApplyModel_LoopOpDesc extends PythonOperatorDescriptor {
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
-    if (is_prob)  outputSchemaBuilder.add(new Attribute(y_prob, AttributeType.BINARY))
+    if (is_prob) outputSchemaBuilder.add(new Attribute(y_prob, AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute(y_pred, AttributeType.BINARY)).build
-
 
   }
 
-
-
   override def generatePythonCode(): String = {
     var flag_prob = "False"
-    if (is_prob)  flag_prob = "True"
+    if (is_prob) flag_prob = "True"
     val finalCode =
       s"""
          |from pytexera import *

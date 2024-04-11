@@ -1,9 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.Scorer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
@@ -37,10 +37,11 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
-    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
-      outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
-    }
-    )
+    scorers
+      .map(scorer => getEachScorerName(scorer))
+      .foreach(scorer => {
+        outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+      })
     outputSchemaBuilder.add(inputSchema)
     outputSchemaBuilder.removeIfExists("para")
     outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))

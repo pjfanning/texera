@@ -22,23 +22,33 @@ class LoopEndOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecutor
   override def close(): Unit = {}
 
   override def processTuple(
-                             tuple: Either[ITuple, InputExhausted],
-                             input: Int,
-                             pauseManager: PauseManager,
-                             asyncRPCClient: AsyncRPCClient
-                           ): Iterator[(ITuple, Option[PortIdentity])] = {
+      tuple: Either[ITuple, InputExhausted],
+      input: Int,
+      pauseManager: PauseManager,
+      asyncRPCClient: AsyncRPCClient
+  ): Iterator[(ITuple, Option[PortIdentity])] = {
     tuple match {
       case Left(t) =>
         t match {
           case t: StartOfIteration =>
-
             Iterator((EndOfIteration(t.workerId, workerId), None))
           case t =>
             val schema = t.asInstanceOf[Tuple].getSchema
-            if (schema.containsAttribute("Iteration")){
+            if (schema.containsAttribute("Iteration")) {
               val s = new Schema.Builder(schema).removeIfExists("Iteration").build()
-              buffer.append((Tuple.newBuilder(s).addSequentially(
-                s.getAttributesScala.map(attr =>  t.asInstanceOf[Tuple].getField[Object](attr.getName)).toArray).build(), None))
+              buffer.append(
+                (
+                  Tuple
+                    .newBuilder(s)
+                    .addSequentially(
+                      s.getAttributesScala
+                        .map(attr => t.asInstanceOf[Tuple].getField[Object](attr.getName))
+                        .toArray
+                    )
+                    .build(),
+                  None
+                )
+              )
             } else {
               buffer.append((t, None))
             }
@@ -50,9 +60,9 @@ class LoopEndOpExec(val workerId: ActorVirtualIdentity) extends OperatorExecutor
   }
 
   override def processTexeraTuple(
-                                   tuple: Either[Tuple, InputExhausted],
-                                   input: Int,
-                                   pauseManager: PauseManager,
-                                   asyncRPCClient: AsyncRPCClient
-                                 ): Iterator[Tuple] = ???
+      tuple: Either[Tuple, InputExhausted],
+      input: Int,
+      pauseManager: PauseManager,
+      asyncRPCClient: AsyncRPCClient
+  ): Iterator[Tuple] = ???
 }

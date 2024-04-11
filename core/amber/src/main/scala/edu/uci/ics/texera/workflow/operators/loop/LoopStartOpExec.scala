@@ -1,7 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.loop
 
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{
-  EndOfIteration,
   FinalizeOperator,
   StartOfIteration
 }
@@ -42,13 +41,17 @@ class LoopStartOpExec(
                   }
                   iteration += 1
                   if (outputSchema.containsAttribute("Iteration")) {
-                    data.iterator.map(dt => (
-                      Tuple.newBuilder(outputSchema).add(outputSchema.getAttribute("Iteration"), iteration-1)
-                        .add(dt.asInstanceOf[Tuple])
-                        .add(buffer(iteration-1).asInstanceOf[Tuple]).build
-                      ,
-                      None
-                    ))
+                    data.iterator.map(dt =>
+                      (
+                        Tuple
+                          .newBuilder(outputSchema)
+                          .add(outputSchema.getAttribute("Iteration"), iteration - 1)
+                          .add(dt.asInstanceOf[Tuple])
+                          .add(buffer(iteration - 1).asInstanceOf[Tuple])
+                          .build,
+                        None
+                      )
+                    )
                   } else {
                     data.iterator.map(t => (t, None))
                   }

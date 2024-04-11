@@ -98,9 +98,9 @@ class AmberFIFOChannel(val channelId: ChannelIdentity) extends AmberLogging {
   }
 
   def getPortId: PortIdentity = {
-    if(this.portId.isEmpty){
+    if (this.portId.isEmpty) {
       PortIdentity()
-  }else{
+    } else {
       this.portId.get
     }
   }

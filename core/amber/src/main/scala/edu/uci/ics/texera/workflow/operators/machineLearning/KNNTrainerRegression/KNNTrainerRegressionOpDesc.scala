@@ -1,14 +1,23 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor{
+class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Using optimized K")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
@@ -21,7 +30,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor{
   @AutofillAttributeName
   var label: String = ""
 
-  @JsonProperty(required = true,defaultValue = "3")
+  @JsonProperty(required = true, defaultValue = "3")
   @JsonSchemaTitle("Custom K")
   @JsonPropertyDescription("Specify the number of nearest neighbours")
   @JsonSchemaInject(
@@ -54,7 +63,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor{
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    if (isLoop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    if (isLoop) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -71,8 +80,12 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor{
           displayName = "dataset",
           allowMultiLinks = true
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
-          dependencies = List(PortIdentity(0))),
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
       ),
       outputPorts = List(OutputPort())
     )

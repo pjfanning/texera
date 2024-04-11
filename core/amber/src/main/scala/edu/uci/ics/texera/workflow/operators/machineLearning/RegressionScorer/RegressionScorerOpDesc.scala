@@ -28,21 +28,22 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-    "Regression Scorer",
-    "Scorer for machine learning regression",
-    OperatorGroupConstants.ML_GROUP,
-    inputPorts = List(InputPort()),
-    outputPorts = List(OutputPort())
+      "Regression Scorer",
+      "Scorer for machine learning regression",
+      OperatorGroupConstants.ML_GROUP,
+      inputPorts = List(InputPort()),
+      outputPorts = List(OutputPort())
     )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
-    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer => {
-      outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
-    }
-    )
+    scorers
+      .map(scorer => getEachScorerName(scorer))
+      .foreach(scorer => {
+        outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+      })
     outputSchemaBuilder.add(inputSchema)
     outputSchemaBuilder.removeIfExists("para")
     outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))

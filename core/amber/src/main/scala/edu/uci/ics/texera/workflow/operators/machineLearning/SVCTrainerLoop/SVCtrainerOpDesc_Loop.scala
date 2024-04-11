@@ -21,7 +21,9 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
 
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get parameters from workflow")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}""")
+  @JsonSchemaInject(
+    json = """{"toggleHidden" : ["loop_c","loop_kernal","loop_gamma","loop_coef"]}"""
+  )
   var is_loop: Boolean = false
 
   @JsonProperty(value = "Selected Features", required = true)
@@ -99,7 +101,7 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
   @AutofillAttributeNameOnPort1
   val loop_coef: String = ""
 
-  @JsonProperty(value = "Kernal Function", required = false,defaultValue ="linear")
+  @JsonProperty(value = "Kernal Function", required = false, defaultValue = "linear")
   @JsonSchemaTitle("Kernal Function")
   @JsonPropertyDescription("multiple kernal functions")
   @JsonSchemaInject(
@@ -126,14 +128,17 @@ class SVCtrainerOpDesc_Loop extends PythonOperatorDescriptor {
   )
   var gamma: String = _
 
-  @JsonProperty(value="coef for SVC",required = false, defaultValue = "1")
+  @JsonProperty(value = "coef for SVC", required = false, defaultValue = "1")
   @JsonSchemaTitle("coef for SVC")
   @JsonPropertyDescription("coef for SVC")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf$")
+      new JsonSchemaString(
+        path = HideAnnotation.hideExpectedValue,
+        value = "^linear$|^sigmoid$|^rbf$"
+      )
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)

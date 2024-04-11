@@ -127,14 +127,17 @@ class SVCTrainerOpDesc extends PythonOperatorDescriptor {
   )
   var gamma: String = _
 
-  @JsonProperty(value="Coef for SVC",required = false, defaultValue = "1")
+  @JsonProperty(value = "Coef for SVC", required = false, defaultValue = "1")
   @JsonSchemaTitle("Coef For SVC")
   @JsonPropertyDescription("Coef for SVC")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$|^sigmoid$|^rbf$")
+      new JsonSchemaString(
+        path = HideAnnotation.hideExpectedValue,
+        value = "^linear$|^sigmoid$|^rbf$"
+      )
     ),
     bools = Array(
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
@@ -144,7 +147,7 @@ class SVCTrainerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    if (isLoop)  outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    if (isLoop) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
@@ -160,8 +163,12 @@ class SVCTrainerOpDesc extends PythonOperatorDescriptor {
           displayName = "dataset",
           allowMultiLinks = true
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true,
-          dependencies = List(PortIdentity(0)))
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
       ),
       outputPorts = List(OutputPort())
     )

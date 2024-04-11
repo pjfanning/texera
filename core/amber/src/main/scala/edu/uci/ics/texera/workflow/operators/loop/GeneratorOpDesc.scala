@@ -65,7 +65,8 @@ class GeneratorOpDesc extends SourceOperatorDescriptor {
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )
-  override def sourceSchema(): Schema = Schema.newBuilder
+  override def sourceSchema(): Schema =
+    Schema.newBuilder
       .add(attributes.map(attribute => new Attribute(attribute.name, AttributeType.DOUBLE)).asJava)
       .build()
 }

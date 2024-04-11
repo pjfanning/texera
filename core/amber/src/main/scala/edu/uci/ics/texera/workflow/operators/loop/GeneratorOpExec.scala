@@ -13,9 +13,9 @@ class GeneratorOpExec(
   override def produceTexeraTuple(): Iterator[Tuple] = {
     attributes
       .map(attribute =>
-        (attribute.start until BigDecimal(attribute.start + attribute.step * iteration) by attribute.step).map(
-          i => (outputSchema.getAttribute(attribute.name), i.toDouble)
-        )
+        (attribute.start until BigDecimal(
+          attribute.start + attribute.step * iteration
+        ) by attribute.step).map(i => (outputSchema.getAttribute(attribute.name), i.toDouble))
       )
       .transpose
       .map(row => {

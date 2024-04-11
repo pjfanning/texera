@@ -1,18 +1,24 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerLoop
 
-
-import scala.jdk.CollectionConverters.IterableHasAsJava
-
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
-  @JsonProperty(defaultValue = "false",required = false)
+  @JsonProperty(defaultValue = "false", required = false)
   @JsonSchemaTitle("Using optimized K")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loop_k"]}""")
   var is_loop: Boolean = false
@@ -22,7 +28,7 @@ class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeName
   var label: String = ""
 
-  @JsonProperty(required = true,defaultValue = "3")
+  @JsonProperty(required = true, defaultValue = "3")
   @JsonSchemaTitle("Custom K")
   @JsonPropertyDescription("Specify the number of nearest neighbours")
   @JsonSchemaInject(
@@ -60,7 +66,6 @@ class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
     outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
   }
 
-
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "KNN Trainer Loop",
@@ -73,7 +78,7 @@ class KNNtrainer_loopOpDesc extends PythonOperatorDescriptor {
           allowMultiLinks = true,
           dependencies = List(PortIdentity(1))
         ),
-        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true),
+        InputPort(PortIdentity(1), displayName = "parameter", allowMultiLinks = true)
       ),
       outputPorts = List(OutputPort())
     )

@@ -1,16 +1,25 @@
 package edu.uci.ics.amber.engine.architecture.worker.promisehandlers
 
-import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{EndOfIteration, StartOfIteration}
-import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeLoopHandler.{ResumeLoop, loopToSelfChannelId}
+import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.StartOfIteration
+import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.ResumeLoopHandler.{
+  ResumeLoop,
+  loopToSelfChannelId
+}
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerInitializer
-import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, EndOfUpstream}
+import edu.uci.ics.amber.engine.common.ambermessage.DataFrame
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
-import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity, OperatorIdentity, PhysicalOpIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
-import edu.uci.ics.texera.workflow.operators.loop.LoopStartOpExec
+import edu.uci.ics.amber.engine.common.virtualidentity.{
+  ActorVirtualIdentity,
+  ChannelIdentity,
+  OperatorIdentity,
+  PhysicalOpIdentity
+}
 
 object ResumeLoopHandler {
-  final case class ResumeLoop(startWorkerId: ActorVirtualIdentity, endWorkerId: ActorVirtualIdentity) extends ControlCommand[Unit]
+  final case class ResumeLoop(
+      startWorkerId: ActorVirtualIdentity,
+      endWorkerId: ActorVirtualIdentity
+  ) extends ControlCommand[Unit]
 
   val loopSelfOp = PhysicalOpIdentity(OperatorIdentity("loopSelf"), "loopSelf")
   val loopSelf = ActorVirtualIdentity("loopSelf")
@@ -22,10 +31,7 @@ trait ResumeLoopHandler {
   registerHandler { (msg: ResumeLoop, _) =>
     {
       //val ls = dp.operator.asInstanceOf[LoopStartOpExec]
-      dp.processDataPayload(
-        loopToSelfChannelId,
-        DataFrame(Array(StartOfIteration(dp.actorId)
-      )))
+      dp.processDataPayload(loopToSelfChannelId, DataFrame(Array(StartOfIteration(dp.actorId))))
 //      val loopStartToEndLink: PhysicalLink = PhysicalLink(
 //        msg.startWorkerId,
 //        PortIdentity(),
@@ -33,13 +39,13 @@ trait ResumeLoopHandler {
 //        PortIdentity()
 //      )
       //if (ls.iteration < ls.termination) {
-       // dp.processDataPayload(
-        //  loopToSelfChannelId,
-        //  DataFrame(ls.buffer.toArray ++ Array(EndOfIteration(dp.actorId)))
+      // dp.processDataPayload(
+      //  loopToSelfChannelId,
+      //  DataFrame(ls.buffer.toArray ++ Array(EndOfIteration(dp.actorId)))
       //  )
       //} else {
-       // dp.processDataPayload(loopToSelfChannelId, EndOfUpstream())
-     // }
+      // dp.processDataPayload(loopToSelfChannelId, EndOfUpstream())
+      // }
     }
   }
 }

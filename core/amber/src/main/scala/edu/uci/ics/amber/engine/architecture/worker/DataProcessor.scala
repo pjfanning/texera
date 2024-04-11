@@ -49,7 +49,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted, VirtualIdentityUtils}
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.operators.loop.{LoopEndOpExec, LoopStartOpExec}
+import edu.uci.ics.texera.workflow.operators.loop.LoopStartOpExec
 
 import scala.collection.mutable
 

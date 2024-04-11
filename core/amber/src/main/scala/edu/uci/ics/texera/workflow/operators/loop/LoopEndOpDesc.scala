@@ -18,7 +18,9 @@ class LoopEndOpDesc extends LogicalOp {
         workflowId,
         executionId,
         operatorIdentifier,
-        OpExecInitInfo((_, _, operatorConfig) => new LoopEndOpExec(operatorConfig.workerConfigs.head.workerId))
+        OpExecInitInfo((_, _, operatorConfig) =>
+          new LoopEndOpExec(operatorConfig.workerConfigs.head.workerId)
+        )
       )
       .withInputPorts(operatorInfo.inputPorts, inputPortToSchemaMapping)
       .withOutputPorts(operatorInfo.outputPorts, outputPortToSchemaMapping)
@@ -35,5 +37,6 @@ class LoopEndOpDesc extends LogicalOp {
       supportReconfiguration = true
     )
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = new Schema.Builder(schemas(0)).removeIfExists("Iteration").build()
+  override def getOutputSchema(schemas: Array[Schema]): Schema =
+    new Schema.Builder(schemas(0)).removeIfExists("Iteration").build()
 }

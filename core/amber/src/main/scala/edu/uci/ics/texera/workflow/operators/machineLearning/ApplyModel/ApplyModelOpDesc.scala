@@ -2,17 +2,21 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-import scala.jdk.CollectionConverters.IterableHasAsJava
-
 class ApplyModelOpDesc extends PythonOperatorDescriptor {
-
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
@@ -22,12 +26,12 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Predict Probability For Each Class")
   @JsonSchemaInject(json = """{"toggleHidden" : ["yProb"]}""")
-  @JsonPropertyDescription("Choose to calculate the probabilities of one dataset belongs to each class")
+  @JsonPropertyDescription(
+    "Choose to calculate the probabilities of one dataset belongs to each class"
+  )
   var isProb: Boolean = false
 
-
-
-  @JsonProperty(value = "yProb", required = false,defaultValue = "y_prob")
+  @JsonProperty(value = "yProb", required = false, defaultValue = "y_prob")
   @JsonSchemaTitle("Probability Column")
   @JsonPropertyDescription("Specify the name of the predicted probability column")
   @JsonSchemaInject(
@@ -39,13 +43,11 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   )
   var yProb: String = "y_prob"
 
-
-  @JsonProperty(value = "is_ground_truth",defaultValue = "false")
+  @JsonProperty(value = "is_ground_truth", defaultValue = "false")
   @JsonSchemaTitle("Ground Truth In Datasets")
   @JsonSchemaInject(json = """{"toggleHidden" : ["yTrue"]}""")
   @JsonPropertyDescription("Choose to pass the ground truth value through this operator")
   var isGroundTruth: Boolean = false
-
 
   @JsonProperty(value = "yTrue", required = false)
   @JsonSchemaTitle("Ground Truth Label")
@@ -71,8 +73,12 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
           displayName = "dataset",
           allowMultiLinks = true
         ),
-        InputPort(PortIdentity(1), displayName = "model", allowMultiLinks = true,
-          dependencies = List(PortIdentity(0)))
+        InputPort(
+          PortIdentity(1),
+          displayName = "model",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
       ),
       outputPorts = List(OutputPort())
     )
@@ -83,20 +89,17 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(1)
     outputSchemaBuilder.add(inputSchema)
-    if (isGroundTruth)  outputSchemaBuilder.add(new Attribute(yTrue, AttributeType.BINARY))
-    if (isProb)  outputSchemaBuilder.add(new Attribute(yProb, AttributeType.BINARY))
+    if (isGroundTruth) outputSchemaBuilder.add(new Attribute(yTrue, AttributeType.BINARY))
+    if (isProb) outputSchemaBuilder.add(new Attribute(yProb, AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute(yPred, AttributeType.BINARY)).build
-
 
   }
 
-
-
   override def generatePythonCode(): String = {
     var flagProb = "False"
-    if (isProb)  flagProb = "True"
+    if (isProb) flagProb = "True"
     var flagGroundTruth = "False"
-    if (isGroundTruth)  flagGroundTruth = "True"
+    if (isGroundTruth) flagGroundTruth = "True"
     val finalCode =
       s"""
          |from pytexera import *

@@ -1,9 +1,12 @@
 package edu.uci.ics.texera.workflow.operators.machineLearning.ScorerLoop
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameOnPort1
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
@@ -53,13 +56,15 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
       OperatorGroupConstants.ML_GROUP,
       inputPorts = List(
         InputPort(
-        PortIdentity(0),
-        displayName = "GroundTruth",
+          PortIdentity(0),
+          displayName = "GroundTruth"
         ),
         InputPort(
           PortIdentity(1),
           displayName = "PredictValue",
-          dependencies = List(PortIdentity(0)))),
+          dependencies = List(PortIdentity(0))
+        )
+      ),
       outputPorts = List(OutputPort())
     )
 
@@ -182,20 +187,20 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
   }
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.newBuilder
-    scorers.map(scorer => getEachScorerName(scorer)).foreach(scorer =>
-    {
-      if (scorer == "Confusion Matrix") {
-        outputSchemaBuilder.add(new Attribute(scorer, AttributeType.STRING))
-        outputSchemaBuilder.add(new Attribute("Best Confusion Matrix Chart", AttributeType.STRING))
-      } else {
-        outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
-      }
-    }
-    )
+    scorers
+      .map(scorer => getEachScorerName(scorer))
+      .foreach(scorer => {
+        if (scorer == "Confusion Matrix") {
+          outputSchemaBuilder.add(new Attribute(scorer, AttributeType.STRING))
+          outputSchemaBuilder
+            .add(new Attribute("Best Confusion Matrix Chart", AttributeType.STRING))
+        } else {
+          outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
+        }
+      })
     outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY)).build
   }
-
 
   private def getEachScorerName(scorer: Scorer_LoopFunction): String = {
     // Directly return the name of the scorer using the getName() method
@@ -205,6 +210,5 @@ class Scorer_LoopOpDesc extends PythonOperatorDescriptor {
     // Return a string of scorers using the getEachScorerName() method
     scorers.map(scorer => getEachScorerName(scorer)).mkString("'", "','", "'")
   }
-
 
 }

@@ -3,12 +3,9 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.CategoryToNumber
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttributeName
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
-import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerFunction
-
 
 class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(required = true)
@@ -29,7 +26,11 @@ class CategoryToNumberOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.newBuilder
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(inputSchema)
-    selections.map(item => outputSchemaBuilder.add(new Attribute(item.attributeName + "_to_number", AttributeType.INTEGER)))
+    selections.map(item =>
+      outputSchemaBuilder.add(
+        new Attribute(item.attributeName + "_to_number", AttributeType.INTEGER)
+      )
+    )
     outputSchemaBuilder.add(new Attribute("label_encoder", AttributeType.BINARY))
     outputSchemaBuilder.build
   }
