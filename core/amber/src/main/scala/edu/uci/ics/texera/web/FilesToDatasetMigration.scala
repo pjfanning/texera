@@ -25,6 +25,7 @@ import java.nio.file.{Path, Paths}
 import java.util
 import scala.collection.convert.ImplicitConversions.`iterable AsScalaIterable`
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, IterableHasAsJava}
+import scala.util.Try
 
 
 object FilesToDatasetMigration extends App {
@@ -115,14 +116,15 @@ object FilesToDatasetMigration extends App {
     // Process the result to build the map with Path objects as keys
     val userToFileMap: Map[UserKey, Map[Path, String]] = result.asScala
       .toList // Convert to Scala List
-      .groupBy(record => UserKey(record.getValue(USER.EMAIL), record.getValue(USER.UID))) // Group by user name
+      .groupBy(record => UserKey(record.getValue(USER.EMAIL), record.getValue(USER.UID))) // Group by user
       .mapValues { records =>
-        records.map { record =>
+        records.flatMap { record =>
           val pathString = record.getValue(FILE.PATH)
-          val path = Paths.get(pathString) // Convert string to Path
-          val name = record.getValue(FILE.NAME)
-          path -> name // Use Path object as the key
-        }.toMap // Convert each list of pairs to a map
+          Try(Paths.get(pathString)).toOption.map { path =>
+            val name = record.getValue(FILE.NAME)
+            path -> name // Create a pair of Path and file name
+          }
+        }.toMap // Convert each list of pairs to a map, filter out None
       }.toMap
 
     userToFileMap
@@ -270,7 +272,7 @@ object FilesToDatasetMigration extends App {
     }
   }
 
-//  refactorFilePath()
+  //  refactorFilePath()
   val userToUserFiles = retrieveListOfOwnerAndFiles()
 
   for ((userKey, userFiles) <- userToUserFiles) {
