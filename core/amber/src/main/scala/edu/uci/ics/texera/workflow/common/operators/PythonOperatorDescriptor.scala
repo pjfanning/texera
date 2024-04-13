@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.common.operators
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfo, OpExecInitInfoWithCode}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
 
 trait PythonOperatorDescriptor extends LogicalOp {
@@ -10,14 +10,14 @@ trait PythonOperatorDescriptor extends LogicalOp {
       executionId: ExecutionIdentity
   ): PhysicalOp = {
 
-    val generatedCode = generatePythonCode()
+
     if (asSource()) {
       PhysicalOp
         .sourcePhysicalOp(
           workflowId,
           executionId,
           operatorIdentifier,
-          OpExecInitInfo(generatedCode, "python")
+          OpExecInitInfoWithCode((_,_ ) => {(generatePythonCode(), "python")})
         )
         .withInputPorts(operatorInfo.inputPorts)
         .withOutputPorts(operatorInfo.outputPorts)
@@ -37,7 +37,7 @@ trait PythonOperatorDescriptor extends LogicalOp {
           workflowId,
           executionId,
           operatorIdentifier,
-          OpExecInitInfo(generatedCode, "python")
+          OpExecInitInfoWithCode((_,_ ) => {(generatePythonCode(), "python")})
         )
         .withInputPorts(operatorInfo.inputPorts)
         .withOutputPorts(operatorInfo.outputPorts)
