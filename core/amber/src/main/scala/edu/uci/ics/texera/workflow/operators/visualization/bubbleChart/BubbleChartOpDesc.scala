@@ -15,42 +15,47 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 
 /**
   * Visualization Operator to visualize results as a Bubble Chart
-  * User specifies 2 columns to use for the x, y labels. Size of bubbles determined via
-  * third column of data. Bubbles can be sorted via color using a fourth column.
+  * User specifies 2 attributes to use for the x, y labels.
+  * Size of bubbles can be determined via third attribute.
+  * Bubbles can be colored using a fourth attribute.
   */
 
 // type can be numerical only
 class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
+  @JsonProperty(value = "title", required = true, defaultValue = "Bubble Chart")
+  @JsonSchemaTitle("Chart Title")
+  @JsonPropertyDescription("Add a title to your visualization")
+  val title: String = ""
+
   @JsonProperty(value = "xValue", required = true)
-  @JsonSchemaTitle("X-Column")
-  @JsonPropertyDescription("Data column for the x-axis")
-  @AutofillAttributeName var xValue: String = ""
+  @JsonSchemaTitle("X-axis Attribute")
+  @JsonPropertyDescription("The attribute for the x-axis")
+  @AutofillAttributeName
+  val xValue: String = ""
 
   @JsonProperty(value = "yValue", required = true)
-  @JsonSchemaTitle("Y-Column")
-  @JsonPropertyDescription("Data column for the y-axis")
-  @AutofillAttributeName var yValue: String = ""
+  @JsonSchemaTitle("Y-axis Attribute")
+  @JsonPropertyDescription("The attribute for the y-axis")
+  @AutofillAttributeName
+  val yValue: String = ""
 
   @JsonProperty(value = "zValue", required = true)
-  @JsonSchemaTitle("Z-Column")
-  @JsonPropertyDescription("Data column to determine bubble size")
-  @AutofillAttributeName var zValue: String = ""
-
-  @JsonProperty(value = "title", required = true)
-  @JsonSchemaTitle("Title")
-  @JsonPropertyDescription("Title of Chart")
-  var title: String = "My Bubble Chart"
+  @JsonSchemaTitle("Size Attribute")
+  @JsonPropertyDescription("The attribute to determine bubble size")
+  @AutofillAttributeName
+  val zValue: String = ""
 
   @JsonProperty(value = "enableColor", defaultValue = "false")
-  @JsonSchemaTitle("Enable Color")
-  @JsonPropertyDescription("Colors bubbles using a data column")
-  var enableColor: Boolean = false
+  @JsonSchemaTitle("Enable Coloring")
+  @JsonPropertyDescription("Give bubbles colors")
+  val enableColoring: Boolean = false
 
   @JsonProperty(value = "colorCategory", required = true)
-  @JsonSchemaTitle("Color-Column")
-  @JsonPropertyDescription("Picks data column to color bubbles with if color is enabled")
-  @AutofillAttributeName var colorCategory: String = ""
+  @JsonSchemaTitle("Color Attribute")
+  @JsonPropertyDescription("The attribute to color bubbles")
+  @AutofillAttributeName
+  private val colorCategory: String = ""
 
   override def chartType: String = VisualizationConstants.HTML_VIZ
 
@@ -79,7 +84,7 @@ class BubbleChartOpDesc extends VisualizationOperator with PythonOperatorDescrip
   def createPlotlyFigure(): String = {
     assert(xValue.nonEmpty && yValue.nonEmpty && zValue.nonEmpty)
     s"""
-       |        if '$enableColor' == 'true':
+       |        if '$enableColoring' == 'true':
        |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100, title='$title', color='$colorCategory'))
        |        else:
        |            fig = go.Figure(px.scatter(table, x='$xValue', y='$yValue', size='$zValue', size_max=100, title='$title'))

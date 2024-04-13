@@ -14,7 +14,7 @@ class BubbleChartOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
     opDesc.yValue = "column2"
     opDesc.zValue = "column3"
     opDesc.title = "myTitle"
-    opDesc.enableColor = false
+    opDesc.enableColoring = false
 
     assert(
       opDesc

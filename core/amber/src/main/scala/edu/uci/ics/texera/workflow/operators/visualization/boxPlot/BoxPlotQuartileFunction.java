@@ -6,14 +6,14 @@ public enum BoxPlotQuartileFunction {
     LINEAR("linear"),
     INCLUSIVE("inclusive"),
     EXCLUSIVE("exclusive");
-    private final String quartiletype;
+    private final String quartileType;
 
-    BoxPlotQuartileFunction(String quartiletype) {
-        this.quartiletype = quartiletype;
+    BoxPlotQuartileFunction(String quartileType) {
+        this.quartileType = quartileType;
     }
 
     @JsonValue
-    public String getQuartiletype() {
-        return this.quartiletype;
+    public String getQuartileType() {
+        return this.quartileType;
     }
 }

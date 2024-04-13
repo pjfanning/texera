@@ -14,39 +14,40 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 
 class FilledAreaPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Title")
-  @JsonPropertyDescription("Title of our plot")
-  var title: String = ""
+  @JsonProperty(value = "title", required = true, defaultValue = "Filled Area Chart")
+  @JsonSchemaTitle("Chart Title")
+  @JsonPropertyDescription("Add a title to your visualization")
+  val title: String = ""
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("X-axis Attribute")
-  @JsonPropertyDescription("The attribute for your x-axis")
+  @JsonPropertyDescription("The attribute for the x-axis")
   @AutofillAttributeName
-  var x: String = ""
+  val x: String = ""
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Y-axis Attribute")
-  @JsonPropertyDescription("The attribute for your y-axis")
+  @JsonPropertyDescription("The attribute for the y-axis")
   @AutofillAttributeName
-  var y: String = ""
+  val y: String = ""
 
   @JsonProperty(required = false)
   @JsonSchemaTitle("Line Group")
   @JsonPropertyDescription("The attribute for group of each line")
   @AutofillAttributeName
-  var lineGroup: String = ""
+  val lineGroup: String = ""
 
-  @JsonProperty(required = false)
-  @JsonSchemaTitle("Color")
-  @JsonPropertyDescription("Choose an attribute to color the plot")
+  @JsonProperty(value = "colorCategory", required = false)
+  @JsonSchemaTitle("Color Attribute")
+  @JsonPropertyDescription("The attribute to color areas")
   @AutofillAttributeName
-  var color: String = ""
+  private val color: String = ""
+
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Split Plot by  Line Group")
+  @JsonSchemaTitle("Split Plot by Line Group")
   @JsonPropertyDescription("Do you want to split the graph")
-  var facetColumn: Boolean = false
+  val facetColumn: Boolean = false
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()

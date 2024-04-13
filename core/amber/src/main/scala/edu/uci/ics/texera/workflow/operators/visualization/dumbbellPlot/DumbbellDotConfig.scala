@@ -17,8 +17,8 @@ class DumbbellDotConfig {
 
   @JsonProperty(value = "dot", required = true)
   @JsonSchemaTitle("Dot Column Value")
-  @JsonPropertyDescription("value for dot axis")
+  @JsonPropertyDescription("Value for dot axis")
   @AutofillAttributeName
-  var dotValue: String = ""
+  val dotValue: String = ""
 
 }

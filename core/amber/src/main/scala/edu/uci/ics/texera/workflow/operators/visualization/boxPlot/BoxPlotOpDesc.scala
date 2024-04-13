@@ -23,28 +23,28 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 """)
 class BoxPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
-  @JsonProperty(defaultValue = "Box Plot Visual")
-  @JsonSchemaTitle("Title")
+  @JsonProperty(defaultValue = "Box Plot Chart")
+  @JsonSchemaTitle("Chart Title")
   @JsonPropertyDescription("Add a title to your visualization")
-  var title: String = ""
+  val title: String = ""
 
   @JsonProperty(value = "value", required = true)
-  @JsonSchemaTitle("Value Column")
-  @JsonPropertyDescription("Data Column for Boxplot")
+  @JsonSchemaTitle("Value Attribute")
+  @JsonPropertyDescription("Data column")
   @AutofillAttributeName
-  var value: String = ""
+  val value: String = ""
 
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Horizontal Orientation")
   @JsonPropertyDescription("Orientation Style")
-  var orientation: Boolean = _
+  val orientation: Boolean = false
 
   @JsonProperty(
     value = "Quartile Method",
     required = true,
     defaultValue = "linear"
   )
-  var quertiletype: BoxPlotQuartileFunction = _
+  private val quartileFunc: BoxPlotQuartileFunction = null
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
@@ -76,7 +76,7 @@ class BoxPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor 
        |            fig = px.box(table, x='$value',boxmode="overlay", points='all')
        |        else:
        |            fig = px.box(table, y='$value',boxmode="overlay", points='all')
-       |        fig.update_traces(quartilemethod="${quertiletype.getQuartiletype}", jitter=0, col=1)
+       |        fig.update_traces(quartilemethod="${quartileFunc.getQuartileType}", jitter=0, col=1)
        |
        |
        |

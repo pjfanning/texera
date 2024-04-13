@@ -24,33 +24,33 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 """)
 class BarChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
-  @JsonProperty(defaultValue = "Bar Graph Visual")
-  @JsonSchemaTitle("Title")
+  @JsonProperty(defaultValue = "Bar Chart")
+  @JsonSchemaTitle("Chart Title")
   @JsonPropertyDescription("Add a title to your visualization")
-  var title: String = ""
+  val title: String = ""
 
   @JsonProperty(value = "value", required = true)
-  @JsonSchemaTitle("Value Column")
+  @JsonSchemaTitle("Value Attribute")
   @JsonPropertyDescription("the value associated with each category")
   @AutofillAttributeName
-  var value: String = ""
+  val value: String = ""
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Fields")
+  @JsonSchemaTitle("Attributes")
   @JsonPropertyDescription("Visualize categorical data in a Bar Chart")
   @AutofillAttributeName
-  var fields: String = ""
+  val fields: String = ""
 
   @JsonProperty(defaultValue = "No Selection", required = false)
-  @JsonSchemaTitle("Category Column")
-  @JsonPropertyDescription("Optional - Select a column to Color Code the Categories")
+  @JsonSchemaTitle("Category Attribute")
+  @JsonPropertyDescription("Optional - Select an attribute to color code the categories")
   @AutofillAttributeName
-  var categoryColumn: String = ""
+  private val categoryColumn: String = ""
 
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Horizontal Orientation")
   @JsonPropertyDescription("Orientation Style")
-  var horizontalOrientation: Boolean = _
+  private val horizontalOrientation: Boolean = false
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
@@ -75,13 +75,9 @@ class BarChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
 
   override def generatePythonCode(): String = {
 
-    var isHorizontalOrientation = "False"
-    if (horizontalOrientation)
-      isHorizontalOrientation = "True"
+    val isHorizontalOrientation = if (horizontalOrientation) "True" else "False"
 
-    var isCategoryColumn = "False"
-    if (categoryColumn != "No Selection")
-      isCategoryColumn = "True"
+    val isCategoryColumn = if (categoryColumn != "No Selection") "True" else "False"
 
     val finalCode = s"""
                         |from pytexera import *

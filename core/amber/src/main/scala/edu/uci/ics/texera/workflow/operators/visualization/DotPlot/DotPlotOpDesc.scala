@@ -14,16 +14,16 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 
 class DotPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
+  @JsonProperty(value = "Title", required = true, defaultValue = "Dot Plot Chart")
+  @JsonSchemaTitle("Chart Title")
+  @JsonPropertyDescription("Add a title to your visualization")
+  val title: String = ""
+
   @JsonProperty(value = "Count Attribute", required = true)
   @JsonSchemaTitle("Count Attribute")
-  @JsonPropertyDescription("the attribute for the counting of the dot plot")
+  @JsonPropertyDescription("The attribute for the counting of the dot plot")
   @AutofillAttributeName
-  var countAttribute: String = ""
-
-  @JsonProperty(value = "Title", required = true)
-  @JsonSchemaTitle("Title")
-  @JsonPropertyDescription("Title for the Dot Plot Visualization")
-  var title: String = ""
+  val countAttribute: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
