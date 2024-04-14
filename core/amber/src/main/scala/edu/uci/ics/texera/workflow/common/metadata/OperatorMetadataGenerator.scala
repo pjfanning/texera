@@ -35,7 +35,8 @@ case class OperatorMetadata(
 
 case class GroupInfo(
     groupName: String,
-    groupOrder: Int
+    groupOrder: Int,
+    children: List[GroupInfo]
 )
 
 case class AllOperatorMetadata(

@@ -32,7 +32,10 @@ export class OperatorMenuComponent implements OnInit {
   // a list of group names, sorted based on the groupOrder from OperatorMetadata
   public groupNamesOrdered: ReadonlyArray<string> = [];
   // a map of group name to a list of operator schema of this group
-  public operatorGroupMap = new Map<string, ReadonlyArray<OperatorSchema>>();
+  public operatorGroupMap = new Map<
+    string,
+    ReadonlyArray<OperatorSchema> | { name: string; operator: ReadonlyArray<OperatorSchema> }[]
+  >();
 
   // input value of the search input box
   public searchInputValue: string = "";
@@ -94,6 +97,14 @@ export class OperatorMenuComponent implements OnInit {
     });
   }
 
+  isArray(value: any): boolean {
+    return Array.isArray(value);
+  }
+
+  log(value: any): void {
+    console.log(value);
+  }
+
   /**
    * handles the event when an operator search option is selected.
    * adds the operator to the canvas and clears the text in the search box
@@ -151,12 +162,32 @@ export function getGroupNamesSorted(groupInfoList: ReadonlyArray<GroupInfo>): st
 /**
  * returns a new empty map from the group name to a list of OperatorSchema
  */
-export function getOperatorGroupMap(operatorMetadata: OperatorMetadata): Map<string, OperatorSchema[]> {
-  const groups = operatorMetadata.groups.map(groupInfo => groupInfo.groupName);
-  const operatorGroupMap = new Map<string, OperatorSchema[]>();
-  groups.forEach(groupName => {
-    const operators = operatorMetadata.operators.filter(x => x.additionalMetadata.operatorGroupName === groupName);
-    operatorGroupMap.set(groupName, operators);
+export function getOperatorGroupMap(
+  operatorMetadata: OperatorMetadata
+): Map<string, ReadonlyArray<OperatorSchema> | { name: string; operator: ReadonlyArray<OperatorSchema> }[]> {
+  console.log(operatorMetadata);
+  const groupInfo = operatorMetadata.groups.map(groupInfo => groupInfo);
+  const operatorGroupMap = new Map<
+    string,
+    ReadonlyArray<OperatorSchema> | { name: string; operator: ReadonlyArray<OperatorSchema> }[]
+  >();
+  groupInfo.forEach(item => {
+    if (item.children) {
+      const secondLevelGroupMap: { name: string; operator: ReadonlyArray<OperatorSchema> }[] = [];
+      item.children.forEach(child => {
+        const operators = operatorMetadata.operators.filter(
+          x => x.additionalMetadata.operatorGroupName === child.groupName
+        );
+        secondLevelGroupMap.push({ name: child.groupName, operator: operators });
+      });
+      operatorGroupMap.set(item.groupName, secondLevelGroupMap);
+    } else {
+      const operators = operatorMetadata.operators.filter(
+        x => x.additionalMetadata.operatorGroupName === item.groupName
+      );
+      operatorGroupMap.set(item.groupName, operators);
+    }
   });
+  console.log(operatorGroupMap);
   return operatorGroupMap;
 }

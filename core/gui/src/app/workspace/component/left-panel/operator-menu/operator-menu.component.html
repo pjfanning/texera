@@ -31,12 +31,31 @@
       nz-menu
       [nzInlineIndent]="0"
       nzSelectable="false">
-      <li
-        *ngFor="let operatorSchema of operatorGroupMap.get(groupName)"
+      <!-- <li
+        *ngFor="let item of operatorGroupMap.get(groupName)"
         class="texera-operator-label"
         nz-menu-item>
-        <texera-operator-label [operator]="operatorSchema"></texera-operator-label>
-      </li>
+        {{log(item)}}
+        <ng-container *ngFor="let contain of item">
+          <ng-container *ngIf="!isArray(contain); else listTemplate">
+            <texera-operator-label [operator]="contain"></texera-operator-label>
+          </ng-container>
+          <ng-template #listTemplate>
+            <ul
+              class="operator-submenu"
+              nz-menu
+              [nzInlineIndent]="0"
+              nzSelectable="false">
+              <li
+                *ngFor="let subItem of contain"
+                class="texera-operator-label"
+                nz-menu-item>
+                <texera-operator-label [operator]="subItem"></texera-operator-label>
+              </li>
+            </ul>
+          </ng-template>
+        </ng-container>
+      </li> -->
     </ul>
   </nz-collapse-panel>
 </nz-collapse>
