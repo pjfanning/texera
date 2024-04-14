@@ -25,7 +25,9 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -166,7 +168,9 @@ trait StateTransferFunc
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
-    new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel")
+    new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
+    new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
+    new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix")
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
