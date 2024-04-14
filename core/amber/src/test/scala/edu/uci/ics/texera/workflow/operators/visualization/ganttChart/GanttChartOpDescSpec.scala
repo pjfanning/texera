@@ -8,7 +8,7 @@ class GanttChartOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
   }
   it should "generate a plotly python figure with 3 columns and no color" in {
     opDesc.start = "start"
-    opDesc.finish = "finish"
+    opDesc.end = "finish"
     opDesc.task = "task"
     opDesc.color = ""
 
@@ -22,7 +22,7 @@ class GanttChartOpDescSpec extends AnyFlatSpec with BeforeAndAfter {
   }
   it should "generate a plotly python figure with 3 columns and color" in {
     opDesc.start = "start"
-    opDesc.finish = "finish"
+    opDesc.end = "finish"
     opDesc.task = "task"
     opDesc.color = "color"
 

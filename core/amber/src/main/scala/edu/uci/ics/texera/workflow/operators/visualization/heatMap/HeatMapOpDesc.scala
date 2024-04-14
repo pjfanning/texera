@@ -14,27 +14,27 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 
 class HeatMapOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "HeatMap", required = true)
-  @JsonSchemaTitle("Title")
+  @JsonSchemaTitle("Chart Title")
   @JsonPropertyDescription("Add a title to your visualization")
-  var title: String = ""
+  val title: String = ""
 
   @JsonProperty(value = "x", required = true)
-  @JsonSchemaTitle("Value X Column")
-  @JsonPropertyDescription("the values along the x-axis")
+  @JsonSchemaTitle("X Attribute")
+  @JsonPropertyDescription("The values along the x-axis")
   @AutofillAttributeName
-  var x: String = ""
+  val x: String = ""
 
   @JsonProperty(value = "y", required = true)
-  @JsonSchemaTitle("Value Y Column")
+  @JsonSchemaTitle("Y Attribute")
   @JsonPropertyDescription("the values along the y-axis")
   @AutofillAttributeName
-  var y: String = ""
+  val y: String = ""
 
   @JsonProperty(value = "Values", required = true)
   @JsonSchemaTitle("Values")
   @JsonPropertyDescription("the values of the heatmap")
   @AutofillAttributeName
-  var value: String = ""
+  val value: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()

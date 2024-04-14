@@ -27,28 +27,28 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
   @JsonProperty(value = "start", required = true)
-  @JsonSchemaTitle("Start Datetime Column")
-  @JsonPropertyDescription("the start timestamp of the task")
+  @JsonSchemaTitle("Start Attribute")
+  @JsonPropertyDescription("The start timestamp of the task")
   @AutofillAttributeName
-  var start: String = ""
+  val start: String = ""
 
-  @JsonProperty(value = "finish", required = true)
-  @JsonSchemaTitle("Finish Datetime Column")
-  @JsonPropertyDescription("the end timestamp of the task")
+  @JsonProperty(value = "end", required = true)
+  @JsonSchemaTitle("End Attribute")
+  @JsonPropertyDescription("The end timestamp of the task")
   @AutofillAttributeName
-  var finish: String = ""
+  val end: String = ""
 
   @JsonProperty(value = "task", required = true)
-  @JsonSchemaTitle("Task Column")
-  @JsonPropertyDescription("the name of the task")
+  @JsonSchemaTitle("Task Attribute")
+  @JsonPropertyDescription("The attribute of the tasks")
   @AutofillAttributeName
-  var task: String = ""
+  val task: String = ""
 
   @JsonProperty(value = "color", required = false)
-  @JsonSchemaTitle("Color Column")
-  @JsonPropertyDescription("column to color tasks")
+  @JsonSchemaTitle("Color Attribute")
+  @JsonPropertyDescription("The attribute to color tasks")
   @AutofillAttributeName
-  var color: String = _
+  val color: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
@@ -66,7 +66,7 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
   def manipulateTable(): String = {
     val optionalFilterTable = if (color.nonEmpty) s"&(table['$color'].notnull())" else ""
     s"""
-       |        table = table[(table["$start"].notnull())&(table["$finish"].notnull())&(table["$finish"].notnull())$optionalFilterTable].copy()
+       |        table = table[(table["$start"].notnull())&(table["$end"].notnull())&(table["$end"].notnull())$optionalFilterTable].copy()
        |""".stripMargin
   }
 
@@ -74,7 +74,7 @@ class GanttChartOpDesc extends VisualizationOperator with PythonOperatorDescript
     val colorSetting = if (color.nonEmpty) s", color='$color'" else ""
 
     s"""
-        |        fig = px.timeline(table, x_start='$start', x_end='$finish', y='$task' $colorSetting)
+        |        fig = px.timeline(table, x_start='$start', x_end='$end', y='$task' $colorSetting)
         |        fig.update_yaxes(autorange='reversed')
         |""".stripMargin
 
