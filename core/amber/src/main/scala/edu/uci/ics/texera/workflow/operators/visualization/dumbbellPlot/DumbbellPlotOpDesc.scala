@@ -27,26 +27,26 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 """)
 class DumbbellPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
-  @JsonProperty(value = "title", required = false, defaultValue = "DumbbellPlot Visualization")
+  @JsonProperty(value = "title", required = false, defaultValue = "DumbbellPlot Plot")
   @JsonSchemaTitle("Title")
   @JsonPropertyDescription("the title of this dumbbell plots")
-  var title: String = "DumbbellPlot Visualization"
+  val title: String = ""
 
   @JsonProperty(value = "categoryColumnName", required = true)
-  @JsonSchemaTitle("Category Column Name")
-  @JsonPropertyDescription("the name of the category column")
+  @JsonSchemaTitle("Category Attribute")
+  @JsonPropertyDescription("the name of the category attribute")
   @AutofillAttributeName
-  var categoryColumnName: String = ""
+  private val categoryColumnName: String = ""
 
   @JsonProperty(value = "dumbbellStartValue", required = true)
   @JsonSchemaTitle("Dumbbell Start Value")
   @JsonPropertyDescription("the start point value of each dumbbell")
-  var dumbbellStartValue: String = ""
+  private val dumbbellStartValue: String = ""
 
   @JsonProperty(value = "dumbbellEndValue", required = true)
   @JsonSchemaTitle("Dumbbell End Value")
   @JsonPropertyDescription("the end value of each dumbbell")
-  var dumbbellEndValue: String = ""
+  private val dumbbellEndValue: String = ""
 
   @JsonProperty(value = "measurementColumnName", required = true)
   @JsonSchemaTitle("Measurement Column Name")

@@ -21,27 +21,28 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 """)
 class FunnelPlotOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
   @JsonProperty(value = "title", required = true, defaultValue = "Funnel Plot")
-  @JsonSchemaTitle("Plot Title")
-  @JsonPropertyDescription("The value for the plot title")
-  var title: String = "Funnel Plot"
+  @JsonSchemaTitle("Chart Title")
+  @JsonPropertyDescription("Add a title to your visualization")
+  val title: String = "Funnel Plot"
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("X Column")
-  @JsonPropertyDescription("Data column for the x-axis")
+  @JsonSchemaTitle("X Attribute")
+  @JsonPropertyDescription("The attribute for the x-axis")
   @AutofillAttributeName
-  var x: String = ""
+  val x: String = ""
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Y Column")
-  @JsonPropertyDescription("Data column for the y-axis")
+  @JsonSchemaTitle("Y Attribute")
+  @JsonPropertyDescription("The attribute for the y-axis")
   @AutofillAttributeName
-  var y: String = ""
+  val y: String = ""
 
-  @JsonProperty(required = false)
-  @JsonSchemaTitle("Color Column")
-  @JsonPropertyDescription("Column to categorically colorize funnel sections")
+x
+  @JsonProperty(defaultValue = "No Selection", required = false)
+  @JsonSchemaTitle("Category Attribute")
+  @JsonPropertyDescription("Optional - Select an attribute to color code the categories")
   @AutofillAttributeName
-  var color: String = ""
+  private val color: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
