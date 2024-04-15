@@ -6,11 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-import java.io.{
-  ByteArrayInputStream,
-  ByteArrayOutputStream,
-  InputStream
-}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import java.net.URI
 import java.nio.file.{Files, Path}
 import scala.collection.mutable.ListBuffer
