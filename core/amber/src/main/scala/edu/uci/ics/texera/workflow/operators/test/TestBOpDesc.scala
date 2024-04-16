@@ -29,7 +29,7 @@ class TestBOpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new TestAOpExec(limit)
+          new TestBOpExec(limit)
         })
       )
       .withInputPorts(operatorInfo.inputPorts)

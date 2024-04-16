@@ -20,15 +20,15 @@ trait OperatorExecutor {
 
   def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike]
 
-  def processMarker(marker: State, port: Int): Iterator[State] = Iterator.empty
+  def processState(state: State, port: Int): State = State()
 
-  def onFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
+  def onInputFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))
   }
   def onFinish(port: Int): Iterator[TupleLike] = Iterator.empty
 
   def onInputStart(port: Int): Iterator[State] = Iterator.empty
 
-  def onOutputFinish(port: Int): State = State("place holder")
+  def onOutputFinish(): State = State()
 
 }

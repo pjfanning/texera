@@ -21,7 +21,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.amber.error.ErrorUtils.{mkConsoleMessage, safely}
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream, State}
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
@@ -92,17 +92,44 @@ class DataProcessor(
     }
   }
 
+  private[this] def processInputState(state: State): Unit = {
+    try {
+      val portIdentity: PortIdentity =
+        this.inputGateway.getChannel(inputManager.currentChannelId).getPortId
+      outputManager.emitMarker(
+        executor.processState(
+          state,
+          portIdentity.id
+        )
+      )
+    } catch safely {
+      case e =>
+        // forward input tuple to the user and pause DP thread
+        handleExecutorException(e)
+    }
+  }
+
   /**
     * process end of an input port with Executor.onFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processEndOfUpstream(): Unit = {
+  private[this] def processStartOfUpstream(): Unit = {
     try {
       outputManager.outputIterator.setTupleOutput(
-        executor.onFinishMultiPort(
+        executor.onInputFinishMultiPort(
           this.inputGateway.getChannel(inputManager.currentChannelId).getPortId.id
         )
       )
+    } catch safely {
+      case e =>
+        // forward input tuple to the user and pause DP thread
+        handleExecutorException(e)
+    }
+  }
+
+  private[this] def processEndOfUpstream(): Unit = {
+    try {
+      outputManager.emitMarker(executor.onOutputFinish())
     } catch safely {
       case e =>
         // forward input tuple to the user and pause DP thread
@@ -192,15 +219,15 @@ class DataProcessor(
         inputManager.initBatch(channelId, tuples)
         processInputTuple(inputManager.getNextTuple)
       case MarkerFrame(marker) =>
+        logger.error(s"unsupported marker type: $marker")
         marker match {
+          case state: State =>
+            processInputState(state)
           case StartOfUpstream() =>
             this.inputManager.getPort(portId).channels(channelId) = true
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
-              processEndOfUpstream()
-              outputManager.outputIterator.appendSpecialTupleToEnd(
-                FinalizePort(portId, input = true)
-              )
+              processStartOfUpstream()
             }
             if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
               // assuming all the output ports finalize after all input ports are finalized.
@@ -209,7 +236,6 @@ class DataProcessor(
           case EndOfUpstream() =>
             this.inputManager.getPort(portId).channels(channelId) = true
             if (inputManager.isPortCompleted(portId)) {
-              inputManager.initBatch(channelId, Array.empty)
               processEndOfUpstream()
               outputManager.outputIterator.appendSpecialTupleToEnd(
                 FinalizePort(portId, input = true)
@@ -273,5 +299,4 @@ class DataProcessor(
     // invoke a pause in-place
     asyncRPCServer.execute(PauseWorker(), SELF)
   }
-
 }
