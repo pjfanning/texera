@@ -4,7 +4,7 @@ import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.ambermessage.{DataFrame, MarkerFrame}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.EndOfUpstream
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, Marker}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 
 import scala.collection.mutable.ArrayBuffer
@@ -33,6 +33,11 @@ class NetworkOutputBuffer(
   def noMore(): Unit = {
     flush()
     dataOutputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
+  }
+
+  def sendMarker(marker: Marker): Unit = {
+    flush()
+    dataOutputPort.sendTo(to, MarkerFrame(marker))
   }
 
   def flush(): Unit = {

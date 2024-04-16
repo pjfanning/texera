@@ -27,6 +27,8 @@ trait OperatorExecutor {
   }
   def onFinish(port: Int): Iterator[TupleLike] = Iterator.empty
 
-  def onOutputFinish(port: Int): Iterator[State] = Iterator.empty
+  def onInputStart(port: Int): Iterator[State] = Iterator.empty
+
+  def onOutputFinish(port: Int): State = State("place holder")
 
 }

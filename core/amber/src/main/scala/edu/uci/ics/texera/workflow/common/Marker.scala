@@ -4,6 +4,10 @@ import edu.uci.ics.amber.engine.common.tuple.amber.SpecialTupleLike
 
 sealed trait Marker extends SpecialTupleLike
 
+final case class StartOfUpstream() extends Marker {
+  override def getFields: Array[Any] = Array("StartOfUpstream")
+}
+
 final case class EndOfUpstream() extends Marker {
   override def getFields: Array[Any] = Array("EndOfUpstream")
 }
