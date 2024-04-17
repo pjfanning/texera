@@ -4,11 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonSubTypes, JsonTypeInfo}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.common.IOperatorExecutor
-import edu.uci.ics.amber.engine.common.virtualidentity.{
-  ExecutionIdentity,
-  OperatorIdentity,
-  WorkflowIdentity
-}
+import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
 import edu.uci.ics.texera.web.OPversion
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorInfo, PropertyNameConstants}
@@ -28,12 +24,7 @@ import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
-import edu.uci.ics.texera.workflow.operators.loop.{
-  GeneratorOpDesc,
-  LoopEndOpDesc,
-  LoopStartOpDesc,
-  LoopStartV2OpDesc
-}
+import edu.uci.ics.texera.workflow.operators.loop.{GeneratorOpDesc, LoopEndOpDesc, LoopStartOpDesc, LoopStartV2OpDesc}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -42,10 +33,7 @@ import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{
-  TwitterFullArchiveSearchSourceOpDesc,
-  TwitterSearchSourceOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.FileScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
@@ -59,12 +47,7 @@ import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDifferenceOpDesc
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonLambdaFunctionOpDesc,
-  PythonTableReducerOpDesc,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonTableReducerOpDesc, PythonUDFOpDescV2}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.boxPlot.BoxPlotOpDesc
@@ -91,6 +74,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.CategoryToNumber.CategoryToNumberOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.MLP.MLPOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.SVCTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDesc
@@ -202,7 +186,8 @@ trait StateTransferFunc
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
     new Type(value = classOf[PredictionVisualizationOpDesc], name = "PredictionVisualization"),
     new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScorer"),
-    new Type(value = classOf[CategoryToNumberOpDesc], name = "CategoryToNumber")
+    new Type(value = classOf[CategoryToNumberOpDesc], name = "CategoryToNumber"),
+    new Type(value = classOf[MLPOpDesc], name = "MLP")
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
