@@ -48,7 +48,7 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
     OperatorInfo(
       "ROC Chart",
       "Visualize the ROC Curve",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODELEVALUATION_GROUP,
       inputPorts = List(
         InputPort()
       ),

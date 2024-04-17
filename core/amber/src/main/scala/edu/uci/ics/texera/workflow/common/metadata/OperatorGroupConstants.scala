@@ -16,6 +16,8 @@ object OperatorGroupConstants {
   final val VISUALIZATION_GROUP = "Visualization"
 
   final val MODELTRAINING_GROUP = "Model Training"
+  final val MODELEVALUATION_GROUP = "Model Evaluation"
+  final val MODELEAPPLY_GROUP = "Model Apply"
 
   /**
     * The order of the groups to show up in the frontend operator panel.
@@ -28,6 +30,8 @@ object OperatorGroupConstants {
     GroupInfo(CLEANING_GROUP, 3, null),
     GroupInfo(MACHINE_LEARNING_GROUP, 4, List(
       GroupInfo(MODELTRAINING_GROUP, 101, null),
+      GroupInfo(MODELEAPPLY_GROUP, 102, null),
+      GroupInfo(MODELEVALUATION_GROUP, 103, null),
     )),
     GroupInfo(JOIN_GROUP, 5, null),
     GroupInfo(SET_GROUP, 6, null),

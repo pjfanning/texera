@@ -32,10 +32,7 @@ export class OperatorMenuComponent implements OnInit {
   // a list of group names, sorted based on the groupOrder from OperatorMetadata
   public groupNamesOrdered: ReadonlyArray<string> = [];
   // a map of group name to a list of operator schema of this group
-  public operatorGroupMap = new Map<
-    string,
-    ReadonlyArray<OperatorSchema> | { name: string; operator: ReadonlyArray<OperatorSchema> }[]
-  >();
+  public operatorGroupMap = new Map<string, any>();
 
   // input value of the search input box
   public searchInputValue: string = "";
@@ -95,14 +92,6 @@ export class OperatorMenuComponent implements OnInit {
     this.autocompleteOptions = this.fuse.search(v).map(item => {
       return item.item;
     });
-  }
-
-  isArray(value: any): boolean {
-    return Array.isArray(value);
-  }
-
-  log(value: any): void {
-    console.log(value);
   }
 
   /**
