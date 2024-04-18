@@ -27,6 +27,7 @@ import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.MLP.MLPOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
@@ -176,10 +177,15 @@ trait StateTransferFunc
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
+<<<<<<< HEAD
     new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
     new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
     new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
     )
+=======
+    new Type(value = classOf[MLPOpDesc], name = "MLP")
+  )
+>>>>>>> 150c66bbd64491196ebb50a086c0c9d72fc26e55
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
 
