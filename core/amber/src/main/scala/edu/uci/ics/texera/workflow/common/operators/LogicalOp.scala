@@ -29,6 +29,9 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChar
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -172,8 +175,11 @@ trait StateTransferFunc
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
-    new Type(value = classOf[ROCChartOpDesc], name = "ROCChart")
-  )
+    new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
+    new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
+    new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
+    new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
+    )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
 
