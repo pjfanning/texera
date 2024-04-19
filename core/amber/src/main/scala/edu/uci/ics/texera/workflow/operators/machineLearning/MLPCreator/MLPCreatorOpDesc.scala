@@ -8,9 +8,7 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIden
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, HideAnnotation, UIWidget}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
-import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
-import edu.uci.ics.texera.workflow.operators.source.scan.text.TextSourceOpDesc
 import org.jooq.True
 
 
@@ -29,9 +27,15 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
 
 */
   @JsonProperty(required = true)
-  @JsonSchemaTitle("lay")
+  @JsonSchemaTitle("Hidden Layers")
   @JsonPropertyDescription("Hidden size of each linear layer and split with ',' ")
   var layersList: String = "32,256,128"
+
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Activate Function")
+  @JsonPropertyDescription("Choose the function for activation layers between linear layers ")
+  var activationFunction: ActivateFunction =ActivateFunction.Relu
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -72,7 +76,7 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
          |        self.fc = []
          |        layers = [$layersList]
          |        self.fc1 = nn.Linear(input_size, layers[0])
-         |        self.activate = nn.ReLU()
+         |        self.activate = nn.$activationFunction()
          |        for i in range(len(layers)-1):
          |            self.fc.append(nn.Linear(layers[i], layers[i+1]))
          |            if i !=len(layers)-1:

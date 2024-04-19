@@ -16,13 +16,13 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Label Column")
-  @JsonPropertyDescription("Label")
+  @JsonPropertyDescription("Specify the name of target column in your datasets")
   @AutofillAttributeName
   var label: String = ""
 
   @JsonProperty(required = true,defaultValue = "100")
   @JsonSchemaTitle("Epochs")
-  @JsonPropertyDescription("Specify number of epochs for training the model")
+  @JsonPropertyDescription("Specify the number of epochs for training the model")
   var epochs: Int = 100
 
   @JsonProperty(required = true)
@@ -130,7 +130,9 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |                    outputs = model(X_test_tensor)
          |                    loss2 = criterion(outputs, y_test_tensor)
          |                    list_test_loss.append(loss2.item())
-         |                    #print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
+         |                    gap = min(100,num_epochs/5)
+         |                    if (epoch + 1) % int(gap) == 0:
+         |                        print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
          |            _, predicted = torch.max(outputs.data, 1)
          |            accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
          |            print(f'Accuracy on test set: {accuracy:.2f}')
