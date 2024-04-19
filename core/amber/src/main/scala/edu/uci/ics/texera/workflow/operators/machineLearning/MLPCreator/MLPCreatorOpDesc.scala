@@ -5,15 +5,18 @@ import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaInt, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, HideAnnotation, UIWidget}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+import edu.uci.ics.texera.workflow.operators.source.scan.text.TextSourceOpDesc
 import org.jooq.True
 
 
 class MLPCreatorOpDesc extends PythonOperatorDescriptor {
 
+/*
   @JsonProperty(required = true)
   @JsonSchemaTitle("Layers")
   @JsonPropertyDescription("Number of linear layers")
@@ -23,6 +26,12 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
   @JsonSchemaTitle("Hidden Size")
   @JsonPropertyDescription("Hidden size of each linear layer")
   var hiddenSize: Int = Int.box(128)
+
+*/
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("lay")
+  @JsonPropertyDescription("Hidden size of each linear layer and split with ',' ")
+  var layersList: String = "32,256,128"
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
@@ -42,8 +51,8 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
   }
   override def asSource(): Boolean = true
   override def generatePythonCode(): String = {
-    val layers = Array.fill(layersNumber)(hiddenSize)
-    val listLayers = layers.mkString(",")
+    //val layers = Array.fill(layersNumber)(hiddenSize)
+    //val listLayers = layers.mkString(",")
     val finalCode =
       s"""
          |from pytexera import *
@@ -61,7 +70,7 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
          |    def __init__(self, input_size, output_size):
          |        super(MLP, self).__init__()
          |        self.fc = []
-         |        layers = [$listLayers]
+         |        layers = [$layersList]
          |        self.fc1 = nn.Linear(input_size, layers[0])
          |        self.activate = nn.ReLU()
          |        for i in range(len(layers)-1):

@@ -151,7 +151,6 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
          |                outputs = model(X_test_tensor)
          |                if $flagProb:
          |                    probability = F.softmax(outputs, dim=1)
-         |                    print(probability)
          |                    _, predicted = torch.max(outputs.data, 1)
          |                    output_numpy = probability.numpy().round(3)
          |                    cols = ["class{}".format(i) for i in range($classNumber)]

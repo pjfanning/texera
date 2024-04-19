@@ -177,15 +177,12 @@ trait StateTransferFunc
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
-<<<<<<< HEAD
     new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
     new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
     new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
-    )
-=======
     new Type(value = classOf[MLPOpDesc], name = "MLP")
   )
->>>>>>> 150c66bbd64491196ebb50a086c0c9d72fc26e55
+
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
 

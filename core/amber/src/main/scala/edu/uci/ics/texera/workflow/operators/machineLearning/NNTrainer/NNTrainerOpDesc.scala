@@ -12,16 +12,18 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttribut
 
 class NNTrainerOpDesc extends PythonOperatorDescriptor {
 
-  @JsonProperty(required = true,defaultValue = "100")
-  @JsonSchemaTitle("Epochs")
-  @JsonPropertyDescription("Specify number of epochs for training the model")
-  var epochs: Int = 100
+
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Label Column")
   @JsonPropertyDescription("Label")
   @AutofillAttributeName
   var label: String = ""
+
+  @JsonProperty(required = true,defaultValue = "100")
+  @JsonSchemaTitle("Epochs")
+  @JsonPropertyDescription("Specify number of epochs for training the model")
+  var epochs: Int = 100
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Learning Rate")
@@ -110,6 +112,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |            model_name = table["name"].values[0]
          |            model = eval(model_name)
          |            model = model(input_size, output_size)
+         |            print(model)
          |            criterion = nn.$lossFunction()
          |            optimizer = optim.$optimizer(model.parameters(), lr=$learningRate)
          |            num_epochs = $epochs
@@ -127,7 +130,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |                    outputs = model(X_test_tensor)
          |                    loss2 = criterion(outputs, y_test_tensor)
          |                    list_test_loss.append(loss2.item())
-         |                    print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
+         |                    #print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
          |            _, predicted = torch.max(outputs.data, 1)
          |            accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
          |            print(f'Accuracy on test set: {accuracy:.2f}')
