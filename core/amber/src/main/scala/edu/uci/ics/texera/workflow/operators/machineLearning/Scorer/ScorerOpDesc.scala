@@ -43,8 +43,8 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
     outputSchemaBuilder.add(inputSchema)
-    outputSchemaBuilder.removeIfExists("para")
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+    outputSchemaBuilder.removeIfExists("Parameters")
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
     outputSchemaBuilder.build
   }
 
@@ -58,7 +58,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   }
 
   override def generatePythonCode(): String = {
-    val finalcode =
+    val finalCode =
       s"""
          |from pytexera import *
          |import pandas as pd
@@ -135,9 +135,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                   else:
          |                    result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
          |
-         |            para_str_series = pd.Series(table['para'].tolist())
-         |            table = table.drop(['para'], axis=1)
-         |            table['para'] = para_str_series
+         |            para_str_series = pd.Series(table['Parameters'].tolist())
+         |            table = table.drop(['Parameters'], axis=1)
+         |            table['Parameters'] = para_str_series
          |
          |            label_show = []
          |
@@ -165,7 +165,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            yield result_df
          |
          |""".stripMargin
-    finalcode
+    finalCode
   }
 
 }

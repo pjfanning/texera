@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+  import { Component, OnInit } from "@angular/core";
 import Fuse from "fuse.js";
 import { OperatorMetadataService } from "../../../service/operator-metadata/operator-metadata.service";
 import { GroupInfo, OperatorMetadata, OperatorSchema } from "../../../types/operator-schema.interface";

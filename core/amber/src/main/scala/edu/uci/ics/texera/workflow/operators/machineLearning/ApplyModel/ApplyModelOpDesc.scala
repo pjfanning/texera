@@ -18,7 +18,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType
 
 class ApplyModelOpDesc extends PythonOperatorDescriptor {
 
-  @JsonProperty(required = true, defaultValue = "y_pred")
+  @JsonProperty(required = true, defaultValue = "y_prediction")
   @JsonSchemaTitle("Predict Column")
   @JsonPropertyDescription("Specify the name of the predicted data column")
   var yPred: String = ""
@@ -31,7 +31,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
   )
   var isProb: Boolean = false
 
-  @JsonProperty(value = "yProb", required = false, defaultValue = "y_prob")
+  @JsonProperty(value = "yProb", required = false, defaultValue = "y_probability")
   @JsonSchemaTitle("Probability Column")
   @JsonPropertyDescription("Specify the name of the predicted probability column")
   @JsonSchemaInject(
@@ -125,9 +125,9 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        y_true = []
          |      model_config = table
          |      for i in range(model_config.shape[0]):
-         |        feature = model_config["features"][i]
+         |        feature = model_config["Features"][i]
          |        x_test = dataset[feature]
-         |        model = pickle.loads(model_config["model"][i])
+         |        model = pickle.loads(model_config["Model"][i])
          |        y_predict = model.predict(x_test)
          |        y_pred.append(y_predict)
          |        if $flagGroundTruth:
@@ -142,12 +142,11 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      if $flagGroundTruth:
          |        result['$yTrue'] = y_true
          |      result_df  = pd.DataFrame(result)
-         |      result_df["model"] = model_config["model"]
-         |      result_df["para"] =  model_config["para"]
-         |      result_df["features"] = model_config["features"]
+         |      result_df["Model"] = model_config["Model"]
+         |      result_df["Parameters"] =  model_config["Parameters"]
+         |      result_df["Features"] = model_config["Features"]
          |      if "Iteration" in model_config.columns:
          |        result_df["Iteration"] = model_config["Iteration"]
-         |
          |
          |      yield result_df
          |
