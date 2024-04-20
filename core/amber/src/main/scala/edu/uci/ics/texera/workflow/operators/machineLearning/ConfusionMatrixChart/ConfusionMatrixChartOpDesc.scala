@@ -29,8 +29,8 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
   var title: String = "Confusion Matrix Chart"
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Actual Value")
-  @JsonPropertyDescription("Specify the label column")
+  @JsonSchemaTitle("Ground Truth")
+  @JsonPropertyDescription("Specify the ground truth label column")
   @AutofillAttributeName
   var actualValueColumn: String = ""
 
@@ -48,7 +48,7 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
     OperatorInfo(
       "Confusion Matrix Chart",
       "Visualize confusion matrix in a Confusion Matrix Chart",
-      OperatorGroupConstants.MODELEVALUATION_GROUP,
+      OperatorGroupConstants.MODEL_VISUALIZATION_GROUP,
       inputPorts = List(
         InputPort()
       ),

@@ -66,7 +66,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Apply Model",
       "Apply Machine learning model(scikit-learn)",
-      OperatorGroupConstants.MODELEAPPLY_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),

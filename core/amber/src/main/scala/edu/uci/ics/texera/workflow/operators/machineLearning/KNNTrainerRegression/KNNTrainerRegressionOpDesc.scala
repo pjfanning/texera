@@ -73,7 +73,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "KNN Trainer Regression",
       "Train a KNN regression",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),
