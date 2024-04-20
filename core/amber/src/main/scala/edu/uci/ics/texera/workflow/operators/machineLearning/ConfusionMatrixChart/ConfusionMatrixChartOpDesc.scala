@@ -48,7 +48,7 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
     OperatorInfo(
       "Confusion Matrix Chart",
       "Visualize confusion matrix in a Confusion Matrix Chart",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODELEVALUATION_GROUP,
       inputPorts = List(
         InputPort()
       ),

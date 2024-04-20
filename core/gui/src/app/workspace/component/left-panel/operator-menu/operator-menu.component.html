@@ -26,17 +26,26 @@
     *ngFor="let groupName of groupNamesOrdered"
     [nzHeader]="groupName"
     class="operator-submenu-title">
-    <ul
-      class="operator-submenu"
-      nz-menu
-      [nzInlineIndent]="0"
-      nzSelectable="false">
-      <li
-        *ngFor="let operatorSchema of operatorGroupMap.get(groupName)"
-        class="texera-operator-label"
-        nz-menu-item>
-        <texera-operator-label [operator]="operatorSchema"></texera-operator-label>
-      </li>
-    </ul>
+    <nz-collapse
+      [nzBordered]="false"
+      class="operator-second-title-wrap">
+      <ng-container *ngFor="let operatorSchema of operatorGroupMap.get(groupName)">
+        <nz-collapse-panel
+          *ngIf="operatorSchema.name"
+          [nzHeader]="operatorSchema.name"
+          class="operator-second-title">
+          <ng-container *ngFor="let item of operatorSchema.operator">
+            <div class="texera-operator-label">
+              <texera-operator-label [operator]="item"></texera-operator-label>
+            </div>
+          </ng-container>
+        </nz-collapse-panel>
+        <ng-container *ngIf="!operatorSchema.name">
+          <div class="texera-operator-label">
+            <texera-operator-label [operator]="operatorSchema"></texera-operator-label>
+          </div>
+        </ng-container>
+      </ng-container>
+    </nz-collapse>
   </nz-collapse-panel>
 </nz-collapse>

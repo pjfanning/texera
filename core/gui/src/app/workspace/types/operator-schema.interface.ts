@@ -47,6 +47,7 @@ export interface GroupInfo
   extends Readonly<{
     groupName: string;
     groupOrder: number;
+    children?: GroupInfo[] | null;
   }> {}
 
 export interface OperatorMetadata
