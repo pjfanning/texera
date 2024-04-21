@@ -29,7 +29,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Classification Scorer",
       "Scorer for machine learning classifier",
-      OperatorGroupConstants.MODELEVALUATION_GROUP,
+      OperatorGroupConstants.MODEL_VISUALIZATION_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )

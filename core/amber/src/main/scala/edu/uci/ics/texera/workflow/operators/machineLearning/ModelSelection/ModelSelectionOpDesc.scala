@@ -34,7 +34,7 @@ class ModelSelectionOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Model Selection",
       "Select the best models based on a chosen metric",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )

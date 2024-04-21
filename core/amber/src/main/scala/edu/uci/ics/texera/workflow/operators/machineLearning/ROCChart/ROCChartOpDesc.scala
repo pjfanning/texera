@@ -29,8 +29,8 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
   var title: String = "ROC Chart"
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Actual Value")
-  @JsonPropertyDescription("Specify the label column")
+  @JsonSchemaTitle("Ground Truth")
+  @JsonPropertyDescription("Specify the ground truth label column")
   @AutofillAttributeName
   var actualValueColumn: String = ""
 
@@ -48,7 +48,7 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
     OperatorInfo(
       "ROC Chart",
       "Visualize the ROC Curve",
-      OperatorGroupConstants.MODELEVALUATION_GROUP,
+      OperatorGroupConstants.MODEL_VISUALIZATION_GROUP,
       inputPorts = List(
         InputPort()
       ),
