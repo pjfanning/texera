@@ -5,14 +5,6 @@ import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 trait MLOperatorDescriptor extends PythonOperatorDescriptor{
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    val outputSchemaBuilder = Schema.builder()
-    if (parameterTuningFlag) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
-    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
-  }
-
   var parameterTuningFlag: Boolean
   var groundTruthAttribute: String
   var selectedFeatures: List[String]
@@ -22,6 +14,22 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
   def trainingModelCustom(): String
 
   def trainingModelOptimization(): String
+
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+    val outputSchemaBuilder = Schema.builder()
+    if (parameterTuningFlag) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build
+  }
+
+  def injectDataToOuputPort(): String = {
+    s"""
+       |      data["Model"]= model_list
+       |      data["Parameters"] = para_list
+       |      data["Features"]= features_list
+       |""".stripMargin
+  }
 
   override def generatePythonCode(): String = {
     var truthy = "False"
@@ -49,6 +57,12 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
          |    if port == 0:
          |      dataset = table
          |
+         |    if port == 1:
+         |      param = table
+         |      table = dataset
+         |      y_train = table["$groundTruthAttribute"]
+         |      X_train = table[features]
+         |
          |      if not ($truthy):
          |        ${trainingModelCustom()}
          |
@@ -60,9 +74,7 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
          |      features_list.append(features)
          |
          |      data = dict({})
-         |      data["model"]= model_list
-         |      data["para"] = para_list
-         |      data["features"]= features_list
+         |      ${injectDataToOuputPort()}
          |
          |      df = pd.DataFrame(data)
          |      if ($truthy):
