@@ -34,12 +34,10 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
-<<<<<<< HEAD
 import edu.uci.ics.texera.workflow.operators.machineLearning.Standardization.ScalerOpDesc
-=======
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.Normalization.NormalizerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
->>>>>>> 230af0d80690d562bb594ae1a8cf0c591942392a
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -189,7 +187,8 @@ trait StateTransferFunc
     new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
     new Type(value = classOf[EncoderOpDesc], name = "Encoder"),
     new Type(value = classOf[ScalerOpDesc], name = "Scaler"),
-    new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
+    new Type(value = classOf[NormalizerOpDesc], name = "Normalizer"),
+new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
     new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
     new Type(value = classOf[MLPOpDesc], name = "MLP")
   )

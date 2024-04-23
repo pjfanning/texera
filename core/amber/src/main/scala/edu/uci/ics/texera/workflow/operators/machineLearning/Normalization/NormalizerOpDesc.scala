@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.Standardization
+package edu.uci.ics.texera.workflow.operators.machineLearning.Normalization
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
@@ -7,7 +7,7 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttribute
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class ScalerOpDesc extends PythonOperatorDescriptor{
+class NormalizerOpDesc extends PythonOperatorDescriptor{
 
   @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
@@ -15,8 +15,8 @@ class ScalerOpDesc extends PythonOperatorDescriptor{
   @AutofillAttributeNameList
   var selectedColumns: List[String] = _
   override def operatorInfo: OperatorInfo = OperatorInfo(
-    "Scaler",
-    "Standardize numerical features between 0 and 1",
+    "Normalizer",
+    "Normalize numerical features ",
     OperatorGroupConstants.MACHINE_LEARNING_GROUP,
     inputPorts = List(InputPort()),
     outputPorts = List(OutputPort())
@@ -40,7 +40,7 @@ class ScalerOpDesc extends PythonOperatorDescriptor{
          |
          |import pandas as pd
          |import numpy as np
-         |from sklearn.preprocessing import StandardScaler
+         |from sklearn.preprocessing import MinMaxScaler
          |import pickle
          |
          |
@@ -53,19 +53,19 @@ class ScalerOpDesc extends PythonOperatorDescriptor{
          |
          |    result= dict()
          |    result['column_name'] = []
-         |    result['scaler'] = []
+         |    result['norm'] = []
          |
          |    for column in columns:
-         |      ss = StandardScaler()
+         |      mms = MinMaxScaler(feature_range=(0, 1))
          |      if dataset[column].isnull().any():
          |        median_value = dataset[column].median()
          |        dataset[column].fillna(median_value, inplace=True)
          |        print(f"Column {column} has missing values, fill with median value {median_value}")
          |
-         |      dataset[column] = ss.fit_transform(dataset[[column]])
-         |      binary_scaler = pickle.dumps(ss)
+         |      dataset[column] = mms.fit_transform(dataset[[column]])
+         |      binary_norm = pickle.dumps(mms)
          |      result['column_name'].append(column)
-         |      result['scaler'].append(binary_scaler)
+         |      result['norm'].append(binary_norm)
          |
          |    print(result)
          |    yield dataset
