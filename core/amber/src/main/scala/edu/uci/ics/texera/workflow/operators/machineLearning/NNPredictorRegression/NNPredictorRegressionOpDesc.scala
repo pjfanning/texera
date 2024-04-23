@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor
+package edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
@@ -9,32 +9,14 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class NNPredictorOpDesc extends PythonOperatorDescriptor {
+class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
   @JsonPropertyDescription("Specify the name of the predicted data column")
   var yPred: String = ""
 
-  @JsonProperty(defaultValue = "false")
-  @JsonSchemaTitle("Predict Probability For Each Class")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["yProb"]}""")
-  @JsonPropertyDescription(
-    "Choose to calculate the probabilities of one dataset belongs to each class"
-  )
-  var isProb: Boolean = false
 
-  @JsonProperty(value = "yProb", required = false)
-  @JsonSchemaTitle("Number of Classes")
-  @JsonPropertyDescription("Specify the name of the predicted probability column")
-  @JsonSchemaInject(
-    strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isProb"),
-      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
-    )
-  )
-  var classNumber: Int = Int.box(2)
 
   @JsonProperty(value = "is_ground_truth", defaultValue = "false")
   @JsonSchemaTitle("Ground Truth In Datasets")
@@ -57,7 +39,7 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Neural Network Predictor (Classification)",
+      "Neural Network Predictor (Regression)",
       "Make prediction with Neural Network model (PyTorch)",
       OperatorGroupConstants.MACHINE_LEARNING_GROUP,
       inputPorts = List(
@@ -83,29 +65,16 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(inputSchema)
 
-    if (isProb) {
-      outputSchemaBuilder.add(new Attribute(yPred, AttributeType.INTEGER))
-      var classList = this.generateClassStrings(classNumber)
-      for (className <- classList) {
-        outputSchemaBuilder.add(new Attribute(className, AttributeType.DOUBLE))
-      }
-    }
-    else{
-      outputSchemaBuilder.add(new Attribute(yPred, AttributeType.DOUBLE))
+    outputSchemaBuilder.add(new Attribute(yPred, AttributeType.DOUBLE))
 
-    }
     outputSchemaBuilder.build()
 
 
   }
 
-  private def generateClassStrings(classNumber: Int): List[String] = {
-    (0 until classNumber).map(i => s"class$i").toList
-  }
+
 
   override def generatePythonCode(): String = {
-    var flagProb = "False"
-    if (isProb) flagProb = "True"
     var flagGroundTruth = "False"
     if (isGroundTruth) flagGroundTruth = "True"
       val finalCode =
@@ -136,13 +105,12 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
            |                label = table["label"].values[0]
            |                X =dataset.drop([label],axis=1).values
            |                y = dataset[label].values
-           |                y_test_tensor = torch.tensor(y, dtype=torch.long)
-           |
+           |                y_test_tensor = torch.tensor(y, dtype=torch.double).reshape([y.shape[0],-1])
+           |            else:
+           |                X = dataset.values
            |            X_test_tensor = torch.tensor(X, dtype=torch.float32)
            |            input_size = X.shape[1]
            |            output_size = 1
-           |            if $flagProb:
-           |                output_size = $classNumber
            |            model_name = table["name"].values[0]
            |            model = eval(model_name)
            |            model = model(input_size, output_size)
@@ -150,29 +118,17 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
            |            model.load_state_dict(state_dict)
            |            with torch.no_grad():
            |                outputs = model(X_test_tensor)
-           |                if $flagProb:
-           |                    probability = F.softmax(outputs, dim=1)
-           |                    _, predicted = torch.max(outputs.data, 1)
-           |                    output_numpy = probability.numpy().round(3)
-           |                    cols = ["class{}".format(i) for i in range($classNumber)]
-           |                    pd_prob = pd.DataFrame(output_numpy,columns=cols)
-           |                    pd_pred = pd.DataFrame(predicted, columns=["$yPred"])
-           |                    pd_result = pd.concat([pd_prob,pd_pred,dataset],axis=1)
-           |                    if $flagGroundTruth:
-           |                        accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
-           |                        print(f'Accuracy on test set: {accuracy:.2f}')
-           |                else:
-           |                    predicted = outputs
-           |                    pd_pred = pd.DataFrame(predicted, columns=["y_pred"])
-           |                    pd_result = pd.concat([pd_pred,dataset],axis=1)
-           |                    if $flagGroundTruth:
-           |                        accuracy = r2_score(y_test_tensor.numpy(), predicted.numpy())
-           |                        print(f'R2 on test set: {accuracy:.2f}')
+           |                predicted = outputs.numpy()
+           |                pd_pred = pd.DataFrame(predicted, columns=["y_pred"])
+           |                pd_result = pd.concat([pd_pred,dataset],axis=1)
+           |                if $flagGroundTruth:
+           |                    accuracy = r2_score(y_test_tensor.numpy(), predicted)
+           |                    print(f'R2 on test set: {accuracy:.2f}')
            |
            |            yield pd_result
            |""".stripMargin
       finalCode
     }
 
-
+    
 }

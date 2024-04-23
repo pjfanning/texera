@@ -33,6 +33,8 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -180,6 +182,8 @@ trait StateTransferFunc
     new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
     new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
     new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
+    new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
+    new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
     new Type(value = classOf[MLPOpDesc], name = "MLP")
   )
 

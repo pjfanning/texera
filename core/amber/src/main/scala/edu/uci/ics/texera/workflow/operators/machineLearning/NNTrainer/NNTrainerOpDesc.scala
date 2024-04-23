@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
@@ -11,7 +11,12 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttribut
 
 
 class NNTrainerOpDesc extends PythonOperatorDescriptor {
-
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Regression")
+  @JsonPropertyDescription(
+    "Choose to solve a regression task"
+  )
+  var isRgression: Boolean = false
 
 
   @JsonProperty(required = true)
@@ -49,7 +54,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
       inputPorts = List(
         InputPort(
           PortIdentity(0),
-          displayName = "datasets",
+          displayName = "dataset",
           allowMultiLinks = true
         ),
         InputPort(
@@ -74,6 +79,8 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
 
   }
   override def generatePythonCode(): String = {
+    var flagRegression = "False"
+    if (isRgression) flagRegression= "True"
 
     val finalCode =
       s"""
@@ -85,6 +92,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |import torch.optim as optim
          |from pytexera import *
          |from sklearn.metrics import accuracy_score
+         |from sklearn.metrics import r2_score
          |global dataset
          |from pytexera.Model_repo import *
          |import plotly.graph_objects as go
@@ -101,18 +109,23 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |        if port == 1:
          |            label = "$label"
          |            X =dataset.drop([label],axis=1).values
-         |            y = dataset[label].values
+         |            y = dataset[label].values.reshape([dataset.shape[0],-1])
          |            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
          |            X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
-         |            y_train_tensor = torch.tensor(y_train, dtype=torch.long)
          |            X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-         |            y_test_tensor = torch.tensor(y_test, dtype=torch.long)
          |            input_size = X_train.shape[1]
-         |            output_size = len(set(y_train))
+         |            if $flagRegression:
+         |              y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
+         |              y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
+         |
+         |              output_size = 1
+         |            else:
+         |              y_test_tensor = torch.tensor(y_test, dtype=torch.long)
+         |              y_train_tensor = torch.tensor(y_train, dtype=torch.long)
+         |              output_size = len(set(y_train))
          |            model_name = table["name"].values[0]
          |            model = eval(model_name)
          |            model = model(input_size, output_size)
-         |            print(model)
          |            criterion = nn.$lossFunction()
          |            optimizer = optim.$optimizer(model.parameters(), lr=$learningRate)
          |            num_epochs = $epochs
@@ -133,9 +146,17 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |                    gap = min(100,num_epochs/5)
          |                    if (epoch + 1) % int(gap) == 0:
          |                        print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
-         |            _, predicted = torch.max(outputs.data, 1)
-         |            accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
-         |            print(f'Accuracy on test set: {accuracy:.2f}')
+         |            if $flagRegression:
+         |                predicted = outputs
+         |                accuracy = r2_score(y_test_tensor.numpy(), predicted.numpy())
+         |                print(f'R2 on test set: {accuracy:.2f}')
+         |
+         |
+         |            else:
+         |                _, predicted = torch.max(outputs.data, 1)
+         |                accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
+         |                print(f'Accuracy on test set: {accuracy:.2f}')
+         |
          |            weights = model.state_dict()
          |            fig = go.Figure()
          |            z = list(range(len(list_train_loss)))

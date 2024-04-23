@@ -27,15 +27,15 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
 
 */
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Hidden Layers")
+  @JsonSchemaTitle("Hidden Sizes for Layers")
   @JsonPropertyDescription("Hidden size of each linear layer and split with ',' ")
   var layersList: String = "32,256,128"
 
 
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Activate Function")
+  @JsonSchemaTitle("Activation Function")
   @JsonPropertyDescription("Choose the function for activation layers between linear layers ")
-  var activationFunction: ActivateFunction =ActivateFunction.Relu
+  var activationFunction: ActivationFunction =ActivationFunction.ReLU
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(

@@ -2,16 +2,16 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum ActivateFunction {
+public enum ActivationFunction {
 
-    Relu("Relu"),
+    ReLU("ReLU"),
     Tanh("Tanh"),
 
     Sigmoid("Sigmoid")
     ;
 
     private final String name;
-    ActivateFunction(String name) {
+    ActivationFunction(String name) {
         this.name = name;
     }
 
