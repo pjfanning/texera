@@ -5,9 +5,9 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchema
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.MLOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptor
 
-class KNNTrainerOpDesc extends MLOperatorDescriptor{
+class KNNTrainerOpDesc extends SklearnMLOperatorDescriptor{
   @JsonProperty(defaultValue = "false", required = false)
   @JsonSchemaTitle("Using Hyper Parameter Training")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
@@ -72,32 +72,30 @@ class KNNTrainerOpDesc extends MLOperatorDescriptor{
       outputPorts = List(OutputPort())
     )
 
-  override def importPackage(): String = {
-    s"""
-       |from sklearn.neighbors import KNeighborsClassifier
-       |""".stripMargin
+   def addImportMap(): Map[String, String] = {
+     val importMap = Map("sklearn.neighbors" -> "KNeighborsClassifier","sklearn.svm" -> "SVC")
+     importMap
+   }
+
+  def addParamMap(): Map[String, Array[Any]] = {
+    val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"str"))
+//    val paramMap = Map("k_list" -> Array(k,loopK,"str"))
+    paramMap
   }
 
-  override def trainingModelCustom(): String = {
+  override def trainingModel(): String = {
     s"""
-       |        k = $k
-       |        knn = KNeighborsClassifier(n_neighbors=k)
+       |      for i in range(k_list.shape[0]):
+       |        k_value = int(k_list[i])
+       |        knn = KNeighborsClassifier(n_neighbors=int(k_list[i]))
        |        knn.fit(X_train, y_train)
-       |        para_str = "K = '{}'".format(k)
+       |
+       |        para_str = "K = '{}'".format(k_value)
        |        model_str = pickle.dumps(knn)
+       |        model_list.append(model_str)
+       |        para_list.append(para_str)
+       |        features_list.append(features)
        |""".stripMargin
   }
 
-  override def trainingModelOptimization(): String = {
-    s"""
-       |        param = param.head(1)
-       |        k = param["$loopK"].values
-       |        for i in k:
-       |          k = int(i)
-       |          knn = KNeighborsClassifier(n_neighbors=k)
-       |          knn.fit(X_train, y_train)
-       |          para_str = "K = '{}'".format(k)
-       |          model_str = pickle.dumps(knn)
-       |""".stripMargin
-  }
 }

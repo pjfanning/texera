@@ -30,6 +30,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{K
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression.KNNTrainerRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.SVCTrainerOpDescOld
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
@@ -172,6 +173,7 @@ trait StateTransferFunc
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
     new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
+    new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
     new Type(value = classOf[KNNTrainerRegressionOpDesc], name = "KNNTrainerRegression"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),

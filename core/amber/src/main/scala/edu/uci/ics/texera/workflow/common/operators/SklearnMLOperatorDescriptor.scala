@@ -4,16 +4,70 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchema
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-trait MLOperatorDescriptor extends PythonOperatorDescriptor{
+trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   var parameterTuningFlag: Boolean
   var groundTruthAttribute: String
   var selectedFeatures: List[String]
 
-  def importPackage(): String
+  def addImportMap():Map[String, String]
+  def addParamMap():Map[String, Array[Any]]
 
-  def trainingModelCustom(): String
+  def importPackage(): String ={
+    val importMap = addImportMap()
+    val importLines = importMap.map { case (key, value) =>
+      s"from $key import $value"
+    }.mkString("\n")
 
-  def trainingModelOptimization(): String
+    s"""
+       |$importLines
+       |""".stripMargin
+  }
+
+  def paramFromCustom():String = {
+    val paramMap = addParamMap()
+    val paramLines = paramMap.map { case (key, array) =>
+      val listName = array(0)
+      val attributeName = array(1)
+      s"""
+         |        $listName = np.array([$attributeName])
+         |"""
+    }.mkString
+
+    s"""
+       |$paramLines
+       |"""
+  }
+
+  def paramFromTuning(): String= {
+    val paramMap = addParamMap()
+    val paramLines = paramMap.map { case (key, array) =>
+      val listName = array(0)
+      val attributeName = array(2)
+      s"""
+         |        $listName = table[\"$attributeName\"].values
+         |"""
+    }.mkString
+
+    s"""
+       |$paramLines
+       |"""
+  }
+  def trainingModel(): String = {
+    val paramMap = addParamMap()
+    val importMap = addImportMap()
+    s"""
+       |      for i in range(k_list.shape[0]):
+       |        k_value = int(k_list[i])
+       |        model = KNeighborsClassifier(n_neighbors=int(k_list[i]))
+       |        model.fit(X_train, y_train)
+       |
+       |        para_str = "K = '{}'".format(k_value)
+       |        model_str = pickle.dumps(model)
+       |        model_list.append(model_str)
+       |        para_list.append(para_str)
+       |        features_list.append(features)
+       |""".stripMargin
+  }
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
@@ -25,6 +79,7 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
 
   def injectDataToOuputPort(): String = {
     s"""
+       |      data = dict({})
        |      data["Model"]= model_list
        |      data["Parameters"] = para_list
        |      data["Features"]= features_list
@@ -43,7 +98,6 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
          |import numpy as np
          |import pickle
          |${importPackage()}
-         |
          |class ProcessTableOperator(UDFTableOperator):
          |
          |  @overrides
@@ -58,30 +112,26 @@ trait MLOperatorDescriptor extends PythonOperatorDescriptor{
          |      dataset = table
          |
          |    if port == 1:
-         |      param = table
-         |      table = dataset
-         |      y_train = table["$groundTruthAttribute"]
-         |      X_train = table[features]
+         |      parameter_table = table
+         |      y_train = dataset["$groundTruthAttribute"]
+         |      X_train = dataset[features]
          |
          |      if not ($truthy):
-         |        ${trainingModelCustom()}
+         |        ${paramFromCustom()}
          |
          |      if ($truthy):
-         |        ${trainingModelOptimization()}
+         |        ${paramFromTuning()}
          |
-         |      model_list.append(model_str)
-         |      para_list.append(para_str)
-         |      features_list.append(features)
+         |      ${trainingModel()}
          |
-         |      data = dict({})
          |      ${injectDataToOuputPort()}
          |
          |      df = pd.DataFrame(data)
          |      if ($truthy):
-         |        df["Iteration"]= param["Iteration"]
+         |        df["Iteration"]= parameter_table["Iteration"]
          |      yield df
-         |
          |""".stripMargin
     finalCode
   }
+
 }

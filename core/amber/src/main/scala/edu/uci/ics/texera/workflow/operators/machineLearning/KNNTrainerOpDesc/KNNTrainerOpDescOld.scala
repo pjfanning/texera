@@ -117,11 +117,12 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |
          |      X_train = dataset[features]
          |      y_train = dataset["$label"]
-         |      print("k_list.shape[0]",k_list.shape[0])
+         |
          |      for i in range(k_list.shape[0]):
-         |        k_value = int(k_list[i])
+         |        k_value = k_list[i]
          |        knn = KNeighborsClassifier(n_neighbors=k_value)
          |        knn.fit(X_train, y_train)
+         |
          |        para_str = "K = '{}'".format(k_value)
          |        model_str = pickle.dumps(knn)
          |        model_list.append(model_str)
