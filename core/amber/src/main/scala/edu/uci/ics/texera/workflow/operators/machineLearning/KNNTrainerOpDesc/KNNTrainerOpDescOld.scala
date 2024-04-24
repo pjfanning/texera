@@ -62,7 +62,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNN Trainer",
+      "KNN Trainer old",
       "Train a KNN classifier",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
@@ -109,32 +109,24 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |      dataset = table
          |
          |    if port == 1:
-         |      param = table
-         |      table = dataset
-         |      y_train = table["$label"]
-         |      X_train = table[features]
          |      if not ($truthy):
-         |        k = $k
-         |        knn = KNeighborsClassifier(n_neighbors=k)
+         |        k_list = np.array([$k])
+         |
+         |      if ($truthy):
+         |        k_list = table["$loopK"].values
+         |
+         |      X_train = dataset[features]
+         |      y_train = dataset["$label"]
+         |      print("k_list.shape[0]",k_list.shape[0])
+         |      for i in range(k_list.shape[0]):
+         |        k_value = int(k_list[i])
+         |        knn = KNeighborsClassifier(n_neighbors=k_value)
          |        knn.fit(X_train, y_train)
-         |        para_str = "K = '{}'".format(k)
+         |        para_str = "K = '{}'".format(k_value)
          |        model_str = pickle.dumps(knn)
          |        model_list.append(model_str)
          |        para_list.append(para_str)
          |        features_list.append(features)
-         |
-         |      if ($truthy):
-         |        param = param.head(1)
-         |        k = param["$loopK"].values
-         |        for i in k:
-         |          k = int(i)
-         |          knn = KNeighborsClassifier(n_neighbors=k)
-         |          knn.fit(X_train, y_train)
-         |          para_str = "K = '{}'".format(k)
-         |          model_str = pickle.dumps(knn)
-         |          model_list.append(model_str)
-         |          para_list.append(para_str)
-         |          features_list.append(features)
          |
          |      data = dict({})
          |      data["Model"]= model_list
@@ -143,7 +135,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |
          |      df = pd.DataFrame(data)
          |      if ($truthy):
-         |        df["Iteration"]= param["Iteration"]
+         |        df["Iteration"]= table["Iteration"]
          |      yield df
          |
          |""".stripMargin
