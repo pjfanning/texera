@@ -73,29 +73,12 @@ class KNNTrainerOpDesc extends SklearnMLOperatorDescriptor{
     )
 
    def addImportMap(): Map[String, String] = {
-     val importMap = Map("sklearn.neighbors" -> "KNeighborsClassifier","sklearn.svm" -> "SVC")
+     val importMap = Map("sklearn.neighbors" -> "KNeighborsClassifier")
      importMap
    }
 
   def addParamMap(): Map[String, Array[Any]] = {
-    val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"str"))
-//    val paramMap = Map("k_list" -> Array(k,loopK,"str"))
+    val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
     paramMap
   }
-
-  override def trainingModel(): String = {
-    s"""
-       |      for i in range(k_list.shape[0]):
-       |        k_value = int(k_list[i])
-       |        knn = KNeighborsClassifier(n_neighbors=int(k_list[i]))
-       |        knn.fit(X_train, y_train)
-       |
-       |        para_str = "K = '{}'".format(k_value)
-       |        model_str = pickle.dumps(knn)
-       |        model_list.append(model_str)
-       |        para_list.append(para_str)
-       |        features_list.append(features)
-       |""".stripMargin
-  }
-
 }

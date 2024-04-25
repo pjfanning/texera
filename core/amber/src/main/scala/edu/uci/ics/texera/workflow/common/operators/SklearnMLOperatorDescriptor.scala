@@ -9,11 +9,18 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   var groundTruthAttribute: String
   var selectedFeatures: List[String]
 
+  var importMap= Map[String, String]()
+  var paramMap =Map[String, Array[Any]]()
+
   def addImportMap():Map[String, String]
   def addParamMap():Map[String, Array[Any]]
 
+  def getOpParam(): Unit = {
+    this.paramMap = addParamMap()
+    this.importMap = addImportMap()
+  }
+
   def importPackage(): String ={
-    val importMap = addImportMap()
     val importLines = importMap.map { case (key, value) =>
       s"from $key import $value"
     }.mkString("\n")
@@ -24,12 +31,12 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   }
 
   def paramFromCustom():String = {
-    val paramMap = addParamMap()
     val paramLines = paramMap.map { case (key, array) =>
       val listName = array(0)
       val attributeName = array(1)
+      val attributeType = array(3)
       s"""
-         |        $listName = np.array([$attributeName])
+         |        $listName = np.array([\"$attributeName\"])
          |"""
     }.mkString
 
@@ -39,7 +46,6 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   }
 
   def paramFromTuning(): String= {
-    val paramMap = addParamMap()
     val paramLines = paramMap.map { case (key, array) =>
       val listName = array(0)
       val attributeName = array(2)
@@ -53,21 +59,45 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
        |"""
   }
   def trainingModel(): String = {
-    val paramMap = addParamMap()
-    val importMap = addImportMap()
+    val listName = paramMap.head._2(0)
+    val trainingName = importMap.head._2
     s"""
-       |      for i in range(k_list.shape[0]):
-       |        k_value = int(k_list[i])
-       |        model = KNeighborsClassifier(n_neighbors=int(k_list[i]))
+       |      for i in range($listName.shape[0]):
+       |        #model = KNeighborsClassifier(n_neighbors=k_value)
+       |        model = ${trainingName}(${combineTrainingParam()})
        |        model.fit(X_train, y_train)
        |
-       |        para_str = "K = '{}'".format(k_value)
+       |        para_str = "${combineParamKeyStr()}".format(${combineParamValueStr()})
        |        model_str = pickle.dumps(model)
        |        model_list.append(model_str)
        |        para_list.append(para_str)
        |        features_list.append(features)
        |""".stripMargin
   }
+
+  def combineTrainingParam():String={
+    val paramLines = paramMap.map { case (key, array) =>
+      val listName = array(0)
+      val listType = array(3)
+      s"$key=$listType($listName[i])"
+    }.mkString(",")
+    paramLines
+  }
+
+  def combineParamKeyStr():String={
+    val paramLines = paramMap.map { case (key, array) =>
+      s"$key = '{}'"
+    }.mkString(",")
+    paramLines
+  }
+  def combineParamValueStr():String={
+    val paramLines = paramMap.map { case (key, array) =>
+      val listName = array(0)
+      s"$listName[i]"
+    }.mkString(",")
+    paramLines
+  }
+
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
@@ -87,6 +117,7 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   }
 
   override def generatePythonCode(): String = {
+    getOpParam()
     var truthy = "False"
     if (parameterTuningFlag) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
