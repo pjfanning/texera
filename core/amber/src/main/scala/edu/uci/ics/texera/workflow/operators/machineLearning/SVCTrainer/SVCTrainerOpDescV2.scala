@@ -5,9 +5,9 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaBool, JsonSchemaIn
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV2
 
-class SVCTrainerOpDesc extends SklearnMLOperatorDescriptor{
+class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get Parameters From Workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernal","loopGamma","loopCoef"]}""")
@@ -137,7 +137,7 @@ class SVCTrainerOpDesc extends SklearnMLOperatorDescriptor{
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVC Trainer",
+      "SVC Trainer V2",
       "Train a SVM classifier",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(

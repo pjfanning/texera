@@ -5,9 +5,9 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchema
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV1
 
-class KNNTrainerOpDesc extends SklearnMLOperatorDescriptor{
+class KNNTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
   @JsonProperty(defaultValue = "false", required = false)
   @JsonSchemaTitle("Using Hyper Parameter Training")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
@@ -53,7 +53,7 @@ class KNNTrainerOpDesc extends SklearnMLOperatorDescriptor{
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNN Trainer",
+      "KNN Trainer V1",
       "Train a KNN classifier",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
@@ -72,13 +72,37 @@ class KNNTrainerOpDesc extends SklearnMLOperatorDescriptor{
       outputPorts = List(OutputPort())
     )
 
-   def addImportMap(): Map[String, String] = {
-     val importMap = Map("sklearn.neighbors" -> "KNeighborsClassifier")
-     importMap
-   }
-
-  def addParamMap(): Map[String, Array[Any]] = {
-    val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
-    paramMap
+  override def importPackage(): String = {
+    s"""
+       |from sklearn.neighbors import KNeighborsClassifier
+       |""".stripMargin
   }
+
+  override def paramFromCustom(): String = {
+    s"""
+       |        k_list = np.array([$k])
+       |""".stripMargin
+  }
+
+  override def paramFromTuning():String = {
+    s"""
+       |        k_list = table["$loopK"].values
+       |""".stripMargin
+  }
+
+  override def trainingModel(): String = {
+    s"""
+       |      for i in range(k_list.shape[0]):
+       |        k_value = k_list[i]
+       |        knn = KNeighborsClassifier(n_neighbors=k_value)
+       |        knn.fit(X_train, y_train)
+       |
+       |        para_str = "K = '{}'".format(k_value)
+       |        model_str = pickle.dumps(knn)
+       |        model_list.append(model_str)
+       |        para_list.append(para_str)
+       |        features_list.append(features)
+       |""".stripMargin
+  }
+
 }

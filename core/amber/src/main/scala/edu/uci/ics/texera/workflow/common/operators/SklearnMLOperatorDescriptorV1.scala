@@ -4,100 +4,18 @@ import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchema
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
+trait SklearnMLOperatorDescriptorV1 extends PythonOperatorDescriptor{
   var parameterTuningFlag: Boolean
   var groundTruthAttribute: String
   var selectedFeatures: List[String]
 
-  var importMap= Map[String, String]()
-  var paramMap =Map[String, Array[Any]]()
 
-  def addImportMap():Map[String, String]
-  def addParamMap():Map[String, Array[Any]]
+  def importPackage(): String
 
-  def getOpParam(): Unit = {
-    this.paramMap = addParamMap()
-    this.importMap = addImportMap()
-  }
+  def paramFromCustom():String
 
-  def importPackage(): String ={
-    val importLines = importMap.map { case (key, value) =>
-      s"from $key import $value"
-    }.mkString("\n")
-
-    s"""
-       |$importLines
-       |""".stripMargin
-  }
-
-  def paramFromCustom():String = {
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val attributeName = array(1)
-      val attributeType = array(3)
-      s"""
-         |        $listName = np.array([\"$attributeName\"])
-         |"""
-    }.mkString
-
-    s"""
-       |$paramLines
-       |"""
-  }
-
-  def paramFromTuning(): String= {
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val attributeName = array(2)
-      s"""
-         |        $listName = table[\"$attributeName\"].values
-         |"""
-    }.mkString
-
-    s"""
-       |$paramLines
-       |"""
-  }
-  def trainingModel(): String = {
-    val listName = paramMap.head._2(0)
-    val trainingName = importMap.head._2
-    s"""
-       |      for i in range($listName.shape[0]):
-       |        #model = KNeighborsClassifier(n_neighbors=k_value)
-       |        model = ${trainingName}(${combineTrainingParam()})
-       |        model.fit(X_train, y_train)
-       |
-       |        para_str = "${combineParamKeyStr()}".format(${combineParamValueStr()})
-       |        model_str = pickle.dumps(model)
-       |        model_list.append(model_str)
-       |        para_list.append(para_str)
-       |        features_list.append(features)
-       |""".stripMargin
-  }
-
-  def combineTrainingParam():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val listType = array(3)
-      s"$key=$listType($listName[i])"
-    }.mkString(",")
-    paramLines
-  }
-
-  def combineParamKeyStr():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      s"$key = '{}'"
-    }.mkString(",")
-    paramLines
-  }
-  def combineParamValueStr():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      s"$listName[i]"
-    }.mkString(",")
-    paramLines
-  }
-
+  def paramFromTuning(): String
+  def trainingModel(): String
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
@@ -117,7 +35,6 @@ trait SklearnMLOperatorDescriptor extends PythonOperatorDescriptor{
   }
 
   override def generatePythonCode(): String = {
-    getOpParam()
     var truthy = "False"
     if (parameterTuningFlag) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")

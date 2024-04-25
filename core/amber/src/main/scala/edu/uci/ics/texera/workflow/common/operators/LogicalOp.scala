@@ -26,11 +26,11 @@ import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDesc, KNNTrainerOpDescOld}
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2}
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression.KNNTrainerRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDesc, SVCTrainerOpDescOld}
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2}
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
@@ -171,9 +171,11 @@ trait StateTransferFunc
     new Type(value = classOf[TablesPlotOpDesc], name = "TablesPlot"),
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
-    new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[KNNTrainerOpDescV1], name = "KNNTrainer"),
+    new Type(value = classOf[KNNTrainerOpDescV2], name = "KNNTrainer"),
     new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
-    new Type(value = classOf[SVCTrainerOpDesc], name = "SVCTrainer"),
+    new Type(value = classOf[SVCTrainerOpDescV1], name = "SVCTrainer"),
+    new Type(value = classOf[SVCTrainerOpDescV2], name = "SVCTrainer"),
     new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
     new Type(value = classOf[KNNTrainerRegressionOpDesc], name = "KNNTrainerRegression"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
