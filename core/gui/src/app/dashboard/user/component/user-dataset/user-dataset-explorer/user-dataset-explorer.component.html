@@ -157,6 +157,14 @@
         (click)="onClickOpenVersionCreator()">
         + Version
       </button>
+      <button 
+      nz-button="" 
+      nztype="primary" 
+      *ngif="userHasWriteAccess()" 
+      class="rounded-button" 
+      (click)="onClickCreateWorkflowFromDataset()">
+        Create Workflow
+      </button>
     </div>
   </nz-sider>
 </nz-layout>

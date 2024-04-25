@@ -10,6 +10,15 @@ import {
 import { DatasetVersion } from "../../../../../common/type/dataset";
 import { switchMap } from "rxjs/operators";
 import { NotificationService } from "../../../../../common/service/notification/notification.service";
+import { Injectable } from "@angular/core";
+import { UserWorkflowService } from "../../../service/user-workflow/user-workflow.service";
+import { EnvironmentService } from "../../../service/user-environment/environment.service";
+import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
+import { Subscription } from "rxjs";
+
+@Injectable({
+  providedIn: "root"
+})
 
 @UntilDestroy()
 @Component({
@@ -41,7 +50,11 @@ export class UserDatasetExplorerComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private datasetService: DatasetService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private userWorkflowService: UserWorkflowService,
+    private EnvironmentService: EnvironmentService,
+    private WorkflowPersistService: WorkflowPersistService,
+    private workflowSubscription : Subscription
   ) {}
 
   // item for control the resizeable sider
@@ -222,6 +235,19 @@ export class UserDatasetExplorerComponent implements OnInit {
 
   onClickHideRightBar() {
     this.isRightBarCollapsed = !this.isRightBarCollapsed;
+  }
+
+  onClickCreateWorkflowFromDataset(): void {
+    this.userWorkflowService.onClickCreateNewWorkflowFromDashboard().subscribe({
+      next: wid => {
+        if(wid !== undefined && this.did !== undefined) { 
+          // get the workflow's eid using its wid
+          this.WorkflowPersistService.retrieveWorkflowEnvironment(wid);
+          // associate the workflow's eid with the did
+          this.EnvironmentService.addDatasetToEnvironment(wid, this.did);
+        }
+      }
+    });
   }
 
   onVersionSelected(version: DatasetVersion): void {
