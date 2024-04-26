@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Input, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
 import { NzModalService } from "ng-zorro-antd/modal";
-import { firstValueFrom, of } from "rxjs";
+import { firstValueFrom, observable, of } from "rxjs";
 import {
   DEFAULT_WORKFLOW_NAME,
   WorkflowPersistService,
@@ -20,6 +20,8 @@ import { SortMethod } from "../../type/sort-method";
 import { isDefined } from "../../../../common/util/predicate";
 import { UserProjectService } from "../../service/user-project/user-project.service";
 import { map, mergeMap, tap } from "rxjs/operators";
+import { Observable } from "rxjs";
+import { observe } from '@ngx-formly/core/lib/utils';
 
 /**
  * UserWorkflowService facilitates creating a new workflow from the dataset dashboard
@@ -71,45 +73,40 @@ export class UserWorkflowService {
         private searchService: SearchService
     ) {}
 
-    public onClickCreateNewWorkflowFromDashboard(): void {
-        const emptyWorkflowContent: WorkflowContent = {
-          operators: [],
-          commentBoxes: [],
-          groups: [],
-          links: [],
-          operatorPositions: {},
-        };
-        let localPid = this.pid;
-        this.workflowPersistService
-          .createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME)
-          .pipe(
-            tap(createdWorkflow => {
-              if (!createdWorkflow.workflow.wid) {
-                throw new Error("Workflow creation failed.");
-              }
-            }),
-            mergeMap(createdWorkflow => {
-              // Check if localPid is defined; if so, add the workflow to the project
-              if (localPid) {
-                return this.userProjectService.addWorkflowToProject(localPid, createdWorkflow.workflow.wid!).pipe(
-                  // Regardless of the project addition outcome, pass the wid downstream
-                  map(() => createdWorkflow.workflow.wid)
-                );
-              } else {
-                // If there's no localPid, skip adding to the project and directly pass the wid downstream
-                return of(createdWorkflow.workflow.wid);
-              }
-            }),
-            untilDestroyed(this)
-          )
-          .subscribe({
-            next: (wid: number | undefined) => {
-              // Use the wid here for navigation
-              this.router.navigate([this.ROUTER_WORKFLOW_BASE_URL, wid]).then(null);
-            },
-            error: (err: unknown) => this.notificationService.error("Workflow creation failed"),
-          });
-      }
+    public onClickCreateNewWorkflowFromDashboard(): Observable<number | undefined> {
+      const emptyWorkflowContent: WorkflowContent = {
+        operators: [],
+        commentBoxes: [],
+        groups: [],
+        links: [],
+        operatorPositions: {},
+      };
+      let localPid = this.pid;
+  
+      return this.workflowPersistService
+        .createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME)
+        .pipe(
+          tap(createdWorkflow => {
+            if (!createdWorkflow.workflow.wid) {
+              throw new Error("Workflow creation failed.");
+            }
+          }),
+          mergeMap(createdWorkflow => {
+            // Check if localPid is defined; if so, add the workflow to the project
+            if (localPid) {
+              return this.userProjectService.addWorkflowToProject(localPid, createdWorkflow.workflow.wid!).pipe(
+                // Regardless of the project addition outcome, pass the wid downstream
+                map(() => createdWorkflow.workflow.wid)
+              );
+            } else {
+              // If there's no localPid, skip adding to the project and directly pass the wid downstream
+              return of(createdWorkflow.workflow.wid);
+            }
+          }),
+          untilDestroyed(this)
+        );
+  }
+  
 
     /**
    * Searches workflows with keywords and filters given in the masterFilterList.

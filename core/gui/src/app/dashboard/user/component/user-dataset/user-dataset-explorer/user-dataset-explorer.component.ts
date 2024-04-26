@@ -54,7 +54,6 @@ export class UserDatasetExplorerComponent implements OnInit {
     private userWorkflowService: UserWorkflowService,
     private EnvironmentService: EnvironmentService,
     private WorkflowPersistService: WorkflowPersistService,
-    private workflowSubscription : Subscription
   ) {}
 
   // item for control the resizeable sider
@@ -238,6 +237,8 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   onClickCreateWorkflowFromDataset(): void {
+    // FOR DEBUGGING
+    console.log("calling onClickCreateWorkflowFromDataset()") 
     this.userWorkflowService.onClickCreateNewWorkflowFromDashboard().subscribe({
       next: wid => {
         if(wid !== undefined && this.did !== undefined) { 
