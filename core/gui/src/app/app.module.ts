@@ -51,7 +51,6 @@ import { OperatorLabelComponent } from "./workspace/component/left-panel/operato
 import { OperatorMenuComponent } from "./workspace/component/left-panel/operator-menu/operator-menu.component";
 import { PropertyEditorComponent } from "./workspace/component/property-editor/property-editor.component";
 import { TypeCastingDisplayComponent } from "./workspace/component/property-editor/typecasting-display/type-casting-display.component";
-import { ResultPanelToggleComponent } from "./workspace/component/result-panel-toggle/result-panel-toggle.component";
 import { ResultPanelComponent } from "./workspace/component/result-panel/result-panel.component";
 import { VisualizationFrameContentComponent } from "./workspace/component/visualization-panel-content/visualization-frame-content.component";
 import { VisualizationFrameComponent } from "./workspace/component/result-panel/visualization-frame/visualization-frame.component";
@@ -134,6 +133,7 @@ import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { TreeModule } from "@ali-hm/angular-tree-component";
 import { EnvironmentComponent } from "./workspace/component/left-panel/environment/environment.component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
+import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
 
 registerLocaleData(en);
 
@@ -150,6 +150,7 @@ registerLocaleData(en);
     TimeTravelComponent,
     WorkflowEditorComponent,
     ResultPanelComponent,
+    ResultExportationComponent,
     OperatorLabelComponent,
     DashboardComponent,
     AdminUserComponent,
@@ -163,7 +164,6 @@ registerLocaleData(en);
     RowModalComponent,
     OperatorLabelComponent,
     MiniMapComponent,
-    ResultPanelToggleComponent,
     ArrayTypeComponent,
     ObjectTypeComponent,
     PresetWrapperComponent,
