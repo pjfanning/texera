@@ -38,6 +38,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Standardization.Sca
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Normalization.NormalizerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.huggingFace.HuggingFaceSentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -193,7 +194,11 @@ trait StateTransferFunc
 new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
     new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
 
-    new Type(value = classOf[MLPOpDesc], name = "MLP")
+    new Type(value = classOf[MLPOpDesc], name = "MLP"),
+    new Type(
+      value = classOf[HuggingFaceSentimentAnalysisOpDesc],
+      name = "HuggingFaceSentimentAnalysis"
+    )
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {
