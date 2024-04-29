@@ -86,6 +86,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatte
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrixChart.ScatterMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -124,6 +125,7 @@ trait StateTransferFunc
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
     new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
     new Type(value = classOf[ProjectionOpDesc], name = "Projection"),
+    new Type(value = classOf[DropOpDesc], name = "Drop"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
     new Type(value = classOf[KeywordSearchOpDesc], name = "KeywordSearch"),
     new Type(value = classOf[AggregateOpDesc], name = "Aggregate"),
@@ -190,6 +192,7 @@ trait StateTransferFunc
     new Type(value = classOf[NormalizerOpDesc], name = "Normalizer"),
 new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
     new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
+
     new Type(value = classOf[MLPOpDesc], name = "MLP")
   )
 )
