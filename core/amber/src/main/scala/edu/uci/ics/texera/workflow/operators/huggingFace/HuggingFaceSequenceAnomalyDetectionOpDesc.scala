@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.metadata.annotations.AutofillAttribute
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
 
-class HuggingFaceTimeSeriesAnomalyDetectionOpDesc extends PythonOperatorDescriptor {
+class HuggingFaceSequenceAnomalyDetectionOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(value = "Feature Attribute", required = true)
   @JsonPropertyDescription("column to detect the anomalies")
   @AutofillAttributeName
@@ -73,8 +73,8 @@ class HuggingFaceTimeSeriesAnomalyDetectionOpDesc extends PythonOperatorDescript
        |""".stripMargin
   }
   override def operatorInfo: OperatorInfo = OperatorInfo(
-    "Hugging Face Time Series Anomaly Detection",
-    "Detect anomalies in a sequence of time series data using a pre-trained model from Hugging Face",
+    "Hugging Face Sequence Data Anomaly Detection",
+    "Detect anomalies in sequence data using a pre-trained model from Hugging Face",
     OperatorGroupConstants.MACHINE_LEARNING_GROUP,
     inputPorts = List(InputPort()),
     outputPorts = List(OutputPort()),

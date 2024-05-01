@@ -24,7 +24,7 @@ import edu.uci.ics.texera.workflow.operators.intersect.IntersectOpDesc
 import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
-import edu.uci.ics.texera.workflow.operators.huggingFace.{HuggingFaceSentimentAnalysisOpDesc, HuggingFaceTimeSeriesAnomalyDetectionOpDesc}
+import edu.uci.ics.texera.workflow.operators.huggingFace.{HuggingFaceSentimentAnalysisOpDesc, HuggingFaceSequenceAnomalyDetectionOpDesc}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -169,8 +169,8 @@ trait StateTransferFunc
       name = "HuggingFaceSentimentAnalysis"
     ),
     new Type(
-      value = classOf[HuggingFaceTimeSeriesAnomalyDetectionOpDesc],
-      name = "HuggingFaceTimeSeriesAnomalyDetection"
+      value = classOf[HuggingFaceSequenceAnomalyDetectionOpDesc],
+      name = "HuggingFaceSequenceAnomalyDetection"
     )
   )
 )
