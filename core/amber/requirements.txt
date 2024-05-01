@@ -26,3 +26,5 @@ bidict==0.22.0
 cached_property
 psutil
 transformers
+huggingface_hub
+tensorflow==2.13.0
