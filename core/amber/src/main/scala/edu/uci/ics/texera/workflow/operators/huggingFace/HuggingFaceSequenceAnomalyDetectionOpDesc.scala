@@ -72,14 +72,15 @@ class HuggingFaceSequenceAnomalyDetectionOpDesc extends PythonOperatorDescriptor
        |
        |""".stripMargin
   }
-  override def operatorInfo: OperatorInfo = OperatorInfo(
-    "Hugging Face Sequence Data Anomaly Detection",
-    "Detect anomalies in sequence data using a pre-trained model from Hugging Face",
-    OperatorGroupConstants.MACHINE_LEARNING_GROUP,
-    inputPorts = List(InputPort()),
-    outputPorts = List(OutputPort()),
-    supportReconfiguration = true
-  )
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
+      "Hugging Face Sequence Data Anomaly Detection",
+      "Detect anomalies in sequence data using a pre-trained model from Hugging Face",
+      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      inputPorts = List(InputPort()),
+      outputPorts = List(OutputPort()),
+      supportReconfiguration = true
+    )
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     if (featureAttribute == null)
