@@ -2,14 +2,14 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum KernalFunction {
+public enum KernelFunction {
     rbf("rbf"),
     linear ("linear"),
     poly ("poly"),
     sigmoid ("sigmoid");
 
     private final String name;
-    KernalFunction(String name) {
+    KernelFunction(String name) {
         this.name = name;
     }
 

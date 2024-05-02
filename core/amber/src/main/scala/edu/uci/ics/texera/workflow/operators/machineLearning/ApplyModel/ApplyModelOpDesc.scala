@@ -148,6 +148,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |      if "Iteration" in model_config.columns:
          |        result_df["Iteration"] = model_config["Iteration"]
          |
+         |
          |      yield result_df
          |
          |""".stripMargin

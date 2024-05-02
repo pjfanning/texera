@@ -109,7 +109,7 @@ class SVCTrainerOpDescOld extends PythonOperatorDescriptor {
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
     )
   )
-  var kernal: KernalFunction = KernalFunction.linear
+  var kernal: KernelFunction = KernelFunction.linear
 
   @JsonProperty(value = "Gamma For SVC", defaultValue = "0.1")
   @JsonSchemaTitle("Gamma For SVC")
@@ -174,7 +174,7 @@ class SVCTrainerOpDescOld extends PythonOperatorDescriptor {
 
   def buildParaStr():String = {
     s"""
-       |        params = {'kernal_value': kernal_value, 'c_value': c_value, 'gamma_value': gamma_value,'coef_value':coef_value}
+       |        params = {'kernal_value': kernal_list[i], 'c_value': c_list[i], 'gamma_value': gamma_list[i],'coef_value':coef_list[i]}
        |        if kernal_value == 'linear':
        |          del params['gamma_value']
        |        if kernal_value in ['linear', 'sigmoid']:
@@ -228,7 +228,7 @@ class SVCTrainerOpDescOld extends PythonOperatorDescriptor {
          |
          |      for i in range(c_list.shape[0]):
          |        c_value = c_list[i]
-         |        svc = SVC(kernel=kernal_list[i],C=float(c_value),gamma=gamma_list[i],coef0=float(coef_list[i]),probability=True)
+         |        svc = SVC(kernel=kernal_list[i],C=float(c_list[i]),gamma=gamma_list[i],coef0=float(coef_list[i]),probability=True)
          |        svc.fit(X_train, y_train)
          |
          |        ${buildParaStr()}

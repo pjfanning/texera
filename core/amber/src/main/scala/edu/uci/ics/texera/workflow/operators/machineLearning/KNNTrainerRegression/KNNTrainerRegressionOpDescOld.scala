@@ -1,16 +1,25 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
-  @JsonProperty(defaultValue = "false", required = false)
-  @JsonSchemaTitle("Using HyperParameter Training")
+class KNNTrainerRegressionOpDescOld extends PythonOperatorDescriptor {
+  @JsonProperty(defaultValue = "false")
+  @JsonSchemaTitle("Using optimized K")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
   @JsonPropertyDescription("Tune the parameter")
   var isLoop: Boolean = false
@@ -33,7 +42,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
   )
   var k: Int = Int.box(1)
 
-  @JsonProperty(required = false, value = "loopK")
+  @JsonProperty(value = "loopK", required = false)
   @JsonSchemaTitle("Optimise k from loop")
   @JsonPropertyDescription("Specify which attribute indicates the value of K")
   @JsonSchemaInject(
@@ -62,8 +71,8 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNN Trainer old",
-      "Train a KNN classifier",
+      "KNN Trainer Regression",
+      "Train a KNN regression",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
         InputPort(
@@ -91,7 +100,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |
          |import pandas as pd
          |import numpy as np
-         |from sklearn.neighbors import KNeighborsClassifier
+         |from sklearn.neighbors import KNeighborsRegressor
          |import pickle
          |
          |
@@ -115,7 +124,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |      X_train = table[features]
          |      if not ($truthy):
          |        k = $k
-         |        knn = KNeighborsClassifier(n_neighbors=k)
+         |        knn = KNeighborsRegressor(n_neighbors=k)
          |        knn.fit(X_train, y_train)
          |        para_str = "K = '{}'".format(k)
          |        model_str = pickle.dumps(knn)
@@ -128,7 +137,7 @@ class KNNTrainerOpDescOld extends PythonOperatorDescriptor {
          |        k = param["$loopK"].values
          |        for i in k:
          |          k = int(i)
-         |          knn = KNeighborsClassifier(n_neighbors=k)
+         |          knn = KNeighborsRegressor(n_neighbors=k)
          |          knn.fit(X_train, y_train)
          |          para_str = "K = '{}'".format(k)
          |          model_str = pickle.dumps(knn)

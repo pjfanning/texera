@@ -9,8 +9,8 @@ trait SklearnMLOperatorDescriptorV2 extends PythonOperatorDescriptor{
   var groundTruthAttribute: String
   var selectedFeatures: List[String]
 
-  var importMap= Map[String, String]()
-  var paramMap =Map[String, Array[Any]]()
+  private var importMap= Map[String, String]()
+  private var paramMap =Map[String, Array[Any]]()
 
   def addImportMap():Map[String, String]
   def addParamMap():Map[String, Array[Any]]

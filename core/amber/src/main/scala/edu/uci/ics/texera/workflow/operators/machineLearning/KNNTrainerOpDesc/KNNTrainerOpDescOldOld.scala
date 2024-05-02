@@ -1,25 +1,16 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{
-  JsonSchemaInject,
-  JsonSchemaString,
-  JsonSchemaTitle
-}
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{
-  AutofillAttributeName,
-  AutofillAttributeNameList,
-  AutofillAttributeNameOnPort1,
-  HideAnnotation
-}
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
-  @JsonProperty(defaultValue = "false")
-  @JsonSchemaTitle("Using optimized K")
+class KNNTrainerOpDescOldOld extends PythonOperatorDescriptor {
+  @JsonProperty(defaultValue = "false", required = false)
+  @JsonSchemaTitle("Using HyperParameter Training")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
   @JsonPropertyDescription("Tune the parameter")
   var isLoop: Boolean = false
@@ -42,7 +33,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
   )
   var k: Int = Int.box(1)
 
-  @JsonProperty(value = "loopK", required = false)
+  @JsonProperty(required = false, value = "loopK")
   @JsonSchemaTitle("Optimise k from loop")
   @JsonPropertyDescription("Specify which attribute indicates the value of K")
   @JsonSchemaInject(
@@ -71,8 +62,8 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNN Trainer Regression",
-      "Train a KNN regression",
+      "KNN Trainer old",
+      "Train a KNN classifier",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
         InputPort(
@@ -100,7 +91,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
          |
          |import pandas as pd
          |import numpy as np
-         |from sklearn.neighbors import KNeighborsRegressor
+         |from sklearn.neighbors import KNeighborsClassifier
          |import pickle
          |
          |
@@ -118,32 +109,25 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
          |      dataset = table
          |
          |    if port == 1:
-         |      param = table
-         |      table = dataset
-         |      y_train = table["$label"]
-         |      X_train = table[features]
          |      if not ($truthy):
-         |        k = $k
-         |        knn = KNeighborsRegressor(n_neighbors=k)
+         |        k_list = np.array([$k])
+         |
+         |      if ($truthy):
+         |        k_list = table["$loopK"].values
+         |
+         |      X_train = dataset[features]
+         |      y_train = dataset["$label"]
+         |
+         |      for i in range(k_list.shape[0]):
+         |        k_value = k_list[i]
+         |        knn = KNeighborsClassifier(n_neighbors=k_value)
          |        knn.fit(X_train, y_train)
-         |        para_str = "K = '{}'".format(k)
+         |
+         |        para_str = "K = '{}'".format(k_value)
          |        model_str = pickle.dumps(knn)
          |        model_list.append(model_str)
          |        para_list.append(para_str)
          |        features_list.append(features)
-         |
-         |      if ($truthy):
-         |        param = param.head(1)
-         |        k = param["$loopK"].values
-         |        for i in k:
-         |          k = int(i)
-         |          knn = KNeighborsRegressor(n_neighbors=k)
-         |          knn.fit(X_train, y_train)
-         |          para_str = "K = '{}'".format(k)
-         |          model_str = pickle.dumps(knn)
-         |          model_list.append(model_str)
-         |          para_list.append(para_str)
-         |          features_list.append(features)
          |
          |      data = dict({})
          |      data["Model"]= model_list
@@ -152,7 +136,7 @@ class KNNTrainerRegressionOpDesc extends PythonOperatorDescriptor {
          |
          |      df = pd.DataFrame(data)
          |      if ($truthy):
-         |        df["Iteration"]= param["Iteration"]
+         |        df["Iteration"]= table["Iteration"]
          |      yield df
          |
          |""".stripMargin

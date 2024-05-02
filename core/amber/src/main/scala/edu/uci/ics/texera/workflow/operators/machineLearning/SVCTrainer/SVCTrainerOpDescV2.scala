@@ -10,7 +10,7 @@ import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV
 class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get Parameters From Workflow")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernal","loopGamma","loopCoef"]}""")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernel","loopGamma","loopCoef"]}""")
   @JsonPropertyDescription("Tune the parameter")
   override var parameterTuningFlag: Boolean = false
 
@@ -51,9 +51,9 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @AutofillAttributeNameOnPort1
   var loopC: String = ""
 
-  @JsonProperty(value = "loopKernal", required = false)
-  @JsonSchemaTitle("Optimise kernal From Loop")
-  @JsonPropertyDescription("Specify which attribute is 'kernal'")
+  @JsonProperty(value = "loopKernel", required = false)
+  @JsonSchemaTitle("Optimise kernel From Loop")
+  @JsonPropertyDescription("Specify which attribute is 'kernel'")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
@@ -62,7 +62,7 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
     )
   )
   @AutofillAttributeNameOnPort1
-  var loopKernal: String = ""
+  var loopKernel: String = ""
 
   @JsonProperty(value = "loopGamma", required = false)
   @JsonSchemaTitle("Optimise Gamma From Loop")
@@ -91,8 +91,8 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   var loopCoef: String = ""
 
   @JsonProperty(required = false)
-  @JsonSchemaTitle("Kernal Function")
-  @JsonPropertyDescription("Multiple kernal functions")
+  @JsonSchemaTitle("Kernel Function")
+  @JsonPropertyDescription("Multiple Kernel functions")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
@@ -100,14 +100,14 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
     )
   )
-  var kernal: KernalFunction = KernalFunction.linear
+  var kernel: KernelFunction = KernelFunction.linear
 
   @JsonProperty(value = "Gamma For SVC", defaultValue = "0.1")
   @JsonSchemaTitle("Gamma For SVC")
   @JsonPropertyDescription("Gamma for SVC")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernel"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$")
     ),
@@ -122,7 +122,7 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @JsonPropertyDescription("Coef for SVC")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernel"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
       new JsonSchemaString(
         path = HideAnnotation.hideExpectedValue,
@@ -164,7 +164,7 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
     var paramMap = Map(
       "C" -> Array("c_list",c,loopC,"float"),
     )
-    paramMap += ("kernel" -> Array("kernal_list",kernal,loopKernal,"str"))
+    paramMap += ("kernel" -> Array("kernel_list",kernel,loopKernel,"str"))
     paramMap += ("gamma" -> Array("gamma_list",gamma,loopGamma,"float"))
     paramMap += ("coef0" -> Array("coef_list",coef,loopCoef,"float"))
     paramMap
