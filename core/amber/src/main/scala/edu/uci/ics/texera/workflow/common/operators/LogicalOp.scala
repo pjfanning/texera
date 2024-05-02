@@ -26,8 +26,7 @@ import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2}
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerRegression.KNNTrainerRegressionOpDescOld
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2, KNNTrainerRegressionOpDescOld}
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.{KNNTrainerRegressionOpDescV2, ModelSelectionOpDesc}
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2}
