@@ -82,21 +82,15 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
     val outputSchemaBuilder = Schema.builder()
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(inputSchema)
+    outputSchemaBuilder.add(new Attribute(yPred, AttributeType.INTEGER))
 
     if (isProb) {
-      outputSchemaBuilder.add(new Attribute(yPred, AttributeType.INTEGER))
       var classList = this.generateClassStrings(classNumber)
       for (className <- classList) {
         outputSchemaBuilder.add(new Attribute(className, AttributeType.DOUBLE))
       }
     }
-    else{
-      outputSchemaBuilder.add(new Attribute(yPred, AttributeType.DOUBLE))
-
-    }
     outputSchemaBuilder.build()
-
-
   }
 
   private def generateClassStrings(classNumber: Int): List[String] = {
@@ -110,21 +104,15 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
     if (isGroundTruth) flagGroundTruth = "True"
       val finalCode =
         s"""
-           |import pandas as pd
-           |from sklearn.model_selection import train_test_split
-           |import torch.nn.functional as F
-           |import torch
-           |import torch.nn as nn
-           |import torch.optim as optim
            |from pytexera import *
+           |import pandas as pd
+           |import torch
+           |import pickle
+           |import torch.nn.functional as F
            |from sklearn.metrics import accuracy_score
            |from sklearn.metrics import r2_score
-           |import os
-           |global dataset
-           |from pytexera.Model_repo import *
            |
            |class ProcessTableOperator(UDFTableOperator):
-           |
            |     @overrides
            |     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
            |        global dataset
@@ -137,33 +125,33 @@ class NNPredictorOpDesc extends PythonOperatorDescriptor {
            |                X =dataset.drop([label],axis=1).values
            |                y = dataset[label].values
            |                y_test_tensor = torch.tensor(y, dtype=torch.long)
-           |
+           |            else:
+           |                X = dataset.values
            |            X_test_tensor = torch.tensor(X, dtype=torch.float32)
-           |            input_size = X.shape[1]
-           |            output_size = 1
-           |            if $flagProb:
-           |                output_size = $classNumber
-           |            model_name = table["name"].values[0]
-           |            model = eval(model_name)
-           |            model = model(input_size, output_size)
+           |
+           |            model = pickle.loads(table["model"].values[0])
            |            state_dict = table["weights"].values[0]
            |            model.load_state_dict(state_dict)
+           |
            |            with torch.no_grad():
            |                outputs = model(X_test_tensor)
            |                if $flagProb:
            |                    probability = F.softmax(outputs, dim=1)
-           |                    _, predicted = torch.max(outputs.data, 1)
            |                    output_numpy = probability.numpy().round(3)
+           |                    predicted = outputs
+           |                    predicted = torch.argmax(predicted, dim=1)
+           |
            |                    cols = ["class{}".format(i) for i in range($classNumber)]
-           |                    pd_prob = pd.DataFrame(output_numpy,columns=cols)
+           |                    pd_prob = pd.DataFrame(output_numpy, columns=cols)
            |                    pd_pred = pd.DataFrame(predicted, columns=["$yPred"])
-           |                    pd_result = pd.concat([pd_prob,pd_pred,dataset],axis=1)
+           |                    pd_result = pd.concat([pd_prob, pd_pred, dataset],axis=1)
            |                    if $flagGroundTruth:
            |                        accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
            |                        print(f'Accuracy on test set: {accuracy:.2f}')
            |                else:
            |                    predicted = outputs
-           |                    pd_pred = pd.DataFrame(predicted, columns=["y_pred"])
+           |                    predicted = torch.argmax(predicted, dim=1)
+           |                    pd_pred = pd.DataFrame(predicted.numpy(), columns=["y_pred"])
            |                    pd_result = pd.concat([pd_pred,dataset],axis=1)
            |                    if $flagGroundTruth:
            |                        accuracy = r2_score(y_test_tensor.numpy(), predicted.numpy())

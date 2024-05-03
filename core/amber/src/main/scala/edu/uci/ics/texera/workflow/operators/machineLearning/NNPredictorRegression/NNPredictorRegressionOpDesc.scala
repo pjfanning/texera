@@ -16,8 +16,6 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
   @JsonPropertyDescription("Specify the name of the predicted data column")
   var yPred: String = ""
 
-
-
   @JsonProperty(value = "is_ground_truth", defaultValue = "false")
   @JsonSchemaTitle("Ground Truth In Datasets")
   @JsonSchemaInject(json = """{"toggleHidden" : ["yTrue"]}""")
@@ -60,18 +58,12 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Preconditions.checkArgument(schemas.length == 2)
-
     val outputSchemaBuilder = Schema.builder()
     val inputSchema = schemas(0)
     outputSchemaBuilder.add(inputSchema)
-
     outputSchemaBuilder.add(new Attribute(yPred, AttributeType.DOUBLE))
-
     outputSchemaBuilder.build()
-
-
   }
-
 
 
   override def generatePythonCode(): String = {
@@ -79,18 +71,11 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
     if (isGroundTruth) flagGroundTruth = "True"
       val finalCode =
         s"""
-           |import pandas as pd
-           |from sklearn.model_selection import train_test_split
-           |import torch.nn.functional as F
-           |import torch
-           |import torch.nn as nn
-           |import torch.optim as optim
            |from pytexera import *
-           |from sklearn.metrics import accuracy_score
+           |import pandas as pd
+           |import pickle
+           |import torch
            |from sklearn.metrics import r2_score
-           |import os
-           |global dataset
-           |from pytexera.Model_repo import *
            |
            |class ProcessTableOperator(UDFTableOperator):
            |
@@ -109,13 +94,11 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
            |            else:
            |                X = dataset.values
            |            X_test_tensor = torch.tensor(X, dtype=torch.float32)
-           |            input_size = X.shape[1]
-           |            output_size = 1
-           |            model_name = table["name"].values[0]
-           |            model = eval(model_name)
-           |            model = model(input_size, output_size)
+           |
+           |            model = pickle.loads(table["model"].values[0])
            |            state_dict = table["weights"].values[0]
            |            model.load_state_dict(state_dict)
+           |
            |            with torch.no_grad():
            |                outputs = model(X_test_tensor)
            |                predicted = outputs.numpy()

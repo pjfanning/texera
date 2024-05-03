@@ -68,38 +68,35 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
     )
 
 
-
-
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
-    outputSchemaBuilder.add(new Attribute("name", AttributeType.STRING))
+    outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("label", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("weights", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("html", AttributeType.STRING)).build()
-
   }
+
   override def generatePythonCode(): String = {
     var flagRegression = "False"
     if (isRgression) flagRegression= "True"
 
     val finalCode =
       s"""
-         |
+         |from pytexera import *
          |import pandas as pd
-         |from sklearn.model_selection import train_test_split
+         |import numpy as np
+         |import pickle
          |import torch
          |import torch.nn as nn
          |import torch.optim as optim
-         |from pytexera import *
          |from sklearn.metrics import accuracy_score
          |from sklearn.metrics import r2_score
-         |global dataset
-         |from pytexera.Model_repo import *
+         |from sklearn.model_selection import train_test_split
          |import plotly.graph_objects as go
          |import plotly.io
          |
-         |class ProcessTableOperator(UDFTableOperator):
          |
+         |class ProcessTableOperator(UDFTableOperator):
          |     @overrides
          |     def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |        global dataset
@@ -108,29 +105,42 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |
          |        if port == 1:
          |            label = "$label"
-         |            X =dataset.drop([label],axis=1).values
+         |            X = dataset.drop([label],axis=1).values
          |            y = dataset[label].values.reshape([dataset.shape[0],-1])
          |            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
          |            X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
          |            X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
-         |            input_size = X_train.shape[1]
+         |            output_size = 0
+         |
          |            if $flagRegression:
          |              y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
          |              y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
-         |
          |              output_size = 1
          |            else:
          |              y_test_tensor = torch.tensor(y_test, dtype=torch.long)
+         |              y_test_tensor = y_test_tensor.squeeze()
          |              y_train_tensor = torch.tensor(y_train, dtype=torch.long)
-         |              output_size = len(set(y_train))
-         |            model_name = table["name"].values[0]
-         |            model = eval(model_name)
-         |            model = model(input_size, output_size)
+         |              y_train_tensor = y_train_tensor.squeeze()
+         |              unique_labels = np.unique(y_train)
+         |              output_size = len(unique_labels)
+         |
+         |            print('output_size:', output_size)
+         |            model = pickle.loads(table["model"].values[0])
+         |
+         |            # Adjust the last layer based on the output size
+         |            in_features = model[-1].in_features  # Adjust 'layers' based on how your model structure is defined
+         |            new_output_size = output_size
+         |            model[-1] = nn.Linear(in_features, new_output_size)
+         |
+         |            print(model)
+         |            # Prepare for training
          |            criterion = nn.$lossFunction()
-         |            optimizer = optim.$optimizer(model.parameters(), lr=$learningRate)
+         |            optimizer = optim.$optimizer(model.parameters(), lr = $learningRate)
          |            num_epochs = $epochs
          |            list_train_loss=[]
          |            list_test_loss=[]
+         |
+         |            # Train the model
          |            for epoch in range(num_epochs):
          |                outputs = model(X_train_tensor)
          |                loss = criterion(outputs, y_train_tensor)
@@ -146,25 +156,28 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |                    gap = min(100,num_epochs/5)
          |                    if (epoch + 1) % int(gap) == 0:
          |                        print(f'Epoch [{epoch + 1}/{num_epochs}], train_Loss: {loss.item():.4f},test_Loss: {loss2.item():.4f}')
+         |
          |            if $flagRegression:
          |                predicted = outputs
          |                accuracy = r2_score(y_test_tensor.numpy(), predicted.numpy())
          |                print(f'R2 on test set: {accuracy:.2f}')
-         |
-         |
          |            else:
          |                _, predicted = torch.max(outputs.data, 1)
          |                accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
          |                print(f'Accuracy on test set: {accuracy:.2f}')
          |
          |            weights = model.state_dict()
+         |
+         |            # Plot the learning curve
          |            fig = go.Figure()
          |            z = list(range(len(list_train_loss)))
          |            fig.add_trace(go.Scatter(x=z, y=list_train_loss, mode='lines', name='Training Loss'))
          |            fig.add_trace(go.Scatter(x=z, y=list_test_loss, mode='lines', name='Testing Loss'))
          |            fig.update_layout(title='Learning Curve',xaxis_title='Epoch',yaxis_title='Loss')
          |            html = plotly.io.to_html(fig, include_plotlyjs="cdn", auto_play=False)
-         |            table ={"weights":weights,"html":html,"name":model_name,"label":label}
+         |
+         |            serialized_model = pickle.dumps(model)
+         |            table ={"weights":weights,"html":html,"model":serialized_model,"label":label}
          |            yield table
          |
          |""".stripMargin
