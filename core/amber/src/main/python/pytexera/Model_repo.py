@@ -4,9 +4,9 @@ class MLP(nn.Module):
     def __init__(self, input_size, output_size):
         super(MLP, self).__init__()
         self.fc = []
-        layers = [256,128]
+        layers = [32,128,64]
         self.fc1 = nn.Linear(input_size, layers[0])
-        self.activate = nn.ReLU()
+        self.activate = nn.Sigmoid()
         for i in range(len(layers)-1):
             self.fc.append(nn.Linear(layers[i], layers[i+1]))
             if i !=len(layers)-1:
