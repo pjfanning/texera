@@ -97,6 +97,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |from pytexera.Model_repo import *
          |import plotly.graph_objects as go
          |import plotly.io
+         |import numpy as np
          |
          |class ProcessTableOperator(UDFTableOperator):
          |
@@ -109,7 +110,10 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |        if port == 1:
          |            label = "$label"
          |            X =dataset.drop([label],axis=1).values
-         |            y = dataset[label].values.reshape([dataset.shape[0],-1])
+         |            if $flagRegression:
+         |              y = dataset[label].values.reshape([dataset.shape[0],-1])
+         |            else:
+         |              y = dataset[label].values
          |            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
          |            X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
          |            X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
@@ -120,9 +124,12 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |
          |              output_size = 1
          |            else:
+         |              unique_values, counts = np.unique(y_train, return_counts=True)
+         |              output_size = len(unique_values)
+         |              print(unique_values)
          |              y_test_tensor = torch.tensor(y_test, dtype=torch.long)
          |              y_train_tensor = torch.tensor(y_train, dtype=torch.long)
-         |              output_size = len(set(y_train))
+         |
          |            model_name = table["name"].values[0]
          |            model = eval(model_name)
          |            model = model(input_size, output_size)

@@ -25,16 +25,18 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
   @JsonPropertyDescription("Hidden size of each linear layer")
   var hiddenSize: Int = Int.box(128)
 
+   @JsonProperty(required = true)
+  @JsonSchemaTitle("Scorer Functions")
+  @JsonPropertyDescription("Select multiple score functions")
+  var scorers: List[Int] = List()
+
 */
   @JsonProperty(required = true)
   @JsonSchemaTitle("Hidden Sizes for Layers")
   @JsonPropertyDescription("Hidden size of each linear layer and split with ',' ")
   var layersList: String = "32,256,128"
 
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Scorer Functions")
-  @JsonPropertyDescription("Select multiple score functions")
-  var scorers: List[Int] = List()
+
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Activation Function")
