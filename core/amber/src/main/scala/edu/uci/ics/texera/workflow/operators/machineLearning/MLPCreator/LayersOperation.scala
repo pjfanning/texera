@@ -8,9 +8,4 @@ class LayersOperation {
   @JsonSchemaTitle("Hidden Layer Neurons")
   @JsonPropertyDescription("Hidden size of each layer")
   var size: Int = 0
-
-//  @JsonIgnore
-//  def getSize(): String = {
-//    size.toString
-//  }
 }
