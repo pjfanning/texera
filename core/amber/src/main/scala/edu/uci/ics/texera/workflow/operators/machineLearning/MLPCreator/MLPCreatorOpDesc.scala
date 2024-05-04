@@ -13,15 +13,10 @@ import org.jooq.True
 
 
 class MLPCreatorOpDesc extends PythonOperatorDescriptor {
-//  @JsonProperty(required = false)
-//  @JsonSchemaTitle("Layer")
-//  @JsonPropertyDescription("Select multiple score functions")
-//  var layers: List[LayersOperation] = List()
-
   @JsonProperty(required = true)
-  @JsonSchemaTitle("Hidden Sizes for Layers")
-  @JsonPropertyDescription("Hidden size of each linear layer and split with ',' ")
-  var layersList: String = "32,256,128"
+  @JsonSchemaTitle("Neurons of Each Layer")
+  @JsonPropertyDescription("Specify the number of neurons in each layer")
+  var neuronsOfLayer: List[LayersOperation] = List()
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Activation Function")
@@ -43,9 +38,14 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
   }
   override def asSource(): Boolean = true
 
-//  private def getLayers(): Unit= {
-//    layers.map(layer => layer.size.toString).mkString("'", "','", "'")
-//  }
+  private def getLayers(): String = {
+    val result = new StringBuilder
+    for (layer <- neuronsOfLayer) {
+      result.append(layer.size.toString).append(",")
+    }
+    result.deleteCharAt(result.length - 1)
+    result.toString()
+  }
   override def generatePythonCode(): String = {
     val finalCode =
       s"""
@@ -61,7 +61,7 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
          |    @overrides
          |    def produce(self) -> Iterator[Union[TupleLike, TableLike, None]]:
          |        result = dict()
-         |        model = MLP(out_features=1, num_cells=[$layersList], activation_class=nn.$activationFunction)
+         |        model = MLP(out_features=1, num_cells=[${getLayers()}], activation_class=nn.$activationFunction)
          |        print(model)
          |        serialized_model = pickle.dumps(model)
          |
