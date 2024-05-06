@@ -15,9 +15,6 @@ import { UserWorkflowService } from "../../../service/user-workflow/user-workflo
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 
-@Injectable({
-  providedIn: "root",
-})
 @UntilDestroy()
 @Component({
   templateUrl: "./user-dataset-explorer.component.html",
