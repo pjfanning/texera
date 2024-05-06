@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable } from "@angular/core";
 import { Input, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
 import { NzModalService } from "ng-zorro-antd/modal";
@@ -13,102 +13,98 @@ import { untilDestroyed } from "@ngneat/until-destroy";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { WorkflowContent } from "../../../../common/type/workflow";
 import { FileSaverService } from "../../service/user-file/file-saver.service";
-import { FiltersComponent } from '../../component/filters/filters.component';
-import { SearchResultsComponent } from '../../component/search-results/search-results.component';
+import { FiltersComponent } from "../../component/filters/filters.component";
+import { SearchResultsComponent } from "../../component/search-results/search-results.component";
 import { SearchService } from "../../service/search.service";
 import { SortMethod } from "../../type/sort-method";
 import { isDefined } from "../../../../common/util/predicate";
 import { UserProjectService } from "../../service/user-project/user-project.service";
 import { map, mergeMap, tap } from "rxjs/operators";
 import { Observable } from "rxjs";
-import { observe } from '@ngx-formly/core/lib/utils';
+import { observe } from "@ngx-formly/core/lib/utils";
 
 /**
  * UserWorkflowService facilitates creating a new workflow from the dataset dashboard
  */
 
-@Injectable ({
-    providedIn: 'root'
-    })
-
+@Injectable({
+  providedIn: "root",
+})
 export class UserWorkflowService {
-    public ROUTER_WORKFLOW_BASE_URL = "workflow";
-    private _searchResultsComponent?: SearchResultsComponent;
-    @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
-        if (this._searchResultsComponent) {
-        return this._searchResultsComponent;
-        }
-        throw new Error("Property cannot be accessed before it is initialized.");
+  public ROUTER_WORKFLOW_BASE_URL = "workflow";
+  private _searchResultsComponent?: SearchResultsComponent;
+  @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
+    if (this._searchResultsComponent) {
+      return this._searchResultsComponent;
     }
-    set searchResultsComponent(value: SearchResultsComponent) {
-        this._searchResultsComponent = value;
-    }
-    private _filters?: FiltersComponent;
-    @ViewChild(FiltersComponent) get filters(): FiltersComponent {
-        if (this._filters) {
-        return this._filters;
-        }
-        throw new Error("Property cannot be accessed before it is initialized.");
-    }
-    set filters(value: FiltersComponent) {
-        value.masterFilterListChange.pipe(untilDestroyed(this)).subscribe({ next: () => this.search() });
-        this._filters = value;
-    }
-    private masterFilterList: ReadonlyArray<string> | null = null;
-
-    // receive input from parent components (UserProjectSection), if any
-    @Input() public pid?: number = undefined;
-    @Input() public accessLevel?: string = undefined;
-    public sortMethod = SortMethod.EditTimeDesc;
-    lastSortMethod: SortMethod | null = null;
-
-    constructor(
-        private userService: UserService,
-        private workflowPersistService: WorkflowPersistService,
-        private userProjectService: UserProjectService,
-        private notificationService: NotificationService,
-        private modalService: NzModalService,
-        private router: Router,
-        private fileSaverService: FileSaverService,
-        private searchService: SearchService
-    ) {}
-
-    public onClickCreateNewWorkflowFromDashboard(): Observable<number | undefined> {
-      const emptyWorkflowContent: WorkflowContent = {
-        operators: [],
-        commentBoxes: [],
-        groups: [],
-        links: [],
-        operatorPositions: {},
-      };
-      let localPid = this.pid;
-  
-      return this.workflowPersistService
-        .createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME)
-        .pipe(
-          tap(createdWorkflow => {
-            if (!createdWorkflow.workflow.wid) {
-              throw new Error("Workflow creation failed.");
-            }
-          }),
-          mergeMap(createdWorkflow => {
-            // Check if localPid is defined; if so, add the workflow to the project
-            if (localPid) {
-              return this.userProjectService.addWorkflowToProject(localPid, createdWorkflow.workflow.wid!).pipe(
-                // Regardless of the project addition outcome, pass the wid downstream
-                map(() => createdWorkflow.workflow.wid)
-              );
-            } else {
-              // If there's no localPid, skip adding to the project and directly pass the wid downstream
-              return of(createdWorkflow.workflow.wid);
-            }
-          }),
-          //untilDestroyed(this)
-        );
+    throw new Error("Property cannot be accessed before it is initialized.");
   }
-  
+  set searchResultsComponent(value: SearchResultsComponent) {
+    this._searchResultsComponent = value;
+  }
+  private _filters?: FiltersComponent;
+  @ViewChild(FiltersComponent) get filters(): FiltersComponent {
+    if (this._filters) {
+      return this._filters;
+    }
+    throw new Error("Property cannot be accessed before it is initialized.");
+  }
+  set filters(value: FiltersComponent) {
+    value.masterFilterListChange.pipe(untilDestroyed(this)).subscribe({ next: () => this.search() });
+    this._filters = value;
+  }
+  private masterFilterList: ReadonlyArray<string> | null = null;
 
-    /**
+  // receive input from parent components (UserProjectSection), if any
+  @Input() public pid?: number = undefined;
+  @Input() public accessLevel?: string = undefined;
+  public sortMethod = SortMethod.EditTimeDesc;
+  lastSortMethod: SortMethod | null = null;
+
+  constructor(
+    private userService: UserService,
+    private workflowPersistService: WorkflowPersistService,
+    private userProjectService: UserProjectService,
+    private notificationService: NotificationService,
+    private modalService: NzModalService,
+    private router: Router,
+    private fileSaverService: FileSaverService,
+    private searchService: SearchService
+  ) {}
+
+  public onClickCreateNewWorkflowFromDashboard(): Observable<number | undefined> {
+    const emptyWorkflowContent: WorkflowContent = {
+      operators: [],
+      commentBoxes: [],
+      groups: [],
+      links: [],
+      operatorPositions: {},
+    };
+    let localPid = this.pid;
+
+    return this.workflowPersistService.createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME).pipe(
+      tap(createdWorkflow => {
+        if (!createdWorkflow.workflow.wid) {
+          throw new Error("Workflow creation failed.");
+        }
+      }),
+      mergeMap(createdWorkflow => {
+        // Check if localPid is defined; if so, add the workflow to the project
+        if (localPid) {
+          return this.userProjectService.addWorkflowToProject(localPid, createdWorkflow.workflow.wid!).pipe(
+            // Regardless of the project addition outcome, pass the wid downstream
+            map(() => createdWorkflow.workflow.wid)
+          );
+        } else {
+          // If there's no localPid, skip adding to the project and directly pass the wid downstream
+          return of(createdWorkflow.workflow.wid);
+        }
+      })
+      //untilDestroyed(this)
+    );
+  }
+
+  /**
    * Searches workflows with keywords and filters given in the masterFilterList.
    * @returns
    */
@@ -152,4 +148,4 @@ export class UserWorkflowService {
     });
     await this.searchResultsComponent.loadMore();
   }
-    }
+}
