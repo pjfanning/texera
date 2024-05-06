@@ -14,7 +14,9 @@ import { Injectable } from "@angular/core";
 import { UserWorkflowService } from "../../../service/user-workflow/user-workflow.service";
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
-import { Subscription } from "rxjs";
+//import { Subscription } from "rxjs";
+//import { EnvironmentComponent } from "src/app/workspace/component/left-panel/environment/environment.component";
+//import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 
 @Injectable({
   providedIn: "root"
@@ -52,8 +54,10 @@ export class UserDatasetExplorerComponent implements OnInit {
     private datasetService: DatasetService,
     private notificationService: NotificationService,
     private userWorkflowService: UserWorkflowService,
-    private EnvironmentService: EnvironmentService,
-    private WorkflowPersistService: WorkflowPersistService,
+    private environmentService: EnvironmentService,
+    private workflowPersistService: WorkflowPersistService,
+    //private environmentComponent: EnvironmentComponent,
+    //private workflowActionService: WorkflowActionService
   ) {}
 
   // item for control the resizeable sider
@@ -86,6 +90,8 @@ export class UserDatasetExplorerComponent implements OnInit {
         untilDestroyed(this)
       )
       .subscribe();
+    //this.environmentComponent = new EnvironmentComponent(this.environmentService, this.notificationService, this.workflowPersistService,
+    //  this.workflowActionService, this.datasetService, this.route);
   }
 
   renderDatasetViewSider() {
@@ -237,19 +243,95 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   onClickCreateWorkflowFromDataset(): void {
-    // FOR DEBUGGING
-    console.log("calling onClickCreateWorkflowFromDataset()") 
-    this.userWorkflowService.onClickCreateNewWorkflowFromDashboard().subscribe({
-      next: wid => {
-        if(wid !== undefined && this.did !== undefined) { 
-          // get the workflow's eid using its wid
-          this.WorkflowPersistService.retrieveWorkflowEnvironment(wid);
-          // associate the workflow's eid with the did
-          this.EnvironmentService.addDatasetToEnvironment(wid, this.did);
+    console.log("calling onClickCreateWorkflowFromDataset()"); 
+  
+    this.userWorkflowService
+      .onClickCreateNewWorkflowFromDashboard()
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: wid => {
+          if (wid && this.did) { 
+            console.log("Workflow created. wid: " + wid + ", did: " + this.did);
+            this.retrieveEnvironmentAndAddDataset(wid);
+          }
         }
-      }
-    });
+      });
   }
+  
+  private retrieveEnvironmentAndAddDataset(wid: number): void {
+    this.workflowPersistService
+      .retrieveWorkflowEnvironment(wid)
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: env => {
+          if (env.eid && this.did) {
+            console.log("workflow eid:" + env.eid + ", did: " + this.did);
+            this.addDatasetToEnvironmentAndNavigate(env.eid, wid);
+          }
+        }
+      });
+  }
+  
+  private addDatasetToEnvironmentAndNavigate(eid: number, wid: number): void {
+    if(this.did) {
+      this.environmentService
+        .addDatasetToEnvironment(eid, this.did)
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: response => {
+            console.log("Dataset added to environment:", response);
+            this.navigateToWorkflowPage(wid);
+          },
+          error: error => {
+            console.error("Error adding dataset to environment:", error);
+          }
+        });
+    }
+  }
+  
+  private navigateToWorkflowPage(wid: number): void {
+    this.router.navigate([`/workflow/${wid}`]);
+  }
+  
+
+/** 
+  onClickCreateWorkflowFromDataset(): void {
+    console.log("calling onClickCreateWorkflowFromDataset()"); 
+    this.userWorkflowService
+      .onClickCreateNewWorkflowFromDashboard()
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: wid => {
+          if(wid && this.did) { 
+            console.log("Workflow created. wid: " + wid + ", did: " + this.did);
+            // get the workflow's eid using its wid
+            this.workflowPersistService
+            .retrieveWorkflowEnvironment(wid)
+            .pipe(untilDestroyed(this))
+            .subscribe({
+              next: env => {
+                if(env.eid && this.did) {
+                  console.log("workflow eid:" + env.eid + ", did: " + this.did);
+                  // associate the workflow's eid with the did
+                  this.environmentService.addDatasetToEnvironment(env.eid, this.did)
+                  .pipe(untilDestroyed(this))
+                  .subscribe({
+                    next: response => {
+                      console.log("Dataset added to environment:", response);
+                      this.router.navigate([`/workflow/${wid}`]);
+                    },
+                    error: error => {
+                      console.error("Error adding dataset to environment:", error);
+                    }
+                  });
+                }
+              }
+            });
+          }
+        }
+      });
+    }
+  **/
 
   onVersionSelected(version: DatasetVersion): void {
     this.selectedVersion = version;

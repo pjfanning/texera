@@ -103,7 +103,7 @@ export class UserWorkflowService {
               return of(createdWorkflow.workflow.wid);
             }
           }),
-          untilDestroyed(this)
+          //untilDestroyed(this)
         );
   }
   
