@@ -14,6 +14,8 @@ object OperatorGroupConstants {
   final val API_GROUP = "External API"
   final val UDF_GROUP = "User-defined Functions"
   final val VISUALIZATION_GROUP = "Visualization"
+  final val HUGGINGFACE_GROUP = "Hugging Face"
+  final val SKLEARN_GROUP = "Sklearn"
 
   final val PREPROCESSING_GROUP = "Preprocessing"
   final val MODEL_TRAINING_GROUP = "Model Training"
@@ -25,24 +27,24 @@ object OperatorGroupConstants {
     * The order numbers are relative.
     */
   final val OperatorGroupOrderList: List[GroupInfo] = List(
-    GroupInfo(INPUT_GROUP, 0, null),
-    GroupInfo(DATABASE_GROUP, 1, null),
-    GroupInfo(SEARCH_GROUP, 2, null),
-    GroupInfo(CLEANING_GROUP, 3, null),
-    GroupInfo(MACHINE_LEARNING_GROUP, 4, List(
-      GroupInfo(PREPROCESSING_GROUP, 101, null),
-      GroupInfo(MODEL_TRAINING_GROUP, 102, null),
-      GroupInfo(MODEL_PERFORMANCE_GROUP, 103, null),
-      GroupInfo(MODEL_VISUALIZATION_GROUP, 104, null),
+    GroupInfo(INPUT_GROUP),
+    GroupInfo(DATABASE_GROUP),
+    GroupInfo(SEARCH_GROUP),
+    GroupInfo(CLEANING_GROUP),
+    GroupInfo(MACHINE_LEARNING_GROUP, List(GroupInfo(SKLEARN_GROUP), GroupInfo(HUGGINGFACE_GROUP),
+      GroupInfo(PREPROCESSING_GROUP),
+      GroupInfo(MODEL_TRAINING_GROUP),
+      GroupInfo(MODEL_PERFORMANCE_GROUP),
+      GroupInfo(MODEL_VISUALIZATION_GROUP),
     )),
-    GroupInfo(JOIN_GROUP, 5, null),
-    GroupInfo(SET_GROUP, 6, null),
-    GroupInfo(AGGREGATE_GROUP, 7, null),
-    GroupInfo(SORT_GROUP, 8, null),
-    GroupInfo(UTILITY_GROUP, 9, null),
-    GroupInfo(API_GROUP, 10, null),
-    GroupInfo(UDF_GROUP, 11, null),
-    GroupInfo(VISUALIZATION_GROUP, 12, null)
+    GroupInfo(JOIN_GROUP),
+    GroupInfo(SET_GROUP),
+    GroupInfo(AGGREGATE_GROUP),
+    GroupInfo(SORT_GROUP),
+    GroupInfo(UTILITY_GROUP),
+    GroupInfo(API_GROUP),
+    GroupInfo(UDF_GROUP),
+    GroupInfo(VISUALIZATION_GROUP)
   )
 }
 
