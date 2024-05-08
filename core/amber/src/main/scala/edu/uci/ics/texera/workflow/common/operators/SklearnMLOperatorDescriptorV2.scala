@@ -67,7 +67,8 @@ trait SklearnMLOperatorDescriptorV2 extends PythonOperatorDescriptor{
        |        model = ${trainingName}(${combineTrainingParam()})
        |        model.fit(X_train, y_train)
        |
-       |        para_str = "${combineParamKeyStr()}".format(${combineParamValueStr()})
+       |        #para_str = "${combineParamKeyStr()}".format(${combineParamValueStr()})
+       |        para_str=""
        |        model_str = pickle.dumps(model)
        |        model_list.append(model_str)
        |        para_list.append(para_str)

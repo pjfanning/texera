@@ -10,24 +10,17 @@ import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptor
 class KNNTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   model = "from sklearn.neighbors import KNeighborsClassifier"
   name = "K-nearest Neighbors"
+  
+  def addParamMap(): Map[String, Array[Any]] = {
+    Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
+  }
+
 
   @JsonProperty(defaultValue = "false", required = false)
   @JsonSchemaTitle("Using Hyper Parameter Training")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
   @JsonPropertyDescription("Tune the parameter K")
   override var parameterTuningFlag: Boolean = false
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Ground Truth Attribute Column")
-  @JsonPropertyDescription("Ground truth attribute column")
-  @AutofillAttributeName
-  override var groundTruthAttribute: String = ""
-
-  @JsonProperty(value = "Selected Features", required = true)
-  @JsonSchemaTitle("Selected Features")
-  @JsonPropertyDescription("Features used to train the model")
-  @AutofillAttributeNameList
-  override var selectedFeatures: List[String] = _
 
   @JsonProperty(required = true, defaultValue = "3")
   @JsonSchemaTitle("Custom K")
@@ -53,11 +46,6 @@ class KNNTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   )
   @AutofillAttributeNameOnPort1
   var loopK: String = ""
-
-  def addParamMap(): Map[String, Array[Any]] = {
-    val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
-    paramMap
-  }
 
 
 }

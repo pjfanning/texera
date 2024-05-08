@@ -1,11 +1,13 @@
 package edu.uci.ics.texera.workflow.common.operators
 
-import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
+abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   @JsonIgnore
   var model = ""
 
@@ -13,60 +15,49 @@ trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   var name = ""
 
   var parameterTuningFlag: Boolean
-  var groundTruthAttribute: String
-  var selectedFeatures: List[String]
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Ground Truth Attribute Column")
+  @JsonPropertyDescription("Ground truth attribute column")
+  @AutofillAttributeName
+  var groundTruthAttribute: String = ""
+
+  @JsonProperty(value = "Selected Features", required = true)
+  @JsonSchemaTitle("Selected Features")
+  @JsonPropertyDescription("Features used to train the model")
+  @AutofillAttributeNameList
+  var selectedFeatures: List[String] = _
 
   private var paramMap =Map[String, Array[Any]]()
-
   def addParamMap():Map[String, Array[Any]]
-
-  def getOpParam(): Unit = {
+  def initParamMap(): Unit = {
     this.paramMap = addParamMap()
   }
 
-  def importPackage(): String ={
-    s"""
-       |$model
-       |""".stripMargin
-  }
-
   def paramFromCustom():String = {
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val attributeName = array(1)
+    paramMap.map { case (_, array) =>
       s"""
-         |        $listName = np.array([\"$attributeName\"])
+         |        ${array(0)} = np.array([\"${array(1)}\"])
          |"""
     }.mkString
-
-    s"""
-       |$paramLines
-       |"""
   }
 
   def paramFromTuning(): String= {
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val attributeName = array(2)
+    paramMap.map { case (_, array) =>
       s"""
-         |        $listName = table[\"$attributeName\"].values
+         |        ${array(0)} = table[\"${array(2)}\"].values
          |"""
     }.mkString
-
-    s"""
-       |$paramLines
-       |"""
   }
   def trainingModel(): String = {
     val listName = paramMap.head._2(0)
     val trainingName = model.split(" ").last
     s"""
        |      for i in range($listName.shape[0]):
-       |        #model = KNeighborsClassifier(n_neighbors=k_value)
-       |        model = $trainingName(${combineTrainingParam()})
+       |        model = $trainingName(${paramMap.map { case (key, array) =>s"$key=${array(3)}(${array(0)}[i])"}.mkString(",")})
        |        model.fit(X_train, y_train)
        |
-       |        para_str = "${combineParamKeyStr()}".format(${combineParamValueStr()})
+       |        para_str = "${paramMap.map { case (key, _) =>s"$key = '{}'"}.mkString(",")}".format(${paramMap.map { case (_, array) =>s"${array(0)}[i]"}.mkString(",")})
        |        model_str = pickle.dumps(model)
        |        model_list.append(model_str)
        |        para_list.append(para_str)
@@ -74,69 +65,8 @@ trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
        |""".stripMargin
   }
 
-  def combineTrainingParam():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      val listType = array(3)
-      s"$key=$listType($listName[i])"
-    }.mkString(",")
-    paramLines
-  }
-
-  def combineParamKeyStr():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      s"$key = '{}'"
-    }.mkString(",")
-    paramLines
-  }
-  def combineParamValueStr():String={
-    val paramLines = paramMap.map { case (key, array) =>
-      val listName = array(0)
-      s"$listName[i]"
-    }.mkString(",")
-    paramLines
-  }
-
-  override def operatorInfo: OperatorInfo =
-    OperatorInfo(
-      name+" V3",
-      "Sklearn " + name + " Operator",
-      OperatorGroupConstants.MODEL_TRAINING_GROUP,
-      inputPorts = List(
-        InputPort(
-          PortIdentity(0),
-          displayName = "dataset",
-          allowMultiLinks = true
-        ),
-        InputPort(
-          PortIdentity(1),
-          displayName = "parameter",
-          allowMultiLinks = true,
-          dependencies = List(PortIdentity(0))
-        )
-      ),
-      outputPorts = List(OutputPort())
-    )
-
-  override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    val outputSchemaBuilder = Schema.builder()
-    if (parameterTuningFlag) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
-    outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build
-  }
-
-  def injectDataToOuputPort(): String = {
-    s"""
-       |      data = dict({})
-       |      data["Model"]= model_list
-       |      data["Parameters"] = para_list
-       |      data["Features"]= features_list
-       |""".stripMargin
-  }
-
   override def generatePythonCode(): String = {
-    getOpParam()
+    initParamMap()
     var truthy = "False"
     if (parameterTuningFlag) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
@@ -147,7 +77,7 @@ trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
          |import pandas as pd
          |import numpy as np
          |import pickle
-         |${importPackage()}
+         |$model
          |class ProcessTableOperator(UDFTableOperator):
          |
          |  @overrides
@@ -174,7 +104,10 @@ trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
          |
          |      ${trainingModel()}
          |
-         |      ${injectDataToOuputPort()}
+         |      data = dict({})
+         |      data["Model"]= model_list
+         |      data["Parameters"] = para_list
+         |      data["Features"]= features_list
          |
          |      df = pd.DataFrame(data)
          |      if ($truthy):
@@ -184,4 +117,32 @@ trait SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
     finalCode
   }
 
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
+      name+" V3",
+      "Sklearn " + name + " Operator",
+      OperatorGroupConstants.MODEL_TRAINING_GROUP,
+      inputPorts = List(
+        InputPort(
+          PortIdentity(0),
+          displayName = "dataset",
+          allowMultiLinks = true
+        ),
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
+      ),
+      outputPorts = List(OutputPort())
+    )
+
+    override def getOutputSchema(schemas: Array[Schema]): Schema = {
+      val outputSchemaBuilder = Schema.builder()
+      if (parameterTuningFlag) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+      outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+      outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
+      outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build
+    }
 }
