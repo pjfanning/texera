@@ -3,14 +3,17 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaBool, JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV1
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptorV2, SklearnMLOperatorDescriptorV3}
 
-class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
+class SVCTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
+  model = "from sklearn.svm import SVC"
+  name = "Support Vector Machine"
+
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get Parameters From Workflow")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernal","loopGamma","loopCoef"]}""")
+  @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernel","loopGamma","loopCoef"]}""")
   @JsonPropertyDescription("Tune the parameter")
   override var parameterTuningFlag: Boolean = false
 
@@ -51,9 +54,9 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
   @AutofillAttributeNameOnPort1
   var loopC: String = ""
 
-  @JsonProperty(value = "loopKernal", required = false)
-  @JsonSchemaTitle("Optimise kernal From Loop")
-  @JsonPropertyDescription("Specify which attribute is 'kernal'")
+  @JsonProperty(value = "loopKernel", required = false)
+  @JsonSchemaTitle("Optimise kernel From Loop")
+  @JsonPropertyDescription("Specify which attribute is 'kernel'")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
@@ -62,7 +65,7 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
     )
   )
   @AutofillAttributeNameOnPort1
-  var loopKernal: String = ""
+  var loopKernel: String = ""
 
   @JsonProperty(value = "loopGamma", required = false)
   @JsonSchemaTitle("Optimise Gamma From Loop")
@@ -91,8 +94,8 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
   var loopCoef: String = ""
 
   @JsonProperty(required = false)
-  @JsonSchemaTitle("Kernal Function")
-  @JsonPropertyDescription("Multiple kernal functions")
+  @JsonSchemaTitle("Kernel Function")
+  @JsonPropertyDescription("Multiple Kernel functions")
   @JsonSchemaInject(
     strings = Array(
       new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
@@ -100,14 +103,14 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
     )
   )
-  var kernal: KernelFunction = KernelFunction.linear
+  var kernel: KernelFunction = KernelFunction.linear
 
   @JsonProperty(value = "Gamma For SVC", defaultValue = "0.1")
   @JsonSchemaTitle("Gamma For SVC")
   @JsonPropertyDescription("Gamma for SVC")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernel"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
       new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "^linear$")
     ),
@@ -122,7 +125,7 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
   @JsonPropertyDescription("Coef for SVC")
   @JsonSchemaInject(
     strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernal"),
+      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "kernel"),
       new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.regex),
       new JsonSchemaString(
         path = HideAnnotation.hideExpectedValue,
@@ -135,78 +138,13 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
   )
   var coef: Float = Float.box(1.0f)
 
-  override def operatorInfo: OperatorInfo =
-    OperatorInfo(
-      "SVC Trainer V1",
-      "Train a SVM classifier",
-      OperatorGroupConstants.MODEL_TRAINING_GROUP,
-      inputPorts = List(
-        InputPort(
-          PortIdentity(0),
-          displayName = "dataset",
-          allowMultiLinks = true
-        ),
-        InputPort(
-          PortIdentity(1),
-          displayName = "parameter",
-          allowMultiLinks = true,
-          dependencies = List(PortIdentity(0))
-        )
-      ),
-      outputPorts = List(OutputPort())
+  override def addParamMap(): Map[String, Array[Any]] = {
+    var paramMap = Map(
+      "C" -> Array("c_list",c,loopC,"float"),
     )
-
-  override def importPackage(): String = {
-    s"""
-       |from sklearn.svm import SVC
-       |""".stripMargin
+    paramMap += ("kernel" -> Array("kernel_list",kernel,loopKernel,"str"))
+    paramMap += ("gamma" -> Array("gamma_list",gamma,loopGamma,"float"))
+    paramMap += ("coef0" -> Array("coef_list",coef,loopCoef,"float"))
+    paramMap
   }
-
-  override def paramFromCustom(): String = {
-    s"""
-       |        c_list = np.array([$c])
-       |        kernal_list = np.array(["$kernal"])
-       |        gamma_list = np.array([$gamma])
-       |        coef_list = np.array([$coef])
-       |""".stripMargin
-  }
-
-  override def paramFromTuning(): String = {
-    s"""
-       |        c_list = table["$loopC"].values
-       |        kernal_list = table["$loopKernal"].values
-       |        gamma_list = table["$loopGamma"].values
-       |        coef_list = table["$loopCoef"].values
-       |""".stripMargin
-  }
-  def buildParaStr():String = {
-    s"""
-       |        params = {'kernal_value': kernal_value, 'c_value': c_value, 'gamma_value': gamma_value,'coef_value':coef_value}
-       |        if kernal_value == 'linear':
-       |          del params['gamma_value']
-       |        if kernal_value in ['linear', 'sigmoid']:
-       |          del params['coef_value']
-       |        para_str = ";".join(["{} = {}".format(key, value) for key, value in params.items()])
-       |""".stripMargin
-  }
-  override def trainingModel(): String = {
-    s"""
-       |      for i in range(c_list.shape[0]):
-       |        c_value = c_list[i]
-       |        kernal_value = kernal_list[i]
-       |        gamma_value = gamma_list[i]
-       |        coef_value = coef_list[i]
-       |        svc = SVC(kernel=kernal_list[i],C=float(c_value),gamma=gamma_list[i],coef0=float(coef_list[i]),probability=True)
-       |        svc.fit(X_train, y_train)
-       |
-       |        ${buildParaStr()}
-       |        model_str = pickle.dumps(svc)
-       |        model_list.append(model_str)
-       |        para_list.append(para_str)
-       |        features_list.append(features)
-       |""".stripMargin
-  }
-
-
-
 }

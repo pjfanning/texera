@@ -169,5 +169,4 @@ class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
     paramMap += ("coef0" -> Array("coef_list",coef,loopCoef,"float"))
     paramMap
   }
-
 }

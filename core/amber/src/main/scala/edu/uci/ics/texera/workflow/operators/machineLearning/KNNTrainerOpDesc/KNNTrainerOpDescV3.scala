@@ -3,11 +3,14 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV2
+import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptorV2, SklearnMLOperatorDescriptorV3}
 
-class KNNTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
+class KNNTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
+  model = "from sklearn.neighbors import KNeighborsClassifier"
+  name = "K-nearest Neighbors"
+
   @JsonProperty(defaultValue = "false", required = false)
   @JsonSchemaTitle("Using Hyper Parameter Training")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
@@ -50,32 +53,6 @@ class KNNTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   )
   @AutofillAttributeNameOnPort1
   var loopK: String = ""
-
-  override def operatorInfo: OperatorInfo =
-    OperatorInfo(
-      "KNN Trainer V2",
-      "Train a KNN classifier",
-      OperatorGroupConstants.MODEL_TRAINING_GROUP,
-      inputPorts = List(
-        InputPort(
-          PortIdentity(0),
-          displayName = "dataset",
-          allowMultiLinks = true
-        ),
-        InputPort(
-          PortIdentity(1),
-          displayName = "parameter",
-          allowMultiLinks = true,
-          dependencies = List(PortIdentity(0))
-        )
-      ),
-      outputPorts = List(OutputPort())
-    )
-
-   def addImportMap(): Map[String, String] = {
-     val importMap = Map("sklearn.neighbors" -> "KNeighborsClassifier")
-     importMap
-   }
 
   def addParamMap(): Map[String, Array[Any]] = {
     val paramMap = Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
