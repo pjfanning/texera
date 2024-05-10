@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.drop
 
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp.oneToOnePhysicalOp
@@ -15,10 +15,14 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, Schema}
 
 class DropOpDesc extends MapOpDesc {
 
-  @JsonProperty(required = true, defaultValue = "true")
-  @JsonSchemaTitle("Drop The Selected Attributes")
-  @JsonPropertyDescription("Choose to drop the selected attributes otherwise keep them and drop the unselected ones.")
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Drop Or Keep The Selected Attributes")
+  @JsonPropertyDescription("Choose to drop or keep the selected attributes")
+  var dropOption: DropOption =DropOption.drop
+
+  @JsonIgnore
   var isDrop: Boolean = true
+  if(dropOption==DropOption.keep) isDrop = false
 
   @JsonProperty(value = "Selected Attributes", required = true)
   @JsonSchemaTitle("Selected Attributes")
@@ -33,8 +37,6 @@ class DropOpDesc extends MapOpDesc {
       executionId: ExecutionIdentity
   ): PhysicalOp = {
 
-
-
     oneToOnePhysicalOp(
       workflowId,
       executionId,
@@ -44,33 +46,8 @@ class DropOpDesc extends MapOpDesc {
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
       .withPropagateSchema(SchemaPropagationFunc(inputSchemas => {
-        val inputSchema = inputSchemas(operatorInfo.inputPorts.head.id)
-        var selectedAttributes = selectedFeatures
-        if (isDrop){
-        val allAttributes =  inputSchema.getAttributeNames
-        selectedAttributes = allAttributes.diff(selectedFeatures)
-        }
-
-        val outputSchema = Schema
-          .builder()
-          .add(
-            selectedAttributes
-              .map(attribute =>
-                new Attribute(
-                  attribute,
-                  inputSchema.getAttribute(attribute).getType
-                )
-              )
-          )
-          .build()
-        Map(operatorInfo.outputPorts.head.id -> outputSchema)
+        Map(operatorInfo.outputPorts.head.id -> getOutputSchema(Array(inputSchemas(operatorInfo.inputPorts.head.id))))
       }))
-
-
-
-
-
-
 
   }
 
@@ -96,8 +73,6 @@ class DropOpDesc extends MapOpDesc {
       val allAttributes = inputSchema.getAttributeNames
       selectedAttributes = allAttributes.diff(selectedFeatures)
     }
-
-
 
     Schema
       .builder()
