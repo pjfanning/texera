@@ -17,7 +17,7 @@ class TestAOpExec(limit: Int) extends OperatorExecutor {
     }
   }
 
-  override def onOutputFinish(): State = {
+  override def produceState(): State = {
     val state = State()
     state.add("count", "test")
     state

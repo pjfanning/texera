@@ -113,23 +113,17 @@ class DataProcessor(
     * process end of an input port with Executor.onFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processStartOfUpstream(): Unit = {
+  private[this] def processEndOfUpstream(): Unit = {
     try {
       outputManager.outputIterator.setTupleOutput(
         executor.onInputFinishMultiPort(
           this.inputGateway.getChannel(inputManager.currentChannelId).getPortId.id
         )
       )
-    } catch safely {
-      case e =>
-        // forward input tuple to the user and pause DP thread
-        handleExecutorException(e)
-    }
-  }
-
-  private[this] def processEndOfUpstream(): Unit = {
-    try {
-      outputManager.emitMarker(executor.onOutputFinish())
+      val outputState = executor.produceState()
+      if (outputState!= null) {
+        outputManager.emitMarker(outputState)
+      }
     } catch safely {
       case e =>
         // forward input tuple to the user and pause DP thread
@@ -219,27 +213,24 @@ class DataProcessor(
         inputManager.initBatch(channelId, tuples)
         processInputTuple(inputManager.getNextTuple)
       case MarkerFrame(marker) =>
-        logger.error(s"unsupported marker type: $marker")
+
         marker match {
           case state: State =>
+            val a = state.get("count")
+            logger.error(s"state marker: $marker")
+            logger.error(s"state marker: $a")
             processInputState(state)
           case StartOfUpstream() =>
+          case EndOfUpstream() =>
+            val channel = this.inputGateway.getChannel(channelId)
+            val portId = channel.getPortId
+
             this.inputManager.getPort(portId).channels(channelId) = true
+
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
-              processStartOfUpstream()
-            }
-            if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
-              // assuming all the output ports finalize after all input ports are finalized.
-              outputManager.finalizeOutput()
-            }
-          case EndOfUpstream() =>
-            this.inputManager.getPort(portId).channels(channelId) = true
-            if (inputManager.isPortCompleted(portId)) {
               processEndOfUpstream()
-              outputManager.outputIterator.appendSpecialTupleToEnd(
-                FinalizePort(portId, input = true)
-              )
+              outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
             }
             if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
               // assuming all the output ports finalize after all input ports are finalized.

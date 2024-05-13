@@ -158,17 +158,6 @@ class OutputManager(
     buffersToFlush.foreach(_.flush())
   }
 
-  /**
-    * Send the last batch and EOU marker to all down streams
-    */
-  def emitEndOfUpstream(): Unit = {
-    // flush all network buffers of this operator, emit end marker to network
-    networkOutputBuffers.foreach(kv => {
-      kv._2.flush()
-      kv._2.noMore()
-    })
-  }
-
   def emitMarker(marker: Marker): Unit = {
     networkOutputBuffers.foreach(kv => {
       kv._2.flush()

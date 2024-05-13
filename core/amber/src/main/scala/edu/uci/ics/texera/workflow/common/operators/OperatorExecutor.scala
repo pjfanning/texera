@@ -29,6 +29,6 @@ trait OperatorExecutor {
 
   def onInputStart(port: Int): Iterator[State] = Iterator.empty
 
-  def onOutputFinish(): State = State()
+  def produceState(): State = null
 
 }
