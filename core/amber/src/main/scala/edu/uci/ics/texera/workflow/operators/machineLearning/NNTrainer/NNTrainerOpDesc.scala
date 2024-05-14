@@ -50,7 +50,7 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Neural Network Trainer",
       "Train a Neural Network model (PyTorch)",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),

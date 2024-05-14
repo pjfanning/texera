@@ -17,7 +17,7 @@ class ScalerOpDesc extends PythonOperatorDescriptor{
   override def operatorInfo: OperatorInfo = OperatorInfo(
     "Scaler",
     "Standardize numerical features between 0 and 1",
-    OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+    OperatorGroupConstants.PREPROCESSING_GROUP,
     inputPorts = List(InputPort()),
     outputPorts = List(OutputPort())
   )

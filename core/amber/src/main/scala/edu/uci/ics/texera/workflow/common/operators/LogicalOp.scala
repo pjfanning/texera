@@ -169,7 +169,7 @@ trait StateTransferFunc
     new Type(value = classOf[SplitOpDesc], name = "Split"),
     new Type(value = classOf[RegexOpDesc], name = "Regex"),
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
-    new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
+//    new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
     new Type(value = classOf[ProjectionOpDesc], name = "Projection"),
     new Type(value = classOf[DropOpDesc], name = "Drop"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),

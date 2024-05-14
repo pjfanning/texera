@@ -39,7 +39,7 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Neural Network Predictor (Regression)",
       "Make prediction with Neural Network model (PyTorch)",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),

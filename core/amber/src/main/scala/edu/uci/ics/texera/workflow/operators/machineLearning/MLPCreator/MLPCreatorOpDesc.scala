@@ -27,7 +27,7 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "MLP Generator",
       "Generate a MLP model (Pytorch)",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(),
       outputPorts = List(OutputPort())
     )

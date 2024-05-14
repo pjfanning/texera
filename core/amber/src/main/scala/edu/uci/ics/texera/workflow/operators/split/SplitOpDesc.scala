@@ -50,7 +50,7 @@ class SplitOpDesc extends LogicalOp {
     OperatorInfo(
       userFriendlyName = "Training/Testing Split",
       operatorDescription = "Split training and testing data to two different ports",
-      operatorGroupName = OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      operatorGroupName = OperatorGroupConstants.PREPROCESSING_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(
         OutputPort(PortIdentity(), displayName = "training"),
