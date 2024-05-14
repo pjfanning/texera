@@ -42,14 +42,12 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       .foreach(scorer => {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
-    if (inputSchema.containsAttribute("para")){
+    if (inputSchema.containsAttribute("Parameters")){
       outputSchemaBuilder.add(inputSchema)
-      outputSchemaBuilder.removeIfExists("para")
-      outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+      outputSchemaBuilder.removeIfExists("Parameters")
+      outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
 
     }
-
-
     outputSchemaBuilder.build()
   }
 
@@ -161,10 +159,10 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |              fill_data = {col: [table[col][0]] * row_diff for col in table.columns}
          |              fill_df = pd.DataFrame(fill_data)
          |              table = pd.concat([table, fill_df], ignore_index=True)
-         |            if "para" in table.columns:
-         |              para_str_series = pd.Series(table['para'].tolist())
+         |            if "Parameters" in table.columns:
+         |              para_str_series = pd.Series(table['Parameters'].tolist())
          |              table = table.drop(['para'], axis=1)
-         |              table['para'] = para_str_series
+         |              table['Parameters'] = para_str_series
          |              result_df = pd.concat([result_df, table], axis=1)
          |
          |            if "Iteration" in result_df.columns:
