@@ -42,10 +42,15 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       .foreach(scorer => {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
-    outputSchemaBuilder.add(inputSchema)
-    outputSchemaBuilder.removeIfExists("Parameters")
-    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
-    outputSchemaBuilder.build
+    if (inputSchema.containsAttribute("para")){
+      outputSchemaBuilder.add(inputSchema)
+      outputSchemaBuilder.removeIfExists("para")
+      outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
+
+    }
+
+
+    outputSchemaBuilder.build()
   }
 
   private def getEachScorerName(scorer: ScorerFunction): String = {
@@ -94,9 +99,13 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |            result = dict()
+         |            if table.shape[0]>1:
+         |              y_true = table['$actualValueColumn']
+         |              y_pred = table['$predictValueColumn']
          |
-         |            y_true = table['$actualValueColumn'][0]
-         |            y_pred = table['$predictValueColumn'][0]
+         |            else:
+         |              y_true = table['$actualValueColumn'][0]
+         |              y_pred = table['$predictValueColumn'][0]
          |            labels = list(set(y_true))
          |            labels.append('Overall')
          |
@@ -135,10 +144,6 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                   else:
          |                    result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
          |
-         |            para_str_series = pd.Series(table['Parameters'].tolist())
-         |            table = table.drop(['Parameters'], axis=1)
-         |            table['Parameters'] = para_str_series
-         |
          |            label_show = []
          |
          |            for item in labels:
@@ -156,8 +161,11 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |              fill_data = {col: [table[col][0]] * row_diff for col in table.columns}
          |              fill_df = pd.DataFrame(fill_data)
          |              table = pd.concat([table, fill_df], ignore_index=True)
-         |
-         |            result_df = pd.concat([result_df, table], axis=1)
+         |            if "para" in table.columns:
+         |              para_str_series = pd.Series(table['para'].tolist())
+         |              table = table.drop(['para'], axis=1)
+         |              table['para'] = para_str_series
+         |              result_df = pd.concat([result_df, table], axis=1)
          |
          |            if "Iteration" in result_df.columns:
          |              result_df['Iteration'] = result_df['Iteration'].astype(int)
