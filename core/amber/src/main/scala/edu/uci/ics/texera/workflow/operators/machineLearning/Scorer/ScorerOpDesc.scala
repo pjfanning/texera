@@ -98,12 +98,13 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |            result = dict()
          |            if table.shape[0]>1:
-         |              y_true = table['$actualValueColumn']
-         |              y_pred = table['$predictValueColumn']
+         |              y_true = table['$actualValueColumn'][0]
+         |              y_pred = table['$predictValueColumn'][0]
          |
          |            else:
          |              y_true = table['$actualValueColumn'][0]
          |              y_pred = table['$predictValueColumn'][0]
+         |
          |            labels = list(set(y_true))
          |            labels.append('Overall')
          |
@@ -161,7 +162,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |              table = pd.concat([table, fill_df], ignore_index=True)
          |            if "Parameters" in table.columns:
          |              para_str_series = pd.Series(table['Parameters'].tolist())
-         |              table = table.drop(['para'], axis=1)
+         |              table = table.drop(['Parameters'], axis=1)
          |              table['Parameters'] = para_str_series
          |              result_df = pd.concat([result_df, table], axis=1)
          |
