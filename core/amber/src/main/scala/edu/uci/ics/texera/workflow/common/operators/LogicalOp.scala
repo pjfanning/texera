@@ -36,7 +36,6 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChar
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2, KNNTrainerOpDescV3, KNNTrainerRegressionOpDescOld}
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.{KNNTrainerRegressionOpDescV2, ModelSelectionOpDesc}
 import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.EncoderOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.MLP.MLPOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2, SVCTrainerOpDescV3}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDescV2
@@ -296,8 +295,6 @@ trait StateTransferFunc
     new Type(value = classOf[NormalizerOpDesc], name = "Normalizer"),
     new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
     new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
-
-    new Type(value = classOf[MLPOpDesc], name = "MLP"),
     new Type(
       value = classOf[HuggingFaceSentimentAnalysisOpDesc],
       name = "HuggingFaceSentimentAnalysis"
