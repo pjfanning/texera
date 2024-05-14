@@ -9,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptor
 
 class KNNTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   model = "from sklearn.neighbors import KNeighborsClassifier"
-  name = "K-nearest Neighbors"
+  name = "KNN"
   
   def addParamMap(): Map[String, Array[Any]] = {
     Map("n_neighbors" -> Array("k_list",k,loopK,"int"))
@@ -21,6 +21,18 @@ class KNNTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
   @JsonPropertyDescription("Tune the parameter K")
   override var parameterTuningFlag: Boolean = false
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Ground Truth Attribute Column")
+  @JsonPropertyDescription("Ground truth attribute column")
+  @AutofillAttributeName
+  override var groundTruthAttribute: String = ""
+
+  @JsonProperty(value = "Selected Features", required = true)
+  @JsonSchemaTitle("Selected Features")
+  @JsonPropertyDescription("Features used to train the model")
+  @AutofillAttributeNameList
+  override var selectedFeatures: List[String] = _
 
   @JsonProperty(required = true, defaultValue = "3")
   @JsonSchemaTitle("Custom K")

@@ -9,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptor
 
 class SVCTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   model = "from sklearn.svm import SVC"
-  name = "Support Vector Machine"
+  name = "SVM"
   
   override def addParamMap(): Map[String, Array[Any]] = {
     var paramMap = Map(
@@ -26,6 +26,18 @@ class SVCTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernel","loopGamma","loopCoef"]}""")
   @JsonPropertyDescription("Tune the parameter")
   override var parameterTuningFlag: Boolean = false
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Ground Truth Attribute Column")
+  @JsonPropertyDescription("Ground truth attribute column")
+  @AutofillAttributeName
+  override var groundTruthAttribute: String = ""
+
+  @JsonProperty(value = "Selected Features", required = true)
+  @JsonSchemaTitle("Selected Features")
+  @JsonPropertyDescription("Features used to train the model")
+  @AutofillAttributeNameList
+  override var selectedFeatures: List[String] = _
 
   @JsonProperty(required = false, defaultValue = "1")
   @JsonSchemaTitle("Custom C")
