@@ -82,8 +82,8 @@ class KNNTrainerOpDescOldOld extends PythonOperatorDescriptor {
     )
 
   override def generatePythonCode(): String = {
-    var truthy = "False"
-    if (isLoop) truthy = "True"
+    var parameterTuningFlag = "False"
+    if (isLoop) parameterTuningFlag = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
     val finalCode =
       s"""
@@ -109,10 +109,10 @@ class KNNTrainerOpDescOldOld extends PythonOperatorDescriptor {
          |      dataset = table
          |
          |    if port == 1:
-         |      if not ($truthy):
+         |      if not ($parameterTuningFlag):
          |        k_list = np.array([$k])
          |
-         |      if ($truthy):
+         |      if ($parameterTuningFlag):
          |        k_list = table["$loopK"].values
          |
          |      X_train = dataset[features]
@@ -135,7 +135,7 @@ class KNNTrainerOpDescOldOld extends PythonOperatorDescriptor {
          |      data["Features"]= features_list
          |
          |      df = pd.DataFrame(data)
-         |      if ($truthy):
+         |      if ($parameterTuningFlag):
          |        df["Iteration"]= table["Iteration"]
          |      yield df
          |

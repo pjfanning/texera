@@ -30,9 +30,6 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
 
   private var paramMap =Map[String, Array[Any]]()
   def addParamMap():Map[String, Array[Any]]
-  def initParamMap(): Unit = {
-    this.paramMap = addParamMap()
-  }
 
   def paramFromCustom():String = {
     paramMap.map { case (_, array) =>
@@ -66,7 +63,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   }
 
   override def generatePythonCode(): String = {
-    initParamMap()
+    this.paramMap = addParamMap()
     var truthy = "False"
     if (parameterTuningFlag) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
@@ -119,7 +116,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      name+" V3",
+      name+"",
       "Sklearn " + name + " Operator",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
