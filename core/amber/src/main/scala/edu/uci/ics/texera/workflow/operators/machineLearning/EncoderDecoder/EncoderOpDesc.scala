@@ -18,7 +18,7 @@ class EncoderOpDesc extends PythonOperatorDescriptor{
   override def operatorInfo: OperatorInfo = OperatorInfo(
     "Label Encoder",
     "Convert category to number",
-    OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+    OperatorGroupConstants.PREPROCESSING_GROUP,
     inputPorts = List(InputPort()),
     outputPorts = List(OutputPort())
   )

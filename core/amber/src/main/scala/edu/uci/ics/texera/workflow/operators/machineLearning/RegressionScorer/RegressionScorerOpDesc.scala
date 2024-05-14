@@ -30,7 +30,7 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Regression Scorer",
       "Scorer for machine learning regression",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )

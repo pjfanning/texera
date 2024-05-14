@@ -17,7 +17,7 @@ class NormalizerOpDesc extends PythonOperatorDescriptor{
   override def operatorInfo: OperatorInfo = OperatorInfo(
     "Normalizer",
     "Normalize numerical features ",
-    OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+    OperatorGroupConstants.PREPROCESSING_GROUP,
     inputPorts = List(InputPort()),
     outputPorts = List(OutputPort())
   )
