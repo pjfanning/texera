@@ -35,6 +35,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyMod
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2, KNNTrainerOpDescV3, KNNTrainerRegressionOpDescOld}
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.{KNNTrainerRegressionOpDescV2, ModelSelectionOpDesc}
+import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.EncoderOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2, SVCTrainerOpDescV3}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDescV2
@@ -46,6 +47,14 @@ import edu.uci.ics.texera.workflow.operators.huggingFace.{
   HuggingFaceSpamSMSDetectionOpDesc,
   HuggingFaceTextSummarizationOpDesc
 }
+import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.Standardization.ScalerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.Normalization.NormalizerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.huggingFace.HuggingFaceSentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -123,6 +132,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatte
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrixChart.ScatterMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -159,8 +169,9 @@ trait StateTransferFunc
     new Type(value = classOf[SplitOpDesc], name = "Split"),
     new Type(value = classOf[RegexOpDesc], name = "Regex"),
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
-    new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
+//    new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
     new Type(value = classOf[ProjectionOpDesc], name = "Projection"),
+    new Type(value = classOf[DropOpDesc], name = "Drop"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
     new Type(value = classOf[KeywordSearchOpDesc], name = "KeywordSearch"),
     new Type(value = classOf[AggregateOpDesc], name = "Aggregate"),
@@ -214,17 +225,17 @@ trait StateTransferFunc
     new Type(value = classOf[TablesPlotOpDesc], name = "TablesPlot"),
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
-    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
-    new Type(value = classOf[KNNTrainerOpDescV1], name = "KNNTrainerV1"),
-    new Type(value = classOf[KNNTrainerOpDescV2], name = "KNNTrainerV2"),
+//    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
+//    new Type(value = classOf[KNNTrainerOpDescV1], name = "KNNTrainerV1"),
+//    new Type(value = classOf[KNNTrainerOpDescV2], name = "KNNTrainerV2"),
     new Type(value = classOf[KNNTrainerOpDescV3], name = "KNNTrainerV3"),
-    new Type(value = classOf[KNNTrainerRegressionOpDescV2], name = "KNNTrainerRegression"),
-    new Type(value = classOf[SVCTrainerOpDescV1], name = "SVCTrainerV1"),
-    new Type(value = classOf[SVCTrainerOpDescV2], name = "SVCTrainerV2"),
+//    new Type(value = classOf[KNNTrainerRegressionOpDescV2], name = "KNNTrainerRegression"),
+//    new Type(value = classOf[SVCTrainerOpDescV1], name = "SVCTrainerV1"),
+//    new Type(value = classOf[SVCTrainerOpDescV2], name = "SVCTrainerV2"),
     new Type(value = classOf[SVCTrainerOpDescV3], name = "SVCTrainerV3"),
-    new Type(value = classOf[SVRTrainerOpDescV2], name = "SVRTrainer"),
-    new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
-    new Type(value = classOf[KNNTrainerRegressionOpDescOld], name = "KNNTrainerRegression"),
+//    new Type(value = classOf[SVRTrainerOpDescV2], name = "SVRTrainer"),
+//    new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
+//    new Type(value = classOf[KNNTrainerRegressionOpDescOld], name = "KNNTrainerRegression"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
@@ -276,6 +287,14 @@ trait StateTransferFunc
     ),
     new Type(value = classOf[SklearnDummyClassifierOpDesc], name = "SklearnDummyClassifier"),
     new Type(value = classOf[SklearnPredictionOpDesc], name = "SklearnPrediction"),
+    new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
+    new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
+    new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
+    new Type(value = classOf[EncoderOpDesc], name = "Encoder"),
+    new Type(value = classOf[ScalerOpDesc], name = "Scaler"),
+    new Type(value = classOf[NormalizerOpDesc], name = "Normalizer"),
+    new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
+    new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
     new Type(
       value = classOf[HuggingFaceSentimentAnalysisOpDesc],
       name = "HuggingFaceSentimentAnalysis"

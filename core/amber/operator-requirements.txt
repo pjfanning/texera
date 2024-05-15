@@ -4,4 +4,5 @@ praw
 pillow
 pybase64
 torch
+torchrl
 scikit-learn

@@ -15,24 +15,12 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   var name = ""
 
   var parameterTuningFlag: Boolean
+  var groundTruthAttribute: String
+  var selectedFeatures: List[String]
 
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Ground Truth Attribute Column")
-  @JsonPropertyDescription("Ground truth attribute column")
-  @AutofillAttributeName
-  var groundTruthAttribute: String = ""
-
-  @JsonProperty(value = "Selected Features", required = true)
-  @JsonSchemaTitle("Selected Features")
-  @JsonPropertyDescription("Features used to train the model")
-  @AutofillAttributeNameList
-  var selectedFeatures: List[String] = _
 
   private var paramMap =Map[String, Array[Any]]()
   def addParamMap():Map[String, Array[Any]]
-  def initParamMap(): Unit = {
-    this.paramMap = addParamMap()
-  }
 
   def paramFromCustom():String = {
     paramMap.map { case (_, array) =>
@@ -66,7 +54,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   }
 
   override def generatePythonCode(): String = {
-    initParamMap()
+    this.paramMap = addParamMap()
     var truthy = "False"
     if (parameterTuningFlag) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
@@ -119,7 +107,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      name+" V3",
+      name+" Training",
       "Sklearn " + name + " Operator",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
