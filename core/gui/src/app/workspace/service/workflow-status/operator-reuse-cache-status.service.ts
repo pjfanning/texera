@@ -7,11 +7,12 @@ import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.ser
 import { merge } from "rxjs";
 import { JointUIService } from "../joint-ui/joint-ui.service";
 import { ExecutionState } from "../../types/execute-workflow.interface";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 
 export const EDIT_TIME_COMPILATION_DEBOUNCE_TIME_IN_MS = 500;
-@Injectable({
-  providedIn: "root",
-})
+
+@UntilDestroy()
+@Injectable()
 export class OperatorReuseCacheStatusService {
   constructor(
     private jointUIService: JointUIService,
@@ -22,6 +23,7 @@ export class OperatorReuseCacheStatusService {
     this.registerRequestCacheStatusUpdate();
     this.registerHandleCacheStatusUpdate();
   }
+
 
   /**
    * Requests cache status (invalid/valid) when workflow is changed from the engine
@@ -48,6 +50,7 @@ export class OperatorReuseCacheStatusService {
         )
     )
       .pipe(debounceTime(EDIT_TIME_COMPILATION_DEBOUNCE_TIME_IN_MS))
+      .pipe(untilDestroyed(this))
       .subscribe(() => {
         const workflow = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
         this.workflowWebsocketService.send("EditingTimeCompilationRequest", workflow);
@@ -61,6 +64,7 @@ export class OperatorReuseCacheStatusService {
     this.workflowActionService
       .getTexeraGraph()
       .getReuseCacheOperatorsChangedStream()
+      .pipe(untilDestroyed(this))
       .subscribe(event => {
         const mainJointPaper = this.workflowActionService.getJointGraphWrapper().getMainJointPaper();
         if (!mainJointPaper) {
@@ -73,7 +77,9 @@ export class OperatorReuseCacheStatusService {
           this.jointUIService.changeOperatorReuseCacheStatus(mainJointPaper, op);
         });
       });
-    this.workflowWebsocketService.subscribeToEvent("CacheStatusUpdateEvent").subscribe(event => {
+    this.workflowWebsocketService.subscribeToEvent("CacheStatusUpdateEvent")
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
       const mainJointPaper = this.workflowActionService.getJointGraphWrapper().getMainJointPaper();
       if (!mainJointPaper) {
         return;
@@ -84,4 +90,6 @@ export class OperatorReuseCacheStatusService {
       });
     });
   }
+
+
 }

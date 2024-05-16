@@ -5,12 +5,12 @@ import { Subject } from "rxjs";
 import { Observable } from "rxjs";
 import { RingBuffer } from "ring-buffer-ts";
 import { ExecutionState } from "../../types/execute-workflow.interface";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 
 export const CONSOLE_BUFFER_SIZE = 100;
 
-@Injectable({
-  providedIn: "root",
-})
+@UntilDestroy()
+@Injectable()
 export class WorkflowConsoleService {
   private consoleMessages: Map<string, RingBuffer<ConsoleMessage>> = new Map();
   private consoleMessagesUpdateStream = new Subject<void>();
@@ -23,6 +23,7 @@ export class WorkflowConsoleService {
   registerPythonConsoleUpdateEventHandler() {
     this.workflowWebsocketService
       .subscribeToEvent("ConsoleUpdateEvent")
+      .pipe(untilDestroyed(this))
       .subscribe((pythonConsoleUpdateEvent: ConsoleUpdateEvent) => {
         const operatorId = pythonConsoleUpdateEvent.operatorId;
         const messages = this.consoleMessages.get(operatorId) || new RingBuffer<ConsoleMessage>(CONSOLE_BUFFER_SIZE);
@@ -33,7 +34,9 @@ export class WorkflowConsoleService {
   }
 
   registerAutoClearConsoleMessages() {
-    this.workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(event => {
+    this.workflowWebsocketService.subscribeToEvent("WorkflowStateEvent")
+      .pipe(untilDestroyed(this))
+      .subscribe(event => {
       if (event.state === ExecutionState.Initializing) {
         this.consoleMessages.clear();
       }
@@ -51,4 +54,5 @@ export class WorkflowConsoleService {
   getConsoleMessageUpdateStream(): Observable<void> {
     return this.consoleMessagesUpdateStream.asObservable();
   }
+
 }
