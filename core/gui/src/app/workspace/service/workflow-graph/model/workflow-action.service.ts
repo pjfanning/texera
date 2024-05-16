@@ -787,12 +787,10 @@ export class WorkflowActionService {
     this.setWorkflowMetadata({ ...this.workflowMetadata, name: newName });
   }
 
-  public clearWorkflow() : void {
-
+  public clearWorkflow(): void {
     this.destroySharedModel();
     this.setWorkflowMetadata(undefined);
     this.reloadWorkflow(undefined);
-
   }
 
   /**
