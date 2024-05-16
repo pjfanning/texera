@@ -55,10 +55,8 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private operatorMetadataService: OperatorMetadataService,
     private router: Router,
     private notificationService: NotificationService,
-    private codeEditorService: CodeEditorService,
-
-  ) {
-  }
+    private codeEditorService: CodeEditorService
+  ) {}
 
   ngOnInit() {
     /**
@@ -198,7 +196,9 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
           // clear stack
           this.undoRedoService.clearUndoStack();
           this.undoRedoService.clearRedoStack();
-          this.notificationService.error("You don't have access to this workflow, please log in with an appropriate account");
+          this.notificationService.error(
+            "You don't have access to this workflow, please log in with an appropriate account"
+          );
         }
       );
   }

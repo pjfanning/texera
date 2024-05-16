@@ -34,13 +34,14 @@ export class WorkflowConsoleService {
   }
 
   registerAutoClearConsoleMessages() {
-    this.workflowWebsocketService.subscribeToEvent("WorkflowStateEvent")
+    this.workflowWebsocketService
+      .subscribeToEvent("WorkflowStateEvent")
       .pipe(untilDestroyed(this))
       .subscribe(event => {
-      if (event.state === ExecutionState.Initializing) {
-        this.consoleMessages.clear();
-      }
-    });
+        if (event.state === ExecutionState.Initializing) {
+          this.consoleMessages.clear();
+        }
+      });
   }
 
   getConsoleMessages(operatorId: string): ReadonlyArray<ConsoleMessage> | undefined {
@@ -54,5 +55,4 @@ export class WorkflowConsoleService {
   getConsoleMessageUpdateStream(): Observable<void> {
     return this.consoleMessagesUpdateStream.asObservable();
   }
-
 }

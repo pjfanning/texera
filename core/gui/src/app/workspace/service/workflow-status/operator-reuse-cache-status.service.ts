@@ -24,7 +24,6 @@ export class OperatorReuseCacheStatusService {
     this.registerHandleCacheStatusUpdate();
   }
 
-
   /**
    * Requests cache status (invalid/valid) when workflow is changed from the engine
    * for example, when operator is updated, the cache status might be invalidated
@@ -77,19 +76,18 @@ export class OperatorReuseCacheStatusService {
           this.jointUIService.changeOperatorReuseCacheStatus(mainJointPaper, op);
         });
       });
-    this.workflowWebsocketService.subscribeToEvent("CacheStatusUpdateEvent")
+    this.workflowWebsocketService
+      .subscribeToEvent("CacheStatusUpdateEvent")
       .pipe(untilDestroyed(this))
       .subscribe(event => {
-      const mainJointPaper = this.workflowActionService.getJointGraphWrapper().getMainJointPaper();
-      if (!mainJointPaper) {
-        return;
-      }
-      Object.entries(event.cacheStatusMap).forEach(([opID, cacheStatus]) => {
-        const op = this.workflowActionService.getTexeraGraph().getOperator(opID);
-        this.jointUIService.changeOperatorReuseCacheStatus(mainJointPaper, op, cacheStatus);
+        const mainJointPaper = this.workflowActionService.getJointGraphWrapper().getMainJointPaper();
+        if (!mainJointPaper) {
+          return;
+        }
+        Object.entries(event.cacheStatusMap).forEach(([opID, cacheStatus]) => {
+          const op = this.workflowActionService.getTexeraGraph().getOperator(opID);
+          this.jointUIService.changeOperatorReuseCacheStatus(mainJointPaper, op, cacheStatus);
+        });
       });
-    });
   }
-
-
 }

@@ -42,7 +42,6 @@ export class SchemaPropagationService {
     this.registerSchemaPropagation();
   }
 
-
   registerSchemaPropagation() {
     // invoke schema propagation API when: link is added/deleted,
     // or any property of any operator is changed
@@ -310,8 +309,6 @@ export class SchemaPropagationService {
   public getOperatorInputSchemaChangedStream(): Observable<void> {
     return this.operatorInputSchemaChangedStream.asObservable();
   }
-
-
 }
 
 // possible types of an attribute
