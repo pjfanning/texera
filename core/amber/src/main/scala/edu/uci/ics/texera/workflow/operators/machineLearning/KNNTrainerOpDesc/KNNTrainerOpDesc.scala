@@ -9,16 +9,9 @@ import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
 class KNNTrainerOpDesc extends PythonOperatorDescriptor {
-
   @JsonProperty(required = true)
   @JsonSchemaTitle("Parameter Setting")
-  var paralist: List[HyperP] = List()
-
-  @JsonProperty(defaultValue = "false", required = false)
-  @JsonSchemaTitle("Using Optimized K")
-  @JsonSchemaInject(json = """{"toggleHidden" : ["loopK"]}""")
-  @JsonPropertyDescription("Tune the parameter")
-  var isLoop: Boolean = false
+  var paraList: List[HyperP] = List()
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Label Column")
@@ -26,47 +19,19 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
   @AutofillAttributeName
   var label: String = ""
 
-  @JsonProperty(required = true, defaultValue = "3")
-  @JsonSchemaTitle("Custom K")
-  @JsonPropertyDescription("Specify the number of nearest neighbours")
-  @JsonSchemaInject(
-    strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
-      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "true")
-    )
-  )
-  var k: Int = Int.box(1)
-
-  @JsonProperty(required = false, value = "loopK")
-  @JsonSchemaTitle("Optimise k from loop")
-  @JsonPropertyDescription("Specify which attribute indicates the value of K")
-  @JsonSchemaInject(
-    strings = Array(
-      new JsonSchemaString(path = HideAnnotation.hideTarget, value = "isLoop"),
-      new JsonSchemaString(path = HideAnnotation.hideType, value = HideAnnotation.Type.equals),
-      new JsonSchemaString(path = HideAnnotation.hideExpectedValue, value = "false")
-    )
-  )
-  @AutofillAttributeNameOnPort1
-  var loopK: String = ""
-
   @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
   @JsonPropertyDescription("Features used to train the model")
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
 
+
+
+
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
-    val inputSchema = schemas(1)
-
-
-    if (isLoop & inputSchema.containsAttribute("Iteration"))
-      outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
     outputSchemaBuilder.add(new Attribute("model", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("para", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("features", AttributeType.BINARY)).build
+    outputSchemaBuilder.add(new Attribute("parameters", AttributeType.STRING)).build
   }
 
   override def operatorInfo: OperatorInfo =
@@ -90,9 +55,56 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
       outputPorts = List(OutputPort())
     )
 
-  override def generatePythonCode(): String = {
-    var truthy = "False"
-    if (isLoop) truthy = "True"
+
+
+  private def numberStatements(paraList:List[HyperP]) : String= {
+
+      for (ele<-paraList){
+        if (ele.source == Source.workflow){
+      return s"""
+         |      n = table[\"${ele.attribute}\"].values.shape[0]
+         |"""
+      }
+
+      }
+    ""
+  }
+
+
+
+    def writeParameterStatements(paraList:List[HyperP]): String =  {
+          var s =""
+      for  (ele<-paraList){
+        if (ele.source == Source.workflow){
+          s = s +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
+        }
+        else {
+          s = s +String.format("%s = %s (%s),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
+        }
+      }
+    s
+    }
+
+  def writeParameterString(paraList:List[HyperP]): String =  {
+    var s1 =""
+    var s2 = ""
+    for  (ele<-paraList){
+      if (ele.source == Source.workflow){
+        s1 = s1 +String.format("%s = {},",ele.parameter.getName())
+        s2 = s2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
+
+      }
+      else {
+        s1 = s1 +String.format("%s = {},",ele.parameter.getName())
+        s2 = s2 +String.format("%s (%s),",ele.parameter.getType(),ele.value)
+      }
+    }
+    String.format("\"%s\".format(%s)",s1,s2)
+  }
+
+
+
+  override def generatePythonCode() = {
     val list_features = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
     val finalcode =
       s"""
@@ -118,42 +130,34 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
          |      dataset = table
          |
          |    if port == 1:
-         |      param = table
-         |      table = dataset
-         |      y_train = table["$label"]
-         |      X_train = table[features]
-         |      if not ($truthy):
-         |        k = $k
-         |        knn = KNeighborsClassifier(n_neighbors=k)
-         |        knn.fit(X_train, y_train)
-         |        para_str = "K = '{}'".format(k)
-         |        model_str = pickle.dumps(knn)
-         |        model_list.append(model_str)
-         |        para_list.append(para_str)
-         |        features_list.append(features)
+         |      n = 1
+         |      y_train = dataset["$label"]
+         |      X_train = dataset[features]
+         |      ${numberStatements(paraList)}
          |
-         |      if ($truthy):
-         |        param = param.head(1)
-         |        k = param["$loopK"].values
-         |        for i in k:
-         |          k = int(i)
-         |          knn = KNeighborsClassifier(n_neighbors=k)
-         |          knn.fit(X_train, y_train)
-         |          para_str = "K = '{}'".format(k)
-         |          model_str = pickle.dumps(knn)
-         |          model_list.append(model_str)
-         |          para_list.append(para_str)
-         |          features_list.append(features)
+         |
+         |      for i in range(n):
+         |        print(i)
+         |        model = KNeighborsClassifier(${writeParameterStatements(paraList)})
+         |        model.fit(X_train, y_train)
+         |
+         |        para_str = ${writeParameterString(paraList)}
+         |        print(para_str)
+         |        model_str = pickle.dumps(model)
+         |        model_dict = {}
+         |        model_dict["model"] = model_str
+         |        model_dict["features"] = features
+         |        model_dict["parameters"] = para_str
+         |        model_list.append(model_dict)
+         |        para_list.append(para_str)
          |
          |      data = dict({})
          |      data["model"]= model_list
-         |      data["para"] = para_list
-         |      data["features"]= features_list
+         |      data["parameters"] =para_list
          |
          |      df = pd.DataFrame(data)
-         |      if ($truthy):
-         |        if "Iteration" in df.columns:
-         |          df["Iteration"]= param["Iteration"]
+         |      if "Iteration" in df.columns:
+         |        df["Iteration"]= table["Iteration"]
          |      yield df
          |
          |""".stripMargin

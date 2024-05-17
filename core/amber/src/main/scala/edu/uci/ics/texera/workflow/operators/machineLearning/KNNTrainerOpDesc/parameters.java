@@ -5,16 +5,23 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum parameters {
 
-    K("k"),
+    n_neighbors("n_neighbors","int"),
+    p("p","int"),
+
 
     ;
 
     private final String name;
+    private final String type;
 
-    parameters(String name) {
+    parameters(String name,String type) {
         this.name = name;
+        this.type  = type;
     }
-
+    @JsonIgnore
+    public String getType() {
+        return this.type;
+    }
     @JsonValue
     public String getName() {
         return this.name;

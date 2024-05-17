@@ -125,9 +125,9 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        y_true = []
          |      model_config = table
          |      for i in range(model_config.shape[0]):
-         |        feature = model_config["features"][i]
+         |        feature = model_config["model"][i]["features"]
          |        x_test = dataset[feature]
-         |        model = pickle.loads(model_config["model"][i])
+         |        model = pickle.loads(model_config["model"][i]["model"])
          |        y_predict = model.predict(x_test)
          |        y_pred.append(y_predict)
          |        if $flagGroundTruth:
@@ -143,8 +143,7 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |        result['$yTrue'] = y_true
          |      result_df  = pd.DataFrame(result)
          |      result_df["model"] = model_config["model"]
-         |      result_df["para"] =  model_config["para"]
-         |      result_df["features"] = model_config["features"]
+         |      result_df["parameters"] = model_config["parameters"]
          |      if "Iteration" in model_config.columns:
          |        result_df["Iteration"] = model_config["Iteration"]
          |

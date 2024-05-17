@@ -51,10 +51,10 @@ public class HyperP {
     @JsonProperty(value = "value")
     public String value;
 
-    public HyperP(parameters parameter,String attribute, Source condition, String value) {
+    public HyperP(parameters parameter,String attribute, Source source, String value) {
         this.parameter = parameter;
         this.attribute = attribute;
-        this.source = condition;
+        this.source = source;
         this.value = value;
     }}
 
