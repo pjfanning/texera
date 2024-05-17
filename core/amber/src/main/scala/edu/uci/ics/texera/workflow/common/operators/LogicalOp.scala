@@ -28,12 +28,11 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyMod
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.EncoderOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.MLP.MLPOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ClassificationScorer.ClassificationScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorClassification.NNPredictorClassificationOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Standardization.ScalerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Normalization.NormalizerOpDesc
@@ -182,19 +181,17 @@ trait StateTransferFunc
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
-    new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
+    new Type(value = classOf[ClassificationScorerOpDesc], name = "ClassificationScorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
     new Type(value = classOf[MLPCreatorOpDesc], name = "MLPCreator"),
     new Type(value = classOf[NNTrainerOpDesc], name = "NNTrainer"),
-    new Type(value = classOf[NNPredictorOpDesc], name = "NNPredictor"),
+    new Type(value = classOf[NNPredictorClassificationOpDesc], name = "NNPredictorClassification"),
     new Type(value = classOf[EncoderOpDesc], name = "Encoder"),
     new Type(value = classOf[ScalerOpDesc], name = "Scaler"),
     new Type(value = classOf[NormalizerOpDesc], name = "Normalizer"),
-new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
-    new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScore"),
-
-    new Type(value = classOf[MLPOpDesc], name = "MLP"),
+    new Type(value = classOf[NNPredictorRegressionOpDesc], name = "NNPredictorRegression"),
+    new Type(value = classOf[RegressionScorerOpDesc], name = "RegressionScorer"),
     new Type(
       value = classOf[HuggingFaceSentimentAnalysisOpDesc],
       name = "HuggingFaceSentimentAnalysis"

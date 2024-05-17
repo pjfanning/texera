@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor
+package edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorClassification
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
@@ -9,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class NNPredictorOpDesc extends PythonOperatorDescriptor {
+class NNPredictorClassificationOpDesc extends PythonOperatorDescriptor {
 
   @JsonProperty(required = true, defaultValue = "y_pred")
   @JsonSchemaTitle("Predict Column")
