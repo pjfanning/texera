@@ -157,7 +157,6 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                  label_show.append(item)
          |
          |              result['Label'] = labels
-         |              print(result)
          |              result_df = pd.DataFrame(result)
          |
          |
@@ -166,9 +165,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                fill_df = table.loc[[l]]
          |                df_fill = pd.DataFrame(np.tile(fill_df.values, (len(labels), 1)), columns=fill_df.columns)
          |                result_df = pd.concat([result_df, df_fill], axis=1)
-         |
-         |              print(result_df)
-         |
+         |         |
          |              if "Iteration" in result_df.columns:
          |                result_df['Iteration'] = result_df['Iteration'].astype(int)
          |              if type(out_table)!=str:
