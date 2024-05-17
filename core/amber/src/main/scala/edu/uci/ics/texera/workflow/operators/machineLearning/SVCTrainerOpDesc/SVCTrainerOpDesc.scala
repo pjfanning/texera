@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerOpDesc
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class KNNTrainerOpDesc extends PythonOperatorDescriptor {
+class SVCTrainerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Parameter Setting")
   var paraList: List[HyperP] = List()
@@ -36,8 +36,8 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "KNN Trainer",
-      "Train a KNN classifier",
+      "SVC Trainer",
+      "Train a Support Vector Machine classifier",
       OperatorGroupConstants.MACHINE_LEARNING_GROUP,
       inputPorts = List(
         InputPort(
@@ -112,7 +112,7 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
          |
          |import pandas as pd
          |import numpy as np
-         |from sklearn.neighbors import KNeighborsClassifier
+         |from sklearn.svm import SVC
          |import pickle
          |
          |
@@ -137,12 +137,11 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
          |
          |
          |      for i in range(n):
-         |        print(i)
-         |        model = KNeighborsClassifier(${writeParameterStatements(paraList)})
+         |        #print(i)
+         |        model = SVC(${writeParameterStatements(paraList)})
          |        model.fit(X_train, y_train)
          |
          |        para_str = ${writeParameterString(paraList)}
-         |        print(para_str)
          |        model_str = pickle.dumps(model)
          |        model_dict = {}
          |        model_dict["model"] = model_str

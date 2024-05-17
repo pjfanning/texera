@@ -1,12 +1,18 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc;
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerOpDesc;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum parameters {
 
-    n_neighbors("n_neighbors","int"),
-    p("p","int"),
+    C("C", "float"),
+    kernel("kernel", "str"),
+    gamma("gamma", "float"),
+    degree("degree", "int"),
+    coef0("coef0", "float"),
+    tol("tol", "float"),
+    probability("probability", "'True'=="),
+
 
     ;
 

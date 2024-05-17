@@ -37,6 +37,8 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChar
 import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.EncoderOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLP.MLPOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.ModelSelectionOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainerOpDesc.SVCTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
@@ -224,6 +226,8 @@ trait StateTransferFunc
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[SVCTrainerOpDesc], name = "SVCTrainer"),
+    new Type(value = classOf[ModelSelectionOpDesc], name = "ModelSelection"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
     new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
