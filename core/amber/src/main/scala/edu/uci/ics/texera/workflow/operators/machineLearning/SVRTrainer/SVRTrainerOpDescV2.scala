@@ -6,7 +6,7 @@ import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIden
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV2
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.KernelFunction
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer_Old.KernelFunction
 
 class SVRTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @JsonProperty(defaultValue = "false")

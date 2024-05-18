@@ -1,30 +1,39 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer
-
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer_Old
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaBool, JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.{
+  JsonSchemaBool,
+  JsonSchemaInject,
+  JsonSchemaString,
+  JsonSchemaTitle
+}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{
+  AutofillAttributeName,
+  AutofillAttributeNameList,
+  AutofillAttributeNameOnPort1,
+  HideAnnotation
+}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
-import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV1
-
-class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
+import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
+import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
+class SVCTrainerOpDescOld extends PythonOperatorDescriptor {
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get Parameters From Workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernal","loopGamma","loopCoef"]}""")
   @JsonPropertyDescription("Tune the parameter")
-  override var parameterTuningFlag: Boolean = false
-
-  @JsonProperty(required = true)
-  @JsonSchemaTitle("Ground Truth Attribute Column")
-  @JsonPropertyDescription("Ground truth attribute column")
-  @AutofillAttributeName
-  override var groundTruthAttribute: String = ""
+  var isLoop: Boolean = false
 
   @JsonProperty(value = "Selected Features", required = true)
   @JsonSchemaTitle("Selected Features")
   @JsonPropertyDescription("Features used to train the model")
   @AutofillAttributeNameList
-  override var selectedFeatures: List[String] = _
+  var selectedFeatures: List[String] = _
+
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("label Column")
+  @JsonPropertyDescription("Label")
+  @AutofillAttributeName
+  var label: String = ""
 
   @JsonProperty(required = false, defaultValue = "1")
   @JsonSchemaTitle("Custom C")
@@ -88,7 +97,7 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
     )
   )
   @AutofillAttributeNameOnPort1
-  var loopCoef: String = ""
+  val loopCoef: String = ""
 
   @JsonProperty(required = false)
   @JsonSchemaTitle("Kernal Function")
@@ -133,11 +142,18 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
       new JsonSchemaBool(path = HideAnnotation.hideOnNull, value = true)
     )
   )
-  var coef: Float = Float.box(1.0f)
+  val coef: Float = Float.box(1.0f)
 
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
+    val outputSchemaBuilder = Schema.builder()
+    if (isLoop) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+    outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build
+  }
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "SVC Trainer V1",
+      "SVC Trainer Old",
       "Train a SVM classifier",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
@@ -156,32 +172,9 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
       outputPorts = List(OutputPort())
     )
 
-  override def importPackage(): String = {
-    s"""
-       |from sklearn.svm import SVC
-       |""".stripMargin
-  }
-
-  override def paramFromCustom(): String = {
-    s"""
-       |        c_list = np.array([$c])
-       |        kernal_list = np.array(["$kernal"])
-       |        gamma_list = np.array([$gamma])
-       |        coef_list = np.array([$coef])
-       |""".stripMargin
-  }
-
-  override def paramFromTuning(): String = {
-    s"""
-       |        c_list = table["$loopC"].values
-       |        kernal_list = table["$loopKernal"].values
-       |        gamma_list = table["$loopGamma"].values
-       |        coef_list = table["$loopCoef"].values
-       |""".stripMargin
-  }
   def buildParaStr():String = {
     s"""
-       |        params = {'kernal_value': kernal_value, 'c_value': c_value, 'gamma_value': gamma_value,'coef_value':coef_value}
+       |        params = {'kernal_value': kernal_list[i], 'c_value': c_list[i], 'gamma_value': gamma_list[i],'coef_value':coef_list[i]}
        |        if kernal_value == 'linear':
        |          del params['gamma_value']
        |        if kernal_value in ['linear', 'sigmoid']:
@@ -189,24 +182,73 @@ class SVCTrainerOpDescV1 extends SklearnMLOperatorDescriptorV1{
        |        para_str = ";".join(["{} = {}".format(key, value) for key, value in params.items()])
        |""".stripMargin
   }
-  override def trainingModel(): String = {
-    s"""
-       |      for i in range(c_list.shape[0]):
-       |        c_value = c_list[i]
-       |        kernal_value = kernal_list[i]
-       |        gamma_value = gamma_list[i]
-       |        coef_value = coef_list[i]
-       |        svc = SVC(kernel=kernal_list[i],C=float(c_value),gamma=gamma_list[i],coef0=float(coef_list[i]),probability=True)
-       |        svc.fit(X_train, y_train)
-       |
-       |        ${buildParaStr()}
-       |        model_str = pickle.dumps(svc)
-       |        model_list.append(model_str)
-       |        para_list.append(para_str)
-       |        features_list.append(features)
-       |""".stripMargin
+
+  override def generatePythonCode(): String = {
+    var truthy = "False"
+    if (isLoop) truthy = "True"
+    assert(selectedFeatures.nonEmpty)
+    val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
+    val finalcode =
+      s"""
+         |from pytexera import *
+         |
+         |import pandas as pd
+         |import numpy as np
+         |from sklearn.svm import SVC
+         |import pickle
+         |global para
+         |
+         |class ProcessTableOperator(UDFTableOperator):
+         |  @overrides
+         |  def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
+         |    global dataset
+         |    model_list = []
+         |    para_list = []
+         |    features_list = []
+         |    features = [$listFeatures]
+         |
+         |    if port == 0:
+         |      dataset = table
+         |
+         |    if port == 1:
+         |      if not ($truthy):
+         |        c_list = np.array([$c])
+         |        kernal_list = np.array(["$kernal"])
+         |        gamma_list = np.array([$gamma])
+         |        coef_list = np.array([$coef])
+         |
+         |      if ($truthy):
+         |        c_list = table["$loopC"].values
+         |        kernal_list = table["$loopKernal"].values
+         |        gamma_list = table["$loopGamma"].values
+         |        coef_list = table["$loopCoef"].values
+         |
+         |      X_train = dataset[features]
+         |      y_train = dataset["$label"]
+         |
+         |      for i in range(c_list.shape[0]):
+         |        c_value = c_list[i]
+         |        svc = SVC(kernel=kernal_list[i],C=float(c_list[i]),gamma=gamma_list[i],coef0=float(coef_list[i]),probability=True)
+         |        svc.fit(X_train, y_train)
+         |
+         |        ${buildParaStr()}
+         |        model_str = pickle.dumps(svc)
+         |        model_list.append(model_str)
+         |        para_list.append(para_str)
+         |        features_list.append(features)
+         |
+         |      data = dict()
+         |      data["Model"]= model_list
+         |      data["Parameters"] = para_list
+         |      data["Features"]= features_list
+         |
+         |      df = pd.DataFrame(data)
+         |      if ($truthy):
+         |        df["Iteration"]= table["Iteration"]
+         |
+         |      yield df
+         |
+         |""".stripMargin
+    finalcode
   }
-
-
-
 }
