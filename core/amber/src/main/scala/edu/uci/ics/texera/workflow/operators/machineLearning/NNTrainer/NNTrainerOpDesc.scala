@@ -109,11 +109,6 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |            X = dataset.drop([label],axis=1).values
          |            y = dataset[label].values.reshape([dataset.shape[0],-1])
          |
-         |            # if $flagRegression:
-         |            #   y = dataset[label].values.reshape([dataset.shape[0],-1])
-         |            # else:
-         |            #   y = dataset[label].values
-         |
          |            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
          |            X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
          |            X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
@@ -126,7 +121,6 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |            else:
          |              unique_values, counts = np.unique(y_train, return_counts=True)
          |              output_size = len(unique_values)
-         |              print(unique_values)
          |              y_test_tensor = torch.tensor(y_test, dtype=torch.long)
          |              y_test_tensor = y_test_tensor.squeeze()
          |              y_train_tensor = torch.tensor(y_train, dtype=torch.long)
@@ -134,15 +128,13 @@ class NNTrainerOpDesc extends PythonOperatorDescriptor {
          |              unique_labels = np.unique(y_train)
          |              output_size = len(unique_labels)
          |
-         |            print('output_size:', output_size)
          |            model = pickle.loads(table["model"].values[0])
          |
          |            # Adjust the last layer based on the output size
-         |            in_features = model[-1].in_features  # Adjust 'layers' based on how your model structure is defined
+         |            in_features = model[-1].in_features
          |            new_output_size = output_size
          |            model[-1] = nn.Linear(in_features, new_output_size)
          |
-         |            print(model)
          |            # Prepare for training
          |            criterion = nn.$lossFunction()
          |            optimizer = optim.$optimizer(model.parameters(), lr = $learningRate)

@@ -56,20 +56,17 @@ class MLPCreatorOpDesc extends PythonOperatorDescriptor {
          |import torch.nn as nn
          |from torchrl.modules import MLP
          |
-         |
          |class GenerateOperator(UDFSourceOperator):
          |    @overrides
          |    def produce(self) -> Iterator[Union[TupleLike, TableLike, None]]:
          |        result = dict()
          |        model = MLP(out_features=1, num_cells=[${getLayers()}], activation_class=nn.$activationFunction)
-         |        print(model)
          |        serialized_model = pickle.dumps(model)
          |
          |        result['model'] = serialized_model
          |        df = pd.DataFrame(result, index=[0])
          |
          |        yield df
-         |
          |
          |""".stripMargin
     finalCode

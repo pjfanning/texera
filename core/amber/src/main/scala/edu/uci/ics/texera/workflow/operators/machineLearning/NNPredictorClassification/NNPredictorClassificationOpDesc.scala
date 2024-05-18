@@ -16,7 +16,7 @@ class NNPredictorClassificationOpDesc extends PythonOperatorDescriptor {
   @JsonPropertyDescription("Specify the name of the predicted data column")
   var yPred: String = ""
 
-  @JsonProperty(defaultValue = "false")
+  @JsonProperty(required = false, defaultValue = "false")
   @JsonSchemaTitle("Predict Probability For Each Class")
   @JsonSchemaInject(json = """{"toggleHidden" : ["yProb"]}""")
   @JsonPropertyDescription(
@@ -24,7 +24,7 @@ class NNPredictorClassificationOpDesc extends PythonOperatorDescriptor {
   )
   var isProb: Boolean = false
 
-  @JsonProperty(value = "yProb", required = false)
+  @JsonProperty(required = false, value = "yProb")
   @JsonSchemaTitle("Number of Classes")
   @JsonPropertyDescription("Specify the name of the predicted probability column")
   @JsonSchemaInject(
@@ -138,24 +138,20 @@ class NNPredictorClassificationOpDesc extends PythonOperatorDescriptor {
            |                if $flagProb:
            |                    probability = F.softmax(outputs, dim=1)
            |                    output_numpy = probability.numpy().round(3)
-           |                    predicted = outputs
-           |                    predicted = torch.argmax(predicted, dim=1)
+           |                    predicted = torch.argmax(outputs, dim=1)
            |
            |                    cols = ["class{}".format(i) for i in range($classNumber)]
            |                    pd_prob = pd.DataFrame(output_numpy, columns=cols)
-           |                    pd_pred = pd.DataFrame(predicted, columns=["$yPred"])
+           |                    pd_pred = pd.DataFrame(predicted.numpy(), columns=["$yPred"])
            |                    pd_result = pd.concat([pd_prob, pd_pred, dataset],axis=1)
-           |                    if $flagGroundTruth:
-           |                        accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
-           |                        print(f'Accuracy on test set: {accuracy:.2f}')
            |                else:
-           |                    predicted = outputs
-           |                    predicted = torch.argmax(predicted, dim=1)
-           |                    pd_pred = pd.DataFrame(predicted.numpy(), columns=["y_pred"])
-           |                    pd_result = pd.concat([pd_pred,dataset],axis=1)
-           |                    if $flagGroundTruth:
-           |                        accuracy = r2_score(y_test_tensor.numpy(), predicted.numpy())
-           |                        print(f'R2 on test set: {accuracy:.2f}')
+           |                    predicted = torch.argmax(outputs, dim=1)
+           |                    pd_pred = pd.DataFrame(predicted.numpy(), columns=["$yPred"])
+           |                    pd_result = pd.concat([pd_pred, dataset],axis=1)
+           |
+           |                if $flagGroundTruth:
+           |                    accuracy = accuracy_score(y_test_tensor.numpy(), predicted.numpy())
+           |                    print(f'Accuracy on test set: {accuracy:.2f}')
            |
            |            yield pd_result
            |""".stripMargin

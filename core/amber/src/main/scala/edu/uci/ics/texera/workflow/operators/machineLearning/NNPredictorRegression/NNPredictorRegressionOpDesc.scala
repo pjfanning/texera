@@ -88,7 +88,7 @@ class NNPredictorRegressionOpDesc extends PythonOperatorDescriptor {
            |        if port == 1:
            |            if $flagGroundTruth:
            |                label = table["label"].values[0]
-           |                X =dataset.drop([label],axis=1).values
+           |                X = dataset.drop([label],axis=1).values
            |                y = dataset[label].values
            |                y_test_tensor = torch.tensor(y, dtype=torch.double).reshape([y.shape[0],-1])
            |            else:
