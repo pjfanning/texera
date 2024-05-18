@@ -101,6 +101,8 @@ object AmberConfig {
     getConfSource.getInt("user-sys.version-time-limit-in-minutes")
   val cleanupAllExecutionResults: Boolean =
     getConfSource.getBoolean("web-server.clean-all-execution-results-on-server-start")
+  val shareWorkflowExecutionAcrossUsers: Boolean =
+    getConfSource.getBoolean("web-server.share-workflow-execution-across-users")
 
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")

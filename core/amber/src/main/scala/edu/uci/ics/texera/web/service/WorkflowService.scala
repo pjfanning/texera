@@ -43,18 +43,23 @@ object WorkflowService {
 
   def getAllWorkflowServices: Iterable[WorkflowService] = workflowServiceMapping.values().asScala
 
-  def mkWorkflowStateId(workflowId: WorkflowIdentity): String = {
-    workflowId.toString
+  def mkWorkflowStateId(uIdOpt: Option[UInteger], workflowId: WorkflowIdentity): String = {
+    if(AmberConfig.shareWorkflowExecutionAcrossUsers){
+      workflowId.toString
+    }else{
+      uIdOpt.toString + workflowId.toString
+    }
   }
   def getOrCreate(
+      uIdOpt: Option[UInteger],
       workflowId: WorkflowIdentity,
       cleanupTimeout: Int = cleanUpDeadlineInSeconds
   ): WorkflowService = {
     workflowServiceMapping.compute(
-      mkWorkflowStateId(workflowId),
+      mkWorkflowStateId(uIdOpt, workflowId),
       (_, v) => {
         if (v == null) {
-          new WorkflowService(workflowId, cleanupTimeout)
+          new WorkflowService(uIdOpt, workflowId, cleanupTimeout)
         } else {
           v
         }
@@ -64,6 +69,7 @@ object WorkflowService {
 }
 
 class WorkflowService(
+    uIdOpt: Option[UInteger],
     val workflowId: WorkflowIdentity,
     cleanUpTimeout: Int
 ) extends SubscriptionManager
@@ -83,7 +89,7 @@ class WorkflowService(
     cleanUpTimeout,
     () => {
       opResultStorage.close()
-      WorkflowService.workflowServiceMapping.remove(mkWorkflowStateId(workflowId))
+      WorkflowService.workflowServiceMapping.remove(mkWorkflowStateId(uIdOpt, workflowId))
       if (executionService.getValue != null) {
         // shutdown client
         executionService.getValue.client.shutdown()

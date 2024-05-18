@@ -60,7 +60,10 @@ class WorkflowWebsocketResource extends LazyLogging {
           // hack to refresh frontend run button state
           sessionState.send(WorkflowStateEvent("Uninitialized"))
           val workflowState =
-            WorkflowService.getOrCreate(WorkflowIdentity(registerWorkflowIdRequest.workflowId))
+            WorkflowService.getOrCreate(
+              uidOpt,
+              WorkflowIdentity(registerWorkflowIdRequest.workflowId)
+            )
           sessionState.subscribe(workflowState)
           sessionState.send(ClusterStatusUpdateEvent(ClusterListener.numWorkerNodesInCluster))
           sessionState.send(RegisterWorkflowIdResponse("workflowId registered"))
