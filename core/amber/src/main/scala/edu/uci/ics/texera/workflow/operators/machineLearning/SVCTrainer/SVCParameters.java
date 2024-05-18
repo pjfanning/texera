@@ -9,8 +9,7 @@ public enum SVCParameters implements AbstractEnumClass {
     degree("degree", "int"),
     coef0("coef0", "float"),
     tol("tol", "float"),
-    probability("probability", "'True'=="),
-
+    probability("probability", "'True'==")
     ;
 
     private final String name;

@@ -36,7 +36,7 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
 
-  private def numberStatements(paraList:List[HyperParameters[T]]) : String= {
+  private def getLoopTimes(paraList:List[HyperParameters[T]]) : String= {
     for (ele<-paraList){
       if (ele.parametersSource == ParametersSource.workflow){
         return s"""table[\"${ele.attribute}\"].values.shape[0]"""
@@ -47,34 +47,34 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
     ""
   }
 
-  def writeParameterStatements(paraList:List[HyperParameters[T]]): String =  {
-    var s =""
+  def getTrainingParameters(paraList:List[HyperParameters[T]]): String =  {
+    var str =""
     for  (ele<-paraList){
       if (ele.parametersSource == ParametersSource.workflow){
-        s = s +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
+        str = str +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
       }
       else {
-        s = s +String.format("%s = %s ('%s'),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
+        str = str +String.format("%s = %s ('%s'),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
       }
     }
-    s
+    str
   }
 
-  def writeParameterString(paraList:List[HyperParameters[T]]): String =  {
-    var s1 =""
-    var s2 = ""
+  def getParameterString(paraList:List[HyperParameters[T]]): String =  {
+    var str1 =""
+    var str2 = ""
     for  (ele<-paraList){
       if (ele.parametersSource == ParametersSource.workflow){
-        s1 = s1 +String.format("%s = {},",ele.parameter.getName())
-        s2 = s2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
+        str1 = str1 +String.format("%s = {},",ele.parameter.getName())
+        str2 = str2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
 
       }
       else {
-        s1 = s1 +String.format("%s = {},",ele.parameter.getName())
-        s2 = s2 +String.format("%s ('%s'),",ele.parameter.getType(),ele.value)
+        str1 = str1 +String.format("%s = {},",ele.parameter.getName())
+        str2 = str2 +String.format("%s ('%s'),",ele.parameter.getType(),ele.value)
       }
     }
-    String.format("\"%s\".format(%s)",s1,s2)
+    String.format("\"%s\".format(%s)",str1,str2)
   }
 
   override def generatePythonCode(): String = {
@@ -106,14 +106,14 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |    if port == 1:
          |      y_train = dataset["$groundTruthAttribute"]
          |      X_train = dataset[features]
-         |      loop_times = ${numberStatements(paraList)}
+         |      loop_times = ${getLoopTimes(paraList)}
          |
          |
          |      for i in range(loop_times):
-         |        model = ${trainingName}(${writeParameterStatements(paraList)})
+         |        model = ${trainingName}(${getTrainingParameters(paraList)})
          |        model.fit(X_train, y_train)
          |
-         |        para_str = ${writeParameterString(paraList)}
+         |        para_str = ${getParameterString(paraList)}
          |        model_str = pickle.dumps(model)
          |        model_dict = {}
          |        model_dict["Model"] = model_str
