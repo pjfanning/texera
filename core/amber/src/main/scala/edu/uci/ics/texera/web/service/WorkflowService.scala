@@ -44,9 +44,9 @@ object WorkflowService {
   def getAllWorkflowServices: Iterable[WorkflowService] = workflowServiceMapping.values().asScala
 
   def mkWorkflowStateId(uIdOpt: Option[UInteger], workflowId: WorkflowIdentity): String = {
-    if(AmberConfig.shareWorkflowExecutionAcrossUsers){
+    if (AmberConfig.shareWorkflowExecutionAcrossUsers) {
       workflowId.toString
-    }else{
+    } else {
       uIdOpt.toString + workflowId.toString
     }
   }
