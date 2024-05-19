@@ -29,7 +29,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Classification Scorer",
       "Scorer for machine learning classifier",
-      OperatorGroupConstants.MODEL_VISUALIZATION_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )
@@ -42,12 +42,11 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       .foreach(scorer => {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
-    if (inputSchema.containsAttribute("Parameters")){
-      outputSchemaBuilder.add(inputSchema)
-      outputSchemaBuilder.removeIfExists("Parameters")
-      outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
 
-    }
+    outputSchemaBuilder.add(inputSchema)
+
+
+
     outputSchemaBuilder.build()
   }
 
@@ -61,7 +60,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   }
 
   override def generatePythonCode(): String = {
-    val finalCode =
+    val finalcode =
       s"""
          |from pytexera import *
          |import pandas as pd
@@ -97,82 +96,86 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |            result = dict()
-         |            if table.shape[0]>1:
-         |              y_true = table['$actualValueColumn'][0]
-         |              y_pred = table['$predictValueColumn'][0]
+         |            length = 1
+         |            out_table = "o"
+         |            if isinstance(table['$actualValueColumn'], pd.Series):
+         |              y_true_list = table['$actualValueColumn']
+         |              y_pred_list = table['$predictValueColumn']
+         |              length = len(table['$predictValueColumn'])
          |
          |            else:
-         |              y_true = table['$actualValueColumn'][0]
-         |              y_pred = table['$predictValueColumn'][0]
-         |
-         |            labels = list(set(y_true))
+         |              y_true_list = [table['$actualValueColumn']]
+         |              y_pred_list = [table['$predictValueColumn']]
+         |            labels = list(set(y_true_list[0]))
          |            labels.append('Overall')
          |
          |            scorer_list = [${getSelectedScorers()}]
+         |            for l in range(length):
+         |              result = dict()
+         |              y_true = y_true_list[l]
+         |              y_pred = y_pred_list[l]
+         |              for scorer in scorer_list:
+         |                result[scorer] = [ None ] * len(labels)
          |
-         |            for scorer in scorer_list:
-         |              result[scorer] = [ None ] * len(labels)
+         |              for scorer in scorer_list:
+         |                prediction = None
+         |                if scorer == 'Accuracy':
+         |                  prediction = accuracy_score(y_true, y_pred)
+         |                  result['Accuracy'][len(labels) - 1] = prediction
          |
-         |            for scorer in scorer_list:
-         |              prediction = None
-         |              if scorer == 'Accuracy':
-         |                prediction = accuracy_score(y_true, y_pred)
-         |                result['Accuracy'][len(labels) - 1] = prediction
+         |                elif scorer == 'Precision Score':
+         |                  for i in range(len(labels)):
+         |                    if labels[i] != 'Overall':
+         |                      prediction = precision_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                      result['Precision Score'][i] = prediction[0]
+         |                    else:
+         |                      result['Precision Score'][i] = precision_score(y_true, y_pred, average = 'macro')
          |
-         |              elif scorer == 'Precision Score':
-         |                for i in range(len(labels)):
-         |                  if labels[i] != 'Overall':
-         |                    prediction = precision_score(y_true, y_pred, average = None, labels = [labels[i]])
-         |                    result['Precision Score'][i] = prediction[0]
-         |                  else:
-         |                    result['Precision Score'][i] = precision_score(y_true, y_pred, average = 'macro')
+         |                elif scorer == 'Recall Score':
+         |                  for i in range(len(labels)):
+         |                    if labels[i] != 'Overall':
+         |                      prediction = recall_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                      result['Recall Score'][i] = prediction[0]
+         |                    else:
+         |                      result['Recall Score'][i] = recall_score(y_true, y_pred, average = 'macro')
          |
-         |              elif scorer == 'Recall Score':
-         |                for i in range(len(labels)):
-         |                  if labels[i] != 'Overall':
-         |                    prediction = recall_score(y_true, y_pred, average = None, labels = [labels[i]])
-         |                    result['Recall Score'][i] = prediction[0]
-         |                  else:
-         |                    result['Recall Score'][i] = recall_score(y_true, y_pred, average = 'macro')
+         |                elif scorer == 'F1 Score':
+         |                  for i in range(len(labels)):
+         |                    if labels[i] != 'Overall':
+         |                      prediction = f1_score(y_true, y_pred, average = None, labels = [labels[i]])
+         |                      result['F1 Score'][i] = prediction[0]
+         |                    else:
+         |                      result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
          |
-         |              elif scorer == 'F1 Score':
-         |                for i in range(len(labels)):
-         |                   if labels[i] != 'Overall':
-         |                    prediction = f1_score(y_true, y_pred, average = None, labels = [labels[i]])
-         |                    result['F1 Score'][i] = prediction[0]
-         |                   else:
-         |                    result['F1 Score'][i] = f1_score(y_true, y_pred, average = 'macro')
          |
-         |            label_show = []
+         |              label_show = []
          |
-         |            for item in labels:
-         |              if type(item) != str:
-         |                 label_show.append('class_' + str(item))
+         |              for item in labels:
+         |                if type(item) != str:
+         |                  label_show.append('class_' + str(item))
+         |                else:
+         |                  label_show.append(item)
+         |
+         |              result['Label'] = label_show
+         |              result_df = pd.DataFrame(result)
+         |
+         |
+         |              row_diff = len(result_df) - 1 # make two table have same row number
+         |              if row_diff > 0:
+         |                fill_df = table.loc[[l]]
+         |                df_fill = pd.DataFrame(np.tile(fill_df.values, (len(labels), 1)), columns=fill_df.columns)
+         |                result_df = pd.concat([result_df, df_fill], axis=1)
+         |
+         |              if "Iteration" in result_df.columns:
+         |                result_df['Iteration'] = result_df['Iteration'].astype(int)
+         |              if type(out_table)!=str:
+         |                out_table = pd.concat([out_table,result_df], axis=0)
          |              else:
-         |                 label_show.append(item)
-         |
-         |            result['Label'] = label_show
-         |
-         |            result_df = pd.DataFrame(result)
-         |
-         |            row_diff = len(result_df) - len(table) # make two table have same row number
-         |            if row_diff > 0:
-         |              fill_data = {col: [table[col][0]] * row_diff for col in table.columns}
-         |              fill_df = pd.DataFrame(fill_data)
-         |              table = pd.concat([table, fill_df], ignore_index=True)
-         |            if "Parameters" in table.columns:
-         |              para_str_series = pd.Series(table['Parameters'].tolist())
-         |              table = table.drop(['Parameters'], axis=1)
-         |              table['Parameters'] = para_str_series
-         |              result_df = pd.concat([result_df, table], axis=1)
-         |
-         |            if "Iteration" in result_df.columns:
-         |              result_df['Iteration'] = result_df['Iteration'].astype(int)
-         |
-         |            yield result_df
+         |                out_table =  result_df
+         |            yield out_table
          |
          |""".stripMargin
-    finalCode
+    finalcode
   }
 
 }
