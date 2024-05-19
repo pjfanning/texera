@@ -104,7 +104,7 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
     dataPayload match {
       case DataFrame(frame) =>
         val tuples: mutable.Queue[Tuple] =
-          mutable.Queue(frame.map(_).toSeq: _*)
+          mutable.Queue(frame.map(_.asInstanceOf[Tuple]).toSeq: _*)
         writeArrowStream(tuples, from, isEnd = false)
       case MarkerFrame(frame) =>
         frame match {
