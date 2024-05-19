@@ -92,33 +92,18 @@ class DataProcessor(
     }
   }
 
-  private[this] def processInputState(state: State): Unit = {
-    try {
-      val portIdentity: PortIdentity =
-        this.inputGateway.getChannel(inputManager.currentChannelId).getPortId
-      outputManager.emitMarker(
-        executor.processState(
-          state,
-          portIdentity.id
-        )
-      )
-    } catch safely {
-      case e =>
-        // forward input tuple to the user and pause DP thread
-        handleExecutorException(e)
-    }
+  private[this] def processInputState(state: State, port: Int): Unit = {
+    executor.processState(state, port)
   }
 
   /**
     * process end of an input port with Executor.onFinish().
     * this function is only called by the DP thread.
     */
-  private[this] def processEndOfUpstream(): Unit = {
+  private[this] def processEndOfUpstream(port: Int): Unit = {
     try {
       outputManager.outputIterator.setTupleOutput(
-        executor.onInputFinishMultiPort(
-          this.inputGateway.getChannel(inputManager.currentChannelId).getPortId.id
-        )
+        executor.onInputFinishMultiPort(port)
       )
       val outputState = executor.produceState()
       if (outputState!= null) {
@@ -213,23 +198,15 @@ class DataProcessor(
         inputManager.initBatch(channelId, tuples)
         processInputTuple(inputManager.getNextTuple)
       case MarkerFrame(marker) =>
-
         marker match {
           case state: State =>
-            val a = state.get("count")
-            logger.error(s"state marker: $marker")
-            logger.error(s"state marker: $a")
-            processInputState(state)
+            processInputState(state, portId.id)
           case StartOfUpstream() =>
           case EndOfUpstream() =>
-            val channel = this.inputGateway.getChannel(channelId)
-            val portId = channel.getPortId
-
             this.inputManager.getPort(portId).channels(channelId) = true
-
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
-              processEndOfUpstream()
+              processEndOfUpstream(portId.id)
               outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
             }
             if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {

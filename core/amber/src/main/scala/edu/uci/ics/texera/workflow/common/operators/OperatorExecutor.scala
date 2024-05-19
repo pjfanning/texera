@@ -19,9 +19,7 @@ trait OperatorExecutor {
   }
 
   def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike]
-
-  def processState(state: State, port: Int): State = State()
-
+  
   def onInputFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))
   }
@@ -30,5 +28,7 @@ trait OperatorExecutor {
   def onInputStart(port: Int): Iterator[State] = Iterator.empty
 
   def produceState(): State = null
+
+  def processState(state: State, port: Int): Unit = {}
 
 }

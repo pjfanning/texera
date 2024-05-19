@@ -1,16 +1,13 @@
 package edu.uci.ics.texera.web
 
-import edu.uci.ics.amber.engine.common.{AmberUtils, SerializedState}
-import edu.uci.ics.texera.Utils
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.RUNNING
+import edu.uci.ics.amber.engine.common.{AmberRuntime, SerializedState}
 
 import scala.collection.mutable
 
 object JsonTest {
 
   def main(args: Array[String]): Unit = {
-    AmberUtils.startActorWorker(None)
+    AmberRuntime.startActorWorker(None)
     val testObjs = Array(
       Map(1 -> "123", 3 -> "1231234"),
       mutable.HashMap[String, Any]("name" -> "peter", "mail" -> "peter@uci.edu", "grade" -> 4.0),

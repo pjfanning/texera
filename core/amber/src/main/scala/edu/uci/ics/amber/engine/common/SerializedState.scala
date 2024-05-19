@@ -18,13 +18,13 @@ object SerializedState {
   }
 
   def fromObjectToString[T <: AnyRef](obj:T):String = {
-    val serializedObj = fromObject(obj, AmberUtils.serde)
+    val serializedObj = fromObject(obj, AmberRuntime.serde)
     s"${serializedObj.manifest}amber_serialization${serializedObj.serializerId}amber_serialization" + (serializedObj.bytes.map(_.toChar)).mkString
   }
 
   def stringToObject(str:String):AnyRef = {
     val fields = str.split("amber_serialization")
-    SerializedState(fields(2).map(_.toByte).toArray,fields(1).toInt,fields(0)).toObject[AnyRef](AmberUtils.serde)
+    SerializedState(fields(2).map(_.toByte).toArray,fields(1).toInt,fields(0)).toObject[AnyRef](AmberRuntime.serde)
   }
 }
 
