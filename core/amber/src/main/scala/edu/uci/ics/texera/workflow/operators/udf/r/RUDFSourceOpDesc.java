@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.udf.python.source;
+package edu.uci.ics.texera.workflow.operators.udf.r;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
@@ -31,19 +31,14 @@ import static java.util.Collections.singletonList;
 import static scala.jdk.javaapi.CollectionConverters.asScala;
 
 
-public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
-
-    @JsonProperty(required = true, defaultValue =
-            "# Choose from the following templates:\n" +
-                    "# \n" +
-                    "# from pytexera import *\n" +
-                    "# \n" +
-                    "# class GenerateOperator(UDFSourceOperator):\n" +
-                    "# \n" +
-                    "#     @overrides\n" +
-                    "#     def produce(self) -> Iterator[Union[TupleLike, TableLike, None]]:\n" +
-                    "#         yield\n")
-    @JsonSchemaTitle("Python script")
+public class RUDFSourceOpDesc extends SourceOperatorDescriptor {
+    @JsonProperty(
+        required = true,
+        defaultValue =
+            "function() {\n\n" +
+            "}"
+    )
+    @JsonSchemaTitle("R Source UDF Script")
     @JsonPropertyDescription("Input your code here")
     public String code;
 
@@ -59,7 +54,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
 
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
-        OpExecInitInfo exec = OpExecInitInfo.apply(code, "python");
+        OpExecInitInfo exec = OpExecInitInfo.apply(code, "r");
         Preconditions.checkArgument(workers >= 1, "Need at least 1 worker.");
         SchemaPropagationFunc func = SchemaPropagationFunc.apply((Function<Map<PortIdentity, Schema>, Map<PortIdentity, Schema>> & Serializable) inputSchemas -> {
             // Initialize a Java HashMap
@@ -96,14 +91,14 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     @Override
     public OperatorInfo operatorInfo() {
         return new OperatorInfo(
-                "1-out Python UDF",
-                "User-defined function operator in Python script",
-                OperatorGroupConstants.PYTHON_GROUP(),
+                "1-out R UDF",
+                "User-defined function operator in R script",
+                OperatorGroupConstants.R_GROUP(),
                 asScala(new ArrayList<InputPort>()).toList(),
                 asScala(singletonList(new OutputPort(new PortIdentity(0, false), "", false))).toList(),
                 false,
                 false,
-                true,
+                false,
                 false
         );
     }
@@ -112,7 +107,7 @@ public class PythonUDFSourceOpDescV2 extends SourceOperatorDescriptor {
     public Schema sourceSchema() {
         Schema.Builder outputSchemaBuilder = Schema.builder();
 
-        // for any pythonUDFType, it can add custom output columns (attributes).
+        // for any UDFType, it can add custom output columns (attributes).
         if (columns != null) {
             outputSchemaBuilder.add(asScala(columns)).build();
         }
