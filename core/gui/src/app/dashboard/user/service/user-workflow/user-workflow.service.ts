@@ -27,9 +27,27 @@ import { observe } from "@ngx-formly/core/lib/utils";
  * UserWorkflowService facilitates creating a new workflow from the dataset dashboard
  */
 
+
+// Define OperatorConfig type
+interface OperatorConfig {
+  operatorID: string;
+  operatorType: string;
+  operatorVersion: string;
+  operatorProperties: any; 
+  inputPorts: any[];
+  outputPorts: any[];
+  showAdvanced: boolean;
+  isDisabled: boolean;
+  customDisplayName: string;
+  dynamicInputPorts: boolean;
+  dynamicOutputPorts: boolean;
+  position: { x: number; y: number };
+}
+
 @Injectable({
   providedIn: "root",
 })
+
 export class UserWorkflowService {
   public ROUTER_WORKFLOW_BASE_URL = "workflow";
   private _searchResultsComponent?: SearchResultsComponent;
@@ -72,14 +90,99 @@ export class UserWorkflowService {
     private searchService: SearchService
   ) {}
 
-  public onClickCreateNewWorkflowFromDashboard(): Observable<number | undefined> {
+  // Define the operator configurations
+  operatorConfigs: { [key: string]: OperatorConfig } = {
+    'jsonl-file-scan': {
+      operatorID: 'JSONLFileScan-operator-4c65a712-19f4-44b6-9165-aa34af72c176',
+      operatorType: 'JSONLFileScan',
+      operatorVersion: 'acc831f5798dbb8df9234be1863fc9a292bc766a',
+      operatorProperties: { fileEncoding: 'UTF_8' },
+      inputPorts: [],
+      outputPorts: [{ portID: 'output-0', displayName: '', allowMultiInputs: false, isDynamicPort: false }],
+      showAdvanced: false,
+      isDisabled: false,
+      customDisplayName: 'JSONL File Scan',
+      dynamicInputPorts: false,
+      dynamicOutputPorts: false,
+      position: { x: 437, y: 193 }
+    },
+    'csv-file-scan': {
+      operatorID: 'CSVFileScan-operator-5289e695-5bfb-4eeb-abad-b12d81e67fdc',
+      operatorType: 'CSVFileScan',
+      operatorVersion: 'acc831f5798dbb8df9234be1863fc9a292bc766a',
+      operatorProperties: { fileEncoding: 'UTF_8', customDelimiter: ',', hasHeader: true },
+      inputPorts: [],
+      outputPorts: [{ portID: 'output-0', displayName: '', allowMultiInputs: false, isDynamicPort: false }],
+      showAdvanced: false,
+      isDisabled: false,
+      customDisplayName: 'CSV File Scan',
+      dynamicInputPorts: false,
+      dynamicOutputPorts: false,
+      position: { x: 463, y: 325 }
+    },
+    'text-input': {
+      operatorID: 'TextInput-operator-90fb9125-c2b3-414c-8eb5-6e8db6abaf93',
+      operatorType: 'TextInput',
+      operatorVersion: '9cfcd7a35153ceaaa14bc24d814014b2ddcc3e51',
+      operatorProperties: { attributeType: 'string', attributeName: 'line' },
+      inputPorts: [],
+      outputPorts: [{ portID: 'output-0', displayName: '', allowMultiInputs: false, isDynamicPort: false }],
+      showAdvanced: false,
+      isDisabled: false,
+      customDisplayName: 'Text Input',
+      dynamicInputPorts: false,
+      dynamicOutputPorts: false,
+      position: { x: 509, y: 503 }
+    },
+    'csv-old-file-scan': {
+      operatorID: 'CSVOldFileScan-operator-f2c6e3d9-bd4b-4024-94af-87e0707e07dd',
+      operatorType: 'CSVOldFileScan',
+      operatorVersion: 'acc831f5798dbb8df9234be1863fc9a292bc766a',
+      operatorProperties: { fileEncoding: 'UTF_8', customDelimiter: ',', hasHeader: true },
+      inputPorts: [],
+      outputPorts: [{ portID: 'output-0', displayName: '', allowMultiInputs: false, isDynamicPort: false }],
+      showAdvanced: false,
+      isDisabled: false,
+      customDisplayName: 'CSVOld File Scan',
+      dynamicInputPorts: false,
+      dynamicOutputPorts: false,
+      position: { x: 699, y: 312 }
+    },
+    'file-scan': {
+      operatorID: 'FileScan-operator-22269944-b337-4a50-a659-0581edc7e258',
+      operatorType: 'FileScan',
+      operatorVersion: '4cf7d13b82b8941ffeec37e96ffc5ff6d6c79095',
+      operatorProperties: { encoding: 'UTF_8', extract: false, outputFileName: false, attributeType: 'string', attributeName: 'line' },
+      inputPorts: [],
+      outputPorts: [{ portID: 'output-0', displayName: '', allowMultiInputs: false, isDynamicPort: false }],
+      showAdvanced: false,
+      isDisabled: false,
+      customDisplayName: ' File Scan',
+      dynamicInputPorts: false,
+      dynamicOutputPorts: false,
+      position: { x: 750, y: 444 }
+    }
+  };
+  
+
+  public onClickCreateNewWorkflowFromDatasetDashboard(datasetFile: string, scanOption: string): Observable<number | undefined> {
+    const operatorConfig = this.operatorConfigs[scanOption]; 
+    if (!operatorConfig) {
+      throw new Error('Invalid scan option selected');
+    }
+  
+    operatorConfig.operatorProperties.fileName = datasetFile;
+  
     const emptyWorkflowContent: WorkflowContent = {
-      operators: [],
+      operators: [operatorConfig],
       commentBoxes: [],
       groups: [],
       links: [],
-      operatorPositions: {},
+      operatorPositions: {
+        [operatorConfig.operatorID]: { x: 474, y: 235 }
+      }
     };
+    
     let localPid = this.pid;
 
     return this.workflowPersistService.createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME).pipe(

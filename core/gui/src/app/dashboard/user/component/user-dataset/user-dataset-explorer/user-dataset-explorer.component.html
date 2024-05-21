@@ -165,6 +165,15 @@
         (click)="onClickCreateWorkflowFromDataset()">
         Create Workflow
       </button>
+      <br>
+      <label for="scan-options">Select an option:</label>
+      <select id="scan-options" name="scan-options" [(ngModel)]="scanOption">
+          <option value="jsonl-file-scan">JSONL File Scan</option>
+          <option value="csv-file-scan">CSV File Scan</option>
+          <option value="text-input">Text Input</option>
+          <option value="csv-old-file-scan">CSV Old File Scan</option>
+          <option value="file-scan" selected>File Scan</option>
+      </select>
     </div>
   </nz-sider>
 </nz-layout>

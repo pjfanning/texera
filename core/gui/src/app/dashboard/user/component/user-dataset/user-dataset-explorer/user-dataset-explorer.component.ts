@@ -14,13 +14,21 @@ import { Injectable } from "@angular/core";
 import { UserWorkflowService } from "../../../service/user-workflow/user-workflow.service";
 import { EnvironmentService } from "../../../service/user-environment/environment.service";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
-
+import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
+import { Point } from "plotly.js-basic-dist-min";
+/**
+import { Point } from "src/app/workspace/types/workflow-common.interface";
+import { OperatorPredicate } from "src/app/workspace/types/workflow-common.interface";
+import { WorkflowMetadata } from "src/app/dashboard/user/type/workflow-metadata.interface";
+import { DynamicSchemaService } from "src/app/workspace/service/dynamic-schema/dynamic-schema.service"; 
+*/
 @UntilDestroy()
 @Component({
   templateUrl: "./user-dataset-explorer.component.html",
   styleUrls: ["./user-dataset-explorer.component.scss"],
 })
 export class UserDatasetExplorerComponent implements OnInit {
+  public scanOption: string  = "";
   public did: number | undefined;
   public datasetName: string = "";
   public datasetDescription: string = "";
@@ -232,12 +240,14 @@ export class UserDatasetExplorerComponent implements OnInit {
   }
 
   onClickCreateWorkflowFromDataset(): void {
+    const datasetFile: string = "/" + this.datasetName + this.currentDisplayedFileName;
     this.userWorkflowService
-      .onClickCreateNewWorkflowFromDashboard()
+      .onClickCreateNewWorkflowFromDatasetDashboard(datasetFile, this.scanOption) // initializes a scan operator in workflow
       .pipe(untilDestroyed(this))
       .subscribe({
         next: wid => {
           if (wid && this.did) {
+            // initialize workflow action service
             this.retrieveEnvironmentAndAddDataset(wid);
           }
         },
