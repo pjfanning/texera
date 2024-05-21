@@ -108,22 +108,15 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |      X_train = dataset[features]
          |      loop_times = ${getLoopTimes(paraList)}
          |
-         |
          |      for i in range(loop_times):
          |        model = ${trainingName}(${getTrainingParameters(paraList)})
          |        model.fit(X_train, y_train)
          |
          |        para_str = ${getParameterString(paraList)}
-         |        model_str = pickle.dumps(model)
-         |        model_dict = {}
-         |        model_dict["Model"] = model_str
-         |        model_dict["Features"] = features
-         |        model_dict["Parameters"] = para_str
-         |        model_list.append(model_dict)
          |        para_list.append(para_str)
          |
          |      data = dict({})
-         |      data["Model"]= model_list
+         |      data["Model"]= model
          |      data["Parameters"] =para_list
          |
          |      df = pd.DataFrame(data)
