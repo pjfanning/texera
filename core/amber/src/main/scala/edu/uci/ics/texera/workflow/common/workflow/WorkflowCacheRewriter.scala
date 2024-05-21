@@ -133,14 +133,18 @@ object WorkflowCacheRewriter {
           // TODO: Ignoring viz for now.
           val storageType = OpResultStorage.defaultStorageMode
           // TODO: Ignoring reuse for now.
-          op.setOutputPortStorage(outPortId, storage.createPortStorage(
-            s"${op.getContext.executionId}_",
-            storageKey,
-            storageType
-          ))
-          op.getOutputPortStorage(outPortId).setSchema(
-            op.outputPortToSchemaMapping(outPortId)
+          op.setOutputPortStorage(
+            outPortId,
+            storage.createPortStorage(
+              s"${op.getContext.executionId}_",
+              storageKey,
+              storageType
+            )
           )
+          op.getOutputPortStorage(outPortId)
+            .setSchema(
+              op.outputPortToSchemaMapping(outPortId)
+            )
           // TODO: Update result JSON in metadata
         })
       }

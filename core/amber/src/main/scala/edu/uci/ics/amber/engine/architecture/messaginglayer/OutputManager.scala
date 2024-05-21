@@ -1,6 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{DPOutputIterator, getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
+  DPOutputIterator,
+  getBatchSize,
+  toPartitioner
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeExecutor, FinalizePort}
@@ -10,7 +14,7 @@ import edu.uci.ics.amber.engine.common.tuple.amber.{SchemaEnforceable, TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
-import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
+import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageWriter
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -139,7 +143,7 @@ class OutputManager(
     // Save to storage
     (outputPortId match {
       case Some(portId) => portStorages.filter(_._1 == portId)
-      case None => portStorages
+      case None         => portStorages
     }).foreach {
       case (portId, storageWriter) =>
         val tuple = tupleLike.enforceSchema(getPort(portId).schema)
@@ -184,8 +188,8 @@ class OutputManager(
 
   def addPort(portId: PortIdentity, schema: Schema): Unit = {
     // each port can only be added and initialized once.
-    portStorages.filter(_._1 == portId).foreach{
-      kv => {
+    portStorages.filter(_._1 == portId).foreach { kv =>
+      {
         kv._2.open()
       }
     }

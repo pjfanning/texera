@@ -37,7 +37,7 @@ class OpResultStorage extends Serializable with LazyLogging {
       executionId: String = "",
       key: String,
       mode: String
-                       ): SinkStorageReader = {
+  ): SinkStorageReader = {
     val storage: SinkStorageReader =
       if (mode == "memory") {
         new MemoryStorage
@@ -66,7 +66,6 @@ class OpResultStorage extends Serializable with LazyLogging {
     }
     portStorage.remove(key)
   }
-
 
   /**
     * Retrieve the result of an operator from OpResultStorage
@@ -123,7 +122,7 @@ class OpResultStorage extends Serializable with LazyLogging {
   def close(): Unit = {
     cache.forEach((_, sinkStorageReader) => sinkStorageReader.clear())
     cache.clear()
-    portStorage.forEach((_, sinkStorageReader)=>sinkStorageReader.clear())
+    portStorage.forEach((_, sinkStorageReader) => sinkStorageReader.clear())
     portStorage.clear()
   }
 
