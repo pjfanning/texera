@@ -1,10 +1,6 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
-  DPOutputIterator,
-  getBatchSize,
-  toPartitioner
-}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{DPOutputIterator, getBatchSize, toPartitioner}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeExecutor, FinalizePort}
@@ -14,7 +10,9 @@ import edu.uci.ics.amber.engine.common.tuple.amber.{SchemaEnforceable, TupleLike
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
 
+import scala.collection.immutable.Map
 import scala.collection.mutable
 
 object OutputManager {
@@ -93,6 +91,8 @@ class OutputManager(
 
   private val ports: mutable.HashMap[PortIdentity, WorkerPort] = mutable.HashMap()
 
+  private var portStorages: Map[PortIdentity, SinkStorageWriter] = _
+
   private val networkOutputBuffers =
     mutable.HashMap[(PhysicalLink, ActorVirtualIdentity), NetworkOutputBuffer]()
 
@@ -135,6 +135,16 @@ class OutputManager(
           networkOutputBuffers((link, partitioner.allReceivers(bucketIndex))).addTuple(tuple)
         }
     }
+
+    // Save to storage
+    (outputPortId match {
+      case Some(portId) => portStorages.filter(_._1 == portId)
+      case None => portStorages
+    }).foreach {
+      case (portId, storageWriter) =>
+        val tuple = tupleLike.enforceSchema(getPort(portId).schema)
+        storageWriter.putOne(tuple)
+    }
   }
 
   /**
@@ -174,6 +184,11 @@ class OutputManager(
 
   def addPort(portId: PortIdentity, schema: Schema): Unit = {
     // each port can only be added and initialized once.
+    portStorages.filter(_._1 == portId).foreach{
+      kv => {
+        kv._2.open()
+      }
+    }
     if (this.ports.contains(portId)) {
       return
     }
@@ -183,6 +198,10 @@ class OutputManager(
 
   def getPort(portId: PortIdentity): WorkerPort = ports(portId)
 
+  def setPortStorage(portStorageMap: Map[PortIdentity, SinkStorageWriter]): Unit = {
+    this.portStorages = portStorageMap
+  }
+
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
   def finalizeOutput(): Unit = {
@@ -191,6 +210,13 @@ class OutputManager(
         outputIterator.appendSpecialTupleToEnd(FinalizePort(outputPortId, input = false))
       )
     outputIterator.appendSpecialTupleToEnd(FinalizeExecutor())
+  }
+
+  def closeOutputStorages(): Unit = {
+    this.portStorages.foreach {
+      case (_, storageWriter) =>
+        storageWriter.close()
+    }
   }
 
   def getSingleOutputPortIdentity: PortIdentity = {

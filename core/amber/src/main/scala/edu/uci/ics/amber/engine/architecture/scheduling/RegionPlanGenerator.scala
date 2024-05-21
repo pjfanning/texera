@@ -138,6 +138,15 @@ abstract class RegionPlanGenerator(
     var newPhysicalPlan = physicalPlan
       .removeLink(physicalLink)
 
+    newPhysicalPlan = newPhysicalPlan.setOperator(fromOp.setOutputPortStorage(
+      fromPortId,
+      opResultStorage.createPortStorage(
+        s"${workflowContext.executionId}_",
+        getMatIdFromPhysicalLink(physicalLink),
+        OpResultStorage.defaultStorageMode
+      ).getStorageWriter
+    ))
+
     // create cache writer and link
     val matWriterPhysicalOp: PhysicalOp =
       createMatWriter(physicalLink)

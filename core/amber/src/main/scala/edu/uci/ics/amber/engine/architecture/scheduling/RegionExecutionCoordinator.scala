@@ -135,7 +135,8 @@ class RegionExecutionCoordinator(
                   InitializeExecutor(
                     workerConfigs.length,
                     physicalOp.opExecInitInfo,
-                    physicalOp.isSourceOperator
+                    physicalOp.isSourceOperator,
+                    physicalOp.outputPortStorages
                   ),
                   workerId
                 )

@@ -49,7 +49,7 @@ object PhysicalPlan {
             val internalLinks = subPlan.getUpstreamPhysicalLinks(physicalOp.id)
 
             // Add the operator to the physical plan
-            physicalPlan = physicalPlan.addOperator(physicalOp.propagateSchema())
+            physicalPlan = physicalPlan.addOperator(physicalOp.propagateSchema().setOutputPortStorages(logicalOp.outputPortToStorageMapping))
 
             // Add all the links to the physical plan
             physicalPlan = (externalLinks ++ internalLinks)

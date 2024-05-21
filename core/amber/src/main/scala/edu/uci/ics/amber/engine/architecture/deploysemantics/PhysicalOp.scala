@@ -5,32 +5,23 @@ import akka.remote.RemoteScope
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.common.AkkaActorService
 import edu.uci.ics.amber.engine.architecture.controller.execution.OperatorExecution
-import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{
-  OpExecInitInfo,
-  OpExecInitInfoWithCode
-}
-import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{
-  AddressInfo,
-  LocationPreference,
-  PreferController,
-  RoundRobinPreference
-}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{OpExecInitInfo, OpExecInitInfoWithCode}
+import edu.uci.ics.amber.engine.architecture.deploysemantics.locationpreference.{AddressInfo, LocationPreference, PreferController, RoundRobinPreference}
 import edu.uci.ics.amber.engine.architecture.pythonworker.PythonWorkflowWorker
 import edu.uci.ics.amber.engine.architecture.scheduling.config.OperatorConfig
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
-  FaultToleranceConfig,
-  StateRestoreConfig,
-  WorkerReplayInitialization
-}
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{FaultToleranceConfig, StateRestoreConfig, WorkerReplayInitialization}
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity._
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import edu.uci.ics.texera.workflow.common.workflow._
+import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -158,34 +149,35 @@ object PhysicalOp {
 }
 
 case class PhysicalOp(
-    // the identifier of this PhysicalOp
-    id: PhysicalOpIdentity,
-    // the workflow id number
-    workflowId: WorkflowIdentity,
-    // the execution id number
-    executionId: ExecutionIdentity,
-    // information regarding initializing an operator executor instance
-    opExecInitInfo: OpExecInitInfo,
-    // preference of parallelism
-    parallelizable: Boolean = true,
-    // preference of worker placement
-    locationPreference: Option[LocationPreference] = None,
-    // requirement of partition policy (hash/range/single/none) on inputs
-    partitionRequirement: List[Option[PartitionInfo]] = List(),
-    // derive the output partition info given the input partitions
-    // if not specified, by default the output partition is the same as input partition
-    derivePartition: List[PartitionInfo] => PartitionInfo = inputParts => inputParts.head,
-    // input/output ports of the physical operator
-    // for operators with multiple input/output ports: must set these variables properly
-    inputPorts: Map[PortIdentity, (InputPort, List[PhysicalLink], Either[Throwable, Schema])] =
+                       // the identifier of this PhysicalOp
+                       id: PhysicalOpIdentity,
+                       // the workflow id number
+                       workflowId: WorkflowIdentity,
+                       // the execution id number
+                       executionId: ExecutionIdentity,
+                       // information regarding initializing an operator executor instance
+                       opExecInitInfo: OpExecInitInfo,
+                       // preference of parallelism
+                       parallelizable: Boolean = true,
+                       // preference of worker placement
+                       locationPreference: Option[LocationPreference] = None,
+                       // requirement of partition policy (hash/range/single/none) on inputs
+                       partitionRequirement: List[Option[PartitionInfo]] = List(),
+                       // derive the output partition info given the input partitions
+                       // if not specified, by default the output partition is the same as input partition
+                       derivePartition: List[PartitionInfo] => PartitionInfo = inputParts => inputParts.head,
+                       // input/output ports of the physical operator
+                       // for operators with multiple input/output ports: must set these variables properly
+                       inputPorts: Map[PortIdentity, (InputPort, List[PhysicalLink], Either[Throwable, Schema])] =
       Map.empty,
-    outputPorts: Map[PortIdentity, (OutputPort, List[PhysicalLink], Either[Throwable, Schema])] =
+                       outputPorts: Map[PortIdentity, (OutputPort, List[PhysicalLink], Either[Throwable, Schema])] =
       Map.empty,
-    // schema propagation function
-    propagateSchema: SchemaPropagationFunc = SchemaPropagationFunc(schemas => schemas),
-    isOneToManyOp: Boolean = false,
-    // hint for number of workers
-    suggestedWorkerNum: Option[Int] = None
+                       outputPortStorages: Map[PortIdentity, SinkStorageWriter] = Map.empty,
+                       // schema propagation function
+                       propagateSchema: SchemaPropagationFunc = SchemaPropagationFunc(schemas => schemas),
+                       isOneToManyOp: Boolean = false,
+                       // hint for number of workers
+                       suggestedWorkerNum: Option[Int] = None
 ) extends LazyLogging {
 
   // all the "dependee" links are also blocking
@@ -437,6 +429,19 @@ case class PhysicalOp(
     } else {
       // Not all input schemas are defined, return the updated operation without changes
       updatedOp
+    }
+  }
+
+  def setOutputPortStorage(outputPortId: PortIdentity, storageWriter: SinkStorageWriter): PhysicalOp = {
+    this.copy(outputPortStorages = outputPortStorages.updated(outputPortId, storageWriter))
+  }
+
+  // TODO: Assuming logical and physical have the same ports for now.
+  //  Need to include mapping from logical port to physical port eventually.
+  def setOutputPortStorages(logicalStorageMap: mutable.Map[PortIdentity, SinkStorageReader]): PhysicalOp = {
+    logicalStorageMap.foldLeft(this) {  (currentOp, entry) =>
+      val (outputPortId, storageReader) = entry
+      currentOp.setOutputPortStorage(outputPortId, storageReader.getStorageWriter)
     }
   }
 

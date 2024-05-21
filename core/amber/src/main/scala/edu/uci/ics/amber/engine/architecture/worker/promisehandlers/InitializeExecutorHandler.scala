@@ -6,12 +6,15 @@ import edu.uci.ics.amber.engine.architecture.worker.DataProcessorRPCHandlerIniti
 import edu.uci.ics.amber.engine.architecture.worker.promisehandlers.InitializeExecutorHandler.InitializeExecutor
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
+import edu.uci.ics.amber.engine.common.workflow.PortIdentity
+import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageWriter}
 
 object InitializeExecutorHandler {
   final case class InitializeExecutor(
       totalWorkerCount: Int,
       opExecInitInfo: OpExecInitInfo,
-      isSource: Boolean
+      isSource: Boolean,
+      portStorages: Map[PortIdentity, SinkStorageWriter]
   ) extends ControlCommand[Unit]
 }
 
@@ -26,6 +29,7 @@ trait InitializeExecutorHandler {
         VirtualIdentityUtils.getWorkerIndex(actorId),
         msg.totalWorkerCount
       )
+      dp.outputManager.setPortStorage(msg.portStorages)
     }
 
   }

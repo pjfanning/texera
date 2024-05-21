@@ -127,7 +127,23 @@ object WorkflowCacheRewriter {
         }
         storage.get(storageKey)
 
-      case _ =>
+      case op => {
+        op.outputPortsWithStorage.foreach(outPortId => {
+          val storageKey = s"${op.operatorIdentifier}_outPort_${outPortId.id}"
+          // TODO: Ignoring viz for now.
+          val storageType = OpResultStorage.defaultStorageMode
+          // TODO: Ignoring reuse for now.
+          op.setOutputPortStorage(outPortId, storage.createPortStorage(
+            s"${op.getContext.executionId}_",
+            storageKey,
+            storageType
+          ))
+          op.getOutputPortStorage(outPortId).setSchema(
+            op.outputPortToSchemaMapping(outPortId)
+          )
+          // TODO: Update result JSON in metadata
+        })
+      }
     }
     // update execution entry in MySQL to have pointers to the mongo collections
     resultsJSON.set("results", sinksPointers)

@@ -51,7 +51,7 @@ object ControlCommandConvertUtils {
         QueryStatisticsV2()
       case QueryCurrentInputTuple() =>
         QueryCurrentInputTupleV2()
-      case InitializeExecutor(_, opExecInitInfo, isSource) =>
+      case InitializeExecutor(_, opExecInitInfo, isSource, _) =>
         InitializeExecutorV2(
           opExecInitInfo.asInstanceOf[OpExecInitInfoWithCode].codeGen(0, 0)._1,
           isSource
