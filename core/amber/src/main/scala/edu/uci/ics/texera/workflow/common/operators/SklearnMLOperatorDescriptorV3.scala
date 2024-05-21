@@ -1,7 +1,7 @@
 package edu.uci.ics.texera.workflow.common.operators
 
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
+import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
@@ -9,15 +9,23 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType
 
 abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   @JsonIgnore
-  var model = ""
+  def getImportStatements():String
 
   @JsonIgnore
-  var name = ""
+  def getOperatorInfo():String
 
-  var parameterTuningFlag: Boolean
-  var groundTruthAttribute: String
-  var selectedFeatures: List[String]
+  var parameterFromWorkflow: Boolean
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Ground Truth Attribute Column")
+  @JsonPropertyDescription("Ground truth attribute column")
+  @AutofillAttributeName
+  var groundTruthAttribute: String = ""
 
+  @JsonProperty(value = "Selected Features", required = true)
+  @JsonSchemaTitle("Selected Features")
+  @JsonPropertyDescription("Features used to train the model")
+  @AutofillAttributeNameList
+  var selectedFeatures: List[String] = _
 
   private var paramMap =Map[String, Array[Any]]()
   def addParamMap():Map[String, Array[Any]]
@@ -39,7 +47,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   }
   def trainingModel(): String = {
     val listName = paramMap.head._2(0)
-    val trainingName = model.split(" ").last
+    val trainingName = getImportStatements().split(" ").last
     s"""
        |      for i in range($listName.shape[0]):
        |        model = $trainingName(${paramMap.map { case (key, array) =>s"$key=${array(3)}(${array(0)}[i])"}.mkString(",")})
@@ -56,7 +64,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   override def generatePythonCode(): String = {
     this.paramMap = addParamMap()
     var truthy = "False"
-    if (parameterTuningFlag) truthy = "True"
+    if (parameterFromWorkflow) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
     val finalCode =
       s"""
@@ -65,7 +73,7 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
          |import pandas as pd
          |import numpy as np
          |import pickle
-         |$model
+         |${getImportStatements()}
          |class ProcessTableOperator(UDFTableOperator):
          |
          |  @overrides
@@ -105,7 +113,8 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
     finalCode
   }
 
-  override def operatorInfo: OperatorInfo =
+  override def operatorInfo: OperatorInfo = {
+    var name = getOperatorInfo()
     OperatorInfo(
       name+" Training",
       "Sklearn " + name + " Operator",
@@ -125,10 +134,11 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
       ),
       outputPorts = List(OutputPort())
     )
+  }
 
-    override def getOutputSchema(schemas: Array[Schema]): Schema = {
+  override def getOutputSchema(schemas: Array[Schema]): Schema = {
       val outputSchemaBuilder = Schema.builder()
-      if (parameterTuningFlag) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
+      if (parameterFromWorkflow) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
       outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
       outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build

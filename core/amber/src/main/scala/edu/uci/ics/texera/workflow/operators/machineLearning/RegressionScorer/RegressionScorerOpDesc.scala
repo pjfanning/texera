@@ -78,31 +78,41 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
          |    @overrides
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |      result = dict()
-         |      if table.shape[0]>1:
-         |        y_true = table['$actualValueColumn']
-         |        y_pred = table['$predictValueColumn']
+         |      length = 1
+         |      if isinstance(table['$actualValueColumn'], pd.Series)::
+         |        y_true_list = table['$actualValueColumn']
+         |        y_pred_list = table['$predictValueColumn']
+         |        length = len(table['$actualValueColumn'])
          |
          |      else:
-         |        y_true = table['$actualValueColumn'][0]
-         |        y_pred = table['$predictValueColumn'][0]
+         |        y_true_list = [table['$actualValueColumn']]
+         |        y_pred_list = [table['$predictValueColumn']]
          |
          |      scorer_list = [${getSelectedScorers()}]
          |
          |      for scorer in scorer_list:
-         |        if scorer == "MSE":
-         |          result["MSE"] = mean_squared_error(y_true, y_pred)
-         |        elif scorer == "RMSE":
-         |          result["RMSE"] = root_mean_squared_error(y_true, y_pred)
-         |        elif scorer == "MAE":
-         |          result["MAE"] = mean_absolute_error(y_true, y_pred)
-         |        elif scorer == "R2":
-         |          result["R2"] = r2_score(y_true, y_pred)
+         |        result[scorer] = [None] * length
+         |
+         |      for i in range(length):
+         |        y_true = y_true_list[i]
+         |        y_pred = y_pred_list[i]
+         |
+         |        for scorer in scorer_list:
+         |          if scorer == "MSE":
+         |            result["MSE"][i] = mean_squared_error(y_true, y_pred)
+         |          elif scorer == "RMSE":
+         |            result["RMSE"][i] = root_mean_squared_error(y_true, y_pred)
+         |          elif scorer == "MAE":
+         |            result["MAE"][i] = mean_absolute_error(y_true, y_pred)
+         |          elif scorer == "R2":
+         |            result["R2"][i] = r2_score(y_true, y_pred)
          |
          |
          |      # convert list/dict to dataframe
          |      label = ['Overall']
          |      label_df = pd.DataFrame(label, columns=['Label'])
          |      result_df = pd.DataFrame(result, index=[0])
+         |
          |      if "para" in table.columns:
          |        para_str_series = pd.Series(table['para'].tolist())
          |        table = table.drop(['para'], axis=1)

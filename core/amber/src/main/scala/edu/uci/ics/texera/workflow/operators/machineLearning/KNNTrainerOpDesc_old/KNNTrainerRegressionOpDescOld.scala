@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc
+package edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc_old
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
