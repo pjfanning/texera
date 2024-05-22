@@ -38,7 +38,7 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
 
   private def getLoopTimes(paraList:List[HyperParameters[T]]) : String= {
     for (ele<-paraList){
-      if (ele.parametersSource == ParametersSource.workflow){
+      if (ele.parametersSource){
         return s"""table[\"${ele.attribute}\"].values.shape[0]"""
       }else{
         return "1"
@@ -50,7 +50,7 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
   def getTrainingParameters(paraList:List[HyperParameters[T]]): String =  {
     var str =""
     for  (ele<-paraList){
-      if (ele.parametersSource == ParametersSource.workflow){
+      if (ele.parametersSource){
         str = str +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
       }
       else {
@@ -64,10 +64,9 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
     var str1 =""
     var str2 = ""
     for  (ele<-paraList){
-      if (ele.parametersSource == ParametersSource.workflow){
+      if (ele.parametersSource){
         str1 = str1 +String.format("%s = {},",ele.parameter.getName())
         str2 = str2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
-
       }
       else {
         str1 = str1 +String.format("%s = {},",ele.parameter.getName())
