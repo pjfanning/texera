@@ -241,10 +241,6 @@ class ExecutionResultService(
           .foreach {
             case (opId, info) =>
               val oldInfo = oldState.resultInfo.getOrElse(opId, OperatorResultMetadata())
-
-              val minValue = sinkOperators(opId).getStorage.getMin("YEAR")
-              println(s"Operator ID: ${opId.id}, Min Value of YEAR: $minValue")
-
               buf(opId.id) = ExecutionResultService.convertWebResultUpdate(
                 sinkOperators(opId),
                 oldInfo.tupleCount,
@@ -256,9 +252,6 @@ class ExecutionResultService(
               val tableNumericStats = sinkMgr.getNumericColStats(fields)
               if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> tableNumericStats)
           }
-        println("========================================================================")
-        println(allTableStats)
-        println("========================================================================")
         Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
       })
     )
