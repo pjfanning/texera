@@ -239,6 +239,9 @@ class ExecutionResultService(
           .foreach {
             case (opId, info) =>
               val oldInfo = oldState.resultInfo.getOrElse(opId, OperatorResultMetadata())
+              val minValue = sinkOperators(opId).getStorage.getMin("Units Sold")
+              println(s"Operator ID: ${opId.id}, Min Value of Units Sold: $minValue")
+
               buf(opId.id) = ExecutionResultService.convertWebResultUpdate(
                 sinkOperators(opId),
                 oldInfo.tupleCount,

@@ -24,4 +24,8 @@ trait SinkStorageReader {
   def getAllFields(): Iterable[String] = {
     Array[String]()
   }
+
+  def getMin(fieldName: String): Option[Any]={
+    Some(0)
+  }
 }

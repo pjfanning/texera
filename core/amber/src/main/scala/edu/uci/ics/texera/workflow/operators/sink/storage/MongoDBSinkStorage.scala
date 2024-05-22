@@ -104,4 +104,9 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
       this.schema = schema
     }
   }
+
+  override def getMin(fieldName: String): Option[Any] = {
+    collectionMgr.calculateMin(fieldName)
+  }
+
 }
