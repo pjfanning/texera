@@ -62,10 +62,6 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     mkTupleIterable(cursor)
   }
 
-  override def getAllFields(): Iterable[String] = {
-    collectionMgr.getColumnNames
-  }
-
   override def getStorageWriter: SinkStorageWriter =
     new MongoDBSinkStorageWriter(commitBatchSize)
 
@@ -109,4 +105,30 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     collectionMgr.calculateMin(fieldName)
   }
 
+  override def getAllNumericFields(): Iterable[String] = {
+    collectionMgr.getNumericColumnNames
+  }
+
+  override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Float]] = {
+    var result = Map[String, Map[String, Float]]()
+
+    fields.foreach(field => {
+      var fieldResult = Map[String, Float]()
+      val minimum = getMin(field)
+
+      minimum match {
+        case Some(value) => {
+          try (value.toString.toFloat) match {
+            case floatValue: Float => fieldResult += ("min" -> floatValue)
+            case _ => fieldResult // Handle conversion failure
+          }
+        }
+        case _ => fieldResult
+      }
+
+      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+    })
+
+    result
+  }
 }

@@ -230,6 +230,8 @@ class ExecutionResultService(
     addSubscription(
       workflowStateStore.resultStore.registerDiffHandler((oldState, newState) => {
         val buf = mutable.HashMap[String, WebResultUpdate]()
+        var allTableStats = Map[String, Map[String, Map[String, Float]]]()
+
         newState.resultInfo
           .filter(info => {
             // only update those operators with changing tuple count.
@@ -239,18 +241,25 @@ class ExecutionResultService(
           .foreach {
             case (opId, info) =>
               val oldInfo = oldState.resultInfo.getOrElse(opId, OperatorResultMetadata())
-              val minValue = sinkOperators(opId).getStorage.getMin("Units Sold")
-              println(s"Operator ID: ${opId.id}, Min Value of Units Sold: $minValue")
+
+              val minValue = sinkOperators(opId).getStorage.getMin("YEAR")
+              println(s"Operator ID: ${opId.id}, Min Value of YEAR: $minValue")
 
               buf(opId.id) = ExecutionResultService.convertWebResultUpdate(
                 sinkOperators(opId),
                 oldInfo.tupleCount,
                 info.tupleCount
               )
+
               val sinkMgr = sinkOperators(opId).getStorage()
-              val fields = sinkMgr.getAllFields()
+              val fields = sinkMgr.getAllNumericFields()
+              val tableNumericStats = sinkMgr.getNumericColStats(fields)
+              if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> tableNumericStats)
           }
-        Iterable(WebResultUpdateEvent(buf.toMap))
+        println("========================================================================")
+        println(allTableStats)
+        println("========================================================================")
+        Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
       })
     )
 

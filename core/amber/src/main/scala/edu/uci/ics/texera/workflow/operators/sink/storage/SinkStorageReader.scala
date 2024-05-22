@@ -21,11 +21,15 @@ trait SinkStorageReader {
 
   def clear(): Unit
 
-  def getAllFields(): Iterable[String] = {
+  def getAllNumericFields(): Iterable[String] = {
     Array[String]()
   }
 
-  def getMin(fieldName: String): Option[Any]={
-    Some(0)
+  def getMin(fieldName: String): Option[Any] = {
+    None
+  }
+
+  def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Float]] = {
+    Map[String, Map[String, Float]]()
   }
 }

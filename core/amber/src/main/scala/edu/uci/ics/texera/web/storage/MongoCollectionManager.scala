@@ -29,11 +29,21 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   }
 
   def getColumnNames: Array[String] = {
+    ???
+  }
+
+  def getNumericColumnNames: Array[String] = {
     var result = List[String]()
-    val keys = collection.find().first().keySet()
-    keys.forEach(key =>
-      result = result :+ key
-    )
+    val doc = collection.find().first()
+    val keys = doc.keySet()
+
+    keys.forEach { key =>
+        val fieldValue = doc.get(key)
+        fieldValue match {
+          case number: java.lang.Number => result = result :+ key
+          case _ => result
+        }
+    }
 
     result.toArray
   }
@@ -70,10 +80,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       group(null, min("minValue", "$" + fieldName))
     )
 
-    // 这里使用Java驱动的API来执行聚合查询
     val result = collection.aggregate(pipeline)
 
-    // 使用Java的迭代器来遍历结果
     if (result.iterator().hasNext()) {
       val doc = result.iterator().next()
       Option(doc.get("minValue"))
