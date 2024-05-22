@@ -75,10 +75,7 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |from pytexera import *
          |
          |import pandas as pd
-         |import numpy as np
          |${getImportStatements()}
-         |import pickle
-         |
          |
          |class ProcessTableOperator(UDFTableOperator):
          |
@@ -87,7 +84,6 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |    global dataset
          |    model_list = []
          |    para_list = []
-         |    features_list = []
          |    features = [$listFeatures]
          |
          |    if port == 0:
@@ -110,8 +106,6 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |      data["Parameters"] =para_list
          |
          |      df = pd.DataFrame(data)
-         |      if "Iteration" in df.columns:
-         |        df["Iteration"]= table["Iteration"]
          |      yield df
          |
          |""".stripMargin
