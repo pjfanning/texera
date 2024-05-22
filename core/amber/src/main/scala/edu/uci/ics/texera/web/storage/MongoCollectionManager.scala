@@ -7,6 +7,10 @@ import org.bson.Document
 import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
+
+import com.mongodb.client.model.Aggregates._
+import com.mongodb.client.model.Accumulators._
+
 class MongoCollectionManager(collection: MongoCollection[Document]) {
 
   def insertOne(document: Document): Unit = {
@@ -42,10 +46,10 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   }
 
   def createIndex(
-      columnName: String,
-      ascendingFlag: Boolean,
-      timeToLiveInMinutes: Option[Int]
-  ): Unit = {
+                   columnName: String,
+                   ascendingFlag: Boolean,
+                   timeToLiveInMinutes: Option[Int]
+                 ): Unit = {
     collection.createIndex(
       Indexes.ascending(columnName),
       new IndexOptions().expireAfter(timeToLiveInMinutes.get, TimeUnit.MINUTES)
@@ -54,5 +58,22 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
 
   def accessDocuments: FindIterable[Document] = {
     collection.find()
+  }
+
+  def calculateMin(fieldName: String): Option[Any] = {
+    val pipeline = java.util.Arrays.asList(
+      group(null, min("minValue", "$" + fieldName))
+    )
+
+    // 这里使用Java驱动的API来执行聚合查询
+    val result = collection.aggregate(pipeline)
+
+    // 使用Java的迭代器来遍历结果
+    if (result.iterator().hasNext()) {
+      val doc = result.iterator().next()
+      Option(doc.get("minValue"))
+    } else {
+      None
+    }
   }
 }

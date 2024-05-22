@@ -20,4 +20,8 @@ trait SinkStorageReader {
   def getStorageWriter: SinkStorageWriter
 
   def clear(): Unit
+
+  def getMin(fieldName: String): Option[Any]={
+    Some(1)
+  }
 }
