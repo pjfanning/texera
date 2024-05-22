@@ -47,39 +47,30 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
     ""
   }
 
-  def getTrainingParameters(paraList:List[HyperParameters[T]]): String =  {
-    var str =""
-    for  (ele<-paraList){
-      if (ele.parametersSource){
-        str = str +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
-      }
-      else {
-        str = str +String.format("%s = %s ('%s'),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
-      }
-    }
-    str
-  }
-
-  def getParameterString(paraList:List[HyperParameters[T]]): String =  {
-    var str1 =""
-    var str2 = ""
+  def getParameter(paraList:List[HyperParameters[T]]): List[String] =  {
+    var str1 =""; var str2 = ""; var str3 = ""
     for  (ele<-paraList){
       if (ele.parametersSource){
         str1 = str1 +String.format("%s = {},",ele.parameter.getName())
         str2 = str2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
+        str3 = str3 +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
       }
       else {
         str1 = str1 +String.format("%s = {},",ele.parameter.getName())
         str2 = str2 +String.format("%s ('%s'),",ele.parameter.getType(),ele.value)
+        str3 = str3 +String.format("%s = %s ('%s'),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
       }
     }
-    String.format("\"%s\".format(%s)",str1,str2)
+    List(String.format("\"%s\".format(%s)",str1,str2),str3)
   }
 
   override def generatePythonCode(): String = {
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
     val trainingName = getImportStatements().split(" ").last
-    val finalcode =
+    val stringList = getParameter(paraList)
+    val trainingParam = stringList(1)
+    val paramString = stringList(0)
+    val finalCode =
       s"""
          |from pytexera import *
          |
@@ -108,10 +99,10 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |      loop_times = ${getLoopTimes(paraList)}
          |
          |      for i in range(loop_times):
-         |        model = ${trainingName}(${getTrainingParameters(paraList)})
+         |        model = ${trainingName}(${trainingParam})
          |        model.fit(X_train, y_train)
          |
-         |        para_str = ${getParameterString(paraList)}
+         |        para_str = ${paramString}
          |        para_list.append(para_str)
          |
          |      data = dict({})
@@ -124,7 +115,7 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |      yield df
          |
          |""".stripMargin
-    finalcode
+    finalCode
   }
 
   override def operatorInfo: OperatorInfo = {
