@@ -62,6 +62,10 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     mkTupleIterable(cursor)
   }
 
+  override def getAllFields(): Iterable[String] = {
+    collectionMgr.getColumnNames
+  }
+
   override def getStorageWriter: SinkStorageWriter =
     new MongoDBSinkStorageWriter(commitBatchSize)
 

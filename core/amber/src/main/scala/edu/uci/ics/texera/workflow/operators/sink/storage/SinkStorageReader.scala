@@ -20,4 +20,8 @@ trait SinkStorageReader {
   def getStorageWriter: SinkStorageWriter
 
   def clear(): Unit
+
+  def getAllFields(): Iterable[String] = {
+    Array[String]()
+  }
 }

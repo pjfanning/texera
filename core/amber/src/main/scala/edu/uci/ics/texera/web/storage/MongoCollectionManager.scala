@@ -26,7 +26,13 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   }
 
   def getColumnNames: Array[String] = {
-    ???
+    var result = List[String]()
+    val keys = collection.find().first().keySet()
+    keys.forEach(key =>
+      result = result :+ key
+    )
+
+    result.toArray
   }
 
   def getDocuments(condition: Option[Document]): Iterable[Document] = {

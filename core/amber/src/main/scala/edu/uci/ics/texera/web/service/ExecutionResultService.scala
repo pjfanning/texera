@@ -244,6 +244,8 @@ class ExecutionResultService(
                 oldInfo.tupleCount,
                 info.tupleCount
               )
+              val sinkMgr = sinkOperators(opId).getStorage()
+              val fields = sinkMgr.getAllFields()
           }
         Iterable(WebResultUpdateEvent(buf.toMap))
       })
