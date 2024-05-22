@@ -6,6 +6,7 @@ import {
   WebPaginationUpdate,
   WebResultUpdate,
   WorkflowResultUpdate,
+  WorkflowResultTableStats,
 } from "../../types/execute-workflow.interface";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
 import { PaginatedResultEvent, WorkflowAvailableResultEvent } from "../../types/workflow-websocket.interface";
@@ -26,10 +27,14 @@ export class WorkflowResultService {
 
   // event stream of operator result update, undefined indicates the operator result is cleared
   private resultUpdateStream = new Subject<Record<string, WebResultUpdate | undefined>>();
+  private resultTableStats = new Subject<Record<string, Record<string, Record<string, number>>>>();
   private resultInitiateStream = new Subject<string>();
 
   constructor(private wsService: WorkflowWebsocketService) {
-    this.wsService.subscribeToEvent("WebResultUpdateEvent").subscribe(event => this.handleResultUpdate(event.updates));
+    this.wsService.subscribeToEvent("WebResultUpdateEvent").subscribe(event => {
+      this.handleResultUpdate(event.updates);
+      this.handleTableStatsUpdate(event.tableStats);
+    }); // event now has two hashmaps
     this.wsService
       .subscribeToEvent("WorkflowAvailableResultEvent")
       .subscribe(event => this.handleCleanResultCache(event));
@@ -49,6 +54,10 @@ export class WorkflowResultService {
 
   public getResultUpdateStream(): Observable<Record<string, WebResultUpdate | undefined>> {
     return this.resultUpdateStream;
+  }
+
+  public getResultTableStats(): Observable<Record<string, Record<string, Record<string, number>>>> {
+    return this.resultTableStats;
   }
 
   public getResultInitiateStream(): Observable<string> {
@@ -121,6 +130,10 @@ export class WorkflowResultService {
       }
     });
     this.resultUpdateStream.next(event);
+  }
+
+  private handleTableStatsUpdate(event: WorkflowResultTableStats): void {
+    this.resultTableStats.next(event);
   }
 
   private getOrInitPaginatedResultService(operatorID: string): OperatorPaginationResultService {

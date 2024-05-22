@@ -5,7 +5,7 @@ import { ExecuteWorkflowService } from "../../../service/execute-workflow/execut
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 import { WorkflowResultService } from "../../../service/workflow-result/workflow-result.service";
 import { PanelResizeService } from "../../../service/workflow-result/panel-resize/panel-resize.service";
-import { isWebPaginationUpdate } from "../../../types/execute-workflow.interface";
+import { WorkflowResultTableStats, isWebPaginationUpdate } from "../../../types/execute-workflow.interface";
 import { IndexableObject, TableColumn } from "../../../types/result-table.interface";
 import { RowModalComponent } from "../result-panel-modal.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -47,6 +47,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   currentPageIndex: number = 1;
   totalNumTuples: number = 0;
   pageSize = 5;
+  tableStats: Record<string, Record<string, number>> = {"_": { "_": 1}};
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -94,6 +95,18 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           this.changePaginatedResultData();
         }
       });
+    
+    // Naive implementation of table stats
+    this.workflowResultService
+      .getResultTableStats()
+      .pipe(untilDestroyed(this))
+      .subscribe(stats => {
+        if (!this.operatorId) {
+          return;
+        }
+        this.tableStats = stats[this.operatorId];
+      })
+
     this.resizeService.currentSize.pipe(untilDestroyed(this)).subscribe(size => {
       this.adjustPageSizeBasedOnPanelSize(size.height);
       let currentPageNum: number = Math.ceil(this.totalNumTuples / this.pageSize);
