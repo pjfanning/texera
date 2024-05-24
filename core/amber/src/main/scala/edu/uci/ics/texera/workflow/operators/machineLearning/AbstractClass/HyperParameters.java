@@ -36,17 +36,11 @@ public class HyperParameters<T>{
     @JsonProperty(value = "value")
     public String value;
 
-    @JsonProperty(defaultValue = "false", required = false)
+    @JsonProperty(defaultValue = "false")
     @JsonSchemaTitle("Workflow")
     @JsonPropertyDescription("Parameter from workflow")
     public boolean parametersSource;
-
-    public HyperParameters(T parameter, String attribute, boolean parametersSource, String value) {
-        this.parameter = parameter;
-        this.attribute = attribute;
-        this.parametersSource = parametersSource;
-        this.value = value;
-    }}
+}
 
 
 
