@@ -79,10 +79,11 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |      result = dict()
          |      length = 1
-         |      if isinstance(table['$actualValueColumn'], pd.Series)::
+         |      if isinstance(table['$actualValueColumn'], pd.Series):
          |        y_true_list = table['$actualValueColumn']
          |        y_pred_list = table['$predictValueColumn']
          |        length = len(table['$actualValueColumn'])
+         |        print(y_pred_list)
          |
          |      else:
          |        y_true_list = [table['$actualValueColumn']]
@@ -107,10 +108,11 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
          |          elif scorer == "R2":
          |            result["R2"][i] = r2_score(y_true, y_pred)
          |
-         |
+         |      print('result: ', result)
          |      # convert list/dict to dataframe
          |      label = ['Overall']
          |      label_df = pd.DataFrame(label, columns=['Label'])
+         |      print('label_df: ', label_df)
          |      result_df = pd.DataFrame(result, index=[0])
          |
          |      if "para" in table.columns:

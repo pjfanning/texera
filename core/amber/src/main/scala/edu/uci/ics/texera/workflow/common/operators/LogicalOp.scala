@@ -94,7 +94,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlo
 import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc_list
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.old.KNNTrainerOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.SVCTrainer_list
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVMTrainer.{SVCTrainer_list, SVRTrainer_list}
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -190,6 +190,7 @@ trait StateTransferFunc
 //    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
     new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
     new Type(value = classOf[SVCTrainer_list], name = "SVCTrainer_list"),
+    new Type(value = classOf[SVRTrainer_list], name = "SVRTrainer_list"),
 //    new Type(value = classOf[KNNTrainerOpDescV1], name = "KNNTrainerV1"),
 //    new Type(value = classOf[KNNTrainerOpDescV2], name = "KNNTrainerV2"),
 //    new Type(value = classOf[KNNTrainerOpDescV3], name = "KNNTrainerV3"),

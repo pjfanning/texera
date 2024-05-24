@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer;
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVMTrainer;
 
 import edu.uci.ics.texera.workflow.operators.machineLearning.AbstractClass.AbstractEnumClass;
 
