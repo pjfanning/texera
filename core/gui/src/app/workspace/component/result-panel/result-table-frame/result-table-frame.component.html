@@ -26,12 +26,12 @@
           *ngFor="let column of currentColumns; let i = index"
           ngClass="header-size"
           style="text-align: center">
-          <ng-container *ngIf="tableStats[column.header]">
+          <ng-container *ngIf="tableStats && tableStats[column.header]">
             <span nz-tooltip nzTooltipTitle="Min: {{tableStats[column.header]['min']}}">
               {{ column.header }}
             </span>
           </ng-container>
-          <ng-container *ngIf="!tableStats[column.header]">
+          <ng-container *ngIf="!tableStats || !tableStats[column.header]">
             {{ column.header }}
           </ng-container>
         </th>

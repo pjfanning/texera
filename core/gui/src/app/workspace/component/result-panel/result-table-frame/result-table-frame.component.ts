@@ -47,7 +47,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   currentPageIndex: number = 1;
   totalNumTuples: number = 0;
   pageSize = 5;
-  tableStats: Record<string, Record<string, number>> = {"_": { "_": 1}};
+  tableStats?: Record<string, Record<string, number>>;
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -66,6 +66,9 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.totalNumTuples = paginatedResultService.getCurrentTotalNumTuples();
         this.currentPageIndex = paginatedResultService.getCurrentPageIndex();
         this.changePaginatedResultData();
+
+        this.tableStats = paginatedResultService.getStats();
+        console.log(this.tableStats);
       }
     }
   }
@@ -96,7 +99,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         }
       });
     
-    // Naive implementation of table stats
     this.workflowResultService
       .getResultTableStats()
       .pipe(untilDestroyed(this))

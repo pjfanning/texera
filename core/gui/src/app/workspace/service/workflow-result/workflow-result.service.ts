@@ -56,7 +56,7 @@ export class WorkflowResultService {
     return this.resultUpdateStream;
   }
 
-  public getResultTableStats(): Observable<Record<string, Record<string, Record<string, number>>>> {
+  public getResultTableStats(): Observable<Record<string, Record<string,  Record<string, number>>>> {
     return this.resultTableStats;
   }
 
@@ -133,6 +133,10 @@ export class WorkflowResultService {
   }
 
   private handleTableStatsUpdate(event: WorkflowResultTableStats): void {
+    Object.keys(event).forEach(operatorID => {
+      const paginatedResultService = this.getOrInitPaginatedResultService(operatorID);
+      paginatedResultService.handleStatsUpdate(event[operatorID]);
+    });
     this.resultTableStats.next(event);
   }
 
@@ -183,6 +187,7 @@ export class OperatorResultService {
 class OperatorPaginationResultService {
   private pendingRequests: Map<string, Subject<PaginatedResultEvent>> = new Map();
   private resultCache: Map<number, ReadonlyArray<object>> = new Map();
+  private statsCache: Record<string, Record<string, number>> = {'_': {'_': 1}};
   private currentPageIndex: number = 1;
   private currentTotalNumTuples: number = 0;
 
@@ -193,6 +198,10 @@ class OperatorPaginationResultService {
     this.workflowWebsocketService
       .subscribeToEvent("PaginatedResultEvent")
       .subscribe(event => this.handlePaginationResult(event));
+  }
+
+  public getStats(): Record<string, Record<string, number>> {
+    return this.statsCache;
   }
 
   public getCurrentPageIndex(): number {
@@ -250,6 +259,10 @@ class OperatorPaginationResultService {
     update.dirtyPageIndices.forEach(dirtyPage => {
       this.resultCache.delete(dirtyPage);
     });
+  }
+
+  public handleStatsUpdate(statsUpdate: Record<string, Record<string, number>>): void {
+    this.statsCache = statsUpdate;
   }
 
   private handlePaginationResult(res: PaginatedResultEvent): void {
