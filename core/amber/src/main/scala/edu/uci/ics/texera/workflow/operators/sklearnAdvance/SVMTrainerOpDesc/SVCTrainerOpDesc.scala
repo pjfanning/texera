@@ -1,5 +1,13 @@
 package edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc
 
-class SVCTrainerOpDesc {
+import edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass.SklearnMLOperatorDescriptor
 
+class SVCTrainerOpDesc extends SklearnMLOperatorDescriptor[SVMParameters]{
+  override def getImportStatements(): String = {
+    "from sklearn.svm import SVC"
+  }
+
+  override def getOperatorInfo(): String = {
+    "SVC"
+  }
 }
