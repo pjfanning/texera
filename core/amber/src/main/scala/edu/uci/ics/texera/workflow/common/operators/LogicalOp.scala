@@ -233,11 +233,11 @@ trait StateTransferFunc
     ),
     new Type(
       value = classOf[SVRTrainerOpDesc],
-      name = "SVRTrainerOpDesc"
+      name = "SVMClassifierTrainer"
     ),
     new Type(
       value = classOf[SVCTrainerOpDesc],
-      name = "SVCTrainerOpDesc"
+      name = "SVMRegressorTrainer"
     ),
     new Type(
       value = classOf[KNNClassifierTrainerOpDesc],

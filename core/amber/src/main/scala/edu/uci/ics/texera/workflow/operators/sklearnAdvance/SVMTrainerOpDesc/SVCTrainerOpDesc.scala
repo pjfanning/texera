@@ -8,6 +8,6 @@ class SVCTrainerOpDesc extends SklearnMLOperatorDescriptor[SVMParameters]{
   }
 
   override def getOperatorInfo(): String = {
-    "SVC"
+    "SVM Classifier"
   }
 }
