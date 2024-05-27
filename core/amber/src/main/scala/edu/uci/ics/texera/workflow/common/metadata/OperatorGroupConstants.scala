@@ -21,7 +21,6 @@ object OperatorGroupConstants {
   final val JAVA_GROUP = "Java"
   final val R_GROUP = "R"
 
-
   /**
     * The order of the groups to show up in the frontend operator panel.
     * The order numbers are relative.
@@ -34,7 +33,14 @@ object OperatorGroupConstants {
       CLEANING_GROUP,
       List(GroupInfo(JOIN_GROUP), GroupInfo(AGGREGATE_GROUP), GroupInfo(SORT_GROUP))
     ),
-    GroupInfo(MACHINE_LEARNING_GROUP, List(GroupInfo(SKLEARN_GROUP), GroupInfo(ADVANCED_SKLEARN_GROUP), GroupInfo(HUGGINGFACE_GROUP))),
+    GroupInfo(
+      MACHINE_LEARNING_GROUP,
+      List(
+        GroupInfo(SKLEARN_GROUP),
+        GroupInfo(ADVANCED_SKLEARN_GROUP),
+        GroupInfo(HUGGINGFACE_GROUP)
+      )
+    ),
     GroupInfo(UTILITY_GROUP),
     GroupInfo(API_GROUP),
     GroupInfo(UDF_GROUP, List(GroupInfo(PYTHON_GROUP), GroupInfo(JAVA_GROUP))),
