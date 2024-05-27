@@ -118,7 +118,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
     OperatorInfo(
       name+" Training list",
       "Sklearn " + name + " Operator",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.ADVANCED_SKLEARN_GROUP,
       inputPorts = List(
         InputPort(
           PortIdentity(0),
