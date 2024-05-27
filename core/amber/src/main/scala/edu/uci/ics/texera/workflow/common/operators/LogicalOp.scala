@@ -78,7 +78,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlot
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc.KNNClassifierTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc.{KNNClassifierTrainerOpDesc, KNNRegressorTrainerOpDesc}
 
 import java.util.UUID
 import scala.collection.mutable
@@ -237,11 +237,15 @@ trait StateTransferFunc
     ),
     new Type(
       value = classOf[SVCTrainerOpDesc],
-      name = "SVRTrainerOpDesc"
+      name = "SVCTrainerOpDesc"
     ),
     new Type(
       value = classOf[KNNClassifierTrainerOpDesc],
       name = "KNNClassifierTrainer"
+    ),
+    new Type(
+      value = classOf[KNNRegressorTrainerOpDesc],
+      name = "KNNRegressorTrainer"
     )
   )
 )

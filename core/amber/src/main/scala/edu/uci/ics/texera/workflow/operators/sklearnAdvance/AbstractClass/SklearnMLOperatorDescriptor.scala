@@ -116,7 +116,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
   override def operatorInfo: OperatorInfo = {
     val name = getOperatorInfo()
     OperatorInfo(
-      name+" Training list",
+      name,
       "Sklearn " + name + " Operator",
       OperatorGroupConstants.ADVANCED_SKLEARN_GROUP,
       inputPorts = List(

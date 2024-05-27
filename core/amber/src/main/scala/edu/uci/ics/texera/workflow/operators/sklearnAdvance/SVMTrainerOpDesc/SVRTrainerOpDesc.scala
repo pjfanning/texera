@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc
 
 import edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass.SklearnMLOperatorDescriptor
 
-class SVRTrainerOpDesc extends SklearnMLOperatorDescriptor[SVMParameters]{
+class SVRTrainerOpDesc extends SklearnMLOperatorDescriptor[SVMParameters] {
   override def getImportStatements(): String = {
     "from sklearn.svm import SVR"
   }
@@ -10,3 +10,4 @@ class SVRTrainerOpDesc extends SklearnMLOperatorDescriptor[SVMParameters]{
   override def getOperatorInfo(): String = {
     "SVR"
   }
+}
