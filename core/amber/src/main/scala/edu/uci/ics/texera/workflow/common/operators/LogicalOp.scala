@@ -127,6 +127,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.scatter3DChart.Scatte
 import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrixChart.ScatterMatrixChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
+import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -220,6 +221,7 @@ trait StateTransferFunc
     new Type(value = classOf[RUDFOpDesc], name = "RUDF"),
     new Type(value = classOf[RUDFSourceOpDesc], name = "RUDFSource"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
+    new Type(value = classOf[DropOpDesc], name = "Drop"),
     new Type(value = classOf[SklearnLogisticRegressionOpDesc], name = "SklearnLogisticRegression"),
     new Type(
       value = classOf[SklearnLogisticRegressionCVOpDesc],
