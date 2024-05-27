@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.drop
 
-import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.google.common.base.Preconditions
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp.oneToOnePhysicalOp
@@ -18,17 +18,13 @@ class DropOpDesc extends MapOpDesc {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Drop Or Keep The Selected Attributes")
   @JsonPropertyDescription("Choose to drop or keep the selected attributes")
-  var dropOption: DropOption =DropOption.drop
-
-
+  var dropOption: DropOption = DropOption.drop
 
   @JsonProperty(value = "Selected Attributes", required = true)
   @JsonSchemaTitle("Selected Attributes")
   @JsonPropertyDescription("Select the attributes to be dropped or kept.")
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
-
-
 
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
@@ -39,18 +35,19 @@ class DropOpDesc extends MapOpDesc {
       workflowId,
       executionId,
       operatorIdentifier,
-      OpExecInitInfo((_, _) => new DropOpExec(selectedFeatures,dropOption==DropOption.drop))
+      OpExecInitInfo((_, _) => new DropOpExec(selectedFeatures, dropOption == DropOption.drop))
     )
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
       .withPropagateSchema(SchemaPropagationFunc(inputSchemas => {
-        Map(operatorInfo.outputPorts.head.id -> getOutputSchema(Array(inputSchemas(operatorInfo.inputPorts.head.id))))
+        Map(
+          operatorInfo.outputPorts.head.id -> getOutputSchema(
+            Array(inputSchemas(operatorInfo.inputPorts.head.id))
+          )
+        )
       }))
 
   }
-
-
-
 
   override def operatorInfo: OperatorInfo = {
     OperatorInfo(
@@ -67,7 +64,7 @@ class DropOpDesc extends MapOpDesc {
     Preconditions.checkArgument(selectedFeatures.nonEmpty)
     var selectedAttributes = selectedFeatures
     val inputSchema = schemas(0)
-    if (dropOption==DropOption.drop) {
+    if (dropOption == DropOption.drop) {
       val allAttributes = inputSchema.getAttributeNames
       selectedAttributes = allAttributes.diff(selectedFeatures)
     }

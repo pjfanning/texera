@@ -14,7 +14,7 @@ class DropOpExec(selectedAttributes: List[String], isDrop: Boolean) extends MapO
     Preconditions.checkArgument(selectedAttributes.nonEmpty)
     val allAttribute = tuple.schema.getAttributeNames
     var attributeUnits = selectedAttributes
-    if (isDrop){
+    if (isDrop) {
       attributeUnits = allAttribute.diff(selectedAttributes)
     }
 
