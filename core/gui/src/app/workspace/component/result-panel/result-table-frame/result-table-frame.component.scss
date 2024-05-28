@@ -15,3 +15,9 @@ th.header-size {
   font-size: 14px;
   padding: 2px;
 }
+
+
+.scrollable-content {
+  max-height: 50px;   /* 最大高度为100px */
+  overflow-y: auto;    /* 内容超出时显示垂直滚动条 */
+}

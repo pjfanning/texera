@@ -30,11 +30,13 @@
         </th>
       </tr>
       <!-- add min row -->
-      <tr *ngIf="tableStats">
+      <tr *ngIf="tableStats" #statsRow class="stats-row">
         <th *ngFor="let column of currentColumns">
-          <ng-container *ngIf="tableStats[column.header]">
-            Min: {{tableStats[column.header]['min']}}
-          </ng-container>
+          <div class="scrollable-content">
+            <ng-container *ngIf="tableStats[column.header]">
+              Min: {{tableStats[column.header]['min']}}
+            </ng-container>
+          </div>
         </th>
       </tr>
     </thead>
