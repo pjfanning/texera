@@ -51,6 +51,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   pageSize = 5;
   panelHeight = 0;
   tableStats?: Record<string, Record<string, number>>;
+  widthPercent: string = "";
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -121,6 +122,8 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           }
           return;
         }
+        let columnCount = this.currentColumns?.length;
+        if (columnCount) this.widthPercent = (1 / columnCount) * 100 + "%";
         this.isFrontPagination = false;
         this.totalNumTuples = opUpdate.totalNumTuples;
         if (opUpdate.dirtyPageIndices.includes(this.currentPageIndex)) {
