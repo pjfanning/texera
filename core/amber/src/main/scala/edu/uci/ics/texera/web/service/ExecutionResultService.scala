@@ -174,6 +174,7 @@ class ExecutionResultService(
     mutable.HashMap[OperatorIdentity, ProgressiveSinkOpDesc]()
   private val resultPullingFrequency = AmberConfig.executionResultPollingInSecs
   private var resultUpdateCancellable: Cancellable = _
+  var tableFields: Map[String, Iterable[String]] = Map()
 
   def attachToExecution(
       stateStore: ExecutionStateStore,
@@ -248,8 +249,14 @@ class ExecutionResultService(
               )
 
               val sinkMgr = sinkOperators(opId).getStorage()
-              val fields = sinkMgr.getAllNumericFields()
-              val tableNumericStats = sinkMgr.getNumericColStats(fields)
+              if (oldState.resultInfo.isEmpty) {
+                val fields = sinkMgr.getAllNumericFields()
+                tableFields += (opId.id -> fields)
+                println("=================================================================================")
+                println(opId.id)
+                println("=================================================================================")
+              }
+              val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id))
               if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> tableNumericStats)
           }
         Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
