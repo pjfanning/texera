@@ -16,12 +16,6 @@ import { EnvironmentService } from "../../../service/user-environment/environmen
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 import { Point } from "plotly.js-basic-dist-min";
-/**
-import { Point } from "src/app/workspace/types/workflow-common.interface";
-import { OperatorPredicate } from "src/app/workspace/types/workflow-common.interface";
-import { WorkflowMetadata } from "src/app/dashboard/user/type/workflow-metadata.interface";
-import { DynamicSchemaService } from "src/app/workspace/service/dynamic-schema/dynamic-schema.service"; 
-*/
 @UntilDestroy()
 @Component({
   templateUrl: "./user-dataset-explorer.component.html",
