@@ -25,8 +25,7 @@ import { WorkflowActionService } from "../../../../workspace/service/workflow-gr
 import { WorkflowUtilService } from "../../../../workspace/service/workflow-graph/util/workflow-util.service";
 
 import { observe } from "@ngx-formly/core/lib/utils";
-import { Point } from "../../../../workspace/types/workflow-common.interface"
-
+import { Point } from "../../../../workspace/types/workflow-common.interface";
 
 /**
  * UserWorkflowService facilitates creating a new workflow from the dataset dashboard
@@ -35,7 +34,6 @@ import { Point } from "../../../../workspace/types/workflow-common.interface"
 @Injectable({
   providedIn: "root",
 })
-
 export class UserWorkflowService {
   public ROUTER_WORKFLOW_BASE_URL = "workflow";
   private _searchResultsComponent?: SearchResultsComponent;
@@ -75,20 +73,23 @@ export class UserWorkflowService {
   ) {}
 
   /* Creates a workflow from the dataset dashboard with a pre-initialized scan operator*/
-  public onClickCreateNewWorkflowFromDatasetDashboard(datasetFile: string, scanOption: string): Observable<number | undefined> {
+  public onClickCreateNewWorkflowFromDatasetDashboard(
+    datasetFile: string,
+    scanOption: string
+  ): Observable<number | undefined> {
     let operatorPredicate = this.workflowUtilService.getNewOperatorPredicate(scanOption);
     operatorPredicate = this.workflowUtilService.addFileName(operatorPredicate, datasetFile); // add the filename
-    
+
     let localPid = this.pid;
-    let point: Point = {x: 474, y: 235};
+    let point: Point = { x: 474, y: 235 };
     let emptyWorkflowContent: WorkflowContent = {
       operators: [operatorPredicate],
       commentBoxes: [],
       groups: [],
       links: [],
       operatorPositions: {
-        [operatorPredicate.operatorID]: { x: 474, y: 235 }
-      }
+        [operatorPredicate.operatorID]: { x: 474, y: 235 },
+      },
     };
 
     return this.workflowPersistService.createWorkflow(emptyWorkflowContent, DEFAULT_WORKFLOW_NAME).pipe(

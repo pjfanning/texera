@@ -219,14 +219,14 @@ export class WorkflowUtilService {
 
   /* Helper function for initializing scan operators with file to scan included.*/
   public addFileName(op: OperatorPredicate, fileName: string): OperatorPredicate {
-  const updatedPredicate: OperatorPredicate = { ...op };
-  const updatedProperties = { ...updatedPredicate.operatorProperties, fileName };
+    const updatedPredicate: OperatorPredicate = { ...op };
+    const updatedProperties = { ...updatedPredicate.operatorProperties, fileName };
 
-  const updatedOperatorPredicate: OperatorPredicate = {
-    ...updatedPredicate,
-    operatorProperties: updatedProperties,
-  };
+    const updatedOperatorPredicate: OperatorPredicate = {
+      ...updatedPredicate,
+      operatorProperties: updatedProperties,
+    };
 
-  return updatedOperatorPredicate;
+    return updatedOperatorPredicate;
   }
 }

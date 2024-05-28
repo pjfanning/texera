@@ -22,7 +22,7 @@ import { Point } from "plotly.js-basic-dist-min";
   styleUrls: ["./user-dataset-explorer.component.scss"],
 })
 export class UserDatasetExplorerComponent implements OnInit {
-  public scanOption: string  = "";
+  public scanOption: string = "";
   public did: number | undefined;
   public datasetName: string = "";
   public datasetDescription: string = "";
