@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NzTableQueryParams } from "ng-zorro-antd/table";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
@@ -30,6 +30,7 @@ export const PRETTY_JSON_TEXT_LIMIT = 50000;
 export class ResultTableFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   @ViewChild('statsRow') statsRow!: ElementRef;
+  private resizeObserver: ResizeObserver | null = null;
   public statsRowHeight: number = 0;
   // display result table
   currentColumns?: TableColumn[];
@@ -48,6 +49,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   currentPageIndex: number = 1;
   totalNumTuples: number = 0;
   pageSize = 5;
+  panelHeight = 0;
   tableStats?: Record<string, Record<string, number>>;
 
   constructor(
@@ -57,8 +59,33 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     private workflowResultService: WorkflowResultService,
     private resizeService: PanelResizeService
   ) {}
+  
+  ngAfterViewInit(): void {
+    this.setupResizeObserver();
+  }
 
+  setupResizeObserver(): void {
+    this.resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.target === this.statsRow.nativeElement) {
+          console.log(`New height: ${entry.contentRect.height}px`);
+          this.adjustPageSizeBasedOnPanelSize(this.panelHeight);
+        }
+      }
+    });
+
+    // start observe
+    this.resizeObserver.observe(this.statsRow.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+  }
+  
   ngOnChanges(changes: SimpleChanges): void {
+
     this.operatorId = changes.operatorId?.currentValue;
     if (this.operatorId) {
       const paginatedResultService = this.workflowResultService.getPaginatedResultService(this.operatorId);
@@ -69,6 +96,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.changePaginatedResultData();
 
         this.tableStats = paginatedResultService.getStats();
+
         console.log(this.tableStats);
       }
     }
@@ -99,7 +127,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           this.changePaginatedResultData();
         }
       });
-    
     this.workflowResultService
       .getResultTableStats()
       .pipe(untilDestroyed(this))
@@ -108,9 +135,11 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           return;
         }
         this.tableStats = stats[this.operatorId];
+        this.getHeightOfStatsRow();
       })
 
     this.resizeService.currentSize.pipe(untilDestroyed(this)).subscribe(size => {
+      this.panelHeight = size.height;
       this.adjustPageSizeBasedOnPanelSize(size.height);
       let currentPageNum: number = Math.ceil(this.totalNumTuples / this.pageSize);
       while (this.currentPageIndex > currentPageNum && this.currentPageIndex > 1) {
@@ -126,6 +155,9 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.statsRowHeight = this.statsRow.nativeElement.offsetHeight;
         console.log('Height of stats row:', this.statsRowHeight);
     }
+    else{
+      console.log('no statsrow');
+    }
   }
 
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
@@ -133,6 +165,9 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     this.getHeightOfStatsRow();
     console.log(this.statsRowHeight)
     let extra: number = Math.floor((panelHeight - this.statsRowHeight - 170) / rowHeight);
+    if (extra < 0){
+      extra = 0;
+    }
     this.pageSize = 1 + extra;
     this.resizeService.pageSize = this.pageSize;
   }
