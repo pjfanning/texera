@@ -7,7 +7,6 @@ import { ResultTableFrameComponent } from "./result-table-frame/result-table-fra
 import { ConsoleFrameComponent } from "./console-frame/console-frame.component";
 import { WorkflowResultService } from "../../service/workflow-result/workflow-result.service";
 import { PanelResizeService } from "../../service/workflow-result/panel-resize/panel-resize.service";
-import { VisualizationFrameComponent } from "./visualization-frame/visualization-frame.component";
 import { filter } from "rxjs/operators";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { isPythonUdf, isSink } from "../../service/workflow-graph/model/workflow-graph";
@@ -15,6 +14,7 @@ import { WorkflowVersionService } from "../../../dashboard/user/service/workflow
 import { ErrorFrameComponent } from "./error-frame/error-frame.component";
 import { WorkflowConsoleService } from "../../service/workflow-console/workflow-console.service";
 import { NzResizeEvent } from "ng-zorro-antd/resizable";
+import { VisualizationFrameContentComponent } from "../visualization-panel-content/visualization-frame-content.component";
 
 /**
  * ResultPanelComponent is the bottom level area that displays the
@@ -36,15 +36,7 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
   prevHeight = 300;
   maxWidth = window.innerWidth;
   maxHeight = window.innerHeight;
-
-  onResize({ width, height }: NzResizeEvent) {
-    cancelAnimationFrame(this.id);
-    this.id = requestAnimationFrame(() => {
-      this.width = width!;
-      this.height = height!;
-      this.resizeService.changePanelSize(this.width, this.height);
-    });
-  }
+  operatorTitle = "";
 
   // the highlighted operator ID for display result table / visualization / breakpoint
   currentOperatorId?: string | undefined;
@@ -151,6 +143,7 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
       .subscribe(_ => {
         this.rerenderResultPanel();
         this.changeDetectorRef.detectChanges();
+        this.registerOperatorDisplayNameChangeHandler();
       });
   }
 
@@ -223,9 +216,27 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
     } else if (resultService) {
       // display visualization result
       this.frameComponentConfigs.set("Result", {
-        component: VisualizationFrameComponent,
+        component: VisualizationFrameContentComponent,
         componentInputs: { operatorId },
       });
+    }
+  }
+
+  private registerOperatorDisplayNameChangeHandler(): void {
+    if (this.currentOperatorId) {
+      const operator = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
+      this.operatorTitle = operator.customDisplayName ?? "";
+      this.workflowActionService
+        .getTexeraGraph()
+        .getOperatorDisplayNameChangedStream()
+        .pipe(untilDestroyed(this))
+        .subscribe(({ operatorID, newDisplayName }) => {
+          console.log(operatorID);
+          console.log(this.currentOperatorId);
+          if (operatorID === this.currentOperatorId) {
+            this.operatorTitle = newDisplayName;
+          }
+        });
     }
   }
 
@@ -257,5 +268,14 @@ export class ResultPanelComponent implements OnInit, OnDestroy {
     this.prevWidth = this.width;
     this.height = 32.5;
     this.width = 0;
+  }
+
+  onResize({ width, height }: NzResizeEvent) {
+    cancelAnimationFrame(this.id);
+    this.id = requestAnimationFrame(() => {
+      this.width = width!;
+      this.height = height!;
+      this.resizeService.changePanelSize(this.width, this.height);
+    });
   }
 }

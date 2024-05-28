@@ -47,6 +47,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   currentPageIndex: number = 1;
   totalNumTuples: number = 0;
   pageSize = 5;
+  widthPercent: string = "";
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -88,6 +89,8 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           }
           return;
         }
+        let columnCount = this.currentColumns?.length;
+        if (columnCount) this.widthPercent = (1 / columnCount) * 100 + "%";
         this.isFrontPagination = false;
         this.totalNumTuples = opUpdate.totalNumTuples;
         if (opUpdate.dirtyPageIndices.includes(this.currentPageIndex)) {
@@ -97,15 +100,15 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     this.resizeService.currentSize.pipe(untilDestroyed(this)).subscribe(size => {
       this.adjustPageSizeBasedOnPanelSize(size.height);
       let currentPageNum: number = Math.ceil(this.totalNumTuples / this.pageSize);
-      while (this.currentPageIndex > currentPageNum) {
+      while (this.currentPageIndex > currentPageNum && this.currentPageIndex > 1) {
         this.currentPageIndex -= 1;
       }
     });
   }
 
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
-    const rowHeight = 35;
-    let extra: number = Math.floor((panelHeight - 200) / rowHeight);
+    const rowHeight = 36;
+    let extra: number = Math.floor((panelHeight - 170) / rowHeight);
     this.pageSize = 1 + extra;
     this.resizeService.pageSize = this.pageSize;
   }
