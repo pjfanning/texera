@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from "@angular/core";
+import { Component, Input, OnChanges, OnInit, SimpleChanges, ViewChild, ElementRef } from '@angular/core';
 import { NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NzTableQueryParams } from "ng-zorro-antd/table";
 import { ExecuteWorkflowService } from "../../../service/execute-workflow/execute-workflow.service";
@@ -29,7 +29,8 @@ export const PRETTY_JSON_TEXT_LIMIT = 50000;
 })
 export class ResultTableFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
-
+  @ViewChild('statsRow') statsRow!: ElementRef;
+  public statsRowHeight: number = 0;
   // display result table
   currentColumns?: TableColumn[];
   currentResult: IndexableObject[] = [];
@@ -116,11 +117,22 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.currentPageIndex -= 1;
       }
     });
+
+  }
+
+
+  getHeightOfStatsRow() {
+    if (this.statsRow && this.statsRow.nativeElement) {
+        this.statsRowHeight = this.statsRow.nativeElement.offsetHeight;
+        console.log('Height of stats row:', this.statsRowHeight);
+    }
   }
 
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
     const rowHeight = 36;
-    let extra: number = Math.floor((panelHeight - 170) / rowHeight);
+    this.getHeightOfStatsRow();
+    console.log(this.statsRowHeight)
+    let extra: number = Math.floor((panelHeight - this.statsRowHeight - 170) / rowHeight);
     this.pageSize = 1 + extra;
     this.resizeService.pageSize = this.pageSize;
   }
