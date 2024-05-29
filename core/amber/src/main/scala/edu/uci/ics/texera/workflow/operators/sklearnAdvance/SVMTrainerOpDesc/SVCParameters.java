@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc;
 
 import edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass.EnumClass;
 
-public enum SVMParameters  implements EnumClass {
+public enum SVCParameters implements EnumClass {
     C("C", "float"),
     kernel("kernel", "str"),
     gamma("gamma", "float"),
@@ -15,7 +15,7 @@ public enum SVMParameters  implements EnumClass {
     private final String name;
     private final String type;
 
-    SVMParameters(String name,String type) {
+    SVCParameters(String name, String type) {
         this.name = name;
         this.type  = type;
     }
