@@ -62,14 +62,14 @@ class EncoderOpDesc extends PythonOperatorDescriptor{
          |      if dataset[column].isnull().any():
          |        mode_value = dataset[column].mode()[0]
          |        dataset[column].fillna(mode_value, inplace=True)
-         |        print(f"Column {column} has missing values, fill with mode value {mode_value}")
+         |        #print(f"Column {column} has missing values, fill with mode value {mode_value}")
          |
          |      dataset[column] = le.fit_transform(dataset[column])
          |      binary_encoder = pickle.dumps(le)
          |      result['column_name'].append(column)
          |      result['encoder'].append(binary_encoder)
          |
-         |    print(result)
+         |    #print(result)
          |    yield dataset
          |
          |

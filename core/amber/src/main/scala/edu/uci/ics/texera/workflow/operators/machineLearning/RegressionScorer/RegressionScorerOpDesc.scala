@@ -38,17 +38,14 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
     val inputSchema = schemas(0)
+    outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
     scorers
       .map(scorer => getEachScorerName(scorer))
       .foreach(scorer => {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
-    if (inputSchema.containsAttribute("para")){
-      outputSchemaBuilder.add(inputSchema)
-      outputSchemaBuilder.removeIfExists("para")
-      outputSchemaBuilder.add(new Attribute("para", AttributeType.STRING))
-
-    }
+    if(inputSchema.containsAttribute("Parameters")){
+    outputSchemaBuilder.add(inputSchema)}
     outputSchemaBuilder.build()
   }
   private def getEachScorerName(scorer: RegressionScorerFunction): String = {
@@ -79,11 +76,11 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
          |    def process_table(self, table: Table, port: int) -> Iterator[Optional[TableLike]]:
          |      result = dict()
          |      length = 1
-         |      if isinstance(table['$actualValueColumn'], pd.Series):
+         |      if isinstance(table['$actualValueColumn'][0], pd.Series):
          |        y_true_list = table['$actualValueColumn']
          |        y_pred_list = table['$predictValueColumn']
          |        length = len(table['$actualValueColumn'])
-         |        print(y_pred_list)
+         |        #print(y_pred_list)
          |
          |      else:
          |        y_true_list = [table['$actualValueColumn']]
@@ -108,18 +105,20 @@ class RegressionScorerOpDesc extends PythonOperatorDescriptor {
          |          elif scorer == "R2":
          |            result["R2"][i] = r2_score(y_true, y_pred)
          |
-         |      print('result: ', result)
+         |      #print('result: ', result)
          |      # convert list/dict to dataframe
-         |      label = ['Overall']
+         |      label = ['Overall']* length
          |      label_df = pd.DataFrame(label, columns=['Label'])
-         |      print('label_df: ', label_df)
-         |      result_df = pd.DataFrame(result, index=[0])
+         |      #print('label_df: ', label_df)
+         |      result_df = pd.DataFrame(result)
          |
-         |      if "para" in table.columns:
-         |        para_str_series = pd.Series(table['para'].tolist())
-         |        table = table.drop(['para'], axis=1)
-         |        table['para'] = para_str_series
-         |        result_df = pd.concat([result_df, table], axis=1)
+         |      result_df = pd.DataFrame(result)
+         |      if "Parameters" in table.columns:
+         |        result_df = pd.concat([label_df,result_df, table], axis=1)
+         |      else:
+         |        result_df = pd.concat([label_df,result_df], axis=1)
+         |
+         |
          |
          |      if "Iteration" in result_df.columns:
          |        result_df['Iteration'] = result_df['Iteration'].astype(int)

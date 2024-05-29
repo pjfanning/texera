@@ -41,6 +41,8 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.Standardization.Sca
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictorRegression.NNPredictorRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.Normalization.NormalizerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.RegressionScorer.RegressionScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.PredictionVisualization.PredictionVisualizationOpDesc
+
 import edu.uci.ics.texera.workflow.operators.huggingFace.HuggingFaceSentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
@@ -195,6 +197,7 @@ trait StateTransferFunc
     new Type(value = classOf[RUDFSourceOpDesc], name = "RUDFSource"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[TrainingOpDesc], name = "TrainingOpDesc"),
+    new Type(value = classOf[PredictionVisualizationOpDesc], name = "PredictionVisualization"),
 //    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
 //    new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
 //    new Type(value = classOf[SVCTrainer_list], name = "SVCTrainer_list"),

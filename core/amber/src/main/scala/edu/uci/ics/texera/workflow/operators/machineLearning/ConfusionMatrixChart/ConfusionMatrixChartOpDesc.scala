@@ -37,7 +37,7 @@ class ConfusionMatrixChartOpDesc extends VisualizationOperator with PythonOperat
   @JsonProperty(required = true,defaultValue = "y_prediction")
   @JsonSchemaTitle("Predicted Value")
   @JsonPropertyDescription("Specify the attribute predicted by the model")
-  @AutofillAttributeNameOnPort1
+  @AutofillAttributeName
   var predictValueColumn: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
