@@ -32,7 +32,7 @@ import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.Enco
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer_Old.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2, SVCTrainerOpDescV3}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDescV2
-import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.ClassificationScorer.ClassificationScorerOpDesc
 import edu.uci.ics.texera.workflow.operators.huggingFace.{HuggingFaceIrisLogisticRegressionOpDesc, HuggingFaceSentimentAnalysisOpDesc, HuggingFaceSpamSMSDetectionOpDesc, HuggingFaceTextSummarizationOpDesc}
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
@@ -50,39 +50,8 @@ import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.sklearn.{
-  SklearnAdaptiveBoostingOpDesc,
-  SklearnBaggingOpDesc,
-  SklearnBernoulliNaiveBayesOpDesc,
-  SklearnComplementNaiveBayesOpDesc,
-  SklearnDecisionTreeOpDesc,
-  SklearnDummyClassifierOpDesc,
-  SklearnExtraTreeOpDesc,
-  SklearnExtraTreesOpDesc,
-  SklearnGaussianNaiveBayesOpDesc,
-  SklearnGradientBoostingOpDesc,
-  SklearnKNNOpDesc,
-  SklearnLinearRegressionOpDesc,
-  SklearnLinearSVMOpDesc,
-  SklearnLogisticRegressionCVOpDesc,
-  SklearnLogisticRegressionOpDesc,
-  SklearnMultiLayerPerceptronOpDesc,
-  SklearnMultinomialNaiveBayesOpDesc,
-  SklearnNearestCentroidOpDesc,
-  SklearnPassiveAggressiveOpDesc,
-  SklearnPerceptronOpDesc,
-  SklearnPredictionOpDesc,
-  SklearnProbabilityCalibrationOpDesc,
-  SklearnRandomForestOpDesc,
-  SklearnRidgeCVOpDesc,
-  SklearnRidgeOpDesc,
-  SklearnSDGOpDesc,
-  SklearnSVMOpDesc
-}
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc.{
-  SVCTrainerOpDesc,
-  SVRTrainerOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.sklearn.{SklearnAdaptiveBoostingOpDesc, SklearnBaggingOpDesc, SklearnBernoulliNaiveBayesOpDesc, SklearnComplementNaiveBayesOpDesc, SklearnDecisionTreeOpDesc, SklearnDummyClassifierOpDesc, SklearnExtraTreeOpDesc, SklearnExtraTreesOpDesc, SklearnGaussianNaiveBayesOpDesc, SklearnGradientBoostingOpDesc, SklearnKNNOpDesc, SklearnLinearRegressionOpDesc, SklearnLinearSVMOpDesc, SklearnLogisticRegressionCVOpDesc, SklearnLogisticRegressionOpDesc, SklearnMultiLayerPerceptronOpDesc, SklearnMultinomialNaiveBayesOpDesc, SklearnNearestCentroidOpDesc, SklearnPassiveAggressiveOpDesc, SklearnPerceptronOpDesc, SklearnPredictionOpDesc, SklearnProbabilityCalibrationOpDesc, SklearnRandomForestOpDesc, SklearnRidgeCVOpDesc, SklearnRidgeOpDesc, SklearnSDGOpDesc, SklearnSVMOpDesc}
+import edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc.{SVCTrainerOpDesc, SVRTrainerOpDesc}
 import edu.uci.ics.texera.workflow.operators.sort.SortOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
@@ -101,12 +70,7 @@ import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDiffer
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.java.JavaUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{
-  DualInputPortsPythonUDFOpDescV2,
-  PythonLambdaFunctionOpDesc,
-  PythonTableReducerOpDesc,
-  PythonUDFOpDescV2
-}
+import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonTableReducerOpDesc, PythonUDFOpDescV2}
 import edu.uci.ics.texera.workflow.operators.udf.r.{RUDFOpDesc, RUDFSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
@@ -135,12 +99,10 @@ import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc_list
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.old.KNNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVMTrainer.{SVCTrainer_list, SVRTrainer_list}
+import edu.uci.ics.texera.workflow.operators.machineLearning.SuperScorer.ScorerOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc.{
-  KNNClassifierTrainerOpDesc,
-  KNNRegressorTrainerOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc.{KNNClassifierTrainerOpDesc, KNNRegressorTrainerOpDesc}
 
 import java.util.UUID
 import scala.collection.mutable
@@ -250,7 +212,7 @@ trait StateTransferFunc
 //    new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
 //    new Type(value = classOf[KNNTrainerRegressionOpDescOld], name = "KNNTrainerRegression"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
-    new Type(value = classOf[ScorerOpDesc], name = "Scorer"),
+    new Type(value = classOf[ClassificationScorerOpDesc], name = "ClassificationScorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
     new Type(value = classOf[ModelSelectionOpDesc], name = "ModelSelection"),
@@ -339,7 +301,11 @@ trait StateTransferFunc
     new Type(
       value = classOf[KNNRegressorTrainerOpDesc],
       name = "KNNRegressorTrainer"
-    )
+    ),
+    new Type(
+      value = classOf[ScorerOpDesc],
+      name = "SuperScorer"
+    ),
   )
 )
 abstract class LogicalOp extends PortDescriptor with Serializable {

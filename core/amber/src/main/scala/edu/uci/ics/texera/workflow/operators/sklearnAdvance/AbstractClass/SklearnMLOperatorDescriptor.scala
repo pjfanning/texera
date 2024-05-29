@@ -109,17 +109,16 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |      for i in range(loop_times):
          |        model = ${trainingName}(${trainingParam})
          |        model.fit(X_train, y_train)
-         |        model_list.append(model)
          |
          |        para_str = ${paramString}
          |        para_list.append(para_str)
          |        features_list.append(features)
+         |        model_list.append(model)
          |
          |      data = dict({})
          |      data["Model"]= model_list
          |      data["Parameters"] =para_list
          |      data["Features"] =features_list
-         |
          |
          |      df = pd.DataFrame(data)
          |      yield df

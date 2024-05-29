@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.Scorer
+package edu.uci.ics.texera.workflow.operators.machineLearning.ClassificationScorer
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-class ScorerOpDesc extends PythonOperatorDescriptor {
+class ClassificationScorerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Actual Value")
   @JsonPropertyDescription("Specify the label column")
@@ -24,12 +24,12 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   @JsonProperty(required = true)
   @JsonSchemaTitle("Scorer Functions")
   @JsonPropertyDescription("Select multiple score functions")
-  var scorers: List[ScorerFunction] = List()
+  var scorers: List[ClassificationScorerFunction] = List()
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
       "Classification Scorer",
       "Scorer for machine learning classifier",
-      OperatorGroupConstants.MACHINE_LEARNING_GROUP,
+      OperatorGroupConstants.MODEL_PERFORMANCE_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )
@@ -51,7 +51,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
     outputSchemaBuilder.build()
   }
 
-  private def getEachScorerName(scorer: ScorerFunction): String = {
+  private def getEachScorerName(scorer: ClassificationScorerFunction): String = {
     // Directly return the name of the scorer using the getName() method
     scorer.getName()
   }
