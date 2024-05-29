@@ -71,7 +71,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
     outputSchemaBuilder.add(new Attribute("Label", AttributeType.STRING))
-
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
     if (isRegression) {
       regressionMetrics.foreach(metric => {
         outputSchemaBuilder.add(new Attribute(metric.getName(), AttributeType.DOUBLE))

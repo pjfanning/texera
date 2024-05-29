@@ -43,7 +43,6 @@ class TrainingOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
     outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("Model Name", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build()
   }
@@ -94,8 +93,7 @@ class TrainingOpDesc extends PythonOperatorDescriptor {
          |
          |      data = dict({})
          |      data["Model"]= model_list
-         |      data["Model Name"]= modelName_list
-         |      data["Parameters"]= para_list
+         |      data["Parameters"]= modelName_list
          |      data["Features"] = features_list
          |
          |      df = pd.DataFrame(data)
