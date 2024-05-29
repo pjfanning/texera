@@ -148,6 +148,8 @@ class ApplyModelOpDesc extends PythonOperatorDescriptor {
          |
          |      if "Iteration" in model_config.columns:
          |        result_df["Iteration"] = model_config["Iteration"]
+         |      if "Model Name" in model_config.columns:
+         |        result_df["Model Name"] = model_config["Model Name"]
          |
          |
          |      yield result_df

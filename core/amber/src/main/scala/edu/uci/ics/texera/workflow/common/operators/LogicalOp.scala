@@ -96,6 +96,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlo
 import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc_list
 import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.old.KNNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.OneTraining.TrainingOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVMTrainer.{SVCTrainer_list, SVRTrainer_list}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SuperScorer.ScorerOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
@@ -193,6 +194,7 @@ trait StateTransferFunc
     new Type(value = classOf[RUDFOpDesc], name = "RUDF"),
     new Type(value = classOf[RUDFSourceOpDesc], name = "RUDFSource"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
+    new Type(value = classOf[TrainingOpDesc], name = "TrainingOpDesc"),
 //    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
 //    new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
 //    new Type(value = classOf[SVCTrainer_list], name = "SVCTrainer_list"),
