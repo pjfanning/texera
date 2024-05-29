@@ -115,11 +115,14 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |        para_str = ${paramString}
          |        para_list.append(para_str)
          |        features_list.append(features)
+         |        model_list.append(model)
          |
          |      data = dict({})
-         |      data["Model"]= model
-         |      data["Parameters"] =para_list
-         |      data["Features"] =features_list
+         |      data["Model"]= model_list
+         |      data["Parameters"] = para_list
+         |      data["Features"] = features_list
+         |
+         |      print(model_list)
          |
          |
          |      df = pd.DataFrame(data)

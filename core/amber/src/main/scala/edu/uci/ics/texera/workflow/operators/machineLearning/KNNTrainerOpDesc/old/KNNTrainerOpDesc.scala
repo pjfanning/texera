@@ -28,6 +28,7 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
     outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING)).build
   }
 
@@ -135,17 +136,13 @@ class KNNTrainerOpDesc extends PythonOperatorDescriptor {
          |        model.fit(X_train, y_train)
          |
          |        para_str = ${writeParameterString(paraList)}
-         |        model_str = pickle.dumps(model)
-         |        model_dict = {}
-         |        model_dict["Model"] = model_str
-         |        model_dict["Features"] = features
-         |        model_dict["Parameters"] = para_str
-         |        model_list.append(model_dict)
          |        para_list.append(para_str)
+         |        features_list.append(features)
          |
          |      data = dict({})
-         |      data["Model"]= model_list
+         |      data["Model"]= model
          |      data["Parameters"] =para_list
+         |      data["Features"] = features_list
          |
          |      df = pd.DataFrame(data)
          |      if "Iteration" in df.columns:
