@@ -173,7 +173,7 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |      if isinstance(table['$predictValueColumn'].iloc[0], np.ndarray):
          |        y_trues = [col.tolist() for col in table['$actualValueColumn']]
          |        y_preds = [col.tolist() for col in table['$predictValueColumn']]
-         |        num_of_model = len(y_trues)
+         |        num_of_model = len(y_preds)
          |
          |      else:
          |        y_trues = [table['$actualValueColumn'].tolist()]
