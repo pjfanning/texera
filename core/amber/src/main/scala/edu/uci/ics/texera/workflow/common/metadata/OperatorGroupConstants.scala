@@ -13,11 +13,13 @@ object OperatorGroupConstants {
   final val API_GROUP = "External API"
   final val VISUALIZATION_GROUP = "Visualization"
   final val MACHINE_LEARNING_GROUP = "Machine Learning"
+  final val ADVANCED_SKLEARN_GROUP = "Advanced Sklearn"
   final val HUGGINGFACE_GROUP = "Hugging Face"
   final val SKLEARN_GROUP = "Sklearn"
   final val UDF_GROUP = "User-defined Functions"
   final val PYTHON_GROUP = "Python"
   final val JAVA_GROUP = "Java"
+  final val R_GROUP = "R"
 
   final val PREPROCESSING_GROUP = "Preprocessing"
   final val MODEL_TRAINING_GROUP = "Model Training"
@@ -32,23 +34,26 @@ object OperatorGroupConstants {
     GroupInfo(INPUT_GROUP),
     GroupInfo(DATABASE_GROUP),
     GroupInfo(SEARCH_GROUP),
-    GroupInfo(CLEANING_GROUP),
-//    GroupInfo(MACHINE_LEARNING_GROUP, List(GroupInfo(SKLEARN_GROUP), GroupInfo(HUGGINGFACE_GROUP),
-//      GroupInfo(PREPROCESSING_GROUP),
-//      GroupInfo(MODEL_TRAINING_GROUP),
-//      GroupInfo(MODEL_PERFORMANCE_GROUP),
-//      GroupInfo(MODEL_VISUALIZATION_GROUP),
-//    )),
-    GroupInfo(MACHINE_LEARNING_GROUP, List(
-      GroupInfo(PREPROCESSING_GROUP),
-      GroupInfo(MODEL_TRAINING_GROUP),
-      GroupInfo(MODEL_PERFORMANCE_GROUP),
-      GroupInfo(MODEL_VISUALIZATION_GROUP),
-    )),
     GroupInfo(JOIN_GROUP),
     GroupInfo(SET_GROUP),
     GroupInfo(AGGREGATE_GROUP),
     GroupInfo(SORT_GROUP),
+    GroupInfo(
+      CLEANING_GROUP,
+      List(GroupInfo(JOIN_GROUP), GroupInfo(AGGREGATE_GROUP), GroupInfo(SORT_GROUP))
+    ),
+    GroupInfo(
+      MACHINE_LEARNING_GROUP,
+      List(
+        GroupInfo(SKLEARN_GROUP),
+//        GroupInfo(ADVANCED_SKLEARN_GROUP),
+        GroupInfo(HUGGINGFACE_GROUP),
+        GroupInfo(PREPROCESSING_GROUP),
+        GroupInfo(MODEL_TRAINING_GROUP),
+        GroupInfo(MODEL_PERFORMANCE_GROUP),
+        GroupInfo(MODEL_VISUALIZATION_GROUP),
+      )
+    ),
     GroupInfo(UTILITY_GROUP),
     GroupInfo(API_GROUP),
     GroupInfo(UDF_GROUP, List(GroupInfo(PYTHON_GROUP), GroupInfo(JAVA_GROUP))),
