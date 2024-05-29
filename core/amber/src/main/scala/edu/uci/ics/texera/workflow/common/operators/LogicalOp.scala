@@ -209,7 +209,7 @@ trait StateTransferFunc
 //    new Type(value = classOf[SVCTrainerOpDescOld], name = "SVCTrainerOld"),
 //    new Type(value = classOf[KNNTrainerRegressionOpDescOld], name = "KNNTrainerRegression"),
     new Type(value = classOf[ApplyModelOpDesc], name = "ApplyModel"),
-    new Type(value = classOf[ClassificationScorerOpDesc], name = "Scorer"),
+    new Type(value = classOf[ClassificationScorerOpDesc], name = "ClassificationScorer"),
     new Type(value = classOf[ConfusionMatrixChartOpDesc], name = "ConfusionMatrix"),
     new Type(value = classOf[ROCChartOpDesc], name = "ROCChart"),
     new Type(value = classOf[ModelSelectionOpDesc], name = "ModelSelection"),
