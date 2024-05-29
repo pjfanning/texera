@@ -97,6 +97,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |    global dataset
          |    model_list = []
          |    para_list = []
+         |    features_list =[]
          |    features = [$listFeatures]
          |
          |    if port == 0:
@@ -113,10 +114,13 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |
          |        para_str = ${paramString}
          |        para_list.append(para_str)
+         |        features_list.append(features)
          |
          |      data = dict({})
          |      data["Model"]= model
          |      data["Parameters"] =para_list
+         |      data["Features"] =features_list
+         |
          |
          |      df = pd.DataFrame(data)
          |      yield df
@@ -151,6 +155,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
     outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY))
     outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING)).build()
   }
 }
