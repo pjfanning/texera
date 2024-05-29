@@ -2,14 +2,14 @@ package edu.uci.ics.texera.workflow.operators.machineLearning.Scorer;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum ScorerFunction {
-    accuracy("Accuracy"),
-    precisionScore ("Precision Score"),
-    recallScore("Recall Score"),
-    f1Score("F1 Score"),;
+public enum regressionMetricsFnc {
+    mse("MSE"),
+    rmse("RMSE"),
+    mae("MAE"),
+    r2("R2"),;
 
     private final String name;
-    ScorerFunction(String name) {
+    regressionMetricsFnc(String name) {
         this.name = name;
     }
 

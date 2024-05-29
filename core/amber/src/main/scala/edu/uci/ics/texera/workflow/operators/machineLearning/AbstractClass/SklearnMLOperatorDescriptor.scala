@@ -1,20 +1,29 @@
-package edu.uci.ics.texera.workflow.common.operators
+package edu.uci.ics.texera.workflow.operators.machineLearning.AbstractClass
 
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
-import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaInject, JsonSchemaTitle}
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
+import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
+trait AbstractEnumClass {
+  def getName(): String
+  def getType(): String
+}
+
+abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends PythonOperatorDescriptor {
   @JsonIgnore
   def getImportStatements():String
 
   @JsonIgnore
   def getOperatorInfo():String
 
-  var parameterFromWorkflow: Boolean
+  @JsonProperty(required = true)
+  @JsonSchemaTitle("Parameter Setting")
+  var paraList: List[HyperParameters[T]] = List()
+
   @JsonProperty(required = true)
   @JsonSchemaTitle("Ground Truth Attribute Column")
   @JsonPropertyDescription("Ground truth attribute column")
@@ -27,53 +36,47 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   @AutofillAttributeNameList
   var selectedFeatures: List[String] = _
 
-  private var paramMap =Map[String, Array[Any]]()
-  def addParamMap():Map[String, Array[Any]]
-
-  def paramFromCustom():String = {
-    paramMap.map { case (_, array) =>
-      s"""
-         |        ${array(0)} = np.array([\"${array(1)}\"])
-         |"""
-    }.mkString
+  private def getLoopTimes(paraList:List[HyperParameters[T]]) : String= {
+    for (ele<-paraList){
+      if (ele.parametersSource){
+        return s"""table[\"${ele.attribute}\"].values.shape[0]"""
+      }else{
+        return "1"
+      }
+    }
+    ""
   }
 
-  def paramFromTuning(): String= {
-    paramMap.map { case (_, array) =>
-      s"""
-         |        ${array(0)} = table[\"${array(2)}\"].values
-         |"""
-    }.mkString
-  }
-  def trainingModel(): String = {
-    val listName = paramMap.head._2(0)
-    val trainingName = getImportStatements().split(" ").last
-    s"""
-       |      for i in range($listName.shape[0]):
-       |        model = $trainingName(${paramMap.map { case (key, array) =>s"$key=${array(3)}(${array(0)}[i])"}.mkString(",")})
-       |        model.fit(X_train, y_train)
-       |
-       |        para_str = "${paramMap.map { case (key, _) =>s"$key = '{}'"}.mkString(",")}".format(${paramMap.map { case (_, array) =>s"${array(0)}[i]"}.mkString(",")})
-       |        model_str = pickle.dumps(model)
-       |        model_list.append(model_str)
-       |        para_list.append(para_str)
-       |        features_list.append(features)
-       |""".stripMargin
+  def getParameter(paraList:List[HyperParameters[T]]): List[String] =  {
+    var str1 =""; var str2 = ""; var str3 = ""
+    for  (ele<-paraList){
+      if (ele.parametersSource){
+        str1 = str1 +String.format("%s = {},",ele.parameter.getName())
+        str2 = str2 +String.format("%s(table['%s'].values[i]),",ele.parameter.getType(),ele.attribute )
+        str3 = str3 +String.format("%s = %s(table['%s'].values[i]),",ele.parameter.getName() ,ele.parameter.getType(),ele.attribute )
+      }
+      else {
+        str1 = str1 +String.format("%s = {},",ele.parameter.getName())
+        str2 = str2 +String.format("%s ('%s'),",ele.parameter.getType(),ele.value)
+        str3 = str3 +String.format("%s = %s ('%s'),",ele.parameter.getName() ,ele.parameter.getType(),ele.value)
+      }
+    }
+    List(String.format("\"%s\".format(%s)",str1,str2),str3)
   }
 
   override def generatePythonCode(): String = {
-    this.paramMap = addParamMap()
-    var truthy = "False"
-    if (parameterFromWorkflow) truthy = "True"
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
+    val trainingName = getImportStatements().split(" ").last
+    val stringList = getParameter(paraList)
+    val trainingParam = stringList(1)
+    val paramString = stringList(0)
     val finalCode =
       s"""
          |from pytexera import *
          |
          |import pandas as pd
-         |import numpy as np
-         |import pickle
          |${getImportStatements()}
+         |
          |class ProcessTableOperator(UDFTableOperator):
          |
          |  @overrides
@@ -81,42 +84,38 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
          |    global dataset
          |    model_list = []
          |    para_list = []
-         |    features_list = []
          |    features = [$listFeatures]
          |
          |    if port == 0:
          |      dataset = table
          |
          |    if port == 1:
-         |      parameter_table = table
          |      y_train = dataset["$groundTruthAttribute"]
          |      X_train = dataset[features]
+         |      loop_times = ${getLoopTimes(paraList)}
          |
-         |      if not ($truthy):
-         |        ${paramFromCustom()}
+         |      for i in range(loop_times):
+         |        model = ${trainingName}(${trainingParam})
+         |        model.fit(X_train, y_train)
          |
-         |      if ($truthy):
-         |        ${paramFromTuning()}
-         |
-         |      ${trainingModel()}
+         |        para_str = ${paramString}
+         |        para_list.append(para_str)
          |
          |      data = dict({})
-         |      data["Model"]= model_list
-         |      data["Parameters"] = para_list
-         |      data["Features"]= features_list
+         |      data["Model"]= model
+         |      data["Parameters"] =para_list
          |
          |      df = pd.DataFrame(data)
-         |      if ($truthy):
-         |        df["Iteration"]= parameter_table["Iteration"]
          |      yield df
+         |
          |""".stripMargin
     finalCode
   }
 
   override def operatorInfo: OperatorInfo = {
-    var name = getOperatorInfo()
+    val name = getOperatorInfo()
     OperatorInfo(
-      name+" Training",
+      name+" Training list",
       "Sklearn " + name + " Operator",
       OperatorGroupConstants.MODEL_TRAINING_GROUP,
       inputPorts = List(
@@ -137,10 +136,8 @@ abstract class SklearnMLOperatorDescriptorV3 extends PythonOperatorDescriptor{
   }
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-      val outputSchemaBuilder = Schema.builder()
-      if (parameterFromWorkflow) outputSchemaBuilder.add(new Attribute("Iteration", AttributeType.INTEGER))
-      outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
-      outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.BINARY))
-      outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build
-    }
+    val outputSchemaBuilder = Schema.builder()
+    outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING)).build
+  }
 }

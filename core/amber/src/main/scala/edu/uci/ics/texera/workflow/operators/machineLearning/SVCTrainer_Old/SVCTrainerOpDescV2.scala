@@ -1,26 +1,13 @@
-package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer
+package edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer_Old
 
 import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.{JsonSchemaBool, JsonSchemaInject, JsonSchemaString, JsonSchemaTitle}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
-import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
-import edu.uci.ics.texera.workflow.common.operators.{SklearnMLOperatorDescriptorV2, SklearnMLOperatorDescriptorV3}
+import edu.uci.ics.texera.workflow.common.metadata.annotations.{AutofillAttributeName, AutofillAttributeNameList, AutofillAttributeNameOnPort1, HideAnnotation}
+import edu.uci.ics.texera.workflow.common.operators.SklearnMLOperatorDescriptorV2
 
-class SVCTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
-  model = "from sklearn.svm import SVC"
-  name = "SVM"
-  
-  override def addParamMap(): Map[String, Array[Any]] = {
-    var paramMap = Map(
-      "C" -> Array("c_list",c,loopC,"float"),
-    )
-    paramMap += ("kernel" -> Array("kernel_list",kernel,loopKernel,"str"))
-    paramMap += ("gamma" -> Array("gamma_list",gamma,loopGamma,"float"))
-    paramMap += ("coef0" -> Array("coef_list",coef,loopCoef,"float"))
-    paramMap
-  }
-
+class SVCTrainerOpDescV2 extends SklearnMLOperatorDescriptorV2{
   @JsonProperty(defaultValue = "false")
   @JsonSchemaTitle("Get Parameters From Workflow")
   @JsonSchemaInject(json = """{"toggleHidden" : ["loopC","loopKernel","loopGamma","loopCoef"]}""")
@@ -147,4 +134,39 @@ class SVCTrainerOpDescV3 extends SklearnMLOperatorDescriptorV3{
     )
   )
   var coef: Float = Float.box(1.0f)
+
+  override def operatorInfo: OperatorInfo =
+    OperatorInfo(
+      "SVC Trainer V2",
+      "Train a SVM classifier",
+      OperatorGroupConstants.MODEL_TRAINING_GROUP,
+      inputPorts = List(
+        InputPort(
+          PortIdentity(0),
+          displayName = "dataset",
+          allowMultiLinks = true
+        ),
+        InputPort(
+          PortIdentity(1),
+          displayName = "parameter",
+          allowMultiLinks = true,
+          dependencies = List(PortIdentity(0))
+        )
+      ),
+      outputPorts = List(OutputPort())
+    )
+  override def addImportMap(): Map[String, String] = {
+    val importMap = Map("sklearn.svm" -> "SVC")
+    importMap
+  }
+
+  override def addParamMap(): Map[String, Array[Any]] = {
+    var paramMap = Map(
+      "C" -> Array("c_list",c,loopC,"float"),
+    )
+    paramMap += ("kernel" -> Array("kernel_list",kernel,loopKernel,"str"))
+    paramMap += ("gamma" -> Array("gamma_list",gamma,loopGamma,"float"))
+    paramMap += ("coef0" -> Array("coef_list",coef,loopCoef,"float"))
+    paramMap
+  }
 }

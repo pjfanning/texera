@@ -2,13 +2,6 @@ package edu.uci.ics.texera.workflow.common.operators
 
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription, JsonSubTypes, JsonTypeInfo}
-import com.fasterxml.jackson.annotation.{
-  JsonIgnore,
-  JsonProperty,
-  JsonPropertyDescription,
-  JsonSubTypes,
-  JsonTypeInfo
-}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity, WorkflowIdentity}
@@ -33,20 +26,14 @@ import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ApplyModel.ApplyModelOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ConfusionMatrixChart.ConfusionMatrixChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2, KNNTrainerOpDescV3, KNNTrainerRegressionOpDescOld}
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc_old.{KNNTrainerOpDescOld, KNNTrainerOpDescV1, KNNTrainerOpDescV2, KNNTrainerOpDescV3, KNNTrainerRegressionOpDescOld}
 import edu.uci.ics.texera.workflow.operators.machineLearning.ModelSelection.{KNNTrainerRegressionOpDescV2, ModelSelectionOpDesc}
 import edu.uci.ics.texera.workflow.operators.machineLearning.EncoderDecoder.EncoderOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.ROCChart.ROCChartOpDesc
-import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2, SVCTrainerOpDescV3}
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVCTrainer_Old.{SVCTrainerOpDescOld, SVCTrainerOpDescV1, SVCTrainerOpDescV2, SVCTrainerOpDescV3}
 import edu.uci.ics.texera.workflow.operators.machineLearning.SVRTrainer.SVRTrainerOpDescV2
 import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.ScorerOpDesc
-import edu.uci.ics.texera.workflow.operators.huggingFace.HuggingFaceSentimentAnalysisOpDesc
-import edu.uci.ics.texera.workflow.operators.huggingFace.{
-  HuggingFaceIrisLogisticRegressionOpDesc,
-  HuggingFaceSentimentAnalysisOpDesc,
-  HuggingFaceSpamSMSDetectionOpDesc,
-  HuggingFaceTextSummarizationOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.huggingFace.{HuggingFaceIrisLogisticRegressionOpDesc, HuggingFaceSentimentAnalysisOpDesc, HuggingFaceSpamSMSDetectionOpDesc, HuggingFaceTextSummarizationOpDesc}
 import edu.uci.ics.texera.workflow.operators.machineLearning.MLPCreator.MLPCreatorOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNTrainer.NNTrainerOpDesc
 import edu.uci.ics.texera.workflow.operators.machineLearning.NNPredictor.NNPredictorOpDesc
@@ -61,35 +48,7 @@ import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.sklearn.{
-  SklearnAdaptiveBoostingOpDesc,
-  SklearnBaggingOpDesc,
-  SklearnBernoulliNaiveBayesOpDesc,
-  SklearnComplementNaiveBayesOpDesc,
-  SklearnDecisionTreeOpDesc,
-  SklearnDummyClassifierOpDesc,
-  SklearnExtraTreeOpDesc,
-  SklearnExtraTreesOpDesc,
-  SklearnGaussianNaiveBayesOpDesc,
-  SklearnGradientBoostingOpDesc,
-  SklearnKNNOpDesc,
-  SklearnLinearRegressionOpDesc,
-  SklearnLinearSVMOpDesc,
-  SklearnLogisticRegressionCVOpDesc,
-  SklearnLogisticRegressionOpDesc,
-  SklearnMultiLayerPerceptronOpDesc,
-  SklearnMultinomialNaiveBayesOpDesc,
-  SklearnNearestCentroidOpDesc,
-  SklearnPassiveAggressiveOpDesc,
-  SklearnPerceptronOpDesc,
-  SklearnPredictionOpDesc,
-  SklearnProbabilityCalibrationOpDesc,
-  SklearnRandomForestOpDesc,
-  SklearnRidgeCVOpDesc,
-  SklearnRidgeOpDesc,
-  SklearnSDGOpDesc,
-  SklearnSVMOpDesc
-}
+import edu.uci.ics.texera.workflow.operators.sklearn.{SklearnAdaptiveBoostingOpDesc, SklearnBaggingOpDesc, SklearnBernoulliNaiveBayesOpDesc, SklearnComplementNaiveBayesOpDesc, SklearnDecisionTreeOpDesc, SklearnDummyClassifierOpDesc, SklearnExtraTreeOpDesc, SklearnExtraTreesOpDesc, SklearnGaussianNaiveBayesOpDesc, SklearnGradientBoostingOpDesc, SklearnKNNOpDesc, SklearnLinearRegressionOpDesc, SklearnLinearSVMOpDesc, SklearnLogisticRegressionCVOpDesc, SklearnLogisticRegressionOpDesc, SklearnMultiLayerPerceptronOpDesc, SklearnMultinomialNaiveBayesOpDesc, SklearnNearestCentroidOpDesc, SklearnPassiveAggressiveOpDesc, SklearnPerceptronOpDesc, SklearnPredictionOpDesc, SklearnProbabilityCalibrationOpDesc, SklearnRandomForestOpDesc, SklearnRidgeCVOpDesc, SklearnRidgeOpDesc, SklearnSDGOpDesc, SklearnSVMOpDesc}
 import edu.uci.ics.texera.workflow.operators.sort.SortOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
@@ -133,6 +92,9 @@ import edu.uci.ics.texera.workflow.operators.visualization.ScatterMatrixChart.Sc
 import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
 import edu.uci.ics.texera.workflow.operators.drop.DropOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.KNNTrainerOpDesc_list
+import edu.uci.ics.texera.workflow.operators.machineLearning.KNNTrainerOpDesc.old.KNNTrainerOpDesc
+import edu.uci.ics.texera.workflow.operators.machineLearning.SVMTrainer.{SVCTrainer_list, SVRTrainer_list}
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
 
@@ -226,10 +188,14 @@ trait StateTransferFunc
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
 //    new Type(value = classOf[KNNTrainerOpDescOld], name = "KNNTrainerOld"),
+    new Type(value = classOf[KNNTrainerOpDesc], name = "KNNTrainer"),
+    new Type(value = classOf[SVCTrainer_list], name = "SVCTrainer_list"),
+    new Type(value = classOf[SVRTrainer_list], name = "SVRTrainer_list"),
 //    new Type(value = classOf[KNNTrainerOpDescV1], name = "KNNTrainerV1"),
 //    new Type(value = classOf[KNNTrainerOpDescV2], name = "KNNTrainerV2"),
-    new Type(value = classOf[KNNTrainerOpDescV3], name = "KNNTrainerV3"),
+//    new Type(value = classOf[KNNTrainerOpDescV3], name = "KNNTrainerV3"),
 //    new Type(value = classOf[KNNTrainerRegressionOpDescV2], name = "KNNTrainerRegression"),
+    new Type(value = classOf[KNNTrainerOpDesc_list], name = "KNNTrainer_list"),
 //    new Type(value = classOf[SVCTrainerOpDescV1], name = "SVCTrainerV1"),
 //    new Type(value = classOf[SVCTrainerOpDescV2], name = "SVCTrainerV2"),
     new Type(value = classOf[SVCTrainerOpDescV3], name = "SVCTrainerV3"),
