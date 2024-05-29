@@ -60,14 +60,14 @@ class NormalizerOpDesc extends PythonOperatorDescriptor{
          |      if dataset[column].isnull().any():
          |        median_value = dataset[column].median()
          |        dataset[column].fillna(median_value, inplace=True)
-         |        print(f"Column {column} has missing values, fill with median value {median_value}")
+         |        #print(f"Column {column} has missing values, fill with median value {median_value}")
          |
          |      dataset[column] = mms.fit_transform(dataset[[column]])
          |      binary_norm = pickle.dumps(mms)
          |      result['column_name'].append(column)
          |      result['norm'].append(binary_norm)
          |
-         |    print(result)
+         |    #print(result)
          |    yield dataset
          |
          |

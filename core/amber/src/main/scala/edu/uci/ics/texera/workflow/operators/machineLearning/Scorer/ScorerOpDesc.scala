@@ -42,8 +42,9 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
       .foreach(scorer => {
         outputSchemaBuilder.add(new Attribute(scorer, AttributeType.DOUBLE))
       })
-
+      if(inputSchema.containsAttribute("Parameters")){
       outputSchemaBuilder.add(inputSchema)
+      }
 
 
 
@@ -98,17 +99,19 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |            result = dict()
          |            length = 1
          |            out_table = "o"
-         |            if isinstance(table['$actualValueColumn'], pd.Series):
+         |            flag = 0
+         |            if isinstance(table['$actualValueColumn'][0], pd.Series):
          |              y_true_list = table['$actualValueColumn']
          |              y_pred_list = table['$predictValueColumn']
          |              length = len(table['$predictValueColumn'])
+         |              flag = 1
+         |
          |
          |            else:
          |              y_true_list = [table['$actualValueColumn']]
          |              y_pred_list = [table['$predictValueColumn']]
          |            labels = list(set(y_true_list[0]))
          |            labels.append('Overall')
-         |
          |            scorer_list = [${getSelectedScorers()}]
          |            for l in range(length):
          |              result = dict()
@@ -156,23 +159,23 @@ class ScorerOpDesc extends PythonOperatorDescriptor {
          |                else:
          |                  label_show.append(item)
          |
-         |              result['Label'] = labels
+         |              result['Label'] = label_show
          |              result_df = pd.DataFrame(result)
          |
          |
          |              row_diff = len(result_df) - 1 # make two table have same row number
-         |              if row_diff > 0:
+         |              if row_diff > 0 and flag==1:
          |                fill_df = table.loc[[l]]
          |                df_fill = pd.DataFrame(np.tile(fill_df.values, (len(labels), 1)), columns=fill_df.columns)
-         |                result_df = pd.concat([result_df, df_fill], axis=1)
+         |                out_table = pd.concat([result_df, df_fill], axis=1)
          |
          |              if "Iteration" in result_df.columns:
          |                result_df['Iteration'] = result_df['Iteration'].astype(int)
-         |              if type(out_table)!=str:
-         |                out_table = pd.concat([out_table,result_df], axis=0)
+         |              if flag==1:
+         |                yield out_table
          |              else:
-         |                out_table =  result_df
-         |            yield out_table
+         |                yield result_df
+         |
          |
          |""".stripMargin
     finalcode

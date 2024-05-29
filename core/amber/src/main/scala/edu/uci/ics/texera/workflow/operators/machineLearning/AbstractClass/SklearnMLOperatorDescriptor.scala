@@ -40,11 +40,9 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
     for (ele<-paraList){
       if (ele.parametersSource){
         return s"""table[\"${ele.attribute}\"].values.shape[0]"""
-      }else{
-        return "1"
       }
     }
-    ""
+    return "1"
   }
 
   def getParameter(paraList:List[HyperParameters[T]]): List[String] =  {
@@ -102,9 +100,11 @@ abstract class SklearnMLOperatorDescriptor[T <: AbstractEnumClass] extends Pytho
          |        para_str = ${paramString}
          |        para_list.append(para_str)
          |        features_list.append(features)
+         |        model_list.append(model)
+         |        print(para_)
          |
          |      data = dict({})
-         |      data["Model"]= model
+         |      data["Model"]= model_list
          |      data["Parameters"] =para_list
          |      data["Features"] =features_list
          |

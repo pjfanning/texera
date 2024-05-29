@@ -43,11 +43,9 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
     for (ele <- paraList) {
       if (ele.parametersSource) {
         return s"""table[\"${ele.attribute}\"].values.shape[0]"""
-      } else {
-        return "1"
       }
     }
-    ""
+    "1"
   }
 
   def getParameter(paraList: List[HyperParameters[T]]): List[String] = {
@@ -111,13 +109,14 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |      for i in range(loop_times):
          |        model = ${trainingName}(${trainingParam})
          |        model.fit(X_train, y_train)
+         |        model_list.append(model)
          |
          |        para_str = ${paramString}
          |        para_list.append(para_str)
          |        features_list.append(features)
          |
          |      data = dict({})
-         |      data["Model"]= model
+         |      data["Model"]= model_list
          |      data["Parameters"] =para_list
          |      data["Features"] =features_list
          |
@@ -154,8 +153,8 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     val outputSchemaBuilder = Schema.builder()
+    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING))
     outputSchemaBuilder.add(new Attribute("Model", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY))
-    outputSchemaBuilder.add(new Attribute("Parameters", AttributeType.STRING)).build()
+    outputSchemaBuilder.add(new Attribute("Features", AttributeType.BINARY)).build()
   }
 }

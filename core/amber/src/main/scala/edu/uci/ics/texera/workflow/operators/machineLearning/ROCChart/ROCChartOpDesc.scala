@@ -37,7 +37,7 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
   @JsonProperty(required = true)
   @JsonSchemaTitle("Predicted probabilities Value")
   @JsonPropertyDescription("Specify the probabilities predicted by the model")
-  @AutofillAttributeNameOnPort1
+  @AutofillAttributeName
   var predictValueColumn: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
@@ -91,6 +91,9 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
          |
          |        y_bin = label_binarize(y_true, classes=labels)
          |        n_classes = y_bin.shape[1]
+         |        if n_classes==1:
+         |            y_bin = np.hstack((1 - y_bin, y_bin))
+         |            n_classes = n_classes+1
          |
          |        fpr = dict()
          |        tpr = dict()
@@ -135,6 +138,7 @@ class ROCChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor
          |
          |        # convert fig to html content
          |        html = plotly.io.to_html(fig, include_plotlyjs="cdn", auto_play=False)
+         |
          |        yield {"html-content": html}
          |
          |""".stripMargin

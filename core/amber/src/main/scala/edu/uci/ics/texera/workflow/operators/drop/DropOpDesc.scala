@@ -20,9 +20,7 @@ class DropOpDesc extends MapOpDesc {
   @JsonPropertyDescription("Choose to drop or keep the selected attributes")
   var dropOption: DropOption =DropOption.drop
 
-  @JsonIgnore
-  var isDrop: Boolean = true
-  if(dropOption==DropOption.keep) isDrop = false
+
 
   @JsonProperty(value = "Selected Attributes", required = true)
   @JsonSchemaTitle("Selected Attributes")
@@ -41,7 +39,7 @@ class DropOpDesc extends MapOpDesc {
       workflowId,
       executionId,
       operatorIdentifier,
-      OpExecInitInfo((_, _) => new DropOpExec(selectedFeatures,isDrop))
+      OpExecInitInfo((_, _) => new DropOpExec(selectedFeatures,dropOption==DropOption.drop))
     )
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
@@ -69,7 +67,7 @@ class DropOpDesc extends MapOpDesc {
     Preconditions.checkArgument(selectedFeatures.nonEmpty)
     var selectedAttributes = selectedFeatures
     val inputSchema = schemas(0)
-    if (isDrop) {
+    if (dropOption==DropOption.drop) {
       val allAttributes = inputSchema.getAttributeNames
       selectedAttributes = allAttributes.diff(selectedFeatures)
     }
