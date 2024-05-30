@@ -40,7 +40,7 @@ object ControlCommandConvertUtils {
         ResumeWorkerV2()
       case OpenExecutor() =>
         OpenExecutorV2()
-      case AssignPort(portId, input, schema) =>
+      case AssignPort(portId, input, schema, _) =>
         AssignPortV2(portId, input, schema.toRawSchema)
       case AddPartitioning(tag: PhysicalLink, partitioning: Partitioning) =>
         AddPartitioningV2(tag, partitioning)
@@ -50,7 +50,7 @@ object ControlCommandConvertUtils {
         QueryStatisticsV2()
       case QueryCurrentInputTuple() =>
         QueryCurrentInputTupleV2()
-      case InitializeExecutor(_, opExecInitInfo, isSource, _) =>
+      case InitializeExecutor(_, opExecInitInfo, isSource) =>
         val (code, language) = opExecInitInfo.asInstanceOf[OpExecInitInfoWithCode].codeGen(0, 0)
         InitializeExecutorV2(
           code,

@@ -18,5 +18,5 @@ trait PortDescriptor {
   var inputPorts: List[PortDescription] = null
 
   @JsonProperty(required = false)
-  var outputPorts: List[PortDescription] = null
+  var outputPorts: List[PortDescription] = List.empty
 }

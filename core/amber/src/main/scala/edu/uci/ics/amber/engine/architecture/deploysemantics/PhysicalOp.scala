@@ -26,13 +26,14 @@ import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
 import edu.uci.ics.amber.engine.common.VirtualIdentityUtils
 import edu.uci.ics.amber.engine.common.virtualidentity._
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
+import edu.uci.ics.texera.workflow.common.WorkflowContext
+import edu.uci.ics.texera.workflow.common.operators.LogicalOp
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import edu.uci.ics.texera.workflow.common.workflow._
-import edu.uci.ics.texera.workflow.operators.sink.storage.{SinkStorageReader, SinkStorageWriter}
 import org.jgrapht.graph.{DefaultEdge, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -183,7 +184,6 @@ case class PhysicalOp(
       Map.empty,
     outputPorts: Map[PortIdentity, (OutputPort, List[PhysicalLink], Either[Throwable, Schema])] =
       Map.empty,
-    outputPortStorages: Map[PortIdentity, SinkStorageWriter] = Map.empty,
     // schema propagation function
     propagateSchema: SchemaPropagationFunc = SchemaPropagationFunc(schemas => schemas),
     isOneToManyOp: Boolean = false,
@@ -443,22 +443,47 @@ case class PhysicalOp(
     }
   }
 
-  def setOutputPortStorage(
-      outputPortId: PortIdentity,
-      storageWriter: SinkStorageWriter
+  def assignOutputPortStorages(
+      logicalOp: LogicalOp,
+      context: WorkflowContext,
+      opResultStorageOptional: Option[OpResultStorage]
   ): PhysicalOp = {
-    this.copy(outputPortStorages = outputPortStorages.updated(outputPortId, storageWriter))
-  }
-
-  // TODO: Assuming logical and physical have the same ports for now.
-  //  Need to include mapping from logical port to physical port eventually.
-  def setOutputPortStorages(
-      logicalStorageMap: mutable.Map[PortIdentity, SinkStorageReader]
-  ): PhysicalOp = {
-    logicalStorageMap.foldLeft(this) { (currentOp, entry) =>
-      val (outputPortId, storageReader) = entry
-      currentOp.setOutputPortStorage(outputPortId, storageReader.getStorageWriter)
+    opResultStorageOptional match {
+      case Some(opResultStorage: OpResultStorage) =>
+        logicalOp.outputPorts.zipWithIndex.foldLeft(this) { (currentOp, portWithIndex) =>
+          {
+            if (
+              portWithIndex._1.hasStorage && currentOp.outputPorts
+                .exists(pred => pred._1.id == portWithIndex._2)
+            ) {
+              val correspondingPortId =
+                currentOp.outputPorts.keys.filter(portId => portId.id == portWithIndex._2).head
+              val existingContent = outputPorts(correspondingPortId)
+              val storageKey = s"${currentOp.id}_outPort_${correspondingPortId.id}"
+              val storageType = OpResultStorage.defaultStorageMode
+              val createdStorageReader = opResultStorage.createPortStorage(
+                s"${context.executionId}_",
+                storageKey,
+                storageType
+              )
+              existingContent._3 match {
+                case Left(_)       =>
+                case Right(schema) => createdStorageReader.setSchema(schema)
+              }
+              currentOp.copy(outputPorts =
+                outputPorts.updated(
+                  correspondingPortId,
+                  existingContent.copy(_1 = existingContent._1.copy(storageLocation = storageKey))
+                )
+              )
+            } else {
+              currentOp
+            }
+          }
+        }
+      case _ => this
     }
+
   }
 
   /**

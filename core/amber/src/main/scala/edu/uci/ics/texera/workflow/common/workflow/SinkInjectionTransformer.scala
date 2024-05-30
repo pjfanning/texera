@@ -24,8 +24,6 @@ object SinkInjectionTransformer {
     operatorsToAddSink.foreach(opId => {
       val op = logicalPlan.getOperator(opId)
       op.operatorInfo.outputPorts.foreach(outPort => {
-        // Set storage on port
-        op.setOutputPortHasStorage(outPort.id)
         // Add sink (TODO:deprecate)
         val sink = new ProgressiveSinkOpDesc()
         sink.setOperatorId("sink_" + opId.id)

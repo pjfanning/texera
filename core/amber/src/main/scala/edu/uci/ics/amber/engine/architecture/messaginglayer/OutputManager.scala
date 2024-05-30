@@ -16,7 +16,6 @@ import edu.uci.ics.amber.engine.common.workflow.{PhysicalLink, PortIdentity}
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageWriter
 
-import scala.collection.immutable.Map
 import scala.collection.mutable
 
 object OutputManager {
@@ -95,8 +94,6 @@ class OutputManager(
 
   private val ports: mutable.HashMap[PortIdentity, WorkerPort] = mutable.HashMap()
 
-  private var portStorages: Map[PortIdentity, SinkStorageWriter] = _
-
   private val networkOutputBuffers =
     mutable.HashMap[(PhysicalLink, ActorVirtualIdentity), NetworkOutputBuffer]()
 
@@ -141,14 +138,19 @@ class OutputManager(
     }
 
     // Save to storage
+
     (outputPortId match {
-      case Some(portId) => portStorages.filter(_._1 == portId)
-      case None         => portStorages
-    }).foreach {
-      case (portId, storageWriter) =>
-        val tuple = tupleLike.enforceSchema(getPort(portId).schema)
-        storageWriter.putOne(tuple)
-    }
+      case Some(portId) => ports.filter(_._1 == portId)
+      case None         => ports
+    }).foreach(kv => {
+      val portId = kv._1
+      kv._2.storage match {
+        case Some(storageWriter) =>
+          val tuple = tupleLike.enforceSchema(getPort(portId).schema)
+          storageWriter.putOne(tuple)
+        case None =>
+      }
+    })
   }
 
   /**
@@ -186,25 +188,19 @@ class OutputManager(
     })
   }
 
-  def addPort(portId: PortIdentity, schema: Schema): Unit = {
+  def addPort(portId: PortIdentity, schema: Schema, storage: Option[SinkStorageWriter]): Unit = {
     // each port can only be added and initialized once.
-    portStorages.filter(_._1 == portId).foreach { kv =>
-      {
-        kv._2.open()
-      }
-    }
     if (this.ports.contains(portId)) {
       return
     }
-    this.ports(portId) = WorkerPort(schema)
-
+    this.ports(portId) = WorkerPort(schema, storage = storage)
+    this.ports(portId).storage match {
+      case Some(storageWriter) => storageWriter.open()
+      case None                =>
+    }
   }
 
   def getPort(portId: PortIdentity): WorkerPort = ports(portId)
-
-  def setPortStorage(portStorageMap: Map[PortIdentity, SinkStorageWriter]): Unit = {
-    this.portStorages = portStorageMap
-  }
 
   def hasUnfinishedOutput: Boolean = outputIterator.hasNext
 
@@ -217,10 +213,12 @@ class OutputManager(
   }
 
   def closeOutputStorages(): Unit = {
-    this.portStorages.foreach {
-      case (_, storageWriter) =>
-        storageWriter.close()
-    }
+    this.ports.values.foreach(workerPort => {
+      workerPort.storage match {
+        case Some(storageWriter) => storageWriter.close()
+        case None                =>
+      }
+    })
   }
 
   def getSingleOutputPortIdentity: PortIdentity = {

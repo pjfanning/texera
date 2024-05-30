@@ -47,7 +47,6 @@ import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageReader
 import edu.uci.ics.texera.workflow.operators.sklearn.{
   SklearnAdaptiveBoostingOpDesc,
   SklearnBaggingOpDesc,
@@ -300,12 +299,6 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   @JsonIgnore
   val outputPortToSchemaMapping: mutable.Map[PortIdentity, Schema] = mutable.HashMap()
 
-  @JsonIgnore
-  val outputPortsWithStorage: mutable.Set[PortIdentity] = mutable.HashSet()
-
-  @JsonIgnore
-  val outputPortToStorageMapping: mutable.Map[PortIdentity, SinkStorageReader] = mutable.HashMap()
-
   def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
   def getPhysicalOp(
@@ -354,18 +347,6 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
 
   def setOperatorId(id: String): Unit = {
     operatorId = id
-  }
-
-  def setOutputPortHasStorage(outputPortId: PortIdentity): Unit = {
-    this.outputPortsWithStorage.add(outputPortId)
-  }
-
-  def setOutputPortStorage(outputPortId: PortIdentity, storage: SinkStorageReader): Unit = {
-    this.outputPortToStorageMapping(outputPortId) = storage
-  }
-
-  def getOutputPortStorage(outputPortId: PortIdentity): SinkStorageReader = {
-    this.outputPortToStorageMapping(outputPortId)
   }
 
   def runtimeReconfiguration(
