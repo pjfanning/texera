@@ -100,7 +100,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |    if port == 0:
          |      dataset = table
          |
-         |    if port == 1:
+         |    if port == 1 :
          |      y_train = dataset["$groundTruthAttribute"]
          |      X_train = dataset[features]
          |      loop_times = ${getLoopTimes(paraList)}
