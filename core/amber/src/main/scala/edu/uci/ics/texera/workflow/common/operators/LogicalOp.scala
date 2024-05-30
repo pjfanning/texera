@@ -298,7 +298,6 @@ abstract class LogicalOp extends PortDescriptor with Serializable {
   val inputPortToSchemaMapping: mutable.Map[PortIdentity, Schema] = mutable.HashMap()
   @JsonIgnore
   val outputPortToSchemaMapping: mutable.Map[PortIdentity, Schema] = mutable.HashMap()
-
   def operatorIdentifier: OperatorIdentity = OperatorIdentity(operatorId)
 
   def getPhysicalOp(

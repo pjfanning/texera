@@ -126,6 +126,7 @@ object WorkflowCacheRewriter {
           sinksPointers.add(storageNode)
         }
         storage.get(storageKey)
+
       case _ =>
     }
     // update execution entry in MySQL to have pointers to the mongo collections

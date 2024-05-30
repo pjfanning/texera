@@ -165,12 +165,7 @@ class WorkerSpec
     )
     val initializeOperatorLogic = ControlInvocation(
       4,
-      InitializeExecutor(
-        1,
-        OpExecInitInfo((_, _) => mockOpExecutor),
-        isSource = false,
-        portStorages = null
-      )
+      InitializeExecutor(1, OpExecInitInfo((_, _) => mockOpExecutor), isSource = false)
     )
     sendControlToWorker(
       worker,
