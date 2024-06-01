@@ -1,9 +1,9 @@
 
-package edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc;
+package edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.KNNTrainer;
 
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass.EnumClass;
+import edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.base.ParamClass;
 
-public enum KNNParameters implements EnumClass {
+public enum SklearnAdvancedKNNParameters implements ParamClass {
     n_neighbors("n_neighbors", "int"),
     p("p", "int"),
     weights("weights", "str"),
@@ -16,15 +16,16 @@ public enum KNNParameters implements EnumClass {
     private final String name;
     private final String type;
 
-    KNNParameters(String name, String type) {
+    SklearnAdvancedKNNParameters(String name, String type) {
         this.name = name;
         this.type = type;
     }
 
-    public String getName() {
-        return name;
-    }
     public String getType() {
-        return type;
-    };
+        return this.type;
+    }
+
+    public String getName() {
+        return this.name;
+    }
 }

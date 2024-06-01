@@ -40,6 +40,14 @@ import edu.uci.ics.texera.workflow.operators.huggingFace.{
   HuggingFaceSpamSMSDetectionOpDesc,
   HuggingFaceTextSummarizationOpDesc
 }
+import edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.KNNTrainer.{
+  SklearnAdvancedKNNClassifierTrainerOpDesc,
+  SklearnAdvancedKNNRegressorTrainerOpDesc
+}
+import edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.SVMTrainer.{
+  SklearnAdvancedSVCTrainerOpDesc,
+  SklearnAdvancedSVRTrainerOpDesc
+}
 import edu.uci.ics.texera.workflow.operators.projection.ProjectionOpDesc
 import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
@@ -74,10 +82,6 @@ import edu.uci.ics.texera.workflow.operators.sklearn.{
   SklearnRidgeOpDesc,
   SklearnSDGOpDesc,
   SklearnSVMOpDesc
-}
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.SVMTrainerOpDesc.{
-  SVCTrainerOpDesc,
-  SVRTrainerOpDesc
 }
 import edu.uci.ics.texera.workflow.operators.sort.SortOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
@@ -132,10 +136,6 @@ import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlot
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
-import edu.uci.ics.texera.workflow.operators.sklearnAdvance.KNNTrainerOpDesc.{
-  KNNClassifierTrainerOpDesc,
-  KNNRegressorTrainerOpDesc
-}
 
 import java.util.UUID
 import scala.collection.mutable
@@ -289,19 +289,19 @@ trait StateTransferFunc
       name = "HuggingFaceIrisLogisticRegression"
     ),
     new Type(
-      value = classOf[SVRTrainerOpDesc],
+      value = classOf[SklearnAdvancedSVRTrainerOpDesc],
       name = "SVMClassifierTrainer"
     ),
     new Type(
-      value = classOf[SVCTrainerOpDesc],
+      value = classOf[SklearnAdvancedSVCTrainerOpDesc],
       name = "SVMRegressorTrainer"
     ),
     new Type(
-      value = classOf[KNNClassifierTrainerOpDesc],
+      value = classOf[SklearnAdvancedKNNClassifierTrainerOpDesc],
       name = "KNNClassifierTrainer"
     ),
     new Type(
-      value = classOf[KNNRegressorTrainerOpDesc],
+      value = classOf[SklearnAdvancedKNNRegressorTrainerOpDesc],
       name = "KNNRegressorTrainer"
     )
   )

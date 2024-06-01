@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass;
+package edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.base;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;

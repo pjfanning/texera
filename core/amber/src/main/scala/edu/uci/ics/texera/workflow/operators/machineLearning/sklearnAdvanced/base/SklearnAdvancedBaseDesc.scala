@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.sklearnAdvance.AbstractClass
+package edu.uci.ics.texera.workflow.operators.machineLearning.sklearnAdvanced.base
 
 import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
 import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaTitle
@@ -11,17 +11,17 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.PythonOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.{Attribute, AttributeType, Schema}
 
-trait EnumClass {
-  def getName(): String
-  def getType(): String
+trait ParamClass {
+  def getName: String
+  def getType: String
 }
 
-abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperatorDescriptor {
+abstract class SklearnMLOperatorDescriptor[T <: ParamClass] extends PythonOperatorDescriptor {
   @JsonIgnore
-  def getImportStatements(): String
+  def getImportStatements: String
 
   @JsonIgnore
-  def getOperatorInfo(): String
+  def getOperatorInfo: String
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Parameter Setting")
@@ -52,22 +52,22 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
     var str1 = ""; var str2 = ""; var str3 = ""
     for (ele <- paraList) {
       if (ele.parametersSource) {
-        str1 = str1 + String.format("%s = {},", ele.parameter.getName())
+        str1 = str1 + String.format("%s = {},", ele.parameter.getName)
         str2 =
-          str2 + String.format("%s(table['%s'].values[i]),", ele.parameter.getType(), ele.attribute)
+          str2 + String.format("%s(table['%s'].values[i]),", ele.parameter.getType, ele.attribute)
         str3 = str3 + String.format(
           "%s = %s(table['%s'].values[i]),",
-          ele.parameter.getName(),
-          ele.parameter.getType(),
+          ele.parameter.getName,
+          ele.parameter.getType,
           ele.attribute
         )
       } else {
-        str1 = str1 + String.format("%s = {},", ele.parameter.getName())
-        str2 = str2 + String.format("%s ('%s'),", ele.parameter.getType(), ele.value)
+        str1 = str1 + String.format("%s = {},", ele.parameter.getName)
+        str2 = str2 + String.format("%s ('%s'),", ele.parameter.getType, ele.value)
         str3 = str3 + String.format(
           "%s = %s ('%s'),",
-          ele.parameter.getName(),
-          ele.parameter.getType(),
+          ele.parameter.getName,
+          ele.parameter.getType,
           ele.value
         )
       }
@@ -77,7 +77,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
 
   override def generatePythonCode(): String = {
     val listFeatures = selectedFeatures.map(feature => s""""$feature"""").mkString(",")
-    val trainingName = getImportStatements().split(" ").last
+    val trainingName = getImportStatements.split(" ").last
     val stringList = getParameter(paraList)
     val trainingParam = stringList(1)
     val paramString = stringList(0)
@@ -86,7 +86,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
          |from pytexera import *
          |
          |import pandas as pd
-         |${getImportStatements()}
+         |${getImportStatements}
          |
          |class ProcessTableOperator(UDFTableOperator):
          |
@@ -124,7 +124,7 @@ abstract class SklearnMLOperatorDescriptor[T <: EnumClass] extends PythonOperato
   }
 
   override def operatorInfo: OperatorInfo = {
-    val name = getOperatorInfo()
+    val name = getOperatorInfo
     OperatorInfo(
       name,
       "Sklearn " + name + " Operator",
