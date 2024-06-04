@@ -44,13 +44,13 @@
               <h5>Max: {{tableStats[column.header]['max'] | number:'1.2-2'}}</h5>
             </ng-container>
             <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['firstCat'] !== undefined">
-              <h5>{{tableStats[column.header]['firstCat']}}: {{tableStats[column.header]['firstPercent'] | number:'1.2-2'}}</h5>
+              <h5>{{tableStats[column.header]['firstCat']}}: {{tableStats[column.header]['firstPercent'] | number:'1.2-2'}}%</h5>
             </ng-container>
             <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['secondCat'] !== undefined">
-              <h5>{{tableStats[column.header]['secondCat']}}: {{tableStats[column.header]['secondPercent'] | number:'1.2-2'}}</h5>
+              <h5>{{tableStats[column.header]['secondCat']}}: {{tableStats[column.header]['secondPercent'] | number:'1.2-2'}}%</h5>
             </ng-container>
             <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['other'] !== undefined">
-              <h5>Other: {{tableStats[column.header]['other'] | number:'1.2-2'}}</h5>
+              <h5>Other: {{tableStats[column.header]['other'] | number:'1.2-2'}}%</h5>
             </ng-container>
           </div>
         </th>
