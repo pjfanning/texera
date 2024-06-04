@@ -115,18 +115,29 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     fields.foreach(field => {
       var fieldResult = Map[String, Float]()
       val stats = getStats(field)
-      val minimum = stats.map(_._1)
-      val max = stats.map(_._2)
-      val mean = stats.map(_._3)
 
-      minimum match {
-        case Some(value) => {
-          try (value.toString.toFloat) match {
-            case floatValue: Float => fieldResult += ("min" -> floatValue)
-            case _ => fieldResult // Handle conversion failure
+      stats match {
+        case Some((minValue, maxValue, meanValue)) => {
+          if (minValue != null) {
+            try (minValue.toString.toFloat) match {
+              case floatValue : Float => fieldResult += ("min" -> floatValue)
+              case _ => None
+            }
+          }
+          if (maxValue != null) {
+            try (maxValue.toString.toFloat) match {
+              case floatValue : Float => fieldResult += ("max" -> floatValue)
+              case _ => None
+            }
+          }
+          if (meanValue != null) {
+            try (meanValue.toString.toFloat) match {
+              case floatValue : Float => fieldResult += ("mean" -> floatValue)
+              case _ => None
+            }
           }
         }
-        case _ => fieldResult
+        case _ => None
       }
 
       if (fieldResult.nonEmpty) result = result + (field -> fieldResult)

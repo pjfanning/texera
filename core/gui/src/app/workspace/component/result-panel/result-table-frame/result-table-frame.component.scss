@@ -17,7 +17,6 @@ th.header-size {
 }
 
 
-.scrollable-content {
-  max-height: 50px;   /* 最大高度为100px */
-  overflow-y: auto;    /* 内容超出时显示垂直滚动条 */
+.statsHeader {
+  max-height: 60px;
 }

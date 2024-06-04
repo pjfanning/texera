@@ -252,9 +252,6 @@ class ExecutionResultService(
               if (oldState.resultInfo.isEmpty) {
                 val fields = sinkMgr.getAllNumericFields()
                 tableFields += (opId.id -> fields)
-                println("=================================================================================")
-                println(opId.id)
-                println("=================================================================================")
               }
               val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id))
               if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> tableNumericStats)

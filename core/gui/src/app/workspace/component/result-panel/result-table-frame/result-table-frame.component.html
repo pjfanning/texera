@@ -30,12 +30,18 @@
           {{ column.header }}
         </th>
       </tr>
-      <!-- add min row -->
+      <!-- add stats row -->
       <tr *ngIf="tableStats" #statsRow class="stats-row">
         <th *ngFor="let column of currentColumns">
-          <div class="scrollable-content">
-            <ng-container *ngIf="tableStats[column.header]">
-              Min: {{tableStats[column.header]['min']}}
+          <div class="statsHeader">
+            <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['min'] !== undefined">
+              <h5>Min: {{tableStats[column.header]['min'] | number:'1.2-2'}}</h5>
+            </ng-container>
+            <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['mean'] !== undefined">
+              <h5>Mean: {{tableStats[column.header]['mean'] | number:'1.2-2'}}</h5>
+            </ng-container>
+            <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['max'] !== undefined">
+              <h5>Max: {{tableStats[column.header]['max'] | number:'1.2-2'}}</h5>
             </ng-container>
           </div>
         </th>

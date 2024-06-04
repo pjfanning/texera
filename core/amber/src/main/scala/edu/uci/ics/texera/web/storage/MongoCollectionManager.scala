@@ -80,7 +80,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     val pipeline = java.util.Arrays.asList(
       group(null,
         min("minValue", "$" + fieldName),
-        max("maxDomain", "$" + fieldName),
+        max("maxValue", "$" + fieldName),
         avg("meanValue", "$" + fieldName))
     )
 
