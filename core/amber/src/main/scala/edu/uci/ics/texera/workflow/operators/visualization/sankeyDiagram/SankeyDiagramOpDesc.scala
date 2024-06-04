@@ -51,7 +51,7 @@ class SankeyDiagramOpDesc extends VisualizationOperator with PythonOperatorDescr
   // @JsonProperty(defaultValue = 20)
   // @JsonSchemaTitle("Thickness")
   // @JsonPropertyDescription("Thickness")
-  // var thickness: Integer = 0 
+  // var thickness: Integer = 0
 
   // @JsonProperty(defaultValue = "blue")
   // @JsonSchemaTitle("NodeColor")
@@ -131,4 +131,3 @@ class SankeyDiagramOpDesc extends VisualizationOperator with PythonOperatorDescr
   // make the chart type to html visualization so it can be recognized by both backend and frontend.
   override def chartType(): String = VisualizationConstants.HTML_VIZ
 }
-
