@@ -101,38 +101,34 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     }
   }
 
-  override def getStats(fieldName: String): Option[(Any, Any, Any)] = {
-    collectionMgr.calculateStats(fieldName)
+  override def getNumAndCatFields(): Array[Array[String]] = {
+    collectionMgr.getNumAndCatColumnNames
   }
 
-  override def getAllNumericFields(): Iterable[String] = {
-    collectionMgr.getNumericColumnNames
-  }
-
-  override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Float]] = {
-    var result = Map[String, Map[String, Float]]()
+  override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    var result = Map[String, Map[String, Any]]()
 
     fields.foreach(field => {
-      var fieldResult = Map[String, Float]()
-      val stats = getStats(field)
+      var fieldResult = Map[String, Any]()
+      val stats = collectionMgr.calculateNumericStats(field)
 
       stats match {
         case Some((minValue, maxValue, meanValue)) => {
           if (minValue != null) {
-            try (minValue.toString.toFloat) match {
-              case floatValue : Float => fieldResult += ("min" -> floatValue)
+            try (minValue.toString.toDouble) match {
+              case doubleValue : Any => fieldResult += ("min" -> doubleValue)
               case _ => None
             }
           }
           if (maxValue != null) {
-            try (maxValue.toString.toFloat) match {
-              case floatValue : Float => fieldResult += ("max" -> floatValue)
+            try (maxValue.toString.toDouble) match {
+              case doubleValue : Any => fieldResult += ("max" -> doubleValue)
               case _ => None
             }
           }
           if (meanValue != null) {
-            try (meanValue.toString.toFloat) match {
-              case floatValue : Float => fieldResult += ("mean" -> floatValue)
+            try (meanValue.toString.toDouble) match {
+              case doubleValue : Any => fieldResult += ("mean" -> doubleValue)
               case _ => None
             }
           }
@@ -146,4 +142,30 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     result
   }
 
+  override def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    var result = Map[String, Map[String, Any]]()
+
+    fields.foreach(field => {
+      var fieldResult = Map[String, Any]()
+      val stats = collectionMgr.calculateCategoricalStats(field)
+
+      stats match {
+        case Some((mode1, mode2, percent1, percent2, other)) => {
+          fieldResult = fieldResult + (
+            "firstCat" -> mode1,
+            "secondCat" -> mode2,
+            "firstPercent" -> percent1,
+            "secondPercent" -> percent2,
+            "other" -> other
+          )
+        }
+        case None => None
+      }
+
+      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+    })
+
+    result
+  }
 }
+

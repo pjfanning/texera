@@ -21,15 +21,15 @@ trait SinkStorageReader {
 
   def clear(): Unit
 
-  def getAllNumericFields(): Iterable[String] = {
-    Array[String]()
+  def getNumAndCatFields(): Array[Array[String]] = {
+    Array.ofDim[String](0, 0)
   }
 
-  def getStats(fieldName: String): Option[(Any, Any, Any)] = {
-    None
+  def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    Map[String, Map[String, Any]]()
   }
 
-  def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Float]] = {
-    Map[String, Map[String, Float]]()
+  def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    Map[String, Map[String, Any]]()
   }
 }

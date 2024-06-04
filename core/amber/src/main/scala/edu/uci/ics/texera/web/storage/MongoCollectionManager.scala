@@ -33,20 +33,20 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     ???
   }
 
-  def getNumericColumnNames: Array[String] = {
-    var result = List[String]()
+  def getNumAndCatColumnNames: Array[Array[String]] = {
+    var result: List[List[String]] = List(List(), List())
     val doc = collection.find().first()
     val keys = doc.keySet()
 
     keys.forEach { key =>
       val fieldValue = doc.get(key)
       fieldValue match {
-        case number: java.lang.Number => result = result :+ key
-        case _ => result
+        case number: java.lang.Number => result = result.updated(0, result.head :+ key)
+        case string: java.lang.String => result = result.updated(1, result(1) :+ key)
+        case _ => None
       }
     }
-
-    result.toArray
+    result.map(_.toArray).toArray
   }
 
   def getDocuments(condition: Option[Document]): Iterable[Document] = {
@@ -76,7 +76,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     collection.find()
   }
 
-  def calculateStats(fieldName: String): Option[(Any, Any, Any)] = {
+  def calculateNumericStats(fieldName: String): Option[(Any, Any, Any)] = {
     val pipeline = java.util.Arrays.asList(
       group(null,
         min("minValue", "$" + fieldName),
@@ -104,7 +104,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
    * @param fieldName The name of the field for which to calculate the statistics.
    * @return An Option containing a tuple with the mode, second mode, and their percentages, and number of others.
    */
-  def calculateCategoricalStats(fieldName: String): Option[(String, String, Double, Double, Long)] = {
+  def calculateCategoricalStats(fieldName: String): Option[(String, String, Double, Double, Double)] = {
     val pipeline = java.util.Arrays.asList(
       group("$" + fieldName, java.util.Arrays.asList(
         com.mongodb.client.model.Accumulators.sum("count", 1)

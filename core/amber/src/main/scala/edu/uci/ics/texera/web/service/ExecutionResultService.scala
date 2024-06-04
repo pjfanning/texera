@@ -174,7 +174,7 @@ class ExecutionResultService(
     mutable.HashMap[OperatorIdentity, ProgressiveSinkOpDesc]()
   private val resultPullingFrequency = AmberConfig.executionResultPollingInSecs
   private var resultUpdateCancellable: Cancellable = _
-  var tableFields: Map[String, Iterable[String]] = Map()
+  var tableFields: Map[String, Map[String,Iterable[String]]] = Map()
 
   def attachToExecution(
       stateStore: ExecutionStateStore,
@@ -231,7 +231,7 @@ class ExecutionResultService(
     addSubscription(
       workflowStateStore.resultStore.registerDiffHandler((oldState, newState) => {
         val buf = mutable.HashMap[String, WebResultUpdate]()
-        var allTableStats = Map[String, Map[String, Map[String, Float]]]()
+        var allTableStats = Map[String, Map[String, Map[String, Any]]]()
 
         newState.resultInfo
           .filter(info => {
@@ -250,11 +250,16 @@ class ExecutionResultService(
 
               val sinkMgr = sinkOperators(opId).getStorage()
               if (oldState.resultInfo.isEmpty) {
-                val fields = sinkMgr.getAllNumericFields()
-                tableFields += (opId.id -> fields)
+                val numAndCatFields = sinkMgr.getNumAndCatFields()
+                tableFields = tableFields.updated(opId.id, Map(
+                  "numericFields" -> numAndCatFields(0),
+                  "catFields" -> numAndCatFields(1)
+                ))
               }
-              val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id))
-              if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> tableNumericStats)
+              val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
+              val tableCatStats = sinkMgr.getCatColStats(tableFields(opId.id)("catFields"))
+              val allStats = tableNumericStats ++ tableCatStats
+              if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> allStats)
           }
         Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
       })
