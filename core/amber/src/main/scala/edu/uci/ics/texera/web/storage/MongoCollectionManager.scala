@@ -38,11 +38,11 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     val keys = doc.keySet()
 
     keys.forEach { key =>
-        val fieldValue = doc.get(key)
-        fieldValue match {
-          case number: java.lang.Number => result = result :+ key
-          case _ => result
-        }
+      val fieldValue = doc.get(key)
+      fieldValue match {
+        case number: java.lang.Number => result = result :+ key
+        case _ => result
+      }
     }
 
     result.toArray
@@ -75,16 +75,23 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     collection.find()
   }
 
-  def calculateMin(fieldName: String): Option[Any] = {
+  def calculateStats(fieldName: String): Option[(Any, Any, Any)] = {
     val pipeline = java.util.Arrays.asList(
-      group(null, min("minValue", "$" + fieldName))
+      group(null,
+        min("minValue", "$" + fieldName),
+        max("maxDomain", "$" + fieldName),
+        avg("meanValue", "$" + fieldName))
     )
 
     val result = collection.aggregate(pipeline)
 
     if (result.iterator().hasNext()) {
       val doc = result.iterator().next()
-      Option(doc.get("minValue"))
+      Option(
+        doc.get("minValue"),
+        doc.get("maxValue"),
+        doc.get("meanValue")
+      )
     } else {
       None
     }

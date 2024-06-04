@@ -101,8 +101,8 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     }
   }
 
-  override def getMin(fieldName: String): Option[Any] = {
-    collectionMgr.calculateMin(fieldName)
+  override def getStats(fieldName: String): Option[(Any, Any, Any)] = {
+    collectionMgr.calculateStats(fieldName)
   }
 
   override def getAllNumericFields(): Iterable[String] = {
@@ -114,7 +114,10 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
     fields.foreach(field => {
       var fieldResult = Map[String, Float]()
-      val minimum = getMin(field)
+      val stats = getStats(field)
+      val minimum = stats.map(_._1)
+      val max = stats.map(_._2)
+      val mean = stats.map(_._3)
 
       minimum match {
         case Some(value) => {
@@ -131,4 +134,5 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
     result
   }
+
 }

@@ -25,7 +25,7 @@ trait SinkStorageReader {
     Array[String]()
   }
 
-  def getMin(fieldName: String): Option[Any] = {
+  def getStats(fieldName: String): Option[(Any, Any, Any)] = {
     None
   }
 
