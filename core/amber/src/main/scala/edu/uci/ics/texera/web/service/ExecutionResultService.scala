@@ -247,7 +247,8 @@ class ExecutionResultService(
                 oldInfo.tupleCount,
                 info.tupleCount
               )
-              if (AmberConfig.sinkStorageMode.toLowerCase == "mongodb") {
+
+              if (AmberConfig.sinkStorageMode.toLowerCase == "mongodb" && !opId.id.startsWith("sink")) {
                 val sinkMgr = sinkOperators(opId).getStorage()
                 if (oldState.resultInfo.isEmpty) {
                   val numAndCatFields = sinkMgr.getNumAndCatFields()

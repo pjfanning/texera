@@ -135,11 +135,6 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
 
       // Calculate the count of 'other' category
       val othersCount = ((totalCount.toDouble - firstModeCount - secondModeCount) / totalCount.toDouble) * 100
-      println("==========================")
-      println("total count: ", totalCount)
-      println("other percentage: ", othersCount)
-      println("All: ", (firstMode, secondMode, firstModePercentage, secondModePercentage, othersCount))
-      println("=========================")
 
       Some((firstMode, secondMode, firstModePercentage, secondModePercentage, othersCount))
     } else if (result.nonEmpty) {
