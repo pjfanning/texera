@@ -10,6 +10,7 @@ import com.mongodb.client.model.Aggregates._
 import com.mongodb.client.model.Accumulators._
 
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 class MongoCollectionManager(collection: MongoCollection[Document]) {
 
@@ -40,10 +41,14 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
 
     keys.forEach { key =>
       val fieldValue = doc.get(key)
-      fieldValue match {
-        case number: java.lang.Number => result = result.updated(0, result.head :+ key)
-        case string: java.lang.String => result = result.updated(1, result(1) :+ key)
-        case _ => None
+      val fieldAsNumber = Try(fieldValue.toString.toDouble).toOption
+      fieldAsNumber match {
+        case Some(_) => result = result.updated(0, result.head :+ key)
+        case None =>
+          fieldValue match {
+            case _: java.lang.String => result = result.updated(1, result(1) :+ key)
+            case _ => None
+          }
       }
     }
     result.map(_.toArray).toArray
@@ -77,21 +82,21 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   }
 
   def calculateNumericStats(fieldName: String): Option[(Any, Any, Any)] = {
+    val fieldAsNumber = new Document("$convert", new Document("input", "$" + fieldName).append("to", "double"))
+    val projection = new Document(fieldName, fieldAsNumber)
     val pipeline = java.util.Arrays.asList(
-      group(null,
-        min("minValue", "$" + fieldName),
-        max("maxValue", "$" + fieldName),
-        avg("meanValue", "$" + fieldName))
+      new Document("$project", projection),
+      new Document("$group", new Document("_id", null)
+        .append("minValue", new Document("$min", "$" + fieldName))
+        .append("maxValue", new Document("$max", "$" + fieldName))
+        .append("meanValue", new Document("$avg", "$" + fieldName))
+      )
     )
-
-    val result = collection.aggregate(pipeline)
-
-    if (result.iterator().hasNext()) {
-      val doc = result.iterator().next()
-      Option(
-        doc.get("minValue"),
-        doc.get("maxValue"),
-        doc.get("meanValue")
+    val result = collection.aggregate(pipeline).iterator()
+    if (result.hasNext) {
+      val doc = result.next()
+      Some(
+        (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"))
       )
     } else {
       None
@@ -109,8 +114,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       group("$" + fieldName, java.util.Arrays.asList(
         com.mongodb.client.model.Accumulators.sum("count", 1)
       )),
-      sort(com.mongodb.client.model.Sorts.descending("count")),
-      limit(2)
+      sort(com.mongodb.client.model.Sorts.descending("count"))
     )
 
     val result = collection.aggregate(pipeline).iterator().asScala.toList
@@ -126,11 +130,16 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       val firstModeCount = firstModeDoc.get("count").asInstanceOf[Number].longValue()
       val secondModeCount = secondModeDoc.get("count").asInstanceOf[Number].longValue()
 
-      val firstModePercentage = (firstModeCount.toDouble / totalCount) * 100
-      val secondModePercentage = (secondModeCount.toDouble / totalCount) * 100
+      val firstModePercentage = (firstModeCount.toDouble / totalCount.toDouble) * 100
+      val secondModePercentage = (secondModeCount.toDouble / totalCount.toDouble) * 100
 
       // Calculate the count of 'other' category
-      val othersCount = totalCount - firstModeCount - secondModeCount
+      val othersCount = ((totalCount.toDouble - firstModeCount - secondModeCount) / totalCount.toDouble) * 100
+      println("==========================")
+      println("total count: ", totalCount)
+      println("other percentage: ", othersCount)
+      println("All: ", (firstMode, secondMode, firstModePercentage, secondModePercentage, othersCount))
+      println("=========================")
 
       Some((firstMode, secondMode, firstModePercentage, secondModePercentage, othersCount))
     } else if (result.nonEmpty) {

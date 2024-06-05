@@ -247,19 +247,20 @@ class ExecutionResultService(
                 oldInfo.tupleCount,
                 info.tupleCount
               )
-
-              val sinkMgr = sinkOperators(opId).getStorage()
-              if (oldState.resultInfo.isEmpty) {
-                val numAndCatFields = sinkMgr.getNumAndCatFields()
-                tableFields = tableFields.updated(opId.id, Map(
-                  "numericFields" -> numAndCatFields(0),
-                  "catFields" -> numAndCatFields(1)
-                ))
+              if (AmberConfig.sinkStorageMode.toLowerCase == "mongodb") {
+                val sinkMgr = sinkOperators(opId).getStorage()
+                if (oldState.resultInfo.isEmpty) {
+                  val numAndCatFields = sinkMgr.getNumAndCatFields()
+                  tableFields = tableFields.updated(opId.id, Map(
+                    "numericFields" -> numAndCatFields(0),
+                    "catFields" -> numAndCatFields(1)
+                  ))
+                }
+                val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
+                val tableCatStats = sinkMgr.getCatColStats(tableFields(opId.id)("catFields"))
+                val allStats = tableNumericStats ++ tableCatStats
+                if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> allStats)
               }
-              val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
-              val tableCatStats = sinkMgr.getCatColStats(tableFields(opId.id)("catFields"))
-              val allStats = tableNumericStats ++ tableCatStats
-              if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> allStats)
           }
         Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
       })
