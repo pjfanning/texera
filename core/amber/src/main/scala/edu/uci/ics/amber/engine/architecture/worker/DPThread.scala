@@ -1,12 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.DPInputQueueElement
+import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  DPInputQueueElement,
+  MainThreadDelegateMessage
+}
 import edu.uci.ics.amber.engine.architecture.logreplay.ReplayLogManager
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerState.{READY, UNINITIALIZED}
 import edu.uci.ics.amber.engine.common.AmberLogging
 import edu.uci.ics.amber.engine.common.actormessage.{ActorCommand, Backpressure}
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelMarkerPayload,
   ControlPayload,
@@ -14,7 +15,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.{
   WorkflowFIFOMessage
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, ChannelIdentity}
-import edu.uci.ics.amber.engine.common.virtualidentity.util.{CONTROLLER, SELF}
+import edu.uci.ics.amber.engine.common.virtualidentity.util.SELF
 import edu.uci.ics.amber.error.ErrorUtils.safely
 
 import java.util.concurrent.{
@@ -75,21 +76,23 @@ class DPThread(
         def run(): Unit = {
           Thread.currentThread().setName(getThreadName)
           logger.info("DP thread started")
-          startFuture.complete(Unit)
+          startFuture.complete(())
+          dp.statisticsManager.initializeWorkerStartTime(System.nanoTime())
           try {
             runDPThreadMainLogic()
           } catch safely {
             case _: InterruptedException =>
               // dp thread will stop here
               logger.info("DP Thread exits")
-            case err: Exception =>
+            case err: Throwable =>
               logger.error("DP Thread exists unexpectedly", err)
-              dp.asyncRPCClient.send(
-                FatalError(new WorkflowRuntimeException("DP Thread exists unexpectedly", err)),
-                CONTROLLER
-              )
+              dp.outputHandler(Left(MainThreadDelegateMessage((worker) => {
+                // notify main thread
+                throw err
+              })))
           }
-          endFuture.complete(Unit)
+          dp.statisticsManager.updateTotalExecutionTime(System.nanoTime())
+          endFuture.complete(())
         }
       })
       startFuture.get()
@@ -137,7 +140,9 @@ class DPThread(
       //
       var channelId: ChannelIdentity = null
       var msgOpt: Option[WorkflowFIFOMessage] = None
-      if (dp.hasUnfinishedInput || dp.hasUnfinishedOutput || dp.pauseManager.isPaused) {
+      if (
+        dp.inputManager.hasUnfinishedInput || dp.outputManager.hasUnfinishedOutput || dp.pauseManager.isPaused
+      ) {
         dp.inputGateway.tryPickControlChannel match {
           case Some(channel) =>
             channelId = channel.channelId
@@ -145,7 +150,7 @@ class DPThread(
           case None =>
             // continue processing
             if (!dp.pauseManager.isPaused && !backpressureStatus) {
-              channelId = dp.currentBatchChannel
+              channelId = dp.inputManager.currentChannelId
             } else {
               waitingForInput = true
             }
@@ -186,6 +191,15 @@ class DPThread(
           }
         }
       }
+      // As the computation is chopped into steps, the checkpoint
+      // serialization must happen after/before a step. Otherwise
+      // DP state will be restored in the middle of a step, which
+      // is often not what we want. Thus, we have this one-time
+      // additional serializationCall assigned inside the checkpoint
+      // handler.
+      dp.serializationManager.applySerialization()
+
+      dp.statisticsManager.updateTotalExecutionTime(System.nanoTime())
       // End of Main loop
     }
   }

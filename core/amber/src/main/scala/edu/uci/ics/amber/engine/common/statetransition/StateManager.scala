@@ -5,33 +5,39 @@ import edu.uci.ics.amber.engine.common.statetransition.StateManager.{
   InvalidStateException,
   InvalidTransitionException
 }
-
-import scala.collection.mutable
+import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
 
 object StateManager {
 
-  case class InvalidStateException(message: String) extends WorkflowRuntimeException(message)
+  case class InvalidStateException(msg: String, actorId: ActorVirtualIdentity)
+      extends WorkflowRuntimeException(msg, Some(actorId))
 
-  case class InvalidTransitionException(message: String) extends WorkflowRuntimeException(message)
+  case class InvalidTransitionException(msg: String, actorId: ActorVirtualIdentity)
+      extends WorkflowRuntimeException(msg, Some(actorId))
 }
 
-class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) extends Serializable {
+class StateManager[T](
+    actorId: ActorVirtualIdentity,
+    stateTransitionGraph: Map[T, Set[T]],
+    initialState: T
+) extends Serializable {
 
-  private val stateStack = mutable.Stack[T]()
   private var currentState: T = initialState
-
-  stateStack.push(initialState)
 
   def assertState(state: T): Unit = {
     if (currentState != state) {
-      throw InvalidStateException(s"except state = $state but current state = $currentState")
+      throw InvalidStateException(
+        s"except state = $state but current state = $currentState",
+        actorId
+      )
     }
   }
 
   def assertState(states: T*): Unit = {
     if (!states.contains(currentState)) {
       throw InvalidStateException(
-        s"except state in [${states.mkString(",")}] but current state = $currentState"
+        s"except state in [${states.mkString(",")}] but current state = $currentState",
+        actorId
       )
     }
   }
@@ -49,28 +55,16 @@ class StateManager[T](stateTransitionGraph: Map[T, Set[T]], initialState: T) ext
 
   def confirmState(states: T*): Boolean = states.contains(getCurrentState)
 
-  def transitTo(state: T, discardOldStates: Boolean = true): Unit = {
+  def transitTo(state: T): Unit = {
     if (state == currentState) {
       return
       // throw InvalidTransitionException(s"current state is already $currentState")
     }
-    if (discardOldStates) {
-      stateStack.clear()
-    }
-
-    stateStack.push(state)
 
     if (!stateTransitionGraph.getOrElse(currentState, Set()).contains(state)) {
-      throw InvalidTransitionException(s"cannot transit from $currentState to $state")
+      throw InvalidTransitionException(s"cannot transit from $currentState to $state", actorId)
     }
     currentState = state
-  }
-
-  def backToPreviousState(): Unit = {
-    if (stateStack.isEmpty) {
-      throw InvalidTransitionException(s"there is no previous state for $currentState")
-    }
-    currentState = stateStack.pop()
   }
 
 }

@@ -1,0 +1,24 @@
+.disable-drag-drop {
+  color: grey;
+}
+
+.operator-label {
+  white-space: nowrap;
+  height: 32px;
+  line-height: 30px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0);
+  transition:
+    border-color 0.3s,
+    color 0.3s;
+  overflow-x: hidden;
+  &:hover {
+    border-color: rgba(64, 169, 255, 1);
+    > .text {
+      transform: translateX(10px);
+    }
+  }
+  > .text {
+    transition: transform 0.5s 0.1s;
+  }
+}

@@ -15,7 +15,7 @@ class PythonLambdaFunctionOpDesc extends PythonOperatorDescriptor {
     Preconditions.checkArgument(schemas.length == 1)
     Preconditions.checkArgument(lambdaAttributeUnits.nonEmpty)
     val inputSchema = schemas(0)
-    val outputSchemaBuilder = Schema.newBuilder
+    val outputSchemaBuilder = Schema.builder()
     // keep the same schema from input
     outputSchemaBuilder.add(inputSchema)
     // add new attributes
@@ -44,7 +44,7 @@ class PythonLambdaFunctionOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Python Lambda Function",
       "Modify or add a new column with more ease",
-      OperatorGroupConstants.UDF_GROUP,
+      OperatorGroupConstants.PYTHON_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true

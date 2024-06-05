@@ -2,10 +2,8 @@ package edu.uci.ics.amber.engine.common.rpc
 
 import com.twitter.util.{Future, Promise}
 import edu.uci.ics.amber.engine.architecture.messaginglayer.NetworkOutputGateway
-import edu.uci.ics.amber.engine.architecture.worker.controlreturns.ControlException
 import edu.uci.ics.amber.engine.architecture.worker.statistics.WorkerStatistics
 import edu.uci.ics.amber.engine.common.AmberLogging
-import edu.uci.ics.amber.engine.common.amberexception.WorkflowRuntimeException
 import edu.uci.ics.amber.engine.common.ambermessage.{
   ChannelMarkerPayload,
   ChannelMarkerType,
@@ -64,7 +62,7 @@ class AsyncRPCClient(
     val actorId: ActorVirtualIdentity
 ) extends AmberLogging {
 
-  private val unfulfilledPromises = mutable.LongMap[WorkflowPromise[_]]()
+  private val unfulfilledPromises = mutable.HashMap[Long, WorkflowPromise[_]]()
   private var promiseID = 0L
 
   def send[T](cmd: ControlCommand[T], to: ActorVirtualIdentity): Future[T] = {
@@ -110,8 +108,6 @@ class AsyncRPCClient(
       ret.controlReturn match {
         case error: Throwable =>
           p.setException(error)
-        case ControlException(msg) =>
-          p.setException(new WorkflowRuntimeException(msg))
         case _ =>
           p.setValue(ret.controlReturn.asInstanceOf[p.returnType])
       }

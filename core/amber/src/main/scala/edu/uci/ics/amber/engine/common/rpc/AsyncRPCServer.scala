@@ -27,7 +27,9 @@ import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
   */
 object AsyncRPCServer {
 
-  trait ControlCommand[T]
+  trait ControlCommand[T] {
+    type ReturnType = T
+  }
 
 }
 
@@ -68,7 +70,6 @@ class AsyncRPCServer(
         // if error occurs, return it to the sender.
         logger.error("Exception occurred", err)
         returnResult(senderID, control.commandID, err)
-
       // if throw this exception right now, the above message might not be able
       // to be sent out. We do not throw for now.
       //        throw err

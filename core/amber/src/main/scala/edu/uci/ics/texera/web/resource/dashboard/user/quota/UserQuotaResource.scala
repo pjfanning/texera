@@ -4,14 +4,14 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.resource.dashboard.user.quota.UserQuotaResource.{
   File,
+  MongoStorage,
   Workflow,
+  deleteMongoCollection,
+  getUserAccessedFiles,
+  getUserAccessedWorkflow,
   getUserCreatedFile,
   getUserCreatedWorkflow,
-  getUserAccessedWorkflow,
-  getUserAccessedFiles,
-  getUserMongoDBSize,
-  deleteMongoCollection,
-  MongoStorage
+  getUserMongoDBSize
 }
 import org.jooq.types.UInteger
 
@@ -19,10 +19,14 @@ import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import edu.uci.ics.texera.web.resource.dashboard.user.dataset.utils.DatasetStatisticsUtils.{
+  getUserCreatedDatasetCount,
+  getUserDatasetSize
+}
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
 import io.dropwizard.auth.Auth
+
+import scala.jdk.CollectionConverters.IterableHasAsScala
 
 object UserQuotaResource {
   final private lazy val context = SqlServer.createDSLContext()
@@ -96,6 +100,7 @@ object UserQuotaResource {
           fileRecord.get(FILE.DESCRIPTION)
         )
       })
+      .asScala
       .toList
   }
 
@@ -128,6 +133,7 @@ object UserQuotaResource {
           workflowRecord.get(WORKFLOW.NAME)
         )
       })
+      .asScala
       .toList
   }
 
@@ -196,7 +202,7 @@ object UserQuotaResource {
           result.get(WORKFLOW_EXECUTIONS.EID)
         )
       })
-      .toList
+      .asScala
       .toArray
 
     val collectionSizes = MongoDatabaseManager.getDatabaseSize(collections)
@@ -223,6 +229,20 @@ class UserQuotaResource {
   @Produces(Array(MediaType.APPLICATION_JSON))
   def getCreatedFile(@Auth current_user: SessionUser): List[File] = {
     getUserCreatedFile(current_user.getUid)
+  }
+
+  @GET
+  @Path("/dataset_size")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getDatasetSize(@Auth current_user: SessionUser): Long = {
+    getUserDatasetSize(current_user.getUid)
+  }
+
+  @GET
+  @Path("/number_of_datasets")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getCreatedDatasetCount(@Auth current_user: SessionUser): Int = {
+    getUserCreatedDatasetCount(current_user.getUid)
   }
 
   @GET

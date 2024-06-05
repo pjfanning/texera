@@ -13,7 +13,7 @@ class PythonTableReducerOpDesc extends PythonOperatorDescriptor {
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
     Preconditions.checkArgument(lambdaAttributeUnits.nonEmpty)
-    val outputSchemaBuilder = Schema.newBuilder
+    val outputSchemaBuilder = Schema.builder()
     for (unit <- lambdaAttributeUnits) {
       outputSchemaBuilder.add(unit.attributeName, unit.attributeType)
     }
@@ -24,7 +24,7 @@ class PythonTableReducerOpDesc extends PythonOperatorDescriptor {
     OperatorInfo(
       "Python Table Reducer",
       "Reduce Table to Tuple",
-      OperatorGroupConstants.UDF_GROUP,
+      OperatorGroupConstants.PYTHON_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort())
     )
