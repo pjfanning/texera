@@ -109,8 +109,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       group("$" + fieldName, java.util.Arrays.asList(
         com.mongodb.client.model.Accumulators.sum("count", 1)
       )),
-      sort(com.mongodb.client.model.Sorts.descending("count")),
-      limit(2)
+      sort(com.mongodb.client.model.Sorts.descending("count"))
     )
 
     val result = collection.aggregate(pipeline).iterator().asScala.toList
