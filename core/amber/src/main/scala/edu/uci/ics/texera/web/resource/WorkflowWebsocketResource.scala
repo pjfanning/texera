@@ -22,7 +22,8 @@ import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
 import java.time.Instant
 import javax.websocket._
 import javax.websocket.server.ServerEndpoint
-import scala.jdk.CollectionConverters.mapAsScalaMapConverter
+import scala.jdk.CollectionConverters.MapHasAsScala
+
 
 @ServerEndpoint(
   value = "/wsapi/workflow-websocket",
@@ -112,7 +113,7 @@ class WorkflowWebsocketResource extends LazyLogging {
             case t: Throwable => // skip, rethrow this exception will overwrite the compilation errors reported below.
           } finally {
             if (stateStore.metadataStore.getState.fatalErrors.nonEmpty) {
-              sessionState.send(WorkflowErrorEvent(stateStore.metadataStore.getState.fatalErrors))
+              sessionState.send(WorkflowErrorEvent(Seq(stateStore.metadataStore.getState.fatalErrors:_*)))
             }
           }
         case workflowExecuteRequest: WorkflowExecuteRequest =>
