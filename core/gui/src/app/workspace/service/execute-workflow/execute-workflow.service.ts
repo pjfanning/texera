@@ -65,11 +65,6 @@ export class ExecuteWorkflowService {
     current: ExecutionStateInfo;
   }>();
 
-  // TODO: move this to another service, or redesign how this
-  //   information is stored on the frontend.
-  private assignedWorkerIds: Map<string, readonly string[]> = new Map();
-
-
   constructor(
     private workflowActionService: WorkflowActionService,
     private workflowWebsocketService: WorkflowWebsocketService,
@@ -78,9 +73,6 @@ export class ExecuteWorkflowService {
   ) {
     workflowWebsocketService.websocketEvent().subscribe(event => {
       switch (event.type) {
-        case "WorkerAssignmentUpdateEvent":
-          this.assignedWorkerIds.set(event.operatorId, event.workerIds);
-          break;
         default:
           // workflow status related event
           this.handleReconfigurationEvent(event);
@@ -250,23 +242,23 @@ export class ExecuteWorkflowService {
   }
 
   public skipTuples(workers: ReadonlyArray<string>): void {
-    if (this.currentState.state !== ExecutionState.Paused) {
-      throw new Error("cannot skip tuples, the current execution state is " + this.currentState.state);
-    }
+    // if (this.currentState.state !== ExecutionState.Paused) {
+    //   throw new Error("cannot skip tuples, the current execution state is " + this.currentState.state);
+    // }
     this.workflowWebsocketService.send("SkipTupleRequest", { workers });
   }
 
   public retryExecution(workers: ReadonlyArray<string>): void {
-    if (this.currentState.state !== ExecutionState.Paused) {
-      throw new Error("cannot retry the current tuple, the current execution state is " + this.currentState.state);
-    }
+    // if (this.currentState.state !== ExecutionState.Paused) {
+    //   throw new Error("cannot retry the current tuple, the current execution state is " + this.currentState.state);
+    // }
     this.workflowWebsocketService.send("RetryRequest", { workers });
   }
 
   public modifyOperatorLogic(operatorID: string): void {
-    if (this.currentState.state !== ExecutionState.Paused) {
-      throw new Error("cannot modify logic, the current execution state is " + this.currentState.state);
-    }
+    // if (this.currentState.state !== ExecutionState.Paused) {
+    //   throw new Error("cannot modify logic, the current execution state is " + this.currentState.state);
+    // }
     const op = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
     const operator: LogicalOperator = {
       ...op.operatorProperties,
@@ -378,9 +370,5 @@ export class ExecuteWorkflowService {
       intersection(operatorIds, workflowGraph.getOperatorsMarkedForReuseResult())
     );
     return { operators, links, opsToViewResult, opsToReuseResult };
-  }
-
-  public getWorkerIds(operatorId: string): ReadonlyArray<string> {
-    return this.assignedWorkerIds.get(operatorId) || [];
   }
 }

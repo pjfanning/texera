@@ -73,9 +73,13 @@ class ExecutionReconfigurationService(
     reconfiguredPhysicalOp match {
       case Failure(exception) => ModifyLogicResponse(opId.id, isValid = false, exception.getMessage)
       case Success(op) => {
-        stateStore.reconfigurationStore.updateState(old =>
-          old.copy(unscheduledReconfigurations = old.unscheduledReconfigurations :+ op)
-        )
+        if(op._1.isPythonBased){
+          client.sendAsync(ModifyLogic(op._1, op._2))
+        }else{
+          stateStore.reconfigurationStore.updateState(old =>
+            old.copy(unscheduledReconfigurations = old.unscheduledReconfigurations :+ op)
+          )
+        }
         ModifyLogicResponse(opId.id, isValid = true, "")
       }
     }

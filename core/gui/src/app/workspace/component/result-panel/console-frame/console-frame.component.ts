@@ -88,7 +88,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   renderConsole(): void {
     if (this.operatorId) {
-      this.workerIds = this.executeWorkflowService.getWorkerIds(this.operatorId);
+      this.workerIds = this.workflowWebsocketService.getWorkerIds(this.operatorId);
 
       // always display console messages
       this.displayConsoleMessages(this.operatorId);
@@ -163,7 +163,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   public onClickStep(): void {
-    this.udfDebugService.initManager(this.operatorId)?.setHitLineNum(0);
+    this.udfDebugService.getOrCreateManager(this.operatorId)?.setHitLineNum(0);
     for (let worker of this.workerIds) {
       this.workflowWebsocketService.send("DebugCommandRequest", {
         operatorId: this.operatorId,
@@ -174,7 +174,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
   }
 
   public onClickContinue(): void {
-    this.udfDebugService.initManager(this.operatorId)?.setHitLineNum(0);
+    this.udfDebugService.getOrCreateManager(this.operatorId)?.setHitLineNum(0);
     for (let worker of this.workerIds) {
       this.workflowWebsocketService.send("DebugCommandRequest", {
         operatorId: this.operatorId,

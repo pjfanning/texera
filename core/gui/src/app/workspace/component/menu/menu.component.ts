@@ -188,12 +188,15 @@ export class MenuComponent implements OnInit {
       case ExecutionState.Completed:
       case ExecutionState.Killed:
       case ExecutionState.Failed:
+        // assuming there is only one workflow running.
+        // reset all states.
+        this.workflowWebsocketService.clearDebugCommands();
+        this.udfDebugService.getAllManagers().forEach(manager => manager.resetState());
         return {
           text: "Run",
           icon: "play-circle",
           disable: false,
           onClick: () => {
-            this.udfDebugService.resetAll()
             this.executeWorkflowService.executeWorkflow(this.currentExecutionName)
           },
         };

@@ -7,6 +7,7 @@ import { NzModalService } from "ng-zorro-antd/modal";
 import { WorkflowExecutionHistoryComponent } from "../../../user/component/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
 import { Workflow } from "../../../../common/type/workflow";
 import { WorkflowWebsocketService } from "../../../../workspace/service/workflow-websocket/workflow-websocket.service";
+import {ExecuteWorkflowService} from "../../../../workspace/service/execute-workflow/execute-workflow.service";
 
 @UntilDestroy()
 @Component({
@@ -62,7 +63,7 @@ export class AdminExecutionComponent implements OnInit, OnDestroy {
 
   constructor(
     private adminExecutionService: AdminExecutionService,
-    private modalService: NzModalService
+    private modalService: NzModalService,
   ) {}
 
   ngOnInit() {

@@ -50,6 +50,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   public componentRef: ComponentRef<CodeEditorComponent> | undefined;
   public language: string = "";
   public languageTitle: string = "";
+  public isUpdatingBreakpoints = false;
 
   private generateLanguageTitle(language: string): string {
     return `${language.charAt(0).toUpperCase()}${language.slice(1)} UDF`;
@@ -100,7 +101,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         .get("operatorProperties") as YType<Readonly<{ [key: string]: any }>>
     ).get("code") as YText;
 
-    this.breakpointManager = this.udfDebugService.initManager(this.operatorID);
+    this.breakpointManager = this.udfDebugService.getOrCreateManager(this.operatorID);
 
     this.workflowVersionService
       .getDisplayParticularVersionStream()
@@ -137,7 +138,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           .forEach(match => {
           const breakpoint = Number(match[1]);
           const lineNumber = Number(match[2]);
-          this.breakpointManager?.addBreakpoint(lineNumber, breakpoint);
+          this.breakpointManager?.assignBreakpointId(lineNumber, breakpoint);
         });
       });
   }
@@ -165,11 +166,11 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
 
   private restoreBreakpoints(instance: MonacoBreakpoint, lineNums: number[]) {
     console.log("trying to restore " + lineNums);
+    this.isUpdatingBreakpoints = true;
+    instance["lineNumberAndDecorationIdMap"].forEach((v:string,k:number,m:Map<number, string>) =>{
+      instance["removeSpecifyDecoration"](v, k);
+    })
     for (let lineNumber of lineNums) {
-      const decorationId = instance["lineNumberAndDecorationIdMap"].get(lineNumber);
-      if (decorationId) {
-        instance["removeSpecifyDecoration"](decorationId, lineNumber);
-      } else {
         const range: monaco.IRange = {
           startLineNumber: lineNumber,
           endLineNumber: lineNumber,
@@ -177,8 +178,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           endColumn: 0,
         };
         instance["createSpecifyDecoration"](range);
-      }
     }
+    this.isUpdatingBreakpoints = false;
   }
 
   /**
@@ -226,41 +227,12 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
 
     const instance = new MonacoBreakpoint({ editor });
 
-    const currentOperatorId: string = this.workflowActionService
-      .getJointGraphWrapper()
-      .getCurrentHighlightedOperatorIDs()[0];
-    const workerIds = this.executeWorkflowService.getWorkerIds(currentOperatorId);
-
-    this.restoreBreakpoints(instance, this.breakpointManager?.getLinesWithBreakpoint()!);
-
     instance.on("breakpointChanged", lineNums => {
-      const existingLines = this.breakpointManager?.getLinesWithBreakpoint();
-      existingLines?.filter(number => !lineNums.includes(number)).forEach(lineNum => {
-        console.log("trying to remove line " + lineNum);
-        const breakpointId = this.breakpointManager?.getBreakpoint(lineNum);
-        for (let worker of workerIds) {
-          this.workflowWebsocketService.send("DebugCommandRequest", {
-            operatorId: currentOperatorId,
-            workerId: worker,
-            cmd: "clear " + breakpointId,
-          });
-        }
-        this.breakpointManager?.removeBreakpoint(lineNum);
-      })
-
-      for (let lineNum of lineNums) {
-        if (!this.breakpointManager?.hasBreakpoint(lineNum)) {
-          for (let worker of workerIds) {
-            this.workflowWebsocketService.send("DebugCommandRequest", {
-              operatorId: currentOperatorId,
-              workerId: worker,
-              cmd: "break " + lineNum,
-            });
-          }
-        }
+      if(this.isUpdatingBreakpoints){
+        return;
       }
-
-
+      this.breakpointManager?.setBreakpoints(lineNums);
+      console.log("breakpointChanged: "+lineNums)
     });
 
     this.breakpointManager?.getBreakpointHitStream()
@@ -272,6 +244,12 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           instance.setLineHighlight(lineNum);
         }
       });
+    this.breakpointManager?.getLineNumToBreakpointMappingStream().pipe(untilDestroyed(this)).subscribe(
+      mapping =>{
+        console.log("trigger"+mapping)
+        this.restoreBreakpoints(instance, Array.from(mapping.keys()));
+    })
+
   }
 
 

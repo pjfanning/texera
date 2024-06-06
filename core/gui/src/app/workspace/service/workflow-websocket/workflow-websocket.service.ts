@@ -1,6 +1,6 @@
-import { Injectable } from "@angular/core";
-import { interval, Observable, Subject, Subscription, timer } from "rxjs";
-import { webSocket, WebSocketSubject } from "rxjs/webSocket";
+import {Injectable} from "@angular/core";
+import {interval, Observable, Subject, Subscription, timer} from "rxjs";
+import {webSocket, WebSocketSubject} from "rxjs/webSocket";
 import {
   TexeraWebsocketEvent,
   TexeraWebsocketEventTypeMap,
@@ -9,10 +9,11 @@ import {
   TexeraWebsocketRequestTypeMap,
   TexeraWebsocketRequestTypes,
 } from "../../types/workflow-websocket.interface";
-import { delayWhen, filter, map, retryWhen, tap } from "rxjs/operators";
-import { environment } from "../../../../environments/environment";
-import { AuthService } from "../../../common/service/user/auth.service";
-import { getWebsocketUrl } from "src/app/common/util/url";
+import {delayWhen, filter, map, retryWhen, tap} from "rxjs/operators";
+import {environment} from "../../../../environments/environment";
+import {AuthService} from "../../../common/service/user/auth.service";
+import {getWebsocketUrl} from "src/app/common/util/url";
+import {ExecutionState} from "../../types/execute-workflow.interface";
 
 export const WS_HEARTBEAT_INTERVAL_MS = 10000;
 export const WS_RECONNECT_INTERVAL_MS = 3000;
@@ -29,6 +30,8 @@ export class WorkflowWebsocketService {
   private websocket?: WebSocketSubject<TexeraWebsocketEvent | TexeraWebsocketRequest>;
   private wsWithReconnectSubscription?: Subscription;
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
+  private requestQueue: Array<{ operatorId: string, isBreak: boolean, line:number, breakpointId:number }> = [];
+  private assignedWorkerIds: Map<string, readonly string[]> = new Map();
 
   constructor() {
     // setup heartbeat
@@ -56,7 +59,63 @@ export class WorkflowWebsocketService {
       type,
       ...payload,
     } as any as TexeraWebsocketRequest;
+    if(request.type === "WorkflowKillRequest"){
+      this.assignedWorkerIds.clear();
+    }
     this.websocket?.next(request);
+  }
+
+  public clearDebugCommands(){
+    this.requestQueue = [];
+  }
+
+  public getWorkerIds(operatorId: string): ReadonlyArray<string> {
+    return this.assignedWorkerIds.get(operatorId) || [];
+  }
+
+
+  public prepareDebugCommand(operatorId: string, isBreak: boolean, line:number, breakpointId:number){
+    if(!isBreak){
+      const breakCommandIdx = this.requestQueue.findIndex(request => request.operatorId === operatorId && request.isBreak && request.line == line);
+      if (breakCommandIdx !== -1) {
+        this.requestQueue.splice(breakCommandIdx, 1);
+        return;
+      }
+    }
+    this.requestQueue.push({ operatorId, isBreak, line, breakpointId });
+    this.processQueue();
+  }
+
+  private sendDebugCommandRequest(request: { operatorId: string, isBreak: boolean, line: number, breakpointId: number }, workerId: string): void {
+    const cmd = request.isBreak ? `break ${request.line}` : `clear ${request.breakpointId}`;
+    this.send("DebugCommandRequest", {
+      operatorId: request.operatorId,
+      workerId,
+      cmd,
+    });
+  }
+
+  private processQueue(): void {
+    // Process the request queue
+    let initialQueueLength = this.requestQueue.length;
+
+    // Loop through the initial length of the queue to prevent infinite loops with continuously failing items
+    for (let i = 0; i < initialQueueLength; i++) {
+      const request = this.requestQueue.shift();
+      if (request) {
+        if (this.assignedWorkerIds.has(request.operatorId)) {
+          const workerIds = this.assignedWorkerIds.get(request.operatorId);
+          if (workerIds) {
+            for (let workerId of workerIds) {
+              this.sendDebugCommandRequest(request, workerId);
+            }
+          }
+        } else {
+          // If the condition is not met, push the request back to the end of the queue
+          this.requestQueue.push(request);
+        }
+      }
+    }
   }
 
   public closeWebsocket() {
@@ -101,6 +160,15 @@ export class WorkflowWebsocketService {
     this.websocketEvent().subscribe(evt => {
       if (evt.type === "ClusterStatusUpdateEvent") {
         this.numWorkers = evt.numWorkers;
+      }
+      if(evt.type === "WorkflowStateEvent"){
+        if(evt.state === ExecutionState.Completed || evt.state === ExecutionState.Killed || evt.state === ExecutionState.Failed){
+          this.assignedWorkerIds.clear();
+        }
+      }
+      if(evt.type === "WorkerAssignmentUpdateEvent"){
+        this.assignedWorkerIds.set(evt.operatorId, evt.workerIds);
+        this.processQueue();
       }
       this.isConnected = true;
     });
