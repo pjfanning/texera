@@ -2,8 +2,8 @@ package edu.uci.ics.texera.workflow.common.storage
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.storage.VirtualDocument
-import edu.uci.ics.amber.engine.common.storage.mongodb.{MemoryDocument, MongoDocument}
+import edu.uci.ics.amber.engine.common.storage.{BufferedItemWriter, VirtualDocument}
+import edu.uci.ics.amber.engine.common.storage.mongodb.{MemoryDocument, MongoDBBufferedItemWriter, MongoDocument}
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
@@ -14,6 +14,16 @@ object OpResultStorage {
   val defaultStorageMode: String = AmberConfig.sinkStorageMode.toLowerCase
   val MEMORY = "memory"
   val MONGODB = "mongodb"
+
+  def getWriter(executionId: String = "",
+                key: OperatorIdentity,
+                mode: String): BufferedItemWriter[Tuple] = {
+    if (mode == "memory") {
+      new MemoryDocument[Tuple]
+    } else {
+      new MongoDBBufferedItemWriter[Tuple](1024, executionId + key, Tuple.toDocument)
+    }
+  }
 }
 
 /**

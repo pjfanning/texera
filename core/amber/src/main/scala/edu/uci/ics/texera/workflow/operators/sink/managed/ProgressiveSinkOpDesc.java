@@ -65,7 +65,7 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
-        final BufferedItemWriter<Tuple> writer = storage.write();
+        final BufferedItemWriter<Tuple> writer = OpResultStorage.getWriter("", this.operatorIdentifier(), this.storageMode);
         return PhysicalOp.localPhysicalOp(
                 workflowId,
                 executionId,
