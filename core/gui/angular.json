@@ -29,7 +29,6 @@
               "node_modules/jointjs/css/themes/default.css",
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "node_modules/ng-zorro-antd/resizable/style/index.min.css",
-              "node_modules/monaco-breakpoints/dist/style.css",
               "src/styles.scss"
             ],
             "scripts": [

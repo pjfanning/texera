@@ -364,9 +364,9 @@ export class ExecuteWorkflowService {
       const inputPortIdx = getInputPortOrdinal(link.target.operatorID, link.target.portID);
       return {
         fromOpId: link.source.operatorID,
-        fromPortId: { id: outputPortIdx, internal: false },
+        fromPortId: {id: outputPortIdx, internal: false},
         toOpId: link.target.operatorID,
-        toPortId: { id: inputPortIdx, internal: false },
+        toPortId: {id: inputPortIdx, internal: false},
       };
     });
 
@@ -377,22 +377,6 @@ export class ExecuteWorkflowService {
     const opsToReuseResult: string[] = Array.from(
       intersection(operatorIds, workflowGraph.getOperatorsMarkedForReuseResult())
     );
-
-  public static transformBreakpoint(
-    workflowGraph: WorkflowGraphReadonly,
-    linkID: string,
-    breakpointData: Breakpoint,
-  ): BreakpointInfo {
-    const operatorID = workflowGraph.getLinkWithID(linkID).source.operatorID;
-    let breakpoint: BreakpointRequest;
-    if ("condition" in breakpointData) {
-      breakpoint = { ...breakpointData, type: "ConditionBreakpoint" };
-    } else if ("count" in breakpointData) {
-      breakpoint = { ...breakpointData, type: "CountBreakpoint" };
-    } else {
-      throw new Error("unhandled breakpoint data " + breakpointData);
-    }
-    return { operatorID, breakpoint };
     return { operators, links, opsToViewResult, opsToReuseResult };
   }
 
