@@ -2,7 +2,7 @@ package edu.uci.ics.texera.workflow.common.storage
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberConfig
-import edu.uci.ics.amber.engine.common.storage.{BufferedItemWriter, VirtualDocument}
+import edu.uci.ics.amber.engine.common.storage.VirtualDocument
 import edu.uci.ics.amber.engine.common.storage.mongodb.{
   MemoryDocument,
   MongoDocument
