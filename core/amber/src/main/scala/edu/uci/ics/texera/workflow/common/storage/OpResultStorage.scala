@@ -2,12 +2,11 @@ package edu.uci.ics.texera.workflow.common.storage
 
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberConfig
+import edu.uci.ics.amber.engine.common.storage.VirtualDocument
+import edu.uci.ics.amber.engine.common.storage.mongodb.{MemoryDocument, MongoDocument}
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
-import edu.uci.ics.texera.workflow.operators.sink.storage.{
-  MemoryStorage,
-  MongoDBSinkStorage,
-  SinkStorageReader
-}
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
+import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,8 +22,8 @@ object OpResultStorage {
   */
 class OpResultStorage extends Serializable with LazyLogging {
 
-  val cache: ConcurrentHashMap[OperatorIdentity, SinkStorageReader] =
-    new ConcurrentHashMap[OperatorIdentity, SinkStorageReader]()
+  val cache: ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Schema)] =
+    new ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Schema)]()
 
   /**
     * Retrieve the result of an operator from OpResultStorage
@@ -32,30 +31,31 @@ class OpResultStorage extends Serializable with LazyLogging {
     *            Currently it is the uuid inside the cache source or cache sink operator.
     * @return The storage of this operator.
     */
-  def get(key: OperatorIdentity): SinkStorageReader = {
+  def get(key: OperatorIdentity): (VirtualDocument[Tuple], Schema) = {
     cache.get(key)
   }
 
   def create(
       executionId: String = "",
       key: OperatorIdentity,
-      mode: String
-  ): SinkStorageReader = {
-    val storage: SinkStorageReader =
+      mode: String,
+      schema: Schema,
+  ): VirtualDocument[Tuple] = {
+    val storage: VirtualDocument[Tuple] =
       if (mode == "memory") {
-        new MemoryStorage
+        new MemoryDocument[Tuple]
       } else {
         try {
-          new MongoDBSinkStorage(executionId + key)
+          new MongoDocument[Tuple](executionId + key, Tuple.toDocument, Tuple.fromDocument(schema))
         } catch {
           case t: Throwable =>
             logger.warn("Failed to create mongo storage", t)
             logger.info(s"Fall back to memory storage for $key")
             // fall back to memory
-            new MemoryStorage
+            new MemoryDocument[Tuple]
         }
       }
-    cache.put(key, storage)
+    cache.put(key, (storage, schema))
     storage
   }
 
@@ -70,7 +70,7 @@ class OpResultStorage extends Serializable with LazyLogging {
     */
   def remove(key: OperatorIdentity): Unit = {
     if (cache.contains(key)) {
-      cache.get(key).clear()
+      cache.get(key)._1.remove()
     }
     cache.remove(key)
   }
@@ -79,7 +79,7 @@ class OpResultStorage extends Serializable with LazyLogging {
     * Close this storage. Used for workflow cleanup.
     */
   def close(): Unit = {
-    cache.forEach((_, sinkStorageReader) => sinkStorageReader.clear())
+    cache.forEach((_, document) => document._1.remove())
     cache.clear()
   }
 

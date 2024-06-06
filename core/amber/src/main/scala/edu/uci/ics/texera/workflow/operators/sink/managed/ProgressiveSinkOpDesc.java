@@ -5,7 +5,8 @@ import com.google.common.base.Preconditions;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.SchemaPropagationFunc;
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
-import edu.uci.ics.amber.engine.common.AmberRuntime;
+import edu.uci.ics.amber.engine.common.storage.BufferedItemWriter;
+import edu.uci.ics.amber.engine.common.storage.VirtualDocument;
 import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity;
@@ -17,10 +18,10 @@ import edu.uci.ics.texera.workflow.common.ProgressiveUtils;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor;
+import edu.uci.ics.texera.workflow.common.storage.OpResultStorage;
+import edu.uci.ics.texera.workflow.common.tuple.Tuple;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.operators.sink.SinkOpDesc;
-import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageReader;
-import edu.uci.ics.texera.workflow.operators.sink.storage.SinkStorageWriter;
 import edu.uci.ics.texera.workflow.operators.util.OperatorDescriptorUtils;
 import scala.Option;
 import scala.Tuple2;
@@ -47,7 +48,13 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     private Option<String> chartType = Option.empty();
 
     @JsonIgnore
-    private SinkStorageReader storage = null;
+    private String storageMode;
+
+    @JsonIgnore
+    private VirtualDocument<Tuple> storage = null;
+
+    @JsonIgnore
+    private OpResultStorage opResultStorage = null;
 
     // corresponding upstream operator ID and output port, will be set by workflow compiler
     @JsonIgnore
@@ -58,7 +65,7 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
-        final SinkStorageWriter writer = storage.getStorageWriter();
+        final BufferedItemWriter<Tuple> writer = storage.write();
         return PhysicalOp.localPhysicalOp(
                 workflowId,
                 executionId,
@@ -94,9 +101,10 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
                             }
 
                             javaMap.put(operatorInfo().outputPorts().head().id(), outputSchema);
-
-                            // set schema for the storage
-                            getStorage().setSchema(outputSchema);
+                            // Here the storage is initialized and saved to the cache of Operator Result Storage
+                            if (this.storage == null) {
+                                this.storage = opResultStorage.create("", this.operatorIdentifier(), storageMode, outputSchema);
+                            }
                             // Convert the Java Map to a Scala immutable Map
                             return OperatorDescriptorUtils.toImmutableMap(javaMap);
                         })
@@ -159,12 +167,20 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     }
 
     @JsonIgnore
-    public void setStorage(SinkStorageReader storage) {
+    public void setStorageContext(String storageMode, OpResultStorage opResultStorage) {
+        // Here, context includes the storageID, storageMode, and the reference of result storage object
+        // The reason to keep these in context is because the actual result storage can be created ONLY when schema is propagated.
+        this.storageMode = storageMode;
+        this.opResultStorage = opResultStorage;
+    }
+
+    @JsonIgnore
+    public void setStorage(VirtualDocument<Tuple> storage) {
         this.storage = storage;
     }
 
     @JsonIgnore
-    public SinkStorageReader getStorage() {
+    public VirtualDocument<Tuple> getStorage() {
         return this.storage;
     }
 
