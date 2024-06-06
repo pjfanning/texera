@@ -109,14 +109,14 @@ object WorkflowCacheRewriter {
         val storageSchema =
           logicalPlan.getOperator(storageKey).outputPortToSchemaMapping.values.head
         if (reuseStorageSet.contains(storageKey) && storage.contains(storageKey)) {
-          sink.setStorage(storage.get(storageKey)._1)
+          sink.setStorage(storage.getStorage(storageKey))
         } else {
           sink.setStorage(
             storage.create(
               s"${o.getContext.executionId}_",
               storageKey,
               storageType,
-              storageSchema
+              Some(storageSchema)
             )
           )
           // add the sink collection name to the JSON array of sinks
@@ -125,7 +125,7 @@ object WorkflowCacheRewriter {
           storageNode.put("storageKey", s"${o.getContext.executionId}_$storageKey")
           sinksPointers.add(storageNode)
         }
-        storage.get(storageKey)
+        storage.getStorage(storageKey)
 
       case _ =>
     }

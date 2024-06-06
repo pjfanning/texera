@@ -5,12 +5,12 @@ import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.storage.{BufferedItemWriter, VirtualDocument}
 import edu.uci.ics.amber.engine.common.storage.mongodb.{
   MemoryDocument,
-  MongoDBBufferedItemWriter,
   MongoDocument
 }
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+import org.bson.Document
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -18,18 +18,6 @@ object OpResultStorage {
   val defaultStorageMode: String = AmberConfig.sinkStorageMode.toLowerCase
   val MEMORY = "memory"
   val MONGODB = "mongodb"
-
-  def getWriter(
-      executionId: String = "",
-      key: OperatorIdentity,
-      mode: String
-  ): BufferedItemWriter[Tuple] = {
-    if (mode == "memory") {
-      new MemoryDocument[Tuple]
-    } else {
-      new MongoDBBufferedItemWriter[Tuple](1024, executionId + key, Tuple.toDocument)
-    }
-  }
 }
 
 /**
@@ -38,8 +26,8 @@ object OpResultStorage {
   */
 class OpResultStorage extends Serializable with LazyLogging {
 
-  val cache: ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Schema)] =
-    new ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Schema)]()
+  val cache: ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Option[Schema])] =
+    new ConcurrentHashMap[OperatorIdentity, (VirtualDocument[Tuple], Option[Schema])]()
 
   /**
     * Retrieve the result of an operator from OpResultStorage
@@ -47,22 +35,37 @@ class OpResultStorage extends Serializable with LazyLogging {
     *            Currently it is the uuid inside the cache source or cache sink operator.
     * @return The storage of this operator.
     */
-  def get(key: OperatorIdentity): (VirtualDocument[Tuple], Schema) = {
-    cache.get(key)
+  def getStorage(key: OperatorIdentity): VirtualDocument[Tuple] = {
+    cache.get(key)._1
+  }
+
+  def getSchema(key: OperatorIdentity): Schema = {
+    cache.get(key)._2.get
+  }
+
+  def setSchema(key: OperatorIdentity, schema: Schema): Unit = {
+    val storage = getStorage(key)
+    cache.put(key, (storage, Some(schema)))
   }
 
   def create(
       executionId: String = "",
       key: OperatorIdentity,
       mode: String,
-      schema: Schema
+      schema: Option[Schema] = None
   ): VirtualDocument[Tuple] = {
     val storage: VirtualDocument[Tuple] =
       if (mode == "memory") {
         new MemoryDocument[Tuple]
       } else {
         try {
-          new MongoDocument[Tuple](executionId + key, Tuple.toDocument, Tuple.fromDocument(schema))
+          val fromDocument: Option[Document => Tuple] = {
+            if (schema.isDefined)
+              Some(Tuple.fromDocument(schema.get))
+            else
+              None
+          }
+          new MongoDocument[Tuple](executionId + key, Some(Tuple.toDocument), fromDocument)
         } catch {
           case t: Throwable =>
             logger.warn("Failed to create mongo storage", t)

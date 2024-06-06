@@ -7,6 +7,8 @@ import edu.uci.ics.amber.engine.architecture.deploysemantics.SchemaPropagationFu
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo;
 import edu.uci.ics.amber.engine.common.storage.BufferedItemWriter;
 import edu.uci.ics.amber.engine.common.storage.VirtualDocument;
+import edu.uci.ics.amber.engine.common.storage.mongodb.MongoDocument;
+import edu.uci.ics.amber.engine.common.storage.mongodb.MongoDocumentMetadata;
 import edu.uci.ics.amber.engine.common.virtualidentity.ExecutionIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.OperatorIdentity;
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity;
@@ -48,9 +50,6 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     private Option<String> chartType = Option.empty();
 
     @JsonIgnore
-    private String storageMode;
-
-    @JsonIgnore
     private VirtualDocument<Tuple> storage = null;
 
     @JsonIgnore
@@ -65,7 +64,7 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
 
     @Override
     public PhysicalOp getPhysicalOp(WorkflowIdentity workflowId, ExecutionIdentity executionId) {
-        final BufferedItemWriter<Tuple> writer = OpResultStorage.getWriter("", this.operatorIdentifier(), this.storageMode);
+        final BufferedItemWriter<Tuple> writer = this.storage.write();
         return PhysicalOp.localPhysicalOp(
                 workflowId,
                 executionId,
@@ -101,9 +100,16 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
                             }
 
                             javaMap.put(operatorInfo().outputPorts().head().id(), outputSchema);
-                            // Here the storage is initialized and saved to the cache of Operator Result Storage
-                            if (this.storage == null) {
-                                this.storage = opResultStorage.create("", this.operatorIdentifier(), storageMode, outputSchema);
+                            // Here the storage is reset if it is a MongoDocument, because the output schema is presented
+                            if (this.storage instanceof MongoDocument) {
+                                getStorage().reset(
+                                    new MongoDocumentMetadata<>(
+                                        Tuple.toDocument(),
+                                        Tuple.fromDocument().apply(outputSchema)
+                                    )
+                                );
+                                // TODO: consider remove this ugly part
+                                this.opResultStorage.setSchema(operatorIdentifier(), outputSchema);
                             }
                             // Convert the Java Map to a Scala immutable Map
                             return OperatorDescriptorUtils.toImmutableMap(javaMap);
@@ -167,16 +173,13 @@ public class ProgressiveSinkOpDesc extends SinkOpDesc {
     }
 
     @JsonIgnore
-    public void setStorageContext(String storageMode, OpResultStorage opResultStorage) {
-        // Here, context includes the storageID, storageMode, and the reference of result storage object
-        // The reason to keep these in context is because the actual result storage can be created ONLY when schema is propagated.
-        this.storageMode = storageMode;
-        this.opResultStorage = opResultStorage;
+    public void setStorage(VirtualDocument<Tuple> storage) {
+        this.storage = storage;
     }
 
     @JsonIgnore
-    public void setStorage(VirtualDocument<Tuple> storage) {
-        this.storage = storage;
+    public void setOpResultStorage(OpResultStorage resultStorage) {
+        this.opResultStorage = resultStorage;
     }
 
     @JsonIgnore
