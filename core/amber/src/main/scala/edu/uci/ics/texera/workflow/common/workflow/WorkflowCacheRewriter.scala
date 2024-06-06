@@ -106,7 +106,8 @@ object WorkflowCacheRewriter {
           else OpResultStorage.defaultStorageMode
         }
 
-        val storageSchema = logicalPlan.getOperator(storageKey).outputPortToSchemaMapping.values.head
+        val storageSchema =
+          logicalPlan.getOperator(storageKey).outputPortToSchemaMapping.values.head
         if (reuseStorageSet.contains(storageKey) && storage.contains(storageKey)) {
           sink.setStorage(storage.get(storageKey)._1)
         } else {
