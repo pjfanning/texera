@@ -148,6 +148,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   onClickSkipTuples(): void {
     try {
+      this.udfDebugService.getOrCreateManager(this.operatorId)?.setHitLineNum(0);
       this.executeWorkflowService.skipTuples(this.workerIds);
     } catch (e) {
       this.notificationService.error((e as Error).message);
@@ -156,6 +157,7 @@ export class ConsoleFrameComponent implements OnInit, OnChanges {
 
   onClickRetryTuples() {
     try {
+      this.udfDebugService.getOrCreateManager(this.operatorId)?.setHitLineNum(0);
       this.executeWorkflowService.retryExecution(this.workerIds);
     } catch (e) {
       this.notificationService.error((e as Error).message);
