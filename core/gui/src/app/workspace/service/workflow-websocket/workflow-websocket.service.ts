@@ -2,6 +2,7 @@ import {Injectable} from "@angular/core";
 import {interval, Observable, Subject, Subscription, timer} from "rxjs";
 import {webSocket, WebSocketSubject} from "rxjs/webSocket";
 import {
+  FrontendDebugCommand,
   TexeraWebsocketEvent,
   TexeraWebsocketEventTypeMap,
   TexeraWebsocketEventTypes,
@@ -30,7 +31,7 @@ export class WorkflowWebsocketService {
   private websocket?: WebSocketSubject<TexeraWebsocketEvent | TexeraWebsocketRequest>;
   private wsWithReconnectSubscription?: Subscription;
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
-  private requestQueue: Array<{ operatorId: string, isBreak: boolean, line:number, breakpointId:number }> = [];
+  private requestQueue: Array<FrontendDebugCommand> = [];
   private assignedWorkerIds: Map<string, readonly string[]> = new Map();
 
   constructor() {
@@ -74,20 +75,20 @@ export class WorkflowWebsocketService {
   }
 
 
-  public prepareDebugCommand(operatorId: string, isBreak: boolean, line:number, breakpointId:number){
-    if(!isBreak){
-      const breakCommandIdx = this.requestQueue.findIndex(request => request.operatorId === operatorId && request.isBreak && request.line == line);
-      if (breakCommandIdx !== -1) {
-        this.requestQueue.splice(breakCommandIdx, 1);
-        return;
-      }
-    }
-    this.requestQueue.push({ operatorId, isBreak, line, breakpointId });
+  public prepareDebugCommand(payload:FrontendDebugCommand){
+    this.requestQueue.push(payload);
     this.processQueue();
   }
 
-  private sendDebugCommandRequest(request: { operatorId: string, isBreak: boolean, line: number, breakpointId: number }, workerId: string): void {
-    const cmd = request.isBreak ? `break ${request.line}` : `clear ${request.breakpointId}`;
+  private sendDebugCommandRequest(request: FrontendDebugCommand, workerId: string): void {
+    let cmd: string = "";
+    if(request.command === "break"){
+      cmd = "break "+request.line;
+    }else if(request.command === "clear"){
+      cmd = "clear "+request.breakpointId;
+    }else{
+      cmd = "continue";
+    }
     this.send("DebugCommandRequest", {
       operatorId: request.operatorId,
       workerId,

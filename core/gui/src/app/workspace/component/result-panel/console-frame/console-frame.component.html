@@ -135,19 +135,19 @@
   [nzAddOnBefore]="addOnBeforeTemplate"
   class="console-input-container">
   <div>
-    <button
-      (click)="onClickSkipTuples()"
-      [disabled]="true"
-      nzSize="small"
-      nz-tooltip
-      nzTooltipTitle="Skip the faulty Tuple"
-      nz-button>
-      <span
-        nz-icon
-        nzType="delete-row"
-        nzTheme="outline"></span>
-    </button>
-
+<!--    <button-->
+<!--      (click)="onClickSkipTuples()"-->
+<!--      [disabled]="false"-->
+<!--      nzSize="small"-->
+<!--      nz-tooltip-->
+<!--      nzTooltipTitle="Skip the faulty Tuple"-->
+<!--      nz-button>-->
+<!--      <span-->
+<!--        nz-icon-->
+<!--        nzType="delete-row"-->
+<!--        nzTheme="outline"></span>-->
+<!--      Skip Tuple-->
+<!--    </button>-->
   <button
     (click)="onClickRetryTuples()"
     [disabled]="false"
@@ -160,6 +160,7 @@
       nzType="redo"
       nzTheme="outline">
     </span>
+    Retry Tuple
   </button>
   <button
     (click)="onClickStep()"
@@ -172,6 +173,7 @@
       nz-icon
       nzTheme="outline"
       nzType="vertical-left"></i>
+    Step
   </button>
   <button
     (click)="onClickContinue()"
@@ -184,6 +186,7 @@
       nz-icon
       nzTheme="outline"
       nzType="right"></i>
+    Continue
   </button>
   </div>
   <input

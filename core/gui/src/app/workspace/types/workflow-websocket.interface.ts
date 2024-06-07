@@ -179,6 +179,13 @@ export type WorkflowStateInfo = Readonly<{
   state: ExecutionState;
 }>;
 
+export type FrontendDebugCommand = Readonly<{
+  operatorId: string;
+  command:string;
+  line: number;
+  breakpointId:number;
+}>
+
 export type TexeraWebsocketRequestTypeMap = {
   RegisterWorkflowIdRequest: RegisterWorkflowIdRequest;
   EditingTimeCompilationRequest: LogicalPlan;
@@ -187,7 +194,7 @@ export type TexeraWebsocketRequestTypeMap = {
   ResultExportRequest: ResultExportRequest;
   ResultPaginationRequest: PaginationRequest;
   RetryRequest: { workers: ReadonlyArray<string> };
-  SkipTupleRequest: { workers: ReadonlyArray<string> };
+  SkipTupleRequest: { workerIds: ReadonlyArray<string> };
   WorkflowExecuteRequest: WorkflowExecuteRequest;
   WorkflowKillRequest: {};
   WorkflowPauseRequest: {};

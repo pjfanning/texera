@@ -1,26 +1,28 @@
-import { AfterViewInit, Component, ComponentRef, ElementRef, OnDestroy, ViewChild } from "@angular/core";
-import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { WorkflowActionService } from "../../service/workflow-graph/model/workflow-action.service";
-import { WorkflowVersionService } from "src/app/dashboard/user/service/workflow-version/workflow-version.service";
-import { YText } from "yjs/dist/src/types/YText";
-import { MonacoBinding } from "y-monaco";
-import { Subject } from "rxjs";
-import { takeUntil } from "rxjs/operators";
+import {AfterViewInit, Component, ComponentRef, ElementRef, OnDestroy, Renderer2, ViewChild} from "@angular/core";
+import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
+import {WorkflowActionService} from "../../service/workflow-graph/model/workflow-action.service";
+import {WorkflowVersionService} from "src/app/dashboard/user/service/workflow-version/workflow-version.service";
+import {YText} from "yjs/dist/src/types/YText";
+import {MonacoBinding} from "y-monaco";
+import {Subject} from "rxjs";
+import {takeUntil} from "rxjs/operators";
 // import { MonacoLanguageClient } from "monaco-languageclient";
-import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from "vscode-ws-jsonrpc";
-import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
-import { DomSanitizer, SafeStyle } from "@angular/platform-browser";
-import { Coeditor } from "../../../common/type/user";
-import { YType } from "../../types/shared-editing.interface";
-import { isUndefined } from "lodash";
+import {CoeditorPresenceService} from "../../service/workflow-graph/model/coeditor-presence.service";
+import {DomSanitizer, SafeStyle} from "@angular/platform-browser";
+import {Coeditor} from "../../../common/type/user";
+import {YType} from "../../types/shared-editing.interface";
+import {isUndefined} from "lodash";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import { FormControl } from "@angular/forms";
-import { MonacoBreakpoint } from "monaco-breakpoints";
-import { WorkflowWebsocketService } from "../../service/workflow-websocket/workflow-websocket.service";
-import { ExecuteWorkflowService } from "../../service/execute-workflow/execute-workflow.service";
-import { BreakpointManager, UdfDebugService } from "../../service/operator-debug/udf-debug.service";
-import { isDefined } from "../../../common/util/predicate";
-import { ConsoleUpdateEvent } from "../../types/workflow-common.interface";
+import {editor} from "monaco-editor/esm/vs/editor/editor.api.js";
+import {FormControl} from "@angular/forms";
+import {MonacoBreakpoint} from "monaco-breakpoints";
+import {WorkflowWebsocketService} from "../../service/workflow-websocket/workflow-websocket.service";
+import {ExecuteWorkflowService} from "../../service/execute-workflow/execute-workflow.service";
+import {BreakpointManager, UdfDebugService} from "../../service/operator-debug/udf-debug.service";
+import {isDefined} from "../../../common/util/predicate";
+import {ConsoleUpdateEvent} from "../../types/workflow-common.interface";
+import {EditorMouseEvent, EditorMouseTarget} from "monaco-breakpoints/dist/types";
+import MouseTargetType = editor.MouseTargetType;
 
 /**
  * CodeEditorComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.
@@ -51,7 +53,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   public language: string = "";
   public languageTitle: string = "";
   public isUpdatingBreakpoints = false;
-
+  public instance: MonacoBreakpoint | undefined = undefined;
+  private tooltipValue = "";
   private generateLanguageTitle(language: string): string {
     return `${language.charAt(0).toUpperCase()}${language.slice(1)} UDF`;
   }
@@ -74,6 +77,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowWebsocketService: WorkflowWebsocketService,
     public udfDebugService: UdfDebugService,
+    private elementRef: ElementRef,
+    private renderer: Renderer2
   ) {
     const currentOperatorId = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0];
     const operatorType = this.workflowActionService.getTexeraGraph().getOperator(currentOperatorId).operatorType;
@@ -141,6 +146,104 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           this.breakpointManager?.assignBreakpointId(lineNumber, breakpoint);
         });
       });
+
+    this.editor.onContextMenu((e:EditorMouseEvent) =>{
+      const { type, range, detail, position } = this.getMouseEventTarget(e);
+
+      if (type === MouseTargetType.GUTTER_GLYPH_MARGIN) {
+        // This indicates that the current position of the mouse is over the total number of lines in the editor
+        if (detail.isAfterLines) {
+          return;
+        }
+        this.showTooltip(e.event.posx, e.event.posy);
+      }
+    })
+  }
+
+  private getMouseEventTarget(e: EditorMouseEvent) {
+    return { ...(e.target as EditorMouseTarget) };
+  }
+
+  showTooltip(mouseX: number, mouseY: number): void {
+    // Create tooltip element
+    const tooltip = this.renderer.createElement('div');
+    this.renderer.addClass(tooltip, 'custom-tooltip');
+
+    // Create content container for the tooltip
+    const contentContainer = this.renderer.createElement('div');
+    this.renderer.addClass(contentContainer, 'tooltip-content');
+
+    // Create value display element
+    const valueDisplay = this.renderer.createElement('span');
+    this.renderer.addClass(valueDisplay, 'tooltip-value');
+    this.renderer.setProperty(valueDisplay, 'innerText', this.tooltipValue || 'Click to edit');
+
+    // Create edit icon
+    const editIcon = this.renderer.createElement('span');
+    this.renderer.addClass(editIcon, 'edit-icon');
+    this.renderer.setProperty(editIcon, 'innerHTML', '&#9998;'); // Unicode character for pencil
+
+    // Create input element
+    const input = this.renderer.createElement('input');
+    this.renderer.addClass(input, 'custom-input');
+    this.renderer.setProperty(input, 'value', this.tooltipValue);
+
+    // Append elements to content container
+    this.renderer.appendChild(contentContainer, valueDisplay);
+    this.renderer.appendChild(contentContainer, input);
+    this.renderer.appendChild(contentContainer, editIcon);
+
+    // Append content container to tooltip
+    this.renderer.appendChild(tooltip, contentContainer);
+
+    // Append tooltip to the document body
+    this.renderer.appendChild(document.body, tooltip);
+
+    // Function to toggle edit mode
+    const toggleEditMode = (isEditMode: boolean) => {
+      if (isEditMode) {
+        this.renderer.setStyle(input, 'display', 'block');
+        this.renderer.setStyle(valueDisplay, 'display', 'none');
+        input.focus();
+      } else {
+        this.tooltipValue = input.value;
+        this.renderer.setStyle(input, 'display', 'none');
+        this.renderer.setStyle(valueDisplay, 'display', 'block');
+        this.renderer.setProperty(valueDisplay, 'innerText', this.tooltipValue || 'Click to edit');
+      }
+    };
+
+    // Set initial state based on tooltip value
+    if (this.tooltipValue === '') {
+      toggleEditMode(true);
+    } else {
+      toggleEditMode(false);
+    }
+
+    // Add click event to edit icon
+    this.renderer.listen(editIcon, 'click', () => {
+      toggleEditMode(true);
+    });
+
+    // Listen for Enter key press to exit edit mode
+    this.renderer.listen(input, 'keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        const inputValue = (event.target as HTMLInputElement).value;
+        console.log(`User input: ${inputValue}`);
+        toggleEditMode(false);
+      }
+    });
+
+    // Calculate tooltip dimensions after appending to the DOM
+    const tooltipRect = tooltip.getBoundingClientRect();
+
+    // Adjust the position to appear at the left side of the mouse
+    const adjustedX = mouseX - tooltipRect.width - 10; // Subtracting width and adding some offset to the left
+    const adjustedY = mouseY - tooltipRect.height / 2;
+
+    // Update tooltip position
+    this.renderer.setStyle(tooltip, 'top', `${adjustedY}px`);
+    this.renderer.setStyle(tooltip, 'left', `${adjustedX}px`);
   }
 
   ngOnDestroy(): void {
@@ -225,9 +328,9 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
       // this.connectLanguageServer();
     }
 
-    const instance = new MonacoBreakpoint({ editor });
+    this.instance = new MonacoBreakpoint({ editor });
 
-    instance.on("breakpointChanged", lineNums => {
+    (this.instance).on("breakpointChanged", lineNums => {
       if(this.isUpdatingBreakpoints){
         return;
       }
@@ -239,15 +342,15 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
       .pipe(untilDestroyed(this))
       .subscribe(lineNum => {
         console.log("highlight " + lineNum);
-        instance.removeHighlight();
+        this.instance!.removeHighlight();
         if (lineNum != 0) {
-          instance.setLineHighlight(lineNum);
+          this.instance!.setLineHighlight(lineNum);
         }
       });
     this.breakpointManager?.getLineNumToBreakpointMappingStream().pipe(untilDestroyed(this)).subscribe(
       mapping =>{
         console.log("trigger"+mapping)
-        this.restoreBreakpoints(instance, Array.from(mapping.keys()));
+        this.restoreBreakpoints(this.instance!, Array.from(mapping.keys()));
     })
 
   }
@@ -304,4 +407,11 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   onFocus() {
     this.workflowActionService.getJointGraphWrapper().highlightOperators(this.operatorID);
   }
+
+  onMouseLeave(){
+    if(this.instance){
+      this.instance!["removeHoverDecoration"]();
+    }
+  }
+
 }

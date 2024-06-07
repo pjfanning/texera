@@ -27,7 +27,7 @@ class ExecutionRuntimeService(
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
-    throw new RuntimeException("skipping tuple is temporarily disabled")
+    client.sendAsync()
   }))
 
   addSubscription(wsInput.subscribe((req: RetryRequest, uidOpt) => {

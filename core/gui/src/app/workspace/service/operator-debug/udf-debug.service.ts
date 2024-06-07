@@ -1,17 +1,57 @@
-import { Injectable } from "@angular/core";
-import { BehaviorSubject, Subject } from "rxjs";
-import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import {ExecuteWorkflowService} from "../execute-workflow/execute-workflow.service";
+import {Injectable} from "@angular/core";
+import {BehaviorSubject, Subject} from "rxjs";
+import {WorkflowWebsocketService} from "../workflow-websocket/workflow-websocket.service";
+import {FrontendDebugCommand} from "../../types/workflow-websocket.interface";
+import {ExecutionState} from "../../types/execute-workflow.interface";
 
 export class BreakpointManager {
 
   constructor(private workflowWebsocketService:WorkflowWebsocketService,
-              private currentOperatorId:string) {}
+              private currentOperatorId:string) {
+    workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(evt =>{
+      if(evt.state === ExecutionState.Initializing){
+        this.sendCommand();
+      }
+    })
+
+    workflowWebsocketService.subscribeToEvent("ConsoleUpdateEvent").subscribe(evt =>{
+      if(evt.messages[evt.messages.length-1].msgType.name === "DEBUGGER"){
+        this.executionActive = true;
+        this.sendCommand();
+      }
+    });
+  }
 
   private hitLineNum: Subject<number> = new BehaviorSubject(0)
   private lineNumToBreakpointSubject: Subject<Map<number, number | undefined>> = new BehaviorSubject(new Map());
   private lineNumToBreakpointMapping:Map<number, number | undefined> = new Map();
+  private debugCommandQueue: FrontendDebugCommand[] = [];
+  private executionActive = false;
 
+  private queueCommand(cmd: FrontendDebugCommand){
+    if(cmd.command !== "break"){
+      const breakCommandIdx = this.debugCommandQueue.findIndex(request => request.command === "break" && request.line == cmd.line);
+      if (breakCommandIdx !== -1) {
+        this.debugCommandQueue.splice(breakCommandIdx, 1);
+        return;
+      }
+    }
+    this.debugCommandQueue.push(cmd);
+    if(this.executionActive){
+      this.sendCommand();
+    }
+  }
+
+  private sendCommand(){
+    if(this.debugCommandQueue.length > 0){
+      let payload = this.debugCommandQueue.shift();
+      this.workflowWebsocketService.prepareDebugCommand(payload!);
+      let needContinue = this.debugCommandQueue.length === 0 || this.debugCommandQueue[this.debugCommandQueue.length-1].command !== "continue";
+      if(payload?.command === "break" && needContinue){
+        this.debugCommandQueue.push({...payload, command: "continue"});
+      }
+    }
+  }
 
   public getBreakpointHitStream() {
     return this.hitLineNum.asObservable();
@@ -22,13 +62,10 @@ export class BreakpointManager {
   }
 
   public resetState(){
+    this.executionActive = false;
+    this.debugCommandQueue = [];
     this.lineNumToBreakpointMapping.forEach((v,k) => {
-      this.workflowWebsocketService.prepareDebugCommand(
-        this.currentOperatorId,
-        true,
-        k,
-        0
-      );
+      this.queueCommand({operatorId: this.currentOperatorId, command:"break", line: k, breakpointId:0})
     });
     this.setHitLineNum(0);
   }
@@ -41,23 +78,19 @@ export class BreakpointManager {
       if(!this.lineNumToBreakpointMapping.has(line)){
         changed = true;
         this.lineNumToBreakpointMapping.set(line, undefined)
-        this.workflowWebsocketService.prepareDebugCommand(
-          this.currentOperatorId,
-          true,
-          line,
-          0
-        );
+        this.queueCommand({operatorId: this.currentOperatorId,
+          command:"break",
+          line:line,
+          breakpointId:0})
       }
     })
     this.lineNumToBreakpointMapping.forEach((v,k,m) =>{
       if(!lineSet.has(k)){
         changed = true;
-        this.workflowWebsocketService.prepareDebugCommand(
-          this.currentOperatorId,
-          false,
-          k,
-          v ?? 0
-        );
+        this.queueCommand({operatorId: this.currentOperatorId,
+          command:"clear",
+          line:k,
+          breakpointId:v ?? 0});
         m.delete(k)
       }
     })

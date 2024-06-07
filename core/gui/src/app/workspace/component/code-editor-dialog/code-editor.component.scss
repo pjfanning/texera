@@ -49,3 +49,52 @@
   left: -4px;
   top: -5px;
 }
+
+.custom-tooltip {
+  position: absolute;
+  background: #333;
+  color: #fff;
+  padding: 20px; /* Increase padding to make tooltip larger */
+  border-radius: 8px; /* Increase border-radius for smoother corners */
+  z-index: 1000;
+  pointer-events: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 150px; /* Set a fixed width to prevent resizing */
+  height: 30px; /* Set a fixed height to prevent resizing */
+}
+
+.tooltip-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%; /* Make sure content container spans the entire tooltip */
+}
+
+.tooltip-value {
+  margin-right: 10px;
+  flex-grow: 1; /* Allow the value display to take up available space */
+}
+
+.edit-icon {
+  cursor: pointer;
+}
+
+.custom-input {
+  width: 100%; /* Ensure input spans the available width */
+  padding: 5px;
+  border: none;
+  background: transparent; /* Make input background transparent */
+  outline: none;
+  display: none; /* Initially hide the input */
+}
+
+.custom-input:focus {
+  border: none;
+}
+
+
+
+
