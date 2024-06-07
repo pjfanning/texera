@@ -54,7 +54,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   public languageTitle: string = "";
   public isUpdatingBreakpoints = false;
   public instance: MonacoBreakpoint | undefined = undefined;
-  private tooltipValue = "";
+  public lastBreakLine = 0;
   private generateLanguageTitle(language: string): string {
     return `${language.charAt(0).toUpperCase()}${language.slice(1)} UDF`;
   }
@@ -77,7 +77,6 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     public executeWorkflowService: ExecuteWorkflowService,
     public workflowWebsocketService: WorkflowWebsocketService,
     public udfDebugService: UdfDebugService,
-    private elementRef: ElementRef,
     private renderer: Renderer2
   ) {
     const currentOperatorId = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0];
@@ -145,6 +144,26 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           const lineNumber = Number(match[2]);
           this.breakpointManager?.assignBreakpointId(lineNumber, breakpoint);
         });
+
+        if(pythonConsoleUpdateEvent.messages.length === 0){
+          return;
+        }
+        let lastMsg = pythonConsoleUpdateEvent.messages[pythonConsoleUpdateEvent.messages.length-1];
+        if(lastMsg.title.startsWith("break")){
+          this.lastBreakLine = Number(lastMsg.title.split(" ")[1]);
+        }
+        if(lastMsg.title.startsWith("*** Blank or comment")){
+          this.isUpdatingBreakpoints = true;
+          this.instance!["lineNumberAndDecorationIdMap"].forEach((v:string,k:number,m:Map<number, string>) =>{
+            if(k === this.lastBreakLine){
+              console.log("removing "+k)
+              this.breakpointManager?.removeBreakpoint(k);
+              this.instance!["removeSpecifyDecoration"](v, k);
+            }
+          })
+          this.isUpdatingBreakpoints = false;
+        }
+
       });
 
     this.editor.onContextMenu((e:EditorMouseEvent) =>{
@@ -155,7 +174,31 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         if (detail.isAfterLines) {
           return;
         }
-        this.showTooltip(e.event.posx, e.event.posy);
+
+        // Get the layout info of the editor
+        const layoutInfo = this.editor.getLayoutInfo();
+
+        // Get the range start line number
+        const startLineNumber = range.startLineNumber;
+
+        if(!this.instance!["lineNumberAndDecorationIdMap"].has(startLineNumber)){
+          return;
+        }
+
+        // Get the top position for the start line number
+        const topForLineNumber = this.editor.getTopForLineNumber(startLineNumber);
+        // Calculate the middle y position for the line number
+        const lineHeight = this.editor.getOption(monaco.editor.EditorOption.lineHeight);
+        const middleForLineNumber = topForLineNumber + lineHeight / 2;
+
+        // Get the editor's DOM node and its bounding rect
+        const editorDomNode = this.editor.getDomNode();
+        const editorRect = editorDomNode.getBoundingClientRect();
+
+        // Calculate x and y positions
+        const x = editorRect.left + layoutInfo.glyphMarginLeft;
+        const y = editorRect.top + middleForLineNumber;
+        this.showTooltip(x, y, startLineNumber, this.breakpointManager!);
       }
     })
   }
@@ -164,74 +207,62 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     return { ...(e.target as EditorMouseTarget) };
   }
 
-  showTooltip(mouseX: number, mouseY: number): void {
+  showTooltip(mouseX: number, mouseY: number, lineNum:number, breakpointManager:BreakpointManager): void {
     // Create tooltip element
     const tooltip = this.renderer.createElement('div');
     this.renderer.addClass(tooltip, 'custom-tooltip');
 
-    // Create content container for the tooltip
-    const contentContainer = this.renderer.createElement('div');
-    this.renderer.addClass(contentContainer, 'tooltip-content');
+    // Create header element
+    const header = this.renderer.createElement('div');
+    this.renderer.addClass(header, 'tooltip-header');
+    this.renderer.setProperty(header, 'innerText', 'Condition:');
 
-    // Create value display element
-    const valueDisplay = this.renderer.createElement('span');
-    this.renderer.addClass(valueDisplay, 'tooltip-value');
-    this.renderer.setProperty(valueDisplay, 'innerText', this.tooltipValue || 'Click to edit');
+    // Create textarea element
+    const textarea = this.renderer.createElement('textarea');
+    this.renderer.addClass(textarea, 'custom-textarea');
+    let oldCondition = breakpointManager.getCondition(lineNum)
+    this.renderer.setProperty(textarea, 'value', oldCondition);
 
-    // Create edit icon
-    const editIcon = this.renderer.createElement('span');
-    this.renderer.addClass(editIcon, 'edit-icon');
-    this.renderer.setProperty(editIcon, 'innerHTML', '&#9998;'); // Unicode character for pencil
-
-    // Create input element
-    const input = this.renderer.createElement('input');
-    this.renderer.addClass(input, 'custom-input');
-    this.renderer.setProperty(input, 'value', this.tooltipValue);
-
-    // Append elements to content container
-    this.renderer.appendChild(contentContainer, valueDisplay);
-    this.renderer.appendChild(contentContainer, input);
-    this.renderer.appendChild(contentContainer, editIcon);
-
-    // Append content container to tooltip
-    this.renderer.appendChild(tooltip, contentContainer);
+    // Append header and textarea to tooltip
+    this.renderer.appendChild(tooltip, header);
+    this.renderer.appendChild(tooltip, textarea);
 
     // Append tooltip to the document body
     this.renderer.appendChild(document.body, tooltip);
+    textarea.focus();
 
-    // Function to toggle edit mode
-    const toggleEditMode = (isEditMode: boolean) => {
-      if (isEditMode) {
-        this.renderer.setStyle(input, 'display', 'block');
-        this.renderer.setStyle(valueDisplay, 'display', 'none');
-        input.focus();
-      } else {
-        this.tooltipValue = input.value;
-        this.renderer.setStyle(input, 'display', 'none');
-        this.renderer.setStyle(valueDisplay, 'display', 'block');
-        this.renderer.setProperty(valueDisplay, 'innerText', this.tooltipValue || 'Click to edit');
+    // Function to remove the tooltip
+    const removeTooltip = () => {
+      const inputValue = textarea.value;
+      if(inputValue != oldCondition){
+        breakpointManager.setCondition(lineNum, inputValue);
       }
+      // Add fade-out class
+      this.renderer.addClass(tooltip, 'fade-out');
+      // Remove tooltip after the transition ends
+      const transitionEndListener = this.renderer.listen(tooltip, 'transitionend', () => {
+        tooltip.remove();
+        if (removeTooltipListener) {
+          removeTooltipListener();
+        }
+        if (removeFocusoutListener) {
+          removeFocusoutListener();
+        }
+        transitionEndListener();
+      });
     };
 
-    // Set initial state based on tooltip value
-    if (this.tooltipValue === '') {
-      toggleEditMode(true);
-    } else {
-      toggleEditMode(false);
-    }
-
-    // Add click event to edit icon
-    this.renderer.listen(editIcon, 'click', () => {
-      toggleEditMode(true);
+    // Listen for Enter key press to exit edit mode
+    const removeTooltipListener = this.renderer.listen(textarea, 'keydown', (event: KeyboardEvent) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        removeTooltip(); // Trigger fade-out and remove the tooltip
+      }
     });
 
-    // Listen for Enter key press to exit edit mode
-    this.renderer.listen(input, 'keydown', (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        const inputValue = (event.target as HTMLInputElement).value;
-        console.log(`User input: ${inputValue}`);
-        toggleEditMode(false);
-      }
+    // Listen for focusout event to remove the tooltip after 1 second
+    const removeFocusoutListener = this.renderer.listen(textarea, 'focusout', () => {
+      setTimeout(removeTooltip, 300);
     });
 
     // Calculate tooltip dimensions after appending to the DOM
@@ -245,6 +276,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     this.renderer.setStyle(tooltip, 'top', `${adjustedY}px`);
     this.renderer.setStyle(tooltip, 'left', `${adjustedX}px`);
   }
+
 
   ngOnDestroy(): void {
     this.workflowActionService.getTexeraGraph().updateSharedModelAwareness("editingCode", false);
@@ -329,6 +361,40 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     }
 
     this.instance = new MonacoBreakpoint({ editor });
+
+    this.instance["mouseDownDisposable"]?.dispose();
+    this.instance["mouseDownDisposable"] = this.editor!.onMouseDown(
+        (e: EditorMouseEvent) => {
+          if(e.event.rightButton){
+            return;
+          }
+          const model = this.editor.getModel();
+          const { type, range, detail, position } = this.getMouseEventTarget(e);
+          if (model && type === MouseTargetType.GUTTER_GLYPH_MARGIN) {
+            // This indicates that the current position of the mouse is over the total number of lines in the editor
+            if (detail.isAfterLines) {
+              return;
+            }
+
+            const lineNumber = position.lineNumber;
+            const decorationId =
+                this.instance!["lineNumberAndDecorationIdMap"].get(lineNumber);
+
+            /**
+             * If a breakpoint exists on the current line,
+             * it indicates that the current action is to remove the breakpoint
+             */
+            if (decorationId) {
+              this.instance!["removeSpecifyDecoration"](decorationId, lineNumber);
+            } else {
+              this.instance!["createSpecifyDecoration"](range);
+            }
+          }
+        }
+    );
+
+
+
 
     (this.instance).on("breakpointChanged", lineNums => {
       if(this.isUpdatingBreakpoints){

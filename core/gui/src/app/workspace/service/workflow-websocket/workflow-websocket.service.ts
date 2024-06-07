@@ -84,10 +84,15 @@ export class WorkflowWebsocketService {
     let cmd: string = "";
     if(request.command === "break"){
       cmd = "break "+request.line;
+      if(request.condition !== ""){
+        cmd += " ,"+request.condition
+      }
     }else if(request.command === "clear"){
       cmd = "clear "+request.breakpointId;
+    }else if(request.command === "condition"){
+      cmd = "condition "+request.breakpointId+" "+request.condition;
     }else{
-      cmd = "continue";
+      cmd = request.command
     }
     this.send("DebugCommandRequest", {
       operatorId: request.operatorId,

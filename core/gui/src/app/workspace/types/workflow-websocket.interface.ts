@@ -184,6 +184,12 @@ export type FrontendDebugCommand = Readonly<{
   command:string;
   line: number;
   breakpointId:number;
+  condition:string;
+}>
+
+export type UDFBreakpointInfo = Readonly<{
+  breakpointId:number | undefined;
+  condition:string;
 }>
 
 export type TexeraWebsocketRequestTypeMap = {

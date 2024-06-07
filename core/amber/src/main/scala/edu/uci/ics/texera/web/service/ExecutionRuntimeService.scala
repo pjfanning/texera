@@ -27,7 +27,6 @@ class ExecutionRuntimeService(
 
   //Receive skip tuple
   addSubscription(wsInput.subscribe((req: SkipTupleRequest, uidOpt) => {
-    client.sendAsync()
   }))
 
   addSubscription(wsInput.subscribe((req: RetryRequest, uidOpt) => {

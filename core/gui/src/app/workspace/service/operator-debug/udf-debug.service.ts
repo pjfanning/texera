@@ -1,7 +1,7 @@
 import {Injectable} from "@angular/core";
 import {BehaviorSubject, Subject} from "rxjs";
 import {WorkflowWebsocketService} from "../workflow-websocket/workflow-websocket.service";
-import {FrontendDebugCommand} from "../../types/workflow-websocket.interface";
+import {FrontendDebugCommand, UDFBreakpointInfo} from "../../types/workflow-websocket.interface";
 import {ExecutionState} from "../../types/execute-workflow.interface";
 
 export class BreakpointManager {
@@ -15,6 +15,9 @@ export class BreakpointManager {
     })
 
     workflowWebsocketService.subscribeToEvent("ConsoleUpdateEvent").subscribe(evt =>{
+      if(evt.messages.length === 0){
+        return;
+      }
       if(evt.messages[evt.messages.length-1].msgType.name === "DEBUGGER"){
         this.executionActive = true;
         this.sendCommand();
@@ -23,16 +26,22 @@ export class BreakpointManager {
   }
 
   private hitLineNum: Subject<number> = new BehaviorSubject(0)
-  private lineNumToBreakpointSubject: Subject<Map<number, number | undefined>> = new BehaviorSubject(new Map());
-  private lineNumToBreakpointMapping:Map<number, number | undefined> = new Map();
+  private lineNumToBreakpointSubject: Subject<Map<number, UDFBreakpointInfo>> = new BehaviorSubject(new Map());
+  private lineNumToBreakpointMapping:Map<number, UDFBreakpointInfo> = new Map();
   private debugCommandQueue: FrontendDebugCommand[] = [];
   private executionActive = false;
 
   private queueCommand(cmd: FrontendDebugCommand){
-    if(cmd.command !== "break"){
+    if(cmd.command === "clear"){
       const breakCommandIdx = this.debugCommandQueue.findIndex(request => request.command === "break" && request.line == cmd.line);
       if (breakCommandIdx !== -1) {
         this.debugCommandQueue.splice(breakCommandIdx, 1);
+        return;
+      }
+    } else if(cmd.command === "condition"){
+      const breakCommandIdx = this.debugCommandQueue.findIndex(request => request.command === "break" && request.line == cmd.line);
+      if (breakCommandIdx !== -1) {
+        this.debugCommandQueue[breakCommandIdx] = {...this.debugCommandQueue[breakCommandIdx], condition: cmd.condition}
         return;
       }
     }
@@ -65,32 +74,41 @@ export class BreakpointManager {
     this.executionActive = false;
     this.debugCommandQueue = [];
     this.lineNumToBreakpointMapping.forEach((v,k) => {
-      this.queueCommand({operatorId: this.currentOperatorId, command:"break", line: k, breakpointId:0})
+      this.queueCommand({operatorId: this.currentOperatorId, command:"break", line: k, breakpointId:0, condition: v.condition})
     });
     this.setHitLineNum(0);
   }
 
-  public setBreakpoints(lineNum: number[]){
+
+  public removeBreakpoint(lineNum: number){
+    this.setBreakpoints(Array.from(this.lineNumToBreakpointMapping.keys()).filter(e => e!= lineNum), false)
+  }
+
+  public setBreakpoints(lineNum: number[], triggerClear:boolean = true){
     console.log("set breakpoint"+lineNum)
     let changed = false;
     let lineSet = new Set(lineNum);
     lineSet.forEach(line =>{
       if(!this.lineNumToBreakpointMapping.has(line)){
         changed = true;
-        this.lineNumToBreakpointMapping.set(line, undefined)
+        this.lineNumToBreakpointMapping.set(line, {breakpointId:undefined, condition:""})
+        console.log("add break command")
         this.queueCommand({operatorId: this.currentOperatorId,
           command:"break",
           line:line,
-          breakpointId:0})
+          breakpointId:0,
+          condition: ""})
       }
     })
     this.lineNumToBreakpointMapping.forEach((v,k,m) =>{
       if(!lineSet.has(k)){
         changed = true;
-        this.queueCommand({operatorId: this.currentOperatorId,
-          command:"clear",
-          line:k,
-          breakpointId:v ?? 0});
+        if(triggerClear){
+          this.queueCommand({operatorId: this.currentOperatorId,
+            command:"clear",
+            line:k,
+            breakpointId:v.breakpointId ?? 0, condition:""});
+        }
         m.delete(k)
       }
     })
@@ -99,9 +117,25 @@ export class BreakpointManager {
     }
   }
 
+  public getCondition(lineNum:number):string{
+    let info = this.lineNumToBreakpointMapping.get(lineNum)!
+    return info.condition;
+  }
+
+  public setCondition(lineNum:number, condition:string){
+    let info = this.lineNumToBreakpointMapping.get(lineNum)!
+    this.lineNumToBreakpointMapping.set(lineNum,  {...info, condition:condition});
+    this.queueCommand({operatorId: this.currentOperatorId,
+      command:"condition",
+      line:lineNum,
+      breakpointId:info.breakpointId ?? 0,
+      condition: condition})
+  }
+
   public assignBreakpointId(lineNum: number, breakpointId: number): void {
     console.log("assign id to breakpoint"+lineNum+" "+breakpointId)
-    this.lineNumToBreakpointMapping.set(lineNum, breakpointId)
+    let info = this.lineNumToBreakpointMapping.get(lineNum)!
+    this.lineNumToBreakpointMapping.set(lineNum,  {...info, breakpointId:breakpointId})
   }
 
   public setHitLineNum(lineNum: number) {
