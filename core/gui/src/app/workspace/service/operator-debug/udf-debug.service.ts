@@ -118,6 +118,9 @@ export class BreakpointManager {
   }
 
   public getCondition(lineNum:number):string{
+    if(!this.lineNumToBreakpointMapping.has(lineNum)){
+      return "";
+    }
     let info = this.lineNumToBreakpointMapping.get(lineNum)!
     return info.condition;
   }
@@ -125,6 +128,7 @@ export class BreakpointManager {
   public setCondition(lineNum:number, condition:string){
     let info = this.lineNumToBreakpointMapping.get(lineNum)!
     this.lineNumToBreakpointMapping.set(lineNum,  {...info, condition:condition});
+    this.lineNumToBreakpointSubject.next(this.lineNumToBreakpointMapping);
     this.queueCommand({operatorId: this.currentOperatorId,
       command:"condition",
       line:lineNum,

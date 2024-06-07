@@ -21,8 +21,30 @@ import {ExecuteWorkflowService} from "../../service/execute-workflow/execute-wor
 import {BreakpointManager, UdfDebugService} from "../../service/operator-debug/udf-debug.service";
 import {isDefined} from "../../../common/util/predicate";
 import {ConsoleUpdateEvent} from "../../types/workflow-common.interface";
-import {EditorMouseEvent, EditorMouseTarget} from "monaco-breakpoints/dist/types";
+import {
+  EditorMouseEvent,
+  EditorMouseTarget,
+} from "monaco-breakpoints/dist/types";
 import MouseTargetType = editor.MouseTargetType;
+
+export type ModelDecorationOptions = monaco.editor.IModelDecorationOptions;
+export enum BreakpointEnum {
+  Exist,
+  Hover,
+}
+export const CONDITIONAL_BREAKPOINT_OPTIONS: ModelDecorationOptions = {
+  glyphMarginClassName: 'monaco-conditional-breakpoint',
+};
+
+export const BREAKPOINT_OPTIONS: ModelDecorationOptions = {
+  glyphMarginClassName: 'monaco-breakpoint',
+};
+
+export const BREAKPOINT_HOVER_OPTIONS: ModelDecorationOptions = {
+  glyphMarginClassName: 'monaco-hover-breakpoint',
+};
+
+export type Range = monaco.IRange;
 
 /**
  * CodeEditorComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.
@@ -196,8 +218,9 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         const editorRect = editorDomNode.getBoundingClientRect();
 
         // Calculate x and y positions
-        const x = editorRect.left + layoutInfo.glyphMarginLeft;
-        const y = editorRect.top + middleForLineNumber;
+        const x = editorRect.left + layoutInfo.glyphMarginLeft - this.editor.getScrollLeft();
+        const y = editorRect.top + middleForLineNumber - this.editor.getScrollTop();
+
         this.showTooltip(x, y, startLineNumber, this.breakpointManager!);
       }
     })
@@ -215,13 +238,13 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     // Create header element
     const header = this.renderer.createElement('div');
     this.renderer.addClass(header, 'tooltip-header');
-    this.renderer.setProperty(header, 'innerText', 'Condition:');
+    this.renderer.setProperty(header, 'innerText', `Condition on line ${lineNum}:`);
 
     // Create textarea element
     const textarea = this.renderer.createElement('textarea');
     this.renderer.addClass(textarea, 'custom-textarea');
     let oldCondition = breakpointManager.getCondition(lineNum)
-    this.renderer.setProperty(textarea, 'value', oldCondition);
+    this.renderer.setProperty(textarea, 'value', oldCondition ?? "");
 
     // Append header and textarea to tooltip
     this.renderer.appendChild(tooltip, header);
@@ -361,7 +384,25 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     }
 
     this.instance = new MonacoBreakpoint({ editor });
-
+    let createBreakpointDecoration = (
+      range: Range,
+      breakpointEnum: BreakpointEnum
+    ): { options: editor.IModelDecorationOptions; range: Range } => {
+      let condition = this.breakpointManager?.getCondition(range.startLineNumber);
+      let isConditional = false;
+      if (condition && condition !== "") {
+        isConditional = true;
+      }
+      console.log(this.breakpointManager, isConditional, condition);
+      return {
+        range,
+        options:
+          breakpointEnum === BreakpointEnum.Exist
+            ? (isConditional ? CONDITIONAL_BREAKPOINT_OPTIONS : BREAKPOINT_OPTIONS)
+            : BREAKPOINT_HOVER_OPTIONS,
+      };
+    };
+    this.instance["createBreakpointDecoration"] = createBreakpointDecoration;
     this.instance["mouseDownDisposable"]?.dispose();
     this.instance["mouseDownDisposable"] = this.editor!.onMouseDown(
         (e: EditorMouseEvent) => {

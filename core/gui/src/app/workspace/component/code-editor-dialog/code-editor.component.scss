@@ -70,6 +70,8 @@
 .custom-tooltip .tooltip-header {
   font-weight: bold;
   margin-bottom: 5px; /* Space between label and textarea */
+  white-space: nowrap; /* Ensure the header text fits in one line */
+  flex-shrink: 0; /* Prevent the header from shrinking */
 }
 
 .custom-tooltip .custom-textarea {
@@ -85,6 +87,17 @@
 .custom-tooltip.fade-out {
   opacity: 0;
 }
+
+::ng-deep .cgmr.codicon.monaco-conditional-breakpoint {
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 100%;
+  background-color: #6fd3f8;
+  margin: 4px 0 0 8px;
+  cursor: pointer;
+}
+
+
 
 
 
