@@ -253,24 +253,23 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     // Append tooltip to the document body
     this.renderer.appendChild(document.body, tooltip);
     textarea.focus();
-
     // Function to remove the tooltip
     const removeTooltip = () => {
       const inputValue = textarea.value;
       if(inputValue != oldCondition){
         breakpointManager.setCondition(lineNum, inputValue);
       }
+      if (removeTooltipListener) {
+        removeTooltipListener();
+      }
+      if (removeFocusoutListener) {
+        removeFocusoutListener();
+      }
       // Add fade-out class
       this.renderer.addClass(tooltip, 'fade-out');
       // Remove tooltip after the transition ends
       const transitionEndListener = this.renderer.listen(tooltip, 'transitionend', () => {
         tooltip.remove();
-        if (removeTooltipListener) {
-          removeTooltipListener();
-        }
-        if (removeFocusoutListener) {
-          removeFocusoutListener();
-        }
         transitionEndListener();
       });
     };
@@ -322,7 +321,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     }
   }
 
-  private restoreBreakpoints(instance: MonacoBreakpoint, lineNums: number[]) {
+  private restoreBreakpoints(instance: MonacoBreakpoint, lineNums: string[]) {
     console.log("trying to restore " + lineNums);
     this.isUpdatingBreakpoints = true;
     instance["lineNumberAndDecorationIdMap"].forEach((v:string,k:number,m:Map<number, string>) =>{
@@ -330,8 +329,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     })
     for (let lineNumber of lineNums) {
         const range: monaco.IRange = {
-          startLineNumber: lineNumber,
-          endLineNumber: lineNumber,
+          startLineNumber: Number(lineNumber),
+          endLineNumber: Number(lineNumber),
           startColumn: 0,
           endColumn: 0,
         };
@@ -441,7 +440,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
       if(this.isUpdatingBreakpoints){
         return;
       }
-      this.breakpointManager?.setBreakpoints(lineNums);
+      this.breakpointManager?.setBreakpoints(lineNums.map(n => String(n)));
       console.log("breakpointChanged: "+lineNums)
     });
 

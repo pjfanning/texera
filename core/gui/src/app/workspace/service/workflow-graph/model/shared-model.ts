@@ -7,6 +7,7 @@ import { getWebsocketUrl } from "../../../../common/util/url";
 import { v4 as uuid } from "uuid";
 import { YType } from "../../../types/shared-editing.interface";
 import { environment } from "../../../../../environments/environment";
+import {BreakpointManager} from "../../operator-debug/udf-debug.service";
 
 /**
  * SharedModel encapsulates everything related to real-time shared editing for the current workflow.
@@ -20,6 +21,7 @@ export class SharedModel {
   public commentBoxMap: Y.Map<YType<CommentBox>>;
   public operatorLinkMap: Y.Map<OperatorLink>;
   public elementPositionMap: Y.Map<Point>;
+  public debugState: Y.Map<any>;
   public undoManager: Y.UndoManager;
   public clientId: string;
 
@@ -35,7 +37,9 @@ export class SharedModel {
     public wid?: number,
     public user?: User
   ) {
+    // TODO: Add a new map for breakpoint here.
     // Initialize Y-structures.
+    this.debugState = this.yDoc.getMap("debugActions");
     this.operatorIDMap = this.yDoc.getMap("operatorIDMap");
     this.commentBoxMap = this.yDoc.getMap("commentBoxMap");
     this.operatorLinkMap = this.yDoc.getMap("operatorLinkMap");

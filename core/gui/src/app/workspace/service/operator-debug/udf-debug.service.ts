@@ -1,13 +1,17 @@
+import * as Y from "yjs";
 import {Injectable} from "@angular/core";
 import {BehaviorSubject, Subject} from "rxjs";
 import {WorkflowWebsocketService} from "../workflow-websocket/workflow-websocket.service";
 import {FrontendDebugCommand, UDFBreakpointInfo} from "../../types/workflow-websocket.interface";
 import {ExecutionState} from "../../types/execute-workflow.interface";
+import {WorkflowGraph} from "../workflow-graph/model/workflow-graph";
+import {WorkflowActionService} from "../workflow-graph/model/workflow-action.service";
 
 export class BreakpointManager {
 
   constructor(private workflowWebsocketService:WorkflowWebsocketService,
-              private currentOperatorId:string) {
+              private currentOperatorId:string,
+              private lineNumToBreakpointMapping:Y.Map<UDFBreakpointInfo>) {
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(evt =>{
       if(evt.state === ExecutionState.Initializing){
         this.sendCommand();
@@ -26,8 +30,7 @@ export class BreakpointManager {
   }
 
   private hitLineNum: Subject<number> = new BehaviorSubject(0)
-  private lineNumToBreakpointSubject: Subject<Map<number, UDFBreakpointInfo>> = new BehaviorSubject(new Map());
-  private lineNumToBreakpointMapping:Map<number, UDFBreakpointInfo> = new Map();
+  private lineNumToBreakpointSubject: Subject<Y.Map<UDFBreakpointInfo>> = new BehaviorSubject(new Y.Map());
   private debugCommandQueue: FrontendDebugCommand[] = [];
   private executionActive = false;
 
@@ -74,17 +77,18 @@ export class BreakpointManager {
     this.executionActive = false;
     this.debugCommandQueue = [];
     this.lineNumToBreakpointMapping.forEach((v,k) => {
-      this.queueCommand({operatorId: this.currentOperatorId, command:"break", line: k, breakpointId:0, condition: v.condition})
+      this.queueCommand({operatorId: this.currentOperatorId, command:"break", line: Number(k), breakpointId:0, condition: v.condition})
     });
     this.setHitLineNum(0);
   }
 
 
   public removeBreakpoint(lineNum: number){
-    this.setBreakpoints(Array.from(this.lineNumToBreakpointMapping.keys()).filter(e => e!= lineNum), false)
+    let line = String(lineNum)
+    this.setBreakpoints(Array.from(this.lineNumToBreakpointMapping.keys()).filter(e => e!= line), false)
   }
 
-  public setBreakpoints(lineNum: number[], triggerClear:boolean = true){
+  public setBreakpoints(lineNum: string[], triggerClear:boolean = true){
     console.log("set breakpoint"+lineNum)
     let changed = false;
     let lineSet = new Set(lineNum);
@@ -95,7 +99,7 @@ export class BreakpointManager {
         console.log("add break command")
         this.queueCommand({operatorId: this.currentOperatorId,
           command:"break",
-          line:line,
+          line:Number(line),
           breakpointId:0,
           condition: ""})
       }
@@ -106,7 +110,7 @@ export class BreakpointManager {
         if(triggerClear){
           this.queueCommand({operatorId: this.currentOperatorId,
             command:"clear",
-            line:k,
+            line:Number(k),
             breakpointId:v.breakpointId ?? 0, condition:""});
         }
         m.delete(k)
@@ -118,16 +122,18 @@ export class BreakpointManager {
   }
 
   public getCondition(lineNum:number):string{
-    if(!this.lineNumToBreakpointMapping.has(lineNum)){
+    let line = String(lineNum)
+    if(!this.lineNumToBreakpointMapping.has(line)){
       return "";
     }
-    let info = this.lineNumToBreakpointMapping.get(lineNum)!
+    let info = this.lineNumToBreakpointMapping.get(line)!
     return info.condition;
   }
 
   public setCondition(lineNum:number, condition:string){
-    let info = this.lineNumToBreakpointMapping.get(lineNum)!
-    this.lineNumToBreakpointMapping.set(lineNum,  {...info, condition:condition});
+    let line = String(lineNum)
+    let info = this.lineNumToBreakpointMapping.get(line)!
+    this.lineNumToBreakpointMapping.set(line,  {...info, condition:condition});
     this.lineNumToBreakpointSubject.next(this.lineNumToBreakpointMapping);
     this.queueCommand({operatorId: this.currentOperatorId,
       command:"condition",
@@ -137,9 +143,10 @@ export class BreakpointManager {
   }
 
   public assignBreakpointId(lineNum: number, breakpointId: number): void {
+    let line = String(lineNum)
     console.log("assign id to breakpoint"+lineNum+" "+breakpointId)
-    let info = this.lineNumToBreakpointMapping.get(lineNum)!
-    this.lineNumToBreakpointMapping.set(lineNum,  {...info, breakpointId:breakpointId})
+    let info = this.lineNumToBreakpointMapping.get(line)!
+    this.lineNumToBreakpointMapping.set(line,  {...info, breakpointId:breakpointId})
   }
 
   public setHitLineNum(lineNum: number) {
@@ -153,14 +160,18 @@ export class BreakpointManager {
 export class UdfDebugService {
   private breakpointManagers: Map<string, BreakpointManager> = new Map();
 
-  constructor(private workflowWebsocketService: WorkflowWebsocketService) {
+  constructor(private workflowWebsocketService: WorkflowWebsocketService, private workflowActionService:WorkflowActionService) {
     console.log("udf debug service started")
     this.subscribePythonLineHighlight();
   }
 
   public getOrCreateManager(operatorId: string): BreakpointManager {
+    let debugState = this.workflowActionService.texeraGraph.sharedModel.debugState
+    if(!debugState.has(operatorId)){
+      debugState.set(operatorId, new Y.Map<UDFBreakpointInfo>())
+    }
     if (!this.breakpointManagers.has(operatorId)) {
-      this.breakpointManagers.set(operatorId, new BreakpointManager(this.workflowWebsocketService, operatorId));
+      this.breakpointManagers.set(operatorId, new BreakpointManager(this.workflowWebsocketService, operatorId, debugState.get(operatorId)));
     }
     return this.breakpointManagers.get(operatorId)!;
   }

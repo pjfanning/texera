@@ -36,6 +36,7 @@ export class SharedModelChangeHandler {
     this.handleCommentBoxAddAndDelete();
     this.handleOperatorDeep();
     this.handleCommentBoxDeep();
+    this.handleDebugActionUpdates();
     this.texeraGraph.newYDocLoadedSubject.subscribe(_ => {
       this.handleOperatorAddAndDelete();
       this.handleLinkAddAndDelete();
@@ -43,7 +44,26 @@ export class SharedModelChangeHandler {
       this.handleCommentBoxAddAndDelete();
       this.handleOperatorDeep();
       this.handleCommentBoxDeep();
+      this.handleDebugActionUpdates();
     });
+  }
+  // TODO: Handle changes to sharedModel here related to breakpoint and reflect them on the UI.
+
+  private handleDebugActionUpdates(){
+    this.texeraGraph.sharedModel.debugState.observe(event => {
+      event.changes.keys.forEach((change, key) => {
+        console.log("abc",this.texeraGraph.sharedModel.debugState)
+        if (change.action === "add") {
+          this.texeraGraph.sharedModel.debugState.get(key).observe((evt:Y.YMapEvent<any>) =>{
+            evt.changes.keys.forEach((c, k) => {
+              console.log("abc",this.texeraGraph.sharedModel.debugState.get(key))
+            })
+          })
+        }else if(change.action === "delete") {
+          console.log("delete detected")
+        }
+      })
+  })
   }
 
   /**
