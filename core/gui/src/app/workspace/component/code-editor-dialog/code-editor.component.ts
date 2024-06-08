@@ -392,7 +392,6 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
       if (condition && condition !== "") {
         isConditional = true;
       }
-      console.log(this.breakpointManager, isConditional, condition);
       return {
         range,
         options:

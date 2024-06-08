@@ -4,7 +4,6 @@ import {BehaviorSubject, Subject} from "rxjs";
 import {WorkflowWebsocketService} from "../workflow-websocket/workflow-websocket.service";
 import {FrontendDebugCommand, UDFBreakpointInfo} from "../../types/workflow-websocket.interface";
 import {ExecutionState} from "../../types/execute-workflow.interface";
-import {WorkflowGraph} from "../workflow-graph/model/workflow-graph";
 import {WorkflowActionService} from "../workflow-graph/model/workflow-action.service";
 
 export class BreakpointManager {
@@ -12,9 +11,22 @@ export class BreakpointManager {
   constructor(private workflowWebsocketService:WorkflowWebsocketService,
               private currentOperatorId:string,
               private lineNumToBreakpointMapping:Y.Map<UDFBreakpointInfo>) {
+    this.triggerUpdate()
+    this.lineNumToBreakpointMapping.observe(evt => {
+      this.triggerUpdate()
+    })
+
     workflowWebsocketService.subscribeToEvent("WorkflowStateEvent").subscribe(evt =>{
       if(evt.state === ExecutionState.Initializing){
-        this.sendCommand();
+        if(!this.workflowWebsocketService.executionInitiator){
+          this.debugCommandQueue = [];
+        }else{
+          this.sendCommand();
+        }
+        this.executionActive = true;
+      }
+      if(evt.state === ExecutionState.Running || evt.state === ExecutionState.Paused){
+        this.executionActive = true;
       }
     })
 
@@ -29,12 +41,24 @@ export class BreakpointManager {
     });
   }
 
-  private hitLineNum: Subject<number> = new BehaviorSubject(0)
+  public triggerUpdate(){
+    console.log("get update ", Array.from(this.lineNumToBreakpointMapping.keys()))
+    this.lineNumToBreakpointSubject.next(this.lineNumToBreakpointMapping);
+  }
+
+  private hitLineNum = 0
+  private hitLineNumSubject: Subject<number> = new BehaviorSubject(this.hitLineNum)
   private lineNumToBreakpointSubject: Subject<Y.Map<UDFBreakpointInfo>> = new BehaviorSubject(new Y.Map());
   private debugCommandQueue: FrontendDebugCommand[] = [];
   private executionActive = false;
 
   private queueCommand(cmd: FrontendDebugCommand){
+    let exist = this.debugCommandQueue.find(value => {
+      return value == cmd;
+    })
+    if(exist){
+      return;
+    }
     if(cmd.command === "clear"){
       const breakCommandIdx = this.debugCommandQueue.findIndex(request => request.command === "break" && request.line == cmd.line);
       if (breakCommandIdx !== -1) {
@@ -59,14 +83,14 @@ export class BreakpointManager {
       let payload = this.debugCommandQueue.shift();
       this.workflowWebsocketService.prepareDebugCommand(payload!);
       let needContinue = this.debugCommandQueue.length === 0 || this.debugCommandQueue[this.debugCommandQueue.length-1].command !== "continue";
-      if(payload?.command === "break" && needContinue){
+      if(payload?.command === "break" && this.hitLineNum == 0 && needContinue){
         this.debugCommandQueue.push({...payload, command: "continue"});
       }
     }
   }
 
   public getBreakpointHitStream() {
-    return this.hitLineNum.asObservable();
+    return this.hitLineNumSubject.asObservable();
   }
 
   public getLineNumToBreakpointMappingStream(){
@@ -117,7 +141,7 @@ export class BreakpointManager {
       }
     })
     if(changed){
-      this.lineNumToBreakpointSubject.next(this.lineNumToBreakpointMapping);
+      this.triggerUpdate();
     }
   }
 
@@ -134,12 +158,12 @@ export class BreakpointManager {
     let line = String(lineNum)
     let info = this.lineNumToBreakpointMapping.get(line)!
     this.lineNumToBreakpointMapping.set(line,  {...info, condition:condition});
-    this.lineNumToBreakpointSubject.next(this.lineNumToBreakpointMapping);
     this.queueCommand({operatorId: this.currentOperatorId,
       command:"condition",
       line:lineNum,
       breakpointId:info.breakpointId ?? 0,
       condition: condition})
+    this.triggerUpdate();
   }
 
   public assignBreakpointId(lineNum: number, breakpointId: number): void {
@@ -150,7 +174,8 @@ export class BreakpointManager {
   }
 
   public setHitLineNum(lineNum: number) {
-    this.hitLineNum.next(lineNum)
+    this.hitLineNum = lineNum
+    this.hitLineNumSubject.next(this.hitLineNum)
   }
 }
 
@@ -162,6 +187,9 @@ export class UdfDebugService {
 
   constructor(private workflowWebsocketService: WorkflowWebsocketService, private workflowActionService:WorkflowActionService) {
     console.log("udf debug service started")
+    // workflowActionService.getTexeraGraph().getOperatorAddStream().subscribe(op => {
+    //   this.getOrCreateManager(op.operatorID);
+    // })
     this.subscribePythonLineHighlight();
   }
 
@@ -173,7 +201,9 @@ export class UdfDebugService {
     if (!this.breakpointManagers.has(operatorId)) {
       this.breakpointManagers.set(operatorId, new BreakpointManager(this.workflowWebsocketService, operatorId, debugState.get(operatorId)));
     }
-    return this.breakpointManagers.get(operatorId)!;
+    let mgr = this.breakpointManagers.get(operatorId)!;
+    mgr.triggerUpdate()
+    return mgr;
   }
 
   public getAllManagers():BreakpointManager[]{
@@ -185,24 +215,25 @@ export class UdfDebugService {
       if (event.messages.length == 0) {
         return
       }
-      const msg = event.messages[0]
-      console.log("processing message", msg)
-      const breakpointManager = this.getOrCreateManager(event.operatorId);
-      if (msg.source == "(Pdb)" && msg.msgType.name == "DEBUGGER") {
-        if (msg.title.startsWith(">")) {
-          const lineNum = this.extractLineNumber(msg.title)
+      event.messages.forEach(msg => {
+        console.log("processing message", msg)
+        const breakpointManager = this.getOrCreateManager(event.operatorId);
+        if (msg.source == "(Pdb)" && msg.msgType.name == "DEBUGGER") {
+          if (msg.title.startsWith(">")) {
+            const lineNum = this.extractLineNumber(msg.title)
+            if (lineNum) {
+              breakpointManager.setHitLineNum(lineNum)
+            }
+          }
+        }
+        if (msg.msgType.name == "ERROR") {
+          const lineNum = this.extractLineNumberException(msg.source)
+          console.log(lineNum)
           if (lineNum) {
             breakpointManager.setHitLineNum(lineNum)
           }
         }
-      }
-      if (msg.msgType.name == "ERROR") {
-        const lineNum = this.extractLineNumberException(msg.source)
-        console.log(lineNum)
-        if (lineNum) {
-          breakpointManager.setHitLineNum(lineNum)
-        }
-      }
+      })
     })
   }
 

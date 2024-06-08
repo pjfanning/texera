@@ -33,6 +33,7 @@ export class WorkflowWebsocketService {
   private readonly webSocketResponseSubject: Subject<TexeraWebsocketEvent> = new Subject();
   private requestQueue: Array<FrontendDebugCommand> = [];
   private assignedWorkerIds: Map<string, readonly string[]> = new Map();
+  public executionInitiator = false;
 
   constructor() {
     // setup heartbeat
@@ -62,6 +63,9 @@ export class WorkflowWebsocketService {
     } as any as TexeraWebsocketRequest;
     if(request.type === "WorkflowKillRequest"){
       this.assignedWorkerIds.clear();
+    }
+    if(request.type === "WorkflowExecuteRequest"){
+      this.executionInitiator = true;
     }
     this.websocket?.next(request);
   }
@@ -170,6 +174,7 @@ export class WorkflowWebsocketService {
       if(evt.type === "WorkflowStateEvent"){
         if(evt.state === ExecutionState.Completed || evt.state === ExecutionState.Killed || evt.state === ExecutionState.Failed){
           this.assignedWorkerIds.clear();
+          this.executionInitiator = false;
         }
       }
       if(evt.type === "WorkerAssignmentUpdateEvent"){
