@@ -16,6 +16,16 @@ th.header-size {
   padding: 2px;
 }
 
+.custom-stats-row th {
+  background-color: rgb(201, 200, 200);
+  border-bottom: 1px solid #ccc;
+  border-top: 1px solid #ccc;
+  border-left: 1px solid #ccc;
+}
+
+.custom-stats-row th:first-child {
+  border-left: none; /* To remove the left border from the first column */
+}
 
 .statsHeader {
   max-height: 70px;

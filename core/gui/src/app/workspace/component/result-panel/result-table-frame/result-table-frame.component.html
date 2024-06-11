@@ -31,7 +31,7 @@
         </th>
       </tr>
       <!-- add stats row -->
-      <tr *ngIf="tableStats" #statsRow class="stats-row">
+      <tr *ngIf="tableStats" #statsRow class="custom-stats-row">
         <th *ngFor="let column of currentColumns">
           <div class="statsHeader">
             <ng-container *ngIf="tableStats[column.header] && tableStats[column.header]['min'] !== undefined">
