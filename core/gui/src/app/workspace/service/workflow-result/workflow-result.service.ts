@@ -10,7 +10,7 @@ import {
 } from "../../types/execute-workflow.interface";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
 import { PaginatedResultEvent, WorkflowAvailableResultEvent } from "../../types/workflow-websocket.interface";
-import { map, Observable, of, Subject } from "rxjs";
+import { map, Observable, of, pairwise, ReplaySubject, startWith, Subject } from "rxjs";
 import { v4 as uuid } from "uuid";
 import { IndexableObject } from "../../types/result-table.interface";
 import { isDefined } from "../../../common/util/predicate";
@@ -27,7 +27,8 @@ export class WorkflowResultService {
 
   // event stream of operator result update, undefined indicates the operator result is cleared
   private resultUpdateStream = new Subject<Record<string, WebResultUpdate | undefined>>();
-  private resultTableStats = new Subject<Record<string, Record<string, Record<string, number>>>>();
+  // private resultTableStats = new Subject<Record<string, Record<string, Record<string, number>>>>();
+  private resultTableStats = new ReplaySubject<Record<string, Record<string, Record<string, number>>>>(1);
   private resultInitiateStream = new Subject<string>();
 
   constructor(private wsService: WorkflowWebsocketService) {
@@ -56,8 +57,11 @@ export class WorkflowResultService {
     return this.resultUpdateStream;
   }
 
-  public getResultTableStats(): Observable<Record<string, Record<string,  Record<string, number>>>> {
-    return this.resultTableStats;
+  // public getResultTableStats(): Observable<Record<string, Record<string,  Record<string, number>>>> {
+  //   return this.resultTableStats;
+  // }
+  public getResultTableStats(): Observable<[Record<string, Record<string, Record<string, number>>>, Record<string, Record<string, Record<string, number>>>]> {
+    return this.resultTableStats.pipe(pairwise());
   }
 
   public getResultInitiateStream(): Observable<string> {
@@ -187,7 +191,8 @@ export class OperatorResultService {
 class OperatorPaginationResultService {
   private pendingRequests: Map<string, Subject<PaginatedResultEvent>> = new Map();
   private resultCache: Map<number, ReadonlyArray<object>> = new Map();
-  private statsCache: Record<string, Record<string, number>> = {'_': {'_': 1}};
+  private prevStatsCache: Record<string, Record<string, number>> = {};
+  private statsCache: Record<string, Record<string, number>> = {};
   private currentPageIndex: number = 1;
   private currentTotalNumTuples: number = 0;
 
@@ -202,6 +207,10 @@ class OperatorPaginationResultService {
 
   public getStats(): Record<string, Record<string, number>> {
     return this.statsCache;
+  }
+
+  public getPrevStats(): Record<string, Record<string, number>> {
+    return this.prevStatsCache;
   }
 
   public getCurrentPageIndex(): number {
@@ -262,7 +271,13 @@ class OperatorPaginationResultService {
   }
 
   public handleStatsUpdate(statsUpdate: Record<string, Record<string, number>>): void {
-    this.statsCache = statsUpdate;
+    if (Object.keys(this.statsCache).length == 0) {
+      this.statsCache = statsUpdate;
+      this.prevStatsCache = statsUpdate;
+    } else {
+      this.prevStatsCache = this.statsCache;
+      this.statsCache = statsUpdate;
+    }
   }
 
   private handlePaginationResult(res: PaginatedResultEvent): void {

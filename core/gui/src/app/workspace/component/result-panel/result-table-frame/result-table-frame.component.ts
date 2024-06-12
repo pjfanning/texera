@@ -5,10 +5,11 @@ import { ExecuteWorkflowService } from "../../../service/execute-workflow/execut
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 import { WorkflowResultService } from "../../../service/workflow-result/workflow-result.service";
 import { PanelResizeService } from "../../../service/workflow-result/panel-resize/panel-resize.service";
-import { WorkflowResultTableStats, isWebPaginationUpdate } from "../../../types/execute-workflow.interface";
+import { isWebPaginationUpdate } from "../../../types/execute-workflow.interface";
 import { IndexableObject, TableColumn } from "../../../types/result-table.interface";
 import { RowModalComponent } from "../result-panel-modal.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 export const TABLE_COLUMN_TEXT_LIMIT = 100;
 export const PRETTY_JSON_TEXT_LIMIT = 50000;
@@ -50,7 +51,8 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   totalNumTuples: number = 0;
   pageSize = 5;
   panelHeight = 0;
-  tableStats?: Record<string, Record<string, number>>;
+  tableStats: Record<string, Record<string, number>> = {};
+  prevTableStats: Record<string, Record<string, number>> = {};
   widthPercent: string = "";
 
   constructor(
@@ -58,7 +60,8 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     private modalService: NzModalService,
     private workflowActionService: WorkflowActionService,
     private workflowResultService: WorkflowResultService,
-    private resizeService: PanelResizeService
+    private resizeService: PanelResizeService, 
+    private sanitizer: DomSanitizer,
   ) {}
   
   ngAfterViewInit(): void {
@@ -69,7 +72,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     this.resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.target === this.statsRow.nativeElement) {
-          console.log(`New height: ${entry.contentRect.height}px`);
           this.adjustPageSizeBasedOnPanelSize(this.panelHeight);
         }
       }
@@ -97,6 +99,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.changePaginatedResultData();
 
         this.tableStats = paginatedResultService.getStats();
+        this.prevTableStats = paginatedResultService.getPrevStats();
       }
     }
   }
@@ -131,11 +134,18 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     this.workflowResultService
       .getResultTableStats()
       .pipe(untilDestroyed(this))
-      .subscribe(stats => {
+      .subscribe(([prevStats, currentStats]) => {
         if (!this.operatorId) {
           return;
         }
-        this.tableStats = stats[this.operatorId];
+
+        this.tableStats = currentStats[this.operatorId];
+        if (prevStats[this.operatorId]) {
+          this.prevTableStats = prevStats[this.operatorId];
+        } else {
+          this.prevTableStats = this.tableStats;
+        }
+
         this.getHeightOfStatsRow();
       })
 
@@ -150,21 +160,34 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
 
   }
 
+  compare(current: number, previous: number | undefined): SafeHtml {
+    const currentStr = current.toFixed(2)
+    const previousStr = previous !== undefined ? previous.toFixed(2) : currentStr;
+    let styledValue = '';
+
+    for (let i = 0; i < currentStr.length; i++) {
+      const char = currentStr[i];
+      const prevChar = previousStr[i];
+
+      if (char !== prevChar) {
+        styledValue += `<span style="color: red">${char}</span>`;
+      } else {
+        styledValue += `<span style="color: black">${char}</span>`;
+      }
+    }
+
+    return this.sanitizer.bypassSecurityTrustHtml(styledValue);
+  }
 
   getHeightOfStatsRow() {
     if (this.statsRow && this.statsRow.nativeElement) {
         this.statsRowHeight = this.statsRow.nativeElement.offsetHeight;
-        console.log('Height of stats row:', this.statsRowHeight);
-    }
-    else{
-      console.log('no statsrow');
     }
   }
 
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
     const rowHeight = 36;
     this.getHeightOfStatsRow();
-    console.log(this.statsRowHeight)
     let extra: number = Math.floor((panelHeight - this.statsRowHeight - 170) / rowHeight);
     if (extra < 0){
       extra = 0;
