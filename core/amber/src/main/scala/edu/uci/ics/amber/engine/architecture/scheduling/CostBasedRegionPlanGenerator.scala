@@ -4,11 +4,13 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.virtualidentity.PhysicalOpIdentity
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
+import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecutionsResource
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
 import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
+import org.jooq.types.UInteger
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
@@ -24,6 +26,21 @@ class CostBasedRegionPlanGenerator(
     )
     with LazyLogging {
 
+  private var firstExecution: Boolean = false
+
+  private val operatorEstimatedTime = getOperatorEstimatedTime
+
+  private def getOperatorEstimatedTime: Map[String, Double] = {
+    val wid: UInteger = UInteger.valueOf(this.workflowContext.workflowId.id)
+    val previousStats = WorkflowExecutionsResource.getStatsForPasta(wid)
+    if (previousStats.isEmpty) firstExecution = true
+    previousStats.map {
+      case(operatorId, statsList)=>
+        val latestStat = statsList.maxByOption(_.timestamp)
+        operatorId -> latestStat.get.dataProcessingTime.doubleValue()/1E9
+    }
+  }
+
   private case class SearchResult(
       state: Set[PhysicalLink],
       regionDAG: DirectedAcyclicGraph[Region, RegionLink],
@@ -33,7 +50,6 @@ class CostBasedRegionPlanGenerator(
   def generate(): (RegionPlan, PhysicalPlan) = {
 
     val regionDAG = createRegionDAG()
-
     (
       RegionPlan(
         regions = regionDAG.iterator().asScala.toSet,
@@ -173,6 +189,20 @@ class CostBasedRegionPlanGenerator(
     * @return A SearchResult containing the plan, the region DAG (without materializations added yet) and the cost.
     */
   private def bottomUpSearch(): SearchResult = {
+
+    if (this.firstExecution) {
+      val allNonMaterializedLinks = this.physicalPlan.getAllNonMaterializedLinks
+      return SearchResult(
+        state = allNonMaterializedLinks,
+        regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
+          case Left(regionDAG) => regionDAG
+          case Right(_) =>
+            throw new RuntimeException("All-materialized plan cannot be cyclic.")
+        },
+        cost = 0.0
+      )
+    }
+
     val originalNonBlockingEdges = physicalPlan.getNonBridgeNonBlockingLinks
     // Queue to hold states to be explored, starting with the empty set
     val queue: mutable.Queue[Set[PhysicalLink]] = mutable.Queue(Set.empty[PhysicalLink])
@@ -251,7 +281,16 @@ class CostBasedRegionPlanGenerator(
     // Using number of materialization (region) edges as the cost.
     // This is independent of the schedule / resource allocator.
     // In the future we may need to use the ResourceAllocator to get the cost.
-    regionLinks.size
+    regions.foldLeft(0.0) {
+      (sum, region) => {
+        val times = region.getOperators.map(op=> {
+          this.operatorEstimatedTime.getOrElse(op.id.logicalOpId.id, 1.0)
+        })
+        val maxTime = if (times.nonEmpty) times.max else 0.0
+        sum + maxTime
+      }
+    }
+//    regionLinks.size
   }
 
 }

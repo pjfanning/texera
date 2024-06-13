@@ -102,6 +102,90 @@ object WorkflowExecutionsResource {
       idleTime: ULong,
       numWorkers: UInteger
   )
+
+  def getStatsForPasta(wid: UInteger): Map[String, List[WorkflowRuntimeStatistics]] = {
+
+    val latestSuccessfulExecution = context
+      .select(
+        WORKFLOW_EXECUTIONS.EID,
+        WORKFLOW_EXECUTIONS.VID,
+        field(
+          context
+            .select(USER.NAME)
+            .from(USER)
+            .where(WORKFLOW_EXECUTIONS.UID.eq(USER.UID))
+        ),
+        WORKFLOW_EXECUTIONS.STATUS,
+        WORKFLOW_EXECUTIONS.RESULT,
+        WORKFLOW_EXECUTIONS.STARTING_TIME,
+        WORKFLOW_EXECUTIONS.LAST_UPDATE_TIME,
+        WORKFLOW_EXECUTIONS.BOOKMARKED,
+        WORKFLOW_EXECUTIONS.NAME,
+        WORKFLOW_EXECUTIONS.LOG_LOCATION
+      )
+      .from(WORKFLOW_EXECUTIONS)
+      .join(WORKFLOW_VERSION)
+      .on(WORKFLOW_VERSION.VID.eq(WORKFLOW_EXECUTIONS.VID))
+      .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_EXECUTIONS.STATUS.eq(3.toByte)))
+      .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.desc())
+      .limit(1)
+      .fetchInto(classOf[WorkflowExecutionEntry])
+      .asScala
+      .toList
+      .headOption
+
+    if (latestSuccessfulExecution.isDefined) {
+      val eid = latestSuccessfulExecution.get.eId
+      val stats = context
+        .select(
+          WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID,
+          WORKFLOW_RUNTIME_STATISTICS.INPUT_TUPLE_CNT,
+          WORKFLOW_RUNTIME_STATISTICS.OUTPUT_TUPLE_CNT,
+          WORKFLOW_RUNTIME_STATISTICS.TIME,
+          WORKFLOW_RUNTIME_STATISTICS.DATA_PROCESSING_TIME,
+          WORKFLOW_RUNTIME_STATISTICS.CONTROL_PROCESSING_TIME,
+          WORKFLOW_RUNTIME_STATISTICS.IDLE_TIME,
+          WORKFLOW_RUNTIME_STATISTICS.NUM_WORKERS
+        )
+        .from(WORKFLOW_RUNTIME_STATISTICS)
+        .where(
+          WORKFLOW_RUNTIME_STATISTICS.WORKFLOW_ID
+            .eq(wid)
+            .and(WORKFLOW_RUNTIME_STATISTICS.EXECUTION_ID.eq(eid))
+        )
+        .orderBy(WORKFLOW_RUNTIME_STATISTICS.TIME, WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID)
+        .fetchInto(classOf[WorkflowRuntimeStatistics])
+        .asScala
+        .toList
+      if (stats.isEmpty) {
+        Map.empty[String, List[WorkflowRuntimeStatistics]]
+      } else {
+        val beginTimestamp = stats.head.timestamp.getTime  // Convert timestamp to long for easier manipulation
+        stats.foldLeft(Map.empty[String, List[WorkflowRuntimeStatistics]]) { (acc, stat) =>
+          val statsArray = acc.getOrElse(stat.operatorId, List.empty)
+          val lastStat = statsArray.lastOption
+
+          val updatedStat = lastStat match {
+            case Some(last) =>
+              stat.copy(
+                inputTupleCount = stat.inputTupleCount.add(last.inputTupleCount),
+                outputTupleCount = stat.outputTupleCount.add(last.outputTupleCount),
+                dataProcessingTime = stat.dataProcessingTime.add(last.dataProcessingTime),
+                controlProcessingTime = stat.controlProcessingTime.add(last.controlProcessingTime),
+                timestamp = new Timestamp(stat.timestamp.getTime - beginTimestamp),
+                numWorkers = stat.numWorkers // Assuming you want to keep the last numWorkers
+              )
+            case None =>
+              stat.copy(timestamp = new Timestamp(stat.timestamp.getTime - beginTimestamp))
+          }
+
+          acc + (stat.operatorId -> (statsArray :+ updatedStat))
+        }
+      }
+    } else {
+      Map.empty[String, List[WorkflowRuntimeStatistics]]
+    }
+  }
 }
 
 case class ExecutionGroupBookmarkRequest(

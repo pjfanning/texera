@@ -9,12 +9,12 @@ case class Schedule(private val regionPlan: RegionPlan) extends Iterator[Set[Reg
   private var currentLevel = 0
 
   regionPlan.topologicalIterator().foreach { currentVertex =>
-    val level = regionPlan.dag.incomingEdgesOf(currentVertex).asScala.foldLeft(0) {
-      (maxLevel, incomingEdge) =>
-        val sourceVertex = regionPlan.dag.getEdgeSource(incomingEdge)
-        math.max(maxLevel, levels.getOrElse(sourceVertex, 0) + 1)
-    }
-
+//    val level = regionPlan.dag.incomingEdgesOf(currentVertex).asScala.foldLeft(0) {
+//      (maxLevel, incomingEdge) =>
+//        val sourceVertex = regionPlan.dag.getEdgeSource(incomingEdge)
+//        math.max(maxLevel, levels.getOrElse(sourceVertex, 0) + 1)
+//    }
+    val level = levelSets.size
     levels(currentVertex) = level
     levelSets.getOrElseUpdate(level, mutable.Set.empty).add(currentVertex)
   }

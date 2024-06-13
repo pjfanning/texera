@@ -210,6 +210,10 @@ case class PhysicalPlan(
     getOperator(link.toOpId).isSinkOperator
   }
 
+  def getAllNonMaterializedLinks: Set[PhysicalLink] = {
+    this.links.filter(l=> !isMaterializedLink(l) && !l.fromOpId.logicalOpId.id.contains("cacheSource"))
+  }
+
   def getNonMaterializedBlockingAndDependeeLinks: Set[PhysicalLink] = {
     operators
       .flatMap { physicalOp =>
