@@ -14,7 +14,7 @@ import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 class WorkflowScheduler(workflowContext: WorkflowContext, opResultStorage: OpResultStorage)
     extends java.io.Serializable {
   var physicalPlan: PhysicalPlan = _
-  private var schedule: Schedule = _
+  var schedule: Schedule = _
 
   /**
     * Update the schedule to be executed, based on the given physicalPlan.

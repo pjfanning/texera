@@ -232,7 +232,9 @@ libraryDependencies += "org.jooq" % "jooq" % "3.14.4"
 libraryDependencies += "mysql" % "mysql-connector-java" % "8.0.33"
 
 // https://mvnrepository.com/artifact/org.jgrapht/jgrapht-core
-libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.4.0"
+libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.2"
+
+libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.2"
 
 // https://mvnrepository.com/artifact/edu.stanford.nlp/stanford-corenlp
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.4"
@@ -285,5 +287,11 @@ libraryDependencies += "org.scala-lang.modules" %% "scala-collection-contrib" % 
 // For supporting deepcopy
 // https://mvnrepository.com/artifact/io.github.kostaskougios/cloning
 libraryDependencies += "io.github.kostaskougios" % "cloning" % "1.10.3"
+
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core" % "0.14.1",
+  "io.circe" %% "circe-generic" % "0.14.1",
+  "io.circe" %% "circe-parser" % "0.14.1"
+)
 
 
