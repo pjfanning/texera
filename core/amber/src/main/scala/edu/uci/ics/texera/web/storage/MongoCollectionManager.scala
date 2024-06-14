@@ -34,8 +34,8 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     ???
   }
 
-  def getNumAndCatColumnNames: Array[Array[String]] = {
-    var result: List[List[String]] = List(List(), List())
+  def getAllColumnNames: Array[Array[String]] = {
+    var result: List[List[String]] = List(List(), List(), List())
     val doc = collection.find().first()
     val keys = doc.keySet()
 
@@ -47,7 +47,12 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
         case None =>
           fieldValue match {
             case _: java.lang.String => result = result.updated(1, result(1) :+ key)
-            case _ => None
+            case _: java.util.Date => result = result.updated(2, result(2) :+ key)
+            case _ => {
+              println("========================================")
+              println(s"Key: $key, Type: ${fieldValue.getClass.getName}")
+              println("========================================")
+            }
           }
       }
     }
@@ -97,6 +102,29 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       val doc = result.next()
       Some(
         (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"))
+      )
+    } else {
+      None
+    }
+  }
+
+  def calculateDateStats(fieldName: String): Option[(Any, Any)] = {
+    val fieldAsDate = new Document("$convert", new Document("input", "$" + fieldName).append("to", "date"))
+    val projection = new Document(fieldName, fieldAsDate)
+
+    val pipeline = java.util.Arrays.asList(
+      new Document("$project", projection),
+      new Document("$group", new Document("_id", null)
+        .append("minValue", new Document("$min", "$" + fieldName))
+        .append("maxValue", new Document("$max", "$" + fieldName))
+      )
+    )
+
+    val result = collection.aggregate(pipeline).iterator()
+    if (result.hasNext) {
+      val doc = result.next()
+      Some(
+        (doc.get("minValue"), doc.get("maxValue"))
       )
     } else {
       None

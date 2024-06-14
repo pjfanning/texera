@@ -99,7 +99,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         this.changePaginatedResultData();
 
         this.tableStats = paginatedResultService.getStats();
-        this.prevTableStats = paginatedResultService.getPrevStats();
+        this.prevTableStats = this.tableStats;
       }
     }
   }
@@ -140,6 +140,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         }
 
         this.tableStats = currentStats[this.operatorId];
+        console.log(this.tableStats);
         if (prevStats[this.operatorId]) {
           this.prevTableStats = prevStats[this.operatorId];
         } else {
@@ -160,9 +161,17 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
 
   }
 
-  compare(current: number, previous: number | undefined): SafeHtml {
-    const currentStr = current.toFixed(2)
-    const previousStr = previous !== undefined ? previous.toFixed(2) : currentStr;
+  compare(current: number | Date, previous: number | Date): SafeHtml {
+    let currentStr = "";
+    let previousStr = "";
+
+    if (typeof current === "number" && typeof previous === "number") {
+      currentStr = current.toFixed(2)
+      previousStr = previous !== undefined ? previous.toFixed(2) : currentStr;
+    } else {
+      currentStr = current.toLocaleString();
+      previousStr = previous !== undefined ? previous.toLocaleString() : currentStr;
+    }
     let styledValue = '';
 
     for (let i = 0; i < currentStr.length; i++) {

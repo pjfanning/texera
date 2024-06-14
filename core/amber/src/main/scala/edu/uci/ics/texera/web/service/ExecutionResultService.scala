@@ -251,15 +251,17 @@ class ExecutionResultService(
               if (AmberConfig.sinkStorageMode.toLowerCase == "mongodb" && !opId.id.startsWith("sink")) {
                 val sinkMgr = sinkOperators(opId).getStorage()
                 if (oldState.resultInfo.isEmpty) {
-                  val numAndCatFields = sinkMgr.getNumAndCatFields()
+                  val fields = sinkMgr.getAllFields()
                   tableFields = tableFields.updated(opId.id, Map(
-                    "numericFields" -> numAndCatFields(0),
-                    "catFields" -> numAndCatFields(1)
+                    "numericFields" -> fields(0),
+                    "catFields" -> fields(1),
+                    "dateFields" -> fields(2)
                   ))
                 }
                 val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
                 val tableCatStats = sinkMgr.getCatColStats(tableFields(opId.id)("catFields"))
-                val allStats = tableNumericStats ++ tableCatStats
+                val tableDateStats = sinkMgr.getDateColStats(tableFields(opId.id)("dateFields"))
+                val allStats = tableNumericStats ++ tableCatStats ++ tableDateStats
                 if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> allStats)
               }
           }

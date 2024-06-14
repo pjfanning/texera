@@ -101,8 +101,8 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     }
   }
 
-  override def getNumAndCatFields(): Array[Array[String]] = {
-    collectionMgr.getNumAndCatColumnNames
+  override def getAllFields(): Array[Array[String]] = {
+    collectionMgr.getAllColumnNames
   }
 
   override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
@@ -129,6 +129,37 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
           if (meanValue != null) {
             try (meanValue.toString.toDouble) match {
               case doubleValue : Any => fieldResult += ("mean" -> doubleValue)
+              case _ => None
+            }
+          }
+        }
+        case _ => None
+      }
+
+      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+    })
+
+    result
+  }
+
+  override def getDateColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    var result = Map[String, Map[String, Any]]()
+
+    fields.foreach(field => {
+      var fieldResult = Map[String, Any]()
+      val stats = collectionMgr.calculateDateStats(field)
+
+      stats match {
+        case Some((minValue, maxValue)) => {
+          if (minValue != null) {
+            minValue match {
+              case _ : java.util.Date => fieldResult += ("min" -> minValue)
+              case _ => None
+            }
+          }
+          if (maxValue != null) {
+            maxValue match {
+              case _ : java.util.Date => fieldResult += ("max" -> maxValue)
               case _ => None
             }
           }
