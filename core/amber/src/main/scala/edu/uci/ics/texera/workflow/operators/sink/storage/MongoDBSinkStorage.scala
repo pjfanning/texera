@@ -17,6 +17,10 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   MongoDatabaseManager.dropCollection(id)
   @transient lazy val collectionMgr: MongoCollectionManager = MongoDatabaseManager.getCollection(id)
 
+  var previousNumCount: Long = 0
+
+  var previousStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
+
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var uncommittedInsertions: mutable.ArrayBuffer[Tuple] = _
     @transient lazy val collection: MongoCollectionManager = MongoDatabaseManager.getCollection(id)
@@ -107,38 +111,32 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
   override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
     var result = Map[String, Map[String, Any]]()
+    val currentCount = collectionMgr.getCount
 
     fields.foreach(field => {
       var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateNumericStats(field)
+      val stats = collectionMgr.calculateNumericStats(field, previousNumCount)
 
       stats match {
-        case Some((minValue, maxValue, meanValue)) => {
-          if (minValue != null) {
-            try (minValue.toString.toDouble) match {
-              case doubleValue : Any => fieldResult += ("min" -> doubleValue)
-              case _ => None
-            }
-          }
-          if (maxValue != null) {
-            try (maxValue.toString.toDouble) match {
-              case doubleValue : Any => fieldResult += ("max" -> doubleValue)
-              case _ => None
-            }
-          }
-          if (meanValue != null) {
-            try (meanValue.toString.toDouble) match {
-              case doubleValue : Any => fieldResult += ("mean" -> doubleValue)
-              case _ => None
-            }
-          }
-        }
-        case _ => None
+        case Some((minValue, maxValue, meanValue, newCount)) =>
+          val (prevMin, prevMax, prevMean) = previousStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
+
+          val newMin = if (minValue != null) Math.min(prevMin, minValue.toString.toDouble) else prevMin
+          val newMax = if (maxValue != null) Math.max(prevMax, maxValue.toString.toDouble) else prevMax
+          val newMean = if (meanValue != null) (prevMean * previousNumCount + meanValue.toString.toDouble * newCount) / (previousNumCount + newCount) else prevMean
+
+          previousStats(field) = (newMin, newMax, newMean)
+
+          fieldResult += ("min" -> newMin)
+          fieldResult += ("max" -> newMax)
+          fieldResult += ("mean" -> newMean)
+        case _ => // Do nothing if stats are not defined
       }
 
-      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+      if (fieldResult.nonEmpty) result += (field -> fieldResult)
     })
 
+    previousNumCount = currentCount  // 更新记录数
     result
   }
 

@@ -86,22 +86,25 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     collection.find()
   }
 
-  def calculateNumericStats(fieldName: String): Option[(Any, Any, Any)] = {
+  def calculateNumericStats(fieldName: String, offset: Long): Option[(Any, Any, Any, Long)] = {
     val fieldAsNumber = new Document("$convert", new Document("input", "$" + fieldName).append("to", "double"))
     val projection = new Document(fieldName, fieldAsNumber)
     val pipeline = java.util.Arrays.asList(
+      new Document("$skip", offset.toInt),
       new Document("$project", projection),
       new Document("$group", new Document("_id", null)
         .append("minValue", new Document("$min", "$" + fieldName))
         .append("maxValue", new Document("$max", "$" + fieldName))
         .append("meanValue", new Document("$avg", "$" + fieldName))
+        .append("count", new Document("$sum", 1))
       )
     )
     val result = collection.aggregate(pipeline).iterator()
     if (result.hasNext) {
       val doc = result.next()
+      val count = doc.get("count").toString.toLong
       Some(
-        (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"))
+        (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"), count)  // 返回记录总数
       )
     } else {
       None
