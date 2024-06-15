@@ -130,13 +130,20 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
           fieldResult += ("min" -> newMin)
           fieldResult += ("max" -> newMax)
           fieldResult += ("mean" -> newMean)
-        case _ => // Do nothing if stats are not defined
+        case _ =>
+          val (prevMin, prevMax, prevMean) = previousStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
+          val newMin = prevMin
+          val newMax = prevMax
+          val newMean = prevMean
+          fieldResult += ("min" -> newMin)
+          fieldResult += ("max" -> newMax)
+          fieldResult += ("mean" -> newMean)
       }
 
       if (fieldResult.nonEmpty) result += (field -> fieldResult)
     })
 
-    previousNumCount = currentCount  // 更新记录数
+    previousNumCount = currentCount
     result
   }
 
