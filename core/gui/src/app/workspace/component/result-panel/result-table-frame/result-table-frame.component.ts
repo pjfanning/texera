@@ -360,4 +360,25 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     }
     return cellContent;
   }
+
+  hasStats(): boolean {
+    if (!this.tableStats || !this.prevTableStats) {
+      return false;
+    }
+    for (let key in this.tableStats) {
+      if (this.tableStats[key] && this.prevTableStats[key]) {
+        if (
+          this.tableStats[key]['min'] !== undefined ||
+          this.tableStats[key]['mean'] !== undefined ||
+          this.tableStats[key]['max'] !== undefined ||
+          this.tableStats[key]['firstCat'] !== undefined ||
+          this.tableStats[key]['secondCat'] !== undefined ||
+          this.tableStats[key]['other'] !== undefined
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

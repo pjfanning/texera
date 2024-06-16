@@ -31,7 +31,7 @@
         </th>
       </tr>
       <!-- add stats row -->
-      <tr *ngIf="tableStats && prevTableStats" #statsRow class="custom-stats-row">
+      <tr *ngIf="tableStats && prevTableStats && hasStats()" #statsRow class="custom-stats-row">
         <th *ngFor="let column of currentColumns">
           <div class="statsHeader">
             <ng-container 
