@@ -19,6 +19,7 @@ import edu.uci.ics.texera.workflow.operators.distinct.DistinctOpDesc
 import edu.uci.ics.texera.workflow.operators.download.BulkDownloaderOpDesc
 import edu.uci.ics.texera.workflow.operators.filter.SpecializedFilterOpDesc
 import edu.uci.ics.texera.workflow.operators.hashJoin.HashJoinOpDesc
+import edu.uci.ics.texera.workflow.operators.ifstatement.IfStatementOpDesc
 import edu.uci.ics.texera.workflow.operators.intersect.IntersectOpDesc
 import edu.uci.ics.texera.workflow.operators.intervalJoin.IntervalJoinOpDesc
 import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
@@ -128,6 +129,7 @@ trait StateTransferFunc
     new Type(value = classOf[LoopStartV2OpDesc], name = "LoopStartV2"),
     new Type(value = classOf[GeneratorOpDesc], name = "Generator"),
     new Type(value = classOf[LoopEndOpDesc], name = "LoopEnd"),
+    new Type(value = classOf[IfStatementOpDesc], name = "IfStatement"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
