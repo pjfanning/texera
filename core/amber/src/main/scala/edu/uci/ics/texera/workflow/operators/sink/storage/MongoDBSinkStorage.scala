@@ -20,6 +20,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   var previousNumCount: Long = 0
 
   var previousStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
+  var catStats: mutable.Map[String, mutable.Map[String, Int]] = mutable.Map()
 
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var uncommittedInsertions: mutable.ArrayBuffer[Tuple] = _
@@ -178,27 +179,42 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     result
   }
 
-  override def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
-    var result = Map[String, Map[String, Any]]()
+  override def getCatColStats(fields: Iterable[String]): mutable.Map[String, mutable.Map[String, Any]] = {
+    var result = mutable.Map[String, mutable.Map[String, Any]]()
 
     fields.foreach(field => {
-      var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateCategoricalStats(field)
+      var fieldResult = mutable.Map[String, Any]()
+      var newCount = 0
+      val newStats = collectionMgr.calculateCategoricalStats(field, previousNumCount)
 
-      stats match {
-        case Some((mode1, mode2, percent1, percent2, other)) => {
-          fieldResult = fieldResult + (
-            "firstCat" -> mode1,
-            "secondCat" -> mode2,
-            "firstPercent" -> percent1,
-            "secondPercent" -> percent2,
-            "other" -> other
-          )
+      val oldStats = catStats.getOrElse(field, mutable.Map())
+      newStats.keySet.foreach(key => {
+        oldStats.update(key, oldStats.getOrElse(key, 0) + newStats(key))
+        newCount += newStats(key)
+      })
+      catStats.update(field, oldStats)
+
+      val top2 = catStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
+      top2.size match {
+        case 2 => {
+          fieldResult("firstCat") = top2(0)
+          fieldResult("secondCat") = top2(1)
+          fieldResult("firstPercent") = (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
+          fieldResult("secondPercent") = (catStats(field)(top2(1)).toDouble / (previousNumCount + newCount).toDouble) * 100
+          fieldResult("other") = 100 - (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
+                                     - (catStats(field)(top2(1)).toDouble / (previousNumCount + newCount).toDouble) * 100
         }
-        case None => None
+        case 1 => {
+          fieldResult("firstCat") = top2(0)
+          fieldResult("secondCat") = ""
+          fieldResult("firstPercent") = (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
+          fieldResult("secondPercent") = 0
+          fieldResult("other") = 0
+        }
+        case _ => None
       }
 
-      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+      if (fieldResult.nonEmpty) result.update(field, fieldResult)
     })
 
     result

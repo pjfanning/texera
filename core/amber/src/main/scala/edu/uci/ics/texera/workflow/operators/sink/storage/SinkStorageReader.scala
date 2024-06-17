@@ -3,6 +3,8 @@ package edu.uci.ics.texera.workflow.operators.sink.storage
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
+import scala.collection.mutable
+
 trait SinkStorageReader {
   var schema: Schema = _
   def getSchema: Schema
@@ -33,7 +35,7 @@ trait SinkStorageReader {
     Map[String, Map[String, Any]]()
   }
 
-  def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
-    Map[String, Map[String, Any]]()
+  def getCatColStats(fields: Iterable[String]): mutable.Map[String, mutable.Map[String, Any]] = {
+    mutable.Map[String, mutable.Map[String, Any]]()
   }
 }

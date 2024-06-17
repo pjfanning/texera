@@ -9,6 +9,7 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 import com.mongodb.client.model.Aggregates._
 import com.mongodb.client.model.Accumulators._
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -140,44 +141,22 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
    * @param fieldName The name of the field for which to calculate the statistics.
    * @return An Option containing a tuple with the mode, second mode, and their percentages, and number of others.
    */
-  def calculateCategoricalStats(fieldName: String): Option[(String, String, Double, Double, Double)] = {
+  def calculateCategoricalStats(fieldName: String, offset: Long): mutable.Map[String, Int] = {
     val pipeline = java.util.Arrays.asList(
+      new Document("$skip", offset.toInt),
       group("$" + fieldName, java.util.Arrays.asList(
         com.mongodb.client.model.Accumulators.sum("count", 1)
-      )),
-      sort(com.mongodb.client.model.Sorts.descending("count"))
+      ))
     )
 
     val result = collection.aggregate(pipeline).iterator().asScala.toList
+    var stats: mutable.Map[String, Int] = mutable.Map()
 
-    if (result.size >= 2) {
-      val totalCount = result.map(doc => doc.get("count").asInstanceOf[Number].longValue()).sum
-      val firstModeDoc = result.head
-      val secondModeDoc = result(1)
+    result.foreach(doc => {
+      stats(doc.getString("_id")) = doc.get("count").asInstanceOf[Number].intValue()
+    })
 
-      val firstMode = firstModeDoc.getString("_id")
-      val secondMode = secondModeDoc.getString("_id")
-
-      val firstModeCount = firstModeDoc.get("count").asInstanceOf[Number].longValue()
-      val secondModeCount = secondModeDoc.get("count").asInstanceOf[Number].longValue()
-
-      val firstModePercentage = (firstModeCount.toDouble / totalCount.toDouble) * 100
-      val secondModePercentage = (secondModeCount.toDouble / totalCount.toDouble) * 100
-
-      // Calculate the count of 'other' category
-      val othersCount = ((totalCount.toDouble - firstModeCount - secondModeCount) / totalCount.toDouble) * 100
-
-      Some((firstMode, secondMode, firstModePercentage, secondModePercentage, othersCount))
-    } else if (result.nonEmpty) {
-      val firstModeDoc = result.head
-      val firstMode = firstModeDoc.getString("_id")
-      val firstModePercentage = 100.0  // Only one mode present, hence 100%
-
-      // There's no second mode, so we set the percentage to 0 and no second mode name
-      Some((firstMode, "", firstModePercentage, 0.0, 0L))
-    } else {
-      None
-    }
+    stats
   }
 
 }
