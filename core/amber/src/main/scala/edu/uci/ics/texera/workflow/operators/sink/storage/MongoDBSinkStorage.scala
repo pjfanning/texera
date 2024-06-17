@@ -17,9 +17,9 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   MongoDatabaseManager.dropCollection(id)
   @transient lazy val collectionMgr: MongoCollectionManager = MongoDatabaseManager.getCollection(id)
 
-  var previousNumCount: Long = 0
-
-  var previousStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
+  var previousCount: Long = 0
+  var previousNumStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
+  var previousDateStats: mutable.Map[String, (java.util.Date, java.util.Date)] = mutable.Map()
 
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var uncommittedInsertions: mutable.ArrayBuffer[Tuple] = _
@@ -115,23 +115,23 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
     fields.foreach(field => {
       var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateNumericStats(field, previousNumCount)
+      val stats = collectionMgr.calculateNumericStats(field, previousCount)
 
       stats match {
         case Some((minValue, maxValue, meanValue, newCount)) =>
-          val (prevMin, prevMax, prevMean) = previousStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
+          val (prevMin, prevMax, prevMean) = previousNumStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
 
           val newMin = if (minValue != null) Math.min(prevMin, minValue.toString.toDouble) else prevMin
           val newMax = if (maxValue != null) Math.max(prevMax, maxValue.toString.toDouble) else prevMax
-          val newMean = if (meanValue != null) (prevMean * previousNumCount + meanValue.toString.toDouble * newCount) / (previousNumCount + newCount) else prevMean
+          val newMean = if (meanValue != null) (prevMean * previousCount + meanValue.toString.toDouble * newCount) / (previousCount + newCount) else prevMean
 
-          previousStats(field) = (newMin, newMax, newMean)
+          previousNumStats(field) = (newMin, newMax, newMean)
 
           fieldResult += ("min" -> newMin)
           fieldResult += ("max" -> newMax)
           fieldResult += ("mean" -> newMean)
         case _ =>
-          val (prevMin, prevMax, prevMean) = previousStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
+          val (prevMin, prevMax, prevMean) = previousNumStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
           val newMin = prevMin
           val newMax = prevMax
           val newMean = prevMean
@@ -143,7 +143,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
       if (fieldResult.nonEmpty) result += (field -> fieldResult)
     })
 
-    previousNumCount = currentCount
+    previousCount = currentCount
     result
   }
 
@@ -152,29 +152,28 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
     fields.foreach(field => {
       var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateDateStats(field)
+      val stats = collectionMgr.calculateDateStats(field, previousCount)
 
       stats match {
-        case Some((minValue, maxValue)) => {
-          if (minValue != null) {
-            minValue match {
-              case _ : java.util.Date => fieldResult += ("min" -> minValue)
-              case _ => None
-            }
-          }
-          if (maxValue != null) {
-            maxValue match {
-              case _ : java.util.Date => fieldResult += ("max" -> maxValue)
-              case _ => None
-            }
-          }
-        }
-        case _ => None
+        case Some((minValue: java.util.Date, maxValue: java.util.Date)) =>
+          val (prevMin, prevMax) = previousDateStats.getOrElse(field, (new java.util.Date(Long.MaxValue), new java.util.Date(Long.MinValue)))
+
+          val newMin = if (minValue != null && minValue.before(prevMin)) minValue else prevMin
+          val newMax = if (maxValue != null && maxValue.after(prevMax)) maxValue else prevMax
+
+          previousDateStats(field) = (newMin, newMax)
+
+          fieldResult += ("min" -> newMin)
+          fieldResult += ("max" -> newMax)
+
+        case _ =>
+          val (prevMin, prevMax) = previousDateStats.getOrElse(field, (new java.util.Date(Long.MaxValue), new java.util.Date(Long.MinValue)))
+          fieldResult += ("min" -> prevMin)
+          fieldResult += ("max" -> prevMax)
       }
 
-      if (fieldResult.nonEmpty) result = result + (field -> fieldResult)
+      if (fieldResult.nonEmpty) result += (field -> fieldResult)
     })
-
     result
   }
 
