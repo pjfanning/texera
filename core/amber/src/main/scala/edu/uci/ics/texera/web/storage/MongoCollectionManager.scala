@@ -105,18 +105,19 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       val doc = result.next()
       val count = doc.get("count").toString.toLong
       Some(
-        (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"), count)  // 返回记录总数
+        (doc.get("minValue"), doc.get("maxValue"), doc.get("meanValue"), count)
       )
     } else {
       None
     }
   }
 
-  def calculateDateStats(fieldName: String): Option[(Any, Any)] = {
+  def calculateDateStats(fieldName: String, offset: Long): Option[(Any, Any)] = {
     val fieldAsDate = new Document("$convert", new Document("input", "$" + fieldName).append("to", "date"))
     val projection = new Document(fieldName, fieldAsDate)
 
     val pipeline = java.util.Arrays.asList(
+      new Document("$skip", offset.toInt),
       new Document("$project", projection),
       new Document("$group", new Document("_id", null)
         .append("minValue", new Document("$min", "$" + fieldName))
