@@ -38,4 +38,8 @@ trait SinkStorageReader {
   def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
     Map[String, Map[String, Any]]()
   }
+
+  def updatePreviousCount(): Unit = {
+    None
+  }
 }
