@@ -35,7 +35,7 @@ trait SinkStorageReader {
     Map[String, Map[String, Any]]()
   }
 
-  def getCatColStats(fields: Iterable[String]): mutable.Map[String, mutable.Map[String, Any]] = {
-    mutable.Map[String, mutable.Map[String, Any]]()
+  def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    Map[String, Map[String, Any]]()
   }
 }

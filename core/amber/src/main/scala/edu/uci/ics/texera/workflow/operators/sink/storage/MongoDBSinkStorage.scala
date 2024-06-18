@@ -17,10 +17,10 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   MongoDatabaseManager.dropCollection(id)
   @transient lazy val collectionMgr: MongoCollectionManager = MongoDatabaseManager.getCollection(id)
 
-  var previousCount: Long = 0
+  var previousCount: mutable.Map[String, Long] = mutable.Map()
   var previousNumStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
   var previousDateStats: mutable.Map[String, (java.util.Date, java.util.Date)] = mutable.Map()
-  var catStats: mutable.Map[String, mutable.Map[String, Int]] = mutable.Map()
+  var previousCatStats: Map[String, Map[String, Int]] = Map()
 
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var uncommittedInsertions: mutable.ArrayBuffer[Tuple] = _
@@ -111,12 +111,12 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   }
 
   override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
-    var result = Map[String, Map[String, Any]]()
-    val currentCount = collectionMgr.getCount
+    var result = mutable.Map[String, Map[String, Any]]()
 
     fields.foreach(field => {
-      var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateNumericStats(field, previousCount)
+      var fieldResult = mutable.Map[String, Any]()
+      val offset: Long = previousCount.getOrElse(field, 0)
+      val stats = collectionMgr.calculateNumericStats(field, offset)
 
       stats match {
         case Some((minValue, maxValue, meanValue, newCount)) =>
@@ -124,39 +124,37 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
           val newMin = if (minValue != null) Math.min(prevMin, minValue.toString.toDouble) else prevMin
           val newMax = if (maxValue != null) Math.max(prevMax, maxValue.toString.toDouble) else prevMax
-          val newMean = if (meanValue != null) (prevMean * previousCount + meanValue.toString.toDouble * newCount) / (previousCount + newCount) else prevMean
+          val newMean = if (meanValue != null) (prevMean * offset + meanValue.toString.toDouble * newCount) / (offset + newCount) else prevMean
 
           previousNumStats(field) = (newMin, newMax, newMean)
+          previousCount.update(field, offset + newCount)
 
-          fieldResult += ("min" -> newMin)
-          fieldResult += ("max" -> newMax)
-          fieldResult += ("mean" -> newMean)
+          fieldResult("min") = newMin
+          fieldResult("max") = newMax
+          fieldResult("mean") = newMean
         case _ =>
           val (prevMin, prevMax, prevMean) = previousNumStats.getOrElse(field, (Double.MaxValue, Double.MinValue, 0.0))
-          val newMin = prevMin
-          val newMax = prevMax
-          val newMean = prevMean
-          fieldResult += ("min" -> newMin)
-          fieldResult += ("max" -> newMax)
-          fieldResult += ("mean" -> newMean)
+          fieldResult("min") = prevMin
+          fieldResult("max") = prevMax
+          fieldResult("mean") = prevMean
       }
 
-      if (fieldResult.nonEmpty) result += (field -> fieldResult)
+      if (fieldResult.nonEmpty) result(field) = fieldResult.toMap
     })
 
-    previousCount = currentCount
-    result
+    result.toMap
   }
 
   override def getDateColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
-    var result = Map[String, Map[String, Any]]()
+    var result = mutable.Map[String, Map[String, Any]]()
 
     fields.foreach(field => {
-      var fieldResult = Map[String, Any]()
-      val stats = collectionMgr.calculateDateStats(field, previousCount)
+      var fieldResult = mutable.Map[String, Any]()
+      val offset: Long = previousCount.getOrElse(field, 0)
+      val stats = collectionMgr.calculateDateStats(field, offset)
 
       stats match {
-        case Some((minValue: java.util.Date, maxValue: java.util.Date)) =>
+        case Some((minValue: java.util.Date, maxValue: java.util.Date, count: Long)) =>
           val (prevMin, prevMax) = previousDateStats.getOrElse(field, (new java.util.Date(Long.MaxValue), new java.util.Date(Long.MinValue)))
 
           val newMin = if (minValue != null && minValue.before(prevMin)) minValue else prevMin
@@ -164,59 +162,67 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
           previousDateStats(field) = (newMin, newMax)
 
-          fieldResult += ("min" -> newMin)
-          fieldResult += ("max" -> newMax)
+          fieldResult("min") = newMin
+          fieldResult("max") = newMax
+          previousCount.update(field, offset + count)
 
         case _ =>
           val (prevMin, prevMax) = previousDateStats.getOrElse(field, (new java.util.Date(Long.MaxValue), new java.util.Date(Long.MinValue)))
-          fieldResult += ("min" -> prevMin)
-          fieldResult += ("max" -> prevMax)
+          fieldResult("min") = prevMin
+          fieldResult("max") = prevMax
       }
 
-      if (fieldResult.nonEmpty) result += (field -> fieldResult)
+      if (fieldResult.nonEmpty) result(field) = fieldResult.toMap
     })
-    result
+
+    result.toMap
   }
 
-  override def getCatColStats(fields: Iterable[String]): mutable.Map[String, mutable.Map[String, Any]] = {
-    var result = mutable.Map[String, mutable.Map[String, Any]]()
+  override def getCatColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
+    var result = mutable.Map[String, Map[String, Any]]()
 
     fields.foreach(field => {
       var fieldResult = mutable.Map[String, Any]()
-      var newCount = 0
-      val newStats = collectionMgr.calculateCategoricalStats(field, previousNumCount)
+      var newCount: Long = 0
+      val offset: Long = previousCount.getOrElse(field, 0) // get the offset from previous run
 
-      val oldStats = catStats.getOrElse(field, mutable.Map())
+      val newStats = collectionMgr.calculateCategoricalStats(field, offset)
+
+      var oldStats = previousCatStats.getOrElse(field, Map())
       newStats.keySet.foreach(key => {
-        oldStats.update(key, oldStats.getOrElse(key, 0) + newStats(key))
+        oldStats += (key -> (oldStats.getOrElse(key, 0) + newStats(key)))
         newCount += newStats(key)
       })
-      catStats.update(field, oldStats)
+      previousCount.update(field, offset + newCount) // update the offset manually by checking the # of docs read
 
-      val top2 = catStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
+      previousCatStats += (field -> oldStats)
+
+      val top2 = previousCatStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
+
       top2.size match {
         case 2 => {
           fieldResult("firstCat") = top2(0)
           fieldResult("secondCat") = top2(1)
-          fieldResult("firstPercent") = (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
-          fieldResult("secondPercent") = (catStats(field)(top2(1)).toDouble / (previousNumCount + newCount).toDouble) * 100
-          fieldResult("other") = 100 - (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
-                                     - (catStats(field)(top2(1)).toDouble / (previousNumCount + newCount).toDouble) * 100
+          val first = (previousCatStats(field)(top2(0)).toDouble / (offset + newCount).toDouble) * 100
+          val second = (previousCatStats(field)(top2(1)).toDouble / (offset + newCount).toDouble) * 100
+          fieldResult("firstPercent") = first
+          fieldResult("secondPercent") = second
+          fieldResult("other") = (100 - first - second)
         }
         case 1 => {
           fieldResult("firstCat") = top2(0)
           fieldResult("secondCat") = ""
-          fieldResult("firstPercent") = (catStats(field)(top2(0)).toDouble / (previousNumCount + newCount).toDouble) * 100
+          fieldResult("firstPercent") = (previousCatStats(field)(top2(0)).toDouble / (offset + newCount).toDouble) * 100
           fieldResult("secondPercent") = 0
           fieldResult("other") = 0
         }
         case _ => None
       }
 
-      if (fieldResult.nonEmpty) result.update(field, fieldResult)
+      if (fieldResult.nonEmpty) result(field) = fieldResult.toMap
     })
 
-    result
+    result.toMap
   }
 }
 

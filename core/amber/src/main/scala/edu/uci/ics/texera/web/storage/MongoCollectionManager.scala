@@ -49,11 +49,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
           fieldValue match {
             case _: java.lang.String => result = result.updated(1, result(1) :+ key)
             case _: java.util.Date => result = result.updated(2, result(2) :+ key)
-            case _ => {
-              println("========================================")
-              println(s"Key: $key, Type: ${fieldValue.getClass.getName}")
-              println("========================================")
-            }
+            case _ => None
           }
       }
     }
@@ -112,7 +108,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     }
   }
 
-  def calculateDateStats(fieldName: String, offset: Long): Option[(Any, Any)] = {
+  def calculateDateStats(fieldName: String, offset: Long): Option[(Any, Any, Any)] = {
     val fieldAsDate = new Document("$convert", new Document("input", "$" + fieldName).append("to", "date"))
     val projection = new Document(fieldName, fieldAsDate)
 
@@ -122,6 +118,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       new Document("$group", new Document("_id", null)
         .append("minValue", new Document("$min", "$" + fieldName))
         .append("maxValue", new Document("$max", "$" + fieldName))
+        .append("count", new Document("$sum", 1))
       )
     )
 
@@ -129,7 +126,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     if (result.hasNext) {
       val doc = result.next()
       Some(
-        (doc.get("minValue"), doc.get("maxValue"))
+        (doc.get("minValue"), doc.get("maxValue"), doc.get("count").asInstanceOf[Number].longValue())
       )
     } else {
       None
@@ -142,7 +139,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
    * @param fieldName The name of the field for which to calculate the statistics.
    * @return An Option containing a tuple with the mode, second mode, and their percentages, and number of others.
    */
-  def calculateCategoricalStats(fieldName: String, offset: Long): mutable.Map[String, Int] = {
+  def calculateCategoricalStats(fieldName: String, offset: Long): Map[String, Int] = {
     val pipeline = java.util.Arrays.asList(
       new Document("$skip", offset.toInt),
       group("$" + fieldName, java.util.Arrays.asList(
@@ -157,7 +154,7 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       stats(doc.getString("_id")) = doc.get("count").asInstanceOf[Number].intValue()
     })
 
-    stats
+    stats.toMap
   }
 
 }

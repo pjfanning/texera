@@ -174,7 +174,7 @@ class ExecutionResultService(
     mutable.HashMap[OperatorIdentity, ProgressiveSinkOpDesc]()
   private val resultPullingFrequency = AmberConfig.executionResultPollingInSecs
   private var resultUpdateCancellable: Cancellable = _
-  var tableFields: Map[String, Map[String,Iterable[String]]] = Map()
+  var tableFields: mutable.Map[String, Map[String,Iterable[String]]] = mutable.Map()
 
   def attachToExecution(
       stateStore: ExecutionStateStore,
@@ -231,7 +231,7 @@ class ExecutionResultService(
     addSubscription(
       workflowStateStore.resultStore.registerDiffHandler((oldState, newState) => {
         val buf = mutable.HashMap[String, WebResultUpdate]()
-        var allTableStats = Map[String, Map[String, Map[String, Any]]]()
+        var allTableStats = mutable.Map[String, Map[String, Map[String, Any]]]()
 
         newState.resultInfo
           .filter(info => {
@@ -252,7 +252,7 @@ class ExecutionResultService(
                 val sinkMgr = sinkOperators(opId).getStorage()
                 if (oldState.resultInfo.isEmpty) {
                   val fields = sinkMgr.getAllFields()
-                  tableFields = tableFields.updated(opId.id, Map(
+                  tableFields.update(opId.id, Map(
                     "numericFields" -> fields(0),
                     "catFields" -> fields(1),
                     "dateFields" -> fields(2)
@@ -262,10 +262,10 @@ class ExecutionResultService(
                 val tableDateStats = sinkMgr.getDateColStats(tableFields(opId.id)("dateFields"))
                 val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
                 val allStats = tableNumericStats ++ tableCatStats ++ tableDateStats
-                if (tableNumericStats.nonEmpty) allTableStats = allTableStats + (opId.id -> allStats)
+                if (tableNumericStats.nonEmpty) allTableStats(opId.id) = allStats
               }
           }
-        Iterable(WebResultUpdateEvent(buf.toMap, allTableStats))
+        Iterable(WebResultUpdateEvent(buf.toMap, allTableStats.toMap))
       })
     )
 

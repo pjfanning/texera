@@ -72,7 +72,7 @@
               <h5>{{tableStats[column.header]['firstCat']}}: 
                 <span 
                 [innerHTML]="compare(tableStats[column.header]['firstPercent'], prevTableStats[column.header]['firstPercent'])">
-                </span>
+                </span>%
               </h5>
             </ng-container>
             <ng-container 
@@ -83,7 +83,7 @@
               <h5>{{tableStats[column.header]['secondCat']}}: 
                 <span 
                 [innerHTML]="compare(tableStats[column.header]['secondPercent'], prevTableStats[column.header]['secondPercent'])">
-                </span>
+                </span>%
               </h5>
             </ng-container>
             <ng-container 
@@ -94,7 +94,7 @@
               <h5>Other: 
                 <span 
                 [innerHTML]="compare(tableStats[column.header]['other'], prevTableStats[column.header]['other'])">
-                </span>
+                </span>%
               </h5>
             </ng-container>
           </div>

@@ -271,7 +271,7 @@ class OperatorPaginationResultService {
   }
 
   public handleStatsUpdate(statsUpdate: Record<string, Record<string, number>>): void {
-    if (Object.keys(this.statsCache).length == 0) {
+    if (!this.statsCache) {
       this.statsCache = statsUpdate;
       this.prevStatsCache = statsUpdate;
     } else {
