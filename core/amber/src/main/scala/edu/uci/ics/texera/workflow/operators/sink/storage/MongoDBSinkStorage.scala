@@ -111,7 +111,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
   override def getNumericColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
     var result = Map[String, Map[String, Any]]()
-    val currentCount = collectionMgr.getCount
+//    val currentCount = collectionMgr.getCount
 
     fields.foreach(field => {
       var fieldResult = Map[String, Any]()
@@ -143,8 +143,12 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
       if (fieldResult.nonEmpty) result += (field -> fieldResult)
     })
 
-    previousCount = currentCount
+//    previousCount = currentCount
     result
+  }
+
+  override def updatePreviousCount(): Unit = {
+    previousCount = collectionMgr.getCount
   }
 
   override def getDateColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
