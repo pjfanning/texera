@@ -54,6 +54,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   tableStats: Record<string, Record<string, number>> = {};
   prevTableStats: Record<string, Record<string, number>> = {};
   widthPercent: string = "";
+  sinkStorageMode: string = "";
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -114,13 +115,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         }
         const opUpdate = update[this.operatorId];
         if (!opUpdate || !isWebPaginationUpdate(opUpdate)) {
-          // clear result panel if currently display results
-          if (this.totalNumTuples > 0) {
-            this.totalNumTuples = 0;
-            this.currentPageIndex = 1;
-            this.currentColumns = undefined;
-            this.currentResult = [];
-          }
           return;
         }
         let columnCount = this.currentColumns?.length;
@@ -146,9 +140,16 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         } else {
           this.prevTableStats = this.tableStats;
         }
-
         this.getHeightOfStatsRow();
       })
+
+    this.workflowResultService.getSinkStorageMode()
+      .pipe(untilDestroyed(this))
+      .subscribe(sinkStorageMode => {
+        this.sinkStorageMode = sinkStorageMode;
+        this.adjustPageSizeBasedOnPanelSize(this.panelHeight);
+      });
+
 
     this.resizeService.currentSize.pipe(untilDestroyed(this)).subscribe(size => {
       this.panelHeight = size.height;
@@ -197,13 +198,20 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
     const rowHeight = 36;
     this.getHeightOfStatsRow();
-    let extra: number = Math.floor((panelHeight - this.statsRowHeight - 170) / rowHeight);
+    let extra: number;
+
+    if (this.sinkStorageMode == "mongodb"){
+        extra = Math.floor((panelHeight - 88 - 170) / rowHeight);
+    } else {
+        extra = Math.floor((panelHeight - 170) / rowHeight);
+    }
+
     if (extra < 0){
-      extra = 0;
+        extra = 0;
     }
     this.pageSize = 1 + extra;
     this.resizeService.pageSize = this.pageSize;
-  }
+}
 
   /**
    * Callback function for table query params changed event
@@ -359,26 +367,5 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
       return cellContent.substring(0, TABLE_COLUMN_TEXT_LIMIT) + "...";
     }
     return cellContent;
-  }
-
-  hasStats(): boolean {
-    if (!this.tableStats || !this.prevTableStats) {
-      return false;
-    }
-    for (let key in this.tableStats) {
-      if (this.tableStats[key] && this.prevTableStats[key]) {
-        if (
-          this.tableStats[key]['min'] !== undefined ||
-          this.tableStats[key]['mean'] !== undefined ||
-          this.tableStats[key]['max'] !== undefined ||
-          this.tableStats[key]['firstCat'] !== undefined ||
-          this.tableStats[key]['secondCat'] !== undefined ||
-          this.tableStats[key]['other'] !== undefined
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 }

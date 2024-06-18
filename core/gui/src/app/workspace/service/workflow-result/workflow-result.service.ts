@@ -10,7 +10,7 @@ import {
 } from "../../types/execute-workflow.interface";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
 import { PaginatedResultEvent, WorkflowAvailableResultEvent } from "../../types/workflow-websocket.interface";
-import { map, Observable, of, pairwise, ReplaySubject, startWith, Subject } from "rxjs";
+import { map, Observable, of, pairwise, ReplaySubject, startWith, Subject, BehaviorSubject } from "rxjs";
 import { v4 as uuid } from "uuid";
 import { IndexableObject } from "../../types/result-table.interface";
 import { isDefined } from "../../../common/util/predicate";
@@ -30,11 +30,13 @@ export class WorkflowResultService {
   // private resultTableStats = new Subject<Record<string, Record<string, Record<string, number>>>>();
   private resultTableStats = new ReplaySubject<Record<string, Record<string, Record<string, number>>>>(1);
   private resultInitiateStream = new Subject<string>();
+  private sinkStorageModeSubject = new BehaviorSubject<string>("");
 
   constructor(private wsService: WorkflowWebsocketService) {
     this.wsService.subscribeToEvent("WebResultUpdateEvent").subscribe(event => {
       this.handleResultUpdate(event.updates);
       this.handleTableStatsUpdate(event.tableStats);
+      this.handleSinkStorageModeUpdate(event.sinkStorageMode);
     }); // event now has two hashmaps
     this.wsService
       .subscribeToEvent("WorkflowAvailableResultEvent")
@@ -142,6 +144,14 @@ export class WorkflowResultService {
       paginatedResultService.handleStatsUpdate(event[operatorID]);
     });
     this.resultTableStats.next(event);
+  }
+
+  private handleSinkStorageModeUpdate(sinkStorageMode: string): void {
+    this.sinkStorageModeSubject.next(sinkStorageMode);
+  }
+
+  public getSinkStorageMode(): BehaviorSubject<string> {
+    return this.sinkStorageModeSubject;
   }
 
   private getOrInitPaginatedResultService(operatorID: string): OperatorPaginationResultService {

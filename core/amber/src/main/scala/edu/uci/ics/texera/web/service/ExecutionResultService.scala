@@ -265,7 +265,7 @@ class ExecutionResultService(
                 if (tableNumericStats.nonEmpty) allTableStats(opId.id) = allStats
               }
           }
-        Iterable(WebResultUpdateEvent(buf.toMap, allTableStats.toMap))
+        Iterable(WebResultUpdateEvent(buf.toMap, allTableStats.toMap, AmberConfig.sinkStorageMode.toLowerCase))
       })
     )
 
