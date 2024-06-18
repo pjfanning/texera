@@ -261,7 +261,6 @@ class ExecutionResultService(
                 val tableCatStats = sinkMgr.getCatColStats(tableFields(opId.id)("catFields"))
                 val tableDateStats = sinkMgr.getDateColStats(tableFields(opId.id)("dateFields"))
                 val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
-                sinkMgr.updatePreviousCount()
                 val allStats = tableNumericStats ++ tableCatStats ++ tableDateStats
                 if (tableNumericStats.nonEmpty) allTableStats(opId.id) = allStats
               }

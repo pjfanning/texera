@@ -142,16 +142,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
       if (fieldResult.nonEmpty) result(field) = fieldResult.toMap
     })
 
-<<<<<<< HEAD
     result.toMap
-=======
-//    previousCount = currentCount
-    result
->>>>>>> 1dea2ebc7f0b7e852ecbffa60a0af485d1ef27ba
-  }
-
-  override def updatePreviousCount(): Unit = {
-    previousCount = collectionMgr.getCount
   }
 
   override def getDateColStats(fields: Iterable[String]): Map[String, Map[String, Any]] = {
