@@ -32,7 +32,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
   @Input() operatorId?: string;
   @ViewChild('statsRow') statsRow!: ElementRef;
   private resizeObserver: ResizeObserver | null = null;
-  public statsRowHeight: number = 0;
   // display result table
   currentColumns?: TableColumn[];
   currentResult: IndexableObject[] = [];
@@ -140,7 +139,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
         } else {
           this.prevTableStats = this.tableStats;
         }
-        this.getHeightOfStatsRow();
       })
 
     this.workflowResultService.getSinkStorageMode()
@@ -189,15 +187,8 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
     return this.sanitizer.bypassSecurityTrustHtml(styledValue);
   }
 
-  getHeightOfStatsRow() {
-    if (this.statsRow && this.statsRow.nativeElement) {
-        this.statsRowHeight = this.statsRow.nativeElement.offsetHeight;
-    }
-  }
-
   private adjustPageSizeBasedOnPanelSize(panelHeight: number) {
     const rowHeight = 36;
-    this.getHeightOfStatsRow();
     let extra: number;
 
     if (this.sinkStorageMode == "mongodb"){
