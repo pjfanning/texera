@@ -262,7 +262,7 @@ class ExecutionResultService(
                 val tableDateStats = sinkMgr.getDateColStats(tableFields(opId.id)("dateFields"))
                 val tableNumericStats = sinkMgr.getNumericColStats(tableFields(opId.id)("numericFields"))
                 val allStats = tableNumericStats ++ tableCatStats ++ tableDateStats
-                if (tableNumericStats.nonEmpty) allTableStats(opId.id) = allStats
+                if (tableNumericStats.nonEmpty || tableCatStats.nonEmpty || tableDateStats.nonEmpty) allTableStats(opId.id) = allStats
               }
           }
         Iterable(WebResultUpdateEvent(buf.toMap, allTableStats.toMap, AmberConfig.sinkStorageMode.toLowerCase))
