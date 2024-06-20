@@ -41,6 +41,7 @@ export class WorkflowResultService {
     this.wsService
       .subscribeToEvent("WorkflowAvailableResultEvent")
       .subscribe(event => this.handleCleanResultCache(event));
+    this.resultTableStats.next({});
   }
 
   public hasAnyResult(operatorID: string): boolean {

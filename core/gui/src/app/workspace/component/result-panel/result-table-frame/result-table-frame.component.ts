@@ -125,6 +125,7 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           this.changePaginatedResultData();
         }
       });
+
     this.workflowResultService
       .getResultTableStats()
       .pipe(untilDestroyed(this))
@@ -138,9 +139,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           if (prevStats[this.operatorId] && this.checkKeys(this.tableStats, prevStats[this.operatorId])) {
             this.prevTableStats = prevStats[this.operatorId];
           } else {
-            console.log(Object.keys(this.tableStats) == Object.keys(prevStats[this.operatorId]))
-            console.log(Object.keys(this.tableStats))
-            console.log(Object.keys(prevStats[this.operatorId]))
             this.prevTableStats = this.tableStats;
           }
         }
