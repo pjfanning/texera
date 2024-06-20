@@ -257,6 +257,10 @@ case class PhysicalPlan(
     this.copy(operators, links.diff(getDependeeLinks))
   }
 
+  def getNonBlockingLinks: Set[PhysicalLink] = {
+    this.links.diff(getNonMaterializedBlockingAndDependeeLinks)
+  }
+
   /**
     * A link is a bridge if removal of that link would increase the number of (weakly) connected components in the DAG.
     * Assuming pipelining a link is more desirable than materializing it, and optimal physical plan always pipelines
