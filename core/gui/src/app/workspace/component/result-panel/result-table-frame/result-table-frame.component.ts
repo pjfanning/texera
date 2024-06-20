@@ -10,6 +10,7 @@ import { IndexableObject, TableColumn } from "../../../types/result-table.interf
 import { RowModalComponent } from "../result-panel-modal.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { style } from '@angular/animations';
 
 export const TABLE_COLUMN_TEXT_LIMIT = 100;
 export const PRETTY_JSON_TEXT_LIMIT = 50000;
@@ -132,12 +133,16 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
           return;
         }
 
-        this.tableStats = currentStats[this.operatorId];
-        console.log(this.tableStats);
-        if (prevStats[this.operatorId]) {
-          this.prevTableStats = prevStats[this.operatorId];
-        } else {
-          this.prevTableStats = this.tableStats;
+        if (currentStats[this.operatorId]) {
+          this.tableStats = currentStats[this.operatorId];
+          if (prevStats[this.operatorId] && this.checkKeys(this.tableStats, prevStats[this.operatorId])) {
+            this.prevTableStats = prevStats[this.operatorId];
+          } else {
+            console.log(Object.keys(this.tableStats) == Object.keys(prevStats[this.operatorId]))
+            console.log(Object.keys(this.tableStats))
+            console.log(Object.keys(prevStats[this.operatorId]))
+            this.prevTableStats = this.tableStats;
+          }
         }
       })
 
@@ -160,7 +165,26 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
 
   }
 
-  compare(current: number | Date, previous: number | Date): SafeHtml {
+  checkKeys(currentStats: Record<string, Record<string, number>>, prevStats: Record<string, Record<string, number>>): boolean {
+    let firstSet = Object.keys(currentStats);
+    let secondSet = Object.keys(prevStats);
+    
+    if (firstSet.length != secondSet.length) {
+      return false;
+    }
+
+    for (let i = 0; i < firstSet.length; i++) {
+      if (firstSet[i] != secondSet[i]) {
+        return false;
+      }
+    }
+ 
+    return true;
+  }
+
+  compare(field: string, stats: string): SafeHtml {
+    let current = this.tableStats[field][stats]
+    let previous = this.prevTableStats[field][stats]
     let currentStr = "";
     let previousStr = "";
 

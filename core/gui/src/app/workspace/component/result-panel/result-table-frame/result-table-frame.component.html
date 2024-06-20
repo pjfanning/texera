@@ -35,67 +35,58 @@
         <th *ngFor="let column of currentColumns">
           <div class="statsHeader">
             <ng-container 
-              *ngIf="tableStats[column.header] &&
-              prevTableStats[column.header] &&
-              tableStats[column.header]['min'] !== undefined &&
-              prevTableStats[column.header]['min'] !== undefined">
-              <h5>Min: 
-                <span [innerHTML]="compare(tableStats[column.header]['min'], prevTableStats[column.header]['min'])">
-                </span>
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['min']">
+              <div class="statsLine">
+                <h5 class="leftAlign">Min </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'min')"></span>
+                </h5>
+              </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && 
-              prevTableStats[column.header] && 
-              tableStats[column.header]['mean'] !== undefined &&
-              prevTableStats[column.header]['mean'] !== undefined">
-              <h5>Mean: 
-                <span [innerHTML]="compare(tableStats[column.header]['mean'], prevTableStats[column.header]['mean'])">
-                </span>
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['mean']">
+              <div class="statsLine">
+                <h5 class="leftAlign">Mean </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'mean')"></span>
+                </h5>
+              </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] &&
-              prevTableStats[column.header] &&
-              tableStats[column.header]['max'] !== undefined &&
-              prevTableStats[column.header]['max'] !== undefined">
-              <h5>Max: 
-                <span [innerHTML]="compare(tableStats[column.header]['max'], prevTableStats[column.header]['max'])">
-                </span>
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['max']">
+              <div class="statsLine">
+                <h5 class="leftAlign">Max </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'max')"></span>
+                </h5>
+              </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && 
-              prevTableStats[column.header] && 
-              tableStats[column.header]['firstCat'] !== undefined && 
-              prevTableStats[column.header]['firstCat'] !== undefined">
-              <h5>{{tableStats[column.header]['firstCat']}}: 
-                <span 
-                [innerHTML]="compare(tableStats[column.header]['firstPercent'], prevTableStats[column.header]['firstPercent'])">
-                </span>%
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['firstPercent']">
+              <div class="statsLine">
+                <h5 class="leftAlign">{{tableStats[column.header]['firstCat']}} </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'firstPercent')"></span>%
+                </h5>
+              </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] &&
-              prevTableStats[column.header] &&
-              tableStats[column.header]['secondCat'] !== undefined &&
-              prevTableStats[column.header]['secondCat'] !== undefined">
-              <h5>{{tableStats[column.header]['secondCat']}}: 
-                <span 
-                [innerHTML]="compare(tableStats[column.header]['secondPercent'], prevTableStats[column.header]['secondPercent'])">
-                </span>%
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['secondPercent']">
+              <div class="statsLine">
+                <h5 class="leftAlign">{{tableStats[column.header]['secondCat']}} </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'secondPercent')"></span>%
+                </h5>
+              </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] &&
-              prevTableStats[column.header] &&
-              tableStats[column.header]['other'] !== undefined &&
-              prevTableStats[column.header]['other'] !== undefined">
-              <h5>Other: 
-                <span 
-                [innerHTML]="compare(tableStats[column.header]['other'], prevTableStats[column.header]['other'])">
-                </span>%
-              </h5>
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['other']">
+              <div class="statsLine">
+                <h5 class="leftAlign">Other </h5>
+                <h5 class="rightAlign">
+                  <span [innerHTML]="compare(column.header, 'other')"></span>%
+                </h5>
+              </div>
             </ng-container>
           </div>
         </th>

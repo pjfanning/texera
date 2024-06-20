@@ -33,3 +33,19 @@ th.header-size {
   padding-top: 4px;
   padding-bottom: 4px;
 }
+
+.statsLine {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  width: 100%;
+}
+
+.leftAlign {
+  text-align: left;
+  margin-right: 10px
+}
+
+.rightAlign {
+  text-align: right;
+}
