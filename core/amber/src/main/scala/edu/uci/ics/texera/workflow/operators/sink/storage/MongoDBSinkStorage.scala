@@ -21,6 +21,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
   var previousNumStats: mutable.Map[String, (Double, Double, Double)] = mutable.Map()
   var previousDateStats: mutable.Map[String, (java.util.Date, java.util.Date)] = mutable.Map()
   var previousCatStats: Map[String, Map[String, Int]] = Map()
+  val previousReachedLimit: mutable.Map[String, Int] = mutable.Map()
 
   class MongoDBSinkStorageWriter(bufferSize: Int) extends SinkStorageWriter {
     var uncommittedInsertions: mutable.ArrayBuffer[Tuple] = _
@@ -186,9 +187,11 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
       var newCount: Long = 0
       val offset: Long = previousCount.getOrElse(field, 0) // get the offset from previous run
 
-      val newStats = collectionMgr.calculateCategoricalStats(field, offset)
-
+      val (newStats, batchReachedLimit) = collectionMgr.calculateCategoricalStats(field, offset)
       var oldStats = previousCatStats.getOrElse(field, Map())
+
+      val reachedLimit = previousReachedLimit.getOrElse(field, 0) == 1 || batchReachedLimit
+
       newStats.keySet.foreach(key => {
         oldStats += (key -> (oldStats.getOrElse(key, 0) + newStats(key)))
         newCount += newStats(key)
@@ -197,8 +200,9 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
 
       previousCatStats += (field -> oldStats)
 
-      val top2 = previousCatStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
+      previousReachedLimit.update(field, if (reachedLimit) 1 else 0)
 
+      val top2 = previousCatStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
       top2.size match {
         case 2 => {
           fieldResult("firstCat") = top2(0)
@@ -208,6 +212,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
           fieldResult("firstPercent") = first
           fieldResult("secondPercent") = second
           fieldResult("other") = (100 - first - second)
+          fieldResult("reachedLimit") = if (reachedLimit) 1 else 0
         }
         case 1 => {
           fieldResult("firstCat") = top2(0)
@@ -215,6 +220,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
           fieldResult("firstPercent") = (previousCatStats(field)(top2(0)).toDouble / (offset + newCount).toDouble) * 100
           fieldResult("secondPercent") = 0
           fieldResult("other") = 0
+          fieldResult("reachedLimit") = if (reachedLimit) 1 else 0
         }
         case _ => None
       }

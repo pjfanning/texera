@@ -64,7 +64,10 @@
             <ng-container 
               *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['firstPercent']">
               <div class="statsLine">
-                <h5 class="leftAlign">{{tableStats[column.header]['firstCat']}} </h5>
+                <h5 class="leftAlign">
+                  {{tableStats[column.header]['firstCat']}} 
+                  <span *ngIf="tableStats[column.header]['reachedLimit'] == 1"> (approximate)</span>
+                </h5>
                 <h5 class="rightAlign">
                   <span [innerHTML]="compare(column.header, 'firstPercent')"></span>%
                 </h5>
@@ -73,7 +76,10 @@
             <ng-container 
               *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['secondPercent']">
               <div class="statsLine">
-                <h5 class="leftAlign">{{tableStats[column.header]['secondCat']}} </h5>
+                <h5 class="leftAlign">
+                  {{tableStats[column.header]['secondCat']}}
+                  <span *ngIf="tableStats[column.header]['reachedLimit'] == 1"> (approximate)</span>
+                 </h5>
                 <h5 class="rightAlign">
                   <span [innerHTML]="compare(column.header, 'secondPercent')"></span>%
                 </h5>
@@ -82,7 +88,10 @@
             <ng-container 
               *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['other']">
               <div class="statsLine">
-                <h5 class="leftAlign">Other </h5>
+                <h5 class="leftAlign">
+                  Other 
+                  <span *ngIf="tableStats[column.header]['reachedLimit'] == 1"> (approximate)</span>
+                </h5>
                 <h5 class="rightAlign">
                   <span [innerHTML]="compare(column.header, 'other')"></span>%
                 </h5>

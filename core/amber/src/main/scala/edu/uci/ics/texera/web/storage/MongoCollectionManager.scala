@@ -133,18 +133,14 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
     }
   }
 
-  /**
-   * Calculates statistics for a categorical field including the mode (most common value),
-   * the second mode (second most common value), and percentages for these modes.
-   * @param fieldName The name of the field for which to calculate the statistics.
-   * @return An Option containing a tuple with the mode, second mode, and their percentages, and number of others.
-   */
-  def calculateCategoricalStats(fieldName: String, offset: Long): Map[String, Int] = {
+  def calculateCategoricalStats(fieldName: String, offset: Long): (Map[String, Int], Boolean) = {
     val pipeline = java.util.Arrays.asList(
       new Document("$skip", offset.toInt),
       group("$" + fieldName, java.util.Arrays.asList(
         com.mongodb.client.model.Accumulators.sum("count", 1)
-      ))
+      )),
+      sort(com.mongodb.client.model.Sorts.descending("count")),
+      limit(1000)
     )
 
     val result = collection.aggregate(pipeline).iterator().asScala.toList
@@ -154,7 +150,9 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
       stats(doc.getString("_id")) = doc.get("count").asInstanceOf[Number].intValue()
     })
 
-    stats.toMap
+    val reachedLimit = result.size >= 1000
+
+    (stats.toMap, reachedLimit)
   }
 
 }
