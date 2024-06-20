@@ -35,7 +35,7 @@
         <th *ngFor="let column of currentColumns">
           <div class="statsHeader">
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['min']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['min'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">Min </h5>
                 <h5 class="rightAlign">
@@ -44,16 +44,16 @@
               </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['mean']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['mean'] !== undefined">
               <div class="statsLine">
-                <h5 class="leftAlign">Mean </h5>
+                <h5 class="leftAlign">Average </h5>
                 <h5 class="rightAlign">
                   <span [innerHTML]="compare(column.header, 'mean')"></span>
                 </h5>
               </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['max']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['max'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">Max </h5>
                 <h5 class="rightAlign">
@@ -62,7 +62,7 @@
               </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['firstPercent']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['firstPercent'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">
                   {{tableStats[column.header]['firstCat']}} 
@@ -74,7 +74,7 @@
               </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['secondPercent']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['secondPercent'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">
                   {{tableStats[column.header]['secondCat']}}
@@ -86,7 +86,7 @@
               </div>
             </ng-container>
             <ng-container 
-              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['other']">
+              *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['other'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">
                   Other 
