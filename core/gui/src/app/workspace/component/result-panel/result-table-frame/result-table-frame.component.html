@@ -65,7 +65,7 @@
               *ngIf="tableStats[column.header] && prevTableStats[column.header] && tableStats[column.header]['firstPercent'] !== undefined">
               <div class="statsLine">
                 <h5 class="leftAlign">
-                  {{tableStats[column.header]['firstCat']}} 
+                  {{tableStats[column.header]['firstCat']}}
                   <span *ngIf="tableStats[column.header]['reachedLimit'] == 1"> (approximate)</span>
                 </h5>
                 <h5 class="rightAlign">

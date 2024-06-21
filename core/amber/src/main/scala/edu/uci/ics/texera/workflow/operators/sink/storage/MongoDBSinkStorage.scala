@@ -185,7 +185,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
     fields.foreach(field => {
       var fieldResult = mutable.Map[String, Any]()
       var newCount: Long = 0
-      val offset: Long = previousCount.getOrElse(field, 0) // get the offset from previous run
+      val offset: Long = previousCount.getOrElse(field, 0)
 
       val (newStats, batchReachedLimit) = collectionMgr.calculateCategoricalStats(field, offset)
       var oldStats = previousCatStats.getOrElse(field, Map())
@@ -196,17 +196,15 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
         oldStats += (key -> (oldStats.getOrElse(key, 0) + newStats(key)))
         newCount += newStats(key)
       })
-      previousCount.update(field, offset + newCount) // update the offset manually by checking the # of docs read
-
+      previousCount.update(field, offset + newCount)
       previousCatStats += (field -> oldStats)
-
       previousReachedLimit.update(field, if (reachedLimit) 1 else 0)
 
       val top2 = previousCatStats(field).toSeq.sortBy(-_._2).take(2).map(_._1)
       top2.size match {
         case 2 => {
-          fieldResult("firstCat") = top2(0)
-          fieldResult("secondCat") = top2(1)
+          fieldResult("firstCat") = if (top2(0) != null) top2(0) else "NULL"
+          fieldResult("secondCat") = if (top2(1) != null) top2(1) else "NULL"
           val first = (previousCatStats(field)(top2(0)).toDouble / (offset + newCount).toDouble) * 100
           val second = (previousCatStats(field)(top2(1)).toDouble / (offset + newCount).toDouble) * 100
           fieldResult("firstPercent") = first
@@ -215,7 +213,7 @@ class MongoDBSinkStorage(id: String) extends SinkStorageReader {
           fieldResult("reachedLimit") = if (reachedLimit) 1 else 0
         }
         case 1 => {
-          fieldResult("firstCat") = top2(0)
+          fieldResult("firstCat") = if (top2(0) != null) top2(0) else "NULL"
           fieldResult("secondCat") = ""
           fieldResult("firstPercent") = (previousCatStats(field)(top2(0)).toDouble / (offset + newCount).toDouble) * 100
           fieldResult("secondPercent") = 0
