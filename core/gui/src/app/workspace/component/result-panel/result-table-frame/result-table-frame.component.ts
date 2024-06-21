@@ -101,7 +101,6 @@ export class ResultTableFrameComponent implements OnInit, OnChanges {
 
         this.tableStats = paginatedResultService.getStats();
         this.prevTableStats = this.tableStats;
-        console.log(this.tableStats)
       }
     }
   }
