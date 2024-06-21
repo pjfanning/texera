@@ -9,9 +9,11 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
+import org.jgrapht.alg.cycle.HawickJamesSimpleCycles
 import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
 import org.jooq.types.UInteger
 
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
 
@@ -111,10 +113,10 @@ class CostBasedRegionPlanGenerator(
       regionDAG.addVertex(region)
     })
     var isAcyclic = true
-    matEdges.foreach(blockingEdge => {
-      val fromRegion = opToRegionMap(blockingEdge.fromOpId)
-      val toRegion = opToRegionMap(blockingEdge.toOpId)
-      regionGraph.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
+    matEdges.foreach(physicalLink => {
+      val fromRegion = opToRegionMap(physicalLink.fromOpId)
+      val toRegion = opToRegionMap(physicalLink.toOpId)
+      regionGraph.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id, Some(physicalLink)))
       try {
         regionDAG.addEdge(fromRegion, toRegion, RegionLink(fromRegion.id, toRegion.id))
       } catch {
@@ -132,7 +134,7 @@ class CostBasedRegionPlanGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    val searchResult = bottomUpSearch()
+    val searchResult = topDownSearch()
     // Only a non-dependee blocking link that has not already been materialized should be replaced
     // with a materialization write op + materialization read op.
     val linksToMaterialize =
@@ -149,7 +151,7 @@ class CostBasedRegionPlanGenerator(
       )
     }
     // Since the plan is now schedulable, calling the search directly returns a region DAG.
-    val regionDAG = bottomUpSearch().regionDAG
+    val regionDAG = topDownSearch().regionDAG
     addMaterializationsAsRegionLinks(linksToMaterialize, regionDAG)
     populateDependeeLinks(regionDAG)
     if (workflowContext.userId.nonEmpty) allocateResource(regionDAG)
@@ -243,7 +245,7 @@ class CostBasedRegionPlanGenerator(
       }
 
       def expandFrontier(): Unit = {
-        val allBlockingEdges =
+        val allBlockingEdges = // TODO: rename
           currentState ++ physicalPlan.getNonMaterializedBlockingAndDependeeLinks
         // Generate and enqueue all neighbour states that haven't been visited
         var candidateEdges = originalNonBlockingEdges
@@ -279,14 +281,24 @@ class CostBasedRegionPlanGenerator(
     bestResult
   }
 
-  // TODO: Migrate topDown search
-  private def topDownSearch(): SearchResult = {
-    val originalNonBlockingEdges = physicalPlan.getNonBridgeNonBlockingLinks // Optimization 2: Bridges
+  private def topDownSearch(globalSearch: Boolean = true, oChains: Boolean = true, oCleanEdges: Boolean = true, oEarlyStop: Boolean = true): SearchResult = {
     // Queue to hold states to be explored, starting with the empty set
-    val queue: mutable.Queue[Set[PhysicalLink]] = mutable.Queue(Set.empty[PhysicalLink])
+    var seedState = this.physicalPlan.getNonBlockingLinks
+
+    if (oChains) {
+      val edgesInChainWithBlockingEdge = physicalPlan.maxChains
+        .filter(chain => chain.intersect(physicalPlan.getNonMaterializedBlockingAndDependeeLinks).nonEmpty)
+        .flatten
+      seedState = seedState.diff(edgesInChainWithBlockingEdge)
+    }
+
+    if (oCleanEdges) seedState = seedState.intersect(physicalPlan.getNonBridgeNonBlockingLinks)
+
+    val queue: mutable.Queue[Set[PhysicalLink]] = mutable.Queue(seedState)
     // Keep track of visited states to avoid revisiting
     val visited: mutable.Set[Set[PhysicalLink]] = mutable.Set.empty[Set[PhysicalLink]]
     // Initialize the bestResult with an impossible high cost for comparison
+    val hopelessStates: mutable.Set[Set[PhysicalLink]] = mutable.Set.empty[Set[PhysicalLink]]
     var bestResult: SearchResult = SearchResult(
       state = Set.empty,
       regionDAG = new DirectedAcyclicGraph[Region, RegionLink](classOf[RegionLink]),
@@ -300,52 +312,64 @@ class CostBasedRegionPlanGenerator(
         physicalPlan.getNonMaterializedBlockingAndDependeeLinks ++ currentState
       ) match {
         case Left(regionDAG) =>
-          // Calculate the current state's cost and update the bestResult if it's lower
-          val cost =
-            evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-          if (cost < bestResult.cost) {
-            bestResult = SearchResult(currentState, regionDAG, cost)
-          }
+          checkSchedulableState(regionDAG)
+          expandFrontier()
         // No need to explore further
-        case Right(_) =>
-          val allBlockingEdges =
-            currentState ++ physicalPlan.getNonMaterializedBlockingAndDependeeLinks
-          // Generate and enqueue all neighbour states that haven't been visited
-          val edgesInChainWithBlockingEdge = physicalPlan.maxChains
-            .filter(chain => chain.intersect(allBlockingEdges).nonEmpty)
-            .flatten
-          val candidateEdges = originalNonBlockingEdges
-            .diff(edgesInChainWithBlockingEdge) // Optimization 1: Chains
-            .diff(currentState)
-          if (AmberConfig.useGlobalSearch) {
-            candidateEdges.foreach { link =>
-              val nextState = currentState + link
-              if (!visited.contains(nextState) && !queue.contains(nextState)) {
-                queue.enqueue(nextState)
+        case Right(regionGraph) =>
+          var isCurrentStateHopeless = false
+          if (oEarlyStop) {
+            // Check if the current state is also hopeless
+            val physicalLinksInRegionCycles = new HawickJamesSimpleCycles(regionGraph).findSimpleCycles().flatMap{cycle =>
+              cycle.toList.sliding(2)
+                .map {
+                case List(v1, v2) => regionGraph.getAllEdges(v1, v2).toSet
+                case _ => Set.empty[RegionLink]
+              }
+            }.toSet.flatten.map { regionLink =>
+              regionLink.originalPhysicalLink match {
+                case Some(physicalLink: PhysicalLink) => physicalLink
+                case None => PhysicalLink.defaultInstance
               }
             }
-          } else {
-            val nextLink = candidateEdges.minBy(edge =>
-              tryConnectRegionDAG(
-                physicalPlan.getNonMaterializedBlockingAndDependeeLinks ++ currentState + edge
-              ) match {
-                case Left(regionDAG) =>
-                  evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-                case Right(regionGraph) =>
-                  evaluate(
-                    regionGraph.vertexSet().asScala.toSet,
-                    regionGraph.edgeSet().asScala.toSet
-                  )
-              }
-            )
-            val nextState = currentState + nextLink
-            if (!visited.contains(nextState) && !queue.contains(nextState)) {
-              queue.enqueue(nextState)
+            isCurrentStateHopeless = physicalPlan.getNonMaterializedBlockingAndDependeeLinks.intersect(physicalLinksInRegionCycles).nonEmpty
+            if (isCurrentStateHopeless) {
+              hopelessStates.add(currentState)
             }
           }
+          if (!oEarlyStop || !isCurrentStateHopeless) expandFrontier()
+      }
+
+      def checkSchedulableState(regionDAG: DirectedAcyclicGraph[Region, RegionLink]): Unit = {
+        // Calculate the current state's cost and update the bestResult if it's lower
+        val cost =
+          evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+        if (cost < bestResult.cost) {
+          bestResult = SearchResult(currentState, regionDAG, cost)
+        }
+      }
+
+      def expandFrontier(): Unit = {
+        // Generate and enqueue all neighbour states that haven't been visited
+        var unvisitedNeighborStates = currentState.map(edge => currentState - edge).filter(neighborState => !visited.contains(neighborState) && !queue.contains(neighborState))
+
+        if (oEarlyStop) unvisitedNeighborStates = unvisitedNeighborStates.filter(neighborState => !hopelessStates.exists(ancestorState => neighborState.subsetOf(ancestorState)))
+
+        if (globalSearch) {
+          unvisitedNeighborStates.foreach(neighborState => queue.enqueue(neighborState))
+        } else {
+          val minCostNeighborState = unvisitedNeighborStates.minBy(neighborState => tryConnectRegionDAG(physicalPlan.getNonMaterializedBlockingAndDependeeLinks ++ neighborState) match {
+            case Left(regionDAG) =>
+              evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+            case Right(regionGraph) =>
+              evaluate(
+                regionGraph.vertexSet().asScala.toSet,
+                regionGraph.edgeSet().asScala.toSet
+              )
+          })
+          queue.enqueue(minCostNeighborState)
+        }
       }
     }
-
     bestResult
   }
 
