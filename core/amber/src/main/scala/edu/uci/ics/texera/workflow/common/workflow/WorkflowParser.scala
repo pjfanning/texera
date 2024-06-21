@@ -9,6 +9,8 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import io.circe.{Json, ParsingFailure, parser}
+import org.jgrapht.graph.DirectedAcyclicGraph
+import org.jgrapht.util.SupplierUtil
 
 import scala.io.Source
 import scala.util.Try
@@ -61,7 +63,7 @@ object WorkflowParser extends App {
         }
         val opIdentityMap = operators.map(op => op.id.logicalOpId.id -> op.id).toMap
 
-        val links = doc.hcursor.downField("links").values match {
+        var links = doc.hcursor.downField("links").values match {
           case Some(linksJson) =>
             linksJson.toList.flatMap { linkJson =>
               for {
@@ -76,10 +78,30 @@ object WorkflowParser extends App {
           case None => Set[PhysicalLink]()
 
         }
+
+        val jgraphtDag = new DirectedAcyclicGraph[PhysicalOpIdentity, PhysicalLink](
+          null, // vertexSupplier
+          SupplierUtil.createSupplier(classOf[PhysicalLink]), // edgeSupplier
+          false, // weighted
+          true // allowMultipleEdges
+        )
+        operators.foreach(op => jgraphtDag.addVertex(op.id))
+        links.foreach(l => {
+          try {
+            jgraphtDag.addEdge(l.fromOpId, l.toOpId, l)
+          } catch {
+            case _: Exception => {
+              links = links - l
+              println(s"Removed link $l to keep the input physical plan acyclic.")
+            }
+          }
+        })
+
         val physicalPlan = PhysicalPlan(operators = operators, links = links)
         val workflowScheduler: WorkflowScheduler = new WorkflowScheduler(new WorkflowContext(), new OpResultStorage())
         workflowScheduler.updateSchedule(physicalPlan)
         val schedule = workflowScheduler.schedule
+        println(schedule.toList)
       case Left(error) =>
         println("Failed to parse JSON:")
         println(error)

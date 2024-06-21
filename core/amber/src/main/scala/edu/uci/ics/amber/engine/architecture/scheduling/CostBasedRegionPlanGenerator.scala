@@ -134,7 +134,7 @@ class CostBasedRegionPlanGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    val searchResult = topDownSearch()
+    val searchResult = bottomUpSearch(globalSearch = false)
     // Only a non-dependee blocking link that has not already been materialized should be replaced
     // with a materialization write op + materialization read op.
     val linksToMaterialize =
@@ -151,7 +151,7 @@ class CostBasedRegionPlanGenerator(
       )
     }
     // Since the plan is now schedulable, calling the search directly returns a region DAG.
-    val regionDAG = topDownSearch().regionDAG
+    val regionDAG = bottomUpSearch(globalSearch = false).regionDAG
     addMaterializationsAsRegionLinks(linksToMaterialize, regionDAG)
     populateDependeeLinks(regionDAG)
     if (workflowContext.userId.nonEmpty) allocateResource(regionDAG)
@@ -357,16 +357,18 @@ class CostBasedRegionPlanGenerator(
         if (globalSearch) {
           unvisitedNeighborStates.foreach(neighborState => queue.enqueue(neighborState))
         } else {
-          val minCostNeighborState = unvisitedNeighborStates.minBy(neighborState => tryConnectRegionDAG(physicalPlan.getNonMaterializedBlockingAndDependeeLinks ++ neighborState) match {
-            case Left(regionDAG) =>
-              evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
-            case Right(regionGraph) =>
-              evaluate(
-                regionGraph.vertexSet().asScala.toSet,
-                regionGraph.edgeSet().asScala.toSet
-              )
-          })
-          queue.enqueue(minCostNeighborState)
+          if (unvisitedNeighborStates.nonEmpty) {
+            val minCostNeighborState = unvisitedNeighborStates.minBy(neighborState => tryConnectRegionDAG(physicalPlan.getNonMaterializedBlockingAndDependeeLinks ++ neighborState) match {
+              case Left(regionDAG) =>
+                evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+              case Right(regionGraph) =>
+                evaluate(
+                  regionGraph.vertexSet().asScala.toSet,
+                  regionGraph.edgeSet().asScala.toSet
+                )
+            })
+            queue.enqueue(minCostNeighborState)
+          }
         }
       }
     }
