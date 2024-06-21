@@ -12,6 +12,7 @@ import com.mongodb.client.model.Accumulators._
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.util.Try
+import org.bson._
 
 class MongoCollectionManager(collection: MongoCollection[Document]) {
 
@@ -36,24 +37,24 @@ class MongoCollectionManager(collection: MongoCollection[Document]) {
   }
 
   def getAllColumnNames: Array[Array[String]] = {
-    var result: List[List[String]] = List(List(), List(), List())
-    val doc = collection.find().first()
-    val keys = doc.keySet()
+    var numericFields: Set[String] = Set()
+    var categoricalFields: Set[String] = Set()
+    var dateFields: Set[String] = Set()
 
-    keys.forEach { key =>
-      val fieldValue = doc.get(key)
-      val fieldAsNumber = Try(fieldValue.toString.toDouble).toOption
-      fieldAsNumber match {
-        case Some(_) => result = result.updated(0, result.head :+ key)
-        case None =>
-          fieldValue match {
-            case _: java.lang.String => result = result.updated(1, result(1) :+ key)
-            case _: java.util.Date => result = result.updated(2, result(2) :+ key)
-            case _ => None
-          }
-      }
-    }
-    result.map(_.toArray).toArray
+    collection.find().limit(10).forEach(doc => {
+      val keys = doc.keySet()
+      keys.forEach ( key => {
+        doc.get(key) match {
+          case _: java.lang.String => categoricalFields += key
+          case _: java.lang.Integer | _: java.lang.Long => numericFields += key
+          case _: java.lang.Float | _: java.lang.Double => numericFields += key
+          case _: java.util.Date => dateFields += key
+          case _ => None
+        }
+      })
+    })
+
+    Array(numericFields.toArray, categoricalFields.toArray, dateFields.toArray)
   }
 
   def getDocuments(condition: Option[Document]): Iterable[Document] = {
