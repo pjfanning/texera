@@ -1,17 +1,15 @@
 package edu.uci.ics.texera.web.service
 
 import com.typesafe.scalalogging.LazyLogging
-import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowPaused
+import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.ExecutionStateUpdate
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.PauseHandler.PauseWorkflow
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.ResumeHandler.ResumeWorkflow
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.RetrieveWorkflowStateHandler.RetrieveWorkflowState
 import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.TakeGlobalCheckpointHandler.TakeGlobalCheckpoint
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.FaultToleranceConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
 import edu.uci.ics.amber.engine.common.virtualidentity.ChannelMarkerIdentity
-import edu.uci.ics.texera.web.model.websocket.event.{OperatorStateEvent, TexeraWebSocketEvent, WorkflowCheckpointStatusEvent}
 import edu.uci.ics.texera.web.{SubscriptionManager, WebsocketInput}
-import edu.uci.ics.texera.web.model.websocket.request.{OperatorStateRequest, SkipTupleRequest, WorkflowInteractionRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
+import edu.uci.ics.texera.web.model.websocket.request.{OperatorStateRequest, SkipTupleRequest, WorkflowCheckpointRequest, WorkflowKillRequest, WorkflowPauseRequest, WorkflowResumeRequest}
 import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState._
@@ -22,10 +20,8 @@ class ExecutionRuntimeService(
     client: AmberClient,
     stateStore: ExecutionStateStore,
     wsInput: WebsocketInput,
-    breakpointService: ExecutionBreakpointService,
     reconfigurationService: ExecutionReconfigurationService,
-    logConf: Option[FaultToleranceConfig],
-    sendEvtFunc: ()=> (TexeraWebSocketEvent => Unit)
+    logConf: Option[FaultToleranceConfig]
 ) extends SubscriptionManager
     with LazyLogging {
 
@@ -36,11 +32,15 @@ class ExecutionRuntimeService(
     throw new RuntimeException("skipping tuple is temporarily disabled")
   }))
 
-  // Receive Paused from Amber
-  addSubscription(client.registerCallback[WorkflowPaused]((evt: WorkflowPaused) => {
+  // Receive execution state update from Amber
+  addSubscription(client.registerCallback[ExecutionStateUpdate]((evt: ExecutionStateUpdate) => {
     stateStore.metadataStore.updateState(metadataStore =>
-      updateWorkflowState(PAUSED, metadataStore)
+      updateWorkflowState(evt.state, metadataStore)
     )
+    if (evt.state == COMPLETED) {
+      client.shutdown()
+      stateStore.statsStore.updateState(stats => stats.withEndTimeStamp(System.currentTimeMillis()))
+    }
   }))
 
   // Receive Pause
@@ -62,7 +62,6 @@ class ExecutionRuntimeService(
 
   // Receive Resume
   addSubscription(wsInput.subscribe((req: WorkflowResumeRequest, uidOpt) => {
-    breakpointService.clearTriggeredBreakpoints()
     reconfigurationService.performReconfigurationOnResume()
     stateStore.metadataStore.updateState(metadataStore =>
       updateWorkflowState(RESUMING, metadataStore)
@@ -86,31 +85,35 @@ class ExecutionRuntimeService(
   }))
 
   // Receive Interaction
+  addSubscription(wsInput.subscribe((req: WorkflowCheckpointRequest, uidOpt) => {
+    assert(
+      logConf.nonEmpty,
+      "Fault tolerance log folder is not established. Unable to take a global checkpoint."
+    )
+    val checkpointId = ChannelMarkerIdentity(s"Checkpoint_${UUID.randomUUID().toString}")
+    val uri = logConf.get.writeTo.resolve(checkpointId.toString)
+    client.sendAsync(TakeGlobalCheckpoint(estimationOnly = false, checkpointId, uri))
+  }))
+
+  // Receive Interaction
   addSubscription(wsInput.subscribe((req: WorkflowInteractionRequest, uidOpt) => {
     if (logConf.isEmpty) {
       logger.info(
         "Fault tolerance log folder is not established. Unable to take a global checkpoint."
       )
-    } else{
+    } else {
       interactionSeq += 1
       val startTime = System.currentTimeMillis()
-      val checkpointId = if(req.toCheckpoint){
+      val checkpointId = if (req.toCheckpoint) {
         ChannelMarkerIdentity(s"Checkpoint_${interactionSeq}")
-      }else{
+      } else {
         ChannelMarkerIdentity(s"Pause_${interactionSeq}")
       }
-      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, logConf.get.writeTo)).foreach{
+      client.sendAsync(TakeGlobalCheckpoint(estimationOnly = !req.toCheckpoint, checkpointId, logConf.get.writeTo)).foreach {
         ret =>
           sendEvtFunc()(WorkflowCheckpointStatusEvent(checkpointId.id, "Success", System.currentTimeMillis() - startTime, ret))
       }
     }
-  }))
-
-  // Receive Interaction
-  addSubscription(wsInput.subscribe((req: OperatorStateRequest, uidOpt) => {
-    client.retrieveStateFromOperator(req.opId).onSuccess(ret =>{
-      sendEvtFunc()(OperatorStateEvent(req.opId, ret.asInstanceOf[String]))
-    })
   }))
 
 }

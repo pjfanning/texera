@@ -23,14 +23,7 @@ import java.util.concurrent.{ExecutorService, Executors}
 import scala.sys.process.{BasicIO, Process}
 
 object PythonWorkflowWorker {
-  def props(
-      workerConfig: WorkerConfig
-  ): Props =
-    Props(
-      new PythonWorkflowWorker(
-        workerConfig
-      )
-    )
+  def props(workerConfig: WorkerConfig): Props = Props(new PythonWorkflowWorker(workerConfig))
 }
 
 class PythonWorkflowWorker(
@@ -50,8 +43,10 @@ class PythonWorkflowWorker(
     .resolve("src")
     .resolve("main")
     .resolve("python")
-  val config: Config = ConfigFactory.load("python_udf")
+  val config: Config = ConfigFactory.load("udf")
   val pythonENVPath: String = config.getString("python.path").trim
+  val RENVPath: String = config.getString("r.path").trim
+
   // Python process
   private var pythonServerProcess: Process = _
 
@@ -76,7 +71,7 @@ class PythonWorkflowWorker(
         case p => logger.error(s"unhandled control payload: $p")
       }
     }
-    sender ! NetworkAck(
+    sender() ! NetworkAck(
       messageId,
       getInMemSize(workflowMsg),
       getQueuedCredit(workflowMsg.channelId)
@@ -86,7 +81,7 @@ class PythonWorkflowWorker(
   override def receiveCreditMessages: Receive = {
     case WorkflowActor.CreditRequest(channel) =>
       pythonProxyClient.enqueueActorCommand(CreditUpdate())
-      sender ! WorkflowActor.CreditResponse(channel, getQueuedCredit(channel))
+      sender() ! WorkflowActor.CreditResponse(channel, getQueuedCredit(channel))
     case WorkflowActor.CreditResponse(channel, credit) =>
       transferService.updateChannelCreditFromReceiver(channel, credit)
   }
@@ -157,10 +152,11 @@ class PythonWorkflowWorker(
         udfEntryScriptPath,
         workerConfig.workerId.name,
         Integer.toString(pythonProxyServer.getPortNumber.get()),
-        config.getString("python.log.streamHandler.level")
+        config.getString("python.log.streamHandler.level"),
+        RENVPath
       )
     ).run(BasicIO.standard(false))
   }
 
-  override def initFromCheckpoint(chkpt: CheckpointState): Unit = ???
+  override def loadFromCheckpoint(chkpt: CheckpointState): Unit = ???
 }

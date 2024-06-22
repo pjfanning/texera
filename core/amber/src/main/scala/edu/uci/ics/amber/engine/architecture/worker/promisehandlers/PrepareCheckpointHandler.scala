@@ -14,7 +14,8 @@ import java.util.concurrent.CompletableFuture
 import scala.collection.mutable
 
 object PrepareCheckpointHandler {
-  final case class PrepareCheckpoint(estimationOnly: Boolean) extends ControlCommand[Unit]
+  final case class PrepareCheckpoint(checkpointId: ChannelMarkerIdentity, estimationOnly: Boolean)
+      extends ControlCommand[Unit]
 }
 
 trait PrepareCheckpointHandler {
@@ -23,9 +24,9 @@ trait PrepareCheckpointHandler {
   registerHandler { (msg: PrepareCheckpoint, sender) =>
     logger.info("Start to take checkpoint")
     if (!msg.estimationOnly) {
-      dp.serializationCall = () => {
-        serializeWorkerState()
-      }
+      dp.serializationManager.registerSerialization(() => {
+        serializeWorkerState(msg.checkpointId)
+      })
     } else {
       logger.info(s"Checkpoint is estimation-only. do nothing.")
     }

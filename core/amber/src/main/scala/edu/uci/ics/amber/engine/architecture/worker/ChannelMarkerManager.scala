@@ -26,15 +26,7 @@ class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: Inpu
   private val markerReceived =
     new mutable.HashMap[ChannelMarkerIdentity, Set[ChannelIdentity]]()
 
-  private var markerContext: MarkerContext = _
-
   val checkpoints = new mutable.HashMap[ChannelMarkerIdentity, CheckpointState]()
-
-  def setContext(marker: ChannelMarkerPayload, from: ChannelIdentity): Unit = {
-    markerContext = MarkerContext(marker, from)
-  }
-
-  def getContext: MarkerContext = markerContext
 
   /**
     * Determines if an epoch marker is fully received from all relevant senders within its scope.
@@ -44,17 +36,19 @@ class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: Inpu
     *
     * @return true if the epoch marker is fully received from all senders in the scope, false otherwise.
     */
-  def isMarkerAligned: Boolean = {
-    assert(markerContext != null)
-    val markerId = markerContext.marker.id
+  def isMarkerAligned(
+      from: ChannelIdentity,
+      marker: ChannelMarkerPayload
+  ): Boolean = {
+    val markerId = marker.id
     if (!markerReceived.contains(markerId)) {
       markerReceived(markerId) = Set()
     }
-    markerReceived.update(markerId, markerReceived(markerId) + markerContext.fromChannel)
+    markerReceived.update(markerId, markerReceived(markerId) + from)
     // check if the epoch marker is completed
     val markerReceivedFromAllChannels =
-      getChannelsWithinScope.subsetOf(markerReceived(markerId))
-    val epochMarkerCompleted = markerContext.marker.markerType match {
+      getChannelsWithinScope(marker).subsetOf(markerReceived(markerId))
+    val epochMarkerCompleted = marker.markerType match {
       case RequireAlignment => markerReceivedFromAllChannels
       case NoAlignment      => markerReceived(markerId).size == 1 // only the first marker triggers
     }
@@ -64,9 +58,8 @@ class ChannelMarkerManager(val actorId: ActorVirtualIdentity, inputGateway: Inpu
     epochMarkerCompleted
   }
 
-  private def getChannelsWithinScope: Set[ChannelIdentity] = {
-    assert(markerContext != null)
-    val upstreams = markerContext.marker.scope.filter(_.toWorkerId == actorId)
+  private def getChannelsWithinScope(marker: ChannelMarkerPayload): Set[ChannelIdentity] = {
+    val upstreams = marker.scope.filter(_.toWorkerId == actorId)
     inputGateway.getAllChannels
       .map(_.channelId)
       .filter { id =>

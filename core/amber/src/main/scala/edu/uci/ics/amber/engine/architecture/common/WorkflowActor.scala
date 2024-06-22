@@ -20,10 +20,10 @@ import edu.uci.ics.amber.engine.architecture.logreplay.{
   ReplayOrderEnforcer
 }
 import edu.uci.ics.amber.engine.architecture.worker.WorkflowWorker.{
+  MainThreadDelegateMessage,
+  TriggerSend,
   FaultToleranceConfig,
-  MainThreadDelegate,
-  StateRestoreConfig,
-  TriggerSend
+  StateRestoreConfig
 }
 import edu.uci.ics.amber.engine.common.{AmberLogging, CheckpointState}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkflowFIFOMessage
@@ -104,7 +104,7 @@ abstract class WorkflowActor(
   def getLogName: String = actorId.name.replace("Worker:", "")
 
   def sendMessageFromLogWriterToActor(
-      msg: Either[MainThreadDelegate, WorkflowFIFOMessage]
+      msg: Either[MainThreadDelegateMessage, WorkflowFIFOMessage]
   ): Unit = {
     // limitation: TriggerSend will be processed after input messages before it.
     msg match {
@@ -128,7 +128,7 @@ abstract class WorkflowActor(
   // actor behavior for FIFO messages
   def receiveMessageAndAck: Receive = {
     case NetworkMessage(id, workflowMsg @ WorkflowFIFOMessage(channel, _, _)) =>
-      actorRefMappingService.registerActorRef(channel.fromWorkerId, sender)
+      actorRefMappingService.registerActorRef(channel.fromWorkerId, sender())
       try {
         handleInputMessage(id, workflowMsg)
       } catch {
@@ -142,7 +142,7 @@ abstract class WorkflowActor(
 
   def receiveCreditMessages: Receive = {
     case CreditRequest(channel) =>
-      sender ! CreditResponse(channel, getQueuedCredit(channel))
+      sender() ! CreditResponse(channel, getQueuedCredit(channel))
     case CreditResponse(channel, credit) =>
       transferService.updateChannelCreditFromReceiver(channel, credit)
   }
@@ -177,36 +177,30 @@ abstract class WorkflowActor(
   //
   def initState(): Unit
 
-  def initFromCheckpoint(chkpt: CheckpointState): Unit
+  def loadFromCheckpoint(chkpt: CheckpointState): Unit
 
   def setupReplay(
       amberProcessor: AmberProcessor,
-      replayConf: StateRestoreConfig,
+      stateRestoreConf: StateRestoreConfig,
       onComplete: () => Unit
   ): Unit = {
     val logStorageToRead =
-      SequentialRecordStorage.getStorage[ReplayLogRecord](Some(replayConf.readFrom))
-    val replayTo = replayConf.replayDestination
+      SequentialRecordStorage.getStorage[ReplayLogRecord](Some(stateRestoreConf.readFrom))
+    val replayTo = stateRestoreConf.replayDestination
     if (logStorageToRead.containsFolder(replayTo.toString)) {
       // checkpoint found
       val chkptStorage = SequentialRecordStorage.getStorage[CheckpointState](
-        Some(replayConf.readFrom.resolve(replayTo.toString))
+        Some(stateRestoreConf.readFrom.resolve(replayTo.toString))
       )
       val chkpt = chkptStorage.getReader(getLogName).mkRecordIterator().next()
-      initFromCheckpoint(chkpt)
-      isReadOnlyState = replayConf.readOnlyState
+      loadFromCheckpoint(chkpt)
     } else {
       // do replay from scratch
       val (processSteps, messages) =
-        ReplayLogGenerator.generate(
-          logStorageToRead,
-          getLogName,
-          replayTo,
-          replayConf.additionalCheckpoints
-        )
+        ReplayLogGenerator.generate(logStorageToRead, getLogName, replayTo)
       logger.info(
         s"setting up replay, " +
-          s"read from ${replayConf.readFrom} " +
+          s"read from ${stateRestoreConf.readFrom} " +
           s"current step = ${logManager.getStep} " +
           s"target step = $replayTo " +
           s"# of log record to replay = ${processSteps.size}"

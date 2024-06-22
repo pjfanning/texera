@@ -1,18 +1,13 @@
 package edu.uci.ics.amber.engine.common
 
-import akka.serialization.Serialization
-
 import scala.collection.mutable
 
 class CheckpointState {
 
   private val states = new mutable.HashMap[String, SerializedState]()
 
-  // it will be recomputed after deserialization
-  @transient private lazy val serde: Serialization = AmberUtils.serde
-
   def save[T <: Any](key: String, state: T): Unit = {
-    states(key) = SerializedState.fromObject(state.asInstanceOf[AnyRef], serde)
+    states(key) = SerializedState.fromObject(state.asInstanceOf[AnyRef], AmberRuntime.serde)
   }
 
   def has(key: String): Boolean = {

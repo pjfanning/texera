@@ -42,7 +42,7 @@ class HierarchyChartOpDesc extends VisualizationOperator with PythonOperatorDesc
   var value: String = ""
 
   override def getOutputSchema(schemas: Array[Schema]): Schema = {
-    Schema.newBuilder.add(new Attribute("html-content", AttributeType.STRING)).build
+    Schema.builder().add(new Attribute("html-content", AttributeType.STRING)).build()
   }
 
   override def operatorInfo: OperatorInfo =
@@ -105,6 +105,7 @@ class HierarchyChartOpDesc extends VisualizationOperator with PythonOperatorDesc
          |           return
          |        ${createPlotlyFigure()}
          |        # convert fig to html content
+         |        fig.update_layout(margin=dict(l=0, r=0, b=0, t=0))
          |        html = plotly.io.to_html(fig, include_plotlyjs='cdn', auto_play=False)
          |        yield {'html-content': html}
          |""".stripMargin

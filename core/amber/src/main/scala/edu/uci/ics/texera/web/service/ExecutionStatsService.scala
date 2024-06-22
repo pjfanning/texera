@@ -4,14 +4,14 @@ import com.google.protobuf.timestamp.Timestamp
 import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.architecture.controller.Controller.WorkflowRecoveryStatus
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.{
-  WorkerAssignmentUpdate,
-  WorkflowCompleted,
-  WorkflowStatusUpdate
+  ExecutionStatsUpdate,
+  FatalError,
+  WorkerAssignmentUpdate
 }
-import edu.uci.ics.amber.engine.architecture.controller.promisehandlers.FatalErrorHandler.FatalError
-import edu.uci.ics.amber.engine.common.{AmberConfig, VirtualIdentityUtils}
+import edu.uci.ics.amber.engine.architecture.worker.statistics.PortTupleCountMapping
+import edu.uci.ics.amber.engine.common.AmberConfig
 import edu.uci.ics.amber.engine.common.client.AmberClient
-import edu.uci.ics.amber.error.ErrorUtils.getStackTraceWithAllCauses
+import edu.uci.ics.amber.error.ErrorUtils.{getOperatorFromActorIdOpt, getStackTraceWithAllCauses}
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.Utils.maptoStatusCode
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.WorkflowRuntimeStatistics
@@ -19,7 +19,7 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.WorkflowRuntimeSt
 import edu.uci.ics.texera.web.{SqlServer, SubscriptionManager}
 import edu.uci.ics.texera.web.model.websocket.event.{
   ExecutionDurationUpdateEvent,
-  OperatorStatistics,
+  OperatorAggregatedMetrics,
   OperatorStatisticsUpdateEvent,
   WorkerAssignmentUpdateEvent
 }
@@ -27,17 +27,20 @@ import edu.uci.ics.texera.web.storage.ExecutionStateStore
 import edu.uci.ics.texera.web.storage.ExecutionStateStore.updateWorkflowState
 import edu.uci.ics.texera.web.workflowruntimestate.FatalErrorType.EXECUTION_FAILURE
 import edu.uci.ics.texera.web.workflowruntimestate.{
-  OperatorRuntimeStats,
+  OperatorMetrics,
+  OperatorStatistics,
   OperatorWorkerMapping,
+  WorkflowAggregatedState,
   WorkflowFatalError
 }
-import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.FAILED
 
 import java.time.Instant
 import edu.uci.ics.texera.workflow.common.WorkflowContext
-import org.jooq.types.UInteger
+import org.jooq.types.{UInteger, ULong}
 
 import java.util
+import java.util.concurrent.Executors
 
 class ExecutionStatsService(
     client: AmberClient,
@@ -47,32 +50,26 @@ class ExecutionStatsService(
     with LazyLogging {
   final private lazy val context = SqlServer.createDSLContext()
   private val workflowRuntimeStatisticsDao = new WorkflowRuntimeStatisticsDao(context.configuration)
-
+  private val metricsPersistThread = Executors.newSingleThreadExecutor()
+  private var lastPersistedMetrics: Map[String, OperatorMetrics] = Map()
   registerCallbacks()
 
   addSubscription(
     stateStore.statsStore.registerDiffHandler((oldState, newState) => {
-      if (AmberConfig.isUserSystemEnabled) {
-        storeRuntimeStatistics(newState.operatorInfo.zip(oldState.operatorInfo).collect {
-          case ((newId, newStats), (oldId, oldStats)) =>
-            val res = OperatorRuntimeStats(
-              newStats.state,
-              newStats.inputCount - oldStats.inputCount,
-              newStats.outputCount - oldStats.outputCount
-            )
-            (newId, res)
-        })
-      }
       // Update operator stats if any operator updates its stat
       if (newState.operatorInfo.toSet != oldState.operatorInfo.toSet) {
         Iterable(
           OperatorStatisticsUpdateEvent(newState.operatorInfo.collect {
             case x =>
-              val stats = x._2
-              val res = OperatorStatistics(
-                Utils.aggregatedStateToString(stats.state),
-                stats.inputCount,
-                stats.outputCount
+              val metrics = x._2
+              val res = OperatorAggregatedMetrics(
+                Utils.aggregatedStateToString(metrics.operatorState),
+                metrics.operatorStatistics.inputCount.map(_.tupleCount).sum,
+                metrics.operatorStatistics.outputCount.map(_.tupleCount).sum,
+                metrics.operatorStatistics.numWorkers,
+                metrics.operatorStatistics.dataProcessingTime,
+                metrics.operatorStatistics.controlProcessingTime,
+                metrics.operatorStatistics.idleTime
               )
               (x._1, res)
           })
@@ -123,26 +120,90 @@ class ExecutionStatsService(
   )
 
   private[this] def registerCallbacks(): Unit = {
-    registerCallbackOnWorkflowStatusUpdate()
+    registerCallbackOnWorkflowStatsUpdate()
     registerCallbackOnWorkerAssignedUpdate()
     registerCallbackOnWorkflowRecoveryUpdate()
-    registerCallbackOnWorkflowComplete()
     registerCallbackOnFatalError()
   }
 
-  private[this] def registerCallbackOnWorkflowStatusUpdate(): Unit = {
+  private[this] def registerCallbackOnWorkflowStatsUpdate(): Unit = {
     addSubscription(
       client
-        .registerCallback[WorkflowStatusUpdate]((evt: WorkflowStatusUpdate) => {
+        .registerCallback[ExecutionStatsUpdate]((evt: ExecutionStatsUpdate) => {
           stateStore.statsStore.updateState { statsStore =>
-            statsStore.withOperatorInfo(evt.operatorStatistics)
+            statsStore.withOperatorInfo(evt.operatorMetrics)
+          }
+          if (AmberConfig.isUserSystemEnabled) {
+            metricsPersistThread.execute(() => {
+              storeRuntimeStatistics(computeStatsDiff(evt.operatorMetrics))
+              lastPersistedMetrics = evt.operatorMetrics
+            })
           }
         })
     )
   }
 
+  private def computeStatsDiff(
+      newMetrics: Map[String, OperatorMetrics]
+  ): Map[String, OperatorMetrics] = {
+    val defaultMetrics =
+      OperatorMetrics(
+        WorkflowAggregatedState.UNINITIALIZED,
+        OperatorStatistics(Seq(), Seq(), 0, 0, 0, 0)
+      )
+
+    var metricsMap = newMetrics
+
+    // Find keys present in newState.operatorInfo but not in oldState.operatorInfo
+    val newKeys = newMetrics.keys.toSet diff lastPersistedMetrics.keys.toSet
+    for (key <- newKeys) {
+      lastPersistedMetrics = lastPersistedMetrics + (key -> defaultMetrics)
+    }
+
+    // Find keys present in oldState.operatorInfo but not in newState.operatorInfo
+    val oldKeys = lastPersistedMetrics.keys.toSet diff newMetrics.keys.toSet
+    for (key <- oldKeys) {
+      metricsMap = metricsMap + (key -> lastPersistedMetrics(key))
+    }
+
+    metricsMap.keys.map { key =>
+      val newMetrics = metricsMap(key)
+      val oldMetrics = lastPersistedMetrics(key)
+      val res = OperatorMetrics(
+        newMetrics.operatorState,
+        OperatorStatistics(
+          newMetrics.operatorStatistics.inputCount.map {
+            case PortTupleCountMapping(k, v) =>
+              PortTupleCountMapping(
+                k,
+                v - oldMetrics.operatorStatistics.inputCount
+                  .find(_.portId == k)
+                  .map(_.tupleCount)
+                  .getOrElse(0L)
+              )
+          },
+          newMetrics.operatorStatistics.outputCount.map {
+            case PortTupleCountMapping(k, v) =>
+              PortTupleCountMapping(
+                k,
+                v - oldMetrics.operatorStatistics.outputCount
+                  .find(_.portId == k)
+                  .map(_.tupleCount)
+                  .getOrElse(0L)
+              )
+          },
+          newMetrics.operatorStatistics.numWorkers,
+          newMetrics.operatorStatistics.dataProcessingTime - oldMetrics.operatorStatistics.dataProcessingTime,
+          newMetrics.operatorStatistics.controlProcessingTime - oldMetrics.operatorStatistics.controlProcessingTime,
+          newMetrics.operatorStatistics.idleTime - oldMetrics.operatorStatistics.idleTime
+        )
+      )
+      (key, res)
+    }.toMap
+  }
+
   private def storeRuntimeStatistics(
-      operatorStatistics: scala.collection.immutable.Map[String, OperatorRuntimeStats]
+      operatorStatistics: scala.collection.immutable.Map[String, OperatorMetrics]
   ): Unit = {
     // Add a try-catch to not produce an error when "workflow_runtime_statistics" table does not exist in MySQL
     try {
@@ -153,9 +214,19 @@ class ExecutionStatsService(
         execution.setWorkflowId(UInteger.valueOf(workflowContext.workflowId.id))
         execution.setExecutionId(UInteger.valueOf(workflowContext.executionId.id))
         execution.setOperatorId(operatorId)
-        execution.setInputTupleCnt(UInteger.valueOf(stat.inputCount))
-        execution.setOutputTupleCnt(UInteger.valueOf(stat.outputCount))
-        execution.setStatus(maptoStatusCode(stat.state))
+        execution.setInputTupleCnt(
+          UInteger.valueOf(stat.operatorStatistics.inputCount.map(_.tupleCount).sum)
+        )
+        execution.setOutputTupleCnt(
+          UInteger.valueOf(stat.operatorStatistics.outputCount.map(_.tupleCount).sum)
+        )
+        execution.setStatus(maptoStatusCode(stat.operatorState))
+        execution.setDataProcessingTime(ULong.valueOf(stat.operatorStatistics.dataProcessingTime))
+        execution.setControlProcessingTime(
+          ULong.valueOf(stat.operatorStatistics.controlProcessingTime)
+        )
+        execution.setIdleTime(ULong.valueOf(stat.operatorStatistics.idleTime))
+        execution.setNumWorkers(UInteger.valueOf(stat.operatorStatistics.numWorkers))
         list.add(execution)
       }
       workflowRuntimeStatisticsDao.insert(list)
@@ -172,7 +243,7 @@ class ExecutionStatsService(
             statsStore.withOperatorWorkerMapping(
               evt.workerMapping
                 .map({
-                  case (opId, workerIds) => OperatorWorkerMapping(opId, workerIds)
+                  case (opId, workerIds) => OperatorWorkerMapping(opId, workerIds.toSeq)
                 })
                 .toSeq
             )
@@ -193,32 +264,12 @@ class ExecutionStatsService(
     )
   }
 
-  private[this] def registerCallbackOnWorkflowComplete(): Unit = {
-    addSubscription(
-      client
-        .registerCallback[WorkflowCompleted]((evt: WorkflowCompleted) => {
-          client.shutdown()
-          stateStore.statsStore.updateState(stats =>
-            stats.withEndTimeStamp(System.currentTimeMillis())
-          )
-          stateStore.metadataStore.updateState(metadataStore =>
-            updateWorkflowState(COMPLETED, metadataStore)
-          )
-        })
-    )
-  }
-
   private[this] def registerCallbackOnFatalError(): Unit = {
     addSubscription(
       client
         .registerCallback[FatalError]((evt: FatalError) => {
           client.shutdown()
-          var operatorId = "unknown operator"
-          var workerId = ""
-          if (evt.fromActor.isDefined) {
-            operatorId = VirtualIdentityUtils.getPhysicalOpId(evt.fromActor.get).logicalOpId.id
-            workerId = evt.fromActor.get.name
-          }
+          val (operatorId, workerId) = getOperatorFromActorIdOpt(evt.fromActor)
           stateStore.statsStore.updateState(stats =>
             stats.withEndTimeStamp(System.currentTimeMillis())
           )

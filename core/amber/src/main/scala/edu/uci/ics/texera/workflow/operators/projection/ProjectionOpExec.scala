@@ -1,27 +1,48 @@
 package edu.uci.ics.texera.workflow.operators.projection
 
 import com.google.common.base.Preconditions
+import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
 import edu.uci.ics.texera.workflow.common.operators.map.MapOpExec
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
+
+import scala.collection.mutable
 
 class ProjectionOpExec(
-    var attributes: List[AttributeUnit],
-    val outputSchema: Schema
+    attributeUnits: List[AttributeUnit],
+    dropOption: Boolean = false
 ) extends MapOpExec {
 
-  def project(tuple: Tuple): Tuple = {
-    Preconditions.checkArgument(attributes.nonEmpty)
-    val builder = Tuple.newBuilder(outputSchema)
-    attributes.foreach(attrName => {
-      builder.add(
-        attrName.getAlias,
-        tuple.getSchema.getAttribute(attrName.getOriginalAttribute).getType,
-        tuple.getField(attrName.getOriginalAttribute)
-      )
-    })
-    builder.build()
+  setMapFunc(project)
+  def project(tuple: Tuple): TupleLike = {
+    Preconditions.checkArgument(attributeUnits.nonEmpty)
+    var selectedUnits: List[AttributeUnit] = List()
+    val fields = mutable.LinkedHashMap[String, Any]()
+    if (dropOption) {
+      val allAttribute = tuple.schema.getAttributeNames
+      val selectedAttributes = attributeUnits.map(_.getOriginalAttribute)
+      val keepAttributes = allAttribute.diff(selectedAttributes)
+
+      keepAttributes.foreach { attribute =>
+        val newList = List(
+          new AttributeUnit(attribute, attribute)
+        )
+        selectedUnits = selectedUnits ::: newList
+      }
+
+    } else {
+
+      selectedUnits = attributeUnits
+    }
+
+    selectedUnits.foreach { attributeUnit =>
+      val alias = attributeUnit.getAlias
+      if (fields.contains(alias)) {
+        throw new RuntimeException("have duplicated attribute name/alias")
+      }
+      fields(alias) = tuple.getField[Any](attributeUnit.getOriginalAttribute)
+    }
+
+    TupleLike(fields.toSeq: _*)
   }
 
-  setMapFunc(project)
 }

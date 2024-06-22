@@ -9,14 +9,13 @@ import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.operators.source.SourceOperatorDescriptor
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.jgrapht.graph.DirectedAcyclicGraph
+import org.jgrapht.util.SupplierUtil
 
 import java.util
-import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{JavaConverters, mutable}
+import scala.collection.mutable
+import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.util.{Failure, Success, Try}
-
-case class BreakpointInfo(operatorID: String, breakpoint: Breakpoint)
 
 object LogicalPlan {
 
@@ -25,7 +24,12 @@ object LogicalPlan {
       links: List[LogicalLink]
   ): DirectedAcyclicGraph[OperatorIdentity, LogicalLink] = {
     val workflowDag =
-      new DirectedAcyclicGraph[OperatorIdentity, LogicalLink](classOf[LogicalLink])
+      new DirectedAcyclicGraph[OperatorIdentity, LogicalLink](
+        null, // vertexSupplier
+        SupplierUtil.createSupplier(classOf[LogicalLink]), // edgeSupplier
+        false, // weighted
+        true // allowMultipleEdges
+      )
     operatorList.foreach(op => workflowDag.addVertex(op.operatorIdentifier))
     links.foreach(l =>
       workflowDag.addEdge(
@@ -40,15 +44,14 @@ object LogicalPlan {
   def apply(
       pojo: LogicalPlanPojo
   ): LogicalPlan = {
-    LogicalPlan(pojo.operators, pojo.links, pojo.breakpoints)
+    LogicalPlan(pojo.operators, pojo.links)
   }
 
 }
 
 case class LogicalPlan(
     operators: List[LogicalOp],
-    links: List[LogicalLink],
-    breakpoints: List[BreakpointInfo]
+    links: List[LogicalLink]
 ) extends LazyLogging {
 
   private lazy val operatorMap: Map[OperatorIdentity, LogicalOp] =
@@ -72,26 +75,26 @@ case class LogicalPlan(
       .toList
 
   def getAncestorOpIds(opId: OperatorIdentity): Set[OperatorIdentity] = {
-    JavaConverters.asScalaSet(jgraphtDag.getAncestors(opId)).toSet
+    jgraphtDag.getAncestors(opId).asScala.toSet
   }
 
   def getUpstreamOps(opId: OperatorIdentity): List[LogicalOp] = {
     jgraphtDag
       .incomingEdgesOf(opId)
+      .asScala
       .map(e => operatorMap(e.fromOpId))
       .toList
   }
 
   def addOperator(op: LogicalOp): LogicalPlan = {
     // TODO: fix schema for the new operator
-    this.copy(operators :+ op, links, breakpoints)
+    this.copy(operators :+ op, links)
   }
 
   def removeOperator(opId: OperatorIdentity): LogicalPlan = {
     this.copy(
       operators.filter(o => o.operatorIdentifier != opId),
-      links.filter(l => l.fromOpId != opId && l.toOpId != opId),
-      breakpoints.filter(b => OperatorIdentity(b.operatorID) != opId)
+      links.filter(l => l.fromOpId != opId && l.toOpId != opId)
     )
   }
 
@@ -108,15 +111,15 @@ case class LogicalPlan(
       toPortId
     )
     val newLinks = links :+ newLink
-    this.copy(operators, newLinks, breakpoints)
+    this.copy(operators, newLinks)
   }
 
   def removeLink(linkToRemove: LogicalLink): LogicalPlan = {
-    this.copy(operators, links.filter(l => l != linkToRemove), breakpoints)
+    this.copy(operators, links.filter(l => l != linkToRemove))
   }
 
   def getDownstreamOps(opId: OperatorIdentity): List[LogicalOp] = {
-    val downstream = new mutable.MutableList[LogicalOp]
+    val downstream = new mutable.ArrayBuffer[LogicalOp]
     jgraphtDag
       .outgoingEdgesOf(opId)
       .forEach(e => downstream += operatorMap(e.toOpId))
@@ -125,6 +128,10 @@ case class LogicalPlan(
 
   def getDownstreamLinks(opId: OperatorIdentity): List[LogicalLink] = {
     links.filter(l => l.fromOpId == opId)
+  }
+
+  def getUpstreamLinks(opId: OperatorIdentity): List[LogicalLink] = {
+    links.filter(l => l.toOpId == opId)
   }
 
   def getInputSchemaMap: Map[OperatorIdentity, List[Option[Schema]]] = {

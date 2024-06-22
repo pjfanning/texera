@@ -35,7 +35,7 @@ class TrivialControlTester(
         case _                       => ???
       }
     }
-    sender ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channelId))
+    sender() ! NetworkAck(id, getInMemSize(workflowMsg), getQueuedCredit(workflowMsg.channelId))
   }
 
   /** flow-control */
@@ -49,5 +49,5 @@ class TrivialControlTester(
 
   override def initState(): Unit = {}
 
-  override def initFromCheckpoint(chkpt: CheckpointState): Unit = {}
+  override def loadFromCheckpoint(chkpt: CheckpointState): Unit = {}
 }

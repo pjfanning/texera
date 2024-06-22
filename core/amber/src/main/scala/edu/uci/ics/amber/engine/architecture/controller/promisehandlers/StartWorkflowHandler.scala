@@ -21,22 +21,18 @@ trait StartWorkflowHandler {
 
   registerHandler { (msg: StartWorkflow, sender) =>
     {
-      if (cp.executionState.getState.isUninitialized) {
-        cp.workflowScheduler
-          .startWorkflow(
-            cp.workflow,
-            cp.actorRefService,
+      if (cp.workflowExecution.getState.isUninitialized) {
+        cp.workflowExecutionCoordinator
+          .executeNextRegions(
             cp.actorService,
             cp.globalReplayManager
           )
           .map(_ => {
             cp.controllerTimerService.enableStatusUpdate()
-            cp.controllerTimerService.enableMonitoring()
-            cp.controllerTimerService.enableSkewHandling()
             RUNNING
           })
       } else {
-        Future(cp.executionState.getState)
+        Future(cp.workflowExecution.getState)
       }
     }
   }
