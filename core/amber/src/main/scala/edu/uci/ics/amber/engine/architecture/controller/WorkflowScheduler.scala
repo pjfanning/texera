@@ -11,7 +11,7 @@ import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
 
-class WorkflowScheduler(workflowContext: WorkflowContext, opResultStorage: OpResultStorage)
+class WorkflowScheduler(workflowContext: WorkflowContext, opResultStorage: OpResultStorage, costFunction: String = "WALL_CLOCK_RUNTIME")
     extends java.io.Serializable {
   var physicalPlan: PhysicalPlan = _
   var schedule: Schedule = _
@@ -26,7 +26,8 @@ class WorkflowScheduler(workflowContext: WorkflowContext, opResultStorage: OpRes
       new CostBasedRegionPlanGenerator(
         workflowContext,
         physicalPlan,
-        opResultStorage
+        opResultStorage,
+        costFunction = this.costFunction
       ).generate()
     } else {
       // ExpansionGreedyRegionPlanGenerator is the stable default plan generator.

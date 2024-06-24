@@ -236,6 +236,8 @@ libraryDependencies += "org.jgrapht" % "jgrapht-core" % "1.5.2"
 
 libraryDependencies += "org.jgrapht" % "jgrapht-io" % "1.5.2"
 
+libraryDependencies += "org.jgrapht" % "jgrapht-ext" % "1.5.2"
+
 // https://mvnrepository.com/artifact/edu.stanford.nlp/stanford-corenlp
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.4"
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.4" classifier "models"
