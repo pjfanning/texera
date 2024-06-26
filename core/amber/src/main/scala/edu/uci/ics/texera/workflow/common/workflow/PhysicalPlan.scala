@@ -7,7 +7,7 @@ import edu.uci.ics.amber.engine.common.virtualidentity.{ActorVirtualIdentity, Op
 import edu.uci.ics.amber.engine.common.workflow.PhysicalLink
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
-import org.jgrapht.alg.cycle.PatonCycleBase
+import org.jgrapht.alg.cycle.{PatonCycleBase, QueueBFSFundamentalCycleBasis, StackBFSFundamentalCycleBasis}
 import org.jgrapht.alg.shortestpath.AllDirectedPaths
 import org.jgrapht.graph.{AsUndirectedGraph, DirectedAcyclicGraph}
 import org.jgrapht.traverse.TopologicalOrderIterator
@@ -84,6 +84,18 @@ case class PhysicalPlan(
   }
 
   @transient lazy val maxChains: Set[Set[PhysicalLink]] = this.getMaxChains
+
+  @transient lazy val allUndirectedCycles = this.getAllUndirectedCycles
+
+  @transient lazy val nonMaterializedBlockingAndDependeeLinks = this.getNonMaterializedBlockingAndDependeeLinks
+
+  @transient lazy val nonBlockingLinks = this.getNonBlockingLinks
+
+  @transient lazy val nonCleanEdgeNonBlockingLinks = this.getNonCleanEdgeNonBlockingLinks
+
+
+
+
 
   def getSourceOperatorIds: Set[PhysicalOpIdentity] =
     operatorMap.keys.filter(op => dag.inDegreeOf(op) == 0).toSet
@@ -214,7 +226,7 @@ case class PhysicalPlan(
     this.links.filter(l=> !isMaterializedLink(l) && !l.fromOpId.logicalOpId.id.contains("cacheSource"))
   }
 
-  def getNonMaterializedBlockingAndDependeeLinks: Set[PhysicalLink] = {
+  private def getNonMaterializedBlockingAndDependeeLinks: Set[PhysicalLink] = {
     operators
       .flatMap { physicalOp =>
         {
@@ -257,7 +269,7 @@ case class PhysicalPlan(
     this.copy(operators, links.diff(getDependeeLinks))
   }
 
-  def getNonBlockingLinks: Set[PhysicalLink] = {
+  private def getNonBlockingLinks: Set[PhysicalLink] = {
     this.links.diff(getNonMaterializedBlockingAndDependeeLinks)
   }
 
@@ -269,14 +281,27 @@ case class PhysicalPlan(
     * @return All non-blocking links that are not bridges.
     */
   def getNonBridgeNonBlockingLinks: Set[PhysicalLink] = {
-    val bridges = new BiconnectivityInspector[PhysicalOpIdentity, PhysicalLink](this.dag).getBridges.asScala
-    this.links.diff(getNonMaterializedBlockingAndDependeeLinks).diff(bridges)
+    this.getNonBlockingLinks.diff(this.getBridges)
   }
 
-  def getNonCleanEdgeNonBlockingLinks: Set[PhysicalLink] = {
+  private def getNonCleanEdgeNonBlockingLinks: Set[PhysicalLink] = {
+    this.getNonBlockingLinks.diff(this.getCleanEdges)
+  }
 
-    val cycleBases = new PatonCycleBase[PhysicalOpIdentity, PhysicalLink](new AsUndirectedGraph[PhysicalOpIdentity, PhysicalLink](this.dag))
-      .getCycleBasis.getCycles.asScala.map(edgeList=>edgeList.toSet)
+  def getBridges: Set[PhysicalLink] = this.getNonBlockingLinks.intersect(new BiconnectivityInspector[PhysicalOpIdentity, PhysicalLink](this.dag).getBridges.toSet)
+
+  def getCleanEdges: Set[PhysicalLink] = {
+    this.allUndirectedCycles match {
+      case Some(allCycles) =>
+        val allSimpleCyclesWithBlockingEdges = allCycles.filter(cycle=>cycle.exists(link=>this.getNonBridgeNonBlockingLinks.contains(link)))
+        this.getNonBlockingLinks.filter(nbEdge => !allSimpleCyclesWithBlockingEdges.exists(cycle=>cycle.contains(nbEdge)))
+      case None => this.getBridges
+    }
+  }
+
+  private def getAllUndirectedCycles: Option[mutable.Set[Set[PhysicalLink]]] = {
+    val cycleBases = new QueueBFSFundamentalCycleBasis[PhysicalOpIdentity, PhysicalLink](new AsUndirectedGraph[PhysicalOpIdentity, PhysicalLink](this.dag))
+      .getCycleBasis.getCycles.asScala.map(edgeList => edgeList.toSet)
     val allCycles: mutable.Set[Set[PhysicalLink]] = cycleBases
 
     breakable {
@@ -291,11 +316,9 @@ case class PhysicalPlan(
                 if (!allCycles.contains(newCycle)) {
                   try {
                     getCycleTraversalFromCycleEdgeSet(newCycle)
-                    // System.out.println("New cycle found: " + newCycle)
                     allCycles += newCycle
                   } catch {
                     case _: UnsupportedOperationException =>
-                    // System.out.println("Not a cycle: " + newCycle)
                   }
                 }
               }
@@ -307,18 +330,11 @@ case class PhysicalPlan(
         }
         if (allCycles.size > 1000) {
           println("Too many undirected cycles. Falling back to bridges.")
-          return getNonBridgeNonBlockingLinks
+          return None
         }
       }
     }
-
-    val allSimpleCyclesWithBlockingEdges = allCycles.filter(cycle=>cycle.exists(link=>this.getNonBridgeNonBlockingLinks.contains(link)))
-
-    val cleanEdges = this.getNonBlockingLinks.filter(nbEdge => !allSimpleCyclesWithBlockingEdges.exists(cycle=>cycle.contains(nbEdge)))
-    val bridges = this.getNonBlockingLinks.intersect(new BiconnectivityInspector[PhysicalOpIdentity, PhysicalLink](this.dag).getBridges.asScala)
-    println(s"#cleanEdges: ${cleanEdges.size}")
-    println(s"#bridges: ${bridges.size}")
-    this.getNonBlockingLinks.diff(cleanEdges)
+    Some(allCycles)
   }
 
   private def getCycleTraversalFromCycleEdgeSet(undirectedCycle: Set[PhysicalLink]): List[PhysicalLink] = {

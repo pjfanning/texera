@@ -6,12 +6,10 @@ import com.mxgraph.util.{mxCellRenderer, mxConstants}
 import com.mxgraph.view.mxStylesheet
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
-import edu.uci.ics.amber.engine.architecture.scheduling.CostBasedRegionPlanGenerator
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity, PhysicalOpIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PhysicalLink, PortIdentity}
-import edu.uci.ics.texera.workflow.common.WorkflowContext
-import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import io.circe.{Json, ParsingFailure, parser}
+import org.jgrapht.alg.connectivity.ConnectivityInspector
 import org.jgrapht.ext.JGraphXAdapter
 import org.jgrapht.graph.DirectedAcyclicGraph
 import org.jgrapht.util.SupplierUtil
@@ -19,64 +17,15 @@ import org.jgrapht.util.SupplierUtil
 import java.awt._
 import java.awt.image.BufferedImage
 import java.io.File
-import java.nio.file.{Files, Paths}
 import java.text.DecimalFormat
 import java.util.{Map => JMap}
 import javax.imageio.ImageIO
 import javax.swing._
 import scala.collection.mutable
 import scala.io.Source
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, IteratorHasAsScala}
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-object WorkflowParser extends App {
-
-  val inputPath = "/Users/xzliu/Downloads/KNIME workflows parsing/ALL_KNIME_WORKFLOWS_CONVERTED_WITH_BLOCKING"
-  val inputDirectory = Paths.get(inputPath)
-  val outputPath = "/Users/xzliu/Downloads/KNIME workflows parsing/ALL_KNIME_WORKFLOWS_RENDERED"
-  val outputDirectory = Paths.get(outputPath)
-  if (!Files.exists(outputDirectory)) Files.createDirectory(outputDirectory)
-
-  if (Files.exists(inputDirectory) && Files.isDirectory(inputDirectory)) {
-    // List all files in the directory and call parseWorkflowFile for each file
-    Files.list(inputDirectory).iterator().asScala.foreach { filePath =>
-      try {
-        if (Files.isRegularFile(filePath)) {
-          val physicalPlan = parseWorkflowFile(filePath.toString)
-          val pasta = new CostBasedRegionPlanGenerator(new WorkflowContext(), physicalPlan, new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
-          if (!pasta.getNaiveSchedulability()) {
-            println(s"$filePath needs Pasta.")
-            val inputPlanImageOutputPath = outputDirectory.resolve(filePath.getFileName.toString + "_input_physical_plan.png")
-            if (physicalPlan.links.forall(link=>physicalPlan.dag.getEdgeWeight(link) == 1.0))
-              println(s"$filePath does not have mat size info to run Pasta, skipping.")
-            else if (physicalPlan.operators.size > 100 || physicalPlan.links.size > 100) {
-              println(s"$filePath is too large, skipping.")
-            }
-            else {
-//              if (physicalPlan.operators.size <= 200 && physicalPlan.links.size <= 200)
-//                renderInputPhysicalPlanToFile(physicalPlan, inputPlanImageOutputPath.toString)
-              val pastaResultPlanImageOutputPath = outputDirectory.resolve(filePath.getFileName.toString + "_output_region_plan_pasta.png")
-              val mustMaterializeSize = physicalPlan.getNonMaterializedBlockingAndDependeeLinks.map(link=>physicalPlan.dag.getEdgeWeight(link)).sum
-              val pastaResult = pasta.runPasta()
-              val pastaAdjustedCost = pastaResult.cost - mustMaterializeSize
-              println(s"Result of Pasta on $filePath: ${pastaResult.cost}, adjusted: $pastaAdjustedCost")
-//              if (physicalPlan.operators.size <= 200 && physicalPlan.links.size <= 200)
-//                renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = pastaResult.state, imageOutputPath = pastaResultPlanImageOutputPath.toString)
-              val baselineResultPlanImageOutputPath = outputDirectory.resolve(filePath.getFileName.toString + "_output_region_plan_baseline.png")
-              val baselineResult = pasta.runBaselineMethod()
-              val baselineAdjustedCost = baselineResult.cost - mustMaterializeSize
-              println(s"Result of baseline on $filePath: ${baselineResult.cost}, adjusted: $baselineAdjustedCost")
-//              if (physicalPlan.operators.size <= 200 && physicalPlan.links.size <= 200)
-//                renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = baselineResult.state, imageOutputPath = baselineResultPlanImageOutputPath.toString)
-            }
-          }
-        }
-      } catch {
-        case error: Exception => println(error)
-      }
-    }
-  } else {
-    println(s"The path $inputPath is not a valid directory.")
-  }
+object WorkflowParser {
 
   def parseWorkflowFile(filePath: String): PhysicalPlan = {
     val fileContent = try {
@@ -166,7 +115,27 @@ object WorkflowParser extends App {
           }
         })
 
-        val physicalPlan = PhysicalPlan(operators = operators, links = links)
+        val inspector = new ConnectivityInspector[PhysicalOpIdentity, PhysicalLink](jgraphtDag)
+        val components = inspector.connectedSets()
+
+        var largestComponent: Set[PhysicalOpIdentity] = Set.empty
+        var maxSize = 0
+
+        components.forEach { component =>
+          if (component.size() > maxSize) {
+            maxSize = component.size()
+            largestComponent = component.asScala.toSet
+          }
+        }
+
+        val operatorsToAdd = largestComponent.map(opId => operatorsMap(opId))
+        val linksToAdd = jgraphtDag.edgeSet().asScala.filter { edge =>
+          val source = jgraphtDag.getEdgeSource(edge)
+          val target = jgraphtDag.getEdgeTarget(edge)
+          largestComponent.contains(source) && largestComponent.contains(target)
+        }.toSet
+
+        val physicalPlan = PhysicalPlan(operators = operatorsToAdd, links = linksToAdd)
 
         physicalPlan.links.foreach(link => {
           val matSize = portMatSizeMap((link.fromOpId, link.fromPortId))
@@ -174,10 +143,6 @@ object WorkflowParser extends App {
         })
 
         physicalPlan
-//        val workflowScheduler: WorkflowScheduler = new WorkflowScheduler(new WorkflowContext(), new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
-//        workflowScheduler.updateSchedule(physicalPlan)
-//        val schedule = workflowScheduler.schedule
-//        println(schedule.toList.size)
       case Left(error) =>
         println("Failed to parse JSON:")
         throw error
@@ -201,9 +166,34 @@ object WorkflowParser extends App {
 
   private def renderDAGToFile(outputPath: String, graphAdapter: JGraphXAdapter[PhysicalOpIdentity, PhysicalLink]): Unit = {
     try {
-    val image: BufferedImage = mxCellRenderer.createBufferedImage(graphAdapter, null, 10, Color.WHITE, true, null)
-    val imgFile = new File(outputPath)
-      ImageIO.write(image, "PNG", imgFile)
+      val originalImage: BufferedImage = mxCellRenderer.createBufferedImage(graphAdapter, null, 1, Color.WHITE, true, null)
+      val maxWidth = 50000
+      val maxHeight = 10000
+
+      val width = originalImage.getWidth
+      val height = originalImage.getHeight
+
+      val aspectRatio = width.toDouble / height.toDouble
+      var newWidth = 0
+      var newHeight = 0
+
+      if (width > height) {
+        newWidth = Math.min(width, maxWidth)
+        newHeight = (newWidth / aspectRatio).toInt
+      } else {
+        newHeight = Math.min(height, maxHeight)
+        newWidth = (newHeight * aspectRatio).toInt
+      }
+
+      val resizedImage = new BufferedImage(newWidth, newHeight, originalImage.getType)
+      val g: Graphics2D = resizedImage.createGraphics()
+
+      g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+      g.drawImage(originalImage, 0, 0, newWidth, newHeight, null)
+      g.dispose()
+
+      val imgFile = new File(outputPath)
+      ImageIO.write(resizedImage, "PNG", imgFile)
     } catch {
       case e: Exception => println(e)
     }
@@ -230,6 +220,23 @@ object WorkflowParser extends App {
     val blockingEdgeColor = "strokeColor=#b22812"
     val matEdgeColor = "strokeColor=#cccc00"
     val graphAdapter = new JGraphXAdapter[PhysicalOpIdentity, PhysicalLink](physicalPlan.dag)
+
+    val vertexDiameter = 50 // Set the diameter for the vertex
+    graphAdapter.getModel.beginUpdate()
+    try {
+      for (vertex <- graphAdapter.getChildVertices(graphAdapter.getDefaultParent)) {
+        val geometry = graphAdapter.getModel.getGeometry(vertex)
+        geometry.setWidth(vertexDiameter)
+        geometry.setHeight(vertexDiameter)
+      }
+    } finally {
+      graphAdapter.getModel.endUpdate()
+    }
+
+    for (vertex <- physicalPlan.dag.vertexSet.asScala) {
+      graphAdapter.getVertexToCellMap.get(vertex).setValue(vertex.logicalOpId.id.substring(15, 22))
+    }
+
     val layout = new mxHierarchicalLayout(graphAdapter, SwingConstants.WEST)
     layout.execute(graphAdapter.getDefaultParent)
     val edgeToCellMap: JMap[PhysicalLink, mxICell] = graphAdapter.getEdgeToCellMap
@@ -243,7 +250,7 @@ object WorkflowParser extends App {
       if (matEdges.contains(edge)) {
         edgeToCellMap.get(edge).setStyle(matEdgeColor)
       }
-      if (physicalPlan.getNonMaterializedBlockingAndDependeeLinks.contains(edge)) {
+      if (physicalPlan.nonMaterializedBlockingAndDependeeLinks.contains(edge)) {
         edgeToCellMap.get(edge).setStyle(blockingEdgeColor)
       }
       edgeToCellMap.get(edge).setValue(df.format(physicalPlan.dag.getEdgeWeight(edge)))
@@ -302,7 +309,7 @@ object WorkflowParser extends App {
     }
 
     for (edge <- physicalPlan.dag.edgeSet.asScala) {
-      if (physicalPlan.getNonMaterializedBlockingAndDependeeLinks.contains(edge)) {
+      if (physicalPlan.nonMaterializedBlockingAndDependeeLinks.contains(edge)) {
         edgeToCellMap.get(edge).setStyle(strokeColor)
       }
       edgeToCellMap.get(edge).setValue("")
