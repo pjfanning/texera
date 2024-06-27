@@ -472,7 +472,7 @@ class CostBasedRegionPlanGenerator(
           sum + maxTime
         }
       }
-      case "MATERIALIZATION_SIZES" => regionLinks.map(regionLink => physicalPlan.dag.getEdgeWeight(regionLink.originalPhysicalLink.get)).sum
+      case "MATERIALIZATION_SIZES" => regionLinks.toList.map(regionLink => physicalPlan.dag.getEdgeWeight(regionLink.originalPhysicalLink.get)).sum
       case _ => throw new UnsupportedOperationException("Unsupported cost function!")
     }
   }
