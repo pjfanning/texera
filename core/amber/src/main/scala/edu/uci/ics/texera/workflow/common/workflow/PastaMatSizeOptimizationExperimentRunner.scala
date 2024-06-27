@@ -116,75 +116,73 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
           "mustMaterializeSize" -> mustMaterializeSize
         )
         val stats = statsList.map { case (_, result) => s""""${result.toString.replace("\"", "\"\"")}""""}.mkString(",")
-        resultCSVWriter.write(stats + ",")
-        resultCSVWriter.flush()
         if (!bottomUpSeedSchedulability && hasMatSizeOnPorts) {
           println(s"Running experiments on $inputPath")
           val baseline = pasta.baselineMethod()
-          println("baseline finished")
+          println(s"$workflowName: baseline finished")
 
           val topDownGreedy = pasta.topDownSearch(globalSearch = false)
-          println("topDownGreedy finished")
+          println(s"$workflowName: topDownGreedy finished")
 
           val bottomUpGreedy = pasta.bottomUpSearch(globalSearch = false)
-          println("bottomUpGreedy finished")
+          println(s"$workflowName: bottomUpGreedy finished")
 
           val topDownGlobal = pasta.topDownSearch()
-          println("topDownGlobal finished")
+          println(s"$workflowName: topDownGlobal finished")
 
           val bottomUpGlobal = pasta.bottomUpSearch()
-          println("bottomUpGlobal finished")
+          println(s"$workflowName: bottomUpGlobal finished")
 
           val pastaBest = Set(topDownGreedy, bottomUpGreedy, topDownGlobal, bottomUpGlobal).minBy(res => res.cost)
-          println(s"pastaBest finished with cost ${pastaBest.cost}")
+          println(s"$workflowName: pastaBest finished with cost ${pastaBest.cost}")
 
           val topDownGreedyNoOptimization = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println("topDownGreedyNoOptimization finished")
+          println(s"$workflowName: topDownGreedyNoOptimization finished")
 
           val topDownGreedyOChains = pasta.topDownSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
-          println("topDownGreedyOChains finished")
+          println(s"$workflowName: topDownGreedyOChains finished")
 
           val topDownGreedyOCleanEdges = pasta.topDownSearch(globalSearch = false, oChains = false, oEarlyStop = false)
-          println("topDownGreedyOCleanEdges finished")
+          println(s"$workflowName: topDownGreedyOCleanEdges finished")
 
           val topDownGreedyOEarlyStop = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false)
-          println("topDownGreedyOEarlyStop finished")
+          println(s"$workflowName: topDownGreedyOEarlyStop finished")
 
           val bottomUpGreedyNoOptimization = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println("bottomUpGreedyNoOptimization finished")
+          println(s"$workflowName: bottomUpGreedyNoOptimization finished")
 
           val bottomUpGreedyOChains = pasta.bottomUpSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
-          println("bottomUpGreedyOChains finished")
+          println(s"$workflowName: bottomUpGreedyOChains finished")
 
           val bottomUpGreedyOCleanEdges = pasta.bottomUpSearch(globalSearch = false, oChains = false, oEarlyStop = false)
-          println("bottomUpGreedyOCleanEdges finished")
+          println(s"$workflowName: bottomUpGreedyOCleanEdges finished")
 
           val bottomUpGreedyOEarlyStop = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false)
-          println("bottomUpGreedyOEarlyStop finished")
+          println(s"$workflowName: bottomUpGreedyOEarlyStop finished")
 
           val topDownGlobalNoOptimization = pasta.topDownSearch(oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println("topDownGlobalNoOptimization finished")
+          println(s"$workflowName: topDownGlobalNoOptimization finished")
 
           val topDownGlobalOChains = pasta.topDownSearch(oCleanEdges = false, oEarlyStop = false)
-          println("topDownGlobalOChains finished")
+          println(s"$workflowName: topDownGlobalOChains finished")
 
           val topDownGlobalOCleanEdges = pasta.topDownSearch(oChains = false, oEarlyStop = false)
-          println("topDownGlobalOCleanEdges finished")
+          println(s"$workflowName: topDownGlobalOCleanEdges finished")
 
           val topDownGlobalOEarlyStop = pasta.topDownSearch(oChains = false, oCleanEdges = false)
-          println("topDownGlobalOEarlyStop finished")
+          println(s"$workflowName: topDownGlobalOEarlyStop finished")
 
           val bottomUpGlobalNoOptimization = pasta.bottomUpSearch(oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println("bottomUpGlobalNoOptimization finished")
+          println(s"$workflowName: bottomUpGlobalNoOptimization finished")
 
           val bottomUpGlobalOChains = pasta.bottomUpSearch(oCleanEdges = false, oEarlyStop = false)
-          println("bottomUpGlobalOChains finished")
+          println(s"$workflowName: bottomUpGlobalOChains finished")
 
           val bottomUpGlobalOCleanEdges = pasta.bottomUpSearch(oChains = false, oEarlyStop = false)
-          println("bottomUpGlobalOCleanEdges finished")
+          println(s"$workflowName: bottomUpGlobalOCleanEdges finished")
 
           val bottomUpGlobalOEarlyStop = pasta.bottomUpSearch(oChains = false, oCleanEdges = false)
-          println("bottomUpGlobalOEarlyStop finished")
+          println(s"$workflowName: bottomUpGlobalOEarlyStop finished")
           val resultList = List(
             "baseline" -> baseline,
             "topDownGreedy" -> topDownGreedy,
@@ -210,6 +208,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
             "bottomUpGlobalOEarlyStop" -> bottomUpGlobalOEarlyStop
           )
           val results = resultList.map { case (_, result) => s""""${new ExperimentResult(cost=result.cost, searchTime = result.searchTime, searchFinished = result.searchFinished, numStatesExplored = result.numStatesExplored).toString.replace("\"", "\"\"")}""""}.mkString(",")
+          resultCSVWriter.write(stats + ",")
           resultCSVWriter.write(results + "\n")
           resultCSVWriter.flush()
           if (!Files.exists(planOutputDirectory)) Files.createDirectory(planOutputDirectory)
@@ -220,6 +219,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
             case (experimentName, result) => renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = result.state, imageOutputPath = outputDirectory.resolve(s"$experimentName.png").toString)
           }
         } else {
+          resultCSVWriter.write(stats + ",")
           resultCSVWriter.write(",,,,,,,,,,,,,,,,,,,,," + "\n")
           resultCSVWriter.flush()
         }

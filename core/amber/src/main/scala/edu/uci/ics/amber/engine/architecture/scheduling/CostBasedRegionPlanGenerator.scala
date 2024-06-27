@@ -250,10 +250,8 @@ class CostBasedRegionPlanGenerator(
     )
 
     while (queue.nonEmpty) {
-      if (visited.size > 10000) {
-        val searchTime = System.nanoTime() - startTime
-        return bestResult.copy(searchTime=searchTime, searchFinished = false, numStatesExplored = visited.size)
-      }
+      val searchTime = System.nanoTime() - startTime
+      if (searchTime > 3E11) return bestResult.copy(searchTime=searchTime, searchFinished = false, numStatesExplored = visited.size)
       // A state is represented as a set of materialized non-blocking edges.
       val currentState = queue.dequeue()
       visited.add(currentState)
@@ -358,10 +356,9 @@ class CostBasedRegionPlanGenerator(
     )
 
     while (queue.nonEmpty) {
-      if (visited.size > 10000) {
-        val searchTime = System.nanoTime() - startTime
+      val searchTime = System.nanoTime() - startTime
+      if (searchTime > 3E11)
         return bestResult.copy(searchTime=searchTime, searchFinished = false, numStatesExplored = visited.size)
-      }
 
       val currentState = queue.dequeue()
       visited.add(currentState)
