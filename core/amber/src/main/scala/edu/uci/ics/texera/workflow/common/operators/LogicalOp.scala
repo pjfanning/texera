@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.workflow.common.operators
 
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type
+
 import com.fasterxml.jackson.annotation.{
   JsonIgnore,
   JsonProperty,
@@ -102,6 +103,7 @@ import edu.uci.ics.texera.workflow.operators.udf.python.{
   PythonTableReducerOpDesc,
   PythonUDFOpDescV2
 }
+import edu.uci.ics.texera.workflow.operators.udf.r.{RUDFOpDesc, RUDFSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.boxPlot.BoxPlotOpDesc
@@ -127,6 +129,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.funnelPlot.FunnelPlot
 import edu.uci.ics.texera.workflow.operators.visualization.tablesChart.TablesPlotOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 import org.apache.zookeeper.KeeperException.UnimplementedException
+import edu.uci.ics.texera.workflow.operators.machineLearning.Scorer.MachineLearningScorerOpDesc
 
 import java.util.UUID
 import scala.collection.mutable
@@ -215,6 +218,9 @@ trait StateTransferFunc
     new Type(value = classOf[FunnelPlotOpDesc], name = "FunnelPlot"),
     new Type(value = classOf[TablesPlotOpDesc], name = "TablesPlot"),
     new Type(value = classOf[JavaUDFOpDesc], name = "JavaUDF"),
+    new Type(value = classOf[RUDFOpDesc], name = "RUDF"),
+    new Type(value = classOf[RUDFSourceOpDesc], name = "RUDFSource"),
+    new Type(value = classOf[MachineLearningScorerOpDesc], name = "Scorer"),
     new Type(value = classOf[SortOpDesc], name = "Sort"),
     new Type(value = classOf[SklearnLogisticRegressionOpDesc], name = "SklearnLogisticRegression"),
     new Type(
