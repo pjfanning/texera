@@ -33,7 +33,8 @@ class AmberClient(
     physicalPlan: PhysicalPlan,
     opResultStorage: OpResultStorage,
     controllerConfig: ControllerConfig,
-    errorHandler: Throwable => Unit
+    errorHandler: Throwable => Unit,
+    schedulingMethod: String = "ALL_MAT"
 ) {
 
   private val clientActor = system.actorOf(Props(new ClientActor))
@@ -46,7 +47,8 @@ class AmberClient(
       workflowContext,
       physicalPlan,
       opResultStorage,
-      controllerConfig
+      controllerConfig,
+      schedulingMethod
     ),
     10.seconds
   )

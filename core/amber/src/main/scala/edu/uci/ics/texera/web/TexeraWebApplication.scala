@@ -89,7 +89,8 @@ object TexeraWebApplication {
       physicalPlan: PhysicalPlan,
       opResultStorage: OpResultStorage,
       conf: ControllerConfig,
-      errorHandler: Throwable => Unit
+      errorHandler: Throwable => Unit,
+      schedulingMethod: String = "ALL_MAT"
   ): AmberClient = {
     new AmberClient(
       AmberRuntime.actorSystem,
@@ -97,7 +98,8 @@ object TexeraWebApplication {
       physicalPlan,
       opResultStorage,
       conf,
-      errorHandler
+      errorHandler,
+      schedulingMethod
     )
   }
 

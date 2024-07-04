@@ -52,14 +52,16 @@ object Controller {
       workflowContext: WorkflowContext,
       physicalPlan: PhysicalPlan,
       opResultStorage: OpResultStorage,
-      controllerConfig: ControllerConfig = ControllerConfig.default
+      controllerConfig: ControllerConfig = ControllerConfig.default,
+      schedulingMethod: String = "ALL_MAT"
   ): Props =
     Props(
       new Controller(
         workflowContext,
         physicalPlan,
         opResultStorage,
-        controllerConfig
+        controllerConfig,
+        schedulingMethod
       )
     )
 
@@ -71,7 +73,8 @@ class Controller(
     workflowContext: WorkflowContext,
     physicalPlan: PhysicalPlan,
     opResultStorage: OpResultStorage,
-    controllerConfig: ControllerConfig
+    controllerConfig: ControllerConfig,
+    schedulingMethod: String = "ALL_MAT"
 ) extends WorkflowActor(
       controllerConfig.faultToleranceConfOpt,
       CONTROLLER
@@ -103,7 +106,7 @@ class Controller(
 
   override def initState(): Unit = {
     attachRuntimeServicesToCPState()
-    cp.workflowScheduler.updateSchedule(physicalPlan)
+    cp.workflowScheduler.updateSchedule(physicalPlan, schedulingMethod)
     val controllerRestoreConf = controllerConfig.stateRestoreConfOpt
     if (controllerRestoreConf.isDefined) {
       globalReplayManager.markRecoveryStatus(CONTROLLER, isRecovering = true)

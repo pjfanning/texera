@@ -118,7 +118,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
         val stats = statsList.map { case (_, result) => s""""${result.toString.replace("\"", "\"\"")}""""}.mkString(",")
         if (!bottomUpSeedSchedulability && hasMatSizeOnPorts) {
           println(s"Running experiments on $inputPath")
-          val baseline = pasta.baselineMethod()
+          val baseline = pasta.baselineMethod
           println(s"$workflowName: baseline finished")
 
           val topDownGreedy = pasta.topDownSearch(globalSearch = false)
@@ -266,7 +266,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
                 if (physicalPlan.operators.size <= 200 && physicalPlan.links.size <= 200)
                   renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = pastaResult.state, imageOutputPath = pastaResultPlanImageOutputPath.toString)
                 val baselineResultPlanImageOutputPath = outputDirectory.resolve(filePath.getFileName.toString + "_output_region_plan_baseline.png")
-                val baselineResult = pasta.baselineMethod()
+                val baselineResult = pasta.baselineMethod
                 val baselineAdjustedCost = baselineResult.cost - mustMaterializeSize
                 println(s"Result of baseline on $filePath: ${baselineResult.cost}, adjusted: $baselineAdjustedCost")
                 if (physicalPlan.operators.size <= 200 && physicalPlan.links.size <= 200)

@@ -127,7 +127,7 @@ object WorkflowExecutionsResource {
       .join(WORKFLOW_VERSION)
       .on(WORKFLOW_VERSION.VID.eq(WORKFLOW_EXECUTIONS.VID))
       .where(WORKFLOW_VERSION.WID.eq(wid).and(WORKFLOW_EXECUTIONS.STATUS.eq(3.toByte)))
-      .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.desc())
+      .orderBy(WORKFLOW_EXECUTIONS.STARTING_TIME.asc())
       .limit(1)
       .fetchInto(classOf[WorkflowExecutionEntry])
       .asScala

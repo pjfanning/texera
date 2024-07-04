@@ -8,6 +8,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecution
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
+import edu.uci.ics.texera.workflow.common.workflow.WorkflowParser.renderRegionPlanToFile
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
 import org.jgrapht.alg.cycle.HawickJamesSimpleCycles
 import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
@@ -24,7 +25,8 @@ class CostBasedRegionPlanGenerator(
     workflowContext: WorkflowContext,
     initialPhysicalPlan: PhysicalPlan,
     opResultStorage: OpResultStorage,
-    costFunction: String = "WALL_CLOCK_RUNTIME"
+    costFunction: String = "WALL_CLOCK_RUNTIME",
+    schedulingMethod: String = "ALL_MAT"
 ) extends RegionPlanGenerator(
       workflowContext,
       initialPhysicalPlan,
@@ -164,13 +166,20 @@ class CostBasedRegionPlanGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
-    val searchResult = bottomUpSearch(globalSearch = false)
+    val searchResult = schedulingMethod match {
+      case "ALL_MAT" => allMatMethod
+      case "TOP_DOWN_GLOBAL" => topDownSearch()
+      case "BOTTOM_UP_GLOBAL" => bottomUpSearch()
+      case "TOP_DOWN_GREEDY" => topDownSearch(globalSearch = false)
+      case "BOTTOM_UP_GREEDY" => bottomUpSearch(globalSearch = false)
+      case "BASELINE" => baselineMethod
+      case _ => allMatMethod
+    }
+    renderRegionPlanToFile(physicalPlan, searchResult.state, s"/Users/xzliu/Downloads/pasta_experiments/${workflowContext.workflowId.id}_${System.nanoTime()}.png")
     // Only a non-dependee blocking link that has not already been materialized should be replaced
     // with a materialization write op + materialization read op.
     val linksToMaterialize =
-      searchResult.state ++ physicalPlan.nonMaterializedBlockingAndDependeeLinks.diff(
-        physicalPlan.getDependeeLinks
-      )
+      (searchResult.state ++ physicalPlan.nonMaterializedBlockingAndDependeeLinks).diff(physicalPlan.getDependeeLinks)
     if (linksToMaterialize.nonEmpty) {
       val matReaderWriterPairs = new mutable.HashMap[PhysicalOpIdentity, PhysicalOpIdentity]()
       linksToMaterialize.foreach(link =>
@@ -181,7 +190,15 @@ class CostBasedRegionPlanGenerator(
       )
     }
     // Since the plan is now schedulable, calling the search directly returns a region DAG.
-    val regionDAG = bottomUpSearch(globalSearch = false).regionDAG
+    val regionDAG = (schedulingMethod match {
+      case "ALL_MAT" => allMatMethod
+      case "TOP_DOWN_GLOBAL" => topDownSearch()
+      case "BOTTOM_UP_GLOBAL" => bottomUpSearch()
+      case "TOP_DOWN_GREEDY" => topDownSearch(globalSearch = false)
+      case "BOTTOM_UP_GREEDY" => bottomUpSearch(globalSearch = false)
+      case "BASELINE" => baselineMethod
+      case _ => allMatMethod
+    }).regionDAG
     addMaterializationsAsRegionLinks(linksToMaterialize, regionDAG)
     populateDependeeLinks(regionDAG)
     if (workflowContext.userId.nonEmpty) allocateResource(regionDAG)
@@ -222,19 +239,6 @@ class CostBasedRegionPlanGenerator(
     */
    def bottomUpSearch(globalSearch: Boolean = true, oChains: Boolean = true, oCleanEdges: Boolean = true, oEarlyStop: Boolean = true): SearchResult = {
     val startTime = System.nanoTime()
-    if (this.costFunction == "WALL_CLOCK_RUNTIME" && this.firstExecution) {
-      val allNonMaterializedLinks = this.physicalPlan.getAllNonMaterializedLinks
-      return SearchResult(
-        state = allNonMaterializedLinks,
-        regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
-          case Left(regionDAG) => regionDAG
-          case Right(_) =>
-            throw new RuntimeException("All-materialized plan cannot be cyclic.")
-        },
-        cost = 0.0
-      )
-    }
-
     val originalNonBlockingEdges = if (oCleanEdges) physicalPlan.nonCleanEdgeNonBlockingLinks else physicalPlan.nonBlockingLinks // Optimization 2: Bridges
     // Queue to hold states to be explored, starting with the empty set
     val queue: mutable.Queue[Set[PhysicalLink]] = mutable.Queue(Set.empty[PhysicalLink])
@@ -323,7 +327,7 @@ class CostBasedRegionPlanGenerator(
     bestResult.copy(searchTime=searchTime, searchFinished = true, numStatesExplored = visited.size)
   }
 
-   def topDownSearch(globalSearch: Boolean = true, oChains: Boolean = true, oCleanEdges: Boolean = true, oEarlyStop: Boolean = true): SearchResult = {
+  def topDownSearch(globalSearch: Boolean = true, oChains: Boolean = true, oCleanEdges: Boolean = true, oEarlyStop: Boolean = true): SearchResult = {
     val startTime = System.nanoTime()
 
     // Queue to hold states to be explored, starting with the empty set
@@ -430,7 +434,20 @@ class CostBasedRegionPlanGenerator(
     bestResult.copy(searchTime=searchTime, searchFinished = true, numStatesExplored = visited.size)
   }
 
-   def baselineMethod(): SearchResult = {
+  def allMatMethod: SearchResult = {
+    val allNonMaterializedLinks = this.physicalPlan.getAllNonMaterializedLinks
+    SearchResult(
+      state = allNonMaterializedLinks.diff(physicalPlan.nonMaterializedBlockingAndDependeeLinks),
+      regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
+        case Left(regionDAG) => regionDAG
+        case Right(_) =>
+          throw new RuntimeException("All-materialized plan cannot be cyclic.")
+      },
+      cost = 0.0
+    )
+  }
+
+   def baselineMethod: SearchResult = {
     val startTime = System.nanoTime()
     var currentRegionPlan = physicalPlan.links
     physicalPlan.topologicalIterator().foreach(physicalOpId=> {
@@ -447,7 +464,7 @@ class CostBasedRegionPlanGenerator(
     tryConnectRegionDAG(currentRegionPlan) match {
       case Left(regionDAG) =>
         val searchTime = System.nanoTime() - startTime
-        SearchResult(state = currentRegionPlan, regionDAG = regionDAG, cost = evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet), searchTime=searchTime)
+        SearchResult(state = currentRegionPlan.diff(physicalPlan.nonMaterializedBlockingAndDependeeLinks), regionDAG = regionDAG, cost = evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet), searchTime=searchTime)
       case Right(_) => throw new Exception("Baseline method should return a region DAG.")
     }
   }

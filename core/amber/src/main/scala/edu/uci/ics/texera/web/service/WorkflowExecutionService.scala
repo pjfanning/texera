@@ -83,7 +83,8 @@ class WorkflowExecutionService(
       workflow.physicalPlan,
       resultService.opResultStorage,
       controllerConfig,
-      errorHandler
+      errorHandler,
+      schedulingMethod = request.executionName
     )
     executionReconfigurationService =
       new ExecutionReconfigurationService(client, executionStateStore, workflow)
