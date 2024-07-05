@@ -15,32 +15,32 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 class CandlestickChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
   @JsonProperty(value = "date", required = true)
-  @JsonSchemaTitle("Date Value Column")
+  @JsonSchemaTitle("Date Column")
   @JsonPropertyDescription("the date of the candlestick")
   @AutofillAttributeName
   var date: String = ""
 
   @JsonProperty(value = "open", required = true)
-  @JsonSchemaTitle("Open Value Column")
-  @JsonPropertyDescription("the opening value of the candlestick")
+  @JsonSchemaTitle("Open Price Column")
+  @JsonPropertyDescription("the opening price of the candlestick")
   @AutofillAttributeName
   var open: String = ""
 
   @JsonProperty(value = "high", required = true)
-  @JsonSchemaTitle("High Value Column")
-  @JsonPropertyDescription("the highest value of the candlestick")
+  @JsonSchemaTitle("High Price Column")
+  @JsonPropertyDescription("the highest price of the candlestick")
   @AutofillAttributeName
   var high: String = ""
 
   @JsonProperty(value = "low", required = true)
-  @JsonSchemaTitle("Low Value Column")
-  @JsonPropertyDescription("the lowest value of the candlestick")
+  @JsonSchemaTitle("Low Price Column")
+  @JsonPropertyDescription("the lowest price of the candlestick")
   @AutofillAttributeName
   var low: String = ""
 
   @JsonProperty(value = "close", required = true)
-  @JsonSchemaTitle("Close Value Column")
-  @JsonPropertyDescription("the closing value of the candlestick")
+  @JsonSchemaTitle("Close Price Column")
+  @JsonPropertyDescription("the closing price of the candlestick")
   @AutofillAttributeName
   var close: String = ""
 
