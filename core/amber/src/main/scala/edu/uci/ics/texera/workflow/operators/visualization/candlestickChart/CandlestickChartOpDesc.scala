@@ -21,25 +21,25 @@ class CandlestickChartOpDesc extends VisualizationOperator with PythonOperatorDe
   var date: String = ""
 
   @JsonProperty(value = "open", required = true)
-  @JsonSchemaTitle("Open Price Column")
+  @JsonSchemaTitle("Opening Price Column")
   @JsonPropertyDescription("the opening price of the candlestick")
   @AutofillAttributeName
   var open: String = ""
 
   @JsonProperty(value = "high", required = true)
-  @JsonSchemaTitle("High Price Column")
+  @JsonSchemaTitle("Highest Price Column")
   @JsonPropertyDescription("the highest price of the candlestick")
   @AutofillAttributeName
   var high: String = ""
 
   @JsonProperty(value = "low", required = true)
-  @JsonSchemaTitle("Low Price Column")
+  @JsonSchemaTitle("Lowest Price Column")
   @JsonPropertyDescription("the lowest price of the candlestick")
   @AutofillAttributeName
   var low: String = ""
 
   @JsonProperty(value = "close", required = true)
-  @JsonSchemaTitle("Close Price Column")
+  @JsonSchemaTitle("Closing Price Column")
   @JsonPropertyDescription("the closing price of the candlestick")
   @AutofillAttributeName
   var close: String = ""
