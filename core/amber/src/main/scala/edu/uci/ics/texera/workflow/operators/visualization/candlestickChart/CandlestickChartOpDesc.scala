@@ -15,31 +15,31 @@ import edu.uci.ics.texera.workflow.operators.visualization.{
 class CandlestickChartOpDesc extends VisualizationOperator with PythonOperatorDescriptor {
 
   @JsonProperty(value = "date", required = true)
-  @JsonSchemaTitle("Date Column")
+  @JsonSchemaTitle("Date Value Column")
   @JsonPropertyDescription("the date of the candlestick")
   @AutofillAttributeName
   var date: String = ""
 
   @JsonProperty(value = "open", required = true)
-  @JsonSchemaTitle("Open Column")
+  @JsonSchemaTitle("Open Value Column")
   @JsonPropertyDescription("the opening value of the candlestick")
   @AutofillAttributeName
   var open: String = ""
 
   @JsonProperty(value = "high", required = true)
-  @JsonSchemaTitle("High Column")
+  @JsonSchemaTitle("High Value Column")
   @JsonPropertyDescription("the highest value of the candlestick")
   @AutofillAttributeName
   var high: String = ""
 
   @JsonProperty(value = "low", required = true)
-  @JsonSchemaTitle("Low Column")
+  @JsonSchemaTitle("Low Value Column")
   @JsonPropertyDescription("the lowest value of the candlestick")
   @AutofillAttributeName
   var low: String = ""
 
   @JsonProperty(value = "close", required = true)
-  @JsonSchemaTitle("Close Column")
+  @JsonSchemaTitle("Close Value Column")
   @JsonPropertyDescription("the closing value of the candlestick")
   @AutofillAttributeName
   var close: String = ""
@@ -81,7 +81,7 @@ class CandlestickChartOpDesc extends VisualizationOperator with PythonOperatorDe
        |            low=df['$low'],
        |            close=df['$close']
        |        )])
-       |        fig.update_layout(title='Candlestick Chart Example')
+       |        fig.update_layout(title='Candlestick Chart')
        |        html = fig.to_html(include_plotlyjs='cdn', full_html=False)
        |        yield {'html-content': html}
        |""".stripMargin
