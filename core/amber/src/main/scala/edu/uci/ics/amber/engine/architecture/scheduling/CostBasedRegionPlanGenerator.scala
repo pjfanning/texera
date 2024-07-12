@@ -45,7 +45,7 @@ class CostBasedRegionPlanGenerator(
     previousStats.map {
       case(operatorId, statsList)=>
         val latestStat = statsList.maxByOption(_.timestamp)
-        operatorId -> latestStat.get.dataProcessingTime.doubleValue()/1E9
+        operatorId -> (latestStat.get.dataProcessingTime.doubleValue() + latestStat.get.controlProcessingTime.doubleValue())/1E9
     }
   }
 
@@ -175,7 +175,7 @@ class CostBasedRegionPlanGenerator(
       case "BASELINE" => baselineMethod
       case _ => allMatMethod
     }
-    renderRegionPlanToFile(physicalPlan, searchResult.state, s"/Users/xzliu/Downloads/pasta_experiments/${workflowContext.workflowId.id}_${System.nanoTime()}.png")
+    logger.info(s"WID: ${workflowContext.workflowId}, EID: ${workflowContext.executionId}, Scheduling method: $schedulingMethod, Cost of schedule: ${searchResult.cost}, scheduler ran for: ${searchResult.searchTime / 10E6}")
     // Only a non-dependee blocking link that has not already been materialized should be replaced
     // with a materialization write op + materialization read op.
     val linksToMaterialize =
@@ -435,15 +435,22 @@ class CostBasedRegionPlanGenerator(
   }
 
   def allMatMethod: SearchResult = {
+    val startTime = System.nanoTime()
     val allNonMaterializedLinks = this.physicalPlan.getAllNonMaterializedLinks
+    var cost = 0.0
     SearchResult(
       state = allNonMaterializedLinks.diff(physicalPlan.nonMaterializedBlockingAndDependeeLinks),
       regionDAG = tryConnectRegionDAG(allNonMaterializedLinks) match {
-        case Left(regionDAG) => regionDAG
+        case Left(regionDAG) => {
+          cost = evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
+          regionDAG
+        }
         case Right(_) =>
           throw new RuntimeException("All-materialized plan cannot be cyclic.")
       },
-      cost = 0.0
+      cost = cost,
+      searchFinished = true,
+      searchTime = System.nanoTime() - startTime
     )
   }
 

@@ -136,6 +136,7 @@ object WorkflowExecutionsResource {
 
     if (latestSuccessfulExecution.isDefined) {
       val eid = latestSuccessfulExecution.get.eId
+      println(s"Using stats from: $eid for Pasta.")
       val stats = context
         .select(
           WORKFLOW_RUNTIME_STATISTICS.OPERATOR_ID,
