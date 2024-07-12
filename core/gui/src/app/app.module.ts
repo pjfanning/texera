@@ -133,6 +133,7 @@ import { TreeModule } from "@ali-hm/angular-tree-component";
 import { EnvironmentComponent } from "./workspace/component/left-panel/environment/environment.component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
+import { HubComponent } from "./hub/hub.component";
 
 registerLocaleData(en);
 
@@ -215,6 +216,7 @@ registerLocaleData(en);
     WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
     HighlightSearchTermsPipe,
+    HubComponent
   ],
   imports: [
     BrowserModule,

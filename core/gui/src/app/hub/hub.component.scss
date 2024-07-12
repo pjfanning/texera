@@ -1,33 +1,14 @@
-.content {
-  text-align: center;
+button {
+  border: none;
 }
 
-ul {
-  list-style-type: none;
-  height: 70px;
-  padding: 10px;
-  overflow: hidden;
-  background-color: #f8f9fa;
-  vertical-align: baseline;
+.ant-layout-content {
+  background-color: white;
+  border: 1px solid #f0f0f0;
 }
 
-li {
-  float: left;
-  padding: 14px;
-}
-
-li a {
-  color: black;
-  font-weight: bold;
-}
-
-#logo {
-  height: 70px;
-  padding: 0;
-  margin-right: 14px;
-}
-
-#googleButton {
-  float: right;
-  padding: 5px 0;
+.ant-menu {
+  overflow-x: hidden;
+  overflow-y: auto;
+  height: calc(100vh - 70px - 48px);
 }
