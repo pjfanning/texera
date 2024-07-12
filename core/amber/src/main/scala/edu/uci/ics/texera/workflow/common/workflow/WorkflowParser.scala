@@ -47,7 +47,8 @@ object WorkflowParser {
            operatorsJson.toList.flatMap {
             operatorJson => for {
               operatorIdStr <- operatorJson.hcursor.get[String]("operatorID").toOption
-              operatorID = PhysicalOpIdentity.apply(OperatorIdentity.apply(operatorIdStr), "main")
+              operatorDNStr <- operatorJson.hcursor.get[String]("customDisplayName").toOption
+              operatorID = PhysicalOpIdentity.apply(OperatorIdentity.apply(operatorIdStr), operatorDNStr)
               inputPorts = operatorJson.hcursor.downField("inputPorts").values.getOrElse(Vector()).map(portJson => {
                 val portIdStr = portJson.hcursor.get[String]("portID").getOrElse("unknown")
                 val portId = PortIdentity(extractId(portIdStr))
@@ -142,7 +143,7 @@ object WorkflowParser {
           physicalPlan.dag.setEdgeWeight(link, matSize)
         })
 
-        println(largestComponent)
+//        println(largestComponent)
         physicalPlan
       case Left(error) =>
         println("Failed to parse JSON:")

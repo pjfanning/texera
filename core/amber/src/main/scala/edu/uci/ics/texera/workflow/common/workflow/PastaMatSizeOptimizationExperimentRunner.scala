@@ -10,6 +10,8 @@ import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.io.Source
+import java.util.stream.Collectors
+import scala.jdk.CollectionConverters._
 
 case class ExperimentResult(
                              cost: Double,
@@ -20,11 +22,11 @@ case class ExperimentResult(
 
 object PastaMatSizeOptimizationExperimentRunner extends App {
 
-  def getTrainingOperators(filename: String): List[String] = {
+  def getOperatorNameList(filename: String): List[String] = {
     val bufferedSource = Source.fromFile(filename)
     try {
       // Remove newline characters and store lines in a List
-      bufferedSource.getLines().map(_.trim).toList
+      bufferedSource.getLines().map(_.trim.toLowerCase()).toList
     } finally {
       bufferedSource.close()
     }
@@ -74,18 +76,31 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
   def runExperimentsOnSingleFile(inputPath: Path, planOutputDirectory: Path, resultCSVWriter: BufferedWriter): Unit = {
     try {
 
-
-
       if (Files.isRegularFile(inputPath)) {
+
+        val trainingOperators = getOperatorNameList("/Users/xzliu/Downloads/Learner.txt")
+        val inferenceOperators = getOperatorNameList("/Users/xzliu/Downloads/Predictor.txt")
+
+
         println(s"Starting experiments on $inputPath")
         val parts = inputPath.getFileName.toString.split("\\.")
         val workflowName = if (parts.length > 1) parts.dropRight(1).mkString(".") else inputPath.getFileName.toString
         val physicalPlan = parseWorkflowFile(filePath = inputPath.toString)
-        val numOperators = physicalPlan.dag.vertexSet().size()
-        val numLinks = physicalPlan.dag.edgeSet().size()
-        val numBlockingLinks = physicalPlan.nonMaterializedBlockingAndDependeeLinks.size
-        val numNonBlockingLinks = numLinks - numBlockingLinks
-        renderInputPhysicalPlanToFile(physicalPlan, planOutputDirectory.resolve("inputPhysicalPlan.png").toString)
+//        val numOperators = physicalPlan.dag.vertexSet().size()
+//        val numLinks = physicalPlan.dag.edgeSet().size()
+//        val numBlockingLinks = physicalPlan.nonMaterializedBlockingAndDependeeLinks.size
+//        val numNonBlockingLinks = numLinks - numBlockingLinks
+        val hasTrainingOp = physicalPlan.operators.exists( op=> {
+          val opName = op.id.layerName.toLowerCase()
+          trainingOperators.contains(opName)
+        })
+        val hasInferenceOp = physicalPlan.operators.exists( op=> {
+          val opName = op.id.layerName.toLowerCase()
+          inferenceOperators.contains(opName)
+        })
+        val hasAny = hasTrainingOp || hasInferenceOp
+        val hasBoth = hasInferenceOp && hasTrainingOp
+//        renderInputPhysicalPlanToFile(physicalPlan, planOutputDirectory.resolve("inputPhysicalPlan.png").toString)
 //        val vertexSet = physicalPlan.dag.vertexSet().toSet
 //        val maxDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).max
 //        val avgDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).sum * 1.0 / vertexSet.size
@@ -113,8 +128,12 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 //        val mustMaterializeSize = physicalPlan.nonMaterializedBlockingAndDependeeLinks.map(link => physicalPlan.dag.getEdgeWeight(link)).sum
         val statsList = List(
           "workflowName" -> workflowName,
-          "chainCalculationTime" -> chainCalculationTime,
-          "cleanEdgeTime" -> cleanEdgeTime
+          "hasTrainingOp"-> hasTrainingOp,
+          "hasInferenceOp" -> hasInferenceOp,
+          "hasAny" -> hasAny,
+          "hasBoth" -> hasBoth
+//          "chainCalculationTime" -> chainCalculationTime,
+//          "cleanEdgeTime" -> cleanEdgeTime
         )
         val stats = statsList.map { case (_, result) => s""""${result.toString.replace("\"", "\"\"")}""""}.mkString(",")
 //        if (!bottomUpSeedSchedulability && hasMatSizeOnPorts) {
@@ -220,7 +239,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 //            case (experimentName, result) => renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = result.state, imageOutputPath = outputDirectory.resolve(s"$experimentName.png").toString)
 //          }
 //        } else {
-          resultCSVWriter.write(stats + ",")
+          resultCSVWriter.write(stats + "\n")
 //          resultCSVWriter.write(",,,,,,,,," + "\n")
           resultCSVWriter.flush()
 //        }
