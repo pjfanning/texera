@@ -48,7 +48,7 @@ object PastaMatSizeOptimizationExperimentExtraRunner extends App {
         val pasta = new CostBasedRegionPlanGenerator(new WorkflowContext(), physicalPlan, new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
         val bottomUpSeedSchedulability = pasta.getNaiveSchedulability()
         val hasMatSizeOnPorts = !physicalPlan.links.forall(link => physicalPlan.dag.getEdgeWeight(link) == 1.0)
-        val hasControlBlocks = physicalPlan.operators.exists(op=>op.id.logicalOpId.id.toLowerCase().contains("switch") || op.id.logicalOpId.id.toLowerCase().contains("loop"))
+        val hasControlBlocks = physicalPlan.operators.exists(op=>op.id.layerName.toLowerCase().contains("switch") || op.id.layerName.toLowerCase().contains("loop"))
         val statsList = List(
           "workflowName" -> workflowName,
           "bottomUpSeedSchedulability" -> bottomUpSeedSchedulability,
