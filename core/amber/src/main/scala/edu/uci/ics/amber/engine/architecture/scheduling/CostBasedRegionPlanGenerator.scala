@@ -312,10 +312,11 @@ class CostBasedRegionPlanGenerator(
               case Left(regionDAG) =>
                 evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
               case Right(regionGraph) =>
-                evaluate(
-                  regionGraph.vertexSet().asScala.toSet,
-                  regionGraph.edgeSet().asScala.toSet
-                )
+                Double.MaxValue
+//                evaluate(
+//                  regionGraph.vertexSet().asScala.toSet,
+//                  regionGraph.edgeSet().asScala.toSet
+//                )
             })
             queue.enqueue(minCostNeighborState)
           }
@@ -420,10 +421,11 @@ class CostBasedRegionPlanGenerator(
               case Left(regionDAG) =>
                 evaluate(regionDAG.vertexSet().asScala.toSet, regionDAG.edgeSet().asScala.toSet)
               case Right(regionGraph) =>
-                evaluate(
-                  regionGraph.vertexSet().asScala.toSet,
-                  regionGraph.edgeSet().asScala.toSet
-                )
+                Double.MaxValue
+//                evaluate(
+//                  regionGraph.vertexSet().asScala.toSet,
+//                  regionGraph.edgeSet().asScala.toSet
+//                )
             })
             queue.enqueue(minCostNeighborState)
           }

@@ -4,7 +4,8 @@ import edu.uci.ics.amber.engine.architecture.scheduling.CostBasedRegionPlanGener
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowParser.{parseWorkflowFile, renderInputPhysicalPlanToFile, renderRegionPlanToFile}
-
+import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import java.io.BufferedWriter
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 
@@ -45,6 +46,27 @@ object PastaMatSizeOptimizationExperimentExtraRunner extends App {
         val parts = inputPath.getFileName.toString.split("\\.")
         val workflowName = if (parts.length > 1) parts.dropRight(1).mkString(".") else inputPath.getFileName.toString
         val physicalPlan = parseWorkflowFile(filePath = inputPath.toString)
+        val numOperators = physicalPlan.dag.vertexSet().size()
+        val numLinks = physicalPlan.dag.edgeSet().size()
+        val numBlockingLinks = physicalPlan.nonMaterializedBlockingAndDependeeLinks.size
+        val numNonBlockingLinks = numLinks - numBlockingLinks
+        val vertexSet = physicalPlan.dag.vertexSet().toSet
+        val maxDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).max
+        val avgDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).sum * 1.0 / vertexSet.size
+        val maxInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).max
+        val avgInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).sum * 1.0 / vertexSet.size
+        val maxOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).max
+        val avgOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).sum * 1.0 / vertexSet.size
+        val numChains = physicalPlan.maxChains.size
+        val maxChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).max else 1
+        val avgChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).sum * 1.0 / numChains else 0.0
+        val numUndirectedCycles = physicalPlan.allUndirectedCycles match {
+          case Some(allCycles) => allCycles.size
+          case None => 1001
+        }
+        val numBridges = physicalPlan.getBridges.size
+        val numCleanEdges = physicalPlan.getCleanEdges.size
+        val isDAG = numUndirectedCycles > 0
         val pasta = new CostBasedRegionPlanGenerator(new WorkflowContext(), physicalPlan, new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
         val bottomUpSeedSchedulability = pasta.getNaiveSchedulability()
         val hasMatSizeOnPorts = !physicalPlan.links.forall(link => physicalPlan.dag.getEdgeWeight(link) == 1.0)
