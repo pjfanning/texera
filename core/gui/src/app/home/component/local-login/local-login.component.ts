@@ -1,9 +1,9 @@
 import { Component } from "@angular/core";
-import { UserService } from "../../../../common/service/user/user.service";
+import { UserService } from "../../../common/service/user/user.service";
 import { FormBuilder, FormControl, FormGroup, Validators } from "@angular/forms";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute, Router } from "@angular/router";
-import { NotificationService } from "../../../../common/service/notification/notification.service";
+import { NotificationService } from "../../../common/service/notification/notification.service";
 import { catchError } from "rxjs/operators";
 import { throwError } from "rxjs";
 @UntilDestroy()
@@ -72,7 +72,7 @@ export class LocalLoginComponent {
         untilDestroyed(this)
       )
       .subscribe(() =>
-        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/workflow")
+        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow")
       );
   }
 
@@ -110,7 +110,7 @@ export class LocalLoginComponent {
         untilDestroyed(this)
       )
       .subscribe(() =>
-        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/workflow")
+        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow")
       );
   }
 }
