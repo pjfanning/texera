@@ -17,10 +17,8 @@
       height="20"
       title="GitHub"></iframe>
   </span>
-  <texera-user-icon *ngIf="isLogin; else googleLogin"></texera-user-icon>
-  <ng-template #googleLogin>
-    <div id="googleButton" ></div>
-  </ng-template>
+  <texera-user-icon *ngIf="isLogin"></texera-user-icon>
+  <texera-google-login [hidden]="isLogin"></texera-google-login>
 </div>
 
 <nz-layout class="layout">

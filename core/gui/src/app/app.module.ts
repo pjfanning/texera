@@ -135,6 +135,7 @@ import { FileSelectionComponent } from "./workspace/component/file-selection/fil
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
 import { HubComponent } from "./hub/component/hub.component";
 import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
+import { GoogleLoginComponent } from "./dashboard/user/component/google-login/google-login.component";
 
 registerLocaleData(en);
 
@@ -218,7 +219,8 @@ registerLocaleData(en);
     FlarumComponent,
     HighlightSearchTermsPipe,
     HubComponent,
-    HubWorkflowSearchComponent
+    HubWorkflowSearchComponent,
+    GoogleLoginComponent
   ],
   imports: [
     BrowserModule,

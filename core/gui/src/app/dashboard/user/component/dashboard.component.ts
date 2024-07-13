@@ -7,8 +7,8 @@ import { HttpErrorResponse } from "@angular/common/http";
 
 @Component({
   selector: "texera-dashboard",
-  templateUrl: "./dashboard.component.html",
-  styleUrls: ["./dashboard.component.scss"],
+  templateUrl: "dashboard.component.html",
+  styleUrls: ["dashboard.component.scss"],
   providers: [WorkflowPersistService],
 })
 @UntilDestroy()

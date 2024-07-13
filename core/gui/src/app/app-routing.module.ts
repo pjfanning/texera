@@ -18,6 +18,7 @@ import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.compon
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
+import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
 
 const routes: Routes = [
   {
@@ -40,6 +41,15 @@ if (environment.userSystemEnabled) {
         {
           path: "home",
           component: HomeComponent,
+        },
+        {
+          path: "hub",
+          children: [
+            {
+              path: "workflow",
+              component: HubWorkflowSearchComponent,
+            },
+          ]
         },
         {
           path: "user",
