@@ -5,13 +5,6 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { FlarumService } from "../service/flarum/flarum.service";
 import { HttpErrorResponse } from "@angular/common/http";
 
-/**
- * dashboardComponent is the component which contains all the subcomponents
- * on the user dashboard. The subcomponents include Top bar, feature bar,
- * and feature container.
- *
- * @author Zhaomin Li
- */
 @Component({
   selector: "texera-dashboard",
   templateUrl: "./dashboard.component.html",
@@ -21,12 +14,17 @@ import { HttpErrorResponse } from "@angular/common/http";
 @UntilDestroy()
 export class DashboardComponent implements OnInit {
   isAdmin = this.userService.isAdmin();
+  isLogin = this.userService.isLogin();
   displayForum = true;
 
   constructor(
     private userService: UserService,
     private flarumService: FlarumService
-  ) {}
+  ) {
+    this.userService.userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => this.isLogin = this.userService.isLogin())
+  }
 
   ngOnInit(): void {
     if (!document.cookie.includes("flarum_remember")) {

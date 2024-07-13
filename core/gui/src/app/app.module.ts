@@ -89,7 +89,7 @@ import { NzSwitchModule } from "ng-zorro-antd/switch";
 import { HomeComponent } from "./home/component/home.component";
 import { NzLayoutModule } from "ng-zorro-antd/layout";
 import { AuthGuardService } from "./common/service/user/auth-guard.service";
-import { LocalLoginComponent } from "./home/component/login/local-login/local-login.component";
+import { LocalLoginComponent } from "./home/component/local-login/local-login.component";
 import { MarkdownModule } from "ngx-markdown";
 import { FileSaverService } from "./dashboard/user/service/user-file/file-saver.service";
 import { DragDropModule } from "@angular/cdk/drag-drop";
@@ -133,7 +133,8 @@ import { TreeModule } from "@ali-hm/angular-tree-component";
 import { EnvironmentComponent } from "./workspace/component/left-panel/environment/environment.component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
-import { HubComponent } from "./hub/hub.component";
+import { HubComponent } from "./hub/component/hub.component";
+import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
 
 registerLocaleData(en);
 
@@ -216,7 +217,8 @@ registerLocaleData(en);
     WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
     HighlightSearchTermsPipe,
-    HubComponent
+    HubComponent,
+    HubWorkflowSearchComponent
   ],
   imports: [
     BrowserModule,

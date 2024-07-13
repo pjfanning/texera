@@ -18,10 +18,7 @@ import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.compon
 import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
-/*
- *  This file defines the url path
- *  The workflow workspace is set as default path
- */
+
 const routes: Routes = [
   {
     path: "",
@@ -35,82 +32,83 @@ const routes: Routes = [
   },
 ];
 if (environment.userSystemEnabled) {
-  /*
-   *  The user dashboard is under path '/dashboard'
-   *  The saved workflow is under path '/dashboard/workflow'
-   *  The user file is under path '/dashboard/user-file'
-   *  The user dictionary is under path '/dashboard/user-dictionary'
-   *  The user project list is under path '/dashboard/project'
-   *  The single user project is under path 'dashboard/project/{pid}'
-   */
-  routes.push({
-    path: "dashboard",
-    component: DashboardComponent,
-    canActivate: [AuthGuardService],
-    children: [
-      {
-        path: "user-project",
-        component: UserProjectComponent,
-      },
-      {
-        path: "user-project/:pid",
-        component: UserProjectSectionComponent,
-      },
-      {
-        path: "workflow",
-        component: UserWorkflowComponent,
-      },
-      {
-        path: "user-file",
-        component: UserFileComponent,
-      },
-      {
-        path: "dataset",
-        component: UserDatasetComponent,
-      },
-      // the below two URLs route to the same Component. The component will render the page accordingly
-      {
-        path: "dataset/:did",
-        component: UserDatasetExplorerComponent,
-      },
-      {
-        path: "dataset/create",
-        component: UserDatasetExplorerComponent,
-      },
-      {
-        path: "user-quota",
-        component: UserQuotaComponent,
-      },
-      {
-        path: "search",
-        component: SearchComponent,
-      },
-      {
-        path: "discussion",
-        component: FlarumComponent,
-      },
-      {
-        path: "admin/user",
-        component: AdminUserComponent,
-        canActivate: [AdminGuardService],
-      },
-      {
-        path: "admin/gmail",
-        component: GmailComponent,
-        canActivate: [AdminGuardService],
-      },
-      {
-        path: "admin/execution",
-        component: AdminExecutionComponent,
-        canActivate: [AdminGuardService],
-      },
-    ],
-  });
+  routes.push(
+    {
+      path: "dashboard",
+      component: DashboardComponent,
+      children: [
+        {
+          path: "home",
+          component: HomeComponent,
+        },
+        {
+          path: "user",
+          canActivate: [AuthGuardService],
+          children: [
+            {
+              path: "project",
+              component: UserProjectComponent,
+            },
+            {
+              path: "project/:pid",
+              component: UserProjectSectionComponent,
+            },
+            {
+              path: "workflow",
+              component: UserWorkflowComponent,
+            },
+            {
+              path: "file",
+              component: UserFileComponent,
+            },
+            {
+              path: "dataset",
+              component: UserDatasetComponent,
+            },
+            // the below two URLs route to the same Component. The component will render the page accordingly
+            {
+              path: "dataset/:did",
+              component: UserDatasetExplorerComponent,
+            },
+            {
+              path: "dataset/create",
+              component: UserDatasetExplorerComponent,
+            },
+            {
+              path: "quota",
+              component: UserQuotaComponent,
+            },
+            {
+              path: "search",
+              component: SearchComponent,
+            },
+            {
+              path: "discussion",
+              component: FlarumComponent,
+            },
+          ]
+        },
+        {
+          path: "admin",
+          canActivate: [AdminGuardService],
+          children: [
+            {
+              path: "user",
+              component: AdminUserComponent,
+            },
+            {
+              path: "gmail",
+              component: GmailComponent,
+            },
+            {
+              path: "execution",
+              component: AdminExecutionComponent,
+            },
+          ]
+        },
 
-  routes.push({
-    path: "home",
-    component: HomeComponent,
-  });
+      ],
+    });
 }
 // redirect all other paths to index.
 routes.push({
