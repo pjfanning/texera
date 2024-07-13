@@ -136,6 +136,12 @@ import { ResultExportationComponent } from "./workspace/component/result-exporta
 import { HubComponent } from "./hub/component/hub.component";
 import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
 import { GoogleLoginComponent } from "./dashboard/user/component/google-login/google-login.component";
+import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-workflow-result.component";
+import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
+import {
+  HubWorkflowSearchBarComponent
+} from "./hub/component/workflow/search/search-bar/hub-workflow-search-bar.component";
+import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 
 registerLocaleData(en);
 
@@ -219,7 +225,11 @@ registerLocaleData(en);
     FlarumComponent,
     HighlightSearchTermsPipe,
     HubComponent,
+    HubWorkflowComponent,
     HubWorkflowSearchComponent,
+    HubWorkflowSearchBarComponent,
+    HubWorkflowDetailComponent,
+    HubWorkflowResultComponent,
     GoogleLoginComponent
   ],
   imports: [

@@ -6,12 +6,4 @@ import { Component } from "@angular/core";
   styleUrls: ["hub-workflow-search.component.scss"],
 })
 
-export class HubWorkflowSearchComponent {
-  inputValue?: string;
-  options: string[] = [];
-
-  onInput(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.options = value ? [value, value + value, value + value + value] : [];
-  }
-}
+export class HubWorkflowSearchComponent {}

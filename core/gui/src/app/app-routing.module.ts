@@ -19,6 +19,8 @@ import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.componen
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
+import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-workflow-result.component";
+import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 
 const routes: Routes = [
   {
@@ -47,7 +49,17 @@ if (environment.userSystemEnabled) {
           children: [
             {
               path: "workflow",
-              component: HubWorkflowSearchComponent,
+              component: HubWorkflowComponent,
+              children: [
+                {
+                  path: "search",
+                  component: HubWorkflowSearchComponent,
+                },
+                {
+                  path: "result",
+                  component: HubWorkflowResultComponent,
+                }
+              ]
             },
           ]
         },
