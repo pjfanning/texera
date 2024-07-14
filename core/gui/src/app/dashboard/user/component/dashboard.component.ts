@@ -23,9 +23,10 @@ export class DashboardComponent implements OnInit {
     private userService: UserService,
     private flarumService: FlarumService
   ) {
-    this.userService.userChanged()
+    this.userService
+      .userChanged()
       .pipe(untilDestroyed(this))
-      .subscribe(() => this.isLogin = this.userService.isLogin())
+      .subscribe(() => (this.isLogin = this.userService.isLogin()));
   }
 
   ngOnInit(): void {

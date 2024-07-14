@@ -18,7 +18,10 @@ import { Router } from "@angular/router";
 export class UserIconComponent {
   public user: User | undefined;
 
-  constructor(private userService: UserService, private router: Router) {
+  constructor(
+    private userService: UserService,
+    private router: Router
+  ) {
     this.user = this.userService.getCurrentUser();
   }
 

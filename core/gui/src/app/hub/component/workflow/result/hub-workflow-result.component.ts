@@ -9,12 +9,15 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
   templateUrl: "hub-workflow-result.component.html",
   styleUrls: ["hub-workflow-result.component.scss"],
 })
-
 export class HubWorkflowResultComponent {
   listOfWorkflows: HubWorkflow[] = [];
+
   constructor(hubWorkflowService: HubWorkflowService) {
-    hubWorkflowService.getWorkflowList().pipe(untilDestroyed(this)).subscribe(workflows => {
-      this.listOfWorkflows = workflows;
-    });
+    hubWorkflowService
+      .getWorkflowList()
+      .pipe(untilDestroyed(this))
+      .subscribe(workflows => {
+        this.listOfWorkflows = workflows;
+      });
   }
 }

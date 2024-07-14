@@ -5,5 +5,4 @@ import { Component } from "@angular/core";
   templateUrl: "hub.component.html",
   styleUrls: ["hub.component.scss"],
 })
-
 export class HubComponent {}

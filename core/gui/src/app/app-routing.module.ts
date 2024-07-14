@@ -21,6 +21,7 @@ import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/us
 import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
 import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-workflow-result.component";
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
+import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 
 const routes: Routes = [
   {
@@ -35,102 +36,104 @@ const routes: Routes = [
   },
 ];
 if (environment.userSystemEnabled) {
-  routes.push(
-    {
-      path: "dashboard",
-      component: DashboardComponent,
-      children: [
-        {
-          path: "home",
-          component: HomeComponent,
-        },
-        {
-          path: "hub",
-          children: [
-            {
-              path: "workflow",
-              component: HubWorkflowComponent,
-              children: [
-                {
-                  path: "search",
-                  component: HubWorkflowSearchComponent,
-                },
-                {
-                  path: "result",
-                  component: HubWorkflowResultComponent,
-                }
-              ]
-            },
-          ]
-        },
-        {
-          path: "user",
-          canActivate: [AuthGuardService],
-          children: [
-            {
-              path: "project",
-              component: UserProjectComponent,
-            },
-            {
-              path: "project/:pid",
-              component: UserProjectSectionComponent,
-            },
-            {
-              path: "workflow",
-              component: UserWorkflowComponent,
-            },
-            {
-              path: "file",
-              component: UserFileComponent,
-            },
-            {
-              path: "dataset",
-              component: UserDatasetComponent,
-            },
-            // the below two URLs route to the same Component. The component will render the page accordingly
-            {
-              path: "dataset/:did",
-              component: UserDatasetExplorerComponent,
-            },
-            {
-              path: "dataset/create",
-              component: UserDatasetExplorerComponent,
-            },
-            {
-              path: "quota",
-              component: UserQuotaComponent,
-            },
-            {
-              path: "search",
-              component: SearchComponent,
-            },
-            {
-              path: "discussion",
-              component: FlarumComponent,
-            },
-          ]
-        },
-        {
-          path: "admin",
-          canActivate: [AdminGuardService],
-          children: [
-            {
-              path: "user",
-              component: AdminUserComponent,
-            },
-            {
-              path: "gmail",
-              component: AdminGmailComponent,
-            },
-            {
-              path: "execution",
-              component: AdminExecutionComponent,
-            },
-          ]
-        },
-
-      ],
-    });
+  routes.push({
+    path: "dashboard",
+    component: DashboardComponent,
+    children: [
+      {
+        path: "home",
+        component: HomeComponent,
+      },
+      {
+        path: "hub",
+        children: [
+          {
+            path: "workflow",
+            component: HubWorkflowComponent,
+            children: [
+              {
+                path: "search",
+                component: HubWorkflowSearchComponent,
+              },
+              {
+                path: "search/result",
+                component: HubWorkflowResultComponent,
+              },
+              {
+                path: "search/result/detail",
+                component: HubWorkflowDetailComponent,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        path: "user",
+        canActivate: [AuthGuardService],
+        children: [
+          {
+            path: "project",
+            component: UserProjectComponent,
+          },
+          {
+            path: "project/:pid",
+            component: UserProjectSectionComponent,
+          },
+          {
+            path: "workflow",
+            component: UserWorkflowComponent,
+          },
+          {
+            path: "file",
+            component: UserFileComponent,
+          },
+          {
+            path: "dataset",
+            component: UserDatasetComponent,
+          },
+          // the below two URLs route to the same Component. The component will render the page accordingly
+          {
+            path: "dataset/:did",
+            component: UserDatasetExplorerComponent,
+          },
+          {
+            path: "dataset/create",
+            component: UserDatasetExplorerComponent,
+          },
+          {
+            path: "quota",
+            component: UserQuotaComponent,
+          },
+          {
+            path: "search",
+            component: SearchComponent,
+          },
+          {
+            path: "discussion",
+            component: FlarumComponent,
+          },
+        ],
+      },
+      {
+        path: "admin",
+        canActivate: [AdminGuardService],
+        children: [
+          {
+            path: "user",
+            component: AdminUserComponent,
+          },
+          {
+            path: "gmail",
+            component: AdminGmailComponent,
+          },
+          {
+            path: "execution",
+            component: AdminExecutionComponent,
+          },
+        ],
+      },
+    ],
+  });
 }
 // redirect all other paths to index.
 routes.push({

@@ -5,6 +5,6 @@ import { environment } from "../../../../environments/environment";
   selector: "texera-login",
   templateUrl: "home.component.html",
 })
-export class HomeComponent{
+export class HomeComponent {
   localLogin = environment.localLogin;
 }

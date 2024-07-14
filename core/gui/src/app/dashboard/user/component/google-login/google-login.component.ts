@@ -8,7 +8,7 @@ import { GoogleAuthService } from "../../../../common/service/user/google-auth.s
 @UntilDestroy()
 @Component({
   selector: "texera-google-login",
-  template: ""
+  template: "",
 })
 export class GoogleLoginComponent implements AfterViewInit {
   @ViewChild("googleButton") googleButton!: ElementRef;
@@ -27,6 +27,8 @@ export class GoogleLoginComponent implements AfterViewInit {
         mergeMap(res => this.userService.googleLogin(res.credential)),
         untilDestroyed(this)
       )
-      .subscribe(() => this.router.navigate([this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow"]));
+      .subscribe(() =>
+        this.router.navigate([this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow"])
+      );
   }
 }
