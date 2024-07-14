@@ -1,4 +1,4 @@
-<div class="example-input">
+<form (ngSubmit)="onSubmit()">
   <nz-input-group
     nzSize="large"
     nzPrefixIcon="search">
@@ -7,9 +7,11 @@
       nz-input
       [(ngModel)]="inputValue"
       (ngModelChange)="onChange($event)"
-      [nzAutocomplete]="auto" />
+      [nzAutocomplete]="auto"
+      name="searchInput" />
   </nz-input-group>
+  <button type="submit" style="display: none;"></button>
   <nz-autocomplete
     [nzDataSource]="filteredOptions"
     #auto></nz-autocomplete>
-</div>
+</form>

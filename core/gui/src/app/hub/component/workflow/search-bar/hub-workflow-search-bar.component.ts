@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { Router } from "@angular/router";
 
 @UntilDestroy()
 @Component({
@@ -12,7 +13,7 @@ export class HubWorkflowSearchBarComponent {
   workflowNames: string[] = [];
   filteredOptions: string[] = [];
 
-  constructor(hubWorkflowService: HubWorkflowService) {
+  constructor(hubWorkflowService: HubWorkflowService, private router: Router) {
     this.filteredOptions = this.workflowNames;
     hubWorkflowService
       .getWorkflowList()
@@ -24,5 +25,9 @@ export class HubWorkflowSearchBarComponent {
     this.filteredOptions = this.workflowNames.filter(
       option => option.toLowerCase().indexOf(value.toLowerCase()) !== -1
     );
+  }
+
+  onSubmit() {
+    this.router.navigate(["/dashboard/hub/workflow/search/result"]);
   }
 }
