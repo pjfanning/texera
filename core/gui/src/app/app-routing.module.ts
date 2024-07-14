@@ -1,7 +1,7 @@
 import { NgModule } from "@angular/core";
 import { RouterModule, Routes } from "@angular/router";
 import { environment } from "../environments/environment";
-import { DashboardComponent } from "./dashboard/user/component/dashboard.component";
+import { DashboardComponent } from "./dashboard/component/dashboard.component";
 import { UserWorkflowComponent } from "./dashboard/user/component/user-workflow/user-workflow.component";
 import { UserFileComponent } from "./dashboard/user/component/user-file/user-file.component";
 import { UserQuotaComponent } from "./dashboard/user/component/user-quota/user-quota.component";
@@ -10,12 +10,12 @@ import { UserProjectComponent } from "./dashboard/user/component/user-project/us
 import { WorkspaceComponent } from "./workspace/component/workspace.component";
 import { HomeComponent } from "./hub/component/home/home.component";
 import { AuthGuardService } from "./common/service/user/auth-guard.service";
-import { AdminUserComponent } from "./dashboard/admin/component/user/admin-user.component";
-import { AdminExecutionComponent } from "./dashboard/admin/component/execution/admin-execution.component";
+import { AdminUserComponent } from "./dashboard/component/admin/user/admin-user.component";
+import { AdminExecutionComponent } from "./dashboard/component/admin/execution/admin-execution.component";
 import { AdminGuardService } from "./dashboard/user/service/admin/guard/admin-guard.service";
 import { SearchComponent } from "./dashboard/user/component/search/search.component";
 import { FlarumComponent } from "./dashboard/user/component/flarum/flarum.component";
-import { GmailComponent } from "./dashboard/admin/component/gmail/gmail.component";
+import { AdminGmailComponent } from "./dashboard/component/admin/gmail/admin-gmail.component";
 import { UserDatasetExplorerComponent } from "./dashboard/user/component/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { UserDatasetComponent } from "./dashboard/user/component/user-dataset/user-dataset.component";
 import { HubWorkflowSearchComponent } from "./hub/component/workflow/search/hub-workflow-search.component";
@@ -120,7 +120,7 @@ if (environment.userSystemEnabled) {
             },
             {
               path: "gmail",
-              component: GmailComponent,
+              component: AdminGmailComponent,
             },
             {
               path: "execution",
