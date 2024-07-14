@@ -35,7 +35,7 @@ import { ObjectTypeComponent } from "./common/formly/object.type";
 import { UserFileUploadService } from "./dashboard/user/service/user-file/user-file-upload.service";
 import { UserFileService } from "./dashboard/user/service/user-file/user-file.service";
 import { UserService } from "./common/service/user/user.service";
-import { DashboardComponent } from "./dashboard/component/dashboard.component";
+import { DashboardComponent } from "./dashboard/user/component/dashboard.component";
 import { UserWorkflowComponent } from "./dashboard/user/component/user-workflow/user-workflow.component";
 import { ShareAccessComponent } from "./dashboard/user/component/share-access/share-access.component";
 import { WorkflowExecutionHistoryComponent } from "./dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
