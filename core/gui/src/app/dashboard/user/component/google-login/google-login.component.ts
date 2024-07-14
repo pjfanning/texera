@@ -27,8 +27,10 @@ export class GoogleLoginComponent implements AfterViewInit {
         mergeMap(res => this.userService.googleLogin(res.credential)),
         untilDestroyed(this)
       )
-      .subscribe(() =>
-        this.router.navigate([this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow"])
+      .subscribe(() => {
+          const returnUrl = this.route.snapshot.queryParams["returnUrl"];
+          if (returnUrl) this.router.navigate([returnUrl]);
+        }
       );
   }
 }

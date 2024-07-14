@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
 import { WorkflowPersistService } from "../../../common/service/workflow-persist/workflow-persist.service";
 import { UserService } from "../../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -21,12 +21,17 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private userService: UserService,
-    private flarumService: FlarumService
+    private flarumService: FlarumService,
+    private cdr: ChangeDetectorRef
   ) {
     this.userService
       .userChanged()
       .pipe(untilDestroyed(this))
-      .subscribe(() => (this.isLogin = this.userService.isLogin()));
+      .subscribe(() => {
+        this.isLogin = this.userService.isLogin();
+        this.isAdmin = this.userService.isAdmin();
+        this.cdr.detectChanges();
+      });
   }
 
   ngOnInit(): void {
