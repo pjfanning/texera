@@ -2,13 +2,25 @@
 
 <nz-list
   nzBordered
-  nzHeader="Header"
-  nzFooter="Footer">
-  <nz-list-item *ngFor="let workflow of listOfWorkflows">
-    <nz-card
-      style="width: 300px"
-      nzTitle="Workflow">
-      {{ workflow.name }}
-    </nz-card>
-  </nz-list-item>
+  nzHeader="Results"
+  nzFooter="Total Workflows: {{listOfWorkflows.length}}">
+  <div class="workflow-list">
+    <nz-list-item *ngFor="let workflow of listOfWorkflows">
+      <nz-card
+        class="workflow-card"
+        nzTitle="{{ workflow.name }}">
+        <p>ID: {{ workflow.wid }}</p>
+        <p>Description: {{ workflow.description }}</p>
+        <p>Created On: {{ workflow.creationTime | date }}</p>
+        <p>Modified On: {{ workflow.lastModifiedTime | date }}</p>
+        <button
+          nz-button
+          nzType="primary"
+          routerLink="/dashboard/hub/workflow/search/result/detail"
+          [queryParams]="{ wid: workflow.wid}">
+          View Details
+        </button>
+      </nz-card>
+    </nz-list-item>
+  </div>
 </nz-list>

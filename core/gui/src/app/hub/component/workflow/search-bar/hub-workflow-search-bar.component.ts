@@ -13,7 +13,10 @@ export class HubWorkflowSearchBarComponent {
   workflowNames: string[] = [];
   filteredOptions: string[] = [];
 
-  constructor(hubWorkflowService: HubWorkflowService, private router: Router) {
+  constructor(
+    hubWorkflowService: HubWorkflowService,
+    private router: Router
+  ) {
     this.filteredOptions = this.workflowNames;
     hubWorkflowService
       .getWorkflowList()

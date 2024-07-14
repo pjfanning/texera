@@ -3,6 +3,6 @@ export interface HubWorkflow {
   description: string;
   wid: number;
   content: string;
-  creation_time: number;
-  last_modified_time: number;
+  creationTime: number;
+  lastModifiedTime: number;
 }

@@ -28,9 +28,8 @@ export class GoogleLoginComponent implements AfterViewInit {
         untilDestroyed(this)
       )
       .subscribe(() => {
-          const returnUrl = this.route.snapshot.queryParams["returnUrl"];
-          if (returnUrl) this.router.navigate([returnUrl]);
-        }
-      );
+        const returnUrl = this.route.snapshot.queryParams["returnUrl"];
+        if (returnUrl) this.router.navigate([returnUrl]);
+      });
   }
 }
