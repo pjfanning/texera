@@ -4,9 +4,9 @@
       placeholder="Search"
       nz-input
       [(ngModel)]="inputValue"
-      (input)="onInput($event)"
+      (ngModelChange)="onChange($event)"
       [nzAutocomplete]="auto"
     />
   </nz-input-group>
-  <nz-autocomplete [nzDataSource]="options" nzBackfill #auto></nz-autocomplete>
+  <nz-autocomplete [nzDataSource]="filteredOptions" #auto></nz-autocomplete>
 </div>

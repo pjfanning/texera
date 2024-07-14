@@ -13,7 +13,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 export class HubWorkflowDetailComponent {
   listOfWorkflows: HubWorkflow[] = [];
   constructor(private hubWorkflowService: HubWorkflowService) {
-    hubWorkflowService.getHubWorkflows().pipe(untilDestroyed(this)).subscribe(workflows => {
+    hubWorkflowService.getWorkflowList().pipe(untilDestroyed(this)).subscribe(workflows => {
       this.listOfWorkflows = workflows;
     });
   }

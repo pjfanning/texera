@@ -9,16 +9,24 @@ import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 
 @Produces(Array(MediaType.APPLICATION_JSON))
-@Path("/hub")
+@Path("/hub/workflow")
 class HubWorkflowResource {
   final private lazy val context = SqlServer.createDSLContext()
 
   @GET
-  @Path("/workflows")
-  def retrieveWorkflows(): util.List[Workflow] = {
+  @Path("/list")
+  def getWorkflowList: util.List[Workflow] = {
     context
       .select()
       .from(WORKFLOW)
       .fetchInto(classOf[Workflow])
+  }
+
+  @GET
+  @Path("/count")
+  def getWorkflowCount: Integer = {
+    context.selectCount
+      .from(WORKFLOW)
+      .fetchOne(0, classOf[Integer])
   }
 }
