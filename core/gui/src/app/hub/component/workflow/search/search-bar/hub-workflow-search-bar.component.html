@@ -1,10 +1,12 @@
 <div class="example-input">
-  <input
-    placeholder="input here"
-    nz-input
-    [(ngModel)]="inputValue"
-    (input)="onInput($event)"
-    [nzAutocomplete]="auto"
-  />
+  <nz-input-group nzSize="large" nzPrefixIcon="search">
+    <input
+      placeholder="Search"
+      nz-input
+      [(ngModel)]="inputValue"
+      (input)="onInput($event)"
+      [nzAutocomplete]="auto"
+    />
+  </nz-input-group>
   <nz-autocomplete [nzDataSource]="options" nzBackfill #auto></nz-autocomplete>
 </div>

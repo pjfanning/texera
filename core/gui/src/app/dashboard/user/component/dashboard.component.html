@@ -29,7 +29,7 @@
     <ul
       nz-menu
       nzMode="inline">
-      <texera-hub></texera-hub>
+      <ng-container *ngComponentOutlet="currentComponent;"></ng-container>
       <li
         *ngIf="isLogin"
         nz-submenu

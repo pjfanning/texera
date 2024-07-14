@@ -8,7 +8,7 @@ import { UserQuotaComponent } from "./dashboard/user/component/user-quota/user-q
 import { UserProjectSectionComponent } from "./dashboard/user/component/user-project/user-project-section/user-project-section.component";
 import { UserProjectComponent } from "./dashboard/user/component/user-project/user-project.component";
 import { WorkspaceComponent } from "./workspace/component/workspace.component";
-import { HomeComponent } from "./home/component/home.component";
+import { HomeComponent } from "./hub/component/home/home.component";
 import { AuthGuardService } from "./common/service/user/auth-guard.service";
 import { AdminUserComponent } from "./dashboard/admin/component/user/admin-user.component";
 import { AdminExecutionComponent } from "./dashboard/admin/component/execution/admin-execution.component";

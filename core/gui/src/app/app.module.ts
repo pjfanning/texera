@@ -86,10 +86,10 @@ import { CoeditorUserIconComponent } from "./workspace/component/menu/coeditor-u
 import { InputAutoCompleteComponent } from "./workspace/component/input-autocomplete/input-autocomplete.component";
 import { CollabWrapperComponent } from "./common/formly/collab-wrapper/collab-wrapper/collab-wrapper.component";
 import { NzSwitchModule } from "ng-zorro-antd/switch";
-import { HomeComponent } from "./home/component/home.component";
+import { HomeComponent } from "./hub/component/home/home.component";
 import { NzLayoutModule } from "ng-zorro-antd/layout";
 import { AuthGuardService } from "./common/service/user/auth-guard.service";
-import { LocalLoginComponent } from "./home/component/local-login/local-login.component";
+import { LocalLoginComponent } from "./hub/component/home/local-login/local-login.component";
 import { MarkdownModule } from "ngx-markdown";
 import { FileSaverService } from "./dashboard/user/service/user-file/file-saver.service";
 import { DragDropModule } from "@angular/cdk/drag-drop";

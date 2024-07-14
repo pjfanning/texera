@@ -4,6 +4,7 @@ import { UserService } from "../../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { FlarumService } from "../service/flarum/flarum.service";
 import { HttpErrorResponse } from "@angular/common/http";
+import { HubComponent } from "../../../hub/component/hub.component";
 
 @Component({
   selector: "texera-dashboard",
@@ -16,6 +17,7 @@ export class DashboardComponent implements OnInit {
   isAdmin = this.userService.isAdmin();
   isLogin = this.userService.isLogin();
   displayForum = true;
+  currentComponent = HubComponent;
 
   constructor(
     private userService: UserService,

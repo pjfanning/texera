@@ -2,8 +2,7 @@ import { Component } from "@angular/core";
 
 @Component({
   selector: "texera-hub-workflow-search-bar",
-  templateUrl: "hub-workflow-search-bar.component.html",
-  styleUrls: ["hub-workflow-search-bar.component.scss"],
+  templateUrl: "hub-workflow-search-bar.component.html"
 })
 
 export class HubWorkflowSearchBarComponent {
