@@ -71,61 +71,47 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
         val numLinks = physicalPlan.dag.edgeSet().size()
         val numBlockingLinks = physicalPlan.nonMaterializedBlockingAndDependeeLinks.size
         val numNonBlockingLinks = numLinks - numBlockingLinks
-        val vertexSet = physicalPlan.dag.vertexSet().toSet
-        val maxDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).max
-        val avgDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).sum * 1.0 / vertexSet.size
-        val maxInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).max
-        val avgInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).sum * 1.0 / vertexSet.size
-        val maxOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).max
-        val avgOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).sum * 1.0 / vertexSet.size
+//        val vertexSet = physicalPlan.dag.vertexSet().toSet
+//        val maxDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).max
+//        val avgDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).sum * 1.0 / vertexSet.size
+//        val maxInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).max
+//        val avgInDegrees = vertexSet.map(opId=>physicalPlan.dag.inDegreeOf(opId)).sum * 1.0 / vertexSet.size
+//        val maxOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).max
+//        val avgOutDegrees = vertexSet.map(opId=>physicalPlan.dag.outDegreeOf(opId)).sum * 1.0 / vertexSet.size
+        var startTime = System.nanoTime()
         val numChains = physicalPlan.maxChains.size
-        val maxChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).max else 1
-        val avgChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).sum * 1.0 / numChains else 0.0
-        val numUndirectedCycles = physicalPlan.allUndirectedCycles match {
-          case Some(allCycles) => allCycles.size
-          case None => 1001
-        }
-        val numBridges = physicalPlan.getBridges.size
+//        val maxChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).max else 1
+//        val avgChainSize = if (numChains > 0) physicalPlan.maxChains.map(_.size).sum * 1.0 / numChains else 0.0
+        val chainCalculationTime = System.nanoTime() - startTime
+        startTime = System.nanoTime()
+//        val numUndirectedCycles = physicalPlan.allUndirectedCycles match {
+//          case Some(allCycles) => allCycles.size
+//          case None => 1001
+//        }
+//        val numBridges = physicalPlan.getBridges.size
         val numCleanEdges = physicalPlan.getCleanEdges.size
-        val isDAG = numUndirectedCycles > 0
-        val pasta = new CostBasedRegionPlanGenerator(new WorkflowContext(), physicalPlan, new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
-        val bottomUpSeedSchedulability = pasta.getNaiveSchedulability()
-        val hasMatSizeOnPorts = !physicalPlan.links.forall(link => physicalPlan.dag.getEdgeWeight(link) == 1.0)
-        val mustMaterializeSize = physicalPlan.nonMaterializedBlockingAndDependeeLinks.map(link => physicalPlan.dag.getEdgeWeight(link)).sum
+        val cleanEdgeTime = System.nanoTime() - startTime
+//        val isDAG = numUndirectedCycles > 0
+//        val pasta = new CostBasedRegionPlanGenerator(new WorkflowContext(), physicalPlan, new OpResultStorage(), costFunction = "MATERIALIZATION_SIZES")
+//        val bottomUpSeedSchedulability = pasta.getNaiveSchedulability()
+//        val hasMatSizeOnPorts = !physicalPlan.links.forall(link => physicalPlan.dag.getEdgeWeight(link) == 1.0)
+//        val mustMaterializeSize = physicalPlan.nonMaterializedBlockingAndDependeeLinks.map(link => physicalPlan.dag.getEdgeWeight(link)).sum
         val statsList = List(
           "workflowName" -> workflowName,
-          "numOperators" -> numOperators,
-          "numLinks" -> numLinks,
-          "numBlockingLinks" -> numBlockingLinks,
-          "numNonBlockingLinks" -> numNonBlockingLinks,
-          "maxDegrees" -> maxDegrees,
-          "avgDegrees" -> avgDegrees,
-          "maxInDegrees" -> maxInDegrees,
-          "avgInDegrees" -> avgInDegrees,
-          "maxOutDegrees" -> maxOutDegrees,
-          "avgOutDegrees" -> avgOutDegrees,
-          "numChains" -> numChains,
-          "maxChainSize" -> maxChainSize,
-          "avgChainSize" -> avgChainSize,
-          "numUndirectedCycles" -> numUndirectedCycles,
-          "numBridges" -> numBridges,
-          "numCleanEdges" -> numCleanEdges,
-          "isDAG" -> isDAG,
-          "bottomUpSeedSchedulability" -> bottomUpSeedSchedulability,
-          "hasMatSizeOnPorts" -> hasMatSizeOnPorts,
-          "mustMaterializeSize" -> mustMaterializeSize
+          "chainCalculationTime" -> chainCalculationTime,
+          "cleanEdgeTime" -> cleanEdgeTime
         )
         val stats = statsList.map { case (_, result) => s""""${result.toString.replace("\"", "\"\"")}""""}.mkString(",")
-        if (!bottomUpSeedSchedulability && hasMatSizeOnPorts) {
-          println(s"Running experiments on $inputPath")
+//        if (!bottomUpSeedSchedulability && hasMatSizeOnPorts) {
+//          println(s"Running experiments on $inputPath")
 //          val baseline = pasta.baselineMethod
 //          println(s"$workflowName: baseline finished")
 
-          val topDownGreedy = pasta.topDownSearch(globalSearch = false)
-          println(s"$workflowName: topDownGreedy finished")
-
-          val bottomUpGreedy = pasta.bottomUpSearch(globalSearch = false)
-          println(s"$workflowName: bottomUpGreedy finished")
+//          val topDownGreedy = pasta.topDownSearch(globalSearch = false)
+//          println(s"$workflowName: topDownGreedy finished")
+//
+//          val bottomUpGreedy = pasta.bottomUpSearch(globalSearch = false)
+//          println(s"$workflowName: bottomUpGreedy finished")
 
 //          val topDownGlobal = pasta.topDownSearch()
 //          println(s"$workflowName: topDownGlobal finished")
@@ -136,29 +122,29 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 //          val pastaBest = Set(topDownGreedy, bottomUpGreedy, topDownGlobal, bottomUpGlobal).minBy(res => res.cost)
 //          println(s"$workflowName: pastaBest finished with cost ${pastaBest.cost}")
 
-          val topDownGreedyNoOptimization = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println(s"$workflowName: topDownGreedyNoOptimization finished")
-
-          val topDownGreedyOChains = pasta.topDownSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
-          println(s"$workflowName: topDownGreedyOChains finished")
-
-          val topDownGreedyOCleanEdges = pasta.topDownSearch(globalSearch = false, oChains = false, oEarlyStop = false)
-          println(s"$workflowName: topDownGreedyOCleanEdges finished")
-
-          val topDownGreedyOEarlyStop = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false)
-          println(s"$workflowName: topDownGreedyOEarlyStop finished")
-
-          val bottomUpGreedyNoOptimization = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
-          println(s"$workflowName: bottomUpGreedyNoOptimization finished")
-
-          val bottomUpGreedyOChains = pasta.bottomUpSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
-          println(s"$workflowName: bottomUpGreedyOChains finished")
-
-          val bottomUpGreedyOCleanEdges = pasta.bottomUpSearch(globalSearch = false, oChains = false, oEarlyStop = false)
-          println(s"$workflowName: bottomUpGreedyOCleanEdges finished")
-
-          val bottomUpGreedyOEarlyStop = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false)
-          println(s"$workflowName: bottomUpGreedyOEarlyStop finished")
+//          val topDownGreedyNoOptimization = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
+//          println(s"$workflowName: topDownGreedyNoOptimization finished")
+//
+//          val topDownGreedyOChains = pasta.topDownSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
+//          println(s"$workflowName: topDownGreedyOChains finished")
+//
+//          val topDownGreedyOCleanEdges = pasta.topDownSearch(globalSearch = false, oChains = false, oEarlyStop = false)
+//          println(s"$workflowName: topDownGreedyOCleanEdges finished")
+//
+//          val topDownGreedyOEarlyStop = pasta.topDownSearch(globalSearch = false, oChains = false, oCleanEdges = false)
+//          println(s"$workflowName: topDownGreedyOEarlyStop finished")
+//
+//          val bottomUpGreedyNoOptimization = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false, oEarlyStop = false)
+//          println(s"$workflowName: bottomUpGreedyNoOptimization finished")
+//
+//          val bottomUpGreedyOChains = pasta.bottomUpSearch(globalSearch = false, oCleanEdges = false, oEarlyStop = false)
+//          println(s"$workflowName: bottomUpGreedyOChains finished")
+//
+//          val bottomUpGreedyOCleanEdges = pasta.bottomUpSearch(globalSearch = false, oChains = false, oEarlyStop = false)
+//          println(s"$workflowName: bottomUpGreedyOCleanEdges finished")
+//
+//          val bottomUpGreedyOEarlyStop = pasta.bottomUpSearch(globalSearch = false, oChains = false, oCleanEdges = false)
+//          println(s"$workflowName: bottomUpGreedyOEarlyStop finished")
 
 //          val topDownGlobalNoOptimization = pasta.topDownSearch(oChains = false, oCleanEdges = false, oEarlyStop = false)
 //          println(s"$workflowName: topDownGlobalNoOptimization finished")
@@ -183,21 +169,21 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 //
 //          val bottomUpGlobalOEarlyStop = pasta.bottomUpSearch(oChains = false, oCleanEdges = false)
 //          println(s"$workflowName: bottomUpGlobalOEarlyStop finished")
-          val resultList = List(
+//          val resultList = List(
 //            "baseline" -> baseline,
-            "topDownGreedy" -> topDownGreedy,
-            "bottomUpGreedy" -> bottomUpGreedy,
+//            "topDownGreedy" -> topDownGreedy,
+//            "bottomUpGreedy" -> bottomUpGreedy,
 //            "topDownGlobal" -> topDownGlobal,
 //            "bottomUpGlobal" -> bottomUpGlobal,
 //            "pastaBest" -> pastaBest,
-            "topDownGreedyNoOptimization" -> topDownGreedyNoOptimization,
-            "topDownGreedyOChains" -> topDownGreedyOChains,
-            "topDownGreedyOCleanEdges" -> topDownGreedyOCleanEdges,
-            "topDownGreedyOEarlyStop" -> topDownGreedyOEarlyStop,
-            "bottomUpGreedyNoOptimization" -> bottomUpGreedyNoOptimization,
-            "bottomUpGreedyOChains" -> bottomUpGreedyOChains,
-            "bottomUpGreedyOCleanEdges" -> bottomUpGreedyOCleanEdges,
-            "bottomUpGreedyOEarlyStop" -> bottomUpGreedyOEarlyStop,
+//            "topDownGreedyNoOptimization" -> topDownGreedyNoOptimization,
+//            "topDownGreedyOChains" -> topDownGreedyOChains,
+//            "topDownGreedyOCleanEdges" -> topDownGreedyOCleanEdges,
+//            "topDownGreedyOEarlyStop" -> topDownGreedyOEarlyStop,
+//            "bottomUpGreedyNoOptimization" -> bottomUpGreedyNoOptimization,
+//            "bottomUpGreedyOChains" -> bottomUpGreedyOChains,
+//            "bottomUpGreedyOCleanEdges" -> bottomUpGreedyOCleanEdges,
+//            "bottomUpGreedyOEarlyStop" -> bottomUpGreedyOEarlyStop,
 //            "topDownGlobalNoOptimization" -> topDownGlobalNoOptimization,
 //            "topDownGlobalOChains" -> topDownGlobalOChains,
 //            "topDownGlobalOCleanEdges" -> topDownGlobalOCleanEdges,
@@ -206,23 +192,23 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 //            "bottomUpGlobalOChains" -> bottomUpGlobalOChains,
 //            "bottomUpGlobalOCleanEdges" -> bottomUpGlobalOCleanEdges,
 //            "bottomUpGlobalOEarlyStop" -> bottomUpGlobalOEarlyStop
-          )
-          val results = resultList.map { case (_, result) => s""""${new ExperimentResult(cost=result.cost, searchTime = result.searchTime, searchFinished = result.searchFinished, numStatesExplored = result.numStatesExplored).toString.replace("\"", "\"\"")}""""}.mkString(",")
+//          )
+//          val results = resultList.map { case (_, result) => s""""${new ExperimentResult(cost=result.cost, searchTime = result.searchTime, searchFinished = result.searchFinished, numStatesExplored = result.numStatesExplored).toString.replace("\"", "\"\"")}""""}.mkString(",")
+//          resultCSVWriter.write(stats + ",")
+//          resultCSVWriter.write(results + "\n")
+//          resultCSVWriter.flush()
+//          if (!Files.exists(planOutputDirectory)) Files.createDirectory(planOutputDirectory)
+//          val outputDirectory = planOutputDirectory.resolve(workflowName)
+//          if (!Files.exists(outputDirectory)) Files.createDirectory(outputDirectory)
+//          renderInputPhysicalPlanToFile(physicalPlan, outputDirectory.resolve("inputPhysicalPlan.png").toString)
+//          resultList.foreach {
+//            case (experimentName, result) => renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = result.state, imageOutputPath = outputDirectory.resolve(s"$experimentName.png").toString)
+//          }
+//        } else {
           resultCSVWriter.write(stats + ",")
-          resultCSVWriter.write(results + "\n")
+//          resultCSVWriter.write(",,,,,,,,," + "\n")
           resultCSVWriter.flush()
-          if (!Files.exists(planOutputDirectory)) Files.createDirectory(planOutputDirectory)
-          val outputDirectory = planOutputDirectory.resolve(workflowName)
-          if (!Files.exists(outputDirectory)) Files.createDirectory(outputDirectory)
-          renderInputPhysicalPlanToFile(physicalPlan, outputDirectory.resolve("inputPhysicalPlan.png").toString)
-          resultList.foreach {
-            case (experimentName, result) => renderRegionPlanToFile(physicalPlan = physicalPlan, matEdges = result.state, imageOutputPath = outputDirectory.resolve(s"$experimentName.png").toString)
-          }
-        } else {
-          resultCSVWriter.write(stats + ",")
-          resultCSVWriter.write(",,,,,,,,," + "\n")
-          resultCSVWriter.flush()
-        }
+//        }
         println(s"Finished $inputPath")
       }
       else {
