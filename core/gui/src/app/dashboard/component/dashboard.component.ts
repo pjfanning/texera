@@ -1,10 +1,10 @@
 import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
-import { WorkflowPersistService } from "../../../common/service/workflow-persist/workflow-persist.service";
-import { UserService } from "../../../common/service/user/user.service";
+import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
+import { UserService } from "../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
-import { FlarumService } from "../service/flarum/flarum.service";
+import { FlarumService } from "../service/user/flarum/flarum.service";
 import { HttpErrorResponse } from "@angular/common/http";
-import { HubComponent } from "../../../hub/component/hub.component";
+import { HubComponent } from "../../hub/component/hub.component";
 
 @Component({
   selector: "texera-dashboard",
