@@ -27,6 +27,7 @@ import org.jooq.impl.DSL.{groupConcatDistinct, noCondition}
 import org.jooq.types.UInteger
 
 import java.sql.Timestamp
+import java.lang.Boolean
 import java.util
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
@@ -378,7 +379,8 @@ class WorkflowResource extends LazyLogging {
               null,
               workflow.getContent,
               null,
-              null
+              null,
+              0.toByte
             ),
             sessionUser
           )
