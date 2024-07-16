@@ -133,11 +133,17 @@ import { TreeModule } from "@ali-hm/angular-tree-component";
 import { EnvironmentComponent } from "./workspace/component/left-panel/environment/environment.component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
+import {ReportPrintComponent} from "./workspace/component/report-print/report-print/report-print.component";
+import {WorkflowActionService} from "./workspace/service/workflow-graph/model/workflow-action.service";
+import {ReportPrintService} from "./workspace/component/report-print/report-print.service";
+import {WorkflowWebsocketService} from "./workspace/service/workflow-websocket/workflow-websocket.service";
 
 registerLocaleData(en);
 
 @NgModule({
   declarations: [
+    AppComponent,
+    ReportPrintComponent,
     GmailComponent,
     PublicProjectComponent,
     AppComponent,
@@ -275,6 +281,9 @@ registerLocaleData(en);
     TreeModule,
   ],
   providers: [
+    ReportPrintService,
+    WorkflowWebsocketService,
+    WorkflowActionService,
     provideNzI18n(en_US),
     AuthGuardService,
     AdminGuardService,

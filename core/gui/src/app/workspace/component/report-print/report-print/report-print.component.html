@@ -1,0 +1,9 @@
+<div *ngIf="results && results.length > 0">
+  <div *ngFor="let result of results">
+    <h2>Result Details</h2>
+    <pre>{{ result | json }}</pre>
+  </div>
+</div>
+<div *ngIf="!results || results.length === 0">
+  <p>No results to display.</p>
+</div>
