@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
 import { UntilDestroy } from "@ngneat/until-destroy";
 import { ActivatedRoute } from "@angular/router";
+import { Location } from "@angular/common"
 
 @UntilDestroy()
 @Component({
@@ -38,7 +39,11 @@ export class HubWorkflowDetailComponent {
     ],
   };
 
-  constructor(private route: ActivatedRoute) {
+  constructor(private route: ActivatedRoute, private location: Location) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
+  }
+
+  goBack(): void {
+    this.location.back()
   }
 }

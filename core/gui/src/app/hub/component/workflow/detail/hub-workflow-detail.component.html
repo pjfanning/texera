@@ -1,3 +1,7 @@
+<div>
+  <button (click)="goBack()" class="back-button">Go Back</button>
+</div>
+
 <div class="container">
   <h1>Workflow Detail Page</h1>
   <div class="workflow-info">
@@ -14,16 +18,13 @@
       <p>{{ workflow.createdBy }}</p>
     </div>
   </div>
-
   <div class="workflow-steps">
     <h2>Steps</h2>
-
-    <div
-      *ngFor="let step of workflow.steps"
-      class="workflow-step">
+    <div *ngFor="let step of workflow.steps" class="workflow-step">
       <h3>{{ step.name }}</h3>
       <p>{{ step.description }}</p>
       <p><strong>Status:</strong> {{ step.status }}</p>
     </div>
   </div>
 </div>
+
