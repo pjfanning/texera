@@ -141,8 +141,10 @@
       <div
         nz-col>
         <nz-switch
+          [ngModel]="isPublic"
           nzCheckedChildren="Public"
-          nzUnCheckedChildren="Private"></nz-switch>
+          nzUnCheckedChildren="Private"
+          (ngModelChange)="visibilityChange()"></nz-switch>
       </div>
     </nz-list-item-action>
     <nz-list-item-action>
