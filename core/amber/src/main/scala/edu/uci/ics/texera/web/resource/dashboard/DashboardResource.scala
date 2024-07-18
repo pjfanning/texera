@@ -1,6 +1,7 @@
 package edu.uci.ics.texera.web.resource.dashboard
 
 import edu.uci.ics.texera.web.auth.SessionUser
+import edu.uci.ics.texera.web.model.jooq.generated.enums.UserRole
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
 import edu.uci.ics.texera.web.resource.dashboard.SearchQueryBuilder.ALL_RESOURCE_TYPE
@@ -18,6 +19,22 @@ import java.util
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 object DashboardResource {
+
+  private val defaultUserId: UInteger = UInteger.valueOf(Long.MaxValue)
+  private val defaultUser: User = new User(
+    defaultUserId,
+    "default_name",
+    "default_email",
+    "default_password",
+    "default_googleId",
+    UserRole.RESTRICTED,
+    "default_googleAvatar"
+  )
+
+  private val defaultSessionUser: SessionUser = new SessionUser(defaultUser)
+
+  def getDefaultSessionUser: SessionUser = defaultSessionUser
+
   case class DashboardClickableFileEntry(
       resourceType: String,
       workflow: Option[DashboardWorkflow] = None,
@@ -67,25 +84,56 @@ object DashboardResource {
   def searchAllResources(
       @Auth user: SessionUser,
       @BeanParam params: SearchQueryParams
-  ): DashboardSearchResult = {
+  ):
+  DashboardSearchResult = {
     val uid = user.getUid
-    val query = params.resourceType match {
-      case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
-        WorkflowSearchQueryBuilder.constructQuery(uid, params)
-      case SearchQueryBuilder.FILE_RESOURCE_TYPE =>
-        FileSearchQueryBuilder.constructQuery(uid, params)
-      case SearchQueryBuilder.PROJECT_RESOURCE_TYPE =>
-        ProjectSearchQueryBuilder.constructQuery(uid, params)
-      case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
-        DatasetSearchQueryBuilder.constructQuery(uid, params)
-      case SearchQueryBuilder.ALL_RESOURCE_TYPE =>
-        val q1 = WorkflowSearchQueryBuilder.constructQuery(uid, params)
-        val q2 = FileSearchQueryBuilder.constructQuery(uid, params)
-        val q3 = ProjectSearchQueryBuilder.constructQuery(uid, params)
-        val q4 = DatasetSearchQueryBuilder.constructQuery(uid, params)
-        q1.unionAll(q2).unionAll(q3).unionAll(q4)
-      case _ => throw new IllegalArgumentException(s"Unknown resource type: ${params.resourceType}")
+    val defaultUid = DashboardResource.defaultUserId
+
+    val query = if (uid == defaultUid) {
+      params.resourceType match {
+        case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
+          WorkflowDefaultSearchQueryBuilder.constructQuery(uid, params)
+        case _ => throw new IllegalArgumentException(s"Unknown resource type: ${params.resourceType}")
+      }
+    } else {
+      params.resourceType match {
+        case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
+          WorkflowSearchQueryBuilder.constructQuery(uid, params)
+        case SearchQueryBuilder.FILE_RESOURCE_TYPE =>
+          FileSearchQueryBuilder.constructQuery(uid, params)
+        case SearchQueryBuilder.PROJECT_RESOURCE_TYPE =>
+          ProjectSearchQueryBuilder.constructQuery(uid, params)
+        case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
+          DatasetSearchQueryBuilder.constructQuery(uid, params)
+        case SearchQueryBuilder.ALL_RESOURCE_TYPE =>
+          val q1 = WorkflowSearchQueryBuilder.constructQuery(uid, params)
+          val q2 = FileSearchQueryBuilder.constructQuery(uid, params)
+          val q3 = ProjectSearchQueryBuilder.constructQuery(uid, params)
+          val q4 = DatasetSearchQueryBuilder.constructQuery(uid, params)
+          q1.unionAll(q2).unionAll(q3).unionAll(q4)
+        case _ => throw new IllegalArgumentException(s"Unknown resource type: ${params.resourceType}")
+      }
     }
+
+//    DashboardSearchResult = {
+//    val uid = user.getUid
+//    val query = params.resourceType match {
+//      case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
+//        WorkflowSearchQueryBuilder.constructQuery(uid, params)
+//      case SearchQueryBuilder.FILE_RESOURCE_TYPE =>
+//        FileSearchQueryBuilder.constructQuery(uid, params)
+//      case SearchQueryBuilder.PROJECT_RESOURCE_TYPE =>
+//        ProjectSearchQueryBuilder.constructQuery(uid, params)
+//      case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
+//        DatasetSearchQueryBuilder.constructQuery(uid, params)
+//      case SearchQueryBuilder.ALL_RESOURCE_TYPE =>
+//        val q1 = WorkflowSearchQueryBuilder.constructQuery(uid, params)
+//        val q2 = FileSearchQueryBuilder.constructQuery(uid, params)
+//        val q3 = ProjectSearchQueryBuilder.constructQuery(uid, params)
+//        val q4 = DatasetSearchQueryBuilder.constructQuery(uid, params)
+//        q1.unionAll(q2).unionAll(q3).unionAll(q4)
+//      case _ => throw new IllegalArgumentException(s"Unknown resource type: ${params.resourceType}")
+//    }
 
     val finalQuery =
       query.orderBy(getOrderFields(params): _*).offset(params.offset).limit(params.count + 1)
@@ -95,15 +143,22 @@ object DashboardResource {
       .take(params.count)
       .map(record => {
         val resourceType = record.get("resourceType", classOf[String])
-        resourceType match {
-          case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
-            WorkflowSearchQueryBuilder.toEntry(uid, record)
-          case SearchQueryBuilder.FILE_RESOURCE_TYPE =>
-            FileSearchQueryBuilder.toEntry(uid, record)
-          case SearchQueryBuilder.PROJECT_RESOURCE_TYPE =>
-            ProjectSearchQueryBuilder.toEntry(uid, record)
-          case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
-            DatasetSearchQueryBuilder.toEntry(uid, record)
+        if (uid == DashboardResource.defaultUserId) {
+          resourceType match {
+            case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
+              WorkflowDefaultSearchQueryBuilder.toEntry(uid, record)
+          }
+        } else {
+          resourceType match {
+            case SearchQueryBuilder.WORKFLOW_RESOURCE_TYPE =>
+              WorkflowSearchQueryBuilder.toEntry(uid, record)
+            case SearchQueryBuilder.FILE_RESOURCE_TYPE =>
+              FileSearchQueryBuilder.toEntry(uid, record)
+            case SearchQueryBuilder.PROJECT_RESOURCE_TYPE =>
+              ProjectSearchQueryBuilder.toEntry(uid, record)
+            case SearchQueryBuilder.DATASET_RESOURCE_TYPE =>
+              DatasetSearchQueryBuilder.toEntry(uid, record)
+          }
         }
       })
 
@@ -161,9 +216,11 @@ class DashboardResource {
   @GET
   @Path("/search")
   def searchAllResourcesCall(
-      @Auth user: SessionUser,
+      @Auth user: Option[SessionUser],
       @BeanParam params: SearchQueryParams
   ): DashboardSearchResult = {
-    DashboardResource.searchAllResources(user, params)
+//    DashboardResource.searchAllResources(user, params)
+    val currentUser = user.getOrElse(DashboardResource.getDefaultSessionUser)
+    DashboardResource.searchAllResources(currentUser, params)
   }
 }
