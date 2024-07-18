@@ -411,6 +411,26 @@ class WorkflowResource extends LazyLogging {
     resultWorkflows.toList
   }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Path("/clone/{wid}")
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): Unit = {
+    val user = sessionUser.getUser
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    createWorkflow(
+      new Workflow(
+        workflow.getName + "_clone",
+        workflow.getDescription,
+        null,
+        workflow.getContent,
+        null,
+        null,
+        0.toByte
+      ),
+      sessionUser
+    )
+    //TODO: copy the environment as well
+  }
   /**
     * This method creates and insert a new workflow to database
     *

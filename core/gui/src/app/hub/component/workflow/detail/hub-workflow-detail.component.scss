@@ -5,14 +5,6 @@ body {
   background-color: #f4f4f4;
 }
 
-.container {
-  width: 80%;
-  margin: 15px auto 0;
-  padding: 20px;
-  background-color: #fff;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
 .back-button {
   margin: 25px 0 10px 2%;
   padding: 7px 14px;
@@ -24,9 +16,31 @@ body {
   cursor: pointer;
 }
 
+.container {
+  width: 80%;
+  margin: 15px auto 0;
+  padding: 20px;
+  background-color: #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
 .back-button:hover {
   background-color: #f8f9fa;
   color: #0056b3;
+}
+
+.workflow-panel {
+  display: flex;
+  justify-content: flex-end;
+  
+}
+
+.clone-button {
+  background-color: black;
+  color: white;
+  border-radius: 15px;
+  padding: 5px 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
