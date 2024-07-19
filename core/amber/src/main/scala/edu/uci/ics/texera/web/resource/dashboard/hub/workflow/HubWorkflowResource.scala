@@ -3,25 +3,10 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Workflow
-import org.jooq.types.UInteger
-import java.lang.Boolean
 
-import java.sql.Timestamp
 import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-
-object HubWorkflowResource {
-  case class HubWorkflow (
-                           name: String,
-                           description: String,
-                           wid: UInteger,
-                           content: String,
-                           creationTime: Timestamp,
-                           lastModifiedTime: Timestamp,
-                           isPublished: UInteger
-                         )
-}
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/hub/workflow")
@@ -29,8 +14,8 @@ class HubWorkflowResource {
   final private lazy val context = SqlServer.createDSLContext()
 
   @GET
-  @Path("/list_old")
-  def getWorkflowListOld: util.List[Workflow] = {
+  @Path("/list_all")
+  def getAllWorkflowList: util.List[Workflow] = {
     context
       .select()
       .from(WORKFLOW)
@@ -47,7 +32,7 @@ class HubWorkflowResource {
 
   @GET
   @Path("/list")
-  def getWorkflowList: util.List[Workflow] = {
+  def getPublishedWorkflowList: util.List[Workflow] = {
     context
       .select()
       .from(WORKFLOW)
