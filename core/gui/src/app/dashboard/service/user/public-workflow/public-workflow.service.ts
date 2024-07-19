@@ -22,5 +22,4 @@ export class PublicWorkflowService {
   public makePrivate(wid: number): Observable<void> {
     return this.http.put<void>(`${USER_BASE_URL}/private/${wid}`, null);
   }
-
 }

@@ -431,6 +431,7 @@ class WorkflowResource extends LazyLogging {
     )
     //TODO: copy the environment as well
   }
+
   /**
     * This method creates and insert a new workflow to database
     *
@@ -576,7 +577,7 @@ class WorkflowResource extends LazyLogging {
 
   @GET
   @Path("/type/{wid}")
-  def getWorkflowType(@PathParam("wid") wid: UInteger) :String = {
+  def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
     if (workflow.getIsPublished() == 1.toByte)
       "Public"

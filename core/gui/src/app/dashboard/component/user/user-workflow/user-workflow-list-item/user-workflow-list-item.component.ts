@@ -78,11 +78,11 @@ export class UserWorkflowListItemComponent {
 
   ngOnInit(): void {
     this.publicWorkflowService
-    .getWorkflowType(this.workflow.wid as number)
-    .pipe(untilDestroyed(this))
-    .subscribe(type => {
-      this.isPublic = type === "Public";
-    })
+      .getWorkflowType(this.workflow.wid as number)
+      .pipe(untilDestroyed(this))
+      .subscribe(type => {
+        this.isPublic = type === "Public";
+      });
   }
 
   getProjectIds() {
@@ -183,7 +183,7 @@ export class UserWorkflowListItemComponent {
         this.entry.workflow.projectIDs = this.entry.workflow.projectIDs.filter(projectID => projectID != pid);
       });
   }
-  
+
   public visibilityChange(): void {
     console.log("visibilityChange Occurred");
     console.log("The pid used is " + this.workflow.wid);
