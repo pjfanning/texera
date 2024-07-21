@@ -1,0 +1,12 @@
+<button
+  nz-button
+  id="preview-button"
+  (click)="hidden = !hidden">
+  <span
+    nz-icon
+    nzType="{{hidden ? 'global' : 'minus'}}"></span>
+</button>
+
+<div [hidden]="hidden">
+  <div id="preview"></div>
+</div>

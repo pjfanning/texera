@@ -1,0 +1,11 @@
+#preview-button {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 4;
+}
+
+#preview {
+  height: 400px;
+  width: 600px;
+}
