@@ -1,4 +1,5 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute } from '@angular/router';
 import { HubWorkflow } from "../../type/hub-workflow.interface";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { SearchService } from "../../../../dashboard/service/user/search.service";
@@ -15,27 +16,34 @@ import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow
 })
 export class HubWorkflowResultComponent {
   listOfWorkflows: HubWorkflow[] = [];
+  query: string = "";
+  constructor(private route: ActivatedRoute, private searchService: SearchService) {
+    
+  }
 
-  constructor(private searchService: SearchService) {
-    const params: SearchFilterParameters = {
-      createDateStart: null,
-      createDateEnd: null,
-      modifiedDateStart: null,
-      modifiedDateEnd: null,
-      owners: [],
-      ids: [],
-      operators: [],
-      projectIds: [],
-    };
-
-    this.searchService.conditional_search([], params, 0, 100, "workflow", SortMethod.NameAsc, "public")
-      .pipe(untilDestroyed(this))
-      .subscribe((result: SearchResult) => {
-        console.log("Search Result:", result);
-        this.listOfWorkflows = result.results
-          .filter(item => item.resourceType === "workflow" && item.workflow !== undefined)
-          .map(item => this.convertToHubWorkflow(item.workflow!)); // 将 item.workflow 转换为 HubWorkflow
-      });
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(queryParams => {
+      this.query = queryParams['q'];
+      const params: SearchFilterParameters = {
+        createDateStart: null,
+        createDateEnd: null,
+        modifiedDateStart: null,
+        modifiedDateEnd: null,
+        owners: [],
+        ids: [],
+        operators: [],
+        projectIds: [],
+      };
+  
+      this.searchService.conditional_search([this.query], params, 0, 100, "workflow", SortMethod.NameAsc, "public")
+        .pipe(untilDestroyed(this))
+        .subscribe((result: SearchResult) => {
+          console.log("Search Result:", result);
+          this.listOfWorkflows = result.results
+            .filter(item => item.resourceType === "workflow" && item.workflow !== undefined)
+            .map(item => this.convertToHubWorkflow(item.workflow!));
+        });
+    });
   }
 
   private convertToHubWorkflow(dashboardWorkflow: DashboardWorkflow): HubWorkflow {

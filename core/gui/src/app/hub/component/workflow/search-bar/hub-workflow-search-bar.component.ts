@@ -17,7 +17,6 @@ export class HubWorkflowSearchBarComponent {
   workflowNames: string[] = [];
   filteredOptions: string[] = [];
   keywords: string[] = [];
-
   constructor(
     private searchService: SearchService,
     private router: Router
@@ -50,6 +49,6 @@ export class HubWorkflowSearchBarComponent {
   }
 
   onSubmit() {
-    this.router.navigate(["/dashboard/hub/workflow/search/result"]);
+    this.router.navigate(["/dashboard/hub/workflow/search/result"], { queryParams: { q: this.inputValue } });
   }
 }
