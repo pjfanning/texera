@@ -1,7 +1,11 @@
 import { Component } from "@angular/core";
-import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { Router } from "@angular/router";
+import {SearchService} from "../../../../dashboard/service/user/search.service";
+import {SearchFilterParameters} from "../../../../dashboard/type/search-filter-parameters";
+import {SearchResult} from "../../../../dashboard/type/search-result";
+import {SortMethod} from "../../../../dashboard/type/sort-method";
+import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
 
 @UntilDestroy()
 @Component({
@@ -12,16 +16,31 @@ export class HubWorkflowSearchBarComponent {
   inputValue?: string;
   workflowNames: string[] = [];
   filteredOptions: string[] = [];
+  keywords: string[] = [];
 
   constructor(
-    hubWorkflowService: HubWorkflowService,
+    private searchService: SearchService,
     private router: Router
   ) {
     this.filteredOptions = this.workflowNames;
-    hubWorkflowService
-      .getWorkflowList()
+    const params: SearchFilterParameters = {
+      createDateStart: null,
+      createDateEnd: null,
+      modifiedDateStart: null,
+      modifiedDateEnd: null,
+      owners: [],
+      ids: [],
+      operators: [],
+      projectIds: []
+    };
+
+    this.searchService.conditional_search([], params, 0, 3, "workflow", SortMethod.NameAsc, "public")
       .pipe(untilDestroyed(this))
-      .subscribe(workflows => (this.workflowNames = workflows.map(obj => obj.name)));
+      .subscribe((result: SearchResult) => {
+        this.workflowNames = result.results
+          .filter(item => item.resourceType === "workflow")
+          .map(item => (item.workflow as DashboardWorkflow)?.workflow.name ?? "");
+      });
   }
 
   onChange(value: string) {

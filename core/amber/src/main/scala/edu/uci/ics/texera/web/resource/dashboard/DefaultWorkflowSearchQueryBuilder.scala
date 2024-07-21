@@ -11,7 +11,9 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
 import org.jooq.TableLike
 import org.jooq.types.UInteger
 
-object WorkflowSearchQueryBuilder extends BaseWorkFlowSearchQueryBuilder {
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
+object DefaultWorkflowSearchQueryBuilder extends BaseWorkFlowSearchQueryBuilder {
 
   override protected def constructFromClause(
       uid: UInteger,
@@ -29,7 +31,7 @@ object WorkflowSearchQueryBuilder extends BaseWorkFlowSearchQueryBuilder {
       .leftJoin(PROJECT_USER_ACCESS)
       .on(PROJECT_USER_ACCESS.PID.eq(WORKFLOW_OF_PROJECT.PID))
       .where(
-        WORKFLOW_USER_ACCESS.UID.eq(uid).or(PROJECT_USER_ACCESS.UID.eq(uid))
+        WORKFLOW.IS_PUBLISHED.eq(1.toByte)
       )
   }
 }

@@ -1,8 +1,10 @@
+import { WorkflowContent } from "../../../common/type/workflow";
+
 export interface HubWorkflow {
   name: string;
-  description: string;
-  wid: number;
-  content: string;
-  creationTime: number;
-  lastModifiedTime: number;
+  description: string | undefined;
+  wid: number | undefined;
+  content: string | WorkflowContent;
+  creationTime: number | undefined;
+  lastModifiedTime: number | undefined;
 }
