@@ -1,11 +1,8 @@
-#preview-button {
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  z-index: 4;
+#workflow-editor {
+  height: 600px;
+  width: 900px;
+}
+#preview-wrapper {
+  height: 100%;
 }
 
-#preview {
-  height: 400px;
-  width: 600px;
-}

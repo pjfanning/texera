@@ -3,6 +3,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { WorkflowActionService } from "../../../service/workflow-graph/model/workflow-action.service";
 import { MAIN_CANVAS } from "../workflow-editor.component";
 import * as joint from "jointjs";
+import {JointGraphWrapper} from "../../../service/workflow-graph/model/joint-graph-wrapper";
 
 @UntilDestroy()
 @Component({
@@ -58,7 +59,9 @@ export class MiniMapComponent implements AfterViewInit, OnDestroy {
   }
 
   private updateNavigator(): void {
+    console.log('inside update navigator')
     if (!this.dragging) {
+      console.log('inside update navigator if')
       const point = this.paper.pageToLocalPoint({ x: 0, y: 0 });
       const editor = document.getElementById("workflow-editor")!;
       const navigator = document.getElementById("mini-map-navigator")!;
@@ -67,5 +70,33 @@ export class MiniMapComponent implements AfterViewInit, OnDestroy {
       navigator.style.width = (editor.offsetWidth / this.paper.scale().sx) * this.scale + "px";
       navigator.style.height = (editor.offsetHeight / this.paper.scale().sy) * this.scale + "px";
     }
+  }
+
+  public onClickZoomOut(): void {
+    // if zoom is already at minimum, don't zoom out again.
+    // if (this.isZoomRatioMin()) {
+    //   return;
+    // }
+
+    // make the ratio small.
+    this.workflowActionService
+      .getJointGraphWrapper()
+      .setZoomProperty(
+        this.workflowActionService.getJointGraphWrapper().getZoomRatio() - JointGraphWrapper.ZOOM_CLICK_DIFF
+      );
+  }
+
+  public onClickZoomIn(): void {
+    // if zoom is already reach maximum, don't zoom in again.
+    // if (this.isZoomRatioMax()) {
+    //   return;
+    // }
+
+    // make the ratio big.
+    this.workflowActionService
+      .getJointGraphWrapper()
+      .setZoomProperty(
+        this.workflowActionService.getJointGraphWrapper().getZoomRatio() + JointGraphWrapper.ZOOM_CLICK_DIFF
+      );
   }
 }

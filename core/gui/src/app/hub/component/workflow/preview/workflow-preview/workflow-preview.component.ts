@@ -5,9 +5,9 @@ import {MAIN_CANVAS} from "../../../../../workspace/component/workflow-editor/wo
 import {untilDestroyed} from "@ngneat/until-destroy";
 
 @Component({
-  selector: 'workflow-preview',
-  templateUrl: './workflow-preview.component.html',
-  styleUrls: ['./workflow-preview.component.css']
+  selector: "workflow-preview",
+  templateUrl: "./workflow-preview.component.html",
+  styleUrls: ["./workflow-preview.component.css"]
 })
 export class WorkflowPreviewComponent implements AfterViewInit, OnDestroy {
   scale = 0;
@@ -21,7 +21,7 @@ export class WorkflowPreviewComponent implements AfterViewInit, OnDestroy {
   constructor(private workflowActionService: WorkflowActionService) {}
 
   ngAfterViewInit() {
-    const map = document.getElementById("preview")!;
+    const map = document.getElementById("workflow-editor")!;
     this.scale = 2 * map.offsetWidth / (MAIN_CANVAS.xMax - MAIN_CANVAS.xMin);
     this.paper = new joint.dia.Paper({
       el: map,
@@ -35,24 +35,24 @@ export class WorkflowPreviewComponent implements AfterViewInit, OnDestroy {
       .scale(this.scale)
       .translate(-MAIN_CANVAS.xMin * this.scale, -MAIN_CANVAS.yMin * this.scale);
     this.hidden = JSON.parse(localStorage.getItem("workflow-preview") as string) || false;
-    map.addEventListener('mousedown', this.onMouseDown.bind(this));
-    map.addEventListener('mousemove', this.onMouseMove.bind(this));
-    map.addEventListener('mouseup', this.onMouseUp.bind(this));
-    map.addEventListener('wheel', this.onMouseWheel.bind(this));
+    map.addEventListener("mousedown", this.onMouseDown.bind(this));
+    map.addEventListener("mousemove", this.onMouseMove.bind(this));
+    map.addEventListener("mouseup", this.onMouseUp.bind(this));
+    map.addEventListener("wheel", this.onMouseWheel.bind(this));
   }
 
   @HostListener("window:beforeunload")
   ngOnDestroy(): void {
     localStorage.setItem("workflow-preview", JSON.stringify(this.hidden));
-    const map = document.getElementById("preview")!;
-    map.removeEventListener('mousedown', this.onMouseDown.bind(this));
-    map.removeEventListener('mousemove', this.onMouseMove.bind(this));
-    map.removeEventListener('mouseup', this.onMouseUp.bind(this));
-    map.removeEventListener('wheel', this.onMouseWheel.bind(this));
+    const map = document.getElementById("workflow-editor")!;
+    map.removeEventListener("mousedown", this.onMouseDown.bind(this));
+    map.removeEventListener("mousemove", this.onMouseMove.bind(this));
+    map.removeEventListener("mouseup", this.onMouseUp.bind(this));
+    map.removeEventListener("wheel", this.onMouseWheel.bind(this));
   }
 
   onDrag(event: any) {
-    console.log('dragging')
+    console.log("dragging")
     this.paper.translate(
       this.paper.translate().tx + -event.event.movementX / this.scale,
       this.paper.translate().ty + -event.event.movementY / this.scale

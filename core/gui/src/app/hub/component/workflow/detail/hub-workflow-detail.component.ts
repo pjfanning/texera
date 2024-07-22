@@ -241,7 +241,6 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
               .userChanged()
               .pipe(untilDestroyed(this))
               .subscribe(() => {
-                console.log("this is inside subscribe")
                 this.loadWorkflowWithId(wid);
               });
           } else {
