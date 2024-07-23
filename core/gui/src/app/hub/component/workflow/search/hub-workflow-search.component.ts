@@ -1,6 +1,8 @@
 import { Component } from "@angular/core";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { Router } from "@angular/router";
+
 
 @UntilDestroy()
 @Component({
@@ -11,12 +13,16 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 export class HubWorkflowSearchComponent {
   workflowCount: number | undefined;
 
-  constructor(hubWorkflowService: HubWorkflowService) {
+  constructor(hubWorkflowService: HubWorkflowService, private router: Router) {
     hubWorkflowService
       .getWorkflowCount()
       .pipe(untilDestroyed(this))
       .subscribe(count => {
         this.workflowCount = count;
       });
+  }
+
+  navigateToSearchResult(): void {
+    this.router.navigate(["/dashboard/hub/workflow/search/result"], { queryParams: { q: "" } });
   }
 }

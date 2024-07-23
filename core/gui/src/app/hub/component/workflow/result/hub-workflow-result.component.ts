@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core";
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from "@angular/router";
 import { HubWorkflow } from "../../type/hub-workflow.interface";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { SearchService } from "../../../../dashboard/service/user/search.service";
@@ -14,16 +14,16 @@ import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow
   templateUrl: "hub-workflow-result.component.html",
   styleUrls: ["hub-workflow-result.component.scss"],
 })
-export class HubWorkflowResultComponent {
+export class HubWorkflowResultComponent implements OnInit{
   listOfWorkflows: HubWorkflow[] = [];
   query: string = "";
   constructor(private route: ActivatedRoute, private searchService: SearchService) {
-    
+
   }
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(queryParams => {
-      this.query = queryParams['q'];
+      this.query = queryParams["q"];
       const params: SearchFilterParameters = {
         createDateStart: null,
         createDateEnd: null,
@@ -34,7 +34,7 @@ export class HubWorkflowResultComponent {
         operators: [],
         projectIds: [],
       };
-  
+
       this.searchService.conditional_search([this.query], params, 0, 100, "workflow", SortMethod.NameAsc, "public")
         .pipe(untilDestroyed(this))
         .subscribe((result: SearchResult) => {
