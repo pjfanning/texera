@@ -71,7 +71,8 @@ class OutputManagerSpec extends AnyFlatSpec with MockFactory {
       )
     }
     val fakeLink = PhysicalLink(physicalOpId(), mockPortId, physicalOpId(), mockPortId)
-    val fakeReceiver = Array[ActorVirtualIdentity](fakeID)
+    val fakeReceiver =
+      Array[ChannelIdentity](ChannelIdentity(identifier, fakeID, isControl = false))
 
     outputManager.addPartitionerWithPartitioning(
       fakeLink,

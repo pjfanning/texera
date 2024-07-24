@@ -5,9 +5,8 @@ import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { environment } from "../../../../environments/environment";
 import { OperatorMenuComponent } from "./operator-menu/operator-menu.component";
 import { VersionsListComponent } from "./versions-list/versions-list.component";
-import { WorkflowExecutionHistoryComponent } from "../../../dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
+import { WorkflowExecutionHistoryComponent } from "../../../dashboard/component/user/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
-import { EnvironmentComponent } from "./environment/environment.component";
 @UntilDestroy()
 @Component({
   selector: "texera-left-panel",
@@ -37,12 +36,6 @@ export class LeftPanelComponent implements OnDestroy, OnInit {
       title: "Time Travel",
       icon: "clock-circle",
       enabled: environment.userSystemEnabled && environment.timetravelEnabled,
-    },
-    {
-      component: EnvironmentComponent,
-      title: "Environment",
-      icon: "dashboard",
-      enabled: environment.userSystemEnabled,
     },
   ];
 
