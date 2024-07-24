@@ -5,13 +5,15 @@ import { ShareAccess } from "../../../type/share-access.interface";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { UserService } from "../../../../common/service/user/user.service";
 import { GmailService } from "../../../../common/service/gmail/gmail.service";
-import { NZ_MODAL_DATA } from "ng-zorro-antd/modal";
+import { NZ_MODAL_DATA, NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { HttpErrorResponse } from "@angular/common/http";
+import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
 
 @UntilDestroy()
 @Component({
   templateUrl: "share-access.component.html",
+  styleUrls: ["share-access.component.scss"]
 })
 export class ShareAccessComponent implements OnInit {
   readonly nzModalData = inject(NZ_MODAL_DATA);
@@ -26,18 +28,22 @@ export class ShareAccessComponent implements OnInit {
   public filteredOwners: Array<string> = [];
   public ownerSearchValue?: string;
   currentEmail: string | undefined = "";
+  isPublic: boolean | null = null;
   constructor(
     private accessService: ShareAccessService,
     private formBuilder: FormBuilder,
     private userService: UserService,
     private gmailService: GmailService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private modalService: NzModalService,
+    private publicWorkflowService: PublicWorkflowService
   ) {
     this.validateForm = this.formBuilder.group({
       email: [null, [Validators.email, Validators.required]],
       accessLevel: ["READ"],
     });
     this.currentEmail = this.userService.getCurrentUser()?.email;
+    
   }
 
   ngOnInit(): void {
@@ -50,6 +56,12 @@ export class ShareAccessComponent implements OnInit {
       .pipe(untilDestroyed(this))
       .subscribe(name => {
         this.owner = name;
+      });
+    this.publicWorkflowService
+      .getWorkflowType(this.id)
+      .pipe(untilDestroyed(this))
+      .subscribe(type => {
+        this.isPublic = type === "Public";
       });
   }
 
@@ -98,5 +110,78 @@ export class ShareAccessComponent implements OnInit {
       .revokeAccess(this.type, this.id, userToRemove)
       .pipe(untilDestroyed(this))
       .subscribe(() => this.ngOnInit());
+  }
+
+  verifyPublish(): void {
+    if (!this.isPublic) {
+      const modal: NzModalRef = this.modalService.create({
+        nzTitle: 'Notice',
+        nzContent: 'Publishing your workflow would grant all Texera users read access to your workflow along with the right to clone your work.',
+        nzFooter: [
+          {
+            label: 'Cancel',
+            onClick: () => modal.close()
+          },
+          {
+            label: 'Publish',
+            type: 'primary',
+            onClick: () => {
+              this.publishWorkflow()
+              alert("Your workflow is published!")
+              modal.close()
+            }
+          }
+        ]
+      });
+    }
+    
+  }
+  verifyUnpublish(): void {
+    if (this.isPublic) {
+      const modal: NzModalRef = this.modalService.create({
+        nzTitle: 'Notice',
+        nzContent: 'All other users would lose access to your work if you unpublish it.',
+        nzFooter: [
+          {
+            label: 'Cancel',
+            onClick: () => modal.close()
+          },
+          {
+            label: 'Unpublish',
+            type: 'primary',
+            onClick: () => {
+              this.unpublishWorkflow()
+              alert("Your workflow is unpublished!")
+              modal.close()
+            }
+          }
+        ]
+      });
+    }
+  }
+
+  public publishWorkflow(): void {
+    if (!this.isPublic) {
+      console.log("Workflow " + this.id + " is published")
+      this.publicWorkflowService
+        .makePublic(this.id)
+        .pipe(untilDestroyed(this))
+        .subscribe(() => this.isPublic = true);
+    }
+    else {
+      console.log("Workflow " + this.id + " is already published")
+    }
+  }
+  public unpublishWorkflow(): void {
+    if (this.isPublic) {
+      console.log("Workflow " + this.id + " is unpublished")
+      this.publicWorkflowService
+        .makePrivate(this.id)
+        .pipe(untilDestroyed(this))
+        .subscribe(() => this.isPublic = false);
+    }
+    else {
+      console.log("Workflow " + this.id + " is already private")
+    }
   }
 }
