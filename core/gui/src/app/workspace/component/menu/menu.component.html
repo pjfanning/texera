@@ -282,8 +282,11 @@
           nz-icon
           nzType="ellipsis"></i>
       </button>
-
       <nz-button-group id="execution-buttons">
+        <button nz-button id="share-button">
+          <span nz-icon nzType="share-alt" nzTheme="outline"></span>
+          Share
+        </button>
         <button
           (click)="handleKill()"
           [disabled]="
