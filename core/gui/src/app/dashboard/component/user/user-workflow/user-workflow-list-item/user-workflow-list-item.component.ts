@@ -127,6 +127,7 @@ export class UserWorkflowListItemComponent {
         type: "workflow",
         id: this.workflow.wid,
         allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+        inWorkspace: false,
       },
       nzFooter: null,
       nzTitle: "Share this workflow with others",
