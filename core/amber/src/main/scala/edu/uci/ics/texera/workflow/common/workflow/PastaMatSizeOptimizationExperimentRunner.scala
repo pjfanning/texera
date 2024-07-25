@@ -9,6 +9,7 @@ import java.io.BufferedWriter
 import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import scala.collection.convert.ImplicitConversions.`collection AsScalaIterable`
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.io.Source
 
 case class ExperimentResult(
                              cost: Double,
@@ -18,6 +19,16 @@ case class ExperimentResult(
                            )
 
 object PastaMatSizeOptimizationExperimentRunner extends App {
+
+  def getTrainingOperators(filename: String): List[String] = {
+    val bufferedSource = Source.fromFile(filename)
+    try {
+      // Remove newline characters and store lines in a List
+      bufferedSource.getLines().map(_.trim).toList
+    } finally {
+      bufferedSource.close()
+    }
+  }
 
   if (args.length != 3) {
     println("Usage: WorkflowExperimentApp <input_file> <output_directory> <results_file>")
@@ -62,6 +73,9 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
 
   def runExperimentsOnSingleFile(inputPath: Path, planOutputDirectory: Path, resultCSVWriter: BufferedWriter): Unit = {
     try {
+
+
+
       if (Files.isRegularFile(inputPath)) {
         println(s"Starting experiments on $inputPath")
         val parts = inputPath.getFileName.toString.split("\\.")
@@ -71,6 +85,7 @@ object PastaMatSizeOptimizationExperimentRunner extends App {
         val numLinks = physicalPlan.dag.edgeSet().size()
         val numBlockingLinks = physicalPlan.nonMaterializedBlockingAndDependeeLinks.size
         val numNonBlockingLinks = numLinks - numBlockingLinks
+        renderInputPhysicalPlanToFile(physicalPlan, planOutputDirectory.resolve("inputPhysicalPlan.png").toString)
 //        val vertexSet = physicalPlan.dag.vertexSet().toSet
 //        val maxDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).max
 //        val avgDegrees = vertexSet.map(opId=>physicalPlan.dag.degreeOf(opId)).sum * 1.0 / vertexSet.size

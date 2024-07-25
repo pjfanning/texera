@@ -8,7 +8,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowExecution
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.storage.OpResultStorage
 import edu.uci.ics.texera.workflow.common.workflow.PhysicalPlan
-import edu.uci.ics.texera.workflow.common.workflow.WorkflowParser.renderRegionPlanToFile
+import edu.uci.ics.texera.workflow.common.workflow.WorkflowParser.{renderInputPhysicalPlanToFile, renderRegionPlanToFile}
 import org.jgrapht.alg.connectivity.BiconnectivityInspector
 import org.jgrapht.alg.cycle.HawickJamesSimpleCycles
 import org.jgrapht.graph.{DirectedAcyclicGraph, DirectedPseudograph}
@@ -166,6 +166,9 @@ class CostBasedRegionPlanGenerator(
     * @return A region DAG.
     */
   private def createRegionDAG(): DirectedAcyclicGraph[Region, RegionLink] = {
+    renderInputPhysicalPlanToFile(physicalPlan = physicalPlan, imageOutputPath = "/Users/xzliu/Downloads/" + workflowContext.workflowId.id + ".png")
+    println(s"numOperators: ${physicalPlan.operators.size}, numLinks: ${physicalPlan.links.size}")
+
     val searchResult = schedulingMethod match {
       case "ALL_MAT" => allMatMethod
       case "TOP_DOWN_GLOBAL" => topDownSearch()

@@ -2,8 +2,8 @@ package edu.uci.ics.texera.workflow.common.workflow
 
 import com.mxgraph.layout.hierarchical.mxHierarchicalLayout
 import com.mxgraph.model.mxICell
-import com.mxgraph.util.{mxCellRenderer, mxConstants}
-import com.mxgraph.view.mxStylesheet
+import com.mxgraph.util.{mxCellRenderer, mxConstants, mxPoint, mxRectangle}
+import com.mxgraph.view.{mxCellState, mxPerimeter, mxStylesheet}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, OperatorIdentity, PhysicalOpIdentity, WorkflowIdentity}
@@ -168,7 +168,7 @@ object WorkflowParser {
   private def renderDAGToFile(outputPath: String, graphAdapter: JGraphXAdapter[PhysicalOpIdentity, PhysicalLink]): Unit = {
     try {
       val originalImage: BufferedImage = mxCellRenderer.createBufferedImage(graphAdapter, null, 1, Color.WHITE, true, null)
-      val maxWidth = 50000
+      val maxWidth = 15000
       val maxHeight = 10000
 
       val width = originalImage.getWidth
@@ -266,11 +266,15 @@ object WorkflowParser {
       val vertexStyle: JMap[String, Object] = stylesheet.getDefaultVertexStyle
       edgeStyle.put(mxConstants.STYLE_FONTSIZE, java.lang.Integer.valueOf(7))
       edgeStyle.put(mxConstants.STYLE_FONTFAMILY, "Arial")
-      edgeStyle.put(mxConstants.STYLE_ENDARROW, mxConstants.ARROW_BLOCK)
-      edgeStyle.put(mxConstants.STYLE_ENDSIZE, java.lang.Integer.valueOf(5))
-      edgeStyle.put(mxConstants.STYLE_STROKEWIDTH, java.lang.Integer.valueOf(4))
+      edgeStyle.put(mxConstants.STYLE_ENDARROW, mxConstants.ARROW_CLASSIC)
+      edgeStyle.put(mxConstants.STYLE_DASHED, java.lang.Boolean.FALSE)
+      edgeStyle.put(mxConstants.STYLE_ENDSIZE, java.lang.Integer.valueOf(50))
+      edgeStyle.put(mxConstants.STYLE_STROKEWIDTH, java.lang.Integer.valueOf(50))
       edgeStyle.put(mxConstants.STYLE_STROKE_OPACITY, java.lang.Integer.valueOf(50))
       edgeStyle.put(mxConstants.STYLE_STROKECOLOR, "#000000")
+      edgeStyle.put(mxConstants.STYLE_EDGE, mxConstants.EDGESTYLE_ELBOW)
+      edgeStyle.put(mxConstants.STYLE_STARTARROW, mxConstants.NONE)
+      edgeStyle.put(mxConstants.SHAPE_CURVE, java.lang.Boolean.TRUE)
       vertexStyle.put(mxConstants.STYLE_SHAPE, mxConstants.SHAPE_ELLIPSE)
       vertexStyle.put(mxConstants.STYLE_PERIMETER, mxConstants.PERIMETER_ELLIPSE)
       vertexStyle.put(mxConstants.STYLE_FONTSIZE, java.lang.Integer.valueOf(7))
@@ -278,7 +282,7 @@ object WorkflowParser {
       vertexStyle.put(mxConstants.STYLE_ROUNDED, java.lang.Boolean.TRUE)
       vertexStyle.put(mxConstants.STYLE_FILLCOLOR, "#FFFFFF")
       vertexStyle.put(mxConstants.STYLE_STROKECOLOR, "#000000") // Black color for vertex borders
-      vertexStyle.put(mxConstants.STYLE_STROKEWIDTH, java.lang.Integer.valueOf(3)) // Increase the line width as needed
+      vertexStyle.put(mxConstants.STYLE_STROKEWIDTH, java.lang.Integer.valueOf(50)) // Increase the line width as needed
       stylesheet.setDefaultVertexStyle(vertexStyle) // Set the default style for vertices
       stylesheet.setDefaultEdgeStyle(edgeStyle) // Set the default style for edges
       stylesheet
@@ -287,13 +291,11 @@ object WorkflowParser {
     val strokeColor = "strokeColor=#b22812"
     val graphAdapter = new JGraphXAdapter[PhysicalOpIdentity, PhysicalLink](physicalPlan.dag)
     val layout = new mxHierarchicalLayout(graphAdapter, SwingConstants.WEST)
-    layout.execute(graphAdapter.getDefaultParent)
+
     val edgeToCellMap: JMap[PhysicalLink, mxICell] = graphAdapter.getEdgeToCellMap
     val stylesheet = getMxStylesheet(graphAdapter)
 
-    graphAdapter.setStylesheet(stylesheet)
-
-    val vertexDiameter = 30 // Set the diameter for the vertex
+    val vertexDiameter = 500 // Set the diameter for the vertex
     graphAdapter.getModel.beginUpdate()
     try {
       for (vertex <- graphAdapter.getChildVertices(graphAdapter.getDefaultParent)) {
@@ -315,6 +317,15 @@ object WorkflowParser {
       }
       edgeToCellMap.get(edge).setValue("")
     }
+
+
+    layout.setIntraCellSpacing(500) // Decreases the space between cells at the same level
+    layout.setInterRankCellSpacing(300) // Decreases the vertical space between ranks
+    layout.setParallelEdgeSpacing(500)
+    layout.execute(graphAdapter.getDefaultParent)
+
+    graphAdapter.setStylesheet(stylesheet)
+
     graphAdapter
   }
 }
