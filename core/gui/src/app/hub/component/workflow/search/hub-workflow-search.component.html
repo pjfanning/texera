@@ -9,4 +9,25 @@
     <br />
     <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
   </div>
+  <div *ngIf="hasResults; else noResultsTemplate" class="results-container">
+    <h2 class="results-title">Recent Changed Workflows</h2>
+    <div class="workflow-cards">
+      <div class="workflow-card" *ngFor="let workflow of listOfWorkflows">
+        <nz-card nzTitle="{{ workflow.name }}">
+          <p>ID: {{ workflow.wid }}</p>
+          <p>Description: {{ workflow.description }}</p>
+          <p>Created On: {{ workflow.creationTime | date }}</p>
+          <p>Modified On: {{ workflow.lastModifiedTime | date }}</p>
+          <button
+            nz-button
+            nzType="primary"
+            [routerLink]="'/workflow/' + workflow.wid">
+            Edit
+          </button>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+  <ng-template #noResultsTemplate>
+  </ng-template>
 </div>

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnInit } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute } from "@angular/router";
 import { Location } from "@angular/common";
@@ -10,12 +10,12 @@ import { HubWorkflowService } from "../../../service/workflow/hub-workflow.servi
   templateUrl: "hub-workflow-detail.component.html",
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
-export class HubWorkflowDetailComponent {
+export class HubWorkflowDetailComponent implements OnInit {
   wid: string | null;
+  workflow_name: string | null;
+  user_name: string | undefined;
 
   workflow = {
-    name: "Example Workflow",
-    createdBy: "John Doe",
     steps: [
       {
         name: "Step 1: Data Collection",
@@ -43,9 +43,21 @@ export class HubWorkflowDetailComponent {
   constructor(
     private route: ActivatedRoute,
     private location: Location,
-    private hubWorkflowService: HubWorkflowService
+    private hubWorkflowService: HubWorkflowService,
   ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
+    this.workflow_name = this.route.snapshot.queryParamMap.get("name")
+  }
+
+  ngOnInit() {
+    this.hubWorkflowService
+      .getUserName(Number(this.wid))
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: name => {
+          this.user_name = name;
+        }
+      });
   }
 
   goBack(): void {

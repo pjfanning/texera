@@ -1,4 +1,4 @@
-import { HttpClient } from "@angular/common/http";
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
@@ -24,5 +24,10 @@ export class HubWorkflowService {
 
   public cloneWorkflow(wid: number): Observable<void> {
     return this.http.post<void>(`${WORKFLOW_BASE_URL}/clone/${wid}`, null);
+  }
+
+  public getUserName(wid: number): Observable<string>{
+    const params = new HttpParams().set("wid", wid);
+    return this.http.get<string>(`${this.BASE_URL}/user_name/`, { params, responseType: "text" as "json" })
   }
 }
