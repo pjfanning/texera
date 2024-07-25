@@ -36,6 +36,7 @@ export const DEFAULT_WORKFLOW = {
   wid: 0,
   creationTime: undefined,
   lastModifiedTime: undefined,
+  isPublished: 0,
   readonly: false,
 };
 

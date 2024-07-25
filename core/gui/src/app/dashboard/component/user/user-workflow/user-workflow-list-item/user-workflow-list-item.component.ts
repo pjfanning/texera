@@ -14,7 +14,6 @@ import { DashboardProject } from "../../../../type/dashboard-project.interface";
 import { UserProjectService } from "../../../../service/user/project/user-project.service";
 import { DashboardEntry } from "../../../../type/dashboard-entry";
 import { firstValueFrom } from "rxjs";
-import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
 
 @UntilDestroy()
 @Component({
@@ -65,7 +64,6 @@ export class UserWorkflowListItemComponent {
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
     private userProjectService: UserProjectService,
-    private publicWorkflowService: PublicWorkflowService
   ) {
     this.userProjectService
       .getProjectList()

@@ -25,10 +25,11 @@ import { saveAs } from "file-saver";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { OperatorMenuService } from "../../service/operator-menu/operator-menu.service";
 import { CoeditorPresenceService } from "../../service/workflow-graph/model/coeditor-presence.service";
-import { Subscription, timer } from "rxjs";
+import { firstValueFrom, Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
+import { ShareAccessComponent } from "src/app/dashboard/component/user/share-access/share-access.component";
 
 /**
  * MenuComponent is the top level menu bar that shows
@@ -83,8 +84,8 @@ export class MenuComponent implements OnInit {
 
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
-    public workflowActionService: WorkflowActionService,
     public workflowWebsocketService: WorkflowWebsocketService,
+    public workflowActionService: WorkflowActionService,
     private location: Location,
     public undoRedoService: UndoRedoService,
     public validationWorkflowService: ValidationWorkflowService,
@@ -148,6 +149,22 @@ export class MenuComponent implements OnInit {
 
     this.registerWorkflowMetadataDisplayRefresh();
     this.handleWorkflowVersionDisplay();
+  }
+
+  public async onClickOpenShareAccess(): Promise<void> {
+    this.modalService.create({
+      nzContent: ShareAccessComponent,
+      nzData: {
+        writeAccess: true,
+        type: "workflow",
+        id: this.workflowId,
+        allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+      },
+      nzFooter: null,
+      nzTitle: "Share this workflow with others",
+      nzCentered: true,
+      nzWidth: '800px',
+    });
   }
 
   // apply a behavior to the run button via bound variables
@@ -389,6 +406,7 @@ export class MenuComponent implements OnInit {
           wid: undefined,
           creationTime: undefined,
           lastModifiedTime: undefined,
+          isPublished: 0,
           readonly: false,
         };
 

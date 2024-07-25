@@ -8,7 +8,7 @@ import { GmailService } from "../../../../common/service/gmail/gmail.service";
 import { NZ_MODAL_DATA, NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { HttpErrorResponse } from "@angular/common/http";
-import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
+import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 
 @UntilDestroy()
 @Component({
@@ -36,7 +36,7 @@ export class ShareAccessComponent implements OnInit {
     private gmailService: GmailService,
     private notificationService: NotificationService,
     private modalService: NzModalService,
-    private publicWorkflowService: PublicWorkflowService
+    private workflowPersistService: WorkflowPersistService
   ) {
     this.validateForm = this.formBuilder.group({
       email: [null, [Validators.email, Validators.required]],
@@ -57,8 +57,8 @@ export class ShareAccessComponent implements OnInit {
       .subscribe(name => {
         this.owner = name;
       });
-    this.publicWorkflowService
-      .getWorkflowType(this.id)
+    this.workflowPersistService
+      .getWorkflowIsPublished(this.id)
       .pipe(untilDestroyed(this))
       .subscribe(type => {
         this.isPublic = type === "Public";
@@ -127,7 +127,6 @@ export class ShareAccessComponent implements OnInit {
             type: 'primary',
             onClick: () => {
               this.publishWorkflow()
-              alert("Your workflow is published!")
               modal.close()
             }
           }
@@ -151,7 +150,6 @@ export class ShareAccessComponent implements OnInit {
             type: 'primary',
             onClick: () => {
               this.unpublishWorkflow()
-              alert("Your workflow is unpublished!")
               modal.close()
             }
           }
@@ -163,8 +161,8 @@ export class ShareAccessComponent implements OnInit {
   public publishWorkflow(): void {
     if (!this.isPublic) {
       console.log("Workflow " + this.id + " is published")
-      this.publicWorkflowService
-        .makePublic(this.id)
+      this.workflowPersistService
+        .updateWorkflowIsPublished(this.id, true)
         .pipe(untilDestroyed(this))
         .subscribe(() => this.isPublic = true);
     }
@@ -175,8 +173,8 @@ export class ShareAccessComponent implements OnInit {
   public unpublishWorkflow(): void {
     if (this.isPublic) {
       console.log("Workflow " + this.id + " is unpublished")
-      this.publicWorkflowService
-        .makePrivate(this.id)
+      this.workflowPersistService
+        .updateWorkflowIsPublished(this.id, false)
         .pipe(untilDestroyed(this))
         .subscribe(() => this.isPublic = false);
     }
