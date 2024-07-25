@@ -3,6 +3,8 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Workflow
+import org.jooq.Record1
+import org.jooq.types.UInteger
 
 import java.util
 import javax.ws.rs._
@@ -39,5 +41,17 @@ class HubWorkflowResource {
       .from(WORKFLOW)
       .where(WORKFLOW.IS_PUBLISHED.eq(1.toByte))
       .fetchInto(classOf[Workflow])
+  }
+
+  @GET
+  @Path("/user_name")
+  def getUserName(@QueryParam("wid") wid: UInteger): String = {
+    context
+      .select(USER.NAME)
+      .from(WORKFLOW_OF_USER)
+      .join(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .where(WORKFLOW_OF_USER.WID.eq(wid))
+      .fetchOne()
+      .value1()
   }
 }
