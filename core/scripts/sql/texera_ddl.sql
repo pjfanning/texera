@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS workflow
     `content`            LONGTEXT                    NOT NULL,
     `creation_time`      TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `last_modified_time` TIMESTAMP                   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    `is_published`       BOOLEAN                     DEFAULT false,
+    `is_published`       BOOLEAN                     NOT NULL DEFAULT false,
     PRIMARY KEY (`wid`)
 ) ENGINE = INNODB,
   AUTO_INCREMENT = 1;
