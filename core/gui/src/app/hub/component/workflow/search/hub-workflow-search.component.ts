@@ -39,6 +39,7 @@ export class HubWorkflowSearchComponent implements OnInit{
   }
 
   searchWorkflows(query: string): void {
+    // eslint-disable-next-line rxjs-angular/prefer-takeuntil
     this.activateRouter.queryParams.subscribe(queryParams => {
       const params: SearchFilterParameters = {
         createDateStart: null,

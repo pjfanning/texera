@@ -22,6 +22,7 @@ export class HubWorkflowResultComponent implements OnInit{
   }
 
   ngOnInit(): void {
+    // eslint-disable-next-line rxjs-angular/prefer-takeuntil
     this.route.queryParams.subscribe(queryParams => {
       this.query = queryParams["q"];
       const params: SearchFilterParameters = {
