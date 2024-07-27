@@ -11,6 +11,7 @@ import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow
 @Component({
   selector: "texera-hub-workflow-search-bar",
   templateUrl: "hub-workflow-search-bar.component.html",
+  styleUrls: ["hub-workflow-search-bar.component.scss"],
 })
 export class HubWorkflowSearchBarComponent {
   inputValue?: string;

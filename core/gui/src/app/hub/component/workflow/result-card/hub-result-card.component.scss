@@ -1,0 +1,115 @@
+.workflow-card-container {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+}
+
+.workflow-card {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s, transform 0.3s, height 0.3s ease-out;
+  background-color: #fff;
+  padding: 10px;
+  position: relative;
+
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+.card-content {
+  display: flex;
+  align-items: center;
+}
+
+.card-cover-image {
+  width: 100px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 16px;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.card-details {
+  flex: 1;
+}
+
+.workflow-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.workflow-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  color: #555;
+  font-size: 14px;
+}
+
+.workflow-meta span {
+  margin-right: 10px;
+}
+
+.workflow-card p {
+  margin: 8px 0;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.workflow-card p:last-child {
+  margin-bottom: 0;
+}
+
+.truncated-description,
+.full-description {
+  margin: 0;
+}
+
+.full-description {
+  display: none;
+  margin: 8px 0;
+}
+
+.workflow-card:hover .full-description {
+  display: block;
+  margin-top: 8px;
+}
+
+.workflow-card:hover .truncated-description {
+  display: none;
+}
+
+.card-actions {
+  position: absolute;
+  right: 30px;
+  top: 20%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+
+}
+
+.card-actions button {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}

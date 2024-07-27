@@ -30,9 +30,6 @@
   </div>
 </div> -->
 <div class="container">
-  <div class="search-bar">
-    <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
-  </div>
   <div class="section-intro">
     <div class="section-intro-text">
       <h1>
@@ -51,6 +48,9 @@
     <span class="section-intro-img"
         nz-icon
         nzType="project"></span>
+  </div>
+  <div class="search-bar">
+    <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
   </div>
   <div *ngIf="hasResults" class="results-container">
     <h2 class="results-title">Recent Changed Workflows</h2>
@@ -76,7 +76,7 @@
     </div>
   </div>
 </div>
-<!-- 
+<!--
 nzTitle="{{ workflow.name }}"
 <p>ID: {{ workflow.wid }}</p>
           <p>Description: {{ workflow.description }}</p>

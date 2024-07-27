@@ -17,9 +17,8 @@ import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow
 export class HubWorkflowResultComponent implements OnInit{
   listOfWorkflows: HubWorkflow[] = [];
   query: string = "";
-  constructor(private route: ActivatedRoute, private searchService: SearchService) {
 
-  }
+  constructor(private route: ActivatedRoute, private searchService: SearchService) {}
 
   ngOnInit(): void {
     // eslint-disable-next-line rxjs-angular/prefer-takeuntil
