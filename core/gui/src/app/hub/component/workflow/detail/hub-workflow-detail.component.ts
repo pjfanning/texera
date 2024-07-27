@@ -177,7 +177,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
     // disable the workspace until the workflow is fetched from the backend
     this.workflowActionService.disableWorkflowModification();
     this.workflowPersistService
-      .retrieveWorkflow(wid)
+      .retrievePublicWorkflow(wid)
       .pipe(untilDestroyed(this))
       .subscribe(
         (workflow: Workflow) => {
@@ -210,6 +210,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
           this.undoRedoService.clearRedoStack();
         },
         () => {
+          console.log("in error")
           this.workflowActionService.resetAsNewWorkflow();
           // enable workspace for modification
           this.workflowActionService.enableWorkflowModification();

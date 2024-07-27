@@ -4,21 +4,11 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  EnvironmentOfWorkflowDao,
-  WorkflowDao,
-  WorkflowOfProjectDao,
-  WorkflowOfUserDao,
-  WorkflowUserAccessDao
-}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
+import edu.uci.ics.texera.web.model.jooq.generated.enums.{UserRole, WorkflowUserAccessPrivilege}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentOfWorkflowDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, _}
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
-  createEnvironment,
-  doesWorkflowHaveEnvironment,
-  copyEnvironment
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{copyEnvironment, createEnvironment, doesWorkflowHaveEnvironment}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -121,7 +111,6 @@ object WorkflowResource {
 
 }
 @Produces(Array(MediaType.APPLICATION_JSON))
-@RolesAllowed(Array("REGULAR", "ADMIN"))
 @Path("/workflow")
 class WorkflowResource extends LazyLogging {
 
@@ -131,6 +120,7 @@ class WorkflowResource extends LazyLogging {
     * @return WorkflowID[]
     */
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/user-workflow-ids")
   def retrieveIDs(@Auth user: SessionUser): util.List[String] = {
     context
@@ -146,6 +136,7 @@ class WorkflowResource extends LazyLogging {
     * @return OwnerName[]
     */
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/user-workflow-owners")
   def retrieveOwners(@Auth user: SessionUser): util.List[String] = {
     context
@@ -165,6 +156,7 @@ class WorkflowResource extends LazyLogging {
     * @return WorkflowID[]
     */
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/search-by-operators")
   def searchWorkflowByOperator(
       @QueryParam("operator") operator: String,
@@ -217,6 +209,7 @@ class WorkflowResource extends LazyLogging {
     * @return Workflow[]
     */
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/list")
   def retrieveWorkflowsBySessionUser(
       @Auth sessionUser: SessionUser
@@ -275,6 +268,7 @@ class WorkflowResource extends LazyLogging {
     * @return a json string representing an savedWorkflow
     */
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/{wid}")
   def retrieveWorkflow(
       @PathParam("wid") wid: UInteger,
@@ -297,6 +291,40 @@ class WorkflowResource extends LazyLogging {
   }
 
   /**
+   * This method handles the client request to get a specific workflow to be displayed in canvas
+   * at current design, it only takes the workflowID and searches within the database for the matching workflow
+   * for future design, it should also take userID as an parameter.
+   *
+   * @param wid workflow id, which serves as the primary key in the UserWorkflow database
+   * @return a json string representing an savedWorkflow
+   */
+  @GET
+  @Path("/public/{wid}")
+  def retrievePublicWorkflow(
+      @PathParam("wid") wid: UInteger
+  ): WorkflowWithPrivilege = {
+    val dummyUser = new User()
+    dummyUser.setRole(UserRole.REGULAR)
+    Console.println(WorkflowAccessResource.hasReadAccess(wid, new SessionUser(dummyUser).getUid))
+    if (WorkflowAccessResource.hasReadAccess(wid, new SessionUser(dummyUser).getUid)) {
+      Console.println("has read access")
+      val workflow = workflowDao.fetchOneByWid(wid)
+      WorkflowWithPrivilege(
+        workflow.getName,
+        workflow.getDescription,
+        workflow.getWid,
+        workflow.getContent,
+        workflow.getCreationTime,
+        workflow.getLastModifiedTime,
+        true
+      )
+    } else {
+      Console.println("no read access")
+      throw new ForbiddenException("No sufficient access privilege.")
+    }
+  }
+
+  /**
     * This method persists the workflow into database
     *
     * @param workflow , a workflow
@@ -307,6 +335,7 @@ class WorkflowResource extends LazyLogging {
     */
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/persist")
   def persistWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): Workflow = {
     val user = sessionUser.getUser
@@ -348,6 +377,7 @@ class WorkflowResource extends LazyLogging {
     */
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/duplicate")
   def duplicateWorkflow(
       workflowIDs: WorkflowIDs,
@@ -413,6 +443,7 @@ class WorkflowResource extends LazyLogging {
 
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/clone/{wid}")
   def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): Unit = {
     val user = sessionUser.getUser
@@ -441,6 +472,7 @@ class WorkflowResource extends LazyLogging {
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
     val user = sessionUser.getUser
@@ -468,6 +500,7 @@ class WorkflowResource extends LazyLogging {
     * @return Response, deleted - 200, not exists - 400
     */
   @POST
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/delete")
   def deleteWorkflow(workflowIDs: WorkflowIDs, @Auth sessionUser: SessionUser): Unit = {
     val user = sessionUser.getUser
@@ -496,6 +529,7 @@ class WorkflowResource extends LazyLogging {
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/update/name")
   def updateWorkflowName(
       workflow: Workflow,
@@ -518,6 +552,7 @@ class WorkflowResource extends LazyLogging {
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/update/description")
   def updateWorkflowDescription(
       workflow: Workflow,
@@ -539,6 +574,7 @@ class WorkflowResource extends LazyLogging {
   }
 
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/{wid}/environment")
   def retrieveWorkflowEnvironment(
       @PathParam("wid") wid: UInteger,
@@ -576,6 +612,7 @@ class WorkflowResource extends LazyLogging {
   }
 
   @GET
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/type/{wid}")
   def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
