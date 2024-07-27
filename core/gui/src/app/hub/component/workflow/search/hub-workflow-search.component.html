@@ -1,35 +1,7 @@
-<!-- <div class="container">
-  <div class="box">
-    <h1>Welcome to Texera Community Hub</h1>
-    <br />
-    <i>Access <a (click)="navigateToSearchResult()">{{workflowCount}} workflows</a></i>
-    <br />
-    <i>provided by Texera and our community.</i>
-    <br />
-    <br />
+<div class="container">
+  <div class="search-bar">
     <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
   </div>
-  <div *ngIf="hasResults" class="results-container">
-    <h2 class="results-title">Recent Changed Workflows</h2>
-    <div class="workflow-cards">
-      <div class="workflow-card" *ngFor="let workflow of listOfWorkflows">
-        <nz-card nzTitle="{{ workflow.name }}">
-          <p>ID: {{ workflow.wid }}</p>
-          <p>Description: {{ workflow.description }}</p>
-          <p>Created On: {{ workflow.creationTime | date }}</p>
-          <p>Modified On: {{ workflow.lastModifiedTime | date }}</p>
-          <button
-            nz-button
-            nzType="primary"
-            [routerLink]="'/workflow/' + workflow.wid">
-            Edit
-          </button>
-        </nz-card>
-      </div>
-    </div>
-  </div>
-</div> -->
-<div class="container">
   <div class="section-intro">
     <div class="section-intro-text">
       <h1>
@@ -45,46 +17,11 @@
         <button nz-button>Your Workflows</button>
       </div>
     </div>
-    <span class="section-intro-img"
-        nz-icon
-        nzType="project"></span>
+    <img class="section-intro-img"
+         src="../../../../../assets/svg/hub_icon.svg" alt="hub icon"/>
   </div>
-  <div class="search-bar">
-    <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
+  <div class="browse-section">
+    <hub-workflow-browse-section
+      sectionTitle="Recent Work"
+      [workflowList]="listOfWorkflows"></hub-workflow-browse-section>
   </div>
-  <div *ngIf="hasResults" class="results-container">
-    <h2 class="results-title">Recent Changed Workflows</h2>
-    <div class="workflow-cards">
-      <div class="workflow-card" *ngFor="let workflow of listOfWorkflows">
-        <nz-card nzHoverable [nzCover]="coverTemplate" class="custom-card" >
-          <h1 class="card-title">{{ workflow.name }}</h1>
-          <p class="card-description">Sample description goes here{{ workflow.description }}</p>
-          <div class="footer">
-            <span class="footer-text">Edited: {{ workflow.lastModifiedTime | date }}</span>
-            <button
-              nz-button
-              nzType="primary"
-              [routerLink]="'/workflow/' + workflow.wid">
-              Edit
-            </button>
-          </div>
-        </nz-card>
-        <ng-template #coverTemplate>
-          <img alt="example" class="card-cover-image" src="../../../../../assets/logos/logo.png" />
-        </ng-template>
-      </div>
-    </div>
-  </div>
-</div>
-<!--
-nzTitle="{{ workflow.name }}"
-<p>ID: {{ workflow.wid }}</p>
-          <p>Description: {{ workflow.description }}</p>
-          <p>Created On: {{ workflow.creationTime | date }}</p>
-          <p>Modified On: {{ workflow.lastModifiedTime | date }}</p>
-          <button
-            nz-button
-            nzType="primary"
-            [routerLink]="'/workflow/' + workflow.wid">
-            Edit
-          </button> -->
