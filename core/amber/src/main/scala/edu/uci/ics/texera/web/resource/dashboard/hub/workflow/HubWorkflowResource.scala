@@ -5,11 +5,13 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, Workflow}
 import org.jooq.Record1
 import org.jooq.types.UInteger
+import scala.jdk.CollectionConverters._
+import scala.collection.mutable
+
 
 import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-
 case class PartialUser(name: String, googleAvatar: String)
 
 
