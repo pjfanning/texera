@@ -318,6 +318,7 @@ class WorkflowResource extends LazyLogging {
         workflow.getContent,
         workflow.getCreationTime,
         workflow.getLastModifiedTime,
+        workflow.getIsPublished,
         true
       )
     } else {
@@ -444,12 +445,10 @@ class WorkflowResource extends LazyLogging {
 
   @POST
   @Consumes(Array(MediaType.APPLICATION_JSON))
-  @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/clone/{wid}")
-  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): Unit = {
-    val user = sessionUser.getUser
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger  = {
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
-    createWorkflow(
+    val newWorkflow: DashboardWorkflow =  createWorkflow(
       new Workflow(
         workflow.getName + "_clone",
         workflow.getDescription,
@@ -461,7 +460,7 @@ class WorkflowResource extends LazyLogging {
       ),
       sessionUser
     )
-    //TODO: copy the environment as well
+    newWorkflow.workflow.getWid()
   }
 
   /**

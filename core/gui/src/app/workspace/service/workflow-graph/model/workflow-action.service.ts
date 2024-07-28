@@ -794,6 +794,10 @@ export class WorkflowActionService {
     this.reloadWorkflow(undefined);
   }
 
+  public setWorkflowIsPublished(newPublishState: number): void {
+    this.setWorkflowMetadata({ ...this.workflowMetadata, isPublished: newPublishState });
+  }
+
   /**
    * Need to quit shared-editing room at first.
    */

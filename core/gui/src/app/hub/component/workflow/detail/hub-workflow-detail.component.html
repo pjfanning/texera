@@ -8,10 +8,9 @@
 
 <div class="container">
   <div class="workflow-panel">
-    <button
-      (click)="cloneWorkflow()"
-      class="clone-button">
-      Copy & Edit
+    <button nz-button
+      (click)="cloneWorkflow()">
+      {{ clonePrompt }}
     </button>
   </div>
   <h1>Workflow Detail Page</h1>
@@ -22,11 +21,11 @@
     </div>
     <div>
       <h2>Workflow Name</h2>
-      <p>{{ workflow.name }}</p>
+      <p>{{ workflowName }}</p>
     </div>
     <div>
       <h2>Created By</h2>
-      <p>{{ workflow.createdBy }}</p>
+      <p *ngIf="ownerUser">{{ ownerUser.name }}</p>
     </div>
   </div>
   <h2>preview</h2>

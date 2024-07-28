@@ -25,6 +25,8 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfProject;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowOfUser;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowRuntimeStatistics;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserClones;
+import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserLikes;
 import edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion;
 
 import java.util.ArrayList;
@@ -42,7 +44,7 @@ import org.jooq.impl.SchemaImpl;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class TexeraDb extends SchemaImpl {
 
-    private static final long serialVersionUID = -633402813;
+    private static final long serialVersionUID = 868602779;
 
     /**
      * The reference instance of <code>texera_db</code>
@@ -155,6 +157,16 @@ public class TexeraDb extends SchemaImpl {
     public final WorkflowUserAccess WORKFLOW_USER_ACCESS = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserAccess.WORKFLOW_USER_ACCESS;
 
     /**
+     * The table <code>texera_db.workflow_user_clones</code>.
+     */
+    public final WorkflowUserClones WORKFLOW_USER_CLONES = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserClones.WORKFLOW_USER_CLONES;
+
+    /**
+     * The table <code>texera_db.workflow_user_likes</code>.
+     */
+    public final WorkflowUserLikes WORKFLOW_USER_LIKES = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowUserLikes.WORKFLOW_USER_LIKES;
+
+    /**
      * The table <code>texera_db.workflow_version</code>.
      */
     public final WorkflowVersion WORKFLOW_VERSION = edu.uci.ics.texera.web.model.jooq.generated.tables.WorkflowVersion.WORKFLOW_VERSION;
@@ -202,6 +214,8 @@ public class TexeraDb extends SchemaImpl {
             WorkflowOfUser.WORKFLOW_OF_USER,
             WorkflowRuntimeStatistics.WORKFLOW_RUNTIME_STATISTICS,
             WorkflowUserAccess.WORKFLOW_USER_ACCESS,
+            WorkflowUserClones.WORKFLOW_USER_CLONES,
+            WorkflowUserLikes.WORKFLOW_USER_LIKES,
             WorkflowVersion.WORKFLOW_VERSION);
     }
 }
