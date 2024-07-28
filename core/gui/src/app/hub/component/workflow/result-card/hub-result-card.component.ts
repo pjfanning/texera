@@ -1,5 +1,18 @@
 import { Component, Input } from "@angular/core";
 import { HubWorkflow} from "../../type/hub-workflow.interface";
+import { WorkflowContent } from "../../../../common/type/workflow";
+
+export interface HubWorkflowWithUserInfo extends HubWorkflow{
+  name: string;
+  description: string | undefined;
+  wid: number | undefined;
+  content: string | WorkflowContent;
+  creationTime: number | undefined;
+  lastModifiedTime: number | undefined;
+  userName?: string;
+  userGoogleAvatar?: string;
+  color?: string;
+}
 
 @Component({
   selector: "texera-hub-result-card",
@@ -7,37 +20,18 @@ import { HubWorkflow} from "../../type/hub-workflow.interface";
   styleUrls: ["./hub-result-card.component.scss"]
 })
 export class HubResultCardComponent {
-  @Input() workflow: HubWorkflow = {
-    name: "Unnamed Workflow",
-    description: undefined,
-    wid: undefined,
-    content: "", // 需要根据 WorkflowContent 的结构调整默认值
-    creationTime: undefined,
-    lastModifiedTime: undefined
-  };
+  @Input() workflow!: HubWorkflowWithUserInfo;
 
-  truncatedDescription: string | undefined;
-  fullDescription: string | undefined;
-  showFullDescription: boolean = false;
+  private defaultColors: string[] = ["#66CCFF", "#AEC6CF", "#B2E0C5", "#D3D3D3", "#F5F5DC", "#F8C8DC", "#D8BFD8", "#C3B091"];
 
-  ngOnInit(): void {
-    this.truncatedDescription = this.getDescription(this.workflow.description || "", 40);
-    this.fullDescription = this.getDescription(this.workflow.description || "", 100);
-  }
-
-  getDescription(description: string, maxWords: number): string {
-    const words = description.split(" ");
-    if (words.length > maxWords) {
-      return words.slice(0, maxWords).join(" ") + "...";
+  ngOnInit() {
+    if (!this.workflow.color) {
+      this.workflow.color = this.getRandomColor();
     }
-    return description;
   }
 
-  onMouseEnter(): void {
-    this.showFullDescription = true;
-  }
-
-  onMouseLeave(): void {
-    this.showFullDescription = false;
+  private getRandomColor(): string {
+    const randomIndex = Math.floor(Math.random() * this.defaultColors.length);
+    return this.defaultColors[randomIndex];
   }
 }

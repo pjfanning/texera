@@ -7,6 +7,7 @@ import { SearchFilterParameters } from "../../../../dashboard/type/search-filter
 import { SortMethod } from "../../../../dashboard/type/sort-method";
 import { SearchResult } from "../../../../dashboard/type/search-result";
 import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
+import { HubWorkflowService, PartialUser } from "../../../service/workflow/hub-workflow.service";
 
 @UntilDestroy()
 @Component({
@@ -15,10 +16,16 @@ import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow
   styleUrls: ["hub-workflow-result.component.scss"],
 })
 export class HubWorkflowResultComponent implements OnInit{
-  listOfWorkflows: HubWorkflow[] = [];
+  // listOfWorkflows: HubWorkflow[] = [];
   query: string = "";
+  listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string, userGoogleAvatar?: string, color?: string  }> = [];
 
-  constructor(private route: ActivatedRoute, private searchService: SearchService) {}
+
+  constructor(
+    private route: ActivatedRoute,
+    private searchService: SearchService,
+    private hubWorkflowService: HubWorkflowService
+  ) {}
 
   ngOnInit(): void {
     // eslint-disable-next-line rxjs-angular/prefer-takeuntil
@@ -39,9 +46,29 @@ export class HubWorkflowResultComponent implements OnInit{
         .pipe(untilDestroyed(this))
         .subscribe((result: SearchResult) => {
           console.log("Search Result:", result);
-          this.listOfWorkflows = result.results
+          const listOfWorkflows = result.results
             .filter(item => item.resourceType === "workflow" && item.workflow !== undefined)
             .map(item => this.convertToHubWorkflow(item.workflow!));
+
+          const wids = listOfWorkflows.map(workflow => workflow.wid).filter(wid => wid !== undefined) as number[];
+
+          this.hubWorkflowService.getUserInfo(wids)
+            .pipe(untilDestroyed(this))
+            .subscribe(userMap => {
+              this.listOfWorkflowsWithUserInfo = listOfWorkflows.map(workflow => {
+                const wid = workflow.wid;
+                if (wid !== undefined) {
+                  return {
+                    ...workflow,
+                    userName: userMap[wid]?.name,
+                    userGoogleAvatar: userMap[wid]?.googleAvatar,
+                    color: undefined
+                  };
+                } else {
+                  return workflow;
+                }
+              });
+            });
         });
     });
   }

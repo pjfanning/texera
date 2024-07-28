@@ -11,10 +11,10 @@
   </div>
 
   <div class="content-wrapper">
-    <h2 class="list-title">Results: {{listOfWorkflows.length}}</h2>
+    <h2 class="list-title">Results: {{listOfWorkflowsWithUserInfo.length}}</h2>
     <nz-list>
       <div class="workflow-list">
-        <nz-list-item *ngFor="let workflow of listOfWorkflows">
+        <nz-list-item *ngFor="let workflow of listOfWorkflowsWithUserInfo">
           <texera-hub-result-card [workflow]="workflow"></texera-hub-result-card>
         </nz-list-item>
       </div>

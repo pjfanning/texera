@@ -6,6 +6,12 @@ import { HubWorkflow } from "../../component/type/hub-workflow.interface";
 
 export const WORKFLOW_BASE_URL = `${AppSettings.getApiEndpoint()}/workflow`;
 
+export interface PartialUser {
+  name: string;
+  color?: string;
+  googleAvatar: string;
+}
+
 @Injectable({
   providedIn: "root",
 })
@@ -30,4 +36,13 @@ export class HubWorkflowService {
     const params = new HttpParams().set("wid", wid);
     return this.http.get<string>(`${this.BASE_URL}/user_name/`, { params, responseType: "text" as "json" })
   }
-}
+
+  public getUserInfo(wids: number[]): Observable<{ [key: number]: PartialUser }> {
+    let params = new HttpParams();
+    wids.forEach(wid => {
+      params = params.append("wids", wid.toString());
+    });
+    return this.http.get<{ [key: number]: PartialUser }>(`${this.BASE_URL}/user_info`, { params });
+  }
+
+  }
