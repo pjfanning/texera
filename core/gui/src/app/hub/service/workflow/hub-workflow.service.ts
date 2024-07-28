@@ -3,6 +3,7 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { AppSettings } from "../../../common/app-setting";
 import { HubWorkflow } from "../../component/type/hub-workflow.interface";
+import { User } from "src/app/common/type/user";
 
 export const WORKFLOW_BASE_URL = `${AppSettings.getApiEndpoint()}/workflow`;
 
@@ -32,9 +33,9 @@ export class HubWorkflowService {
     return this.http.post<number>(`${WORKFLOW_BASE_URL}/clone/${wid}`, null);
   }
 
-  public getUserName(wid: number): Observable<string>{
+  public getOwnerUser(wid: number): Observable<User>{
     const params = new HttpParams().set("wid", wid);
-    return this.http.get<string>(`${this.BASE_URL}/user_name/`, { params, responseType: "text" as "json" })
+    return this.http.get<User>(`${this.BASE_URL}/owner_user/`, { params })
   }
 
   public getUserInfo(wids: number[]): Observable<{ [key: number]: PartialUser }> {

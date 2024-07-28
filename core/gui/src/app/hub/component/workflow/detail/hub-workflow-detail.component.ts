@@ -3,6 +3,10 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from "@angular/common";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
+import { User } from "src/app/common/type/user";
+import { UserService } from "src/app/common/service/user/user.service";
+import { NzModalService } from "ng-zorro-antd/modal";
+import { LocalLoginComponent } from "../../home/local-login/local-login.component";
 
 @UntilDestroy()
 @Component({
@@ -13,9 +17,10 @@ import { HubWorkflowService } from "../../../service/workflow/hub-workflow.servi
 export class HubWorkflowDetailComponent implements OnInit {
   wid: string | null;
   clonedWorklowId: number | undefined;
-  workflow_name: string | null;
-  user_name: string | undefined;
-
+  workflowName: string | null;
+  ownerUser!: User;
+  private currentUser?: User;
+  public clonePrompt: String = "";
   workflow = {
     steps: [
       {
@@ -46,18 +51,28 @@ export class HubWorkflowDetailComponent implements OnInit {
     private location: Location,
     private hubWorkflowService: HubWorkflowService,
     private router: Router,
+    private userService: UserService,
+    private modalService: NzModalService,
   ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
-    this.workflow_name = this.route.snapshot.queryParamMap.get("name")
+    this.workflowName = this.route.snapshot.queryParamMap.get("name")
   }
 
   ngOnInit() {
     this.hubWorkflowService
-      .getUserName(Number(this.wid))
+      .getOwnerUser(Number(this.wid))
       .pipe(untilDestroyed(this))
       .subscribe({
-        next: name => {
-          this.user_name = name;
+        next: owner => {
+          this.ownerUser = owner;
+          console.log(this.ownerUser.uid)
+          this.currentUser = this.userService.getCurrentUser();
+          if (!this.currentUser || this.currentUser.uid !== this.ownerUser.uid) {
+            this.clonePrompt = "Copy & Edit";
+          }
+          else {
+            this.clonePrompt = "Edit";
+          }
         }
       });
   }
@@ -67,11 +82,24 @@ export class HubWorkflowDetailComponent implements OnInit {
   }
 
   cloneWorkflow(): void {
-    this.hubWorkflowService.cloneWorkflow(Number(this.wid))
-      .pipe(untilDestroyed(this))
-      .subscribe(newWid => {
-        this.clonedWorklowId = newWid;
-        this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
-      });
+    if (!this.currentUser) {
+      this.modalService.create({
+        nzContent: LocalLoginComponent,
+        nzTitle: "Login",
+        nzFooter: null,
+        nzCentered: true,
+      })
+    }
+    else if (this.currentUser.uid !== this.ownerUser.uid) {
+      this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+        .pipe(untilDestroyed(this))
+        .subscribe(newWid => {
+          this.clonedWorklowId = newWid;
+          this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
+        });
+    }
+    else {
+      this.router.navigate([`/workflow/${this.wid}`]);
+    }
   }
 }
