@@ -1,7 +1,6 @@
 package edu.uci.ics.texera.workflow.common
 
 import edu.uci.ics.amber.engine.common.SerializedState
-import edu.uci.ics.amber.engine.common.tuple.amber.SpecialTupleLike
 
 import scala.collection.mutable
 
