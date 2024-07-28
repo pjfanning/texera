@@ -14,7 +14,6 @@ import { DashboardProject } from "../../../../type/dashboard-project.interface";
 import { UserProjectService } from "../../../../service/user/project/user-project.service";
 import { DashboardEntry } from "../../../../type/dashboard-entry";
 import { firstValueFrom } from "rxjs";
-import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
 
 @UntilDestroy()
 @Component({
@@ -26,7 +25,6 @@ export class UserWorkflowListItemComponent {
   ROUTER_WORKFLOW_BASE_URL = "/workflow";
   ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user/project";
   private _entry?: DashboardEntry;
-  isPublic: boolean = false;
   @Input() public keywords: string[] = [];
 
   @Input()
@@ -66,7 +64,6 @@ export class UserWorkflowListItemComponent {
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
     private userProjectService: UserProjectService,
-    private publicWorkflowService: PublicWorkflowService
   ) {
     this.userProjectService
       .getProjectList()
@@ -76,14 +73,6 @@ export class UserWorkflowListItemComponent {
       });
   }
 
-  ngOnInit(): void {
-    this.publicWorkflowService
-      .getWorkflowType(this.workflow.wid as number)
-      .pipe(untilDestroyed(this))
-      .subscribe(type => {
-        this.isPublic = type === "Public";
-      });
-  }
 
   getProjectIds() {
     return new Set(this.entry.workflow.projectIDs);
@@ -142,6 +131,7 @@ export class UserWorkflowListItemComponent {
       nzFooter: null,
       nzTitle: "Share this workflow with others",
       nzCentered: true,
+      nzWidth: '800px',
     });
   }
 
@@ -184,19 +174,4 @@ export class UserWorkflowListItemComponent {
       });
   }
 
-  public visibilityChange(): void {
-    console.log("visibilityChange Occurred");
-    console.log("The pid used is " + this.workflow.wid);
-    if (this.isPublic) {
-      this.publicWorkflowService
-        .makePrivate(this.workflow.wid as number)
-        .pipe(untilDestroyed(this))
-        .subscribe(() => this.ngOnInit());
-    } else {
-      this.publicWorkflowService
-        .makePublic(this.workflow.wid as number)
-        .pipe(untilDestroyed(this))
-        .subscribe(() => this.ngOnInit());
-    }
-  }
 }

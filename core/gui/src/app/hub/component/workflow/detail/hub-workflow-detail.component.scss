@@ -64,7 +64,7 @@ h1 {
 }
 
 .workflow-steps {
-  margin-top: 20px;
+  margin-top: 100px;
 }
 
 .workflow-step {
@@ -83,14 +83,16 @@ h1 {
   margin: 5px 0;
 }
 
-texera-workflow-editor {
-  height: 50%;
+.preview-containers {
+  position: relative;
+  height: 500px;
+  width: 1000px;
 }
 
 texera-mini-map {
-  user-select: none;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  //z-index: 3;
 }
 
-.preview-container {
-  height:400px;
-}
