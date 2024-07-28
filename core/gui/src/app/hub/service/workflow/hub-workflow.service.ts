@@ -46,4 +46,10 @@ export class HubWorkflowService {
     return this.http.get<{ [key: number]: PartialUser }>(`${this.BASE_URL}/user_info`, { params });
   }
 
+  public checkUserClonedWorkflow(wid: number, uid: number): Observable<boolean> {
+    const params = new HttpParams()
+      .set('wid', wid.toString())
+      .set('uid', uid.toString());
+      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is-cloned`, { params });
   }
+}

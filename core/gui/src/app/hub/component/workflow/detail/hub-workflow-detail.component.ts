@@ -7,6 +7,7 @@ import { User } from "src/app/common/type/user";
 import { UserService } from "src/app/common/service/user/user.service";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { LocalLoginComponent } from "../../home/local-login/local-login.component";
+import { switchMap } from "rxjs";
 
 @UntilDestroy()
 @Component({
@@ -15,12 +16,13 @@ import { LocalLoginComponent } from "../../home/local-login/local-login.componen
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
 export class HubWorkflowDetailComponent implements OnInit {
-  wid: string | null;
+  wid: number;
   clonedWorklowId: number | undefined;
   workflowName: string | null;
   ownerUser!: User;
   private currentUser?: User;
   public clonePrompt: String = "";
+  public hasCloned: Boolean = false;
   workflow = {
     steps: [
       {
@@ -54,27 +56,50 @@ export class HubWorkflowDetailComponent implements OnInit {
     private userService: UserService,
     private modalService: NzModalService,
   ) {
-    this.wid = this.route.snapshot.queryParamMap.get("wid");
-    this.workflowName = this.route.snapshot.queryParamMap.get("name")
+    this.wid = Number(this.route.snapshot.queryParamMap.get("wid"));
+    this.workflowName = this.route.snapshot.queryParamMap.get("name");
+    this.currentUser = this.userService.getCurrentUser();
   }
 
   ngOnInit() {
-    this.hubWorkflowService
-      .getOwnerUser(Number(this.wid))
-      .pipe(untilDestroyed(this))
-      .subscribe({
-        next: owner => {
+    if (!this.currentUser) {
+      this.hasCloned = false;
+      this.hubWorkflowService.getOwnerUser(this.wid)
+        .pipe(untilDestroyed(this))
+        .subscribe(owner => {
           this.ownerUser = owner;
-          console.log(this.ownerUser.uid)
-          this.currentUser = this.userService.getCurrentUser();
-          if (!this.currentUser || this.currentUser.uid !== this.ownerUser.uid) {
-            this.clonePrompt = "Copy & Edit";
+          this.clonePrompt = "Clone & Edit";
+        });
+      
+    }
+    else {
+      this.hubWorkflowService.checkUserClonedWorkflow(this.wid, this.currentUser.uid)
+        .pipe(
+          switchMap(cloned => {
+            this.hasCloned = cloned;
+            return this.hubWorkflowService
+            .getOwnerUser(this.wid)
+          })
+        )
+        .pipe(untilDestroyed(this))
+        .subscribe({
+          next: owner => {
+            this.ownerUser = owner;
+            if (this.currentUser!.uid !== this.ownerUser.uid) {
+              if (this.hasCloned){
+                this.clonePrompt = "Create Another Clone";
+              }
+              else {
+                this.clonePrompt = "Clone & Edit";
+              }
+            }
+            else {
+              this.clonePrompt = "Edit";
+            }
           }
-          else {
-            this.clonePrompt = "Edit";
-          }
-        }
-      });
+        });
+    }
+    
   }
 
   goBack(): void {
@@ -91,7 +116,7 @@ export class HubWorkflowDetailComponent implements OnInit {
       })
     }
     else if (this.currentUser.uid !== this.ownerUser.uid) {
-      this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+      this.hubWorkflowService.cloneWorkflow(this.wid)
         .pipe(untilDestroyed(this))
         .subscribe(newWid => {
           this.clonedWorklowId = newWid;

@@ -5,20 +5,10 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
-  EnvironmentOfWorkflowDao,
-  WorkflowDao,
-  WorkflowOfProjectDao,
-  WorkflowOfUserDao,
-  WorkflowUserAccessDao
-}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentOfWorkflowDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao, WorkflowUserClonesDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{
-  createEnvironment,
-  doesWorkflowHaveEnvironment,
-  copyEnvironment
-}
+import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{copyEnvironment, createEnvironment, doesWorkflowHaveEnvironment}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -28,7 +18,7 @@ import org.jooq.types.UInteger
 
 import java.sql.Timestamp
 import java.util
-import javax.annotation.security.RolesAllowed
+import javax.annotation.security.{PermitAll, RolesAllowed}
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import scala.collection.mutable.ListBuffer
@@ -54,6 +44,7 @@ object WorkflowResource {
   final private lazy val environmentOfWorkflowDao = new EnvironmentOfWorkflowDao(
     context.configuration
   )
+  final private lazy val workflowUserClonesDao = new WorkflowUserClonesDao(context.configuration)
 
   private def insertWorkflow(workflow: Workflow, user: User): Unit = {
     workflowDao.insert(workflow)
@@ -75,6 +66,14 @@ object WorkflowResource {
     )
   }
 
+  private def workflowUserClonesExists(wid: UInteger, uid: UInteger): Boolean = {
+    workflowUserClonesDao.existsById(
+      context
+        .newRecord(WORKFLOW_OF_USER.UID, WORKFLOW_OF_USER.WID)
+        .values(uid, wid)
+    )
+  }
+
   private def workflowOfProjectExists(wid: UInteger, pid: UInteger): Boolean = {
     workflowOfProjectDao.existsById(
       context
@@ -82,6 +81,8 @@ object WorkflowResource {
         .values(wid, pid)
     )
   }
+
+
 
   def getEnvironmentEidOfWorkflow(wid: UInteger): UInteger = {
     val environmentOfWorkflow = environmentOfWorkflowDao.fetchByWid(wid)
@@ -139,6 +140,13 @@ class WorkflowResource extends LazyLogging {
       .from(WORKFLOW_USER_ACCESS)
       .where(WORKFLOW_USER_ACCESS.UID.eq(user.getUid))
       .fetchInto(classOf[String])
+  }
+
+  @GET
+  @Path("/is-cloned")
+  @PermitAll
+  def checkUserClonedWorkflow(@QueryParam("wid") wid: UInteger, @QueryParam("uid") uid: UInteger): Boolean = {
+    workflowUserClonesExists(wid, uid)
   }
 
   /**
@@ -417,6 +425,8 @@ class WorkflowResource extends LazyLogging {
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/clone/{wid}")
   def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger  = {
+    val user = sessionUser.getUser
+    val uid = user.getUid
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
     val newWorkflow: DashboardWorkflow =  createWorkflow(
       new Workflow(
@@ -430,6 +440,9 @@ class WorkflowResource extends LazyLogging {
       ),
       sessionUser
     )
+    if (!workflowUserClonesExists(wid, uid)) {
+      workflowUserClonesDao.insert(new WorkflowUserClones(uid, wid))
+    }
     newWorkflow.workflow.getWid()
   }
 
