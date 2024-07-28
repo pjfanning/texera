@@ -55,7 +55,7 @@ export class HubWorkflowDetailComponent implements OnInit {
     private modalService: NzModalService,
   ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
-    this.workflowName = this.route.snapshot.queryParamMap.get("name")
+    this.workflowName = this.route.snapshot.queryParamMap.get("name");
   }
 
   ngOnInit() {
@@ -65,15 +65,14 @@ export class HubWorkflowDetailComponent implements OnInit {
       .subscribe({
         next: owner => {
           this.ownerUser = owner;
-          console.log(this.ownerUser.uid)
+          console.log(this.ownerUser.uid);
           this.currentUser = this.userService.getCurrentUser();
           if (!this.currentUser || this.currentUser.uid !== this.ownerUser.uid) {
             this.clonePrompt = "Copy & Edit";
-          }
-          else {
+          } else {
             this.clonePrompt = "Edit";
           }
-        }
+        },
       });
   }
 
@@ -88,17 +87,15 @@ export class HubWorkflowDetailComponent implements OnInit {
         nzTitle: "Login",
         nzFooter: null,
         nzCentered: true,
-      })
-    }
-    else if (this.currentUser.uid !== this.ownerUser.uid) {
+      });
+    } else if (this.currentUser.uid !== this.ownerUser.uid) {
       this.hubWorkflowService.cloneWorkflow(Number(this.wid))
         .pipe(untilDestroyed(this))
         .subscribe(newWid => {
           this.clonedWorklowId = newWid;
           this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
         });
-    }
-    else {
+    } else {
       this.router.navigate([`/workflow/${this.wid}`]);
     }
   }
