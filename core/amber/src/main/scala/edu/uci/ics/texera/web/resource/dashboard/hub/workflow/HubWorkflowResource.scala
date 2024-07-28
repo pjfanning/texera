@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
-import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.Workflow
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, Workflow}
 import org.jooq.Record1
 import org.jooq.types.UInteger
 
@@ -44,14 +44,21 @@ class HubWorkflowResource {
   }
 
   @GET
-  @Path("/user_name")
-  def getUserName(@QueryParam("wid") wid: UInteger): String = {
+  @Path("/owner_user")
+  def getOwnerUser(@QueryParam("wid") wid: UInteger): User = {
     context
-      .select(USER.NAME)
+      .select(
+        USER.UID,
+        USER.NAME,
+        USER.EMAIL,
+        USER.PASSWORD,
+        USER.GOOGLE_ID,
+        USER.ROLE,
+        USER.GOOGLE_AVATAR
+      )
       .from(WORKFLOW_OF_USER)
       .join(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
       .where(WORKFLOW_OF_USER.WID.eq(wid))
-      .fetchOne()
-      .value1()
+      .fetchOneInto(classOf[User])
   }
 }

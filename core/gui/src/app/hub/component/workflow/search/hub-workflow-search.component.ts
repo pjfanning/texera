@@ -8,6 +8,7 @@ import { SortMethod } from "../../../../dashboard/type/sort-method";
 import { SearchResult } from "../../../../dashboard/type/search-result";
 import { HubWorkflow } from "../../type/hub-workflow.interface";
 import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
+import { UserService } from "src/app/common/service/user/user.service";
 
 
 @UntilDestroy()
@@ -20,12 +21,15 @@ export class HubWorkflowSearchComponent implements OnInit{
   workflowCount: number | undefined;
   listOfWorkflows: HubWorkflow[] = [];
   hasResults: boolean = false;
-
+  public isLoggedIn: boolean = false;
   constructor(private hubWorkflowService: HubWorkflowService,
               private router: Router,
               private searchService: SearchService,
-              private activateRouter: ActivatedRoute
-  ) {}
+              private activateRouter: ActivatedRoute,
+              private userService: UserService,
+  ) {
+    this.isLoggedIn = this.userService.isLogin();
+  }
 
   ngOnInit() {
     this.hubWorkflowService
