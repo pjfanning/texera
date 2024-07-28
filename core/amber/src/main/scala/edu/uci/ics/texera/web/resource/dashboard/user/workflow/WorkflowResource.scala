@@ -143,7 +143,7 @@ class WorkflowResource extends LazyLogging {
   }
 
   @GET
-  @Path("/is-cloned")
+  @Path("/is_cloned")
   @PermitAll
   def checkUserClonedWorkflow(@QueryParam("wid") wid: UInteger, @QueryParam("uid") uid: UInteger): Boolean = {
     workflowUserClonesExists(wid, uid)

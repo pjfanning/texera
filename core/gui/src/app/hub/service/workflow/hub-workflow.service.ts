@@ -50,6 +50,6 @@ export class HubWorkflowService {
     const params = new HttpParams()
       .set('wid', wid.toString())
       .set('uid', uid.toString());
-      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is-cloned`, { params });
+      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is_cloned`, { params });
   }
 }
