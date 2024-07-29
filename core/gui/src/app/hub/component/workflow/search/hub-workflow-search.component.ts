@@ -20,6 +20,7 @@ import { UserService } from "src/app/common/service/user/user.service";
 export class HubWorkflowSearchComponent implements OnInit{
   workflowCount: number | undefined;
   listOfWorkflows: HubWorkflow[] = [];
+  popularWorkflowList: HubWorkflow[] = [];
   hasResults: boolean = false;
   public isLoggedIn: boolean = false;
   constructor(private hubWorkflowService: HubWorkflowService,
@@ -38,8 +39,14 @@ export class HubWorkflowSearchComponent implements OnInit{
       .subscribe(count => {
         this.workflowCount = count;
       });
-
+    
     this.searchWorkflows("");
+    this.hubWorkflowService.getPopularWorkflows()
+      .pipe(untilDestroyed(this))
+      .subscribe(workflowList => {
+        this.popularWorkflowList = workflowList;
+        console.log(this.popularWorkflowList);
+      });
   }
 
   searchWorkflows(query: string): void {
@@ -73,9 +80,9 @@ export class HubWorkflowSearchComponent implements OnInit{
       name: dashboardWorkflow.workflow.name,
       description: dashboardWorkflow.workflow.description,
       wid: dashboardWorkflow.workflow.wid,
-      content: dashboardWorkflow.workflow.content,
       creationTime: dashboardWorkflow.workflow.creationTime,
       lastModifiedTime: dashboardWorkflow.workflow.lastModifiedTime,
+      owner: undefined,
     };
   }
 
@@ -83,4 +90,5 @@ export class HubWorkflowSearchComponent implements OnInit{
   navigateToSearchResult(): void {
     this.router.navigate(["/dashboard/hub/workflow/search/result"], { queryParams: { q: "" } });
   }
+
 }

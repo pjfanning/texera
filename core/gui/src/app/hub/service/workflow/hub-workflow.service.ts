@@ -44,8 +44,12 @@ export class HubWorkflowService {
 
   public checkUserClonedWorkflow(wid: number, uid: number): Observable<boolean> {
     const params = new HttpParams()
-      .set("wid", wid.toString())
-      .set("uid", uid.toString());
-      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is-cloned`, { params });
+      .set('wid', wid.toString())
+      .set('uid', uid.toString());
+      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is_cloned`, { params });
+  }
+
+  public getPopularWorkflows(): Observable<HubWorkflow[]> {
+    return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/popular_workflow_list`);
   }
 }

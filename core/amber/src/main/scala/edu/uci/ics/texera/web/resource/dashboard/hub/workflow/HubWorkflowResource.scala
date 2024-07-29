@@ -3,16 +3,32 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, Workflow}
-import org.jooq.Record1
+import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{HubWorkflow, OwnerInfo, PartialUser}
+import org.jooq.impl.DSL
 import org.jooq.types.UInteger
+
+import java.sql.Timestamp
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
-
-
 import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-case class PartialUser(name: String, googleAvatar: String)
+object HubWorkflowResource{
+  case class PartialUser(name: String, googleAvatar: String)
+  case class OwnerInfo(
+      uid: UInteger,
+      name: String,
+      googleAvatar: String
+                      )
+  case class HubWorkflow(
+      name: String,
+      description: String,
+      wid: UInteger,
+      creationTime: Timestamp,
+      lastModifiedTime: Timestamp,
+      owner: OwnerInfo
+                        )
+}
 
 
 @Produces(Array(MediaType.APPLICATION_JSON))
@@ -89,5 +105,58 @@ class HubWorkflowResource {
       userMap += (wid -> user)
     }
     userMap.asJava
+  }
+
+  @GET
+  @Path("/popular_workflow_list")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getPopularWorkflowList(): List[HubWorkflow] = {
+    val hubWorkflowEntries = context
+      .select(
+        WORKFLOW.NAME,
+        WORKFLOW.DESCRIPTION,
+        WORKFLOW.WID,
+        WORKFLOW.CREATION_TIME,
+        WORKFLOW.LAST_MODIFIED_TIME,
+        USER.UID,
+        USER.NAME,
+        USER.GOOGLE_AVATAR
+      )
+      .from(WORKFLOW)
+      .leftJoin(WORKFLOW_USER_CLONES).on(WORKFLOW.WID.eq(WORKFLOW_USER_CLONES.WID))
+      .leftJoin(WORKFLOW_OF_USER).on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
+      .leftJoin(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .groupBy(
+          WORKFLOW.NAME,
+          WORKFLOW.DESCRIPTION,
+          WORKFLOW.WID,
+          WORKFLOW.CREATION_TIME,
+          WORKFLOW.LAST_MODIFIED_TIME,
+          USER.UID,
+          USER.NAME,
+          USER.GOOGLE_AVATAR
+      )
+      .orderBy(DSL.count(WORKFLOW_USER_CLONES.UID).desc())
+      .limit(4)
+      .fetch();
+
+    hubWorkflowEntries
+      .map(workflowRecord => {
+        val ownerInfo = OwnerInfo(
+          workflowRecord.get(USER.UID),
+          workflowRecord.get(USER.NAME),
+          workflowRecord.get(USER.GOOGLE_AVATAR)
+        )
+        HubWorkflow(
+          workflowRecord.get(WORKFLOW.NAME),
+          workflowRecord.get(WORKFLOW.DESCRIPTION),
+          workflowRecord.get(WORKFLOW.WID),
+          workflowRecord.get(WORKFLOW.CREATION_TIME),
+          workflowRecord.get(WORKFLOW.LAST_MODIFIED_TIME),
+          ownerInfo
+        )
+      })
+      .asScala
+      .toList
   }
 }
