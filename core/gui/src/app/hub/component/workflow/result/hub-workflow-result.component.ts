@@ -7,7 +7,7 @@ import { SearchFilterParameters } from "../../../../dashboard/type/search-filter
 import { SortMethod } from "../../../../dashboard/type/sort-method";
 import { SearchResult } from "../../../../dashboard/type/search-result";
 import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
-import { HubWorkflowService, PartialUser } from "../../../service/workflow/hub-workflow.service";
+import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 
 @UntilDestroy()
 @Component({

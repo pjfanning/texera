@@ -70,9 +70,8 @@ export class HubWorkflowDetailComponent implements OnInit {
           this.ownerUser = owner;
           this.clonePrompt = "Clone & Edit";
         });
-      
-    }
-    else {
+
+    } else {
       this.hubWorkflowService.checkUserClonedWorkflow(this.wid, this.currentUser.uid)
         .pipe(
           switchMap(cloned => {
@@ -88,18 +87,16 @@ export class HubWorkflowDetailComponent implements OnInit {
             if (this.currentUser!.uid !== this.ownerUser.uid) {
               if (this.hasCloned){
                 this.clonePrompt = "Create Another Clone";
-              }
-              else {
+              } else {
                 this.clonePrompt = "Clone & Edit";
               }
-            }
-            else {
+            } else {
               this.clonePrompt = "Edit";
             }
           }
         });
     }
-    
+
   }
 
   goBack(): void {
@@ -114,16 +111,14 @@ export class HubWorkflowDetailComponent implements OnInit {
         nzFooter: null,
         nzCentered: true,
       })
-    }
-    else if (this.currentUser.uid !== this.ownerUser.uid) {
+    } else if (this.currentUser.uid !== this.ownerUser.uid) {
       this.hubWorkflowService.cloneWorkflow(this.wid)
         .pipe(untilDestroyed(this))
         .subscribe(newWid => {
           this.clonedWorklowId = newWid;
           this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
         });
-    }
-    else {
+    } else {
       this.router.navigate([`/workflow/${this.wid}`]);
     }
   }

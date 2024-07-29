@@ -1,9 +1,13 @@
 <div class="workflow-card-container" [routerLink]="['/dashboard/hub/workflow/search/result/detail']" [queryParams]="{ wid: workflow.wid, name: workflow.name }">
   <nz-card class="workflow-card">
     <div class="card-content">
-      <img alt="example" class="card-cover-image" src="../../../../../assets/card_background.jpg" />
+      <div class="icon-container">
+        <i nz-icon nzType="project" class="card-cover-icon"></i>
+      </div>
       <div class="card-details">
-        <h2 class="workflow-title">{{ workflow.name }}</h2>
+        <div class="title-container">
+          <h2 class="workflow-title">{{ truncatedTitle }}</h2>
+        </div>
         <div class="workflow-meta">
           <span>ID: {{ workflow.wid }}</span>
           <span>Created On: {{ workflow.creationTime | date }}</span>
