@@ -22,9 +22,11 @@
   </div>
   <div class="browse-section">
     <texera-hub-workflow-browse-section
+      *ngIf="isLoggedIn && recentWorkflowList.length > 0"
       sectionTitle="Recent Work"
-      [workflowList]="listOfWorkflows"></texera-hub-workflow-browse-section>
+      [workflowList]="recentWorkflowList"></texera-hub-workflow-browse-section>
     <texera-hub-workflow-browse-section
+      *ngIf="popularWorkflowList.length > 0"
       sectionTitle="Most Popular"
       [workflowList]="popularWorkflowList"></texera-hub-workflow-browse-section>
   </div>
