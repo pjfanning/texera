@@ -8,7 +8,7 @@
 
 <div class="container">
   <div class="workflow-panel">
-    <button nz-button
+    <button *ngIf="clonePrompt" nz-button
       (click)="cloneWorkflow()">
       {{ clonePrompt }}
     </button>

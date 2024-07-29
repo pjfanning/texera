@@ -31,12 +31,16 @@
   width: 100%;
 }
 
-.card-cover-image {
-  width: 100px;
-  height: auto;
-  object-fit: cover;
-  border-radius: 4px;
+.icon-container {
+  display: flex;
+  align-items: center;
   margin-right: 16px;
+}
+
+.card-cover-icon {
+  font-size: 90px;
+  margin-right: 14px;
+  color: #333;
   transition: transform 0.3s ease;
 
   &:hover {
@@ -49,6 +53,14 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  min-width: 0;
+  flex-shrink: 1; /* 允许在必要时缩小 */
+  max-width: 100%;
+}
+
+.title-container {
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .workflow-title {
@@ -56,10 +68,15 @@
   font-weight: bold;
   margin-bottom: 12px;
   color: #333;
-  max-width: 80%;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: normal;
+  max-width: 100%;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .workflow-meta {

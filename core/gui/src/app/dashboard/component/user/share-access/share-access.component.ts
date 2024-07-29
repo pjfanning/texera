@@ -45,7 +45,7 @@ export class ShareAccessComponent implements OnInit {
       accessLevel: ["READ"],
     });
     this.currentEmail = this.userService.getCurrentUser()?.email;
-
+    
   }
 
   ngOnInit(): void {
@@ -138,7 +138,7 @@ export class ShareAccessComponent implements OnInit {
         ]
       });
     }
-
+    
   }
   verifyUnpublish(): void {
     if (this.isPublic) {

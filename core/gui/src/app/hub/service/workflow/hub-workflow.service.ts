@@ -7,11 +7,7 @@ import { User } from "src/app/common/type/user";
 
 export const WORKFLOW_BASE_URL = `${AppSettings.getApiEndpoint()}/workflow`;
 
-export interface PartialUser {
-  name: string;
-  color?: string;
-  googleAvatar: string;
-}
+type PartialUserInfo = Pick<User, "name" | "color" | "googleAvatar">;
 
 @Injectable({
   providedIn: "root",
@@ -38,12 +34,23 @@ export class HubWorkflowService {
     return this.http.get<User>(`${this.BASE_URL}/owner_user/`, { params })
   }
 
-  public getUserInfo(wids: number[]): Observable<{ [key: number]: PartialUser }> {
+  public getUserInfo(wids: number[]): Observable<{ [key: number]: PartialUserInfo }> {
     let params = new HttpParams();
     wids.forEach(wid => {
       params = params.append("wids", wid.toString());
     });
-    return this.http.get<{ [key: number]: PartialUser }>(`${this.BASE_URL}/user_info`, { params });
+    return this.http.get<{ [key: number]: PartialUserInfo }>(`${this.BASE_URL}/user_info`, { params });
   }
 
+  public checkUserClonedWorkflow(wid: number, uid: number): Observable<boolean> {
+    const params = new HttpParams()
+      .set('wid', wid.toString())
+      .set('uid', uid.toString());
+      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is_cloned`, { params });
   }
+
+  public getPopularWorkflows(): Observable<HubWorkflow[]> {
+    return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/popular_workflow_list`);
+  }
+
+}
