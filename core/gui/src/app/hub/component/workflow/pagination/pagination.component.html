@@ -1,0 +1,26 @@
+<div class="pagination-controls">
+  <button (click)="setPage(1)" [disabled]="currentPage === 1">
+    <i class="material-icons">first_page</i>
+  </button>
+  <button (click)="setPage(currentPage - 1)" [disabled]="currentPage === 1">
+    <i class="material-icons">chevron_left</i>
+  </button>
+
+  <ng-container *ngFor="let page of getPages()">
+    <button (click)="setPage(page)" [class.active]="page === currentPage">{{ page }}</button>
+  </ng-container>
+
+  <button (click)="setPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+    <i class="material-icons">chevron_right</i>
+  </button>
+  <button (click)="setPage(totalPages)" [disabled]="currentPage === totalPages">
+    <i class="material-icons">last_page</i>
+  </button>
+
+  <div class="page-input">
+    <input type="number" [value]="userInputPage" (input)="onUserInputChange($event)" min="1" [max]="totalPages" />
+    <button (click)="goToPage()">Go</button>
+  </div>
+
+  <span class="total-pages">of {{ totalPages }}</span>
+</div>

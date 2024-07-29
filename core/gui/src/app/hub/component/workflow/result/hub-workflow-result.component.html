@@ -11,7 +11,7 @@
   </div>
 
   <div class="content-wrapper">
-    <h2 class="list-title">Results: {{listOfWorkflowsWithUserInfo.length}}</h2>
+    <h2 class="list-title">Results: {{totalResults}}</h2>
     <nz-list>
       <div class="workflow-list">
         <nz-list-item *ngFor="let workflow of listOfWorkflowsWithUserInfo">
@@ -19,5 +19,11 @@
         </nz-list-item>
       </div>
     </nz-list>
+
+    <texera-pagination-component
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      (pageChange)="onPageChange($event)">
+    </texera-pagination-component>
   </div>
 </div>

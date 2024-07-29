@@ -19,7 +19,10 @@ export class HubWorkflowResultComponent implements OnInit{
   // listOfWorkflows: HubWorkflow[] = [];
   query: string = "";
   listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string, userGoogleAvatar?: string, color?: string  }> = [];
-
+  currentPage: number = 1;
+  resultsPerPage: number = 10;
+  totalResults: number = 0;
+  totalPages: number = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -31,46 +34,68 @@ export class HubWorkflowResultComponent implements OnInit{
     // eslint-disable-next-line rxjs-angular/prefer-takeuntil
     this.route.queryParams.subscribe(queryParams => {
       this.query = queryParams["q"];
-      const params: SearchFilterParameters = {
-        createDateStart: null,
-        createDateEnd: null,
-        modifiedDateStart: null,
-        modifiedDateEnd: null,
-        owners: [],
-        ids: [],
-        operators: [],
-        projectIds: [],
-      };
-
-      this.searchService.conditional_search([this.query], params, 0, 100, "workflow", SortMethod.NameAsc, "public")
-        .pipe(untilDestroyed(this))
-        .subscribe((result: SearchResult) => {
-          console.log("Search Result:", result);
-          const listOfWorkflows = result.results
-            .filter(item => item.resourceType === "workflow" && item.workflow !== undefined)
-            .map(item => this.convertToHubWorkflow(item.workflow!));
-
-          const wids = listOfWorkflows.map(workflow => workflow.wid).filter(wid => wid !== undefined) as number[];
-
-          this.hubWorkflowService.getUserInfo(wids)
-            .pipe(untilDestroyed(this))
-            .subscribe(userMap => {
-              this.listOfWorkflowsWithUserInfo = listOfWorkflows.map(workflow => {
-                const wid = workflow.wid;
-                if (wid !== undefined) {
-                  return {
-                    ...workflow,
-                    userName: userMap[wid]?.name,
-                    userGoogleAvatar: userMap[wid]?.googleAvatar,
-                    color: undefined
-                  };
-                } else {
-                  return workflow;
-                }
-              });
-            });
-        });
+      this.loadTotalResultsNum();
+      this.loadWorkflows();
     });
+  }
+
+  private loadTotalResultsNum(): void {
+    this.hubWorkflowService.getWorkflowCount()
+      .pipe(untilDestroyed(this))
+      .subscribe(count => {
+        this.totalResults = count;
+        this.totalPages = Math.ceil(this.totalResults / this.resultsPerPage);
+      });
+  }
+
+  private loadWorkflows(): void {
+    const offset = (this.currentPage - 1) * this.resultsPerPage;
+
+    const params: SearchFilterParameters = {
+      createDateStart: null,
+      createDateEnd: null,
+      modifiedDateStart: null,
+      modifiedDateEnd: null,
+      owners: [],
+      ids: [],
+      operators: [],
+      projectIds: [],
+    };
+
+    this.searchService.conditional_search([this.query], params, offset, this.resultsPerPage, "workflow", SortMethod.NameAsc, "public")
+      .pipe(untilDestroyed(this))
+      .subscribe((result: SearchResult) => {
+        const listOfWorkflows = result.results
+          .filter(item => item.resourceType === "workflow" && item.workflow !== undefined)
+          .map(item => this.convertToHubWorkflow(item.workflow!));
+
+        const wids = listOfWorkflows.map(workflow => workflow.wid).filter(wid => wid !== undefined) as number[];
+
+        this.hubWorkflowService.getUserInfo(wids)
+          .pipe(untilDestroyed(this))
+          .subscribe(userMap => {
+            this.listOfWorkflowsWithUserInfo = listOfWorkflows.map(workflow => {
+              const wid = workflow.wid;
+              if (wid !== undefined) {
+                return {
+                  ...workflow,
+                  userName: userMap[wid]?.name,
+                  userGoogleAvatar: userMap[wid]?.googleAvatar,
+                  color: undefined
+                };
+              } else {
+                return workflow;
+              }
+            });
+          });
+      });
+  }
+
+  onPageChange(page: number): void {
+    if (page !== this.currentPage) {
+      this.currentPage = page;
+      this.loadWorkflows();
+    }
   }
 
   private convertToHubWorkflow(dashboardWorkflow: DashboardWorkflow): HubWorkflow {
