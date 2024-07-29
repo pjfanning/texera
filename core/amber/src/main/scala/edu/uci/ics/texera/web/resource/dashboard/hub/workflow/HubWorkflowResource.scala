@@ -6,7 +6,10 @@ import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, Workflow}
 import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{HubWorkflow, OwnerInfo, PartialUser}
 import org.jooq.impl.DSL
 import org.jooq.types.UInteger
-
+import io.dropwizard.auth.Auth
+import edu.uci.ics.texera.web.auth.{
+  SessionUser
+}
 import java.sql.Timestamp
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
@@ -108,7 +111,7 @@ class HubWorkflowResource {
   }
 
   @GET
-  @Path("/popular_workflow_list")
+  @Path("/popular_workflows")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def getPopularWorkflowList(): List[HubWorkflow] = {
     val hubWorkflowEntries = context
@@ -137,6 +140,50 @@ class HubWorkflowResource {
           USER.GOOGLE_AVATAR
       )
       .orderBy(DSL.count(WORKFLOW_USER_CLONES.UID).desc())
+      .limit(4)
+      .fetch();
+
+    hubWorkflowEntries
+      .map(workflowRecord => {
+        val ownerInfo = OwnerInfo(
+          workflowRecord.get(USER.UID),
+          workflowRecord.get(USER.NAME),
+          workflowRecord.get(USER.GOOGLE_AVATAR)
+        )
+        HubWorkflow(
+          workflowRecord.get(WORKFLOW.NAME),
+          workflowRecord.get(WORKFLOW.DESCRIPTION),
+          workflowRecord.get(WORKFLOW.WID),
+          workflowRecord.get(WORKFLOW.CREATION_TIME),
+          workflowRecord.get(WORKFLOW.LAST_MODIFIED_TIME),
+          ownerInfo
+        )
+      })
+      .asScala
+      .toList
+  }
+
+  @GET
+  @Path("/recent_workflows")
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  def getRecentWorkflowList(@Auth sessionUser: SessionUser): List[HubWorkflow] = {
+    val uid = sessionUser.getUser.getUid
+    val hubWorkflowEntries = context
+      .select(
+        WORKFLOW.NAME,
+        WORKFLOW.DESCRIPTION,
+        WORKFLOW.WID,
+        WORKFLOW.CREATION_TIME,
+        WORKFLOW.LAST_MODIFIED_TIME,
+        USER.UID,
+        USER.NAME,
+        USER.GOOGLE_AVATAR
+      )
+      .from(WORKFLOW)
+      .leftJoin(WORKFLOW_OF_USER).on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
+      .leftJoin(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .where(USER.UID.eq(uid))
+      .orderBy(WORKFLOW.LAST_MODIFIED_TIME.desc())
       .limit(4)
       .fetch();
 
