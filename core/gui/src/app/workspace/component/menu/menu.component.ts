@@ -60,7 +60,8 @@ export class MenuComponent implements OnInit {
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
   public workflowId?: number;
-
+  
+  @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
   @Input() public currentWorkflowName: string = ""; // reset workflowName
@@ -155,10 +156,11 @@ export class MenuComponent implements OnInit {
     this.modalService.create({
       nzContent: ShareAccessComponent,
       nzData: {
-        writeAccess: true,
+        writeAccess: this.writeAccess,
         type: "workflow",
         id: this.workflowId,
         allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+        inWorkspace: true,
       },
       nzFooter: null,
       nzTitle: "Share this workflow with others",
@@ -446,7 +448,9 @@ export class MenuComponent implements OnInit {
     this.workflowPersistService
       .persistWorkflow(this.workflowActionService.getWorkflow())
       .pipe(
-        tap((updatedWorkflow: Workflow) => this.workflowActionService.setWorkflowMetadata(updatedWorkflow)),
+        tap((updatedWorkflow: Workflow) => {
+          this.workflowActionService.setWorkflowMetadata(updatedWorkflow)
+        }),
         filter(workflow => isDefined(localPid) && isDefined(workflow.wid)),
         mergeMap(workflow => this.userProjectService.addWorkflowToProject(localPid!, workflow.wid!)),
         untilDestroyed(this)

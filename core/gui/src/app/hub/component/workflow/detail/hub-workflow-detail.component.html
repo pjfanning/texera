@@ -8,10 +8,9 @@
 
 <div class="container">
   <div class="workflow-panel">
-    <button
-      (click)="cloneWorkflow()"
-      class="clone-button">
-      Copy & Edit
+    <button nz-button
+      (click)="cloneWorkflow()">
+      {{ clonePrompt }}
     </button>
   </div>
   <h1>Workflow Detail Page</h1>
@@ -22,18 +21,19 @@
     </div>
     <div>
       <h2>Workflow Name</h2>
-      <p>{{ workflow.name }}</p>
+      <p>{{ workflowName }}</p>
     </div>
     <div>
       <h2>Created By</h2>
-      <p>{{ workflow.createdBy }}</p>
+      <p *ngIf="ownerUser">{{ ownerUser.name }}</p>
     </div>
   </div>
-  <p>preview</p>
-  <div class="preview-container">
+  <h2>preview</h2>
+  <div class="preview-containers">
     <texera-workflow-editor></texera-workflow-editor>
     <texera-mini-map></texera-mini-map>
   </div>
+  <ng-template #codeEditor></ng-template>
   <div class="workflow-steps">
     <h2>Steps</h2>
     <div
@@ -45,3 +45,6 @@
     </div>
   </div>
 </div>
+
+
+

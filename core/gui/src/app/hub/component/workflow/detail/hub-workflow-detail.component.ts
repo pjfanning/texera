@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, HostListener, OnDestroy, OnInit, ViewChild, ViewContainerRef} from "@angular/core";
+import {AfterViewInit, Component, OnInit, HostListener, OnDestroy, ViewChild, ViewContainerRef} from "@angular/core";
 import {UntilDestroy, untilDestroyed} from "@ngneat/until-destroy";
 import {ActivatedRoute, Router} from "@angular/router";
 import {Version} from "../../../../../environments/version";
@@ -22,6 +22,9 @@ import {Workflow} from "../../../../common/type/workflow";
 import {of} from "rxjs";
 import {isDefined} from "../../../../common/util/predicate";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
+import { User } from "src/app/common/type/user";
+import { NzModalService } from "ng-zorro-antd/modal";
+import { LocalLoginComponent } from "../../home/local-login/local-login.component";
 
 export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
 
@@ -31,12 +34,14 @@ export const SAVE_DEBOUNCE_TIME_IN_MS = 5000;
   templateUrl: "hub-workflow-detail.component.html",
   styleUrls: ["hub-workflow-detail.component.scss"],
 })
-export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
+export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   wid: string | null;
-
+  clonedWorklowId: number | undefined;
+  workflowName: string | null;
+  ownerUser!: User;
+  private currentUser?: User;
+  public clonePrompt: String = "";
   workflow = {
-    name: "Example Workflow",
-    createdBy: "John Doe",
     steps: [
       {
         name: "Step 1: Data Collection",
@@ -88,12 +93,31 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
     private router: Router,
     private notificationService: NotificationService,
     private codeEditorService: CodeEditorService,
-    private hubWorkflowService: HubWorkflowService
+    private hubWorkflowService: HubWorkflowService,
+    private modalService: NzModalService,
   ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
+    this.workflowName = this.route.snapshot.queryParamMap.get("name")
   }
 
-
+  ngOnInit() {
+    this.hubWorkflowService
+      .getOwnerUser(Number(this.wid))
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: owner => {
+          this.ownerUser = owner;
+          console.log(this.ownerUser.uid)
+          this.currentUser = this.userService.getCurrentUser();
+          if (!this.currentUser || this.currentUser.uid !== this.ownerUser.uid) {
+            this.clonePrompt = "Copy & Edit";
+          }
+          else {
+            this.clonePrompt = "Edit";
+          }
+        }
+      });
+  }
   ngAfterViewInit(): void {
     /**
      * On initialization of the workspace, there could be three cases:
@@ -137,9 +161,11 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
       this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
     }
 
+    console.log("before clear")
     this.codeEditorViewRef.clear();
     this.workflowWebsocketService.closeWebsocket();
     this.workflowActionService.clearWorkflow();
+    console.log("end of on destroy")
   }
 
   registerAutoCacheWorkFlow(): void {
@@ -177,7 +203,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
     // disable the workspace until the workflow is fetched from the backend
     this.workflowActionService.disableWorkflowModification();
     this.workflowPersistService
-      .retrieveWorkflow(wid)
+      .retrievePublicWorkflow(wid)
       .pipe(untilDestroyed(this))
       .subscribe(
         (workflow: Workflow) => {
@@ -210,6 +236,7 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
           this.undoRedoService.clearRedoStack();
         },
         () => {
+          console.log("in error")
           this.workflowActionService.resetAsNewWorkflow();
           // enable workspace for modification
           this.workflowActionService.enableWorkflowModification();
@@ -299,8 +326,24 @@ export class HubWorkflowDetailComponent implements AfterViewInit, OnDestroy {
   }
 
   cloneWorkflow(): void {
-    alert("Workflow " + this.wid + " is cloned to your workspace.");
-    this.hubWorkflowService.cloneWorkflow(Number(this.wid)).pipe(untilDestroyed(this)).subscribe();
+    if (!this.currentUser) {
+      this.modalService.create({
+        nzContent: LocalLoginComponent,
+        nzTitle: "Login",
+        nzFooter: null,
+        nzCentered: true,
+      })
+    }
+    else if (this.currentUser.uid !== this.ownerUser.uid) {
+      this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+        .pipe(untilDestroyed(this))
+        .subscribe(newWid => {
+          this.clonedWorklowId = newWid;
+          this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
+        });
+    }
+    else {
+      this.router.navigate([`/workflow/${this.wid}`]);
+    }
   }
 }
-
