@@ -78,9 +78,9 @@ export class HubWorkflowResultComponent implements OnInit{
       name: dashboardWorkflow.workflow.name,
       description: dashboardWorkflow.workflow.description,
       wid: dashboardWorkflow.workflow.wid,
-      content: dashboardWorkflow.workflow.content,
       creationTime: dashboardWorkflow.workflow.creationTime,
       lastModifiedTime: dashboardWorkflow.workflow.lastModifiedTime,
+      owner: undefined,
     };
   }
 }

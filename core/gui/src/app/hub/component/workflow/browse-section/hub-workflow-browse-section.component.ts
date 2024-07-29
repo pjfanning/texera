@@ -12,6 +12,7 @@ import { UntilDestroy } from "@ngneat/until-destroy";
 })
 export class HubWorkflowBrowseSectionComponent {
   public user: User | undefined;
+  public targetLink: string = "";
 
   constructor(
     private userService: UserService,
@@ -21,4 +22,20 @@ export class HubWorkflowBrowseSectionComponent {
   @Input() workflowList: HubWorkflow[] = [];
   @Input() sectionTitle: String = "";
   public defaultBackground: String = "../../../../../assets/card_background.jpg";
+
+  getRouterLink(workflow: HubWorkflow) {
+    if (workflow.owner?.uid === this.user?.uid) {
+      return ['/workflow', workflow.wid];
+    } else {
+      return ['/dashboard/hub/workflow/search/result/detail'];
+    }
+  }
+
+  getQueryParams(workflow: HubWorkflow) {
+    if (workflow.owner?.uid !== this.user?.uid) {
+      return { wid: workflow.wid, name: workflow.name };
+    } else {
+      return null;
+    }
+  }
 }
