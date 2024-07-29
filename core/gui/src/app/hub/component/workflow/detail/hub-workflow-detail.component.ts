@@ -161,9 +161,11 @@ export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDest
       this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
     }
 
+    console.log("before clear")
     this.codeEditorViewRef.clear();
     this.workflowWebsocketService.closeWebsocket();
     this.workflowActionService.clearWorkflow();
+    console.log("end of on destroy")
   }
 
   registerAutoCacheWorkFlow(): void {
