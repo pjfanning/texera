@@ -1,9 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  padding: 20px 68px;
+  padding: 32px 133px 0 133px;
   align-items: center;
-  min-height: 110vh;
   height: 100%;
   width: 100%;
 }
@@ -55,5 +54,4 @@
   max-width: 1200px;
   width: 100%;
   padding-bottom: 40px;
-  margin-bottom: 40px;
 }

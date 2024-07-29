@@ -3,8 +3,8 @@
     <div class="workflow-cards">
       <nz-card
       nzHoverable
-      [routerLink]="getRouterLink(workflow)"
-      [queryParams]="getQueryParams(workflow)"
+      [routerLink]="['/dashboard/hub/workflow/search/result/detail']"
+      [queryParams]="{ wid: workflow.wid, name: workflow.name }"
       [nzCover]="coverTemplate"
       class="workflow-card"
       *ngFor="let workflow of workflowList">
