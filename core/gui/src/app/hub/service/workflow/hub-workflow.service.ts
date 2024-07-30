@@ -50,6 +50,10 @@ export class HubWorkflowService {
   }
 
   public getPopularWorkflows(): Observable<HubWorkflow[]> {
-    return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/popular_workflow_list`);
+    return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/popular_workflows`);
+  }
+
+  public getRecentWorkflows(): Observable<HubWorkflow[]> {
+    return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/recent_workflows`);
   }
 }
