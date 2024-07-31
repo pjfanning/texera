@@ -60,7 +60,7 @@ export class MenuComponent implements OnInit {
   public isSaving: boolean = false;
   public isWorkflowModifiable: boolean = false;
   public workflowId?: number;
-  
+
   @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
@@ -165,7 +165,7 @@ export class MenuComponent implements OnInit {
       nzFooter: null,
       nzTitle: "Share this workflow with others",
       nzCentered: true,
-      nzWidth: '800px',
+      nzWidth: "800px",
     });
   }
 
@@ -449,7 +449,7 @@ export class MenuComponent implements OnInit {
       .persistWorkflow(this.workflowActionService.getWorkflow())
       .pipe(
         tap((updatedWorkflow: Workflow) => {
-          this.workflowActionService.setWorkflowMetadata(updatedWorkflow)
+          this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
         }),
         filter(workflow => isDefined(localPid) && isDefined(workflow.wid)),
         mergeMap(workflow => this.userProjectService.addWorkflowToProject(localPid!, workflow.wid!)),

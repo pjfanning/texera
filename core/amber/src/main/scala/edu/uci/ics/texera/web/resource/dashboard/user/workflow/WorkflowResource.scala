@@ -5,7 +5,13 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.WorkflowUserAccessPrivilege
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao, WorkflowUserClonesDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{
+  WorkflowDao,
+  WorkflowOfProjectDao,
+  WorkflowOfUserDao,
+  WorkflowUserAccessDao,
+  WorkflowUserClonesDao
+}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
@@ -123,7 +129,10 @@ class WorkflowResource extends LazyLogging {
   @GET
   @Path("/is_cloned")
   @PermitAll
-  def checkUserClonedWorkflow(@QueryParam("wid") wid: UInteger, @QueryParam("uid") uid: UInteger): Boolean = {
+  def checkUserClonedWorkflow(
+      @QueryParam("wid") wid: UInteger,
+      @QueryParam("uid") uid: UInteger
+  ): Boolean = {
     workflowUserClonesExists(wid, uid)
   }
 
@@ -393,11 +402,11 @@ class WorkflowResource extends LazyLogging {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/clone/{wid}")
-  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger  = {
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger = {
     val user = sessionUser.getUser
     val uid = user.getUid
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
-    val newWorkflow: DashboardWorkflow =  createWorkflow(
+    val newWorkflow: DashboardWorkflow = createWorkflow(
       new Workflow(
         workflow.getName + "_clone",
         workflow.getDescription,

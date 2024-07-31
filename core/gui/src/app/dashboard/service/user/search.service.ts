@@ -7,7 +7,7 @@ import { SearchFilterParameters, toQueryStrings } from "../../type/search-filter
 import { SortMethod } from "../../type/sort-method";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
-const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/public-search"
+const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/public-search";
 
 @Injectable({
   providedIn: "root",

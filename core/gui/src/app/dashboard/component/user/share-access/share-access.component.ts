@@ -42,14 +42,13 @@ export class ShareAccessComponent implements OnInit {
     private message: NzMessageService,
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
-    private workflowActionService: WorkflowActionService,
+    private workflowActionService: WorkflowActionService
   ) {
     this.validateForm = this.formBuilder.group({
       email: [null, Validators.email],
       accessLevel: ["READ"],
     });
     this.currentEmail = this.userService.getCurrentUser()?.email;
-    
   }
 
   ngOnInit(): void {
@@ -164,77 +163,75 @@ export class ShareAccessComponent implements OnInit {
   verifyPublish(): void {
     if (!this.isPublic) {
       const modal: NzModalRef = this.modalService.create({
-        nzTitle: 'Notice',
-        nzContent: 'Publishing your workflow would grant all Texera users read access to your workflow along with the right to clone your work.',
+        nzTitle: "Notice",
+        nzContent:
+          "Publishing your workflow would grant all Texera users read access to your workflow along with the right to clone your work.",
         nzFooter: [
           {
-            label: 'Cancel',
-            onClick: () => modal.close()
+            label: "Cancel",
+            onClick: () => modal.close(),
           },
           {
-            label: 'Publish',
-            type: 'primary',
+            label: "Publish",
+            type: "primary",
             onClick: () => {
-              this.publishWorkflow()
+              this.publishWorkflow();
               if (this.inWorkspace) {
-                this.workflowActionService.setWorkflowIsPublished(1)
+                this.workflowActionService.setWorkflowIsPublished(1);
               }
-              modal.close()
-            }
-          }
-        ]
+              modal.close();
+            },
+          },
+        ],
       });
     }
-    
   }
   verifyUnpublish(): void {
     if (this.isPublic) {
       const modal: NzModalRef = this.modalService.create({
-        nzTitle: 'Notice',
-        nzContent: 'All other users would lose access to your work if you unpublish it.',
+        nzTitle: "Notice",
+        nzContent: "All other users would lose access to your work if you unpublish it.",
         nzFooter: [
           {
-            label: 'Cancel',
-            onClick: () => modal.close()
+            label: "Cancel",
+            onClick: () => modal.close(),
           },
           {
-            label: 'Unpublish',
-            type: 'primary',
+            label: "Unpublish",
+            type: "primary",
             onClick: () => {
-              this.unpublishWorkflow()
+              this.unpublishWorkflow();
               if (this.inWorkspace) {
-                this.workflowActionService.setWorkflowIsPublished(0)
+                this.workflowActionService.setWorkflowIsPublished(0);
               }
-              modal.close()
-            }
-          }
-        ]
+              modal.close();
+            },
+          },
+        ],
       });
     }
   }
 
   public publishWorkflow(): void {
     if (!this.isPublic) {
-      console.log("Workflow " + this.id + " is published")
+      console.log("Workflow " + this.id + " is published");
       this.workflowPersistService
         .updateWorkflowIsPublished(this.id, true)
         .pipe(untilDestroyed(this))
-        .subscribe(() => this.isPublic = true);
-    }
-    else {
-      console.log("Workflow " + this.id + " is already published")
+        .subscribe(() => (this.isPublic = true));
+    } else {
+      console.log("Workflow " + this.id + " is already published");
     }
   }
   public unpublishWorkflow(): void {
     if (this.isPublic) {
-      console.log("Workflow " + this.id + " is unpublished")
+      console.log("Workflow " + this.id + " is unpublished");
       this.workflowPersistService
         .updateWorkflowIsPublished(this.id, false)
         .pipe(untilDestroyed(this))
-        .subscribe(() => this.isPublic = false);
-    }
-    else {
-      console.log("Workflow " + this.id + " is already private")
+        .subscribe(() => (this.isPublic = false));
+    } else {
+      console.log("Workflow " + this.id + " is already private");
     }
   }
 }

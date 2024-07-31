@@ -63,7 +63,7 @@ export class UserWorkflowListItemComponent {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
-    private userProjectService: UserProjectService,
+    private userProjectService: UserProjectService
   ) {
     this.userProjectService
       .getProjectList()
@@ -72,7 +72,6 @@ export class UserWorkflowListItemComponent {
         this.userProjectsMap = new Map(userProjectsList.map(userProject => [userProject.pid, userProject]));
       });
   }
-
 
   getProjectIds() {
     return new Set(this.entry.workflow.projectIDs);
@@ -132,7 +131,7 @@ export class UserWorkflowListItemComponent {
       nzFooter: null,
       nzTitle: "Share this workflow with others",
       nzCentered: true,
-      nzWidth: '800px',
+      nzWidth: "800px",
     });
   }
 
@@ -174,5 +173,4 @@ export class UserWorkflowListItemComponent {
         this.entry.workflow.projectIDs = this.entry.workflow.projectIDs.filter(projectID => projectID != pid);
       });
   }
-
 }

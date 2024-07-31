@@ -54,7 +54,7 @@ export class HubWorkflowDetailComponent implements OnInit {
     private hubWorkflowService: HubWorkflowService,
     private router: Router,
     private userService: UserService,
-    private modalService: NzModalService,
+    private modalService: NzModalService
   ) {
     this.wid = Number(this.route.snapshot.queryParamMap.get("wid"));
     this.workflowName = this.route.snapshot.queryParamMap.get("name");
@@ -64,20 +64,20 @@ export class HubWorkflowDetailComponent implements OnInit {
   ngOnInit() {
     if (!this.currentUser) {
       this.hasCloned = false;
-      this.hubWorkflowService.getOwnerUser(this.wid)
+      this.hubWorkflowService
+        .getOwnerUser(this.wid)
         .pipe(untilDestroyed(this))
         .subscribe(owner => {
           this.ownerUser = owner;
           this.clonePrompt = "Clone & Edit";
         });
-
     } else {
-      this.hubWorkflowService.checkUserClonedWorkflow(this.wid, this.currentUser.uid)
+      this.hubWorkflowService
+        .checkUserClonedWorkflow(this.wid, this.currentUser.uid)
         .pipe(
           switchMap(cloned => {
             this.hasCloned = cloned;
-            return this.hubWorkflowService
-            .getOwnerUser(this.wid)
+            return this.hubWorkflowService.getOwnerUser(this.wid);
           })
         )
         .pipe(untilDestroyed(this))
@@ -85,7 +85,7 @@ export class HubWorkflowDetailComponent implements OnInit {
           next: owner => {
             this.ownerUser = owner;
             if (this.currentUser!.uid !== this.ownerUser.uid) {
-              if (this.hasCloned){
+              if (this.hasCloned) {
                 this.clonePrompt = "Create Another Clone";
               } else {
                 this.clonePrompt = "Clone & Edit";
@@ -93,10 +93,9 @@ export class HubWorkflowDetailComponent implements OnInit {
             } else {
               this.clonePrompt = "Edit";
             }
-          }
+          },
         });
     }
-
   }
 
   goBack(): void {
@@ -110,9 +109,10 @@ export class HubWorkflowDetailComponent implements OnInit {
         nzTitle: "Login",
         nzFooter: null,
         nzCentered: true,
-      })
+      });
     } else if (this.currentUser.uid !== this.ownerUser.uid) {
-      this.hubWorkflowService.cloneWorkflow(this.wid)
+      this.hubWorkflowService
+        .cloneWorkflow(this.wid)
         .pipe(untilDestroyed(this))
         .subscribe(newWid => {
           this.clonedWorklowId = newWid;

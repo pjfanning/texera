@@ -8,15 +8,13 @@ import { UntilDestroy } from "@ngneat/until-destroy";
 @Component({
   selector: "texera-hub-workflow-browse-section",
   templateUrl: "./hub-workflow-browse-section.component.html",
-  styleUrls: ["./hub-workflow-browse-section.component.scss"]
+  styleUrls: ["./hub-workflow-browse-section.component.scss"],
 })
 export class HubWorkflowBrowseSectionComponent {
   public user: User | undefined;
   public targetLink: string = "";
 
-  constructor(
-    private userService: UserService,
-  ){
+  constructor(private userService: UserService) {
     this.user = this.userService.getCurrentUser();
   }
   @Input() workflowList: HubWorkflow[] = [];

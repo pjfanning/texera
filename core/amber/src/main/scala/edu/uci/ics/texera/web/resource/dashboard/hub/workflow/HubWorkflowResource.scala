@@ -3,26 +3,28 @@ package edu.uci.ics.texera.web.resource.dashboard.hub.workflow
 import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, Workflow}
-import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{HubWorkflow, OwnerInfo, PartialUser}
+import edu.uci.ics.texera.web.resource.dashboard.hub.workflow.HubWorkflowResource.{
+  HubWorkflow,
+  OwnerInfo,
+  PartialUser
+}
 import org.jooq.impl.DSL
 import org.jooq.types.UInteger
 import io.dropwizard.auth.Auth
-import edu.uci.ics.texera.web.auth.{
-  SessionUser
-}
+import edu.uci.ics.texera.web.auth.{SessionUser}
 import java.sql.Timestamp
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import java.util
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
-object HubWorkflowResource{
+object HubWorkflowResource {
   case class PartialUser(name: String, googleAvatar: String)
   case class OwnerInfo(
       uid: UInteger,
       name: String,
       googleAvatar: String
-                      )
+  )
   case class HubWorkflow(
       name: String,
       description: String,
@@ -30,9 +32,8 @@ object HubWorkflowResource{
       creationTime: Timestamp,
       lastModifiedTime: Timestamp,
       owner: OwnerInfo
-                        )
+  )
 }
-
 
 @Produces(Array(MediaType.APPLICATION_JSON))
 @Path("/hub/workflow")
@@ -81,20 +82,24 @@ class HubWorkflowResource {
         USER.GOOGLE_AVATAR
       )
       .from(WORKFLOW_OF_USER)
-      .join(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .join(USER)
+      .on(WORKFLOW_OF_USER.UID.eq(USER.UID))
       .where(WORKFLOW_OF_USER.WID.eq(wid))
       .fetchOneInto(classOf[User])
   }
 
   @GET
   @Path("/user_info")
-  def getUserInfo(@QueryParam("wids") wids: java.util.List[UInteger]): java.util.Map[UInteger, PartialUser] = {
+  def getUserInfo(
+      @QueryParam("wids") wids: java.util.List[UInteger]
+  ): java.util.Map[UInteger, PartialUser] = {
     val widsScala: Seq[UInteger] = wids.asScala.toSeq
 
     val records = context
       .select(WORKFLOW_OF_USER.WID, USER.NAME, USER.GOOGLE_AVATAR)
       .from(WORKFLOW_OF_USER)
-      .join(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .join(USER)
+      .on(WORKFLOW_OF_USER.UID.eq(USER.UID))
       .where(WORKFLOW_OF_USER.WID.in(widsScala: _*))
       .fetch()
 
@@ -126,18 +131,21 @@ class HubWorkflowResource {
         USER.GOOGLE_AVATAR
       )
       .from(WORKFLOW)
-      .leftJoin(WORKFLOW_USER_CLONES).on(WORKFLOW.WID.eq(WORKFLOW_USER_CLONES.WID))
-      .leftJoin(WORKFLOW_OF_USER).on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
-      .leftJoin(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .leftJoin(WORKFLOW_USER_CLONES)
+      .on(WORKFLOW.WID.eq(WORKFLOW_USER_CLONES.WID))
+      .leftJoin(WORKFLOW_OF_USER)
+      .on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
+      .leftJoin(USER)
+      .on(WORKFLOW_OF_USER.UID.eq(USER.UID))
       .groupBy(
-          WORKFLOW.NAME,
-          WORKFLOW.DESCRIPTION,
-          WORKFLOW.WID,
-          WORKFLOW.CREATION_TIME,
-          WORKFLOW.LAST_MODIFIED_TIME,
-          USER.UID,
-          USER.NAME,
-          USER.GOOGLE_AVATAR
+        WORKFLOW.NAME,
+        WORKFLOW.DESCRIPTION,
+        WORKFLOW.WID,
+        WORKFLOW.CREATION_TIME,
+        WORKFLOW.LAST_MODIFIED_TIME,
+        USER.UID,
+        USER.NAME,
+        USER.GOOGLE_AVATAR
       )
       .orderBy(DSL.count(WORKFLOW_USER_CLONES.UID).desc())
       .limit(4)
@@ -180,8 +188,10 @@ class HubWorkflowResource {
         USER.GOOGLE_AVATAR
       )
       .from(WORKFLOW)
-      .leftJoin(WORKFLOW_OF_USER).on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
-      .leftJoin(USER).on(WORKFLOW_OF_USER.UID.eq(USER.UID))
+      .leftJoin(WORKFLOW_OF_USER)
+      .on(WORKFLOW.WID.eq(WORKFLOW_OF_USER.WID))
+      .leftJoin(USER)
+      .on(WORKFLOW_OF_USER.UID.eq(USER.UID))
       .where(USER.UID.eq(uid))
       .orderBy(WORKFLOW.LAST_MODIFIED_TIME.desc())
       .limit(4)

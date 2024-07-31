@@ -17,7 +17,8 @@ import { HubWorkflowService } from "../../../service/workflow/hub-workflow.servi
 })
 export class HubWorkflowResultComponent implements OnInit {
   query: string = "";
-  listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string, userGoogleAvatar?: string, color?: string }> = [];
+  listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string; userGoogleAvatar?: string; color?: string }> =
+    [];
   currentPage: number = 1;
   resultsPerPage: number = 10;
   totalResults: number = 0;
@@ -38,7 +39,8 @@ export class HubWorkflowResultComponent implements OnInit {
   }
 
   private loadTotalResultsNum(): void {
-    this.hubWorkflowService.getWorkflowCount()
+    this.hubWorkflowService
+      .getWorkflowCount()
       .pipe(untilDestroyed(this))
       .subscribe(count => {
         this.totalResults = count;
@@ -59,7 +61,8 @@ export class HubWorkflowResultComponent implements OnInit {
       projectIds: [],
     };
 
-    this.searchService.conditional_search([this.query], params, offset, this.resultsPerPage, "workflow", SortMethod.NameAsc, "public")
+    this.searchService
+      .conditional_search([this.query], params, offset, this.resultsPerPage, "workflow", SortMethod.NameAsc, "public")
       .pipe(untilDestroyed(this))
       .subscribe((result: SearchResult) => {
         const listOfWorkflows = result.results
@@ -68,7 +71,8 @@ export class HubWorkflowResultComponent implements OnInit {
 
         const wids = listOfWorkflows.map(workflow => workflow.wid).filter(wid => wid !== undefined) as number[];
 
-        this.hubWorkflowService.getUserInfo(wids)
+        this.hubWorkflowService
+          .getUserInfo(wids)
           .pipe(untilDestroyed(this))
           .subscribe(userMap => {
             this.listOfWorkflowsWithUserInfo = listOfWorkflows.map(workflow => {
@@ -78,7 +82,7 @@ export class HubWorkflowResultComponent implements OnInit {
                   ...workflow,
                   userName: userMap[wid]?.name,
                   userGoogleAvatar: userMap[wid]?.googleAvatar,
-                  color: undefined
+                  color: undefined,
                 };
               } else {
                 return workflow;

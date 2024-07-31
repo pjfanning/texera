@@ -142,7 +142,6 @@ import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-
 import { HubResultCardComponent } from "./hub/component/workflow/result-card/hub-result-card.component";
 import { HubWorkflowBrowseSectionComponent } from "./hub/component/workflow/browse-section/hub-workflow-browse-section.component";
 
-
 registerLocaleData(en);
 
 @NgModule({
