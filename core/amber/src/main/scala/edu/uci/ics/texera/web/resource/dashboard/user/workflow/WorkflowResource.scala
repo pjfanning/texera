@@ -5,11 +5,8 @@ import edu.uci.ics.texera.web.SqlServer
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.enums.{UserRole, WorkflowUserAccessPrivilege}
-import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{EnvironmentOfWorkflowDao, WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao,WorkflowUserClonesDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfProjectDao, WorkflowOfUserDao, WorkflowUserAccessDao,WorkflowUserClonesDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{User, _}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{copyEnvironment, createEnvironment, doesWorkflowHaveEnvironment}
-import edu.uci.ics.texera.web.resource.dashboard.user.environment.EnvironmentResource.{copyEnvironment, createEnvironment, doesWorkflowHaveEnvironment}
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowAccessResource.hasReadAccess
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource._
 import io.dropwizard.auth.Auth
@@ -568,24 +565,6 @@ class WorkflowResource extends LazyLogging {
       userWorkflow.setDescription(description)
       workflowDao.update(userWorkflow)
     }
-  }
-
-  @GET
-  @RolesAllowed(Array("REGULAR", "ADMIN"))
-  @Path("/{wid}/environment")
-  def retrieveWorkflowEnvironment(
-      @PathParam("wid") wid: UInteger,
-      @Auth user: SessionUser
-  ): Environment = {
-
-    val uid = user.getUid
-    if (!hasReadAccess(wid, uid)) {
-      throw new ForbiddenException(
-        "current user has no read access to this workflow and its environment"
-      )
-    }
-
-    EnvironmentResource.getEnvironmentByWid(context, uid, wid)
   }
 
   @PUT
