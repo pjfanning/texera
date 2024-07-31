@@ -67,7 +67,6 @@ body, html {
   color: #333;
 }
 
-
 .workflow-list {
   display: block;
   padding: 0;
@@ -97,12 +96,47 @@ nz-list {
   box-shadow: none !important;
 }
 
-.pagination-controls {
+/* Pagination Styles */
+.ant-pagination {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-.pagination-controls button {
+.ant-pagination-item {
   margin: 0 5px;
+}
+
+.ant-pagination-item a {
+  color: #333;
+}
+
+.ant-pagination-item-active {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.ant-pagination-item-active a {
+  color: #fff;
+}
+
+.ant-pagination-item a:hover,
+.ant-pagination-item a:focus,
+.ant-pagination-prev a,
+.ant-pagination-next a {
+  color: #007bff;
+}
+
+.ant-pagination-prev,
+.ant-pagination-next {
+  margin: 0 5px;
+}
+
+.ant-pagination-prev .ant-pagination-item-link,
+.ant-pagination-next .ant-pagination-item-link {
+  color: #007bff;
+}
+
+.ant-pagination-options {
+  margin-left: 10px;
 }

@@ -15,14 +15,12 @@ import { HubWorkflowService } from "../../../service/workflow/hub-workflow.servi
   templateUrl: "hub-workflow-result.component.html",
   styleUrls: ["hub-workflow-result.component.scss"],
 })
-export class HubWorkflowResultComponent implements OnInit{
-  // listOfWorkflows: HubWorkflow[] = [];
+export class HubWorkflowResultComponent implements OnInit {
   query: string = "";
-  listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string, userGoogleAvatar?: string, color?: string  }> = [];
+  listOfWorkflowsWithUserInfo: Array<HubWorkflow & { userName?: string, userGoogleAvatar?: string, color?: string }> = [];
   currentPage: number = 1;
   resultsPerPage: number = 10;
   totalResults: number = 0;
-  totalPages: number = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -44,7 +42,6 @@ export class HubWorkflowResultComponent implements OnInit{
       .pipe(untilDestroyed(this))
       .subscribe(count => {
         this.totalResults = count;
-        this.totalPages = Math.ceil(this.totalResults / this.resultsPerPage);
       });
   }
 
