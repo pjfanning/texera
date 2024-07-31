@@ -29,9 +29,9 @@ export class HubWorkflowService {
     return this.http.post<number>(`${WORKFLOW_BASE_URL}/clone/${wid}`, null);
   }
 
-  public getOwnerUser(wid: number): Observable<User>{
+  public getOwnerUser(wid: number): Observable<User> {
     const params = new HttpParams().set("wid", wid);
-    return this.http.get<User>(`${this.BASE_URL}/owner_user/`, { params })
+    return this.http.get<User>(`${this.BASE_URL}/owner_user/`, { params });
   }
 
   public getUserInfo(wids: number[]): Observable<{ [key: number]: PartialUserInfo }> {
@@ -43,10 +43,8 @@ export class HubWorkflowService {
   }
 
   public checkUserClonedWorkflow(wid: number, uid: number): Observable<boolean> {
-    const params = new HttpParams()
-      .set('wid', wid.toString())
-      .set('uid', uid.toString());
-      return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is_cloned`, { params });
+    const params = new HttpParams().set("wid", wid.toString()).set("uid", uid.toString());
+    return this.http.get<boolean>(`${WORKFLOW_BASE_URL}/is_cloned`, { params });
   }
 
   public getPopularWorkflows(): Observable<HubWorkflow[]> {

@@ -47,7 +47,7 @@ export class UserProjectListItemComponent implements OnInit {
     private userProjectService: UserProjectService,
     private notificationService: NotificationService,
     private modalService: NzModalService,
-    private userService: UserService,
+    private userService: UserService
   ) {
     this.isAdmin = this.userService.isAdmin();
   }

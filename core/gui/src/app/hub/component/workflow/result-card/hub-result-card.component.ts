@@ -1,8 +1,8 @@
 import { Component, Input, OnInit } from "@angular/core";
-import { HubWorkflow} from "../../type/hub-workflow.interface";
+import { HubWorkflow } from "../../type/hub-workflow.interface";
 import { WorkflowContent } from "../../../../common/type/workflow";
 
-export interface HubWorkflowWithUserInfo extends HubWorkflow{
+export interface HubWorkflowWithUserInfo extends HubWorkflow {
   name: string;
   description: string | undefined;
   wid: number | undefined;
@@ -16,9 +16,9 @@ export interface HubWorkflowWithUserInfo extends HubWorkflow{
 @Component({
   selector: "texera-hub-result-card",
   templateUrl: "./hub-result-card.component.html",
-  styleUrls: ["./hub-result-card.component.scss"]
+  styleUrls: ["./hub-result-card.component.scss"],
 })
-export class HubResultCardComponent implements OnInit{
+export class HubResultCardComponent implements OnInit {
   @Input() workflow!: HubWorkflowWithUserInfo;
   truncatedTitle: string = "";
 

@@ -17,7 +17,7 @@ import edu.uci.ics.texera.web.resource.dashboard.FulltextSearchQueryUtils.{
   getOperatorsFilter
 }
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
-import org.jooq.{Condition, GroupField, Record, TableLike}
+import org.jooq.{Condition, GroupField, Record}
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.groupConcatDistinct
 import org.jooq.types.UInteger

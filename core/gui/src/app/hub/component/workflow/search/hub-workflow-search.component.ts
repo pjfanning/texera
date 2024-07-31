@@ -8,22 +8,22 @@ import { HubWorkflow } from "../../type/hub-workflow.interface";
 import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
 import { UserService } from "src/app/common/service/user/user.service";
 
-
 @UntilDestroy()
 @Component({
   selector: "texera-hub-workflow-search",
   templateUrl: "hub-workflow-search.component.html",
   styleUrls: ["hub-workflow-search.component.scss"],
 })
-export class HubWorkflowSearchComponent implements OnInit{
+export class HubWorkflowSearchComponent implements OnInit {
   workflowCount: number | undefined;
   recentWorkflowList: HubWorkflow[] = [];
   popularWorkflowList: HubWorkflow[] = [];
   hasResults: boolean = false;
   public isLoggedIn: boolean = false;
-  constructor(private hubWorkflowService: HubWorkflowService,
-              private router: Router,
-              private userService: UserService,
+  constructor(
+    private hubWorkflowService: HubWorkflowService,
+    private router: Router,
+    private userService: UserService
   ) {
     this.isLoggedIn = this.userService.isLogin();
   }
@@ -35,7 +35,7 @@ export class HubWorkflowSearchComponent implements OnInit{
       .subscribe(count => {
         this.workflowCount = count;
       });
-    
+
     if (this.isLoggedIn) {
       this.hubWorkflowService
         .getRecentWorkflows()
@@ -56,5 +56,4 @@ export class HubWorkflowSearchComponent implements OnInit{
   navigateToSearchResult(): void {
     this.router.navigate(["/dashboard/hub/workflow/search/result"], { queryParams: { q: "" } });
   }
-
 }

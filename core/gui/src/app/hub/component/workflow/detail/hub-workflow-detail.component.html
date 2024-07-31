@@ -1,47 +1,62 @@
 <div class="container">
   <button
-      nz-button
-      nzType="text"
-      nzSize="large"
-      class="go-back-button"
-      (click)="goBack()"
-      >
-      <span nz-icon nzType="arrow-left" nzTheme="outline"></span>
+    nz-button
+    nzType="text"
+    nzSize="large"
+    class="go-back-button"
+    (click)="goBack()">
+    <span
+      nz-icon
+      nzType="arrow-left"
+      nzTheme="outline"></span>
   </button>
   <div class="workflow-info">
     <div class="entity-type">
-      <span class="type-icon" nz-icon nzType="project" nzTheme="outline"></span>
+      <span
+        class="type-icon"
+        nz-icon
+        nzType="project"
+        nzTheme="outline"></span>
       <span class="type-text">Workflow</span>
     </div>
 
     <div class="workflow-title">
       <h1>{{ workflowName }}</h1>
       <texera-user-avatar
-      [googleAvatar]="ownerUser.googleAvatar || ''"
-      userColor="grey"
-      [userName]="''+ wid"
-      nz-button>
+        [googleAvatar]="ownerUser.googleAvatar || ''"
+        userColor="grey"
+        [userName]="''+ wid"
+        nz-button>
       </texera-user-avatar>
     </div>
     <div class="workflow-panel">
       <div class="workflow-owner-info">
         <texera-user-avatar
-        [googleAvatar]="ownerUser.googleAvatar || ''"
-        userColor="grey"
-        [userName]="ownerUser.name || ''"
-        nz-button>
+          [googleAvatar]="ownerUser.googleAvatar || ''"
+          userColor="grey"
+          [userName]="ownerUser.name || ''"
+          nz-button>
         </texera-user-avatar>
         <span class="owner-name"><strong>{{ ownerUser.name }}</strong> - Created on Nov 26, 2023 2:30 AM</span>
       </div>
       <div class="workflow-button-group">
-        <button nz-button nzType="default" nzShape="circle">
-          <i nz-icon nzType="heart" nzTheme="outline"></i>
+        <button
+          nz-button
+          nzType="default"
+          nzShape="circle">
+          <i
+            nz-icon
+            nzType="heart"
+            nzTheme="outline"></i>
         </button>
-        <button *ngIf="clonePrompt" nz-button
+        <button
+          *ngIf="clonePrompt"
+          nz-button
           (click)="cloneWorkflow()">
           {{ clonePrompt }}
         </button>
-        <button nz-button
+        <button
+          nz-button
           nzType="primary">
           <i
             nz-icon

@@ -1,4 +1,4 @@
-import { Component, inject, Input, OnInit } from "@angular/core";
+import { Component, inject, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators } from "@angular/forms";
 import { ShareAccessService } from "../../../service/user/share-access/share-access.service";
 import { ShareAccess } from "../../../type/share-access.interface";
@@ -9,7 +9,6 @@ import { NZ_MODAL_DATA, NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { HttpErrorResponse } from "@angular/common/http";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
-import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 
 @UntilDestroy()
 @Component({
@@ -22,7 +21,7 @@ export class ShareAccessComponent implements OnInit {
   readonly type: string = this.nzModalData.type;
   readonly id: number = this.nzModalData.id;
   readonly allOwners: string[] = this.nzModalData.allOwners;
-  readonly inWorkspace: boolean = this.nzModalData.inWorkspace;
+
   public validateForm: FormGroup;
   public accessList: ReadonlyArray<ShareAccess> = [];
   public owner: string = "";
@@ -37,8 +36,7 @@ export class ShareAccessComponent implements OnInit {
     private gmailService: GmailService,
     private notificationService: NotificationService,
     private modalService: NzModalService,
-    private workflowPersistService: WorkflowPersistService,
-    private workflowActionService: WorkflowActionService,
+    private workflowPersistService: WorkflowPersistService
   ) {
     this.validateForm = this.formBuilder.group({
       email: [null, [Validators.email, Validators.required]],
@@ -89,12 +87,12 @@ export class ShareAccessComponent implements OnInit {
             this.gmailService.sendEmail(
               "Texera: " + this.owner + " shared a " + this.type + " with you",
               this.owner +
-              " shared a " +
-              this.type +
-              " with you, access the workflow at " +
-              location.origin +
-              "/workflow/" +
-              this.id,
+                " shared a " +
+                this.type +
+                " with you, access the workflow at " +
+                location.origin +
+                "/workflow/" +
+                this.id,
               this.validateForm.value.email
             );
           },
@@ -129,9 +127,6 @@ export class ShareAccessComponent implements OnInit {
             type: 'primary',
             onClick: () => {
               this.publishWorkflow()
-              if (this.inWorkspace) {
-                this.workflowActionService.setWorkflowIsPublished(1)
-              }
               modal.close()
             }
           }
@@ -155,9 +150,6 @@ export class ShareAccessComponent implements OnInit {
             type: 'primary',
             onClick: () => {
               this.unpublishWorkflow()
-              if (this.inWorkspace) {
-                this.workflowActionService.setWorkflowIsPublished(0)
-              }
               modal.close()
             }
           }

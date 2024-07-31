@@ -1,10 +1,10 @@
 import { Component } from "@angular/core";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { Router } from "@angular/router";
-import {SearchService} from "../../../../dashboard/service/user/search.service";
-import {SearchFilterParameters} from "../../../../dashboard/type/search-filter-parameters";
-import {SearchResult} from "../../../../dashboard/type/search-result";
-import {SortMethod} from "../../../../dashboard/type/sort-method";
+import { SearchService } from "../../../../dashboard/service/user/search.service";
+import { SearchFilterParameters } from "../../../../dashboard/type/search-filter-parameters";
+import { SearchResult } from "../../../../dashboard/type/search-result";
+import { SortMethod } from "../../../../dashboard/type/sort-method";
 import { DashboardWorkflow } from "../../../../dashboard/type/dashboard-workflow.interface";
 
 @UntilDestroy()
@@ -31,10 +31,11 @@ export class HubWorkflowSearchBarComponent {
       owners: [],
       ids: [],
       operators: [],
-      projectIds: []
+      projectIds: [],
     };
 
-    this.searchService.conditional_search([], params, 0, 3, "workflow", SortMethod.NameAsc, "public")
+    this.searchService
+      .conditional_search([], params, 0, 3, "workflow", SortMethod.NameAsc, "public")
       .pipe(untilDestroyed(this))
       .subscribe((result: SearchResult) => {
         this.workflowNames = result.results

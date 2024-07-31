@@ -11,8 +11,6 @@ import edu.uci.ics.texera.web.model.jooq.generated.Tables.{
 import org.jooq.TableLike
 import org.jooq.types.UInteger
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-
 object DefaultWorkflowSearchQueryBuilder extends BaseWorkFlowSearchQueryBuilder {
 
   override protected def constructFromClause(
