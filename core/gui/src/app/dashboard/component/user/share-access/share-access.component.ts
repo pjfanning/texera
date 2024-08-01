@@ -217,8 +217,7 @@ export class ShareAccessComponent implements OnInit {
       console.log("Workflow " + this.id + " is published");
       this.workflowPersistService
         .updateWorkflowIsPublished(this.id, true)
-        .pipe(untilDestroyed(this))nice
-        
+        .pipe(untilDestroyed(this))
         .subscribe(() => (this.isPublic = true));
     } else {
       console.log("Workflow " + this.id + " is already published");
