@@ -140,7 +140,7 @@ export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDest
     this.workflowName = this.route.snapshot.queryParamMap.get("name")
   }
 
-  
+
   ngAfterViewInit(): void {
     /**
      * On initialization of the workspace, there could be three cases:
@@ -184,11 +184,9 @@ export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDest
       this.workflowPersistService.persistWorkflow(workflow).pipe(untilDestroyed(this)).subscribe();
     }
 
-    console.log("before clear")
     this.codeEditorViewRef.clear();
     this.workflowWebsocketService.closeWebsocket();
     this.workflowActionService.clearWorkflow();
-    console.log("end of on destroy")
   }
 
   registerAutoCacheWorkFlow(): void {
@@ -239,17 +237,19 @@ export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDest
           // set the URL fragment to previous value
           // because reloadWorkflow will highlight/unhighlight all elements
           // which will change the URL fragment
-          this.router.navigate([], {
-            relativeTo: this.route,
-            fragment: fragment !== null ? fragment : undefined,
-            preserveFragment: false,
-          });
+          // this.router.navigate([], {
+          //   relativeTo: this.route,
+          //   fragment: fragment !== null ? fragment : undefined,
+          //   preserveFragment: false,
+          // });
           // highlight the operator, comment box, or link in the URL fragment
           if (fragment) {
             if (this.workflowActionService.getTexeraGraph().hasElementWithID(fragment)) {
+              console.log("highlight elements")
               this.workflowActionService.highlightElements(false, fragment);
             } else {
               this.notificationService.error(`Element ${fragment} doesn't exist`);
+              console.log("not highlight elements")
               // remove the fragment from the URL
               this.router.navigate([], { relativeTo: this.route });
             }
@@ -308,11 +308,11 @@ export class HubWorkflowDetailComponent implements OnInit, AfterViewInit, OnDest
           // set the URL fragment to previous value
           // because reloadWorkflow will highlight/unhighlight all elements
           // which will change the URL fragment
-          this.router.navigate([], {
-            relativeTo: this.route,
-            fragment: fragment !== null ? fragment : undefined,
-            preserveFragment: false,
-          });
+          // this.router.navigate([], {
+          //   relativeTo: this.route,
+          //   fragment: fragment !== null ? fragment : undefined,
+          //   preserveFragment: false,
+          // });
           // highlight the operator, comment box, or link in the URL fragment
           if (fragment) {
             if (this.workflowActionService.getTexeraGraph().hasElementWithID(fragment)) {
