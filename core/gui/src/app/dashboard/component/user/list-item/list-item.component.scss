@@ -1,0 +1,72 @@
+.list-item-card {
+    padding: 0;
+    max-width: 900px;
+    min-width: 700px;
+    .card-content {
+      display: flex;
+      flex-direction: row;
+      justify-content: left;
+      align-items: center;
+      
+      .avatar-section {
+        position: relative;
+        .user-avatar {
+          ::ng-deep .texera-user-avatar {
+            width: 60px; 
+            height: 60px;
+            line-height: 60px;
+            font-size: 20px;
+          }
+        }
+        .type-icon-div {
+          position: absolute;
+          text-align: center;
+          right: -8px;
+          bottom: -8px;
+          width: 30px;
+          height: 30px;
+          font-size: 16px;
+          border: 1px solid grey;
+          border-radius: 15px;
+          background-color: white;
+          display: flex;         
+          justify-content: center;
+          align-items: center;
+        
+        }
+      }
+
+      .resource-info {
+        margin-left: 15px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        h3 {
+          width: 100%;
+          padding: 0;
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+        }
+        .resource-metadata {
+          width: 100%;
+          font-size: 12px;
+          font-weight: light;
+          color: grey;
+          margin: 0;
+        }
+        .resource-description {
+          width: 100%;
+          font-size: 12px;
+          font-weight: light;
+          color: grey;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+
+

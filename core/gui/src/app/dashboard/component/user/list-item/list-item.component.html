@@ -1,1 +1,30 @@
-<p>list-item works!</p>
+<nz-card 
+  nzHoverable
+  [nzBodyStyle]="{padding: '16px'}"
+  class="list-item-card">
+  <div class="card-content">
+    <div class="avatar-section">
+      <texera-user-avatar
+        class="user-avatar"
+        googleAvatar=""
+        userColor="#1E90FF"
+        userName="Tim">
+      </texera-user-avatar>
+      <div class="type-icon-div">
+        <i
+          nz-icon
+          nzType="project"
+        ></i>
+      </div>
+    </div>
+    <div class="resource-info">
+      <h3>KNN prediction on diabete dataset</h3>
+      <p class="resource-metadata">
+        Workflow • 5y ago • by Tim
+      </p>
+      <p class="resource-description">
+        This is a quite loooooong sample description
+      </p>
+    </div>
+  </div>
+</nz-card>
