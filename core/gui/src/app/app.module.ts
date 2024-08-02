@@ -132,6 +132,10 @@ import { NzNoAnimationModule } from "ng-zorro-antd/core/no-animation";
 import { TreeModule } from "@ali-hm/angular-tree-component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
+import { GeneralSearchComponent } from './dashboard/component/user/general-search/general-search.component';
+import { GeneralSearchResultComponent } from './dashboard/component/user/general-search-result/general-search-result.component';
+import { ListItemComponent } from './dashboard/component/user/list-item/list-item.component';
+import { GeneralSearchBarComponent } from './dashboard/component/user/general-search-bar/general-search-bar.component';
 
 registerLocaleData(en);
 
@@ -213,6 +217,10 @@ registerLocaleData(en);
     WorkflowRuntimeStatisticsComponent,
     FlarumComponent,
     HighlightSearchTermsPipe,
+    GeneralSearchComponent,
+    GeneralSearchResultComponent,
+    ListItemComponent,
+    GeneralSearchBarComponent,
   ],
   imports: [
     BrowserModule,

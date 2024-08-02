@@ -97,6 +97,17 @@
         <span>Forum</span>
       </li>
       <li
+        nz-menu-item
+        nz-tooltip="Temorary Playground for implement general search"
+        nzMatchRouter="true"
+        nzTooltipPlacement="right"
+        routerLink="/dashboard/general-search">
+        <span
+          nz-icon
+          nzType="search"></span>
+        <span>General Search</span>
+      </li>
+      <li
         *ngIf="isAdmin"
         nz-submenu
         nzTitle="Admin"
@@ -137,6 +148,7 @@
           </li>
         </ul>
       </li>
+
     </ul>
   </nz-sider>
   <nz-layout>
