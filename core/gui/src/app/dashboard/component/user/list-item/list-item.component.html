@@ -1,6 +1,7 @@
 <nz-card 
   nzHoverable
   [nzBodyStyle]="{padding: '16px'}"
+  [routerLink]="entryLink"
   class="list-item-card">
   <div class="card-content">
     <div class="avatar-section">
@@ -8,22 +9,22 @@
         class="user-avatar"
         googleAvatar=""
         userColor="#1E90FF"
-        userName="Tim">
+        [userName]="entry.ownerName || 'User'">
       </texera-user-avatar>
       <div class="type-icon-div">
         <i
           nz-icon
-          nzType="project"
+          [nzType]="iconType"
         ></i>
       </div>
     </div>
     <div class="resource-info">
-      <h3>KNN prediction on diabete dataset</h3>
+      <h3>{{ entry.name }}</h3>
       <p class="resource-metadata">
-        Workflow • 5y ago • by Tim
+        {{ entry.type }} • {{ entry.creationTime | date:'short' }} • by {{ entry.ownerName || 'User' }}
       </p>
       <p class="resource-description">
-        This is a quite loooooong sample description
+        {{ entry.description || "Empty Description"}}
       </p>
     </div>
   </div>
