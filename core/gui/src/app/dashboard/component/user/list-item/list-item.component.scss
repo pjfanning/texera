@@ -1,7 +1,8 @@
 .list-item-card {
     padding: 0;
     min-width: 700px;
-    margin-bottom: 8px;
+    background-color: white;
+    transition: background-color 0.2s ease;
     .card-content {
       display: flex;
       flex-direction: row;
@@ -68,5 +69,7 @@
     }
   }
 
-
-
+.list-item-card:hover {
+  background-color: #f0f0f0;
+  cursor: pointer;
+}
