@@ -24,4 +24,8 @@ class OutputDataFrame(DataPayload):
 
 @dataclass
 class EndOfUpstream(DataPayload):
-    pass
+    def __str__(self):
+        return "EndOfUpstream"
+
+    def __eq__(self, other):
+        return str(self) == other

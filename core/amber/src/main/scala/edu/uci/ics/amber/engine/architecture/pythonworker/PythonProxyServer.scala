@@ -84,8 +84,6 @@ private class AmberProducer(
     val dataHeader: PythonDataHeader = PythonDataHeader
       .parseFrom(flightStream.getDescriptor.getCommand)
     val to: ActorVirtualIdentity = dataHeader.tag
-    val isEnd: Boolean = dataHeader.isEnd
-
     val root = flightStream.getRoot
 
     // send back ack with credits on ackStream
@@ -105,8 +103,7 @@ private class AmberProducer(
     // closing the stream will release the dictionaries
     flightStream.takeDictionaryOwnership
 
-    if (isEnd) {
-      // EndOfUpstream
+    if (dataHeader.marker == EndOfUpstream().toString) {
       assert(root.getRowCount == 0)
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
     } else {

@@ -6,9 +6,9 @@ import scala.collection.mutable
 
 sealed trait Marker
 
-final case class StartOfUpstream() extends Marker
-
-final case class EndOfUpstream() extends Marker
+final case class EndOfUpstream() extends Marker {
+  override def toString: String = "EndOfUpstream"
+}
 
 final case class State() extends Marker {
   val list: mutable.Map[String, (AttributeType, Any)] = mutable.HashMap()
@@ -21,4 +21,3 @@ final case class State() extends Marker {
     list(key)._2
   }
 }
-

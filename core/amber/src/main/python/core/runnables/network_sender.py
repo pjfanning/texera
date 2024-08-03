@@ -61,11 +61,11 @@ class NetworkSender(StoppableQueueBlockingRunnable):
                 {name: [t[name] for t in data_payload.frame] for name in field_names},
                 schema=data_payload.schema.as_arrow_schema(),
             )
-            data_header = PythonDataHeader(tag=to, is_end=False)
+            data_header = PythonDataHeader(tag=to, marker="data")
             self._proxy_client.send_data(bytes(data_header), table)  # returns credits
 
         elif isinstance(data_payload, EndOfUpstream):
-            data_header = PythonDataHeader(tag=to, is_end=True)
+            data_header = PythonDataHeader(tag=to, marker=str(EndOfUpstream()))
             self._proxy_client.send_data(bytes(data_header), None)  # returns credits
 
         else:
