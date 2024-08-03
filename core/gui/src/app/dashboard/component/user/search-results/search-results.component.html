@@ -8,7 +8,8 @@
     class="virtual-scroll-container">
     <nz-list>
       <ng-container *cdkVirtualFor="let entry of entries">
-        <nz-layout *ngIf="entry.type === 'project'">
+        <texera-list-item [entry]="entry"></texera-list-item>
+        <!-- <nz-layout *ngIf="entry.type === 'project'">
           <nz-sider
             *ngIf="showResourceTypes"
             [nzWidth]="40"
@@ -78,7 +79,7 @@
               (deleted)="deleted.emit(entry)"
               (refresh)="modified.emit(entry)">
             </texera-user-dataset-list-item> </nz-content
-        ></nz-layout>
+        ></nz-layout> -->
       </ng-container>
     </nz-list>
     <div
