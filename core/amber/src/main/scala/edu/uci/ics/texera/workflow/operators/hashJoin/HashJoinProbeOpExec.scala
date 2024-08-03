@@ -55,8 +55,6 @@ class HashJoinProbeOpExec[K](
     if (port == 0) {
       Iterator.empty
     } else {
-      System.err.println(buildTableHashMap)
-      System.err.println(tuple)
       // Probe phase
       val key = tuple.getField(probeAttributeName).asInstanceOf[K]
       val (matchedTuples, joined) =

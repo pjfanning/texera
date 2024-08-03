@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.common
 
-import edu.uci.ics.amber.engine.common.SerializedState
+import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 
 import scala.collection.mutable
 
@@ -10,20 +10,15 @@ final case class StartOfUpstream() extends Marker
 
 final case class EndOfUpstream() extends Marker
 
-
 final case class State() extends Marker {
-  val list: mutable.Map[String, String] = mutable.HashMap()
+  val list: mutable.Map[String, (AttributeType, Any)] = mutable.HashMap()
 
-  def add(key: String, value: Object): Unit = {
-    list.put(key, SerializedState.fromObjectToString(value))
+  def add(attributeName: String, attributeType: AttributeType, field: Any): Unit = {
+    list.put(attributeName, (attributeType, field))
   }
 
-  def get(key: String): Object = {
-    //SerializedState.stringToObject(list.getOrElse(key, ""))
-    list.get(key) match {
-      case Some(value) => SerializedState.stringToObject(value)
-      case None => null
-    }
+  def get(key: String): Any = {
+    list(key)._2
   }
 }
 
