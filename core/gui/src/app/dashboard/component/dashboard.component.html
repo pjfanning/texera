@@ -150,6 +150,16 @@
     </ul>
   </nz-sider>
   <nz-layout>
+    <div 
+      class="navbar" 
+      *ngIf="showNavbar">
+      <nz-input-group 
+        nzSize="large"
+        nzPrefixIcon="search">
+        <input type="text" nz-input placeholder="Search" />
+      </nz-input-group>
+      <texera-user-icon></texera-user-icon>
+    </div>
     <nz-content>
       <router-outlet></router-outlet>
     </nz-content>
