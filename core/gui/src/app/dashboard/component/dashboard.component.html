@@ -59,18 +59,6 @@
           nzType="database"></span>
         <span>Datasets</span>
       </li>
-
-      <li
-        nz-menu-item
-        nz-tooltip="Search across the entire site"
-        nzMatchRouter="true"
-        nzTooltipPlacement="right"
-        routerLink="/dashboard/search">
-        <span
-          nz-icon
-          nzType="file-search"></span>
-        <span>Search</span>
-      </li>
       <li
         nz-menu-item
         nz-tooltip="Quota information"
@@ -93,17 +81,6 @@
           nz-icon
           nzType="comment"></span>
         <span>Forum</span>
-      </li>
-      <li
-        nz-menu-item
-        nz-tooltip="Temorary Playground for implement general search"
-        nzMatchRouter="true"
-        nzTooltipPlacement="right"
-        routerLink="/dashboard/general-search">
-        <span
-          nz-icon
-          nzType="search"></span>
-        <span>General Search</span>
       </li>
       <li
         *ngIf="isAdmin"
@@ -153,7 +130,8 @@
     <div 
       class="navbar" 
       *ngIf="showNavbar">
-      <nz-input-group 
+      <nz-input-group
+        routerLink="/search"
         nzSize="large"
         nzPrefixIcon="search">
         <input type="text" nz-input placeholder="Search" />

@@ -18,7 +18,6 @@ import { FlarumComponent } from "./dashboard/component/user/flarum/flarum.compon
 import { AdminGmailComponent } from "./dashboard/component/admin/gmail/admin-gmail.component";
 import { UserDatasetExplorerComponent } from "./dashboard/component/user/user-dataset/user-dataset-explorer/user-dataset-explorer.component";
 import { UserDatasetComponent } from "./dashboard/component/user/user-dataset/user-dataset.component";
-import { GeneralSearchComponent } from "./dashboard/component/user/general-search/general-search.component";
 /*
  *  This file defines the url path
  *  The workflow workspace is set as default path
@@ -29,6 +28,10 @@ const routes: Routes = [
     component: WorkspaceComponent,
     canActivate: [AuthGuardService],
   },
+  {
+    path:"search",
+    component: SearchComponent,
+  }
 ];
 if (environment.userSystemEnabled) {
   /*
@@ -83,10 +86,6 @@ if (environment.userSystemEnabled) {
         component: UserQuotaComponent,
       },
       {
-        path: "search",
-        component: SearchComponent,
-      },
-      {
         path: "discussion",
         component: FlarumComponent,
       },
@@ -105,10 +104,6 @@ if (environment.userSystemEnabled) {
         component: AdminExecutionComponent,
         canActivate: [AdminGuardService],
       },
-      {
-        path: "general-search",
-        component: GeneralSearchComponent
-      }
     ],
   });
 

@@ -1,4 +1,5 @@
-import { Component, ViewChild } from "@angular/core";
+import { Component, AfterViewInit, ViewChild } from "@angular/core";
+import { NzSelectComponent } from 'ng-zorro-antd/select';
 import { DashboardEntry } from "../../../type/dashboard-entry";
 import { SearchService } from "../../../service/user/search.service";
 import { FiltersComponent } from "../filters/filters.component";
@@ -6,6 +7,7 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { firstValueFrom } from "rxjs";
 import { SearchResultsComponent } from "../search-results/search-results.component";
 import { SortMethod } from "../../../type/sort-method";
+import { Location } from "@angular/common";
 
 @UntilDestroy()
 @Component({
@@ -13,7 +15,8 @@ import { SortMethod } from "../../../type/sort-method";
   templateUrl: "./search.component.html",
   styleUrls: ["./search.component.scss"],
 })
-export class SearchComponent {
+export class SearchComponent implements AfterViewInit{
+  @ViewChild('searchInput') searchInput!: NzSelectComponent;
   sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
   public masterFilterList: ReadonlyArray<string> = [];
@@ -31,7 +34,14 @@ export class SearchComponent {
     this._filters = value;
   }
 
-  constructor(private searchService: SearchService) {}
+  constructor(
+    private location: Location,
+    private searchService: SearchService
+  ) {}
+
+  ngAfterViewInit() {
+    this.searchInput.focus();
+  }
 
   async search(): Promise<void> {
     if (this.filters.masterFilterList.length === 0) {
@@ -78,5 +88,9 @@ export class SearchComponent {
       };
     });
     await this.searchResultsComponent.loadMore();
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 }
