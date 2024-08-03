@@ -1,4 +1,10 @@
-import { Component, OnInit } from "@angular/core";
+import {
+  OnInit,
+  Component,
+} from "@angular/core";
+import { Location } from "@angular/common";
+import { ActivatedRoute, Router } from "@angular/router";
+import { environment } from "../../../environments/environment";
 import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
 import { UserService } from "../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -22,11 +28,17 @@ import { HttpErrorResponse } from "@angular/common/http";
 export class DashboardComponent implements OnInit {
   isAdmin = this.userService.isAdmin();
   displayForum = true;
+  showNavbar = true;
 
   constructor(
     private userService: UserService,
-    private flarumService: FlarumService
-  ) {}
+    private flarumService: FlarumService,
+    private workflowPersistService: WorkflowPersistService,
+    private location: Location,
+    private route: ActivatedRoute,
+    private router: Router,
+  ) {
+  }
 
   ngOnInit(): void {
     if (!document.cookie.includes("flarum_remember")) {
@@ -49,5 +61,16 @@ export class DashboardComponent implements OnInit {
           },
         });
     }
+    this.router.events.subscribe(() => {
+      this.checkRoute();
+    })
+  }
+
+  checkRoute() {
+    const currentRoute = this.router.url;
+    console.log(currentRoute)
+    const routeWithoutNavbar = '/workspace';
+    this.showNavbar = !currentRoute.includes(routeWithoutNavbar);
   }
 }
+
