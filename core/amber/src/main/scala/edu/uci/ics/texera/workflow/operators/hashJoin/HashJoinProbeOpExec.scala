@@ -1,10 +1,9 @@
 package edu.uci.ics.texera.workflow.operators.hashJoin
 
-import edu.uci.ics.amber.engine.common.ambermessage.State
 import edu.uci.ics.amber.engine.common.tuple.amber.TupleLike
+import edu.uci.ics.texera.workflow.common.State
 import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 

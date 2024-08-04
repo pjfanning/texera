@@ -13,12 +13,15 @@ import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import org.apache.arrow.flight._
 import org.apache.arrow.memory.{ArrowBuf, BufferAllocator, RootAllocator}
 import org.apache.arrow.util.AutoCloseables
+
 import java.nio.{ByteBuffer, ByteOrder}
 import java.io.IOException
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
+import edu.uci.ics.texera.workflow.common.EndOfUpstream
+
 import java.nio.charset.Charset
 
 private class AmberProducer(
@@ -127,7 +130,7 @@ class PythonProxyServer(
   def getPortNumber: AtomicInteger = portNumber
 
   val allocator: BufferAllocator =
-    new RootAllocator().newChildAllocator("flight-server", 0, Long.MaxValue)
+    new RootAllocator().newChildAllocator("flight-server", 0, Long.MaxValue);
 
   val producer: FlightProducer = new AmberProducer(actorId, outputPort, promise)
 
