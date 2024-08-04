@@ -17,7 +17,7 @@ import edu.uci.ics.amber.engine.common.ambermessage.InvocationConvertUtils.{
 import edu.uci.ics.amber.engine.common.ambermessage.{PythonControlMessage, _}
 import edu.uci.ics.amber.engine.common.rpc.AsyncRPCClient.{ControlInvocation, ReturnInvocation}
 import edu.uci.ics.amber.engine.common.virtualidentity.ActorVirtualIdentity
-import edu.uci.ics.texera.workflow.common.EndOfUpstream
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, State}
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 import org.apache.arrow.flight._
@@ -103,14 +103,14 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
   def sendData(dataPayload: DataPayload, from: ActorVirtualIdentity): Unit = {
     dataPayload match {
       case DataFrame(frame) =>
-        val tuples: mutable.Queue[Tuple] =
-          mutable.Queue(frame.map(_.asInstanceOf[Tuple]).toSeq: _*)
-        writeArrowStream(tuples, from, "InputDataFrame")
-      case MarkerFrame(frame) =>
-        frame match {
-          case EndOfUpstream() =>
-            writeArrowStream(mutable.Queue(), from, EndOfUpstream().getClass.getSimpleName)
+        val queue = mutable.Queue(frame.map(_.asInstanceOf[Tuple]): _*)
+        writeArrowStream(queue, from, "InputDataFrame")
+      case MarkerFrame(marker) =>
+        val queue = marker match {
+          case state: State => mutable.Queue(state.toTuple)
+          case _            => mutable.Queue.empty[Tuple]
         }
+        writeArrowStream(queue, from, marker.getClass.getSimpleName)
     }
   }
 
