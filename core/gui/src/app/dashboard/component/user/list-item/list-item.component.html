@@ -1,8 +1,9 @@
 <nz-card 
   [nzBodyStyle]="{padding: '16px'}"
-  [routerLink]="entryLink"
   class="list-item-card">
-  <div class="card-content">
+  <div 
+    [routerLink]="entryLink"
+    class="card-content">
     <div class="avatar-section">
       <texera-user-avatar
         class="user-avatar"
@@ -18,7 +19,7 @@
       </div>
     </div>
     <div class="resource-info">
-      <h3>{{ entry.name }}</h3>
+      <h3>{{ entry.name }} <em>#{{ entry.id }}</em></h3>
       <p class="resource-metadata">
         {{ entry.type }} • {{ entry.creationTime | date:'short' }} • by {{ entry.ownerName || 'User' }}
       </p>
@@ -26,5 +27,17 @@
         {{ entry.description || "Empty Description"}}
       </p>
     </div>
+  </div>
+  <div class="kebab-menu">
+    <a nz-dropdown [nzDropdownMenu]="menu">
+      <i nz-icon nzType="more" nzTheme="outline"></i>
+    </a>
+    <nz-dropdown-menu #menu="nzDropdownMenu">
+      <ul nz-menu>
+        <li nz-menu-item>Action 1</li>
+        <li nz-menu-item>Action 2</li>
+        <li nz-menu-item>Action 3</li>
+      </ul>
+    </nz-dropdown-menu>
   </div>
 </nz-card>
