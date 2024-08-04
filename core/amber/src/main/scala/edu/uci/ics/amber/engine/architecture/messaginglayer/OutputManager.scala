@@ -1,6 +1,10 @@
 package edu.uci.ics.amber.engine.architecture.messaginglayer
 
-import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{DPOutputIterator, getBatchSize, toPartitioner}
+import edu.uci.ics.amber.engine.architecture.messaginglayer.OutputManager.{
+  DPOutputIterator,
+  getBatchSize,
+  toPartitioner
+}
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitioners._
 import edu.uci.ics.amber.engine.architecture.sendsemantics.partitionings._
 import edu.uci.ics.amber.engine.architecture.worker.DataProcessor.{FinalizeExecutor, FinalizePort}
@@ -160,10 +164,7 @@ class OutputManager(
   }
 
   def emitMarker(marker: Marker): Unit = {
-    networkOutputBuffers.foreach(kv => {
-      kv._2.flush()
-      kv._2.sendMarker(marker)
-    })
+    networkOutputBuffers.foreach(kv => kv._2.sendMarker(marker))
   }
 
   def addPort(portId: PortIdentity, schema: Schema): Unit = {
