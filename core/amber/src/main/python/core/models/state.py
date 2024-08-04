@@ -7,3 +7,6 @@ class State:
 
     def __getitem__(self, key):
         return self.data[key]
+
+    def __repr__(self):
+        return str(self.data)

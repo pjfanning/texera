@@ -30,13 +30,7 @@ class NetworkOutputBuffer(
     }
   }
 
-  def noMore(): Unit = {
-    flush()
-    dataOutputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
-  }
-
   def sendMarker(marker: Marker): Unit = {
-    flush()
     dataOutputPort.sendTo(to, MarkerFrame(marker))
   }
 

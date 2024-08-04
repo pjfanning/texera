@@ -29,8 +29,14 @@ class DataProcessor(Runnable, Stoppable):
         self._running.set()
         self._switch_context()
         while self._running.is_set():
+            self.process_state()
             self.process_tuple()
             self._switch_context()
+
+    def process_state(self) -> None:
+        executor = self._context.executor_manager.executor
+        executor.state = self._context.tuple_processing_manager.get_input_state()
+        self._switch_context()
 
     def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current

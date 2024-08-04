@@ -20,6 +20,7 @@ from core.models import (
     Tuple,
 )
 from core.models.internal_queue import DataElement, ControlElement
+from core.models.state import State
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement
@@ -202,6 +203,12 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.process_input_tuple()
         self._check_and_process_control()
 
+    def _process_state(self, state: State):
+        self.context.tuple_processing_manager.current_input_state = state
+        self._check_and_process_control()
+        self._switch_context()
+        return self.context.tuple_processing_manager.get_output_tuple()
+
     def _process_input_exhausted(self, input_exhausted: InputExhausted):
         self._process_tuple(input_exhausted)
         if self.context.tuple_processing_manager.current_input_port_id is not None:
@@ -290,6 +297,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     self._process_sender_change_marker,
                     EndOfAllMarker,
                     self._process_end_of_all_marker,
+                    State,
+                    self._process_state,
                 )
             except Exception as err:
                 logger.exception(err)
