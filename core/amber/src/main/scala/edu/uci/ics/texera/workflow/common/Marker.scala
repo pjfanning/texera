@@ -1,7 +1,8 @@
 package edu.uci.ics.texera.workflow.common
 
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
-import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
+import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema, Attribute}
+
 import scala.collection.mutable
 
 sealed trait Marker
@@ -19,13 +20,12 @@ final case class State() extends Marker {
     list(key)._2
   }
 
-  def toTuple: Tuple = {
-    val schemaBuilder = Schema.builder()
-    for ((name, (attributeType, _)) <- list) {
-      schemaBuilder.add(name, attributeType)
-    }
-    val tupleBuilder = Tuple.builder(schemaBuilder.build())
-    tupleBuilder.addSequentially(list.values.map(_._2).toArray)
-    tupleBuilder.build()
-  }
+  def toTuple: Tuple =
+    Tuple.builder(
+      Schema.builder()
+        .add(list.map { case (name, (attrType, _)) =>
+          new Attribute(name, attrType)})
+        .build())
+      .addSequentially(list.values.map(_._2).toArray)
+      .build()
 }

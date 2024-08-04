@@ -4,7 +4,7 @@ from loguru import logger
 from overrides import overrides
 from pyarrow import Table
 
-from core.models import OutputDataFrame, DataPayload, EndOfUpstream, InternalQueue
+from core.models import OutputDataFrame, DataPayload, EndOfUpstream, InternalQueue, InputDataFrame
 from core.models.internal_queue import InternalQueueElement, DataElement, ControlElement
 from core.proxy import ProxyClient
 from core.util import StoppableQueueBlockingRunnable
@@ -61,11 +61,11 @@ class NetworkSender(StoppableQueueBlockingRunnable):
                 {name: [t[name] for t in data_payload.frame] for name in field_names},
                 schema=data_payload.schema.as_arrow_schema(),
             )
-            data_header = PythonDataHeader(tag=to, marker="InputDataFrame")
+            data_header = PythonDataHeader(tag=to, marker=InputDataFrame.__name__)
             self._proxy_client.send_data(bytes(data_header), table)  # returns credits
 
         elif isinstance(data_payload, EndOfUpstream):
-            data_header = PythonDataHeader(tag=to, marker=str(EndOfUpstream()))
+            data_header = PythonDataHeader(tag=to, marker=EndOfUpstream.__name__)
             self._proxy_client.send_data(bytes(data_header), None)  # returns credits
 
         else:
