@@ -8,7 +8,12 @@
     class="virtual-scroll-container">
     <nz-list>
       <ng-container *cdkVirtualFor="let entry of entries">
-        <texera-list-item [entry]="entry"></texera-list-item>
+        <texera-list-item
+          (deleted)="deleted.emit(entry)"
+          (duplicated)="duplicated.emit(entry)"
+          [editable]="editable"
+          [entry]="entry">
+        </texera-list-item>
         <!-- <nz-layout *ngIf="entry.type === 'project'">
           <nz-sider
             *ngIf="showResourceTypes"
