@@ -24,6 +24,8 @@ class OutputDataFrame(DataPayload):
 
 @dataclass
 class EndOfUpstream(DataPayload):
+    frame: Optional[Table] = None
+
     def __str__(self):
         return "EndOfUpstream"
 
