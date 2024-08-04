@@ -28,7 +28,9 @@
       </p>
     </div>
   </div>
-  <div class="kebab-menu">
+  <div 
+    *ngIf="isPrivateSearch"
+    class="kebab-menu">
     <a nz-dropdown nzTrigger="click" [nzDropdownMenu]="menu">
       <i nz-icon nzType="more" nzTheme="outline"></i>
     </a>
@@ -45,6 +47,7 @@
           Share
         </li>
         <li
+          *ngIf="entry.type==='workflow'"
           class="dropdown-item"
           nz-menu-item
           (click)="duplicated.emit()">
@@ -54,6 +57,7 @@
           nzType="copy"></i>
           Copy</li>
         <li
+          *ngIf="entry.type==='workflow'"
           class="dropdown-item"
           nz-menu-item
           (click)="onClickDownload()">

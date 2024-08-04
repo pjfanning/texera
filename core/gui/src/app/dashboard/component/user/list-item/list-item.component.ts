@@ -7,10 +7,14 @@ import { DashboardEntry } from "src/app/dashboard/type/dashboard-entry";
 import { ShareAccessComponent } from "../share-access/share-access.component";
 import { DEFAULT_WORKFLOW_NAME, WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 import { Workflow } from "src/app/common/type/workflow";
+import { Dataset } from "src/app/common/type/dataset";
+import { DatasetService } from "src/app/dashboard/service/user/dataset/dataset.service";
 import { FileSaverService } from "src/app/dashboard/service/user/file/file-saver.service";
 import { DashboardProject } from "src/app/dashboard/type/dashboard-project.interface";
 import { UserProjectService } from "src/app/dashboard/service/user/project/user-project.service";
 import { firstValueFrom } from "rxjs";
+import { DashboardDataset } from "src/app/dashboard/type/dashboard-dataset.interface";
+import { NotificationService } from "src/app/common/service/notification/notification.service";
 
 @UntilDestroy()
 @Component({
@@ -24,6 +28,7 @@ export class ListItemComponent implements OnInit{
   ROUTER_DATASET_BASE_URL = "/dashboard/dataset";
   public entryLink: string = "";
   public iconType: string = "";
+  @Input() isPrivateSearch = false;
   @Input() editable = false;
   private _entry?: DashboardEntry;
   @Input()
@@ -38,13 +43,16 @@ export class ListItemComponent implements OnInit{
   }
   @Output() deleted = new EventEmitter<void>();
   @Output() duplicated = new EventEmitter<void>();
-
+  @Output()
+  refresh = new EventEmitter<void>();
   constructor(
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
-    private userProjectService: UserProjectService
-  ){}
+    private userProjectService: UserProjectService,
+    private datasetService: DatasetService,
+    private notificationService: NotificationService
+  ) {}
 
   ngOnInit(): void {
       if (this.entry.type === "workflow") {
@@ -79,6 +87,19 @@ export class ListItemComponent implements OnInit{
         },
         nzFooter: null,
         nzTitle: "Share this workflow with others",
+        nzCentered: true,
+      });
+    }
+    else if (this.entry.type === "dataset") {
+      this.modalService.create({
+        nzContent: ShareAccessComponent,
+        nzData: {
+          writeAccess: this.entry.accessLevel === "WRITE",
+          type: "dataset",
+          id: this.entry.id,
+        },
+        nzFooter: null,
+        nzTitle: "Share this dataset with others",
         nzCentered: true,
       });
     }

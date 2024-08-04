@@ -11,6 +11,7 @@
         <texera-list-item
           (deleted)="deleted.emit(entry)"
           (duplicated)="duplicated.emit(entry)"
+          [isPrivateSearch]="isPrivateSearch"
           [editable]="editable"
           [entry]="entry">
         </texera-list-item>

@@ -123,6 +123,7 @@
   </div>
 
   <texera-search-results
+    [isPrivateSearch]="true"
     [editable]="true"
     (deleted)="deleteWorkflow($event)"
     (duplicated)="onClickDuplicateWorkflow($event)"></texera-search-results>
