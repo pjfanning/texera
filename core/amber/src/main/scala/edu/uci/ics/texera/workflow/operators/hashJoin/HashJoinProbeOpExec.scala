@@ -47,7 +47,7 @@ class HashJoinProbeOpExec[K](
   var buildTableHashMap: mutable.HashMap[K, (ListBuffer[Tuple], Boolean)] = _
 
   override def processState(state: State, port: Int): Unit = {
-    buildTableHashMap = state.get("hashtable").asInstanceOf[mutable.HashMap[K, (mutable.ListBuffer[Tuple], Boolean)]]
+    buildTableHashMap = state("hashtable").asInstanceOf[mutable.HashMap[K, (mutable.ListBuffer[Tuple], Boolean)]]
   }
 
 

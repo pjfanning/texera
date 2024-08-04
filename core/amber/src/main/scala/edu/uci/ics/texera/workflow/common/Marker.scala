@@ -16,9 +16,9 @@ final case class State() extends Marker {
     list.put(attributeName, (attributeType, field))
   }
 
-  def get(key: String): Any = {
-    list(key)._2
-  }
+  def get(key: String): Any = list(key)._2
+
+  def apply(key: String): Any = get(key)
 
   def toTuple: Tuple =
     Tuple.builder(

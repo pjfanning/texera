@@ -22,7 +22,7 @@ class TestBOpExec(limit: Int) extends OperatorExecutor {
 
 
   override def processState(state: State, port: Int): Unit = {
-    val objRepr = state.get("count")
+    val objRepr = state("count")
     println(objRepr)
   }
 }

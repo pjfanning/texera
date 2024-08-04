@@ -6,16 +6,10 @@ import edu.uci.ics.texera.workflow.common.operators.OperatorExecutor
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 
-class TestAOpExec(limit: Int) extends OperatorExecutor {
-  var count = 0
+class TestAOpExec extends OperatorExecutor {
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
-    if (count < limit) {
-      count += 1
       Iterator(tuple)
-    } else {
-      Iterator()
-    }
   }
 
   override def produceState(): State = {

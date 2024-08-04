@@ -102,15 +102,12 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
 
   def sendData(dataPayload: DataPayload, from: ActorVirtualIdentity): Unit = {
     dataPayload match {
-      case DataFrame(frame) =>
-        val queue = mutable.Queue(frame: _*)
-        writeArrowStream(queue, from, "InputDataFrame")
+      case DataFrame(frame) => writeArrowStream(mutable.Queue(frame: _*), from, "InputDataFrame")
       case MarkerFrame(marker) =>
-        val queue = marker match {
-          case state: State => mutable.Queue(state.toTuple)
-          case _            => mutable.Queue.empty[Tuple]
+        marker match {
+          case state: State => writeArrowStream(mutable.Queue(state.toTuple), from, "StateFrame")
+          case _            => writeArrowStream(mutable.Queue.empty, from, marker.getClass.getSimpleName)
         }
-        writeArrowStream(queue, from, marker.getClass.getSimpleName)
     }
   }
 
