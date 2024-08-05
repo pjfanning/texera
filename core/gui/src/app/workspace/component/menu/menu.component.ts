@@ -291,39 +291,37 @@ export class MenuComponent implements OnInit {
       const resultService = this.workflowResultService.getResultService(operatorId);
       const paginatedResultService = this.workflowResultService.getPaginatedResultService(operatorId);
 
-      const operatorDetails =
-        operatorInfo
-      ;
+      const operatorDetails = operatorInfo;
 
       const operatorDetailsHtml = `
-      <div style="text-align: center;">
-          <h4>Operator Details</h4>
-          <div id="json-editor-${operatorId}" style="height: 400px;"></div>
-          <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              const container = document.querySelector("#json-editor-${operatorId}");
-              const options = { mode: 'view', language: 'en' };
-              const editor = new JSONEditor(container, options);
-              editor.set(${JSON.stringify(operatorDetails)});
-            });
-          </script>
-      </div>
-    `;
+    <div style="text-align: center;">
+        <h4>Operator Details</h4>
+        <div id="json-editor-${operatorId}" style="height: 400px;"></div>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector("#json-editor-${operatorId}");
+            const options = { mode: 'view', language: 'en' };
+            const editor = new JSONEditor(container, options);
+            editor.set(${JSON.stringify(operatorDetails)});
+          });
+        </script>
+    </div>
+  `;
 
       if (paginatedResultService) {
-        paginatedResultService.selectPage(1, 10).subscribe(
-          pageData => {
+        paginatedResultService.selectPage(1, 10).subscribe({
+          next: pageData => {
             const table = pageData.table;
             if (!table.length) {
               allResults.push({
                 operatorId,
                 html: `
-                <h3>Operator ID: ${operatorId}</h3>
-                <p>No results found for operator</p>
-                <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-                <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-                <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-              `
+              <h3>Operator ID: ${operatorId}</h3>
+              <p>No results found for operator</p>
+              <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+              <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+              <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+            `
               });
               resolve();
               return;
@@ -333,30 +331,30 @@ export class MenuComponent implements OnInit {
             const rows: any[][] = table.map(row => columns.map(col => row[col]));
 
             const tableHtml: string = `
-            <div style="width: 50%; margin: 0 auto; text-align: center;">
-              <h3>Operator ID: ${operatorId}</h3>
-              <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
-                <thead>
-                  <tr>${columns.map(col => `<th style="border: 1px solid black; padding: 8px; text-align: center;">${col}</th>`).join("")}</tr>
-                </thead>
-                <tbody>
-                  ${rows.map(row => `<tr>${row.map(cell => `<td style="border: 1px solid black; padding: 8px; text-align: center;">${String(cell)}</td>`).join("")}</tr>`).join("")}
-                </tbody>
-              </table>
-              <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-              <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-              <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-            </div>
-          `;
+          <div style="width: 50%; margin: 0 auto; text-align: center;">
+            <h3>Operator ID: ${operatorId}</h3>
+            <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
+              <thead>
+                <tr>${columns.map(col => `<th style="border: 1px solid black; padding: 8px; text-align: center;">${col}</th>`).join("")}</tr>
+              </thead>
+              <tbody>
+                ${rows.map(row => `<tr>${row.map(cell => `<td style="border: 1px solid black; padding: 8px; text-align: center;">${String(cell)}</td>`).join("")}</tr>`).join("")}
+              </tbody>
+            </table>
+            <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+            <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+            <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+          </div>
+        `;
 
             allResults.push({ operatorId, html: tableHtml });
             resolve();
           },
-          error => {
+          error: error => {
             console.error(`Error displaying paginated results for operator ${operatorId}:`, error);
             reject(error);
           }
-        );
+        });
       } else if (resultService) {
         const data = resultService.getCurrentResultSnapshot();
         if (data) {
@@ -374,12 +372,12 @@ export class MenuComponent implements OnInit {
           const newHtmlString = serializer.serializeToString(doc);
 
           const visualizationHtml = `
-          <h3 style="text-align: center;">Operator ID: ${operatorId}</h3>
-          ${newHtmlString}
-          <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-          <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-          <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-        `;
+        <h3 style="text-align: center;">Operator ID: ${operatorId}</h3>
+        ${newHtmlString}
+        <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+        <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+        <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+      `;
 
           allResults.push({ operatorId, html: visualizationHtml });
           resolve();
@@ -387,12 +385,12 @@ export class MenuComponent implements OnInit {
           allResults.push({
             operatorId,
             html: `
-            <h3>Operator ID: ${operatorId}</h3>
-            <p>No data found for operator</p>
-            <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-            <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-            <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-          `
+          <h3>Operator ID: ${operatorId}</h3>
+          <p>No data found for operator</p>
+          <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+          <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+          <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+        `
           });
           resolve();
         }
@@ -400,17 +398,18 @@ export class MenuComponent implements OnInit {
         allResults.push({
           operatorId,
           html: `
-          <h3>Operator ID: ${operatorId}</h3>
-          <p>No results found for operator</p>
-          <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-          <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-          <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-        `
+        <h3>Operator ID: ${operatorId}</h3>
+        <p>No results found for operator</p>
+        <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+        <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+        <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+      `
         });
         resolve();
       }
     });
   }
+
 
 
 
