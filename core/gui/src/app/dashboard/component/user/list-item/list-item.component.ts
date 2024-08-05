@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, OnInit } from "@angular/core";
+import { Component, EventEmitter, Input, Output, OnInit, OnChanges, SimpleChanges } from "@angular/core";
 import { environment } from "src/environments/environment";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NzModalService } from "ng-zorro-antd/modal";
@@ -22,7 +22,7 @@ import { NotificationService } from "src/app/common/service/notification/notific
   templateUrl: './list-item.component.html',
   styleUrls: ['./list-item.component.scss'],
 })
-export class ListItemComponent implements OnInit{
+export class ListItemComponent implements OnInit, OnChanges{
   ROUTER_WORKFLOW_BASE_URL = "/dashboard/workspace";
   ROUTER_USER_PROJECT_BASE_URL = "/dashboard/user-project";
   ROUTER_DATASET_BASE_URL = "/dashboard/dataset";
@@ -54,27 +54,38 @@ export class ListItemComponent implements OnInit{
     private notificationService: NotificationService
   ) {}
 
-  ngOnInit(): void {
-      if (this.entry.type === "workflow") {
-        this.entryLink = this.ROUTER_WORKFLOW_BASE_URL + "/" + this.entry.id;
-        this.iconType = "project";
-      }
-      else if (this.entry.type === "project") {
-        this.entryLink = this.ROUTER_USER_PROJECT_BASE_URL + '/' + this.entry.id;
-        this.iconType = "container";
-      }
-      else if (this.entry.type === "dataset") {
-        this.entryLink = this.ROUTER_DATASET_BASE_URL + '/' + this.entry.id;
-        this.iconType = "database";
-      }
-      else if (this.entry.type === "file") {
-        // not sure where to redirect
-        this.iconType = "folder-open";
-      }
-      else {
-        throw new Error("Unexpected type in DashboardEntry.");
-      }
+  initializeEntry() {
+    if (this.entry.type === "workflow") {
+      this.entryLink = this.ROUTER_WORKFLOW_BASE_URL + "/" + this.entry.id;
+      this.iconType = "project";
+    }
+    else if (this.entry.type === "project") {
+      this.entryLink = this.ROUTER_USER_PROJECT_BASE_URL + '/' + this.entry.id;
+      this.iconType = "container";
+    }
+    else if (this.entry.type === "dataset") {
+      this.entryLink = this.ROUTER_DATASET_BASE_URL + '/' + this.entry.id;
+      this.iconType = "database";
+    }
+    else if (this.entry.type === "file") {
+      // not sure where to redirect
+      this.iconType = "folder-open";
+    }
+    else {
+      throw new Error("Unexpected type in DashboardEntry.");
+    }
   }
+  
+  ngOnInit(): void {
+    this.initializeEntry();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['entry']) {
+      this.initializeEntry()
+    }
+  }
+
   public async onClickOpenShareAccess(): Promise<void> {
     if (this.entry.type === "workflow") {
       this.modalService.create({
