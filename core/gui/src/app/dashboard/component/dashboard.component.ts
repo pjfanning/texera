@@ -72,6 +72,13 @@ export class DashboardComponent implements OnInit {
     const routeWithPanelCollapsed = '/workspace'
     this.showNavbar = !currentRoute.includes(routeWithoutNavbar);
     this.isCollapsed = currentRoute.includes(routeWithPanelCollapsed);
+    const resizeEvent = new Event("resize");
+    const editor = document.getElementById("workflow-editor")
+    setTimeout(() => {
+      if (editor) {
+        window.dispatchEvent(resizeEvent);
+      }
+    }, 100)
   }
 }
 
