@@ -93,7 +93,7 @@ class DataProcessor(
   }
 
   private[this] def processInputState(state: State, port: Int): Unit = {
-    executor.processState(state, port)
+    outputManager.emitMarker(executor.processState(state, port))
   }
 
   /**
@@ -206,7 +206,9 @@ class DataProcessor(
             if (inputManager.isPortCompleted(portId)) {
               inputManager.initBatch(channelId, Array.empty)
               processEndOfUpstream(portId.id)
-              outputManager.outputIterator.appendSpecialTupleToEnd(FinalizePort(portId, input = true))
+              outputManager.outputIterator.appendSpecialTupleToEnd(
+                FinalizePort(portId, input = true)
+              )
             }
             if (inputManager.getAllPorts.forall(portId => inputManager.isPortCompleted(portId))) {
               // assuming all the output ports finalize after all input ports are finalized.

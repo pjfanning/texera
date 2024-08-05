@@ -9,7 +9,7 @@ trait OperatorExecutor {
 
   def open(): Unit = {}
 
-  def close(): Unit = {}
+  def processState(state: State, port: Int): State = state
 
   def processTupleMultiPort(
       tuple: Tuple,
@@ -19,16 +19,14 @@ trait OperatorExecutor {
   }
 
   def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike]
-  
+
+  def produceState(): State = null
+
   def onInputFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))
   }
   def onFinish(port: Int): Iterator[TupleLike] = Iterator.empty
 
-  def onInputStart(port: Int): Iterator[State] = Iterator.empty
-
-  def produceState(): State = null
-
-  def processState(state: State, port: Int): Unit = {}
+  def close(): Unit = {}
 
 }

@@ -9,7 +9,13 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType
 class TestAOpExec extends OperatorExecutor {
 
   override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = {
-      Iterator(tuple)
+    Iterator(tuple)
+  }
+
+  override def processState(state: State, port: Int): State = {
+    val state = State()
+    state.add("count", AttributeType.STRING, "test")
+    state
   }
 
   override def produceState(): State = {
@@ -17,4 +23,7 @@ class TestAOpExec extends OperatorExecutor {
     state.add("count", AttributeType.STRING, "test")
     state
   }
+
+  //openState
+  //closeState
 }
