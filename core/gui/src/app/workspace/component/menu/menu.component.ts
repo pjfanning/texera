@@ -416,114 +416,136 @@ export class MenuComponent implements OnInit {
 
   public downloadResultsAsHtml(workflowSnapshot: string, allResults: string[]): void {
     const htmlContent = `
-    <html>
-      <head>
-        <title>Operator Results</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.js"></script>
-        <style>
-          .button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            border: 1px solid #ccc;
-            background-color: #f8f8f8;
-            color: #333;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-          }
-          .button:hover {
-            background-color: #e8e8e8;
-          }
-          .hidden-input {
-            display: none;
-          }
-          .json-editor-container {
-            height: 400px;
-          }
-        </style>
-        <script>
-          function saveComments() {
-            const comments = {};
-            const divs = document.querySelectorAll('div[contenteditable="true"]');
-            divs.forEach(div => {
-              comments[div.id] = div.innerHTML;
-            });
-            const blob = new Blob([JSON.stringify(comments, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'comments.json';
-            a.click();
-            URL.revokeObjectURL(url);
-          }
+  <html>
+    <head>
+      <title>Operator Results</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.css">
+      <script src="https://cdn.jsdelivr.net/npm/jsoneditor@latest/dist/jsoneditor.min.js"></script>
+      <style>
+        .button {
+          margin-top: 20px;
+          padding: 10px 20px;
+          border: 1px solid #ccc;
+          background-color: #f8f8f8;
+          color: #333;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+        .button:hover {
+          background-color: #e8e8e8;
+        }
+        .hidden-input {
+          display: none;
+        }
+        .json-editor-container {
+          height: 400px;
+        }
+        .comment-box {
+          margin-top: 20px;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+        }
+      </style>
+      <script>
+        let overallCommentCounter = 1;
 
-          function loadComments() {
-            fetch('comments.json')
-              .then(response => response.json())
-              .then(data => {
-                Object.keys(data).forEach(id => {
-                  const div = document.getElementById(id);
-                  if (div) {
-                    div.innerHTML = data[id];
-                  }
-                });
-              });
-          }
+        function saveComments() {
+          const comments = {};
+          const divs = document.querySelectorAll('div[contenteditable="true"]');
+          divs.forEach(div => {
+            comments[div.id] = div.innerHTML;
+          });
+          const blob = new Blob([JSON.stringify(comments, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'comments.json';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
 
-          function toggleDetails(detailsId) {
-            const detailsDiv = document.getElementById(detailsId);
-            if (detailsDiv.style.display === "none") {
-              detailsDiv.style.display = "block";
-            } else {
-              detailsDiv.style.display = "none";
-            }
-          }
-
-          function downloadJson() {
-            const workflowContent = ${JSON.stringify(this.workflowActionService.getWorkflowContent())};
-            const workflowContentJson = JSON.stringify(workflowContent, null, 2);
-            const blob = new Blob([workflowContentJson], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'workflowContent.json';
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-
-          function uploadComments(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const comments = JSON.parse(e.target.result);
-              Object.keys(comments).forEach(id => {
+        function loadComments() {
+          fetch('comments.json')
+            .then(response => response.json())
+            .then(data => {
+              Object.keys(data).forEach(id => {
                 const div = document.getElementById(id);
                 if (div) {
-                  div.innerHTML = comments[id];
+                  div.innerHTML = data[id];
                 }
               });
-            };
-            reader.readAsText(file);
-          }
+            });
+        }
 
-          window.onload = loadComments;
-        </script>
-      </head>
-      <body>
-        <div style="text-align: center;">
-          <h2>Workflow Static State</h2>
-          <img src="${workflowSnapshot}" alt="Workflow Snapshot" style="width: 100%; max-width: 800px;">
-        </div>
-        ${allResults.join("")}
-        <button onclick="downloadJson()" class="button">Download JSON</button>
-        <button onclick="saveComments()" class="button">Save All Comments</button>
-        <label for="upload-comments" class="button">
-          Upload all Comments
-          <input id="upload-comments" type="file" accept=".json" onchange="uploadComments(event)" class="hidden-input">
-        </label>
-      </body>
-    </html>
+        function toggleDetails(detailsId) {
+          const detailsDiv = document.getElementById(detailsId);
+          if (detailsDiv.style.display === "none") {
+            detailsDiv.style.display = "block";
+          } else {
+            detailsDiv.style.display = "none";
+          }
+        }
+
+        function downloadJson() {
+          const workflowContent = ${JSON.stringify(this.workflowActionService.getWorkflowContent())};
+          const workflowContentJson = JSON.stringify(workflowContent, null, 2);
+          const blob = new Blob([workflowContentJson], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'workflowContent.json';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        function uploadComments(event) {
+          const file = event.target.files[0];
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const comments = JSON.parse(e.target.result);
+            Object.keys(comments).forEach(id => {
+              const div = document.getElementById(id);
+              if (div) {
+                div.innerHTML = comments[id];
+              }
+            });
+          };
+          reader.readAsText(file);
+        }
+
+        function addOverallComment() {
+          overallCommentCounter++;
+          const commentContainer = document.createElement('div');
+          commentContainer.className = 'comment-box';
+          commentContainer.contentEditable = 'true';
+          commentContainer.id = 'overall-comment-' + overallCommentCounter;
+          commentContainer.innerText = 'Overall Comment ' + overallCommentCounter;
+          document.getElementById('overall-comments-container').appendChild(commentContainer);
+        }
+
+        window.onload = loadComments;
+      </script>
+    </head>
+    <body>
+      <div style="text-align: center;">
+        <h2>Workflow Static State</h2>
+        <img src="${workflowSnapshot}" alt="Workflow Snapshot" style="width: 100%; max-width: 800px;">
+      </div>
+      ${allResults.join("")}
+      <div id="overall-comments-container">
+        <div class="comment-box" contentEditable="true" id="overall-comment-1">Overall Comment 1</div>
+      </div>
+      <button onclick="addOverallComment()" class="button">Add Overall Comment</button>
+      <button onclick="downloadJson()" class="button">Download JSON</button>
+      <button onclick="saveComments()" class="button">Save All Comments</button>
+      <label for="upload-comments" class="button">
+        Upload all Comments
+        <input id="upload-comments" type="file" accept=".json" onchange="uploadComments(event)" class="hidden-input">
+      </label>
+    </body>
+  </html>
   `;
     const blob = new Blob([htmlContent], { type: "text/html" });
     const url = URL.createObjectURL(blob);
