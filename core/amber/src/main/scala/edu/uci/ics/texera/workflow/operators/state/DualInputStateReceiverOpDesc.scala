@@ -3,7 +3,7 @@ package edu.uci.ics.texera.workflow.operators.state
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
-import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort}
+import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
@@ -33,7 +33,7 @@ class DualInputStateReceiverOpDesc extends LogicalOp {
       "2 in Testing State Receiver",
       "",
       OperatorGroupConstants.UTILITY_GROUP,
-      inputPorts = List(InputPort(), InputPort()),
+      inputPorts = List(InputPort(PortIdentity(0)), InputPort(PortIdentity(1))),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
     )

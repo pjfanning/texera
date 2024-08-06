@@ -34,9 +34,37 @@ class DataProcessor(Runnable, Stoppable):
             self._switch_context()
 
     def process_state(self) -> None:
-        executor = self._context.executor_manager.executor
-        executor.state = self._context.tuple_processing_manager.get_input_state()
-        self._switch_context()
+        try:
+            executor = self._context.executor_manager.executor
+            state_ = self._context.tuple_processing_manager.get_input_state()
+            port_id = self._context.tuple_processing_manager.current_input_port_id
+            port: int
+            if port_id is None:
+                # no upstream, special case for source executor.
+                port = 0
+            else:
+                port = port_id.id
+
+
+            with replace_print(
+                    self._context.worker_id,
+                    self._context.console_message_manager.print_buf,
+            ):
+                output_iterator = executor.process_state(state_, port)
+                #for output in output_iterator:
+                    #for output_tuple in all_output_to_tuple(output):
+                        #self._set_output_tuple(output_tuple)
+                        #self._switch_context()
+
+
+        except Exception as err:
+            logger.exception(err)
+            exc_info = sys.exc_info()
+            self._context.exception_manager.set_exception_info(exc_info)
+            self._report_exception(exc_info)
+
+        finally:
+            self._switch_context()
 
     def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current
@@ -58,8 +86,8 @@ class DataProcessor(Runnable, Stoppable):
                     else executor.on_finish(port)
                 )
                 with replace_print(
-                    self._context.worker_id,
-                    self._context.console_message_manager.print_buf,
+                        self._context.worker_id,
+                        self._context.console_message_manager.print_buf,
                 ):
                     for output in output_iterator:
                         # output could be a None, a TupleLike, or a TableLike.
