@@ -32,7 +32,7 @@ import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
 import { Subject } from "rxjs";
 import { WorkflowResultService } from "../../service/workflow-result/workflow-result.service";
-import html2canvas from 'html2canvas';
+import html2canvas from "html2canvas";
 import * as joint from "jointjs";
 
 
@@ -173,14 +173,14 @@ export class MenuComponent implements OnInit {
         console.log("Selected element: ", element); // Log the selected element
 
         // Create a container element to hold the workflow
-        const snapshotContainer = document.createElement('div');
-        snapshotContainer.style.width = '75%';  // Set to 3/4 size
-        snapshotContainer.style.height = '75%'; // Set to 3/4 size
-        snapshotContainer.style.position = 'fixed';
-        snapshotContainer.style.top = '0';
-        snapshotContainer.style.left = '0';
-        snapshotContainer.style.zIndex = '-1';
-        snapshotContainer.style.background = '#FFFFFF'; // Ensure the background is white
+        const snapshotContainer = document.createElement("div");
+        snapshotContainer.style.width = "75%";  // Set to 3/4 size
+        snapshotContainer.style.height = "75%"; // Set to 3/4 size
+        snapshotContainer.style.position = "fixed";
+        snapshotContainer.style.top = "0";
+        snapshotContainer.style.left = "0";
+        snapshotContainer.style.zIndex = "-1";
+        snapshotContainer.style.background = "#FFFFFF"; // Ensure the background is white
         document.body.appendChild(snapshotContainer);
 
         console.log("Snapshot container created and appended to body:", snapshotContainer);
@@ -211,15 +211,15 @@ export class MenuComponent implements OnInit {
 
         // Increase delay time to ensure all content is fully loaded
         setTimeout(() => {
-          const svgIcons = snapshotContainer.querySelectorAll('svg');
-          console.log('SVG icons count within snapshot container:', svgIcons.length);
+          const svgIcons = snapshotContainer.querySelectorAll("svg");
+          console.log("SVG icons count within snapshot container:", svgIcons.length);
           if (svgIcons.length > 0) {
-            console.log('SVG icons found within snapshot container:', svgIcons.length);
+            console.log("SVG icons found within snapshot container:", svgIcons.length);
             svgIcons.forEach((icon, index) => {
               console.log(`SVG Icon ${index} within snapshot container:`, icon);
             });
           } else {
-            console.log('No SVG icons found within snapshot container.');
+            console.log("No SVG icons found within snapshot container.");
           }
 
           console.log("Starting html2canvas capture");
@@ -230,11 +230,11 @@ export class MenuComponent implements OnInit {
             foreignObjectRendering: true,
             onclone: (clonedDoc) => {
               console.log("onclone callback called");
-              const clonedContainer = clonedDoc.querySelector('div');
+              const clonedContainer = clonedDoc.querySelector("div");
               console.log("Cloned container:", clonedContainer);
             }
           }).then((canvas: HTMLCanvasElement) => {
-            const dataUrl: string = canvas.toDataURL('image/png');
+            const dataUrl: string = canvas.toDataURL("image/png");
             console.log("Canvas data URL:", dataUrl.substring(0, 100)); // Only print the first 100 characters
             resolve(dataUrl);
             document.body.removeChild(snapshotContainer); // Remove snapshot container
@@ -247,8 +247,8 @@ export class MenuComponent implements OnInit {
           });
         }, 1000); // Increase delay time to 1 seconds
       } else {
-        console.error('Workflow canvas element not found');
-        reject('Workflow canvas element not found');
+        console.error("Workflow canvas element not found");
+        reject("Workflow canvas element not found");
       }
     });
   }
@@ -286,8 +286,8 @@ export class MenuComponent implements OnInit {
       });
   }
 
-  public displayResult(operatorId: string, operatorInfo: any, allResults: { operatorId: string, html: string }[]): Promise<void> {
-    return new Promise((resolve, reject) => {
+  public async displayResult(operatorId: string, operatorInfo: any, allResults: { operatorId: string, html: string }[]): Promise<void> {
+    try {
       const resultService = this.workflowResultService.getResultService(operatorId);
       const paginatedResultService = this.workflowResultService.getPaginatedResultService(operatorId);
 
@@ -309,52 +309,48 @@ export class MenuComponent implements OnInit {
   `;
 
       if (paginatedResultService) {
-        paginatedResultService.selectPage(1, 10).subscribe({
-          next: pageData => {
-            const table = pageData.table;
-            if (!table.length) {
-              allResults.push({
-                operatorId,
-                html: `
-              <h3>Operator ID: ${operatorId}</h3>
-              <p>No results found for operator</p>
-              <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
-              <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
-              <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-            `
-              });
-              resolve();
-              return;
-            }
-
-            const columns: string[] = Object.keys(table[0]);
-            const rows: any[][] = table.map(row => columns.map(col => row[col]));
-
-            const tableHtml: string = `
-          <div style="width: 50%; margin: 0 auto; text-align: center;">
+        try {
+          const pageData = await paginatedResultService.selectPage(1, 10).toPromise();
+          if (!pageData || !pageData.table || !pageData.table.length) {
+            allResults.push({
+              operatorId,
+              html: `
             <h3>Operator ID: ${operatorId}</h3>
-            <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
-              <thead>
-                <tr>${columns.map(col => `<th style="border: 1px solid black; padding: 8px; text-align: center;">${col}</th>`).join("")}</tr>
-              </thead>
-              <tbody>
-                ${rows.map(row => `<tr>${row.map(cell => `<td style="border: 1px solid black; padding: 8px; text-align: center;">${String(cell)}</td>`).join("")}</tr>`).join("")}
-              </tbody>
-            </table>
+            <p>No results found for operator</p>
             <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
             <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
             <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-          </div>
-        `;
-
-            allResults.push({ operatorId, html: tableHtml });
-            resolve();
-          },
-          error: error => {
-            console.error(`Error displaying paginated results for operator ${operatorId}:`, error);
-            reject(error);
+          `
+            });
+            return;
           }
-        });
+
+          const table = pageData.table;
+          const columns: string[] = Object.keys(table[0]);
+          const rows: any[][] = table.map(row => columns.map(col => row[col]));
+
+          const tableHtml: string = `
+        <div style="width: 50%; margin: 0 auto; text-align: center;">
+          <h3>Operator ID: ${operatorId}</h3>
+          <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
+            <thead>
+              <tr>${columns.map(col => `<th style="border: 1px solid black; padding: 8px; text-align: center;">${col}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `<tr>${row.map(cell => `<td style="border: 1px solid black; padding: 8px; text-align: center;">${String(cell)}</td>`).join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+          <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
+          <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
+          <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
+        </div>
+      `;
+
+          allResults.push({ operatorId, html: tableHtml });
+        } catch (error) {
+          console.error(`Error displaying paginated results for operator ${operatorId}:`, error);
+          throw error;
+        }
       } else if (resultService) {
         const data = resultService.getCurrentResultSnapshot();
         if (data) {
@@ -380,7 +376,6 @@ export class MenuComponent implements OnInit {
       `;
 
           allResults.push({ operatorId, html: visualizationHtml });
-          resolve();
         } else {
           allResults.push({
             operatorId,
@@ -392,7 +387,6 @@ export class MenuComponent implements OnInit {
           <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
         `
           });
-          resolve();
         }
       } else {
         allResults.push({
@@ -405,9 +399,10 @@ export class MenuComponent implements OnInit {
         <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
       `
         });
-        resolve();
       }
-    });
+    } catch (error) {
+      console.error(`Error displaying results for operator ${operatorId}:`, error);
+    }
   }
 
 
