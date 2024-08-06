@@ -56,7 +56,7 @@ class Operator(ABC):
         :param port: int, input port index of the current exhausted port.
         :return: State, producing one State object
         """
-        pass
+        return state_
 
 
 class TupleOperatorV2(Operator):
