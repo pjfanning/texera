@@ -1,4 +1,4 @@
-package edu.uci.ics.texera.workflow.operators.test
+package edu.uci.ics.texera.workflow.operators.state
 
 import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, Oper
 import edu.uci.ics.texera.workflow.common.operators.LogicalOp
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema
 
-class TestA1OpDesc extends LogicalOp {
+class StateSender1OpDesc extends LogicalOp {
   override def getPhysicalOp(
       workflowId: WorkflowIdentity,
       executionId: ExecutionIdentity
@@ -19,7 +19,7 @@ class TestA1OpDesc extends LogicalOp {
         executionId,
         operatorIdentifier,
         OpExecInitInfo((_, _) => {
-          new TestA1OpExec()
+          new StateSender1OpExec()
         })
       )
       .withInputPorts(operatorInfo.inputPorts)
@@ -29,9 +29,9 @@ class TestA1OpDesc extends LogicalOp {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "TestA",
-      "Limit the number of output rows",
-      OperatorGroupConstants.CLEANING_GROUP,
+      "State Sender A",
+      "Append State to Data",
+      OperatorGroupConstants.UTILITY_GROUP,
       inputPorts = List(InputPort()),
       outputPorts = List(OutputPort()),
       supportReconfiguration = true
