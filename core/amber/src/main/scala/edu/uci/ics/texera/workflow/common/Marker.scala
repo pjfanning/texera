@@ -33,10 +33,11 @@ final case class State() extends Marker {
       .addSequentially(list.values.map(_._2).toArray)
       .build()
 
-  def fromTuple(tuple: Tuple): Unit = {
+  def fromTuple(tuple: Tuple): State = {
     tuple.getSchema.getAttributes.foreach { attribute =>
       add(attribute.getName, attribute.getType, tuple.getField(attribute.getName))
     }
+    this
   }
 
   override def toString: String =
