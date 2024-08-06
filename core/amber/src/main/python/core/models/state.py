@@ -1,4 +1,6 @@
-import pyarrow as pa
+from pyarrow import Table
+from pandas import DataFrame
+
 
 class State:
     def __init__(self, data):
@@ -19,4 +21,4 @@ class State:
     __repr__ = __str__
 
     def to_table(self):
-        return pa.Table.from_pydict(self.data)
+        return Table.from_pandas(DataFrame([self.data]))
