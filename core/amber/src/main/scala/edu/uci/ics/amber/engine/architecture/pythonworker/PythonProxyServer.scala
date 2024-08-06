@@ -20,7 +20,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
-import edu.uci.ics.texera.workflow.common.EndOfUpstream
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, State}
 
 import java.nio.charset.Charset
 
@@ -106,6 +106,12 @@ private class AmberProducer(
     if (dataHeader.marker == EndOfUpstream().getClass.getSimpleName) {
       assert(root.getRowCount == 0)
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
+    }
+    if (dataHeader.marker == "StateFrame") {
+      //val state = State()
+      //state.fromTuple(ArrowUtils.getTexeraTuple(0, root))
+      //println("wefwefwef", state)
+      //outputPort.sendTo(to, MarkerFrame(state))
     } else {
       // normal data batches
       val queue = mutable.Queue[Tuple]()

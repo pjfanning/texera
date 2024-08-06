@@ -5,8 +5,8 @@ from loguru import logger
 from overrides import overrides
 
 from core.architecture.sendsemantics.partitioner import Partitioner
-from core.models import Tuple
-from core.models.payload import OutputDataFrame, DataPayload, EndOfUpstream
+from core.models import Tuple, State
+from core.models.payload import OutputDataFrame, DataPayload, EndOfUpstream, StateFrame
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     HashBasedShufflePartitioning,
@@ -41,6 +41,11 @@ class HashBasedShufflePartitioner(Partitioner):
         if len(batch) == self.batch_size:
             yield receiver, OutputDataFrame(frame=batch)
             self.receivers[hash_code] = (receiver, list())
+
+    @overrides
+    def add_state_to_batch(self, state: State):
+        for receiver, batch in self.receivers:
+            yield receiver, StateFrame(frame=state.to_table())
 
     @overrides
     def no_more(self) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:

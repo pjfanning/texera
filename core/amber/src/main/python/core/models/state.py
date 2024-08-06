@@ -1,3 +1,5 @@
+import pyarrow as pa
+
 class State:
     def __init__(self, data):
         self.data = data
@@ -8,5 +10,13 @@ class State:
     def __getitem__(self, key):
         return self.data[key]
 
-    def __repr__(self):
-        return str(self.data)
+    def __str__(self) -> str:
+        content = ", ".join(
+            [repr(key) + ": " + repr(value) for key, value in self.data.items()]
+        )
+        return f"State[{content}]"
+
+    __repr__ = __str__
+
+    def to_table(self):
+        return pa.Table.from_pydict(self.data)

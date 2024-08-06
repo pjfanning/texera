@@ -7,7 +7,7 @@ from threading import Event
 from loguru import logger
 
 from core.architecture.managers import Context
-from core.models import Tuple, ExceptionInfo
+from core.models import Tuple, ExceptionInfo, State
 from core.models.table import all_output_to_tuple
 from core.util import Stoppable
 from core.util.console_message.replace_print import replace_print
@@ -45,17 +45,11 @@ class DataProcessor(Runnable, Stoppable):
             else:
                 port = port_id.id
 
-
             with replace_print(
                     self._context.worker_id,
                     self._context.console_message_manager.print_buf,
             ):
-                output_iterator = executor.process_state(state_, port)
-                #for output in output_iterator:
-                    #for output_tuple in all_output_to_tuple(output):
-                        #self._set_output_tuple(output_tuple)
-                        #self._switch_context()
-
+                self._set_output_state(executor.process_state(state_, port))
 
         except Exception as err:
             logger.exception(err)
@@ -111,6 +105,9 @@ class DataProcessor(Runnable, Stoppable):
         if output_tuple is not None:
             output_tuple.finalize(self._context.output_manager.get_port().get_schema())
         self._context.tuple_processing_manager.current_output_tuple = output_tuple
+
+    def _set_output_state(self, output_state: State):
+        self._context.tuple_processing_manager.current_output_state = output_state
 
     def _switch_context(self) -> None:
         """
