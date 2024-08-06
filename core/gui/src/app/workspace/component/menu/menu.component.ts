@@ -35,7 +35,6 @@ import { WorkflowResultService } from "../../service/workflow-result/workflow-re
 import html2canvas from "html2canvas";
 import * as joint from "jointjs";
 
-
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -107,7 +106,7 @@ export class MenuComponent implements OnInit {
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
     private modalService: NzModalService,
-    private workflowResultService: WorkflowResultService,
+    private workflowResultService: WorkflowResultService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -136,7 +135,6 @@ export class MenuComponent implements OnInit {
     this.registerWorkflowIdUpdateHandler();
   }
 
-
   public onClickExportAllResults(): void {
     // get JSON
     const workflowContent: WorkflowContent = this.workflowActionService.getWorkflowContent();
@@ -155,13 +153,14 @@ export class MenuComponent implements OnInit {
     console.log("Extracted operators: ", operators);
 
     // Get shot
-    this.getWorkflowSnapshot().then(snapshot => {
-      this.getAllOperatorResults({ operatorIds, operators, workflowSnapshot: snapshot });
-    }).catch(error => {
-      console.error("Error capturing workflow snapshot: ", error);
-    });
+    this.getWorkflowSnapshot()
+      .then(snapshot => {
+        this.getAllOperatorResults({ operatorIds, operators, workflowSnapshot: snapshot });
+      })
+      .catch(error => {
+        console.error("Error capturing workflow snapshot: ", error);
+      });
   }
-
 
   private paper!: joint.dia.Paper;
 
@@ -174,7 +173,7 @@ export class MenuComponent implements OnInit {
 
         // Create a container element to hold the workflow
         const snapshotContainer = document.createElement("div");
-        snapshotContainer.style.width = "75%";  // Set to 3/4 size
+        snapshotContainer.style.width = "75%"; // Set to 3/4 size
         snapshotContainer.style.height = "75%"; // Set to 3/4 size
         snapshotContainer.style.position = "fixed";
         snapshotContainer.style.top = "0";
@@ -228,23 +227,25 @@ export class MenuComponent implements OnInit {
             useCORS: true,
             allowTaint: true,
             foreignObjectRendering: true,
-            onclone: (clonedDoc) => {
+            onclone: clonedDoc => {
               console.log("onclone callback called");
               const clonedContainer = clonedDoc.querySelector("div");
               console.log("Cloned container:", clonedContainer);
-            }
-          }).then((canvas: HTMLCanvasElement) => {
-            const dataUrl: string = canvas.toDataURL("image/png");
-            console.log("Canvas data URL:", dataUrl.substring(0, 100)); // Only print the first 100 characters
-            resolve(dataUrl);
-            document.body.removeChild(snapshotContainer); // Remove snapshot container
-            console.log("Snapshot container removed from body");
-          }).catch(error => {
-            console.error("Error in html2canvas:", error);
-            reject(error);
-            document.body.removeChild(snapshotContainer); // Remove snapshot container
-            console.log("Snapshot container removed from body due to error");
-          });
+            },
+          })
+            .then((canvas: HTMLCanvasElement) => {
+              const dataUrl: string = canvas.toDataURL("image/png");
+              console.log("Canvas data URL:", dataUrl.substring(0, 100)); // Only print the first 100 characters
+              resolve(dataUrl);
+              document.body.removeChild(snapshotContainer); // Remove snapshot container
+              console.log("Snapshot container removed from body");
+            })
+            .catch(error => {
+              console.error("Error in html2canvas:", error);
+              reject(error);
+              document.body.removeChild(snapshotContainer); // Remove snapshot container
+              console.log("Snapshot container removed from body due to error");
+            });
         }, 1000); // Increase delay time to 1 seconds
       } else {
         console.error("Workflow canvas element not found");
@@ -253,16 +254,12 @@ export class MenuComponent implements OnInit {
     });
   }
 
-
-
-
-
-  public getAllOperatorResults(payload: { operatorIds: string[], operators: any[], workflowSnapshot: string }): void {
+  public getAllOperatorResults(payload: { operatorIds: string[]; operators: any[]; workflowSnapshot: string }): void {
     console.log("Starting getAllOperatorResults with payload: ", payload);
     console.log("Type of payload.operatorIds: ", typeof payload.operatorIds);
     console.log("Is Array: ", Array.isArray(payload.operatorIds));
 
-    const allResults: { operatorId: string, html: string }[] = [];
+    const allResults: { operatorId: string; html: string }[] = [];
 
     const promises = payload.operatorIds.map(operatorId => {
       const operatorInfo = payload.operators.find((op: any) => op.operatorID === operatorId);
@@ -274,7 +271,9 @@ export class MenuComponent implements OnInit {
         console.log("All results before sorting: ", allResults);
         console.log("Payload: ", payload);
 
-        const sortedResults = payload.operatorIds.map(id => allResults.find(result => result.operatorId === id)?.html || "");
+        const sortedResults = payload.operatorIds.map(
+          id => allResults.find(result => result.operatorId === id)?.html || ""
+        );
 
         console.log("All results after sorting: ", sortedResults);
 
@@ -286,7 +285,11 @@ export class MenuComponent implements OnInit {
       });
   }
 
-  public async displayResult(operatorId: string, operatorInfo: any, allResults: { operatorId: string, html: string }[]): Promise<void> {
+  public async displayResult(
+    operatorId: string,
+    operatorInfo: any,
+    allResults: { operatorId: string; html: string }[]
+  ): Promise<void> {
     try {
       const resultService = this.workflowResultService.getResultService(operatorId);
       const paginatedResultService = this.workflowResultService.getPaginatedResultService(operatorId);
@@ -320,7 +323,7 @@ export class MenuComponent implements OnInit {
             <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
             <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
             <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-          `
+          `,
             });
             return;
           }
@@ -385,7 +388,7 @@ export class MenuComponent implements OnInit {
           <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
           <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
           <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-        `
+        `,
           });
         }
       } else {
@@ -397,16 +400,13 @@ export class MenuComponent implements OnInit {
         <button onclick="toggleDetails('details-${operatorId}')">Toggle Details</button>
         <div id="details-${operatorId}" style="display: none;">${operatorDetailsHtml}</div>
         <div contenteditable="true" id="comment-${operatorId}" style="width: 100%; margin-top: 10px; border: 1px solid black; padding: 10px;">Add your comments here...</div>
-      `
+      `,
         });
       }
     } catch (error) {
       console.error(`Error displaying results for operator ${operatorId}:`, error);
     }
   }
-
-
-
 
   public downloadResultsAsHtml(workflowSnapshot: string, allResults: string[]): void {
     const htmlContent = `
@@ -549,7 +549,6 @@ export class MenuComponent implements OnInit {
     a.click();
     URL.revokeObjectURL(url);
   }
-
 
   public ngOnInit(): void {
     this.executeWorkflowService
