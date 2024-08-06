@@ -109,7 +109,6 @@ private class AmberProducer(
     } else if (dataHeader.marker == "StateFrame") {
       val state = State()
       state.fromTuple(ArrowUtils.getTexeraTuple(0, root))
-      println("wefwefwef", state)
       outputPort.sendTo(to, MarkerFrame(state))
     } else {
       // normal data batches
