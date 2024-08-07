@@ -175,7 +175,7 @@ object DatasetResource {
   def resolveFilePath(
       filePath: java.nio.file.Path
   ): (Dataset, DatasetVersion, java.nio.file.Path) = {
-    val pathSegments = filePath.toString.stripPrefix("/").split("/")
+    val pathSegments = filePath.toString.stripPrefix("/").stripPrefix("\\").split("[/\\\\]")
 
     if (pathSegments.length < 4) {
       throw new BadRequestException(
