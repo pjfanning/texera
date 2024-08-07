@@ -35,6 +35,10 @@ class OneToOnePartitioner(Partitioner):
 
     @overrides
     def add_state_to_batch(self, state: State):
+        if len(self.batch) > 0:
+            yield self.receiver, OutputDataFrame(frame=self.batch)
+            self.batch.clear()
+
         yield self.receiver, StateFrame(frame=state.to_table())
 
     @overrides

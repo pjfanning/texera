@@ -45,6 +45,10 @@ class HashBasedShufflePartitioner(Partitioner):
     @overrides
     def add_state_to_batch(self, state: State):
         for receiver, batch in self.receivers:
+            if len(batch) > 0:
+                yield receiver, OutputDataFrame(frame=batch)
+            yield receiver, OutputDataFrame(frame=batch)
+            batch.clear()
             yield receiver, StateFrame(frame=state.to_table())
 
     @overrides

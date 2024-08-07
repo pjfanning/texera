@@ -20,7 +20,7 @@ from core.models import (
     Tuple,
 )
 from core.models.internal_queue import DataElement, ControlElement
-from core.models.payload import StateFrame
+from core.models.payload import OutputDataFrame
 from core.models.state import State
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
@@ -174,6 +174,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                         self._output_queue.put(DataElement(tag=to, payload=batch))
                 elif isinstance(output_data, State):
                     for (to, batch) in self.context.output_manager.state_to_batch(output_data):
+                        if isinstance(batch, OutputDataFrame):
+                            batch.schema = self.context.output_manager.get_port().get_schema()
                         self._output_queue.put(DataElement(tag=to, payload=batch))
 
     def process_tuple_with_udf(self) -> Iterator[Optional[Tuple]]:
