@@ -3,7 +3,7 @@ from typing import Iterator
 
 from loguru import logger
 from overrides import overrides
-
+from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
 from core.models import Tuple, State
 from core.models.payload import OutputDataFrame, DataPayload, EndOfUpstream, StateFrame
@@ -46,8 +46,8 @@ class HashBasedShufflePartitioner(Partitioner):
     def add_state_to_batch(self, state: State):
         for receiver, batch in self.receivers:
             if len(batch) > 0:
-                yield receiver, OutputDataFrame(frame=batch)
-            yield receiver, OutputDataFrame(frame=batch)
+                yield receiver, OutputDataFrame(frame=deepcopy(batch))
+            yield receiver, OutputDataFrame(frame=deepcopy(batch))
             batch.clear()
             yield receiver, StateFrame(frame=state.to_table())
 
