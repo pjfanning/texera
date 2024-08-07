@@ -61,7 +61,11 @@
     </nz-select>
   </div>
 
-  <texera-search-results [isPrivateSearch]="true"></texera-search-results>
+  <texera-search-results
+    [editable]="true"
+    [isPrivateSearch]="true"
+    (deleted)="deleteDataset($event)"
+  ></texera-search-results>
 
 <!--  <nz-card class="section-list-container">-->
 <!--    <ul-->
