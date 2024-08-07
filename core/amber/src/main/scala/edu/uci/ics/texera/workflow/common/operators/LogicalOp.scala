@@ -50,7 +50,7 @@ import edu.uci.ics.texera.workflow.operators.source.sql.mysql.MySQLSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.sql.postgresql.PostgreSQLSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.split.SplitOpDesc
 import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDifferenceOpDesc
-import edu.uci.ics.texera.workflow.operators.state.{DualInputStateReceiverOpDesc, StateReceiverOpDesc, StateSender1OpDesc, StateSender2OpDesc}
+import edu.uci.ics.texera.workflow.operators.state.{DualInputStateReceiverOpDesc, StateReceiverOpDesc, StateSender1OpDesc, StateSender2OpDesc, DataToStateOpDesc}
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.java.JavaUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
@@ -147,10 +147,11 @@ trait StateTransferFunc
     new Type(value = classOf[AsterixDBSourceOpDesc], name = "AsterixDBSource"),
     new Type(value = classOf[TypeCastingOpDesc], name = "TypeCasting"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
-    new Type(value = classOf[StateSender1OpDesc], name = "State Sender1"),
-    new Type(value = classOf[StateSender2OpDesc], name = "State Sender2"),
-    new Type(value = classOf[StateReceiverOpDesc], name = "Testing State Receiver"),
-    new Type(value = classOf[DualInputStateReceiverOpDesc], name = "Dual Input Testing State Receiver"),
+    new Type(value = classOf[DataToStateOpDesc], name = "DataToState"),
+    new Type(value = classOf[StateSender1OpDesc], name = "StateSender1"),
+    new Type(value = classOf[StateSender2OpDesc], name = "State ender2"),
+    new Type(value = classOf[StateReceiverOpDesc], name = "TestingStateReceiver"),
+    new Type(value = classOf[DualInputStateReceiverOpDesc], name = "DualInputTestingStateReceiver"),
     new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
     new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling"),
     new Type(value = classOf[HashJoinOpDesc[String]], name = "HashJoin"),
