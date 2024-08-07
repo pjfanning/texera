@@ -97,7 +97,7 @@ class InputManager:
             yield SenderChangeMarker(current_channel_id)
 
         if isinstance(payload, StateFrame):
-            yield State(payload.frame.to_pandas().iloc[0].to_dict())
+            yield State().from_dict(payload.frame.to_pandas().iloc[0].to_dict())
 
         elif isinstance(payload, InputDataFrame):
             for field_accessor in ArrowTableTupleProvider(payload.frame):
