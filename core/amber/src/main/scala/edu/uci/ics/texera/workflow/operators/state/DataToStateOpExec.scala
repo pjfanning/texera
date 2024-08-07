@@ -22,7 +22,7 @@ class DataToStateOpExec extends OperatorExecutor {
     Iterator()
   }
 
-  override def produceState(): State = State().fromTuple(stateTuple)
+  override def produceState(port: Int): State = State().fromTuple(stateTuple)
 
   override def onFinish(port: Int): Iterator[TupleLike] = buffer.iterator
 }
