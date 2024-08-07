@@ -105,7 +105,7 @@ class DataProcessor(
       outputManager.outputIterator.setTupleOutput(
         executor.onInputFinishMultiPort(port)
       )
-      val outputState = executor.produceState()
+      val outputState = executor.produceState(port)
       if (outputState!= null) {
         outputManager.emitMarker(outputState)
       }
