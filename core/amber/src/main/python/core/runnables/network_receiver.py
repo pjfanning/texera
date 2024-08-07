@@ -59,7 +59,6 @@ class NetworkReceiver(Runnable, Stoppable):
             :return: sender credits
             """
             data_header = PythonDataHeader().parse(command)
-            print("data_header:", data_header.marker)
             shared_queue.put(
                 DataElement(
                     tag=data_header.tag,

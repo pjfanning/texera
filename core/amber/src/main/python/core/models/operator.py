@@ -58,6 +58,15 @@ class Operator(ABC):
         """
         return state_
 
+    def produce_state(self, port: int) -> State:
+        """
+        Produce a State after the input port is exhausted.
+
+        :param port: int, input port index of the current exhausted port.
+        :return: State, producing one State object
+        """
+        pass
+
 
 class TupleOperatorV2(Operator):
     """

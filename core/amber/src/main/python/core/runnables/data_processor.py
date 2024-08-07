@@ -75,11 +75,11 @@ class DataProcessor(Runnable, Stoppable):
                 else:
                     port = port_id.id
 
-                output_iterator = (
-                    executor.process_tuple(tuple_, port)
-                    if isinstance(tuple_, Tuple)
-                    else executor.on_finish(port)
-                )
+                if isinstance(tuple_, Tuple):
+                    output_iterator = executor.process_tuple(tuple_, port)
+                else:
+                    self._set_output_state(executor.produce_state(port))
+                    output_iterator = executor.on_finish(port)
                 with replace_print(
                         self._context.worker_id,
                         self._context.console_message_manager.print_buf,
