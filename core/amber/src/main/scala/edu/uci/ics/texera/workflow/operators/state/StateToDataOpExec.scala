@@ -10,7 +10,8 @@ class StateToDataOpExec extends OperatorExecutor {
   private var stateTuple: Tuple = _
 
   override def processState(state: State, port: Int): State = {
-    stateTuple = state.toTuple
+    if (state.size > 0)
+      stateTuple = state.toTuple
     State()
   }
 
@@ -27,5 +28,5 @@ class StateToDataOpExec extends OperatorExecutor {
     }
   }
 
-  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = ???
+  override def processTuple(tuple: Tuple, port: Int): Iterator[TupleLike] = throw new NotImplementedError()
 }

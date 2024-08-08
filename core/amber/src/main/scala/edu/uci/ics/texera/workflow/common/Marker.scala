@@ -40,6 +40,8 @@ final case class State() extends Marker {
     this
   }
 
+  def size: Int = list.size
+
   override def toString: String =
     list.map { case (key, (_, value)) => s"$key: $value" }.mkString(", ")
 }

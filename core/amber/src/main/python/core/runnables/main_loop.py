@@ -194,7 +194,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self._switch_context()
             yield self.context.tuple_processing_manager.get_output_tuple()
             self._check_and_process_control()
-            self._switch_context()
             yield self.context.tuple_processing_manager.get_output_state()
 
     def _process_control_element(self, control_element: ControlElement) -> None:
