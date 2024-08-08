@@ -37,7 +37,16 @@ export class UserDatasetComponent implements AfterViewInit {
 
   public sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
-  @ViewChild(SearchResultsComponent) searchResultsComponent?: SearchResultsComponent;
+  private _searchResultsComponent?: SearchResultsComponent;
+  @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
+    if (this._searchResultsComponent) {
+      return this._searchResultsComponent;
+    }
+    throw new Error("Property cannot be accessed before it is initialized.");
+  }
+  set searchResultsComponent(value: SearchResultsComponent) {
+    this._searchResultsComponent = value;
+  }
 
   private _filters?: FiltersComponent;
   @ViewChild(FiltersComponent) get filters(): FiltersComponent {
@@ -56,7 +65,7 @@ export class UserDatasetComponent implements AfterViewInit {
     private userService: UserService,
     private router: Router,
     private searchService: SearchService,
-    // private datasetService: DatasetService,
+    private datasetService: DatasetService,
   ) {}
 
   ngAfterViewInit() {
@@ -177,4 +186,18 @@ export class UserDatasetComponent implements AfterViewInit {
   //       });
   //   }
   // }
+
+  public deleteDataset(entry: DashboardEntry): void {
+    if (entry.dataset.dataset.did == undefined) {
+      return;
+    }
+    this.datasetService
+      .deleteDatasets([entry.dataset.dataset.did])
+      .pipe(untilDestroyed(this))
+      .subscribe(_ => {
+        this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
+          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+        );
+      });
+  }
 }
