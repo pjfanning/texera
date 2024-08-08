@@ -1,5 +1,4 @@
-import { Component, AfterViewInit, ViewChild } from "@angular/core";
-import { NzSelectComponent } from 'ng-zorro-antd/select';
+import { Component, AfterViewInit, ViewChild, ElementRef } from "@angular/core";
 import { DashboardEntry } from "../../../type/dashboard-entry";
 import { SearchService } from "../../../service/user/search.service";
 import { FiltersComponent } from "../filters/filters.component";
@@ -16,7 +15,8 @@ import { Location } from "@angular/common";
   styleUrls: ["./search.component.scss"],
 })
 export class SearchComponent implements AfterViewInit{
-  @ViewChild('searchInput') searchInput!: NzSelectComponent;
+  public searchParam: string = ""
+  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
   sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
   public masterFilterList: ReadonlyArray<string> = [];
@@ -40,7 +40,7 @@ export class SearchComponent implements AfterViewInit{
   ) {}
 
   ngAfterViewInit() {
-    this.searchInput.focus();
+    this.searchInput.nativeElement.focus();
   }
 
   async search(): Promise<void> {
@@ -92,5 +92,9 @@ export class SearchComponent implements AfterViewInit{
 
   goBack(): void {
     this.location.back();
+  }
+
+  updateMasterFilterList() {
+    this.filters.masterFilterList = this.searchParam.split(/\s+/);
   }
 }
