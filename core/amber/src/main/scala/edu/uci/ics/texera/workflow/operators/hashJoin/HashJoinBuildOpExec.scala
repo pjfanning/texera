@@ -21,7 +21,7 @@ class HashJoinBuildOpExec[K](buildAttributeName: String) extends OperatorExecuto
   }
 
 
-  override def produceState(prot: Int): State = {
+  override def onFinishProduceState(prot: Int): State = {
     val state = State()
     state.add("hashtable", AttributeType.ANY, buildTableHashMap)
     state
