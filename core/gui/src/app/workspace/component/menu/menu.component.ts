@@ -222,14 +222,14 @@ export class MenuComponent implements OnInit {
           }
 
           const imgElements = snapshotContainer.querySelectorAll("image");
-          console.log("IMG elements count within snapshot container:", imgElements.length);
+          console.log("Image elements count within snapshot container:", imgElements.length);
           if (imgElements.length > 0) {
-            console.log("IMG elements found within snapshot container:", imgElements.length);
+            console.log("Image elements found within snapshot container:", imgElements.length);
             imgElements.forEach((img, index) => {
-              console.log(`IMG Element ${index} within snapshot container:`, img);
+              console.log(`Image Element ${index} within snapshot container:`, img);
             });
           } else {
-            console.log("No IMG elements found within snapshot container.");
+            console.log("No Image elements found within snapshot container.");
           }
 
           console.log("Starting html2canvas capture");
