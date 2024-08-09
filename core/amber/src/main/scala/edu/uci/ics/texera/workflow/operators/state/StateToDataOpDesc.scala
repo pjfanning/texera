@@ -36,10 +36,9 @@ class StateToDataOpDesc extends LogicalOp {
       .withParallelizable(false)
       .withPropagateSchema(
         SchemaPropagationFunc(inputSchemas =>
-          operatorInfo.outputPorts
-            .map(_.id)
-            .map(id => id -> inputSchemas(operatorInfo.inputPorts.head.id))
-            .toMap
+          operatorInfo.inputPorts.zipWithIndex.map {
+            case (port, index) => PortIdentity(index) -> inputSchemas(port.id)
+          }.toMap
         )
       )
   }
