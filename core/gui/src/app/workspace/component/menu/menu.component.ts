@@ -221,6 +221,17 @@ export class MenuComponent implements OnInit {
             console.log("No SVG icons found within snapshot container.");
           }
 
+          const imgElements = snapshotContainer.querySelectorAll("image");
+          console.log("IMG elements count within snapshot container:", imgElements.length);
+          if (imgElements.length > 0) {
+            console.log("IMG elements found within snapshot container:", imgElements.length);
+            imgElements.forEach((img, index) => {
+              console.log(`IMG Element ${index} within snapshot container:`, img);
+            });
+          } else {
+            console.log("No IMG elements found within snapshot container.");
+          }
+
           console.log("Starting html2canvas capture");
           html2canvas(snapshotContainer, {
             logging: true,
