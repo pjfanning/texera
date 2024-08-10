@@ -42,6 +42,7 @@ class StateToDataOpDesc extends LogicalOp {
           }.toMap
         )
       )
+      .withSuggestedWorkerNum(1)
   }
 
   override def operatorInfo: OperatorInfo =

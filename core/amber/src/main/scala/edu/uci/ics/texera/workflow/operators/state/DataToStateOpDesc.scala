@@ -27,6 +27,7 @@ class DataToStateOpDesc extends LogicalOp {
       .withPropagateSchema(
         SchemaPropagationFunc(inputSchemas => Map(PortIdentity() -> inputSchemas(PortIdentity(1))))
       )
+      .withSuggestedWorkerNum(1)
   }
 
   override def operatorInfo: OperatorInfo =
