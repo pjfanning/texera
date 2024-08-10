@@ -33,7 +33,6 @@ class StateToDataOpDesc extends LogicalOp {
       )
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
-      .withParallelizable(false)
       .withPropagateSchema(
         SchemaPropagationFunc(inputSchemas =>
           getOutputSchemas(

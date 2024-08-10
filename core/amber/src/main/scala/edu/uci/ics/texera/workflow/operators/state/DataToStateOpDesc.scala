@@ -1,6 +1,6 @@
 package edu.uci.ics.texera.workflow.operators.state
 
-import edu.uci.ics.amber.engine.architecture.deploysemantics.PhysicalOp
+import edu.uci.ics.amber.engine.architecture.deploysemantics.{PhysicalOp, SchemaPropagationFunc}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.OpExecInitInfo
 import edu.uci.ics.amber.engine.common.virtualidentity.{ExecutionIdentity, WorkflowIdentity}
 import edu.uci.ics.amber.engine.common.workflow.{InputPort, OutputPort, PortIdentity}
@@ -24,7 +24,9 @@ class DataToStateOpDesc extends LogicalOp {
       )
       .withInputPorts(operatorInfo.inputPorts)
       .withOutputPorts(operatorInfo.outputPorts)
-      .withParallelizable(false)
+      .withPropagateSchema(
+        SchemaPropagationFunc(inputSchemas => Map(PortIdentity() -> inputSchemas(PortIdentity(1))))
+      )
   }
 
   override def operatorInfo: OperatorInfo =
@@ -39,5 +41,5 @@ class DataToStateOpDesc extends LogicalOp {
       outputPorts = List(OutputPort())
     )
 
-  override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(0)
+  override def getOutputSchema(schemas: Array[Schema]): Schema = schemas(1)
 }
