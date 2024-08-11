@@ -29,7 +29,6 @@ export class DashboardComponent implements OnInit {
   isAdmin = this.userService.isAdmin();
   displayForum = true;
   showNavbar = true;
-  isCollapsed = false;
   constructor(
     private userService: UserService,
     private flarumService: FlarumService,
@@ -69,9 +68,7 @@ export class DashboardComponent implements OnInit {
   checkRoute() {
     const currentRoute = this.router.url;
     const routeWithoutNavbar = '/workspace';
-    const routeWithPanelCollapsed = '/workspace'
     this.showNavbar = !currentRoute.includes(routeWithoutNavbar);
-    this.isCollapsed = currentRoute.includes(routeWithPanelCollapsed);
     this.handleCollapseChange();
   }
 
