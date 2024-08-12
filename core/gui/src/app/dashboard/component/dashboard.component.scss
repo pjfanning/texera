@@ -1,10 +1,15 @@
 .navbar {
   height: 75px;
-  padding: 8px 0;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   background-color: white;
-  justify-content: space-around;
+  justify-content:  space-between;
+}
+
+texera-search-bar {
+  flex: 1;
+  margin-right: 15px;
 }
 
 .logo {

@@ -129,15 +129,21 @@
     </ul>
   </nz-sider>
   <nz-layout>
+<!--    <div-->
+<!--      class="navbar"-->
+<!--      *ngIf="showNavbar">-->
+<!--      <nz-input-group-->
+<!--        routerLink="/dashboard/search"-->
+<!--        nzSize="large"-->
+<!--        nzPrefixIcon="search">-->
+<!--        <input type="text" nz-input placeholder="Search" />-->
+<!--      </nz-input-group>-->
+<!--      <texera-user-icon></texera-user-icon>-->
+<!--    </div>-->
     <div
       class="navbar"
       *ngIf="showNavbar">
-      <nz-input-group
-        routerLink="/search"
-        nzSize="large"
-        nzPrefixIcon="search">
-        <input type="text" nz-input placeholder="Search" />
-      </nz-input-group>
+      <texera-search-bar></texera-search-bar>
       <texera-user-icon></texera-user-icon>
     </div>
     <nz-content>

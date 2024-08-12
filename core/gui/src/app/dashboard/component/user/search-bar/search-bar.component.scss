@@ -1,0 +1,27 @@
+.nz-input-group {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+  padding: 5px 10px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+input[nz-input] {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 6px 10px;
+
+  &::placeholder {
+    color: #aaa;
+  }
+}
+
+.nz-prefix-icon {
+  color: #888;
+  margin-right: 8px;
+}

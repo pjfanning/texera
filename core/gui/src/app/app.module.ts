@@ -133,6 +133,7 @@ import { TreeModule } from "@ali-hm/angular-tree-component";
 import { FileSelectionComponent } from "./workspace/component/file-selection/file-selection.component";
 import { ResultExportationComponent } from "./workspace/component/result-exportation/result-exportation.component";
 import { ListItemComponent } from './dashboard/component/user/list-item/list-item.component';
+import { SearchBarComponent } from './dashboard/component/user/search-bar/search-bar.component';
 
 registerLocaleData(en);
 
@@ -215,6 +216,7 @@ registerLocaleData(en);
     FlarumComponent,
     HighlightSearchTermsPipe,
     ListItemComponent,
+    SearchBarComponent,
   ],
   imports: [
     BrowserModule,

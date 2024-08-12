@@ -13,21 +13,12 @@
         nzType="arrow-left"
         nzTheme="outline"></span>
     </button>
-    <input 
-        nz-input
-        nzBorderless
-        #searchInput
-        class="search-input-box"
-        name="search-input-box"
-        placeholder="Search all"
-        [nzBorderless]="true"
-        [(ngModel)]="searchParam"
-        (keydown.enter)="updateMasterFilterList()"/>
     <div class="filters">
+      <texera-sort-button (sortMethodChange)="sortMethod = $event; search()"></texera-sort-button>
       <texera-filters-instructions></texera-filters-instructions>
       <texera-filters #filters></texera-filters>
     </div>
-    
+
   </div>
   <div class="general-search-result">
     <texera-search-results

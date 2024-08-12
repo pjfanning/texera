@@ -28,10 +28,6 @@ const routes: Routes = [
     component: WorkspaceComponent,
     canActivate: [AuthGuardService],
   },
-  {
-    path:"search",
-    component: SearchComponent,
-  }
 ];
 if (environment.userSystemEnabled) {
   /*
@@ -71,6 +67,10 @@ if (environment.userSystemEnabled) {
       {
         path: "dataset",
         component: UserDatasetComponent,
+      },
+      {
+        path: "search",
+        component: SearchComponent,
       },
       // the below two URLs route to the same Component. The component will render the page accordingly
       {

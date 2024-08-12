@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ViewChild, ElementRef } from "@angular/core";
+import { Component, AfterViewInit, ViewChild, ElementRef, OnInit } from "@angular/core";
 import { DashboardEntry } from "../../../type/dashboard-entry";
 import { SearchService } from "../../../service/user/search.service";
 import { FiltersComponent } from "../filters/filters.component";
@@ -7,6 +7,7 @@ import { firstValueFrom } from "rxjs";
 import { SearchResultsComponent } from "../search-results/search-results.component";
 import { SortMethod } from "../../../type/sort-method";
 import { Location } from "@angular/common";
+import { ActivatedRoute } from "@angular/router";
 
 @UntilDestroy()
 @Component({
@@ -14,9 +15,8 @@ import { Location } from "@angular/common";
   templateUrl: "./search.component.html",
   styleUrls: ["./search.component.scss"],
 })
-export class SearchComponent implements AfterViewInit{
-  public searchParam: string = ""
-  @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+export class SearchComponent implements AfterViewInit {
+  public searchParam: string = "";
   sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
   public masterFilterList: ReadonlyArray<string> = [];
@@ -29,6 +29,7 @@ export class SearchComponent implements AfterViewInit{
     }
     throw new Error("Property cannot be accessed before it is initialized.");
   }
+
   set filters(value: FiltersComponent) {
     value.masterFilterListChange.pipe(untilDestroyed(this)).subscribe({ next: () => this.search() });
     this._filters = value;
@@ -36,11 +37,19 @@ export class SearchComponent implements AfterViewInit{
 
   constructor(
     private location: Location,
-    private searchService: SearchService
-  ) {}
+    private searchService: SearchService,
+    private activatedRoute: ActivatedRoute,
+  ) {
+  }
 
   ngAfterViewInit() {
-    this.searchInput.nativeElement.focus();
+    this.activatedRoute.queryParams.pipe(untilDestroyed(this)).subscribe(params => {
+      const keyword = params["q"];
+      if (keyword) {
+        this.searchParam = keyword;
+        this.updateMasterFilterList();
+      }
+    });
   }
 
   async search(): Promise<void> {
@@ -67,8 +76,8 @@ export class SearchComponent implements AfterViewInit{
           start,
           count,
           null,
-          this.sortMethod
-        )
+          this.sortMethod,
+        ),
       );
       return {
         entries: results.results.map(i => {
