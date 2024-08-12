@@ -20,18 +20,6 @@
     0 1px 5px #0000001f;
 }
 
-//#result-container {
-//  position: fixed;
-//  right: calc(100vh - 300px);
-//  user-select: none;
-//  background: white;
-//  border-radius: 5px;
-//  box-shadow:
-//    0 3px 1px -2px #0003,
-//    0 2px 2px #00000024,
-//    0 1px 5px #0000001f;
-//}
-
 // make modal body scrollable and modal size fixed
 .modal-body {
   min-height: calc(50vh);
@@ -63,14 +51,6 @@ $type-colors: (
   z-index: 4;
   display: flex;
 }
-
-//#result-buttons {
-//  position: absolute;
-//  top: 0;
-//  right: calc(50vw - 100px);
-//  z-index: 4;
-//  display: flex;
-//}
 
 .ant-menu-item {
   margin: 0 !important;
