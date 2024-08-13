@@ -60,6 +60,7 @@ export class DashboardComponent implements OnInit {
   checkRoute() {
     const currentRoute = this.router.url;
     this.displayNavbar = this.isNavbarEnabled(currentRoute);
+    this.handleCollapseChange();
   }
 
   isNavbarEnabled(currentRoute: string) {
@@ -69,5 +70,15 @@ export class DashboardComponent implements OnInit {
       }
     }
     return true;
+  }
+
+  handleCollapseChange() {
+    const resizeEvent = new Event("resize");
+    const editor = document.getElementById("workflow-editor")
+    setTimeout(() => {
+      if (editor) {
+        window.dispatchEvent(resizeEvent);
+      }
+    }, 175);
   }
 }
