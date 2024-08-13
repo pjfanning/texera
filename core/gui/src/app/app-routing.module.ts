@@ -48,6 +48,10 @@ if (environment.userSystemEnabled) {
         component: UserProjectComponent,
       },
       {
+        path: "user-project/:pid",
+        component: UserProjectSectionComponent,
+      },
+      {
         path: "workspace/:id",
         component: WorkspaceComponent,
         canActivate: [AuthGuardService],
