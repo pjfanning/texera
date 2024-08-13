@@ -1,9 +1,4 @@
-<div id="nav">
-  <img
-    alt="logo"
-    class="logo"
-    height="50"
-    src="../../../../assets/logos/logo.png" />
+<div *ngIf="displayNavbar" id="nav">
   <texera-user-icon></texera-user-icon>
 </div>
 <nz-layout class="layout">
@@ -14,6 +9,11 @@
     <ul
       nz-menu
       nzMode="inline">
+      <img
+        alt="logo"
+        class="logo"
+        height="50"
+        src="../../../../assets/logos/logo.png" />
       <li
         nz-menu-item
         nz-tooltip="Look up the user projects"
