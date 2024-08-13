@@ -8,43 +8,43 @@ import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.TexeraWebApplication.parseArgs
 import edu.uci.ics.texera.web.auth.JwtAuth.jwtConsumer
 import edu.uci.ics.texera.web.auth.{GuestAuthFilter, SessionUser, UserAuthenticator, UserRoleAuthorizer}
-import edu.uci.ics.texera.web.resource.{SchemaPropagationResource, SystemMetadataResource}
+import edu.uci.ics.texera.web.resource.{SchemaPropagationResource, SystemMetadataResource, WorkflowEditingResource}
 import io.dropwizard.Configuration
 import io.dropwizard.auth.{AuthDynamicFeature, AuthValueFactoryProvider}
 import io.dropwizard.setup.{Bootstrap, Environment}
 import org.eclipse.jetty.server.session.SessionHandler
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
 
-object TexeraWorkflowEditingAndCompilationApplication {
+object TexeraWorkflowEditingApplication {
   def main(args: Array[String]): Unit = {
     val argMap = parseArgs(args)
 
-    new TexeraWorkflowEditingAndCompilationApplication().run(
+    new TexeraWorkflowEditingApplication().run(
       "server",
       Utils.amberHomePath
         .resolve("src")
         .resolve("main")
         .resolve("resources")
-        .resolve("texera-editing-n-compilation-web-config.yml")
+        .resolve("texera-editing-web-config.yml")
         .toString
     )
   }
 }
 
-class TexeraWorkflowEditingAndCompilationApplication extends io.dropwizard.Application[TexeraWorkflowEditingAndCompilationWebConfiguration] with LazyLogging{
-  override def initialize(bootstrap: Bootstrap[TexeraWorkflowEditingAndCompilationWebConfiguration]): Unit = {
+class TexeraWorkflowEditingApplication extends io.dropwizard.Application[TexeraWorkflowEditingWebConfiguration] with LazyLogging{
+  override def initialize(bootstrap: Bootstrap[TexeraWorkflowEditingWebConfiguration]): Unit = {
     // register scala module to dropwizard default object mapper
     bootstrap.getObjectMapper.registerModule(DefaultScalaModule)
   }
 
-  override def run(configuration: TexeraWorkflowEditingAndCompilationWebConfiguration, environment: Environment): Unit = {
+  override def run(configuration: TexeraWorkflowEditingWebConfiguration, environment: Environment): Unit = {
     // serve backend at /api/texera
     environment.jersey.setUrlPattern("/api/texera/*")
 
     // register SessionHandler
     environment.jersey.register(classOf[SessionHandler])
     environment.servlets.setSessionHandler(new SessionHandler)
-    environment.jersey.register(classOf[SchemaPropagationResource])
+    environment.jersey.register(classOf[WorkflowEditingResource])
 
     if (AmberConfig.isUserSystemEnabled) {
       // register JWT Auth layer

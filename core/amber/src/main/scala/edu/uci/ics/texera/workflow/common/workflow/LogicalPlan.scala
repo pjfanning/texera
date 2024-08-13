@@ -147,7 +147,9 @@ case class LogicalPlan(
   def propagateWorkflowSchema(
       context: WorkflowContext,
       errorList: Option[ArrayBuffer[(OperatorIdentity, Throwable)]]
-  ): Unit = {
+  ): Map[OperatorIdentity, List[Option[Schema]]] = {
+    // a mapping recording the input schema of each operator
+    var operatorIdToInputSchemasMapping: Map[OperatorIdentity, List[Option[Schema]]] = Map()
 
     operators.foreach(operator => {
       if (operator.getContext == null) {
@@ -178,6 +180,9 @@ case class LogicalPlan(
           .toArray
       }
 
+      // record the input schemas in the mapping
+      operatorIdToInputSchemasMapping += (opId -> inputSchemas.toList)
+
       if (!inputSchemas.contains(None)) {
         Try(op.getOutputSchemas(inputSchemas.map(_.get))) match {
           case Success(outputSchemas) =>
@@ -192,8 +197,8 @@ case class LogicalPlan(
               case None       =>
             }
         }
-
       }
     })
+    operatorIdToInputSchemasMapping
   }
 }
