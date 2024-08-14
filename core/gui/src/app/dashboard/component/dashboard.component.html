@@ -2,16 +2,23 @@
   <nz-sider
     nzCollapsible
     [nzCollapsedWidth]="45"
-    (nzCollapsedChange)="handleCollapseChange()"
+    (nzCollapsedChange)="handleCollapseChange($event)"
     nzTheme="light">
     <ul
       nz-menu
       nzMode="inline">
-      <img
-        alt="logo"
-        class="logo"
-        height="50"
-        src="../../../../assets/logos/logo.png" />
+      <li
+        class="logo-section">
+          <img
+          *ngIf="isCollpased"
+          alt="mini-logo"
+          src="../../../../assets/logos/favicon-32x32.png" />
+          <img
+          *ngIf="!isCollpased"
+          alt="logo"
+          height="50"
+          src="../../../../assets/logos/logo.png" />
+      </li>
       <li
         nz-menu-item
         nz-tooltip="Look up the user projects"
