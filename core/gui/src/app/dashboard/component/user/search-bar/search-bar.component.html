@@ -1,4 +1,6 @@
-<nz-input-group nzSize="large" nzPrefixIcon="search">
+<nz-input-group
+  nzSize="large"
+  nzPrefixIcon="search">
   <input
     type="text"
     nz-input
@@ -9,4 +11,6 @@
     [nzAutocomplete]="auto"
     #searchInput />
 </nz-input-group>
-<nz-autocomplete [nzDataSource]="listOfResult" #auto></nz-autocomplete>
+<nz-autocomplete
+  [nzDataSource]="listOfResult"
+  #auto></nz-autocomplete>

@@ -16,7 +16,6 @@ export class DashboardEntry {
   ownerName: string | undefined;
   ownerEmail: string | undefined;
 
-
   constructor(public value: DashboardWorkflow | DashboardProject | DashboardFile | DashboardDataset) {
     if (isDashboardWorkflow(value)) {
       this.type = "workflow";

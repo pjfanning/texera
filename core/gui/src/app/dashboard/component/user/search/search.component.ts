@@ -38,9 +38,8 @@ export class SearchComponent implements AfterViewInit {
   constructor(
     private location: Location,
     private searchService: SearchService,
-    private activatedRoute: ActivatedRoute,
-  ) {
-  }
+    private activatedRoute: ActivatedRoute
+  ) {}
 
   ngAfterViewInit() {
     this.activatedRoute.queryParams.pipe(untilDestroyed(this)).subscribe(params => {
@@ -76,8 +75,8 @@ export class SearchComponent implements AfterViewInit {
           start,
           count,
           null,
-          this.sortMethod,
-        ),
+          this.sortMethod
+        )
       );
       return {
         entries: results.results.map(i => {

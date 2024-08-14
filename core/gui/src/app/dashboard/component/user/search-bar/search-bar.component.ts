@@ -33,16 +33,18 @@ export class SearchBarComponent {
 
   constructor(
     private router: Router,
-    private searchService: SearchService,
+    private searchService: SearchService
   ) {
-    this.searchSubject.pipe(
-      debounceTime(200),
-      switchMap(query => this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc)),
-      untilDestroyed(this),
-    ).subscribe((result: SearchResult) => {
-      const uniqueResults = Array.from(new Set(result.results.map(item => this.convertToName(item))));
-      this.listOfResult = uniqueResults;
-    });
+    this.searchSubject
+      .pipe(
+        debounceTime(200),
+        switchMap(query => this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc)),
+        untilDestroyed(this)
+      )
+      .subscribe((result: SearchResult) => {
+        const uniqueResults = Array.from(new Set(result.results.map(item => this.convertToName(item))));
+        this.listOfResult = uniqueResults;
+      });
   }
 
   onSearchInputChange(query: string): void {
