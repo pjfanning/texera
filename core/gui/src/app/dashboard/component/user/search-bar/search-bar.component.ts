@@ -40,8 +40,8 @@ export class SearchBarComponent {
       switchMap(query => this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc)),
       untilDestroyed(this),
     ).subscribe((result: SearchResult) => {
-      this.listOfResult = result.results.map(item => this.convertToName(item));
-      console.log(this.listOfResult);
+      const uniqueResults = Array.from(new Set(result.results.map(item => this.convertToName(item))));
+      this.listOfResult = uniqueResults;
     });
   }
 
