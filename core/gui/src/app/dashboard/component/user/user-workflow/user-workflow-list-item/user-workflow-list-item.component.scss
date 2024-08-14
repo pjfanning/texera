@@ -1,4 +1,4 @@
-@import "../../search/search.component";
+@import "../../../section-style.scss";
 @import "../../../dashboard.component.scss";
 
 /**
@@ -39,11 +39,11 @@
     }
 
     .light-color:hover {
-      background-image: linear-gradient(rgba(0, 0, 0, 0.4) 0 0);
+      background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4));
     }
 
     .dark-color:hover {
-      background-image: linear-gradient(rgba(255, 255, 255, 0.345) 0 0);
+      background-image: linear-gradient(rgba(255, 255, 255, 0.345), rgba(255, 255, 255, 0.345));
     }
   }
 }
