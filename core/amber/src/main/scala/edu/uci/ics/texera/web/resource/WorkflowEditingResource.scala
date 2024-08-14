@@ -18,6 +18,9 @@ import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import scala.collection.immutable.Map
 
+case class WorkflowEditingRequest(
+    workflowStr: String
+                                 )
 case class WorkflowEditingResponse(
    operatorIdToInputSchemas: Map[String, List[Option[List[Attribute]]]],
    operatorIdToError: Map[String, String]
@@ -30,6 +33,7 @@ class WorkflowEditingResource extends LazyLogging {
 
   @POST
   @Path("/{wid}")
+  @Consumes(Array(MediaType.APPLICATION_JSON))
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   def editWorkflow(
       workflowStr: String,
