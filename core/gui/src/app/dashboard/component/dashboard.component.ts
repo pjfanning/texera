@@ -4,7 +4,7 @@ import { UserService } from "../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { FlarumService } from "../service/user/flarum/flarum.service";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Router } from "@angular/router"
+import { Router } from "@angular/router";
 
 /**
  * dashboardComponent is the component which contains all the subcomponents
@@ -21,10 +21,11 @@ import { Router } from "@angular/router"
 })
 @UntilDestroy()
 export class DashboardComponent implements OnInit {
-  isAdmin = this.userService.isAdmin();
-  displayForum = true;
-  displayNavbar = true;
-  routesWithoutNavbar = ["/workspace"]
+  isAdmin: boolean = this.userService.isAdmin();
+  displayForum: boolean = true;
+  displayNavbar: boolean = true;
+  isCollpased: boolean = false;
+  routesWithoutNavbar: string[] = ["/workspace"];
   constructor(
     private userService: UserService,
     private flarumService: FlarumService,
@@ -32,6 +33,7 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.isCollpased = false;
     if (!document.cookie.includes("flarum_remember")) {
       this.flarumService
         .auth()
@@ -52,15 +54,14 @@ export class DashboardComponent implements OnInit {
           },
         });
     }
-    this.router.events.subscribe(() => {
+    this.router.events.pipe(untilDestroyed(this)).subscribe(() => {
       this.checkRoute();
-    })
+    });
   }
 
   checkRoute() {
     const currentRoute = this.router.url;
     this.displayNavbar = this.isNavbarEnabled(currentRoute);
-    this.handleCollapseChange();
   }
 
   isNavbarEnabled(currentRoute: string) {
@@ -72,13 +73,14 @@ export class DashboardComponent implements OnInit {
     return true;
   }
 
-  handleCollapseChange() {
+  handleCollapseChange(collapsed: boolean) {
+    this.isCollpased = collapsed;
     const resizeEvent = new Event("resize");
-    const editor = document.getElementById("workflow-editor")
-    setTimeout(() => {
-      if (editor) {
+    const editor = document.getElementById("workflow-editor");
+    if (editor) {
+      setTimeout(() => {
         window.dispatchEvent(resizeEvent);
-      }
-    }, 175);
+      }, 175);
+    }
   }
 }

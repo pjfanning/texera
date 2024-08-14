@@ -40,9 +40,11 @@ texera-user-icon {
   height: calc(100vh - 70px - 48px);
 }
 
-.logo {
-  height: 75px;
-  padding: 15px 0 10px 45px;
+.logo-section {
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 nz-content {
