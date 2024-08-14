@@ -52,7 +52,7 @@ export class DashboardComponent implements OnInit {
           },
         });
     }
-    this.router.events.subscribe(() => {
+    this.router.events.pipe(untilDestroyed(this)).subscribe(() => {
       this.checkRoute();
     });
   }
