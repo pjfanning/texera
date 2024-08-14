@@ -4,7 +4,7 @@ import { UserService } from "../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { FlarumService } from "../service/user/flarum/flarum.service";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Router } from "@angular/router"
+import { Router } from "@angular/router";
 
 /**
  * dashboardComponent is the component which contains all the subcomponents
@@ -24,7 +24,7 @@ export class DashboardComponent implements OnInit {
   isAdmin = this.userService.isAdmin();
   displayForum = true;
   displayNavbar = true;
-  routesWithoutNavbar = ["/workspace"]
+  routesWithoutNavbar = ["/workspace"];
   constructor(
     private userService: UserService,
     private flarumService: FlarumService,
@@ -54,7 +54,7 @@ export class DashboardComponent implements OnInit {
     }
     this.router.events.subscribe(() => {
       this.checkRoute();
-    })
+    });
   }
 
   checkRoute() {
@@ -74,7 +74,7 @@ export class DashboardComponent implements OnInit {
 
   handleCollapseChange() {
     const resizeEvent = new Event("resize");
-    const editor = document.getElementById("workflow-editor")
+    const editor = document.getElementById("workflow-editor");
     setTimeout(() => {
       if (editor) {
         window.dispatchEvent(resizeEvent);
