@@ -48,7 +48,12 @@ export class SearchBarComponent {
   }
 
   onSearchInputChange(query: string): void {
-    this.searchSubject.next(query);
+    if (query) {
+      this.searchSubject.next(query);
+    }
+    else {
+      this.listOfResult = [];
+    }
   }
 
   performSearch(keyword: string) {
