@@ -50,8 +50,7 @@ export class SearchBarComponent {
   onSearchInputChange(query: string): void {
     if (query) {
       this.searchSubject.next(query);
-    }
-    else {
+    } else {
       this.listOfResult = [];
     }
   }
