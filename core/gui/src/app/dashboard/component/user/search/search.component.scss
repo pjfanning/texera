@@ -1,3 +1,6 @@
+$section-height: 76px;
+$section-margin: 24px;
+
 .general-search-container {
   width: 100%;
   height: 100%;
@@ -6,28 +9,26 @@
 
   .general-search-section {
     width: 100%;
-    height: 76px;
-    flex-shrink: 0;
+    height: $section-height;
     display: flex;
     align-items: center;
     gap: 10px;
 
     .go-back-button {
-      margin-left: 15px;
-      flex-shrink: 0;
+      margin-left: $section-margin;
     }
 
     .filters {
-      margin-right: 24px;
+      margin-right: $section-margin;
       flex-grow: 1;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-shrink: 0;
     }
   }
+
   .general-search-result {
     width: 100%;
-    height: 100%;
+    flex-grow: 1;
   }
 }
