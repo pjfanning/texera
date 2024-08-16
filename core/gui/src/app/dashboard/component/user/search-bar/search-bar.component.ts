@@ -9,9 +9,7 @@ import { Router } from "@angular/router";
 export class SearchBarComponent {
   public searchParam: string = "";
 
-  constructor(
-    private router: Router,
-  ) {}
+  constructor(private router: Router) {}
 
   performSearch(keyword: string) {
     this.router.navigate(["/dashboard/search"], { queryParams: { q: keyword } });
