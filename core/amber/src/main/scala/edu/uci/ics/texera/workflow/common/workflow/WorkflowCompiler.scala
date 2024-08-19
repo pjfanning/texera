@@ -19,7 +19,6 @@ import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants
 
 import java.time.Instant
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 class WorkflowCompiler(
