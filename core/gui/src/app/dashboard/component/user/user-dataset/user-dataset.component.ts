@@ -50,8 +50,9 @@ export class UserDatasetComponent implements AfterViewInit {
     private userService: UserService,
     private router: Router,
     private searchService: SearchService,
-    private datasetService: DatasetService
-  ) {}
+    private datasetService: DatasetService,
+  ) {
+  }
 
   ngAfterViewInit() {
     this.userService
@@ -83,8 +84,8 @@ export class UserDatasetComponent implements AfterViewInit {
           start,
           count,
           "dataset",
-          this.sortMethod
-        )
+          this.sortMethod,
+        ),
       );
       return {
         entries: results.results.map(i => {
@@ -113,7 +114,7 @@ export class UserDatasetComponent implements AfterViewInit {
       .pipe(untilDestroyed(this))
       .subscribe(_ => {
         this.searchResultsComponent.entries = this.searchResultsComponent.entries.filter(
-          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did
+          datasetEntry => datasetEntry.dataset.dataset.did !== entry.dataset.dataset.did,
         );
       });
   }
