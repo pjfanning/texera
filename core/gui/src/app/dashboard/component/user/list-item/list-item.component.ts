@@ -134,4 +134,27 @@ export class ListItemComponent implements OnInit, OnChanges {
       }
     }
   }
+
+  formatTime(timestamp: number | undefined): string {
+    if (timestamp === undefined) {
+      return "Unknown"; // Return "Unknown" if the timestamp is undefined
+    }
+
+    const currentTime = new Date().getTime();
+    const timeDifference = currentTime - timestamp;
+
+    const minutesAgo = Math.floor(timeDifference / (1000 * 60));
+    const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
+    const daysAgo = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+
+    if (minutesAgo < 60) {
+      return `${minutesAgo} minutes ago`;
+    } else if (hoursAgo < 24) {
+      return `${hoursAgo} hours ago`;
+    } else if (daysAgo < 30) {
+      return `${daysAgo} days ago`;
+    } else {
+      return new Date(timestamp).toLocaleDateString();  // If more than 30 days, return standard date format
+    }
+  }
 }
