@@ -9,7 +9,7 @@ import service.KubernetesClientService
 import web.Utils.withTransaction
 import web.model.SqlServer
 import web.model.jooq.generated.tables.daos.PodDao
-import web.resources.WorkflowPodBrainResource.{WorkflowPodCreationParams, WorkflowPodTerminationParams, context}
+import web.resources.WorkflowPodBrainResource.{WorkflowPodCreationParams, WorkflowPodTerminationParams, WorkflowPodRunParams, context}
 import web.model.jooq.generated.tables.pojos.Pod
 
 import java.sql.Timestamp
@@ -99,22 +99,5 @@ class WorkflowPodBrainResource {
       podDao.update(pods)
       Response.ok(s"Successfully terminated deployment and pod of uid ${param.uid}").build()
     }
-  }
-
-
-  /**
-   * Run given workflow in request body.
-   * @param param the parameters
-   * @return workflow result
-   */
-  @POST
-  @Consumes(Array(MediaType.APPLICATION_JSON))
-  @Produces(Array(MediaType.APPLICATION_JSON))
-  @Path("/{uid}/run-workflow")
-  def runWorkflow(
-                    @PathParam("uid") uid: String,
-                    param: WorkflowPodTerminationParams
-                  ): Response = {
-    Response.ok(s"Endpoints successfully reached by uid: $uid").build()
   }
 }

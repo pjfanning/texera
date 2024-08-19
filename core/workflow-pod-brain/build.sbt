@@ -13,7 +13,6 @@ val dropwizardVersion = "4.0.7"
 // https://mvnrepository.com/artifact/io.dropwizard/dropwizard-core
 val dropwizardDependencies = Seq(
   "io.dropwizard" % "dropwizard-core" % dropwizardVersion,
-
 )
 
 
@@ -31,3 +30,17 @@ libraryDependencies += "com.typesafe" % "config" % "1.4.1"
 
 // https://mvnrepository.com/artifact/mysql/mysql-connector-java
 libraryDependencies += "mysql" % "mysql-connector-java" % "8.0.33"
+
+// Scala https library
+libraryDependencies += "com.softwaremill.sttp.client4" %% "core" % "4.0.0-M6"
+
+// Scala JSON library
+libraryDependencies += "com.lihaoyi" %% "upickle" % "3.1.0"
+
+// Websockets
+
+// Dependency used in main Texera codebase is outdated for dropwizard version 4.0.7
+//libraryDependencies += "com.liveperson" % "dropwizard-websockets" % "1.3.14"
+
+// Newer websocket bundle that works with dropwizard version >= 4.0.0
+libraryDependencies += "be.tomcools" % "dropwizard-websocket-jsr356-bundle" % "4.0.0"

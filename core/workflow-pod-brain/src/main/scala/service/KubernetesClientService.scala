@@ -3,12 +3,16 @@ package service
 import config.ApplicationConf.appConfig
 import io.kubernetes.client.openapi.{ApiClient, Configuration}
 import io.kubernetes.client.openapi.apis.{AppsV1Api, CoreV1Api}
-import io.kubernetes.client.openapi.models.{V1Container, V1ContainerPort, V1Deployment, V1DeploymentSpec, V1LabelSelector, V1ObjectMeta, V1Pod, V1PodList, V1PodSpec, V1PodTemplateSpec}
+import io.kubernetes.client.openapi.models.{V1Container, V1ContainerPort, V1ObjectMeta, V1Pod, V1PodList, V1PodSpec}
 import io.kubernetes.client.util.Config
 import service.KubernetesClientConfig.kubernetesConfig
 
 import java.util
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import sttp.client4.quick.{RichRequest, quickRequest}
+import sttp.client4.{Response, UriContext}
+import sttp.model.Uri
+import sttp.model.Uri.QuerySegment.Value
 
 object KubernetesClientConfig {
 
@@ -27,7 +31,9 @@ object KubernetesClientConfig {
 
 class KubernetesClientService(
                                val namespace: String = kubernetesConfig.namespace,
-                               val deploymentName: String = kubernetesConfig.workflowPodPoolDeploymentName) {
+                               val brainNamespace: String = kubernetesConfig.workflowPodBrainNamespace,
+                               val poolNamespace: String = kubernetesConfig.workflowPodPoolNamespace,
+                               val deploymentName: String = kubernetesConfig.workflowPodBrainDeploymentName) {
 
   // Kubernetes Api Clients are collections of different K8s objects and functions
   // which provide programmatic access to K8s resources.
@@ -42,7 +48,7 @@ class KubernetesClientService(
     *
     * @return A list of V1Pod objects.
     */
-  def getPodsList(): List[V1Pod] = {
+  def getPodsList(namespace: String): List[V1Pod] = {
     coreApi.listNamespacedPod(namespace).execute().getItems.asScala.toList
   }
 
@@ -52,14 +58,18 @@ class KubernetesClientService(
    * @param podLabel        The label of the pods to be returned.
    * @return A list of V1Pod objects representing the pods with the given label.
    */
-  def getPodsList(podLabel: String): List[V1Pod] = {
-    val podList = coreApi.listNamespacedPod(namespace).execute().getItems.asScala
-    (
-      for (
-        pod: V1Pod <- podList
-        if pod.getMetadata.getLabels.containsValue(podLabel)
-      ) yield pod
-    ).toList
+  def getPodsList(namespace: String, podLabel: String): List[V1Pod] = {
+    coreApi.listNamespacedPod(namespace).labelSelector(podLabel).execute().getItems.asScala.toList
+  }
+
+  /**
+   * Retrieves a single with the given label in the specified namespace.
+   *
+   * @param podLabel        The label of the pods to be returned.
+   * @return A list of V1Pod objects representing the pods with the given label.
+   */
+  def getPodFromLabel(namespace: String, podLabel: String): V1Pod = {
+    coreApi.listNamespacedPod(namespace).labelSelector(podLabel).limit(1).execute().getItems.asScala.toList.last
   }
 
   /**
@@ -70,11 +80,12 @@ class KubernetesClientService(
    */
   def createPod(uid: Int): V1Pod = {
     val uidString: String = String.valueOf(uid)
+    val uidLabelSelector: String = s"userId=$uidString"
     val pod: V1Pod = createUserPod(uid)
 
     // Should be a list with a single pod
     try {
-      getPodsList(uidString).last
+      getPodFromLabel(poolNamespace, uidLabelSelector)
     }
     catch {
       // In case program moves too fast and newly created pod is not detectable yet
@@ -82,7 +93,7 @@ class KubernetesClientService(
         println(e.getMessage)
         Thread.sleep(1000)
         println("Attempting to retrieve pod again")
-        getPodsList(uidString).last
+        getPodFromLabel(poolNamespace, uidLabelSelector)
     }
   }
 
@@ -100,7 +111,7 @@ class KubernetesClientService(
       .metadata(
         new V1ObjectMeta()
           .name(s"user-pod-$uid")
-          .namespace(namespace)
+          .namespace(poolNamespace)
           .labels(util.Map.of("userId", uidString, "workflow", "worker"))
       )
       .spec(
@@ -108,14 +119,14 @@ class KubernetesClientService(
           .containers(
             util.List.of(new V1Container()
               .name("worker")
-              .image("pureblank/dropwizard-example:latest")
-              .ports(util.List.of(new V1ContainerPort().containerPort(8080))))
+              .image("ksdn117/web-socket-test")
+              .ports(util.List.of(new V1ContainerPort().containerPort(8010))))
           )
           .hostname(s"user-pod-$uid")
           .subdomain("workflow-pods")
           .overhead(null)
       )
-    coreApi.createNamespacedPod(namespace, pod).execute()
+    coreApi.createNamespacedPod(poolNamespace, pod).execute()
   }
 
   /**
@@ -124,17 +135,8 @@ class KubernetesClientService(
    * @param uid   The pod owner's user id.
    */
   def deletePod(uid: Int): Unit = {
-    coreApi.deleteNamespacedPod(s"user-pod-$uid", namespace).execute()
+    coreApi.deleteNamespacedPod(s"user-pod-$uid", poolNamespace).execute()
   }
-
-  /**
-   * Sends given workflow to specified user's pod and gets workflow response.
-   *
-   * @param uid        The user id who the workflow belongs to.
-   * @param workflow   The JSON representation of a texera workflow.
-   * @return The response object produced by the worker pod.
-   */
-  def sendWorkflow(uid: String, workflow: String): Map[String, String] = ???
 
   /**
    * Find and replace pod in case of pod failure.
