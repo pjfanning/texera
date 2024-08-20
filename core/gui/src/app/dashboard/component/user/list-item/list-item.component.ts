@@ -5,11 +5,8 @@ import { DashboardEntry } from "src/app/dashboard/type/dashboard-entry";
 import { ShareAccessComponent } from "../share-access/share-access.component";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 import { Workflow } from "src/app/common/type/workflow";
-import { DatasetService } from "src/app/dashboard/service/user/dataset/dataset.service";
 import { FileSaverService } from "src/app/dashboard/service/user/file/file-saver.service";
-import { UserProjectService } from "src/app/dashboard/service/user/project/user-project.service";
 import { firstValueFrom } from "rxjs";
-import { NotificationService } from "src/app/common/service/notification/notification.service";
 
 @UntilDestroy()
 @Component({

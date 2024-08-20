@@ -28,7 +28,7 @@ import { NzToolTipModule } from "ng-zorro-antd/tooltip";
 import { FileSaverService } from "../../../service/user/file/file-saver.service";
 import { testWorkflowEntries, testWorkflowFileNameConflictEntries } from "../../user-dashboard-test-fixtures";
 import { FiltersComponent } from "../filters/filters.component";
-import { UserWorkflowListItemComponent } from "./user-workflow-list-item/user-workflow-list-item.component";
+import { ListItemComponent } from "../list-item/list-item.component";
 import { UserProjectService } from "../../../service/user/project/user-project.service";
 import { StubUserProjectService } from "../../../service/user/project/stub-user-project.service";
 import { SearchService } from "../../../service/user/search.service";
@@ -50,7 +50,7 @@ describe("SavedWorkflowSectionComponent", () => {
         UserWorkflowComponent,
         ShareAccessComponent,
         FiltersComponent,
-        UserWorkflowListItemComponent,
+        ListItemComponent,
         SearchResultsComponent,
       ],
       providers: [
