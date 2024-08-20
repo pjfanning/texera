@@ -79,7 +79,7 @@ class WorkflowCompiler(
     assignSinkStorage(
       logicalPlan,
       context,
-      opResultStorage,
+      opResultStorage
     )
 
     // the PhysicalPlan with topology expanded.
