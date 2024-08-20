@@ -73,15 +73,13 @@ class WorkflowCompiler(
       executionStateStore: ExecutionStateStore
   ): Workflow = {
     // generate a LogicalPlan. The logical plan is the injected with all necessary sinks
-    //  this plan will be compared in subsequent runs to check which operator can be replaced
-    //  by cache.
     val logicalPlan = compileLogicalPlan(logicalPlanPojo, executionStateStore)
 
+    // assign the storage location to sink operators
     assignSinkStorage(
       logicalPlan,
       context,
       opResultStorage,
-      logicalPlanPojo.opsToReuseResult.map(idString => OperatorIdentity(idString)).toSet
     )
 
     // the PhysicalPlan with topology expanded.
@@ -92,7 +90,6 @@ class WorkflowCompiler(
       logicalPlan,
       physicalPlan
     )
-
   }
 
   private def assignSinkStorage(
