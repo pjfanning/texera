@@ -29,10 +29,10 @@ import {
   mockSchemaPropagationResponse,
 } from "./mock-schema-propagation.data";
 import {
-  SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS,
-  SCHEMA_PROPAGATION_ENDPOINT,
-  SchemaPropagationService,
-} from "./schema-propagation.service";
+  WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS,
+  WORKFLOW_COMPILATION_ENDPOINT,
+  WorkflowCompilerService,
+} from "./workflow-compiler.service";
 
 describe("SchemaPropagationService", () => {
   let httpClient: HttpClient;
@@ -51,7 +51,7 @@ describe("SchemaPropagationService", () => {
         WorkflowUtilService,
         UndoRedoService,
         DynamicSchemaService,
-        SchemaPropagationService,
+        WorkflowCompilerService,
       ],
     });
 
@@ -60,48 +60,48 @@ describe("SchemaPropagationService", () => {
     environment.schemaPropagationEnabled = true;
   });
 
-  it("should be created", inject([SchemaPropagationService], (service: SchemaPropagationService) => {
+  it("should be created", inject([WorkflowCompilerService], (service: WorkflowCompilerService) => {
     expect(service).toBeTruthy();
   }));
 
   it("should invoke schema propagation API on link changes, property changes, and disable status changes", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     workflowActionService.addOperator(mockScanPredicate, mockPoint);
     workflowActionService.addOperator(mockSentimentPredicate, mockPoint);
 
     // add link
     workflowActionService.addLink(mockScanSentimentLink);
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
 
     // delete link
     workflowActionService.deleteLinkWithID(mockScanSentimentLink.linkID);
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
 
     // add link again
     workflowActionService.addLink(mockScanSentimentLink);
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
 
     // disable opeator
     workflowActionService.getTexeraGraph().disableOperator(mockScanPredicate.operatorID);
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
 
     // enable operator
     workflowActionService.getTexeraGraph().disableOperator(mockScanPredicate.operatorID);
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
 
@@ -113,7 +113,7 @@ describe("SchemaPropagationService", () => {
     httpTestingController.verify();
     // request should be made after debounce time
     httpTestingController.match(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     httpTestingController.verify();
     discardPeriodicTasks();
@@ -121,15 +121,15 @@ describe("SchemaPropagationService", () => {
 
   it("should invoke schema propagation API when a operator property is changed", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     workflowActionService.addOperator(mockScanPredicate, mockPoint);
     workflowActionService.setOperatorProperty(mockScanPredicate.operatorID, {
       tableName: "test",
     });
 
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method).toEqual("POST");
     req1.flush(mockSchemaPropagationResponse);
@@ -139,15 +139,15 @@ describe("SchemaPropagationService", () => {
 
   it("should handle error responses from server gracefully", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     workflowActionService.addOperator(mockScanPredicate, mockPoint);
     workflowActionService.setOperatorProperty(mockScanPredicate.operatorID, {
       tableName: "test",
     });
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
 
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method).toEqual("POST");
 
@@ -159,10 +159,10 @@ describe("SchemaPropagationService", () => {
     workflowActionService.setOperatorProperty(mockScanPredicate.operatorID, {
       tableName: "newTable",
     });
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
 
     const req2 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req2.request.method).toEqual("POST");
     req2.flush(mockSchemaPropagationResponse);
@@ -173,7 +173,7 @@ describe("SchemaPropagationService", () => {
   it("should modify `attribute` of operator schema", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
     const dynamicSchemaService: DynamicSchemaService = TestBed.inject(DynamicSchemaService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     const mockOperator = {
       ...mockSentimentPredicate,
       operatorID: mockSchemaPropagationOperatorID,
@@ -185,15 +185,15 @@ describe("SchemaPropagationService", () => {
       testAttr: "test",
     });
 
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
 
     // flush mock response
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method === "POST");
     expect(req1.request.url).toEqual(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     req1.flush(mockSchemaPropagationResponse);
 
@@ -216,7 +216,7 @@ describe("SchemaPropagationService", () => {
   it("should restore `attribute` to original schema if input attributes no longer exists", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
     const dynamicSchemaService: DynamicSchemaService = TestBed.inject(DynamicSchemaService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     const mockOperator = {
       ...mockSentimentPredicate,
       operatorID: mockSchemaPropagationOperatorID,
@@ -228,14 +228,14 @@ describe("SchemaPropagationService", () => {
       testAttr: "test",
     });
 
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
 
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method === "POST");
     expect(req1.request.url).toEqual(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
 
     // flush mock response
@@ -260,13 +260,13 @@ describe("SchemaPropagationService", () => {
       testAttr: "test2",
     });
 
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
     const req3 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req3.request.method === "POST");
     expect(req3.request.url).toEqual(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
 
     // flush mock response, however, this time response is empty, which means input attrs no longer exists
@@ -293,7 +293,7 @@ describe("SchemaPropagationService", () => {
   it("should modify `attributes` of operator schema", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
     const dynamicSchemaService: DynamicSchemaService = TestBed.inject(DynamicSchemaService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     const mockKeywordSearchOperator: OperatorPredicate = {
       operatorID: mockSchemaPropagationOperatorID,
       operatorType: mockKeywordSearchSchema.operatorType,
@@ -309,13 +309,13 @@ describe("SchemaPropagationService", () => {
     // change operator property to trigger invoking schema propagation API
     workflowActionService.setOperatorProperty(mockKeywordSearchOperator.operatorID, { testAttr: "test" });
 
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method === "POST");
     expect(req1.request.url).toEqual(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     // flush mock response
     req1.flush(mockSchemaPropagationResponse);
@@ -345,7 +345,7 @@ describe("SchemaPropagationService", () => {
   it("should modify nested deep `attribute` of operator schema", fakeAsync(() => {
     const workflowActionService: WorkflowActionService = TestBed.inject(WorkflowActionService);
     const dynamicSchemaService: DynamicSchemaService = TestBed.inject(DynamicSchemaService);
-    TestBed.inject(SchemaPropagationService);
+    TestBed.inject(WorkflowCompilerService);
     // to match the operator ID of mockSchemaPropagationResponse
     const mockAggregationPredicate: OperatorPredicate = {
       operatorID: mockSchemaPropagationOperatorID,
@@ -361,14 +361,14 @@ describe("SchemaPropagationService", () => {
     workflowActionService.addOperator(mockAggregationPredicate, mockPoint);
     // change operator property to trigger invoking schema propagation API
     workflowActionService.setOperatorProperty(mockAggregationPredicate.operatorID, { testAttr: "test" });
-    tick(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS);
+    tick(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS);
 
     const req1 = httpTestingController.expectOne(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
     expect(req1.request.method === "POST");
     expect(req1.request.url).toEqual(
-      `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
+      `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${DEFAULT_WORKFLOW.wid}`
     );
 
     // flush mock response

@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
 import { WorkflowWebsocketService } from "../workflow-websocket/workflow-websocket.service";
-import { SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS } from "../dynamic-schema/schema-propagation/schema-propagation.service";
+import { WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS } from "../dynamic-schema/schema-propagation/workflow-compiler.service";
 import { debounceTime, filter } from "rxjs/operators";
 import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.service";
 import { merge } from "rxjs";
@@ -36,7 +36,7 @@ export class OperatorReuseCacheStatusService {
       this.workflowActionService
         .getTexeraGraph()
         .getOperatorPropertyChangeStream()
-        .pipe(debounceTime(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS)),
+        .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS)),
       this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream(),
       this.workflowActionService.getTexeraGraph().getReuseCacheOperatorsChangedStream(),
       this.executeWorkflowService

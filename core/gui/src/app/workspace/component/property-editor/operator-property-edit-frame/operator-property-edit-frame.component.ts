@@ -31,8 +31,8 @@ import { DynamicSchemaService } from "../../../service/dynamic-schema/dynamic-sc
 import {
   AttributeType,
   PortInputSchema,
-  SchemaPropagationService,
-} from "../../../service/dynamic-schema/schema-propagation/schema-propagation.service";
+  WorkflowCompilerService,
+} from "../../../service/dynamic-schema/schema-propagation/workflow-compiler.service";
 import {
   createOutputFormChangeEventStream,
   createShouldHideFieldFunc,
@@ -133,7 +133,7 @@ export class OperatorPropertyEditFrameComponent implements OnInit, OnChanges, On
     private workflowActionService: WorkflowActionService,
     public executeWorkflowService: ExecuteWorkflowService,
     private dynamicSchemaService: DynamicSchemaService,
-    private schemaPropagationService: SchemaPropagationService,
+    private schemaPropagationService: WorkflowCompilerService,
     private notificationService: NotificationService,
     private changeDetectorRef: ChangeDetectorRef,
     private workflowVersionService: WorkflowVersionService,

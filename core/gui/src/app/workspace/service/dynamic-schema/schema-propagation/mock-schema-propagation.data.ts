@@ -1,4 +1,4 @@
-import { SchemaPropagationResponse } from "./schema-propagation.service";
+import { SchemaPropagationResponse } from "./workflow-compiler.service";
 
 /**
  * Export constants related to the source table names present at the server

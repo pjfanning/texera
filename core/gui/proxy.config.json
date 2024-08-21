@@ -15,5 +15,10 @@
     "ws": true,
     "secure": false,
     "changeOrigin": false
+  },
+  "/api/texera": {
+    "target": "http://localhost:9090",
+    "secure": false,
+    "changeOrigin": false
   }
 }

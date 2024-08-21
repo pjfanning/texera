@@ -12,9 +12,9 @@ import { DynamicSchemaService } from "../dynamic-schema.service";
 import { catchError, debounceTime, filter, mergeMap } from "rxjs/operators";
 
 // endpoint for schema propagation
-export const SCHEMA_PROPAGATION_ENDPOINT = "queryplan/autocomplete";
+export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
 
-export const SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS = 500;
+export const WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS = 500;
 
 /**
  * Schema Propagation Service provides autocomplete functionality for attribute property of operators.
@@ -29,7 +29,7 @@ export const SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS = 500;
 @Injectable({
   providedIn: "root",
 })
-export class SchemaPropagationService {
+export class WorkflowCompilerService {
   private operatorInputSchemaMap: Readonly<Record<string, OperatorInputSchema>> = {};
 
   private operatorInputSchemaChangedStream = new Subject<void>();
@@ -40,6 +40,7 @@ export class SchemaPropagationService {
     private dynamicSchemaService: DynamicSchemaService
   ) {
     // do nothing if schema propagation is not enabled
+    // TODO: consider remove this flag
     if (!environment.schemaPropagationEnabled) {
       return;
     }
@@ -52,9 +53,9 @@ export class SchemaPropagationService {
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getDisabledOperatorsChangedStream()
     )
-      .pipe(debounceTime(SCHEMA_PROPAGATION_DEBOUNCE_TIME_MS))
+      .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
       .pipe(
-        mergeMap(() => this.invokeSchemaPropagationAPI()),
+        mergeMap(() => this.invokeWorkflowCompilationAPI()),
         filter(response => response.code === 0)
       )
       .subscribe(response => {
@@ -102,7 +103,7 @@ export class SchemaPropagationService {
       // if operator input attributes are in the result, set them in dynamic schema
       let newDynamicSchema: OperatorSchema;
       if (schemaPropagationResult[operatorID]) {
-        newDynamicSchema = SchemaPropagationService.setOperatorInputAttrs(
+        newDynamicSchema = WorkflowCompilerService.setOperatorInputAttrs(
           currentDynamicSchema,
           schemaPropagationResult[operatorID]
         );
@@ -110,7 +111,7 @@ export class SchemaPropagationService {
         // otherwise, the input attributes of the operator is unknown
         // if the operator is not a source operator, restore its original schema of input attributes
         if (currentDynamicSchema.additionalMetadata.inputPorts.length > 0) {
-          newDynamicSchema = SchemaPropagationService.restoreOperatorInputAttrs(currentDynamicSchema);
+          newDynamicSchema = WorkflowCompilerService.restoreOperatorInputAttrs(currentDynamicSchema);
         } else {
           newDynamicSchema = currentDynamicSchema;
         }
@@ -130,7 +131,7 @@ export class SchemaPropagationService {
    * that users can easily set the properties of the next operator. For eg: If there are two operators Source:Scan and KeywordSearch and
    * a link is created between them, the attributed of the table selected in Source can be propagated to the KeywordSearch operator.
    */
-  private invokeSchemaPropagationAPI(): Observable<SchemaPropagationResponse> {
+  private invokeWorkflowCompilationAPI(): Observable<SchemaPropagationResponse> {
     // create a Logical Plan based on the workflow graph
     const body = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     // remove unnecessary information for schema propagation.
@@ -143,7 +144,7 @@ export class SchemaPropagationService {
     // make a http post request to the API endpoint with the logical plan object
     return this.httpClient
       .post<SchemaPropagationResponse>(
-        `${AppSettings.getApiEndpoint()}/${SCHEMA_PROPAGATION_ENDPOINT}/${
+        `${AppSettings.getApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${
           this.workflowActionService.getWorkflow().wid ?? DEFAULT_WORKFLOW.wid
         }`,
         JSON.stringify(body2),
@@ -347,18 +348,8 @@ export type PortInputSchema = ReadonlyArray<SchemaAttribute>;
  */
 export interface SchemaPropagationResponse
   extends Readonly<{
-    code: 0;
-    result: {
+    code: any;
+    operatorInputSchemas: {
       [key: string]: OperatorInputSchema;
     };
-  }> {}
-
-/**
- * The backend interface of the return object of a failed execution of
- * autocomplete API
- */
-export interface SchemaPropagationError
-  extends Readonly<{
-    code: -1;
-    message: string;
   }> {}

@@ -3,7 +3,7 @@ import { isDefined } from "../util/predicate";
 import {
   PortInputSchema,
   SchemaAttribute,
-} from "../../workspace/service/dynamic-schema/schema-propagation/schema-propagation.service";
+} from "../../workspace/service/dynamic-schema/schema-propagation/workflow-compiler.service";
 import { Observable } from "rxjs";
 import { FORM_DEBOUNCE_TIME_MS } from "../../workspace/service/execute-workflow/execute-workflow.service";
 import { debounceTime, distinctUntilChanged, filter, share } from "rxjs/operators";

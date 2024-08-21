@@ -3,8 +3,8 @@ import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/
 import {
   AttributeType,
   SchemaAttribute,
-  SchemaPropagationService,
-} from "src/app/workspace/service/dynamic-schema/schema-propagation/schema-propagation.service";
+  WorkflowCompilerService,
+} from "../../../service/dynamic-schema/schema-propagation/workflow-compiler.service";
 import { filter, map } from "rxjs/operators";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 
@@ -24,7 +24,7 @@ export class TypeCastingDisplayComponent implements OnInit, OnChanges {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private schemaPropagationService: SchemaPropagationService
+    private schemaPropagationService: WorkflowCompilerService
   ) {}
 
   ngOnInit(): void {
