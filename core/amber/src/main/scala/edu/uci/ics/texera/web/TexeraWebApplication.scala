@@ -137,6 +137,7 @@ object TexeraWebApplication {
         .resolve("web-config.yml")
         .toString
     )
+    AmberConfig.startLanguageServer()
   }
 }
 

@@ -176,7 +176,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
 
   private connectLanguageServer() {
     if (this.languageServerSocket === undefined) {
-      this.languageServerSocket = new WebSocket(getWebsocketUrl("/python-language-server", "3000"));
+      this.languageServerSocket = new WebSocket(getWebsocketUrl("/pyright", "3000"));
       this.languageServerSocket.onopen = () => {
         if (this.languageServerSocket !== undefined) {
           const socket = toSocket(this.languageServerSocket);

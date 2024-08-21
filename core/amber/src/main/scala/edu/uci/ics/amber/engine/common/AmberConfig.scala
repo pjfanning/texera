@@ -7,6 +7,8 @@ import edu.uci.ics.texera.Utils
 import java.io.File
 import java.net.URI
 
+import scala.sys.process._
+
 object AmberConfig {
 
   private val configFile: File = Utils.amberHomePath
@@ -105,4 +107,65 @@ object AmberConfig {
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
+  // Language server configuration
+  val languageServer: String = getConfSource.getString("language-server.default")
+
+  //free the port for the server
+  private def releasePort(port: Int): Unit = {
+    val pythonCode =
+      s"""
+         |import os
+         |
+         |def release_port(port):
+         |    cmd_find = 'netstat -aon | findstr %s' % (port)
+         |    print('cmd_find:', cmd_find)
+         |    res = os.popen(cmd_find).read()
+         |    print('res:', res)
+         |    if str(port) and 'LISTENING' in res:
+         |        i = res.index('LISTENING')
+         |        start = i + len('LISTENING') + 7
+         |        end = res.find('\\n', start)
+         |        pid = res[start:end].strip()
+         |        print('pid:', pid)
+         |        cmd_kill = 'taskkill -f -pid %s' % (pid)
+         |        print('cmd_kill:', cmd_kill)
+         |        os.popen(cmd_kill)
+         |    else:
+         |        print('This port is free to use')
+         |
+         |release_port($port)
+       """.stripMargin
+
+    val command = Seq("python", "-c", pythonCode)
+    val exitCode = command.!
+    if (exitCode == 0) {
+      println(s"port: $port is free successfully")
+    } else {
+      println(s"fail to free port: $port")
+    }
+  }
+
+  def startLanguageServer(): Unit = {
+    languageServer match {
+      case "pyright" =>
+        println("Starting Pyright...")
+        releasePort(3000)
+        //language server
+        try {
+          val pyrightPath = "startPyright.mjs"
+          val result = Process(s"node $pyrightPath").run()
+          println("Pyright language server is running on port 3000")
+        } catch {
+          case e: Exception => println(s"Failed to start Pyright: ${e.getMessage}")
+        }
+      case "pylsp" =>
+        println("Starting Pylsp...")
+        releasePort(3000)
+        val result = Process("pylsp --ws --port 3000").run()
+        println("Python language server is running on port 3000")
+      case _ =>
+        throw new IllegalArgumentException(s"Unknown language server: $languageServer")
+    }
+  }
 }
+
