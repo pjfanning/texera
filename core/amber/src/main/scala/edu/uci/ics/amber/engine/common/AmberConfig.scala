@@ -152,8 +152,7 @@ object AmberConfig {
         releasePort(3000)
         //language server
         try {
-          val pyrightPath = "startPyright.mjs"
-          val result = Process(s"node $pyrightPath").run()
+          val result = Process("node C:/Users/Owner/new/texera/core/languageServer/startPyright.mjs").run()
           println("Pyright language server is running on port 3000")
         } catch {
           case e: Exception => println(s"Failed to start Pyright: ${e.getMessage}")

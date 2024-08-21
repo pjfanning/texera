@@ -22,7 +22,7 @@ server1.on('upgrade', (request, socket, head) => {
 
 const startPyrightServer = () => {
     const baseDir = resolve(dir);
-    const relativeDir = '../../node_modules/pyright/dist/pyright-langserver.js';
+    const relativeDir = './node_modules/pyright/dist/pyright-langserver.js';
     const ls = resolve(baseDir, relativeDir);
     console.log(`Resolved Pyright language server path: ${ls}`);
     return createServerProcess('pyright', 'node', [ls, '--stdio']);
