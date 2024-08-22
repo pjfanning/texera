@@ -10,11 +10,11 @@ const dir = dirname(__filename);
 
 const app = express();
 app.use(express.static(dir));
-const server1 = app.listen(3000);
+const server = app.listen(3000);
 
 const wss = new WebSocketServer({ noServer: true });
 
-server1.on('upgrade', (request, socket, head) => {
+server.on('upgrade', (request, socket, head) => {
     wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
     });
