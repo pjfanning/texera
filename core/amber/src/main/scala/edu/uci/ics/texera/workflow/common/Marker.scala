@@ -45,6 +45,3 @@ final case class State() extends Marker {
   override def toString: String =
     list.map { case (key, (_, value)) => s"$key: $value" }.mkString(", ")
 }
-sealed trait Marker
-
-final case class EndOfUpstream() extends Marker

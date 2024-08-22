@@ -103,10 +103,10 @@ private class AmberProducer(
     // closing the stream will release the dictionaries
     flightStream.takeDictionaryOwnership
 
-    if (dataHeader.marker == EndOfUpstream().getClass.getSimpleName) {
+    if (dataHeader.payloadType == EndOfUpstream().getClass.getSimpleName) {
       assert(root.getRowCount == 0)
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
-    } else if (dataHeader.marker == "StateFrame") {
+    } else if (dataHeader.payloadType == "state") {
       assert(root.getRowCount == 1)
       outputPort.sendTo(to, MarkerFrame(State().fromTuple(ArrowUtils.getTexeraTuple(0, root))))
     } else {
