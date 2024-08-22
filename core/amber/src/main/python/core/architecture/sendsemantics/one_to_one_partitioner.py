@@ -5,8 +5,8 @@ from overrides import overrides
 
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
-from core.models import Tuple, State
-from core.models.payload import OutputDataFrame, DataPayload, EndOfUpstream, StateFrame
+from core.models import Tuple
+from core.models.marker import EndOfUpstream
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     OneToOnePartitioning,
@@ -28,10 +28,10 @@ class OneToOnePartitioner(Partitioner):
     @overrides
     def add_tuple_to_batch(
         self, tuple_: Tuple
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.List[Tuple]]]:
         self.batch.append(tuple_)
         if len(self.batch) == self.batch_size:
-            yield self.receiver, OutputDataFrame(frame=self.batch)
+            yield self.receiver, self.batch
             self.reset()
 
     @overrides
@@ -43,9 +43,15 @@ class OneToOnePartitioner(Partitioner):
         yield self.receiver, StateFrame(frame=state.to_table())
 
     @overrides
-    def no_more(self) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
+    def no_more(
+        self,
+    ) -> Iterator[
+        typing.Tuple[
+            ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
+        ]
+    ]:
         if len(self.batch) > 0:
-            yield self.receiver, OutputDataFrame(frame=self.batch)
+            yield self.receiver, self.batch
         self.reset()
         yield self.receiver, EndOfUpstream()
 

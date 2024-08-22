@@ -5,8 +5,8 @@ from loguru import logger
 from overrides import overrides
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
-from core.models import Tuple, State
-from core.models.payload import OutputDataFrame, DataPayload, EndOfUpstream, StateFrame
+from core.models import Tuple
+from core.models.marker import EndOfUpstream
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     HashBasedShufflePartitioning,
@@ -29,7 +29,7 @@ class HashBasedShufflePartitioner(Partitioner):
     @overrides
     def add_tuple_to_batch(
         self, tuple_: Tuple
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, OutputDataFrame]]:
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.List[Tuple]]]:
         partial_tuple = (
             tuple_
             if not self.hash_attribute_names
@@ -39,7 +39,7 @@ class HashBasedShufflePartitioner(Partitioner):
         receiver, batch = self.receivers[hash_code]
         batch.append(tuple_)
         if len(batch) == self.batch_size:
-            yield receiver, OutputDataFrame(frame=batch)
+            yield receiver, batch
             self.receivers[hash_code] = (receiver, list())
 
     @overrides
@@ -52,8 +52,14 @@ class HashBasedShufflePartitioner(Partitioner):
             yield receiver, StateFrame(frame=state.to_table())
 
     @overrides
-    def no_more(self) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
+    def no_more(
+        self,
+    ) -> Iterator[
+        typing.Tuple[
+            ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
+        ]
+    ]:
         for receiver, batch in self.receivers:
             if len(batch) > 0:
-                yield receiver, OutputDataFrame(frame=batch)
+                yield receiver, batch
             yield receiver, EndOfUpstream()

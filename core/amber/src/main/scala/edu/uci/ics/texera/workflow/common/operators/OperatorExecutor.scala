@@ -25,6 +25,7 @@ trait OperatorExecutor {
   def onInputFinishMultiPort(port: Int): Iterator[(TupleLike, Option[PortIdentity])] = {
     onFinish(port).map(t => (t, None))
   }
+
   def onFinish(port: Int): Iterator[TupleLike] = Iterator.empty
 
   def close(): Unit = {}

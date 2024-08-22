@@ -102,10 +102,10 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
 
   def sendData(dataPayload: DataPayload, from: ActorVirtualIdentity): Unit = {
     dataPayload match {
-      case DataFrame(frame) => writeArrowStream(mutable.Queue(frame: _*), from, "InputDataFrame")
+      case DataFrame(frame) => writeArrowStream(mutable.Queue(frame: _*), from, "data")
       case MarkerFrame(marker) =>
         marker match {
-          case state: State => writeArrowStream(mutable.Queue(state.toTuple), from, "StateFrame")
+          case state: State => writeArrowStream(mutable.Queue(state.toTuple), from, "state")
           case _            => writeArrowStream(mutable.Queue.empty, from, marker.getClass.getSimpleName)
         }
     }
@@ -160,13 +160,13 @@ class PythonProxyClient(portNumberPromise: Promise[Int], val actorId: ActorVirtu
   private def writeArrowStream(
       tuples: mutable.Queue[Tuple],
       from: ActorVirtualIdentity,
-      marker: String
+      payloadType: String
   ): Unit = {
 
     val schema = if (tuples.isEmpty) new Schema() else tuples.front.getSchema
-    val descriptor = FlightDescriptor.command(PythonDataHeader(from, marker).toByteArray)
+    val descriptor = FlightDescriptor.command(PythonDataHeader(from, payloadType).toByteArray)
     logger.debug(
-      s"sending data with descriptor ${PythonDataHeader(from, marker)}, schema $schema, size of batch ${tuples.size}"
+      s"sending data with descriptor ${PythonDataHeader(from, payloadType)}, schema $schema, size of batch ${tuples.size}"
     )
     val flightListener = new SyncPutListener
     val schemaRoot = VectorSchemaRoot.create(ArrowUtils.fromTexeraSchema(schema), allocator)
