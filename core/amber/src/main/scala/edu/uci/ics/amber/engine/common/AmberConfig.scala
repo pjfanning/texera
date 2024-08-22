@@ -7,6 +7,9 @@ import edu.uci.ics.texera.Utils
 import java.io.File
 import java.net.URI
 
+import java.net.HttpURLConnection
+import java.net.URL
+
 object AmberConfig {
 
   private val configFile: File = Utils.amberHomePath
@@ -104,5 +107,62 @@ object AmberConfig {
 
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
+
+  // ai assistant server configuration
+  val aiAssistant: String = getConfSource.getString("ai-assistant-server.default")
+
+  // this will return a boolean, in the code where you want to add AI feature,
+  // use "if (getAIAssistant())" to determine whether the AI feature will be exposed to the users.
+  def getAIAssistant(): Boolean = {
+    aiAssistant match {
+      case "none" =>
+        println("No AI assistant.")
+        false
+      case "openai" =>
+        val source = scala.io.Source.fromFile(".env")
+        //the OpenAI authentication key
+        val key = source
+          .getLines()
+          .find(_.startsWith("OPENAI_API_KEY="))
+          .map(_.split("=")(1).trim)
+          .getOrElse("")
+        source.close()
+        if (key.nonEmpty) {
+          //validate if the key is usable
+          if (validateKey(key)) {
+            println("The AI Assistant initialized successfully")
+            true
+          } else {
+            println("The OpenAI authentication key is not correct")
+            false
+          }
+        } else {
+          println("The authentication key for OpenAI is empty in your .env")
+          false
+        }
+      case _ =>
+        println(s"Unknown AI Assistant")
+        false
+    }
+  }
+
+  private def validateKey(authKey: String): Boolean = {
+    try {
+      val url = new URL("https://api.openai.com/v1/models")
+      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
+      connection.setRequestMethod("GET")
+      connection.setRequestProperty(
+        "Authorization",
+        s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}"
+      )
+      val responseCode = connection.getResponseCode
+      connection.disconnect()
+      responseCode == 200
+    } catch {
+      case e: Exception =>
+        println(s"Error validating OpenAI API key: ${e.getMessage}")
+        false
+    }
+  }
 
 }
