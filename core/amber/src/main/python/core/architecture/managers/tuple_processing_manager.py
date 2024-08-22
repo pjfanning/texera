@@ -2,7 +2,7 @@ from threading import Event, Condition
 from typing import Optional, Union, Tuple, Iterator
 
 from core.models import InputExhausted
-from core.models.state import State
+from core.models.marker import State
 from proto.edu.uci.ics.amber.engine.common import PortIdentity
 
 

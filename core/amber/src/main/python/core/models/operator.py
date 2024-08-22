@@ -8,7 +8,7 @@ import pandas
 from deprecated import deprecated
 
 from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
-from .state import State
+from .marker import State
 from .table import all_output_to_tuple
 
 

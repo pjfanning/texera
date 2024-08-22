@@ -5,7 +5,7 @@ from overrides import overrides
 
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
-from core.models import Tuple
+from core.models import Tuple, State
 from core.models.marker import EndOfUpstream
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
@@ -37,10 +37,10 @@ class OneToOnePartitioner(Partitioner):
     @overrides
     def add_state_to_batch(self, state: State):
         if len(self.batch) > 0:
-            yield self.receiver, OutputDataFrame(frame=deepcopy(self.batch))
+            yield self.receiver, deepcopy(self.batch)
             self.batch.clear()
 
-        yield self.receiver, StateFrame(frame=state.to_table())
+        yield self.receiver, state
 
     @overrides
     def no_more(

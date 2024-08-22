@@ -5,7 +5,7 @@ from loguru import logger
 from overrides import overrides
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
-from core.models import Tuple
+from core.models import Tuple, State
 from core.models.marker import EndOfUpstream
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
@@ -46,10 +46,10 @@ class HashBasedShufflePartitioner(Partitioner):
     def add_state_to_batch(self, state: State):
         for receiver, batch in self.receivers:
             if len(batch) > 0:
-                yield receiver, OutputDataFrame(frame=deepcopy(batch))
-            yield receiver, OutputDataFrame(frame=deepcopy(batch))
+                yield receiver, deepcopy(batch)
+            yield receiver, deepcopy(batch)
             batch.clear()
-            yield receiver, StateFrame(frame=state.to_table())
+            yield receiver, state
 
     @overrides
     def no_more(

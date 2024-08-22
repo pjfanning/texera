@@ -21,7 +21,7 @@ from core.architecture.sendsemantics.round_robin_partitioner import (
 from core.architecture.sendsemantics.broad_cast_partitioner import (
     BroadcastPartitioner,
 )
-from core.models import Tuple, Schema, MarkerFrame
+from core.models import Tuple, Schema, MarkerFrame, State
 from core.models.marker import EndOfUpstream
 from core.models.payload import DataPayload, DataFrame
 from core.util import get_one_of
@@ -101,10 +101,20 @@ class OutputManager:
 
     def state_to_batch(
             self, state: State
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, StateFrame]]:
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         return chain(
             *(
-                partitioner.add_state_to_batch(state)
+                (
+                    (
+                        receiver,
+                        (
+                            MarkerFrame(tuples)
+                            if isinstance(tuples, State)
+                            else self.tuple_to_frame(tuples)
+                        ),
+                    )
+                    for receiver, tuples in partitioner.add_state_to_batch(state)
+                )
                 for partitioner in self._partitioners.values()
             )
         )

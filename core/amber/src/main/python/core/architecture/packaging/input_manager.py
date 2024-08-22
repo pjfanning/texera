@@ -2,7 +2,7 @@ from typing import Iterator, Optional, Union, Dict, List
 
 from core.models import Tuple, ArrowTableTupleProvider, Schema, InputExhausted
 from core.models.internal_marker import EndOfAll, InternalMarker, SenderChange
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, State
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -96,10 +96,7 @@ class InputManager:
             self._current_channel_id = current_channel_id
             yield SenderChange(current_channel_id)
 
-        if isinstance(payload, StateFrame):
-            yield State().from_dict(payload.frame.to_pandas().iloc[0].to_dict())
-
-        elif isinstance(payload, DataFrame):
+        if isinstance(payload, DataFrame):
             for field_accessor in ArrowTableTupleProvider(payload.frame):
                 yield Tuple(
                     {name: field_accessor for name in payload.frame.column_names},
@@ -108,28 +105,31 @@ class InputManager:
                     ].get_schema(),
                 )
 
-        elif isinstance(payload, MarkerFrame) and isinstance(
-            payload.frame, EndOfUpstream
-        ):
-            channel = self._channels[self._current_channel_id]
-            channel.complete()
-            port_id = channel.port_id
-            port_completed = all(
-                map(
-                    lambda channel: channel.is_completed(),
-                    self._ports[port_id].channels,
+
+
+        elif isinstance(payload, MarkerFrame):
+            if isinstance(payload.frame, State):
+                yield payload.frame
+            if isinstance(payload.frame, EndOfUpstream):
+                channel = self._channels[self._current_channel_id]
+                channel.complete()
+                port_id = channel.port_id
+                port_completed = all(
+                    map(
+                        lambda channel: channel.is_completed(),
+                        self._ports[port_id].channels,
+                    )
                 )
-            )
 
-            if port_completed:
-                yield InputExhausted()
+                if port_completed:
+                    yield InputExhausted()
 
-            all_ports_completed = all(
-                map(lambda port: port.is_completed(), self._ports.values())
-            )
+                all_ports_completed = all(
+                    map(lambda port: port.is_completed(), self._ports.values())
+                )
 
-            if all_ports_completed:
-                yield EndOfAll()
+                if all_ports_completed:
+                    yield EndOfAll()
 
         else:
             raise NotImplementedError()

@@ -17,7 +17,7 @@ from core.models import (
     MarkerFrame,
 )
 from core.models.internal_queue import DataElement, ControlElement, InternalQueue
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, State
 from core.proxy import ProxyServer
 from core.util import Stoppable, get_one_of
 from core.util.runnable.runnable import Runnable
@@ -64,8 +64,10 @@ class NetworkReceiver(Runnable, Stoppable):
             """
             data_header = PythonDataHeader().parse(command)
             payload_type = data_header.payload_type
-            if payload_type == "data":
+            if payload_type == "Data":
                 payload = DataFrame(table)
+            elif payload_type == "State":
+                payload = MarkerFrame(State().from_dict(table.to_pandas().iloc[0].to_dict()))
             elif payload_type == "EndOfUpstream":
                 payload = MarkerFrame(EndOfUpstream())
             shared_queue.put(

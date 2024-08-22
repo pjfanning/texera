@@ -106,7 +106,7 @@ private class AmberProducer(
     if (dataHeader.payloadType == EndOfUpstream().getClass.getSimpleName) {
       assert(root.getRowCount == 0)
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
-    } else if (dataHeader.payloadType == "state") {
+    } else if (dataHeader.payloadType == State().getClass.getSimpleName) {
       assert(root.getRowCount == 1)
       outputPort.sendTo(to, MarkerFrame(State().fromTuple(ArrowUtils.getTexeraTuple(0, root))))
     } else {

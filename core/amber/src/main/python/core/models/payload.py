@@ -12,9 +12,5 @@ class DataFrame(DataPayload):
     frame: Table
 
 @dataclass
-class StateFrame(DataPayload):
-    frame: Table
-    
-@dataclass
 class MarkerFrame(DataPayload):
     frame: Marker

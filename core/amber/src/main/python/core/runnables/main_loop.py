@@ -20,8 +20,7 @@ from core.models import (
     Tuple,
 )
 from core.models.internal_queue import DataElement, ControlElement
-from core.models.payload import OutputDataFrame
-from core.models.state import State
+from core.models.marker import State
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement

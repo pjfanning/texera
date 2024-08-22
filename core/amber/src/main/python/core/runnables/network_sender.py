@@ -3,10 +3,9 @@ from typing import Optional
 from loguru import logger
 from overrides import overrides
 
-from core.models import DataPayload, InternalQueue, DataFrame, MarkerFrame
+from core.models import DataPayload, InternalQueue, DataFrame, MarkerFrame, State
 
 from core.models.internal_queue import InternalQueueElement, DataElement, ControlElement
-from core.models.payload import StateFrame
 from core.proxy import ProxyClient
 from core.util import StoppableQueueBlockingRunnable
 from proto.edu.uci.ics.amber.engine.common import (
@@ -55,24 +54,15 @@ class NetworkSender(StoppableQueueBlockingRunnable):
         """
 
         if isinstance(data_payload, DataFrame):
-            data_header = PythonDataHeader(tag=to, payload_type="data")
+            data_header = PythonDataHeader(tag=to, payload_type="Data")
             self._proxy_client.send_data(bytes(data_header), data_payload.frame)
 
         elif isinstance(data_payload, MarkerFrame):
             data_header = PythonDataHeader(
                 tag=to, payload_type=data_payload.frame.__class__.__name__
             )
-            self._proxy_client.send_data(bytes(data_header), None)
-
-        elif isinstance(data_payload, EndOfUpstream):
-            data_header = PythonDataHeader(tag=to, marker=EndOfUpstream.__name__)
-            self._proxy_client.send_data(bytes(data_header), None)
-
-        elif isinstance(data_payload, StateFrame):
-            data_header = PythonDataHeader(tag=to, marker=StateFrame.__name__)
-            table = data_payload.frame
+            table = data_payload.frame.to_table() if isinstance(data_payload.frame, State) else None
             self._proxy_client.send_data(bytes(data_header), table)
-
         else:
             raise TypeError(f"Unexpected payload {data_payload}")
 
