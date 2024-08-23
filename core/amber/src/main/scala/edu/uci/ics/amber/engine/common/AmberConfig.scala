@@ -122,7 +122,8 @@ object AmberConfig {
         println("No AI assistant.")
         false
       case "openai" =>
-        val key = scala.io.Source.fromFile(".env")
+        val key = scala.io.Source
+          .fromFile(".env")
           .getLines()
           .find(_.startsWith("OPENAI_API_KEY="))
           .map(_.split("=")(1).trim)
