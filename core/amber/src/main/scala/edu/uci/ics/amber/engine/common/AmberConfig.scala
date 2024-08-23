@@ -9,6 +9,7 @@ import java.net.URI
 
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.logging.{Logger}
 
 object AmberConfig {
 
@@ -111,6 +112,8 @@ object AmberConfig {
   // ai assistant server configuration
   val aiAssistant: String = getConfSource.getString("ai-assistant-server.default")
 
+  private val logger: Logger = Logger.getLogger(this.getClass.getName)
+
   // this will return a boolean, in the code where you want to add AI feature,
   // use "if (getAIAssistant())" to determine whether the AI feature will be exposed to the users.
   def getAIAssistant(): Boolean = {
@@ -119,29 +122,23 @@ object AmberConfig {
         println("No AI assistant.")
         false
       case "openai" =>
-        val source = scala.io.Source.fromFile(".env")
-        //the OpenAI authentication key
-        val key = source
+        val key = scala.io.Source.fromFile(".env")
           .getLines()
           .find(_.startsWith("OPENAI_API_KEY="))
           .map(_.split("=")(1).trim)
-          .getOrElse("")
-        source.close()
-        if (key.nonEmpty) {
-          //validate if the key is usable
-          if (validateKey(key)) {
-            println("The AI Assistant initialized successfully")
-            true
-          } else {
-            println("The OpenAI authentication key is not correct")
-            false
+          .getOrElse {
+            logger.warning("The authentication key for OpenAI is empty in your .env")
+            return false
           }
+        if (validateKey(key)) {
+          logger.info("The AI Assistant initialized successfully")
+          true
         } else {
-          println("The authentication key for OpenAI is empty in your .env")
+          logger.warning("The OpenAI authentication key is not correct")
           false
         }
       case _ =>
-        println(s"Unknown AI Assistant")
+        logger.warning("The OpenAI authentication key is not correct")
         false
     }
   }
