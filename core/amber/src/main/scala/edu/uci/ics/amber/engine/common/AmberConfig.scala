@@ -8,6 +8,7 @@ import java.io.File
 import java.net.URI
 
 import scala.sys.process._
+import java.util.logging.{Logger}
 
 object AmberConfig {
 
@@ -110,6 +111,8 @@ object AmberConfig {
   // Language server configuration
   val languageServer: String = getConfSource.getString("language-server.default")
 
+  private val logger: Logger = Logger.getLogger(this.getClass.getName)
+
   //free the port for the server
   private def releasePort(port: Int): Unit = {
     val pythonCode =
@@ -139,30 +142,30 @@ object AmberConfig {
     val command = Seq("python", "-c", pythonCode)
     val exitCode = command.!
     if (exitCode == 0) {
-      println(s"port: $port is free successfully")
+      logger.info(s"port: $port is free successfully")
     } else {
-      println(s"fail to free port: $port")
+      logger.warning(s"fail to free port: $port")
     }
   }
 
   def startLanguageServer(): Unit = {
     languageServer match {
       case "pyright" =>
-        println("Starting Pyright...")
+        logger.info("Starting Pyright...")
         releasePort(3000)
         //language server
         try {
           val result =
             Process("node C:/Users/Owner/new/texera/core/languageServer/startPyright.mjs").run()
-          println("Pyright language server is running on port 3000")
+          logger.info("Pyright language server is running on port 3000")
         } catch {
-          case e: Exception => println(s"Failed to start Pyright: ${e.getMessage}")
+          case e: Exception => logger.warning(s"Failed to start Pyright: ${e.getMessage}")
         }
       case "pylsp" =>
-        println("Starting Pylsp...")
+        logger.info("Starting Pylsp...")
         releasePort(3000)
         val result = Process("pylsp --ws --port 3000").run()
-        println("Python language server is running on port 3000")
+        logger.info("Python language server is running on port 3000")
       case _ =>
         throw new IllegalArgumentException(s"Unknown language server: $languageServer")
     }
