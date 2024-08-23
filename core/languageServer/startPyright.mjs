@@ -36,12 +36,12 @@ wss.on('connection', (ws) => {
 
     const socket = {
         send: (content) => ws.send(content),
-        onMessage: (cb) => ws.on('message', cb),
-        onError: (cb) => ws.on('error', cb),
-        onClose: (cb) => {
+        onMessage: (message) => ws.on('message', message),
+        onError: (error) => ws.on('error', error),
+        onClose: (close) => {
             ws.on('close', () => {
                 console.log('WebSocket connection closed.');
-                cb();
+                close();
             });
         },
         dispose: () => {
@@ -50,7 +50,6 @@ wss.on('connection', (ws) => {
             }
         }
     };
-
     const reader = new WebSocketMessageReader(socket);
     const writer = new WebSocketMessageWriter(socket);
     const socketConnection = createConnection(reader, writer, () => socket.dispose());
@@ -59,8 +58,4 @@ wss.on('connection', (ws) => {
         return message;
     });
 
-    ws.on('close', () => {
-        console.log('WebSocket connection closed.');
-        socket.dispose();
-    });
 });
