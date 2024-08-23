@@ -119,18 +119,10 @@ object AmberConfig {
   def getAIAssistant(): Boolean = {
     aiAssistant match {
       case "none" =>
-        println("No AI assistant.")
+        logger.warning("No AI Assistant")
         false
       case "openai" =>
-        val key = scala.io.Source
-          .fromFile(".env")
-          .getLines()
-          .find(_.startsWith("OPENAI_API_KEY="))
-          .map(_.split("=")(1).trim)
-          .getOrElse {
-            logger.warning("The authentication key for OpenAI is empty in your .env")
-            return false
-          }
+        val key: String = getConfSource.getString(("ai-assistant-server.account-key.openai-key"))
         if (validateKey(key)) {
           logger.info("The AI Assistant initialized successfully")
           true
@@ -158,7 +150,7 @@ object AmberConfig {
       responseCode == 200
     } catch {
       case e: Exception =>
-        println(s"Error validating OpenAI API key: ${e.getMessage}")
+        logger.warning("Error in validating OpenAI key")
         false
     }
   }
