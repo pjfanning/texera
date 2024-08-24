@@ -1,21 +1,18 @@
 #nav {
-  list-style-type: none;
-  height: 70px;
-  padding: 10px;
-  background-color: #f8f9fa;
-  span {
-    float: left;
-    padding: 14px;
-    a {
-      color: black;
-      font-weight: bold;
-    }
-  }
+  height: 75px;
+  padding: 10px 0 10px 24px;
+  display: flex;
+  align-items: center;
+  background-color: white;
+  justify-content: space-between;
 }
 
-#logo {
-  float: left;
-  margin-right: 14px;
+texera-filters-instructions {
+  margin-right: 10px;
+}
+
+texera-search-bar {
+  flex: 1;
 }
 
 texera-google-login {
@@ -24,8 +21,16 @@ texera-google-login {
 }
 
 texera-user-icon {
+  padding: 0 24px;
+}
+
+texera-google-login {
   float: right;
-  padding: 8px;
+  padding: 5px 0;
+}
+
+texera-user-icon {
+  padding: 0 24px;
 }
 
 button {
@@ -33,7 +38,7 @@ button {
 }
 
 .layout {
-  height: calc(100vh - 70px);
+  height: 100vh;
 }
 
 .ant-layout-content {
@@ -45,4 +50,15 @@ button {
   overflow-x: hidden;
   overflow-y: auto;
   height: calc(100vh - 70px - 48px);
+}
+
+.logo-section {
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+nz-content {
+  position: relative;
 }

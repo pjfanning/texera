@@ -1,15 +1,14 @@
 package edu.uci.ics.amber.engine.common.storage
 
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource
-import org.jooq.types.UInteger
 
 import java.io.{File, InputStream, FileOutputStream}
 import java.net.URI
 import java.nio.file.{Files, Path}
 
-class DatasetFileDocument(uid: UInteger, fileFullPath: Path) extends VirtualDocument[Nothing] {
+class DatasetFileDocument(fileFullPath: Path) extends VirtualDocument[Nothing] {
 
-  private val (dataset, datasetVersion, fileRelativePath) =
+  private val (_, dataset, datasetVersion, fileRelativePath) =
     DatasetResource.resolveFilePath(fileFullPath)
 
   private var tempFile: Option[File] = None
@@ -20,7 +19,7 @@ class DatasetFileDocument(uid: UInteger, fileFullPath: Path) extends VirtualDocu
     )
 
   override def asInputStream(): InputStream =
-    DatasetResource.getDatasetFile(dataset.getDid, datasetVersion.getDvid, uid, fileRelativePath)
+    DatasetResource.getDatasetFile(dataset.getDid, datasetVersion.getDvid, fileRelativePath)
 
   override def asFile(): File = {
     tempFile match {
