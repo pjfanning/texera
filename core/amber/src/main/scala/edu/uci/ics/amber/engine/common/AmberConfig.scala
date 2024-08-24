@@ -10,6 +10,7 @@ import java.net.URI
 import scala.sys.process._
 import java.util.logging.{Logger}
 
+
 object AmberConfig {
 
   private val configFile: File = Utils.amberHomePath
@@ -109,37 +110,14 @@ object AmberConfig {
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
   // Language server configuration
-  val languageServer: String = getConfSource.getString("language-server.default")
-
-  private val logger: Logger = Logger.getLogger(this.getClass.getName)
+  val languageServer: String = getConfSource.getString("python-language-server.provider")
+  val languageServerPort: Int = getConfSource.getInt("python-language-server.port")
 
   //free the port for the server
   private def releasePort(port: Int): Unit = {
-    val pythonCode =
-      s"""
-         |import os
-         |
-         |def release_port(port):
-         |    cmd_find = 'netstat -aon | findstr %s' % (port)
-         |    print('cmd_find:', cmd_find)
-         |    res = os.popen(cmd_find).read()
-         |    print('res:', res)
-         |    if str(port) and 'LISTENING' in res:
-         |        i = res.index('LISTENING')
-         |        start = i + len('LISTENING') + 7
-         |        end = res.find('\\n', start)
-         |        pid = res[start:end].strip()
-         |        print('pid:', pid)
-         |        cmd_kill = 'taskkill -f -pid %s' % (pid)
-         |        print('cmd_kill:', cmd_kill)
-         |        os.popen(cmd_kill)
-         |    else:
-         |        print('This port is free to use')
-         |
-         |release_port($port)
-       """.stripMargin
-
-    val command = Seq("python", "-c", pythonCode)
+    val logger = Logger.getLogger("AmberConfig")
+    val scriptPath = "release_port.py"
+    val command = Seq("python", scriptPath, port.toString)
     val exitCode = command.!
     if (exitCode == 0) {
       logger.info(s"Successfully free the port: $port")
@@ -149,25 +127,28 @@ object AmberConfig {
   }
 
   def startLanguageServer(): Unit = {
+    val logger = Logger.getLogger("AmberConfig")
     languageServer match {
       case "pyright" =>
         logger.info("Starting Pyright...")
-        releasePort(3000)
-        //Try to run the Pyright language server
+        releasePort(languageServerPort)
         try {
-          val result =
-            Process("node ../languageServer/startPyright.mjs").run()
-          logger.info("Pyright language server is running on port 3000")
+          val result = {
+            // Ignore the stdout and catch the stderr
+            Process("node ../languageServer/startPyright.mjs").run(ProcessLogger(_ => (), err => logger.warning(err)))
+          }
+          logger.info(s"Pyright language server is running on port ${languageServerPort}")
         } catch {
-          case e: Exception => logger.warning(s"Failed to start Pyright: ${e.getMessage}")
+          case e: Exception =>
+            logger.warning(s"Failed to start Pyright: ${e.getMessage}")
         }
       case "pylsp" =>
         logger.info("Starting Pylsp...")
         releasePort(3000)
-        val result = Process("pylsp --ws --port 3000").run()
-        logger.info("Python language server is running on port 3000")
+        val result = Process(s"pylsp --ws --port ${languageServerPort}").run(ProcessLogger(_ => (), err => logger.warning(err)))
+        logger.info(s"Python language server is running on port ${languageServerPort}")
       case _ =>
-        throw new IllegalArgumentException(s"Unknown language server: $languageServer")
+        logger.warning(s"Unknown language server: $languageServer")
     }
   }
 }
