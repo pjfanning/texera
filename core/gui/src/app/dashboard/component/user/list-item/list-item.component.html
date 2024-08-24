@@ -24,9 +24,7 @@
       <!-- Name -->
       <div
         class="resource-name truncate-single-line"
-        [ngClass]="{ 'editable': isPrivateSearch }"
-        *ngIf="!editingName"
-        (click)="isPrivateSearch ? onEditName($event) : null">
+        *ngIf="!editingName">
         {{ entry.name }}
       </div>
       <input
@@ -40,14 +38,11 @@
         autofocus>
 
       <!-- Description -->
-      <div
-        class="resource-description-container"
-        (click)="isPrivateSearch ? onEditDescription($event) : null">
+      <div class="resource-description-container">
         <div
           class="resource-description truncate-single-line"
-          [ngClass]="{ 'editable': isPrivateSearch }"
           *ngIf="!editingDescription">
-          {{ isPrivateSearch ? (entry.description || "Click to add a description...") : (entry.description || '') }}
+          {{ entry.description ? entry.description : '' }}
         </div>
         <textarea
           *ngIf="editingDescription"
@@ -82,6 +77,26 @@
   <div
     *ngIf="isPrivateSearch"
     class="button-group">
+    <button
+      nz-button
+      nzType="text"
+      class="dropdown-item"
+      (click)="onEditName()">
+      <i
+        nz-icon
+        nzTheme="outline"
+        nzType="edit"></i>
+    </button>
+    <button
+      nz-button
+      nzType="text"
+      class="dropdown-item"
+      (click)="onEditDescription()">
+      <i
+        nz-icon
+        nzTheme="outline"
+        nzType="form"></i>
+    </button>
     <button
       nz-button
       nzType="text"

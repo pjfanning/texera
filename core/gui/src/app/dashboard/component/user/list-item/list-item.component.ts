@@ -143,34 +143,28 @@ export class ListItemComponent implements OnInit, OnChanges {
     }
   }
 
-  onEditName(event: MouseEvent): void {
-    event.stopPropagation(); // prevent triggering routerLink navigation
+  onEditName(): void {
     this.editingName = true;
-
-    // Use setTimeout to focus the input and set the cursor position
     setTimeout(() => {
       if (this.nameInput) {
         const inputElement = this.nameInput.nativeElement;
         const valueLength = inputElement.value.length;
         inputElement.focus();
-        inputElement.setSelectionRange(valueLength, valueLength); // set the cursor to the end of the text
+        inputElement.setSelectionRange(valueLength, valueLength);
       }
-    }, 0); // Delay execution to allow the DOM to update
+    }, 0);
   }
 
-  onEditDescription(event: MouseEvent): void {
-    event.stopPropagation(); // prevent triggering routerLink navigation
+  onEditDescription(): void {
     this.editingDescription = true;
-
-    // Use setTimeout to focus the textarea and set the cursor position
     setTimeout(() => {
       if (this.descriptionInput) {
         const textareaElement = this.descriptionInput.nativeElement;
         const valueLength = textareaElement.value.length;
         textareaElement.focus();
-        textareaElement.setSelectionRange(valueLength, valueLength); // set the cursor to the end of the text
+        textareaElement.setSelectionRange(valueLength, valueLength);
       }
-    }, 0); // Delay execution to allow the DOM to update
+    }, 0);
   }
 
   public confirmUpdateWorkflowCustomName(name: string): void {
