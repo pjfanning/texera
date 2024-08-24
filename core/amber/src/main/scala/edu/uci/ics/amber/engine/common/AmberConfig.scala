@@ -143,14 +143,17 @@ object AmberConfig {
       val url = new URL("https://api.openai.com/v1/models")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
-      connection.setRequestProperty("Authorization", s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}")
+      connection.setRequestProperty(
+        "Authorization",
+        s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}"
+      )
       val responseCode = connection.getResponseCode
       responseCode == 200
     } catch {
       case e: Exception =>
         println(s"Error validating OpenAI API key: ${e.getMessage}")
         false
-    }finally{
+    } finally {
       if (connection != null) {
         connection.disconnect()
       }
