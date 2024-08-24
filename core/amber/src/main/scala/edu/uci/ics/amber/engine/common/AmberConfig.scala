@@ -114,7 +114,7 @@ object AmberConfig {
 
   private val logger: Logger = Logger.getLogger(this.getClass.getName)
 
-  // this will return a boolean, in the code where you want to add AI feature,
+  // This will return a boolean, in the code where you want to add AI feature,
   // use "if (getAIAssistant())" to determine whether the AI feature will be exposed to the users.
   def getAIAssistant(): Boolean = {
     aiAssistant match {
@@ -131,28 +131,29 @@ object AmberConfig {
           false
         }
       case _ =>
-        logger.warning("The OpenAI authentication key is not correct")
+        logger.warning("This AI assistant is not exist")
         false
     }
   }
 
+  //To check if the OpenAI key is valid
   private def validateKey(authKey: String): Boolean = {
+    var connection: HttpURLConnection = null
     try {
       val url = new URL("https://api.openai.com/v1/models")
       val connection = url.openConnection().asInstanceOf[HttpURLConnection]
       connection.setRequestMethod("GET")
-      connection.setRequestProperty(
-        "Authorization",
-        s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}"
-      )
+      connection.setRequestProperty("Authorization", s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}")
       val responseCode = connection.getResponseCode
-      connection.disconnect()
       responseCode == 200
     } catch {
       case e: Exception =>
-        logger.warning("Error in validating OpenAI key")
+        println(s"Error validating OpenAI API key: ${e.getMessage}")
         false
+    }finally{
+      if (connection != null) {
+        connection.disconnect()
+      }
     }
   }
-
 }
