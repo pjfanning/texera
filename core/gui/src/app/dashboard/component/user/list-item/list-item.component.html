@@ -24,6 +24,7 @@
       <!-- Name -->
       <div
         class="resource-name truncate-single-line"
+        [ngClass]="{ 'editable': isPrivateSearch }"
         *ngIf="!editingName"
         (click)="isPrivateSearch ? onEditName($event) : null">
         {{ entry.name }}
@@ -44,8 +45,9 @@
         (click)="isPrivateSearch ? onEditDescription($event) : null">
         <div
           class="resource-description truncate-single-line"
+          [ngClass]="{ 'editable': isPrivateSearch }"
           *ngIf="!editingDescription">
-          {{ entry.description || "Click to add a description..." }}
+          {{ isPrivateSearch ? (entry.description || "Click to add a description...") : (entry.description || '') }}
         </div>
         <textarea
           *ngIf="editingDescription"
