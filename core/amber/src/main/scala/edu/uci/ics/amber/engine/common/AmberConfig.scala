@@ -142,9 +142,9 @@ object AmberConfig {
     val command = Seq("python", "-c", pythonCode)
     val exitCode = command.!
     if (exitCode == 0) {
-      logger.info(s"port: $port is free successfully")
+      logger.info(s"Successfully free the port: $port")
     } else {
-      logger.warning(s"fail to free port: $port")
+      logger.warning(s"fail to free the port: $port")
     }
   }
 
@@ -153,10 +153,10 @@ object AmberConfig {
       case "pyright" =>
         logger.info("Starting Pyright...")
         releasePort(3000)
-        //language server
+        //Try to run the Pyright language server
         try {
           val result =
-            Process("node C:/Users/Owner/new/texera/core/languageServer/startPyright.mjs").run()
+            Process("node ../languageServer/startPyright.mjs").run()
           logger.info("Pyright language server is running on port 3000")
         } catch {
           case e: Exception => logger.warning(s"Failed to start Pyright: ${e.getMessage}")

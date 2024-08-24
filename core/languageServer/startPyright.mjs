@@ -38,10 +38,9 @@ wss.on('connection', (ws) => {
         send: (content) => ws.send(content),
         onMessage: (message) => ws.on('message', message),
         onError: (error) => ws.on('error', error),
-        onClose: (close) => {
+        onClose: () => {
             ws.on('close', () => {
                 console.log('WebSocket connection closed.');
-                close();
             });
         },
         dispose: () => {
