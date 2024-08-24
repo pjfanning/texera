@@ -5,21 +5,60 @@
     [routerLink]="entryLink"
     nz-row
     nzAlign="middle">
-    <div
-      nz-col
-      nzSpan="1">
+
+    <!-- Icon Column -->
+    <div nz-col nzSpan="1">
       <div class="type-icon-div">
-        <i
-          nz-icon
-          [nzType]="iconType"></i>
+        <i nz-icon [nzType]="iconType"></i>
       </div>
     </div>
-    <div
-      nz-col
-      nzSpan="11">
-      <div class="resource-name truncate-single-line"><em>#{{ entry.id }}</em> {{ entry.name }}</div>
-      <div class="resource-description truncate-single-line">{{ entry.description || ""}}</div>
+
+    <!-- ID Column -->
+    <div nz-col nzSpan="1">
+      <div class="resource-id">
+        <em>#{{ entry.id }}</em>
+      </div>
     </div>
+
+    <div nz-col nzSpan="10">
+      <!-- Name -->
+      <div
+        class="resource-name truncate-single-line"
+        *ngIf="!editingName"
+        (click)="isPrivateSearch ? onEditName($event) : null">
+        {{ entry.name }}
+      </div>
+      <input
+        *ngIf="editingName"
+        #nameInput
+        class="resource-name-edit-input"
+        [(ngModel)]="entry.name"
+        (blur)="confirmUpdateWorkflowCustomName(entry.name)"
+        (keydown.enter)="confirmUpdateWorkflowCustomName(entry.name)"
+        (click)="$event.stopPropagation()"
+        autofocus>
+
+      <!-- Description -->
+      <div
+        class="resource-description-container"
+        (click)="isPrivateSearch ? onEditDescription($event) : null">
+        <div
+          class="resource-description truncate-single-line"
+          *ngIf="!editingDescription">
+          {{ entry.description || "Click to add a description..." }}
+        </div>
+        <textarea
+          *ngIf="editingDescription"
+          #descriptionInput
+          class="resource-description-edit-textarea"
+          [(ngModel)]="entry.description"
+          (blur)="confirmUpdateWorkflowCustomDescription(entry.description)"
+          (keydown.enter)="confirmUpdateWorkflowCustomDescription(entry.description)"
+          (click)="$event.stopPropagation()"
+          autofocus></textarea>
+      </div>
+    </div>
+
     <div
       nz-col
       nzSpan="12">

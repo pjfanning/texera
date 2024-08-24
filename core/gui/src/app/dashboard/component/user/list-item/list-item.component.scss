@@ -13,14 +13,24 @@
   text-overflow: ellipsis;
 }
 
+.resource-id {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 3px;
+  margin-left: 5px;
+}
+
 .resource-name {
   font-size: 17px;
   font-weight: 600;
+  width: calc(100% - 20px);
 }
+
 .resource-description {
   font-size: 12px;
   font-weight: 300;
   color: grey;
+  height: 24px;
 }
 
 .type-icon-div {
@@ -75,4 +85,30 @@
 
 .list-item-card:hover .button-group {
   display: flex;
+}
+
+.resource-name-edit-input {
+  font-size: 17px;
+  font-weight: 600;
+  width: calc(100% - 20px);
+  padding: 0;
+  margin-bottom: 4px;
+  border: none;
+  outline: none;
+  height: 23px;
+}
+
+.resource-description-edit-textarea {
+  font-size: 12px;
+  font-weight: 300;
+  width: calc(100% - 20px);
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  height: 18px;
+  line-height: 1.5;
+  max-height: 18px;
+  overflow: hidden;
 }
