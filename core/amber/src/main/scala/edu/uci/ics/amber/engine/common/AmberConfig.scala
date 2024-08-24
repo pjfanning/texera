@@ -109,34 +109,34 @@ object AmberConfig {
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
-  // ai assistant server configuration
+  // AI assistant server configuration
   val aiAssistant: String = getConfSource.getString("ai-assistant-server.default")
 
   private val logger: Logger = Logger.getLogger(this.getClass.getName)
 
-  // This will return a boolean, in the code where you want to add AI feature,
-  // use "if (getAIAssistant())" to determine whether the AI feature will be exposed to the users.
+  // Returns a boolean. In the code where you want to add the AI feature,
+  // use if (getAIAssistant()) to determine whether the AI feature should be exposed to users.
   def getAIAssistant(): Boolean = {
     aiAssistant match {
       case "none" =>
-        logger.warning("No AI Assistant")
+        logger.warning("No AI Assistant available")
         false
       case "openai" =>
         val key: String = getConfSource.getString(("ai-assistant-server.account-key.openai-key"))
         if (validateKey(key)) {
-          logger.info("The AI Assistant initialized successfully")
+          logger.info("The AI Assistant initialized successfully.")
           true
         } else {
-          logger.warning("The OpenAI authentication key is not correct")
+          logger.warning("The OpenAI authentication key is incorrect.")
           false
         }
       case _ =>
-        logger.warning("This AI assistant is not exist")
+        logger.warning("This AI assistant does not exist.")
         false
     }
   }
 
-  //To check if the OpenAI key is valid
+  // To check if the OpenAI key is valid
   private def validateKey(authKey: String): Boolean = {
     var connection: HttpURLConnection = null
     try {
