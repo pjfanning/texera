@@ -20,7 +20,7 @@ export class DashboardComponent implements OnInit {
   displayForum: boolean = true;
   displayNavbar: boolean = true;
   isCollpased: boolean = false;
-  routesWithoutNavbar: string[] = ["/workspace"];  
+  routesWithoutNavbar: string[] = ["/workspace"];
   currentComponent = HubComponent;
 
   constructor(

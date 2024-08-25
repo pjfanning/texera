@@ -43,7 +43,7 @@ if (environment.userSystemEnabled) {
     children: [
       {
         path: "home",
-        component: HomeComponent
+        component: HomeComponent,
       },
       {
         path: "hub",
