@@ -15,12 +15,26 @@ texera-search-bar {
   flex: 1;
 }
 
-button {
-  border: none;
+texera-google-login {
+  float: right;
+  padding: 5px 0;
 }
 
 texera-user-icon {
   padding: 0 24px;
+}
+
+texera-google-login {
+  float: right;
+  padding: 5px 0;
+}
+
+texera-user-icon {
+  padding: 0 24px;
+}
+
+button {
+  border: none;
 }
 
 .layout {

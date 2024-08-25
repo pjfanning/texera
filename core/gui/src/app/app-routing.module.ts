@@ -113,6 +113,11 @@ if (environment.userSystemEnabled) {
         canActivate: [AdminGuardService],
       },
       {
+        path: "admin/user",
+        component: AdminUserComponent,
+        canActivate: [AdminGuardService],
+      },
+      {
         path: "admin/gmail",
         component: AdminGmailComponent,
         canActivate: [AdminGuardService],
