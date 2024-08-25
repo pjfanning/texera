@@ -29,7 +29,7 @@ import { Subscription, timer } from "rxjs";
 import { isDefined } from "../../../common/util/predicate";
 import { NzModalService } from "ng-zorro-antd/modal";
 import { ResultExportationComponent } from "../result-exportation/result-exportation.component";
-
+import { ReportGenerationService } from "../../service/report-generation/report-generation.service";
 /**
  * MenuComponent is the top level menu bar that shows
  *  the Texera title and workflow execution button
@@ -98,7 +98,8 @@ export class MenuComponent implements OnInit {
     private notificationService: NotificationService,
     public operatorMenu: OperatorMenuService,
     public coeditorPresenceService: CoeditorPresenceService,
-    private modalService: NzModalService
+    private modalService: NzModalService,
+    private reportGenerationService: ReportGenerationService
   ) {
     workflowWebsocketService
       .subscribeToEvent("ExecutionDurationUpdateEvent")
@@ -245,6 +246,25 @@ export class MenuComponent implements OnInit {
 
   public handleCheckpoint(): void {
     this.executeWorkflowService.takeGlobalCheckpoint();
+  }
+
+  /**
+   * get the html to export all results.
+   */
+  public onClickGenerateReport(): void {
+    //Get notification
+    this.notificationService.info("The report is being generated...");
+
+    const workflowName = this.currentWorkflowName;
+
+    // Invokes the method of the report printing service
+    this.reportGenerationService
+      .generateWorkflowSnapshot(workflowName)
+      .pipe(untilDestroyed(this))
+      .subscribe({
+        next: (snapshot: string) => this.reportGenerationService.generateReportAsHtml(snapshot, workflowName),
+        error: (e: unknown) => this.notificationService.error((e as Error).message),
+      });
   }
 
   /**
@@ -410,7 +430,7 @@ export class MenuComponent implements OnInit {
 
   public onClickExportWorkflow(): void {
     const workflowContent: WorkflowContent = this.workflowActionService.getWorkflowContent();
-    const workflowContentJson = JSON.stringify(workflowContent);
+    const workflowContentJson = JSON.stringify(workflowContent, null, 2);
     const fileName = this.currentWorkflowName + ".json";
     saveAs(new Blob([workflowContentJson], { type: "text/plain;charset=utf-8" }), fileName);
   }

@@ -3,7 +3,6 @@ import { RouterModule, Routes } from "@angular/router";
 import { environment } from "../environments/environment";
 import { DashboardComponent } from "./dashboard/component/dashboard.component";
 import { UserWorkflowComponent } from "./dashboard/component/user/user-workflow/user-workflow.component";
-import { UserFileComponent } from "./dashboard/component/user/user-file/user-file.component";
 import { UserQuotaComponent } from "./dashboard/component/user/user-quota/user-quota.component";
 import { UserProjectSectionComponent } from "./dashboard/component/user/user-project/user-project-section/user-project-section.component";
 import { UserProjectComponent } from "./dashboard/component/user/user-project/user-project.component";
@@ -26,24 +25,23 @@ import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-
 const routes: Routes = [
   {
     path: "",
-    component: WorkspaceComponent,
-    canActivate: [AuthGuardService],
-  },
-  {
-    path: "workflow/:id",
-    component: WorkspaceComponent,
+    component: environment.userSystemEnabled ? UserWorkflowComponent : WorkspaceComponent,
     canActivate: [AuthGuardService],
   },
 ];
 if (environment.userSystemEnabled) {
+  /*
+   *  The user dashboard is under path '/dashboard'
+   *  The saved workflow is under path '/dashboard/workflow'
+   *  The user dictionary is under path '/dashboard/user-dictionary'
+   *  The user project list is under path '/dashboard/project'
+   *  The single user project is under path 'dashboard/project/{pid}'
+   */
   routes.push({
     path: "dashboard",
     component: DashboardComponent,
+    canActivate: [AuthGuardService],
     children: [
-      {
-        path: "home",
-        component: HomeComponent,
-      },
       {
         path: "hub",
         children: [
@@ -68,71 +66,68 @@ if (environment.userSystemEnabled) {
         ],
       },
       {
-        path: "user",
-        canActivate: [AuthGuardService],
-        children: [
-          {
-            path: "project",
-            component: UserProjectComponent,
-          },
-          {
-            path: "project/:pid",
-            component: UserProjectSectionComponent,
-          },
-          {
-            path: "workflow",
-            component: UserWorkflowComponent,
-          },
-          {
-            path: "file",
-            component: UserFileComponent,
-          },
-          {
-            path: "dataset",
-            component: UserDatasetComponent,
-          },
-          // the below two URLs route to the same Component. The component will render the page accordingly
-          {
-            path: "dataset/:did",
-            component: UserDatasetExplorerComponent,
-          },
-          {
-            path: "dataset/create",
-            component: UserDatasetExplorerComponent,
-          },
-          {
-            path: "quota",
-            component: UserQuotaComponent,
-          },
-          {
-            path: "search",
-            component: SearchComponent,
-          },
-          {
-            path: "discussion",
-            component: FlarumComponent,
-          },
-        ],
+        path: "user-project",
+        component: UserProjectComponent,
       },
       {
-        path: "admin",
+        path: "user-project/:pid",
+        component: UserProjectSectionComponent,
+      },
+      {
+        path: "workspace/:id",
+        component: WorkspaceComponent,
+        canActivate: [AuthGuardService],
+      },
+      {
+        path: "workflow",
+        component: UserWorkflowComponent,
+      },
+      {
+        path: "dataset",
+        component: UserDatasetComponent,
+      },
+      // the below two URLs route to the same Component. The component will render the page accordingly
+      {
+        path: "dataset/:did",
+        component: UserDatasetExplorerComponent,
+      },
+      {
+        path: "dataset/create",
+        component: UserDatasetExplorerComponent,
+      },
+      {
+        path: "user-quota",
+        component: UserQuotaComponent,
+      },
+      {
+        path: "search",
+        component: SearchComponent,
+      },
+      {
+        path: "discussion",
+        component: FlarumComponent,
+      },
+      {
+        path: "admin/user",
+        component: AdminUserComponent,
         canActivate: [AdminGuardService],
-        children: [
-          {
-            path: "user",
-            component: AdminUserComponent,
-          },
-          {
-            path: "gmail",
-            component: AdminGmailComponent,
-          },
-          {
-            path: "execution",
-            component: AdminExecutionComponent,
-          },
-        ],
+      },
+      {
+        path: "admin/gmail",
+        component: AdminGmailComponent,
+        canActivate: [AdminGuardService],
+      },
+      {
+        path: "admin/execution",
+        component: AdminExecutionComponent,
+        canActivate: [AdminGuardService],
       },
     ],
+  });
+
+  routes.push({
+    path: "home",
+    component: HomeComponent,
   });
 }
 // redirect all other paths to index.
