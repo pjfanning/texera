@@ -5,9 +5,9 @@ import { CdkDragDrop, moveItemInArray } from "@angular/cdk/drag-drop";
 import { environment } from "../../../../environments/environment";
 import { OperatorMenuComponent } from "./operator-menu/operator-menu.component";
 import { VersionsListComponent } from "./versions-list/versions-list.component";
-import { WorkflowExecutionHistoryComponent } from "../../../dashboard/user/component/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
+import { WorkflowExecutionHistoryComponent } from "../../../dashboard/component/user/user-workflow/ngbd-modal-workflow-executions/workflow-execution-history.component";
 import { TimeTravelComponent } from "./time-travel/time-travel.component";
-import { EnvironmentComponent } from "./environment/environment.component";
+
 @UntilDestroy()
 @Component({
   selector: "texera-left-panel",
@@ -38,19 +38,17 @@ export class LeftPanelComponent implements OnDestroy, OnInit {
       icon: "clock-circle",
       enabled: environment.userSystemEnabled && environment.timetravelEnabled,
     },
-    {
-      component: EnvironmentComponent,
-      title: "Environment",
-      icon: "dashboard",
-      enabled: environment.userSystemEnabled,
-    },
   ];
 
   order = Array.from({ length: this.items.length - 1 }, (_, index) => index + 1);
 
   constructor() {
-    this.order = localStorage.getItem("left-panel-order")?.split(",").map(Number) || this.order;
-    this.openFrame(Number(localStorage.getItem("left-panel-index") || "1"));
+    const savedOrder = localStorage.getItem("left-panel-order")?.split(",").map(Number);
+    this.order = savedOrder && new Set(savedOrder).size === new Set(this.order).size ? savedOrder : this.order;
+
+    const savedIndex = Number(localStorage.getItem("left-panel-index"));
+    this.openFrame(savedIndex < this.items.length && this.items[savedIndex].enabled ? savedIndex : 1);
+
     this.width = Number(localStorage.getItem("left-panel-width")) || this.width;
     this.height = Number(localStorage.getItem("left-panel-height")) || this.height;
   }
