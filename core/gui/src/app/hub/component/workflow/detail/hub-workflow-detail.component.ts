@@ -1,6 +1,9 @@
 import { Component } from "@angular/core";
-import { UntilDestroy } from "@ngneat/until-destroy";
 import { ActivatedRoute } from "@angular/router";
+import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import { Location } from "@angular/common";
+import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
+
 
 @UntilDestroy()
 @Component({
@@ -38,7 +41,20 @@ export class HubWorkflowDetailComponent {
     ],
   };
 
-  constructor(private route: ActivatedRoute) {
+  constructor(
+    private route: ActivatedRoute,
+    private location: Location,
+    private hubWorkflowService: HubWorkflowService
+  ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
+  }
+
+  goBack(): void {
+    this.location.back();
+  }
+
+  cloneWorkflow(): void {
+    alert("Workflow " + this.wid + " is cloned to your workspace.");
+    this.hubWorkflowService.cloneWorkflow(Number(this.wid)).pipe(untilDestroyed(this)).subscribe();
   }
 }
