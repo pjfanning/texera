@@ -18,7 +18,7 @@ object PythonLanguageServerManager {
         releasePort(pythonLanguageServerPort)
         try {
           val result = {
-            Process("node ../languageServer/startPyright.mjs").run(
+            Process("node ../pyright-language-server/startPyright.mjs").run(
               ProcessLogger(_ => (), err => logger.warning(s"Error during Pyright startup: $err"))
             )
           }
