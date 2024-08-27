@@ -1,8 +1,8 @@
 {
-  "name": "languageServer",
-  "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
+  "name": "pyright-language-server",
+  "version": "0.0.1",
+  "main": "startPyright.mjs",
+  "license": "Apache 2.0",
   "dependencies": {
     "express": "^4.19.2",
     "hocon-parser": "^1.0.1",
