@@ -2,7 +2,7 @@ package edu.uci.ics.texera.web.resource.languageserver
 
 import edu.uci.ics.amber.engine.common.AmberConfig
 
-import java.util.logging.{Logger}
+import java.util.logging.Logger
 import scala.sys.process._
 
 object PythonLanguageServerManager {
