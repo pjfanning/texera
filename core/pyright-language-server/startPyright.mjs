@@ -8,25 +8,28 @@ import hocon from 'hocon-parser';
 import fs from 'fs';
 import * as path from "node:path";
 
-// to get the absolute path of this file
+// To get the absolute path of this file
 const absolutePath = fileURLToPath(import.meta.url);
-// to get the absolute path of this file except for the file name
+// To get the absolute path of this file except for the file name
 const dir = dirname(absolutePath);
 
-// to get the config to avoid hard code path
+// To get the config to avoid hard code path
 const configFilePath = path.resolve(dir, 'pythonLanguageServerConfig.json');
 const config = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
 
-// to get the backend application.conf for the port
+// To get the backend application.conf for the port
 const amberConfigFilePath = path.resolve(dir, config.amberConfigFilePath);
 const amberConfigContent = fs.readFileSync(amberConfigFilePath, 'utf-8');
 const applicationConfig = hocon(amberConfigContent);
+// The port is decided by the configuration in the backend "python-language-server" flag
 const pythonLanguageServerPort = applicationConfig['python-language-server'].port;
 
+// To get the file to start the pyright
 const pyrightPath = path.resolve(dir, config.languageServerDir, config.languageServerFile);
 
 const app = express();
 app.use(express.static(dir));
+// Listening on a port which is configurable
 const server = app.listen(pythonLanguageServerPort);
 console.log(pythonLanguageServerPort)
 

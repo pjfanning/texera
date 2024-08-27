@@ -7,12 +7,14 @@ import scala.sys.process._
 
 object PythonLanguageServerManager {
   private val pythonLanguageServerConfig = AmberConfig.pythonLanguageServerConfig
-  val pythonLanguageServerType: String = pythonLanguageServerConfig.getString("provider")
+  val pythonLanguageServerProvider: String = pythonLanguageServerConfig.getString("provider")
   val pythonLanguageServerPort: Int = pythonLanguageServerConfig.getInt("port")
   private val logger = Logger.getLogger("PythonLanguageServerManager")
 
+  // To start the python language server based on the python-language-server provider
   def startLanguageServer(): Unit = {
-    pythonLanguageServerType match {
+    pythonLanguageServerProvider match {
+      // The situation when the provider is Pyright
       case "pyright" =>
         logger.info("Starting Pyright...")
         releasePort(pythonLanguageServerPort)
@@ -28,6 +30,7 @@ object PythonLanguageServerManager {
             logger.warning(s"Failed to start Pyright: ${e.getMessage}")
         }
 
+      // The situation when the provider is Pylsp
       case "pylsp" =>
         logger.info("Starting Pylsp...")
         releasePort(pythonLanguageServerPort)
