@@ -7,10 +7,6 @@ import edu.uci.ics.texera.Utils
 import java.io.File
 import java.net.URI
 
-import scala.sys.process._
-import java.util.logging.{Logger}
-
-
 object AmberConfig {
 
   private val configFile: File = Utils.amberHomePath
@@ -110,45 +106,5 @@ object AmberConfig {
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
   // Language server configuration
-  val languageServer: String = getConfSource.getString("python-language-server.provider")
-  val languageServerPort: Int = getConfSource.getInt("python-language-server.port")
-
-  //free the port for the server
-  private def releasePort(port: Int): Unit = {
-    val logger = Logger.getLogger("AmberConfig")
-    val scriptPath = "release_port.py"
-    val command = Seq("python", scriptPath, port.toString)
-    val exitCode = command.!
-    if (exitCode == 0) {
-      logger.info(s"Successfully free the port: $port")
-    } else {
-      logger.warning(s"fail to free the port: $port")
-    }
-  }
-
-  def startLanguageServer(): Unit = {
-    val logger = Logger.getLogger("AmberConfig")
-    languageServer match {
-      case "pyright" =>
-        logger.info("Starting Pyright...")
-        releasePort(languageServerPort)
-        try {
-          val result = {
-            // Ignore the stdout and catch the stderr
-            Process("node ../languageServer/startPyright.mjs").run(ProcessLogger(_ => (), err => logger.warning(err)))
-          }
-          logger.info(s"Pyright language server is running on port ${languageServerPort}")
-        } catch {
-          case e: Exception =>
-            logger.warning(s"Failed to start Pyright: ${e.getMessage}")
-        }
-      case "pylsp" =>
-        logger.info("Starting Pylsp...")
-        releasePort(3000)
-        val result = Process(s"pylsp --ws --port ${languageServerPort}").run(ProcessLogger(_ => (), err => logger.warning(err)))
-        logger.info(s"Python language server is running on port ${languageServerPort}")
-      case _ =>
-        logger.warning(s"Unknown language server: $languageServer")
-    }
-  }
+  val pythonLanguageServerConfig: Config = getConfSource.getConfig("python-language-server")
 }

@@ -1,16 +1,34 @@
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { dirname, resolve} from 'path';
 import { WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
 import { createConnection, createServerProcess, forward } from 'vscode-ws-jsonrpc/server';
+import hocon from 'hocon-parser';
+import fs from 'fs';
+import * as path from "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const dir = dirname(__filename);
+// to get the absolute path of this file
+const absolutePath = fileURLToPath(import.meta.url);
+// to get the absolute path of this file except for the file name
+const dir = dirname(absolutePath);
+
+// to get the config to avoid hard code path
+const configFilePath = path.resolve(dir, 'pythonLanguageServerConfig.json');
+const config = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
+
+// to get the backend application.conf for the port
+const amberConfigFilePath = path.resolve(dir, config.amberConfigFilePath);
+const configFileContent = fs.readFileSync(amberConfigFilePath, 'utf-8');
+const applicationConfig = hocon(configFileContent);
+const pythonLanguageServerPort = applicationConfig['python-language-server'].port;
+
+const pyrightPath = path.resolve(dir, config.languageServerDir, config.languageServerFile);
 
 const app = express();
 app.use(express.static(dir));
-const server = app.listen(3000);
+const server = app.listen(pythonLanguageServerPort);
+console.log(pythonLanguageServerPort)
 
 const wss = new WebSocketServer({ noServer: true });
 
@@ -20,12 +38,18 @@ server.on('upgrade', (request, socket, head) => {
     });
 });
 
-const startPyrightServer = () => {
-    const baseDir = resolve(dir);
-    const relativeDir = './node_modules/pyright/dist/pyright-langserver.js';
-    const ls = resolve(baseDir, relativeDir);
-    console.log(`Resolved Pyright language server path: ${ls}`);
-    return createServerProcess('pyright', 'node', [ls, '--stdio']);
+const startPyrightServer = (remainingRetries = 3) => {
+    try{
+        return createServerProcess('pyright', 'node', [pyrightPath, '--stdio']);
+    }catch (error) {
+        console.error(`Failed to start Pyright language server: ${error.message}`);
+        if (remainingRetries > 0) {
+            console.log(`Retrying... (${remainingRetries} attempts left)`);
+            return startPyrightServer(remainingRetries - 1);
+        } else {
+            throw new Error('Exceeded maximum retry attempts to start Pyright language server');
+        }
+    }
 };
 
 wss.on('connection', (ws) => {
