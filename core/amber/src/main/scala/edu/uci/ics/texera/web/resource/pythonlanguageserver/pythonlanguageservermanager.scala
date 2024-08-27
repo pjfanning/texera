@@ -18,7 +18,9 @@ object PythonLanguageServerManager {
         releasePort(pythonLanguageServerPort)
         try {
           val result = {
-            Process("node ../languageServer/startPyright.mjs").run(ProcessLogger(_ => (), err => logger.warning(s"Error during Pyright startup: $err")))
+            Process("node ../languageServer/startPyright.mjs").run(
+              ProcessLogger(_ => (), err => logger.warning(s"Error during Pyright startup: $err"))
+            )
           }
           logger.info(s"Pyright language server is running on port $pythonLanguageServerPort")
         } catch {
@@ -30,7 +32,9 @@ object PythonLanguageServerManager {
         logger.info("Starting Pylsp...")
         releasePort(pythonLanguageServerPort)
         try {
-          Process(s"pylsp --ws --port $pythonLanguageServerPort").run(ProcessLogger(_ => (), err => logger.warning(s"Error during Pylsp startup: $err")))
+          Process(s"pylsp --ws --port $pythonLanguageServerPort").run(
+            ProcessLogger(_ => (), err => logger.warning(s"Error during Pylsp startup: $err"))
+          )
           logger.info(s"Pylsp language server is running on port $pythonLanguageServerPort")
         } catch {
           case e: Exception =>
@@ -43,7 +47,8 @@ object PythonLanguageServerManager {
   }
 
   private def releasePort(port: Int): Unit = {
-    val scriptPath = "../amber/src/main/scala/edu/uci/ics/texera/web/resource/pythonlanguageserver/release_port.py"
+    val scriptPath =
+      "../amber/src/main/scala/edu/uci/ics/texera/web/resource/pythonlanguageserver/release_port.py"
     val command = Seq("python", scriptPath, port.toString)
     val exitCode = command.!
     if (exitCode == 0) {
