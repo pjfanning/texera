@@ -19,8 +19,8 @@ const config = JSON.parse(fs.readFileSync(configFilePath, 'utf-8'));
 
 // to get the backend application.conf for the port
 const amberConfigFilePath = path.resolve(dir, config.amberConfigFilePath);
-const configFileContent = fs.readFileSync(amberConfigFilePath, 'utf-8');
-const applicationConfig = hocon(configFileContent);
+const amberConfigContent = fs.readFileSync(amberConfigFilePath, 'utf-8');
+const applicationConfig = hocon(amberConfigContent);
 const pythonLanguageServerPort = applicationConfig['python-language-server'].port;
 
 const pyrightPath = path.resolve(dir, config.languageServerDir, config.languageServerFile);
