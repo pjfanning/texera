@@ -7,10 +7,6 @@ import edu.uci.ics.texera.Utils
 import java.io.File
 import java.net.URI
 
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.logging.{Logger}
-
 object AmberConfig {
 
   private val configFile: File = Utils.amberHomePath

@@ -19,7 +19,6 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import { FormControl } from "@angular/forms";
 import { AiAssistantService } from "../../../dashboard/service/user/ai-assistant/ai-assistant.service";
 
-
 /**
  * CodeEditorComponent is the content of the dialogue invoked by CodeareaCustomTemplateComponent.
  *
@@ -57,7 +56,6 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   // The range selected by the user
   public currentRange: monaco.Range | null = null;
 
-
   private generateLanguageTitle(language: string): string {
     return `${language.charAt(0).toUpperCase()}${language.slice(1)} UDF`;
   }
@@ -76,7 +74,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     private workflowActionService: WorkflowActionService,
     private workflowVersionService: WorkflowVersionService,
     public coeditorPresenceService: CoeditorPresenceService,
-    private aiAssistantService: AiAssistantService,
+    private aiAssistantService: AiAssistantService
   ) {
     const currentOperatorId = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()[0];
     const operatorType = this.workflowActionService.getTexeraGraph().getOperator(currentOperatorId).operatorType;
@@ -184,8 +182,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     this.editor = editor;
 
     // Check if the AI provider is "openai"
-    if (await this.aiAssistantService.checkAiAssistantEnabled()){
-
+    if (await this.aiAssistantService.checkAiAssistantEnabled()) {
       // Add all needed modules for add type annotation
       this.addAnnotationModule(editor);
 
@@ -195,7 +192,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         label: "Add Type Annotation",
         contextMenuGroupId: "1_modification",
         contextMenuOrder: 1.0,
-        run: async (ed) => {
+        run: async ed => {
           // User selected code(including range and content)
           const selection = ed.getSelection();
           const model = ed.getModel();
@@ -208,8 +205,14 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           const code = model.getValueInRange(selection);
           // Start line of the selected code
           const lineNumber = selection.startLineNumber;
-          await this.handleTypeAnnotation(code, selection, ed as monaco.editor.IStandaloneCodeEditor, lineNumber, allcode);
-        }
+          await this.handleTypeAnnotation(
+            code,
+            selection,
+            ed as monaco.editor.IStandaloneCodeEditor,
+            lineNumber,
+            allcode
+          );
+        },
       });
 
       // "Add All Type Annotation" Button
@@ -218,7 +221,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
         label: "Add All Type Annotations",
         contextMenuGroupId: "1_modification",
         contextMenuOrder: 1.1,
-        run: async (ed) => {
+        run: async ed => {
           console.log("Add All Type Annotations action triggered");
 
           const selection = ed.getSelection();
@@ -230,7 +233,10 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           const selectedCode = model.getValueInRange(selection);
           const allCode = model.getValue();
           // Locate the unannotated argument
-          const variablesWithoutAnnotations = await this.aiAssistantService.locateUnannotated(selectedCode, selection.startLineNumber);
+          const variablesWithoutAnnotations = await this.aiAssistantService.locateUnannotated(
+            selectedCode,
+            selection.startLineNumber
+          );
 
           // If no
           if (variablesWithoutAnnotations.length == 0) {
@@ -276,7 +282,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
               // Update the col after inserting last type annotation in the same line
               currVariable[2] + offset,
               currVariable[3],
-              currVariable[4] + offset,
+              currVariable[4] + offset
             );
 
             // Custom highlight for the current variable
@@ -292,13 +298,19 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
               },
             ]);
 
-            await this.handleTypeAnnotation(variableCode, variableRange, ed as monaco.editor.IStandaloneCodeEditor, variableLineNumber, allCode);
+            await this.handleTypeAnnotation(
+              variableCode,
+              variableRange,
+              ed as monaco.editor.IStandaloneCodeEditor,
+              variableLineNumber,
+              allCode
+            );
             // Clear the custom highlight
             highlight.clear();
             // Update the lastLine
             lastLine = variableLineNumber;
           }
-        }
+        },
       });
     }
 
@@ -307,9 +319,15 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     }
   }
 
-  private async handleTypeAnnotation(code: string, range: monaco.Range, editor: monaco.editor.IStandaloneCodeEditor, lineNumber: number, allcode: string): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.aiAssistantService.getTypeAnnotations(code, lineNumber, allcode).then((typeAnnotations) => {
+  private async handleTypeAnnotation(
+    code: string,
+    range: monaco.Range,
+    editor: monaco.editor.IStandaloneCodeEditor,
+    lineNumber: number,
+    allcode: string
+  ): Promise<void> {
+    return new Promise<void>(resolve => {
+      this.aiAssistantService.getTypeAnnotations(code, lineNumber, allcode).then(typeAnnotations => {
         console.log("The result from OpenAI is", typeAnnotations);
 
         let acceptButton: HTMLButtonElement | null = null;
@@ -394,7 +412,11 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
   }
 
   // Add the type annotation into monaco editor
-  private insertTypeAnnotations(editor: monaco.editor.IStandaloneCodeEditor, selection: monaco.Selection, annotations: string) {
+  private insertTypeAnnotations(
+    editor: monaco.editor.IStandaloneCodeEditor,
+    selection: monaco.Selection,
+    annotations: string
+  ) {
     const endLineNumber = selection.endLineNumber;
     const endColumn = selection.endColumn;
     const range = new monaco.Range(
@@ -408,22 +430,45 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     const op = {
       range: range,
       text: text,
-      forceMoveMarkers: true
+      forceMoveMarkers: true,
     };
     editor.executeEdits("add annotation", [op]);
   }
 
   // Add all necessary modules for type annotation at the first line of the Python UDF
-  private addAnnotationModule(editor: monaco.editor.IStandaloneCodeEditor){
+  private addAnnotationModule(editor: monaco.editor.IStandaloneCodeEditor) {
     const model = editor.getModel();
     if (!model) {
       return;
     }
     const allCode = model.getValue();
     const typingImports = [
-      "Any", "Awaitable", "Callable", "Coroutine", "Dict", "FrozenSet", "Generator", "Generic",
-      "Iterable", "Iterator", "List", "Mapping", "Optional", "Sequence", "Set", "Tuple", "Type", "TypeVar",
-      "Union", "Deque", "NamedTuple", "TypedDict", "Protocol", "Literal", "NewType", "NoReturn"
+      "Any",
+      "Awaitable",
+      "Callable",
+      "Coroutine",
+      "Dict",
+      "FrozenSet",
+      "Generator",
+      "Generic",
+      "Iterable",
+      "Iterator",
+      "List",
+      "Mapping",
+      "Optional",
+      "Sequence",
+      "Set",
+      "Tuple",
+      "Type",
+      "TypeVar",
+      "Union",
+      "Deque",
+      "NamedTuple",
+      "TypedDict",
+      "Protocol",
+      "Literal",
+      "NewType",
+      "NoReturn",
     ];
     const importStatement = `from typing import (\n  ${typingImports.join(",\n  ")}\n)`;
     if (!allCode.includes(importStatement)) {
@@ -466,7 +511,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
           this.connectLanguageServer();
         }, 3000);
       };
-      this.languageServerSocket.onerror = (error) => {
+      this.languageServerSocket.onerror = error => {
         console.error("WebSocket error:", error);
       };
     }

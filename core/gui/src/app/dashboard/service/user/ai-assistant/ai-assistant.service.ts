@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { firstValueFrom} from "rxjs";
+import { firstValueFrom } from "rxjs";
 import { AppSettings } from "../../../../common/app-setting";
 import { HttpClient } from "@angular/common/http";
 
@@ -14,13 +14,10 @@ export class AiAssistantService {
 
   public checkAiAssistantEnabled(): Promise<boolean> {
     const apiUrl = `${AI_ASSISTANT_API_BASE_URL}/isenabled`;
-    return firstValueFrom(
-      this.http.get<boolean>(apiUrl)
-    )
-      .then(response => response !== undefined ? response : false)
+    return firstValueFrom(this.http.get<boolean>(apiUrl))
+      .then(response => (response !== undefined ? response : false))
       .catch(() => false);
   }
-
 
   public getTypeAnnotations(code: string, lineNumber: number, allcode: string): Promise<string> {
     const prompt = `
@@ -56,9 +53,7 @@ export class AiAssistantService {
             - For the first situation: you must return strictly according to the format ": type", without adding any extra characters. No need for an explanation, just the result : type is enough!
             - For the second situation: you return strictly according to the format " -> type", without adding any extra characters. No need for an explanation, just the result -> type is enough!
         `;
-    return firstValueFrom(
-      this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getresult`, { prompt })
-    )
+    return firstValueFrom(this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getresult`, { prompt }))
       .then(response => {
         console.log("Received response from backend:", response);
         const result = response.choices[0].message.content.trim();
@@ -71,9 +66,7 @@ export class AiAssistantService {
   }
 
   public locateUnannotated(selectedCode: string, startLine: number) {
-    return firstValueFrom(
-      this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getArgument`, { selectedCode, startLine })
-    )
+    return firstValueFrom(this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getArgument`, { selectedCode, startLine }))
       .then(response => {
         console.log("Received response from backend:", response);
         return response.result;

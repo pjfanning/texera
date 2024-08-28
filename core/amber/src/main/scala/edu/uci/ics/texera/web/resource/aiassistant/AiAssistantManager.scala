@@ -3,7 +3,7 @@ import edu.uci.ics.amber.engine.common.AmberConfig
 import java.net.{HttpURLConnection, URL}
 import java.util.logging.Logger
 
-object AiAssistantManager{
+object AiAssistantManager {
   private val logger = Logger.getLogger(getClass.getName)
 
   private val aiAssistantConfig = AmberConfig.aiAssistantConfig
@@ -20,7 +20,10 @@ object AiAssistantManager{
         val url = new URL("https://api.openai.com/v1/models")
         connection = url.openConnection().asInstanceOf[HttpURLConnection]
         connection.setRequestMethod("GET")
-        connection.setRequestProperty("Authorization", s"Bearer ${accountKey.trim.replaceAll("^\"|\"$", "")}")
+        connection.setRequestProperty(
+          "Authorization",
+          s"Bearer ${accountKey.trim.replaceAll("^\"|\"$", "")}"
+        )
         val responseCode = connection.getResponseCode
         isKeyValid = responseCode == 200
       } catch {

@@ -24,8 +24,8 @@ class AiAssistantResource {
   def isAiAssistantEnabled: Boolean = isEnabled
 
   /**
-   * To get the type annotation suggestion from OpenAI
-   */
+    * To get the type annotation suggestion from OpenAI
+    */
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/getresult")
@@ -76,15 +76,22 @@ class AiAssistantResource {
 
     val encodedCode = Base64.getEncoder.encodeToString(selectedCode.getBytes("UTF-8"))
     try {
-      val pythonScriptPath = "src/main/scala/edu/uci/ics/texera/web/resource/aiassistant/python_abstract_syntax_tree.py"
-      val command = s"python ${pythonScriptPath} \"$encodedCode\" $startLine"
+      val pythonScriptPath =
+        "src/main/scala/edu/uci/ics/texera/web/resource/aiassistant/python_abstract_syntax_tree.py"
+      val command = s"""python $pythonScriptPath "$encodedCode" $startLine"""
       val result = command.!!
       // Parse the string to the Json
       val parsedJson = parseJson(result)
       parsedJson match {
         case Some(data: List[List[Any]]) =>
           val unannotatedArgs = data.map {
-            case List(name: String, startLine: Double, startColumn: Double, endLine: Double, endColumn: Double) =>
+            case List(
+                  name: String,
+                  startLine: Double,
+                  startColumn: Double,
+                  endLine: Double,
+                  endColumn: Double
+                ) =>
               List(name, startLine.toInt, startColumn.toInt, endLine.toInt, endColumn.toInt)
           }
           logger.info(s"Unannotated arguments: $unannotatedArgs")
