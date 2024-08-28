@@ -3,6 +3,14 @@
   width: 100%;
   background-color: white;
   position: relative;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #f0f0f0;
+    .edit-button-group {
+      display: flex;
+    }
+  }
 }
 
 .truncate-single-line {
@@ -16,25 +24,22 @@
 .resource-id {
   font-size: 17px;
   font-weight: 600;
-  margin-top: 3px;
+  margin-top: -5px;
   margin-left: 5px;
 }
 
 .resource-name {
   font-size: 17px;
   font-weight: 600;
-  width: calc(100% - 20px);
-  border: 1px solid transparent;
-  transition: background-color 0.3s, border 0.3s;
+  width: calc(100% - 100px);
 }
 
 .resource-description {
   font-size: 12px;
   font-weight: 300;
   color: grey;
-  width: calc(100% - 20px);
-  border: 1px solid transparent;
-  transition: background-color 0.3s, border 0.3s;
+  width: calc(100% - 100px);
+  min-height: 18px;
 }
 
 .type-icon-div {
@@ -82,11 +87,6 @@
   }
 }
 
-.list-item-card:hover {
-  background-color: #f0f0f0;
-  cursor: pointer;
-}
-
 .list-item-card:hover .button-group {
   display: flex;
 }
@@ -94,7 +94,7 @@
 .resource-name-edit-input {
   font-size: 17px;
   font-weight: 600;
-  width: calc(100% - 20px);
+  width: calc(100% - 100px);
   padding: 0;
   margin-bottom: 4px;
   outline: none;
@@ -105,7 +105,7 @@
 .resource-description-edit-textarea {
   font-size: 12px;
   font-weight: 300;
-  width: calc(100% - 20px);
+  width: calc(100% - 100px);
   padding: 0;
   margin: 0;
   border: 1px solid #d9d9d9;
@@ -115,4 +115,24 @@
   line-height: 1.5;
   max-height: 18px;
   overflow: hidden;
+}
+
+.edit-button-group {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 0;
+  background-color: #f0f0f0;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 10px;
+
+  button {
+    margin-left: 8px;
+    background-color: transparent;
+
+    &:hover {
+      background-color: #d9d9d9;
+    }
+  }
 }
