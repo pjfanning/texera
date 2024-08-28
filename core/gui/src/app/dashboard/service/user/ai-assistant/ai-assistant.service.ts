@@ -9,7 +9,6 @@ export const AI_ASSISTANT_API_BASE_URL = `${AppSettings.getApiEndpoint()}/aiassi
   providedIn: "root",
 })
 export class AiAssistantService {
-  // public isEnabled: Boolean = false;
   constructor(private http: HttpClient) {}
 
   public checkAiAssistantEnabled(): Promise<boolean> {

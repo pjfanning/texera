@@ -238,7 +238,7 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
             selection.startLineNumber
           );
 
-          // If no
+          // If no argument need the type annotation, another UI will pop up
           if (variablesWithoutAnnotations.length == 0) {
             const popup = document.getElementById("noAnnotationNeeded");
             if (popup) {
