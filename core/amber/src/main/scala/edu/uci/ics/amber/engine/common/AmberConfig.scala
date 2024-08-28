@@ -109,54 +109,6 @@ object AmberConfig {
   // JDBC configuration
   val jdbcConfig: Config = getConfSource.getConfig("jdbc")
 
-  // AI assistant server configuration
-  val aiAssistant: String = getConfSource.getString("ai-assistant-server.default")
-
-  private val logger: Logger = Logger.getLogger(this.getClass.getName)
-
-  // Returns a boolean. In the code where you want to add the AI feature,
-  // use if (getAIAssistant()) to determine whether the AI feature should be exposed to users.
-  def getAIAssistant(): Boolean = {
-    aiAssistant match {
-      case "none" =>
-        logger.warning("No AI Assistant available")
-        false
-      case "openai" =>
-        val key: String = getConfSource.getString(("ai-assistant-server.account-key.openai-key"))
-        if (validateKey(key)) {
-          logger.info("The AI Assistant initialized successfully.")
-          true
-        } else {
-          logger.warning("The OpenAI authentication key is incorrect.")
-          false
-        }
-      case _ =>
-        logger.warning("This AI assistant does not exist.")
-        false
-    }
-  }
-
-  // To check if the OpenAI key is valid
-  private def validateKey(authKey: String): Boolean = {
-    var connection: HttpURLConnection = null
-    try {
-      val url = new URL("https://api.openai.com/v1/models")
-      val connection = url.openConnection().asInstanceOf[HttpURLConnection]
-      connection.setRequestMethod("GET")
-      connection.setRequestProperty(
-        "Authorization",
-        s"Bearer ${authKey.trim.replaceAll("^\"|\"$", "")}"
-      )
-      val responseCode = connection.getResponseCode
-      responseCode == 200
-    } catch {
-      case e: Exception =>
-        println(s"Error validating OpenAI API key: ${e.getMessage}")
-        false
-    } finally {
-      if (connection != null) {
-        connection.disconnect()
-      }
-    }
-  }
+  // Python language server configuration
+  val aiAssistantConfig: Config = getConfSource.getConfig("ai-assistant-server")
 }

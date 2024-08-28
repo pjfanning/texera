@@ -29,3 +29,17 @@
     <div [innerHTML]="this.getCoeditorCursorStyles(user)"></div>
   </ng-container>
 </div>
+
+<!--  If showAnnotationSuggestion is true, then the annotation-suggestion will pop up -->
+<div *ngIf="showAnnotationSuggestion" class="annotation-suggestion">
+  <p>Do you agree with the type annotation suggestion？</p>
+  <pre>Adding annotation for code: {{ currentCode }}</pre>
+  <p>Given suggestion: <strong>{{ currentSuggestion }}</strong></p>
+  <button class = "accept-button" (click)="acceptCurrentAnnotation()">Accept</button>
+  <button class = "decline-button" (click)="rejectCurrentAnnotation()">Decline</button>
+</div>
+
+<div id="noAnnotationNeeded" class="noAnnotationNeeded" style="display: none;">
+  <h5 class="title">No Type Annotations Needed</h5>
+  <button id="close-button-for-none" class="close-button-for-none">Ok</button>
+</div>
