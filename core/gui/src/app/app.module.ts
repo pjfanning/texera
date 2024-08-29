@@ -1,4 +1,4 @@
-import { DatePipe, registerLocaleData } from "@angular/common";
+import { DatePipe, registerLocaleData, CommonModule } from "@angular/common";
 import { HTTP_INTERCEPTORS, HttpClientModule } from "@angular/common/http";
 import en from "@angular/common/locales/en";
 import { NgModule } from "@angular/core";
@@ -138,6 +138,9 @@ import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowSearchBarComponent } from "./hub/component/workflow/search-bar/hub-workflow-search-bar.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
+import {
+  JupyterUploadSuccessComponent
+} from "./dashboard/component/user/user-workflow/notebook-migration-tool/notebook-migration.component";
 
 registerLocaleData(en);
 
@@ -164,6 +167,7 @@ registerLocaleData(en);
     UserAvatarComponent,
     LocalLoginComponent,
     UserWorkflowComponent,
+    JupyterUploadSuccessComponent,
     UserQuotaComponent,
     RowModalComponent,
     OperatorLabelComponent,
@@ -229,6 +233,7 @@ registerLocaleData(en);
   ],
   imports: [
     BrowserModule,
+    CommonModule,
     AppRoutingModule,
     HttpClientModule,
     JwtModule.forRoot({
