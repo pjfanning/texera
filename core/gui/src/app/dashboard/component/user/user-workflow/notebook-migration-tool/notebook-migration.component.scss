@@ -1,0 +1,77 @@
+.modal-content {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  overflow-y: auto; // Ensure content is scrollable
+  background-color: white;
+}
+
+.left-column {
+  flex: 0 0 60%;
+  padding: 20px;
+  border-right: 1px solid #ddd;
+  overflow-y: auto; // Ensure notebook preview is scrollable
+  max-height: 100%; // Ensure content fits within modal height
+}
+
+.right-column {
+  flex: 0 0 35%;
+  padding: 20px;
+  overflow-y: auto; // Ensure dataset input section is scrollable
+}
+
+.notebook-preview {
+  margin-top: 20px;
+  padding: 10px;
+  max-height: 60vh; // Adjust max height for better visibility
+  overflow-y: auto;
+  background-color: #f7f7f7;
+}
+
+// Styling for Jupyter Notebook Cells
+.notebook-cell {
+  margin-bottom: 20px;
+  border-radius: 5px;
+  padding: 15px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  border: 1px solid #e0e0e0;
+}
+
+// Markdown Cell Styles
+.markdown-cell {
+  padding: 10px;
+  background-color: #fbfbfb;
+  font-family: "Georgia", "Times", "serif";
+  border-left: 4px solid #f1f1f1;
+}
+
+// Code Cell Styles
+.code-cell {
+  background-color: #f7f7f7;
+  padding: 10px;
+  border-radius: 4px;
+  font-family: "Courier New", Courier, monospace;
+  border: 1px solid #ddd;
+  position: relative;
+}
+
+// Output Area Styles
+.output {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border: 1px solid #e8e8e8;
+  font-family: "Courier New", Courier, monospace;
+  white-space: pre-wrap;
+}
+
+// Raw Cell Styles
+.raw-cell {
+  padding: 10px;
+  background-color: #f1f1f1;
+  border: 1px dashed #ddd;
+  font-family: "Courier New", Courier, monospace;
+}

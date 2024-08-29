@@ -1,0 +1,50 @@
+<div class="modal-content">
+  <!-- Left Column: Jupyter Notebook Preview -->
+  <div class="left-column">
+    <h2>Upload Successful</h2>
+    <p>Your Jupyter Notebook has been successfully uploaded!</p>
+
+    <div class="notebook-preview">
+      <h3>Notebook Preview:</h3>
+      <div *ngFor="let cell of notebookContent?.cells" class="notebook-cell">
+        <ng-container [ngSwitch]="cell.cell_type">
+          <!-- Markdown Cell -->
+          <div *ngSwitchCase="'markdown'" class="markdown-cell">
+            <pre>{{ cell.source.join("") }}</pre>
+          </div>
+
+          <!-- Code Cell -->
+          <div *ngSwitchCase="'code'" class="code-cell">
+            <pre>{{ cell.source.join("") }}</pre>
+            <!-- Safe check for outputs -->
+            <div *ngIf="cell.outputs && cell.outputs.length > 0" class="output">
+              <h4>Output:</h4>
+              <pre *ngFor="let output of cell.outputs">{{ getOutputText(output) }}</pre>
+            </div>
+          </div>
+
+          <!-- Raw Cell -->
+          <div *ngSwitchCase="'raw'" class="raw-cell">
+            <pre>{{ cell.source.join("") }}</pre>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Dataset Input -->
+  <div class="right-column">
+    <h3>Select Datasets for Workflow</h3>
+    <p>Add CSV files that will be used as input datasets for the workflow execution:</p>
+    <div class="dataset-input">
+      <input type="file" accept=".csv" (change)="onFileChange($event)" multiple />
+      <ul *ngIf="datasets.length > 0" class="dataset-list">
+        <li *ngFor="let dataset of datasets">{{ dataset.name }}</li>
+      </ul>
+    </div>
+    <!-- Disable button when no datasets are selected -->
+    <button nz-button nzType="primary" (click)="convertToWorkflow()" [disabled]="datasets.length === 0">
+      Convert to Texera Workflow
+    </button>
+  </div>
+</div>

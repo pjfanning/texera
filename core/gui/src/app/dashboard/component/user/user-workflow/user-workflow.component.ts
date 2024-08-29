@@ -23,6 +23,7 @@ import { SortMethod } from "../../../type/sort-method";
 import { isDefined } from "../../../../common/util/predicate";
 import { UserProjectService } from "../../../service/user/project/user-project.service";
 import { map, mergeMap, tap } from "rxjs/operators";
+import { JupyterUploadSuccessComponent } from "./notebook-migration-tool/notebook-migration.component";
 /**
  * Saved-workflow-section component contains information and functionality
  * of the saved workflows section and is re-used in the user projects section when a project is clicked
@@ -32,6 +33,7 @@ import { map, mergeMap, tap } from "rxjs/operators";
  *  - allows easy searching for workflows by name or other parameters using Fuse.js
  *  - sorting options
  *  - creation of a new workflow
+ *  - AI generation of new workflow from jupyter notebook
  *
  * Steps to add new search parameter:
  *  1. Add a newly formatted dropdown menu in the html and css files, and a backend call to retrieve any necessary data
@@ -495,4 +497,103 @@ export class UserWorkflowComponent implements AfterViewInit {
       }
     }
   }
+
+  /**
+   * Verify Uploaded file name and process the Jupyter Notebook file
+   */
+  public onUploadJupyterNotebook = (file: NzUploadFile): boolean => {
+    const fileExtensionIndex = file.name.lastIndexOf(".");
+    if (file.name.substring(fileExtensionIndex) === ".ipynb") {
+      this.handleJupyterNotebookUpload(file as unknown as Blob);
+    } else {
+      this.notificationService.error("Please upload a valid Jupyter Notebook (.ipynb) file.");
+    }
+    return false;
+  };
+
+  /**
+   * Process Jupyter Notebook uploads
+   */
+  private handleJupyterNotebookUpload(notebookFile: Blob) {
+    const reader = new FileReader();
+    reader.readAsText(notebookFile);
+    reader.onload = () => {
+      try {
+        const result = reader.result;
+        if (typeof result !== "string") {
+          throw new Error("Incorrect format: file is not a string");
+        }
+
+        const notebookContent = JSON.parse(result);
+        const workflowContent: WorkflowContent = this.convertJupyterToWorkflow(notebookContent);
+
+        this.workflowPersistService
+          .createWorkflow(workflowContent, "Generated from Jupyter Notebook")
+          .pipe(untilDestroyed(this))
+          .subscribe({
+            next: (uploadedWorkflow) => {
+              this.searchResultsComponent.entries = [
+                ...this.searchResultsComponent.entries,
+                new DashboardEntry(uploadedWorkflow),
+              ];
+
+              // Open the success modal and pass notebook content for preview
+              this.openSuccessModal(notebookContent);
+            },
+            error: (err: unknown) =>
+              this.notificationService.error("Workflow creation from notebook failed."),
+          });
+      } catch (error) {
+        this.notificationService.error("An error occurred when importing the Jupyter Notebook. Please upload a valid file.");
+      }
+    };
+  }
+
+  private openSuccessModal(notebookContent: any): void {
+    const modalRef = this.modalService.create({
+      nzContent: JupyterUploadSuccessComponent,
+      nzFooter: null,
+      nzTitle: "Upload Successful",
+      nzCentered: true,
+      nzWidth: '80%',  // Set the modal width to 80% of the screen width
+    });
+
+    // Access the component instance of the modal and set the input property
+    const instance = modalRef.getContentComponent();
+    if (instance) {
+      instance.notebookContent = notebookContent; // Set the notebook content directly
+    }
+  }
+
+
+  /**
+   * Convert Jupyter Notebook content to a WorkflowContent object
+   * You need to implement this method according to your workflow requirements.
+   */
+  private convertJupyterToWorkflow(notebookContent: any): WorkflowContent {
+    let workflowContent: WorkflowContent = {
+      operators: [],
+      commentBoxes: [],
+      groups: [],
+      links: [],
+      operatorPositions: {},
+    };
+
+    // Parse notebook content and create operators, links, etc.
+    notebookContent.cells.forEach((cell: any, index: number) => {
+      if (cell.cell_type === "code") {
+        const operatorID = `operator_${index}`;
+        const operatorType = "PythonCode"; // Example operator type; adjust based on your application logic
+        const operatorVersion = "1.0"; // Example version; adjust as needed
+        const operatorProperties = {
+          code: cell.source.join(""), // Assuming cell.source is an array of strings
+        };
+
+        //workflowContent.operators.push(operator);
+      }
+    });
+
+    return workflowContent;
+  }
+
 }

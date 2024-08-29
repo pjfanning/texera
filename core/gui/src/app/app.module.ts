@@ -1,4 +1,4 @@
-import { DatePipe, registerLocaleData } from "@angular/common";
+import { DatePipe, registerLocaleData, CommonModule } from "@angular/common";
 import { HTTP_INTERCEPTORS, HttpClientModule } from "@angular/common/http";
 import en from "@angular/common/locales/en";
 import { NgModule } from "@angular/core";
@@ -129,6 +129,9 @@ import { ResultExportationComponent } from "./workspace/component/result-exporta
 import { ReportGenerationService } from "./workspace/service/report-generation/report-generation.service";
 import { SearchBarComponent } from "./dashboard/component/user/search-bar/search-bar.component";
 import { ListItemComponent } from "./dashboard/component/user/list-item/list-item.component";
+import {
+  JupyterUploadSuccessComponent
+} from "./dashboard/component/user/user-workflow/notebook-migration-tool/notebook-migration.component";
 
 registerLocaleData(en);
 
@@ -154,6 +157,7 @@ registerLocaleData(en);
     UserAvatarComponent,
     LocalLoginComponent,
     UserWorkflowComponent,
+    JupyterUploadSuccessComponent,
     UserQuotaComponent,
     RowModalComponent,
     OperatorLabelComponent,
@@ -211,6 +215,7 @@ registerLocaleData(en);
   ],
   imports: [
     BrowserModule,
+    CommonModule,
     AppRoutingModule,
     HttpClientModule,
     JwtModule.forRoot({
