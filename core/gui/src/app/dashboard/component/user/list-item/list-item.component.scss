@@ -31,14 +31,14 @@
 .resource-name {
   font-size: 17px;
   font-weight: 600;
-  width: calc(100% - 100px);
+  width: 20%;
 }
 
 .resource-description {
   font-size: 12px;
   font-weight: 300;
   color: grey;
-  width: calc(100% - 100px);
+  width: 85%;
   min-height: 18px;
 }
 
@@ -94,7 +94,7 @@
 .resource-name-edit-input {
   font-size: 17px;
   font-weight: 600;
-  width: calc(100% - 100px);
+  width: 20%;
   padding: 0;
   margin-bottom: 4px;
   outline: none;
@@ -105,7 +105,7 @@
 .resource-description-edit-textarea {
   font-size: 12px;
   font-weight: 300;
-  width: calc(100% - 100px);
+  width: 85%;
   padding: 0;
   margin: 0;
   border: 1px solid #d9d9d9;
@@ -115,24 +115,41 @@
   line-height: 1.5;
   max-height: 18px;
   overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.name-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+
+  &:hover {
+    .edit-button-group {
+      display: flex;
+    }
+  }
 }
 
 .edit-button-group {
   display: none;
   position: absolute;
-  top: 6px;
-  right: 0;
-  background-color: #f0f0f0;
-  justify-content: flex-end;
+  left: calc(20% + 10px);
   align-items: center;
-  padding-right: 10px;
 
   button {
-    margin-left: 8px;
+    margin-left: 0;
     background-color: transparent;
+    font-size: 15px;
+    padding: 4px 6px;
+    height: 30px;
+    width: 30px;
 
     &:hover {
       background-color: #d9d9d9;
     }
   }
+}
+
+.resource-description-container {
+  margin-top: 8px;
 }
