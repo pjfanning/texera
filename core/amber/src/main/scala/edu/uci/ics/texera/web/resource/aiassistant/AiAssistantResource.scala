@@ -10,12 +10,9 @@ import javax.ws.rs._
 import javax.ws.rs.core.Response
 import java.util.Base64
 import scala.sys.process._
-import java.util.logging.Logger
 
 @Path("/aiassistant")
 class AiAssistantResource {
-  private val logger = Logger.getLogger(classOf[AiAssistantResource].getName)
-
   final private lazy val isEnabled = AiAssistantManager.validAIAssistant
 
   @GET
@@ -51,17 +48,11 @@ class AiAssistantResource {
       val responseCode = connection.getResponseCode
       val responseStream = connection.getInputStream
       val responseString = scala.io.Source.fromInputStream(responseStream).mkString
-      if (responseCode == 200) {
-        logger.info(s"Response from OpenAI API: $responseString")
-      } else {
-        logger.warning(s"Error response from OpenAI API: $responseString")
-      }
       responseStream.close()
       connection.disconnect()
       Response.status(responseCode).entity(responseString).build()
     } catch {
       case e: Exception =>
-        logger.warning(s"Exception occurred: ${e.getMessage}")
         e.printStackTrace()
         Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error occurred").build()
     }
@@ -94,7 +85,6 @@ class AiAssistantResource {
                 ) =>
               List(name, startLine.toInt, startColumn.toInt, endLine.toInt, endColumn.toInt)
           }
-          logger.info(s"Unannotated arguments: $unannotatedArgs")
           Response.ok(Map("result" -> unannotatedArgs)).build()
         case _ =>
           Response.status(400).entity("Invalid JSON").build()
@@ -118,7 +108,6 @@ class AiAssistantResource {
         val endColumn = elements(4).trim.toDouble
         List(name, startLine, startColumn, endLine, endColumn)
       } else {
-        logger.warning("The Json format is wrong")
         List.empty
       }
     }

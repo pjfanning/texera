@@ -14,8 +14,17 @@ export class AiAssistantService {
   public checkAiAssistantEnabled(): Promise<boolean> {
     const apiUrl = `${AI_ASSISTANT_API_BASE_URL}/isenabled`;
     return firstValueFrom(this.http.get<boolean>(apiUrl))
-      .then(response => (response !== undefined ? response : false))
-      .catch(() => false);
+      .then(response => {
+        const isEnabled = response !== undefined ? response : false;
+        console.log(
+          isEnabled ? "AI Assistant successfully started" : "No AI Assistant or OpenAI authentication key error"
+        );
+        return isEnabled;
+      })
+      .catch(() => {
+        console.log("No AI Assistant or OpenAI authentication key error");
+        return false;
+      });
   }
 
   public getTypeAnnotations(code: string, lineNumber: number, allcode: string): Promise<string> {
@@ -50,9 +59,12 @@ export class AiAssistantService {
         `;
     return firstValueFrom(this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getresult`, { prompt }))
       .then(response => {
-        console.log("Received response from backend:", response);
-        const result = response.choices[0].message.content.trim();
-        return result;
+        if (response.choices && response.choices.length > 0) {
+          return response.choices[0].message.content.trim();
+        } else {
+          console.error("Error from backend:", response.body);
+          return "";
+        }
       })
       .catch(error => {
         console.error("Request to backend failed:", error);
@@ -63,7 +75,7 @@ export class AiAssistantService {
   public locateUnannotated(selectedCode: string, startLine: number) {
     return firstValueFrom(this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getArgument`, { selectedCode, startLine }))
       .then(response => {
-        console.log("Received response from backend:", response);
+        console.log("Unannotated arguments list:", response);
         return response.result;
       })
       .catch(error => {
