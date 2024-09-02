@@ -34,7 +34,9 @@ object PythonLanguageServerManager {
             started = true
           } catch {
             case e: Exception =>
-              logger.warning(s"Failed to start Pyright (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}")
+              logger.warning(
+                s"Failed to start Pyright (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}"
+              )
               if (tryCount < MAX_TRY_COUNT - 1) {
                 logger.info(s"Retrying in $UNIT_WAIT_TIME_MS ms...")
                 Thread.sleep(UNIT_WAIT_TIME_MS)
