@@ -5,6 +5,8 @@ import io.dropwizard.auth.Auth
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
 import javax.ws.rs.core.Response
+import java.util.Base64
+import scala.sys.process._
 
 @Path("/aiassistant")
 class AiAssistantResource {
@@ -88,7 +90,7 @@ class AiAssistantResource {
     }
   }
 
-  def parseJson(jsonString: String): Option[List[List[Any]]] = {
+  private def parseJson(jsonString: String): Option[List[List[Any]]] = {
     val cleanJson = jsonString.trim.drop(1).dropRight(1)
     val rows = cleanJson.split("], \\[").toList
     val parsedRows = rows.map { row =>
@@ -112,4 +114,3 @@ class AiAssistantResource {
 object AiAssistantResource {
   case class LocateUnannotatedRequest(selectedCode: String, startLine: Int)
 }
-

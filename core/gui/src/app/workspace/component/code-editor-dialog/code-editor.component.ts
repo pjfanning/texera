@@ -181,8 +181,8 @@ export class CodeEditorComponent implements AfterViewInit, SafeStyle, OnDestroy 
     }
     this.editor = editor;
 
-    // Check if the AI provider is "openai"
-    if (await this.aiAssistantService.checkAiAssistantEnabled()) {
+    // Check if the AI provider is "openai"\
+    if ((await this.aiAssistantService.checkAiAssistantEnabled()) == "OpenAI") {
       // Add all needed modules for add type annotation
       this.addAnnotationModule(editor);
 
