@@ -11,6 +11,9 @@ object PythonLanguageServerManager {
   val pythonLanguageServerPort: Int = pythonLanguageServerConfig.getInt("port")
   private val logger = Logger.getLogger("PythonLanguageServerManager")
 
+  private val MAX_TRY_COUNT: Int = 2
+  private val UNIT_WAIT_TIME_MS = 200
+
   // To start the python language server based on the python-language-server provider
   def startLanguageServer(): Unit = {
     pythonLanguageServerProvider match {
@@ -18,16 +21,29 @@ object PythonLanguageServerManager {
       case "pyright" =>
         logger.info("Starting Pyright...")
         releasePort(pythonLanguageServerPort)
-        try {
-          val result = {
-            Process("node ../pyright-language-server/startPyright.mjs").run(
-              ProcessLogger(_ => (), err => logger.warning(s"Error during Pyright startup: $err"))
-            )
+        var tryCount = 0
+        var started = false
+        while (tryCount < MAX_TRY_COUNT && !started) {
+          try {
+            val result = {
+              Process("node ../pyright-language-server/startPyright.mjs").run(
+                ProcessLogger(_ => (), err => logger.warning(s"Error during Pyright startup: $err"))
+              )
+            }
+            logger.info(s"Pyright language server is running on port $pythonLanguageServerPort")
+            started = true
+          } catch {
+            case e: Exception =>
+              logger.warning(s"Failed to start Pyright (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}")
+              if (tryCount < MAX_TRY_COUNT - 1) {
+                logger.info(s"Retrying in $UNIT_WAIT_TIME_MS ms...")
+                Thread.sleep(UNIT_WAIT_TIME_MS)
+              }
+              tryCount += 1
           }
-          logger.info(s"Pyright language server is running on port $pythonLanguageServerPort")
-        } catch {
-          case e: Exception =>
-            logger.warning(s"Failed to start Pyright: ${e.getMessage}")
+        }
+        if (!started) {
+          logger.severe(s"Failed to start Pyright after $MAX_TRY_COUNT attempts. Abort!")
         }
 
       // The situation when the provider is Pylsp
