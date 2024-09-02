@@ -11,19 +11,20 @@ export const AI_ASSISTANT_API_BASE_URL = `${AppSettings.getApiEndpoint()}/aiassi
 export class AiAssistantService {
   constructor(private http: HttpClient) {}
 
-  public checkAiAssistantEnabled(): Promise<boolean> {
+  public checkAiAssistantEnabled(): Promise<string> {
     const apiUrl = `${AI_ASSISTANT_API_BASE_URL}/isenabled`;
-    return firstValueFrom(this.http.get<boolean>(apiUrl))
+    return firstValueFrom(this.http.get(apiUrl, { responseType: "text" }))
       .then(response => {
-        const isEnabled = response !== undefined ? response : false;
+        const isEnabled = response !== undefined ? response : "NoAiAssistant";
         console.log(
-          isEnabled ? "AI Assistant successfully started" : "No AI Assistant or OpenAI authentication key error"
+          isEnabled === "OpenAI"
+            ? "AI Assistant successfully started"
+            : "No AI Assistant or OpenAI authentication key error"
         );
         return isEnabled;
       })
       .catch(() => {
-        console.log("No AI Assistant or OpenAI authentication key error");
-        return false;
+        return "NoAiAssistant";
       });
   }
 
@@ -71,7 +72,6 @@ export class AiAssistantService {
         return "";
       });
   }
-
   public locateUnannotated(selectedCode: string, startLine: number) {
     return firstValueFrom(this.http.post<any>(`${AI_ASSISTANT_API_BASE_URL}/getArgument`, { selectedCode, startLine }))
       .then(response => {
@@ -84,3 +84,4 @@ export class AiAssistantService {
       });
   }
 }
+

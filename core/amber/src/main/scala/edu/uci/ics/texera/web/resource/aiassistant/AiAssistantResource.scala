@@ -1,24 +1,18 @@
 package edu.uci.ics.texera.web.resource
-
 import edu.uci.ics.texera.web.auth.SessionUser
 import edu.uci.ics.texera.web.resource.aiassistant.AiAssistantManager
 import io.dropwizard.auth.Auth
-
 import javax.annotation.security.RolesAllowed
 import javax.ws.rs._
-
 import javax.ws.rs.core.Response
-import java.util.Base64
-import scala.sys.process._
 
 @Path("/aiassistant")
 class AiAssistantResource {
   final private lazy val isEnabled = AiAssistantManager.validAIAssistant
-
   @GET
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/isenabled")
-  def isAiAssistantEnabled: Boolean = isEnabled
+  def isAiAssistantEnable: String = isEnabled
 
   /**
     * To get the type annotation suggestion from OpenAI
@@ -38,7 +32,7 @@ class AiAssistantResource {
             """.stripMargin
 
     try {
-      val url = new java.net.URL("https://api.openai.com/v1/chat/completions")
+      val url = new java.net.URL(s"${AiAssistantManager.sharedUrl}/chat/completions")
       val connection = url.openConnection().asInstanceOf[java.net.HttpURLConnection]
       connection.setRequestMethod("POST")
       connection.setRequestProperty("Authorization", s"Bearer ${AiAssistantManager.accountKey}")
@@ -57,7 +51,6 @@ class AiAssistantResource {
         Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Error occurred").build()
     }
   }
-
   @POST
   @RolesAllowed(Array("REGULAR", "ADMIN"))
   @Path("/getArgument")
@@ -119,3 +112,4 @@ class AiAssistantResource {
 object AiAssistantResource {
   case class LocateUnannotatedRequest(selectedCode: String, startLine: Int)
 }
+
