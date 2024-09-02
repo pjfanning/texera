@@ -37,4 +37,11 @@ export class SearchService {
       )}`
     );
   }
+
+  public getUserNames(userIds: number[]): Observable<{ [key: number]: string }> {
+    const queryString = userIds.map(id => `userIds=${encodeURIComponent(id)}`).join('&');
+    return this.http.get<{ [key: number]: string }>(
+      `${AppSettings.getApiEndpoint()}/dashboard/results_owners?${queryString}`
+    );
+  }
 }

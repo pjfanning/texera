@@ -86,10 +86,28 @@ export class UserDatasetComponent implements AfterViewInit {
           this.sortMethod
         )
       );
+
+      const userIds = new Set<number>();
+      results.results.forEach(i => {
+        const ownerUid = i.dataset?.dataset?.ownerUid;
+        if (ownerUid !== undefined) {
+          userIds.add(ownerUid);
+        }
+      });
+
+      let userIdToNameMap: { [key: number]: string } = {};
+      if (userIds.size > 0) {
+        userIdToNameMap = await firstValueFrom(this.searchService.getUserNames(Array.from(userIds)));
+      }
+
       return {
         entries: results.results.map(i => {
           if (i.dataset) {
-            return new DashboardEntry(i.dataset);
+            const entry = new DashboardEntry(i.dataset);
+            const ownerUid = i.dataset.dataset?.ownerUid;
+            const userName = ownerUid !== undefined ? userIdToNameMap[ownerUid] || "" : "";
+            entry.setOwnerName(userName);
+            return entry;
           } else {
             throw new Error("Unexpected type in SearchResult.");
           }

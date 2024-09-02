@@ -62,6 +62,10 @@ export class DashboardEntry {
     }
   }
 
+  setOwnerName(ownerName: string): void {
+    this.ownerName = ownerName;
+  }
+
   get project(): DashboardProject {
     if (!isDashboardProject(this.value)) {
       throw new Error("Value is not of type DashboardProject.");

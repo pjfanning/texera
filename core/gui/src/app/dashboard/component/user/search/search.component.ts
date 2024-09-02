@@ -8,6 +8,7 @@ import { SearchResultsComponent } from "../search-results/search-results.compone
 import { SortMethod } from "../../../type/sort-method";
 import { Location } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
+import { UserFile } from "../../../type/dashboard-file.interface";
 
 @UntilDestroy()
 @Component({
@@ -83,22 +84,52 @@ export class SearchComponent implements AfterViewInit {
           this.sortMethod
         )
       );
+
+      const userIds = new Set<number>();
+      results.results.forEach(i => {
+        if (i.project) {
+          userIds.add(i.project.ownerId);
+        } else if (i.dataset) {
+          const ownerUid = i.dataset.dataset?.ownerUid;
+          if (ownerUid !== undefined) {
+            userIds.add(ownerUid);
+          } else {
+            console.warn(`Dataset with ID ${i.dataset.dataset?.did} does not have an ownerUid.`);
+          }
+        }
+      });
+
+      let userIdToNameMap: { [key: number]: string } = {};
+      if (userIds.size > 0) {
+        userIdToNameMap = await firstValueFrom(this.searchService.getUserNames(Array.from(userIds)));
+      }
+
       return {
         entries: results.results.map(i => {
+          let entry: DashboardEntry;
+
           if (i.workflow) {
-            return new DashboardEntry(i.workflow);
+            entry = new DashboardEntry(i.workflow);
           } else if (i.project) {
-            return new DashboardEntry(i.project);
+            entry = new DashboardEntry(i.project);
+            const userName = userIdToNameMap[i.project.ownerId] || "";
+            entry.setOwnerName(userName);
           } else if (i.file) {
-            return new DashboardEntry(i.file);
+            entry = new DashboardEntry(i.file);
           } else if (i.dataset) {
-            return new DashboardEntry(i.dataset);
+            entry = new DashboardEntry(i.dataset);
+            const ownerUid = i.dataset.dataset?.ownerUid;
+            const userName = ownerUid !== undefined ? userIdToNameMap[ownerUid] || "" : "";
+            entry.setOwnerName(userName);
           } else {
             throw new Error("Unexpected type in SearchResult.");
           }
+
+          return entry;
         }),
         more: results.more,
       };
+
     });
     await this.searchResultsComponent.loadMore();
   }

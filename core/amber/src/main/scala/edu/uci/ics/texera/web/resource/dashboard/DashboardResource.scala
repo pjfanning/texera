@@ -1,9 +1,10 @@
 package edu.uci.ics.texera.web.resource.dashboard
 
 import edu.uci.ics.texera.web.auth.SessionUser
+import edu.uci.ics.texera.web.model.jooq.generated.Tables._
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos._
 import edu.uci.ics.texera.web.resource.dashboard.DashboardResource._
-import edu.uci.ics.texera.web.resource.dashboard.SearchQueryBuilder.ALL_RESOURCE_TYPE
+import edu.uci.ics.texera.web.resource.dashboard.SearchQueryBuilder.{ALL_RESOURCE_TYPE, context}
 import edu.uci.ics.texera.web.resource.dashboard.user.dataset.DatasetResource.DashboardDataset
 import edu.uci.ics.texera.web.resource.dashboard.user.workflow.WorkflowResource.DashboardWorkflow
 import io.dropwizard.auth.Auth
@@ -14,8 +15,7 @@ import javax.ws.rs.core.MediaType
 import org.jooq.types.UInteger
 
 import java.util
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-
+import scala.jdk.CollectionConverters._
 object DashboardResource {
   case class DashboardClickableFileEntry(
       resourceType: String,
@@ -158,5 +158,20 @@ class DashboardResource {
       @BeanParam params: SearchQueryParams
   ): DashboardSearchResult = {
     DashboardResource.searchAllResources(user, params)
+  }
+
+  @GET
+  @Path("/results_owners")
+  def getUserNames(@QueryParam("userIds") userIds: util.List[UInteger]): util.Map[UInteger, String] = {
+    print(userIds)
+    val scalaUserIds: Set[UInteger] = userIds.asScala.toSet
+    val userIdToNameMap = context
+      .select(USER.UID, USER.NAME)
+      .from(USER)
+      .where(USER.UID.in(scalaUserIds.asJava))
+      .fetchMap(USER.UID, USER.NAME)
+
+    print(userIdToNameMap)
+    userIdToNameMap
   }
 }
