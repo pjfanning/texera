@@ -12,8 +12,8 @@ object PythonLanguageServerManager {
   private val logger = Logger.getLogger("PythonLanguageServerManager")
 
   // For retry
-  private val MAX_TRY_COUNT: Int = 2
-  private val UNIT_WAIT_TIME_MS = 200
+  private val MAX_TRY_COUNT: Int = pythonLanguageServerConfig.getInt("retry-counts")
+  private val UNIT_WAIT_TIME_MS = pythonLanguageServerConfig.getInt("wait-time-ms")
 
   // To start the python language server based on the python-language-server provider
   def startLanguageServer(): Unit = {
