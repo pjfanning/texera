@@ -15,11 +15,11 @@ class AiAssistantResource {
   def isAiAssistantEnable: String = isEnabled
 
   /**
-   * Endpoint to get the operator comment from OpenAI.
-   * @param prompt The input prompt for the OpenAI model.
-   * @param user The authenticated session user.
-   * @return A response containing the generated comment from OpenAI or an error message.
-   */
+    * Endpoint to get the operator comment from OpenAI.
+    * @param prompt The input prompt for the OpenAI model.
+    * @param user The authenticated session user.
+    * @return A response containing the generated comment from OpenAI or an error message.
+    */
   @POST
   @Path("/generateComment")
   @Consumes(Array(MediaType.APPLICATION_JSON))
@@ -69,11 +69,11 @@ class AiAssistantResource {
   }
 
   /**
-   * Endpoint to get the summary comment from OpenAI.
-   * @param prompt The input prompt for the OpenAI model.
-   * @param user The authenticated session user.
-   * @return A response containing the generated summary comment from OpenAI or an error message.
-   */
+    * Endpoint to get the summary comment from OpenAI.
+    * @param prompt The input prompt for the OpenAI model.
+    * @param user The authenticated session user.
+    * @return A response containing the generated summary comment from OpenAI or an error message.
+    */
   @POST
   @Path("/generateSummaryComment")
   @Consumes(Array(MediaType.APPLICATION_JSON))
