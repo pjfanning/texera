@@ -423,13 +423,9 @@ export class ReportGenerationService {
     return firstValueFrom(this.http.get(apiUrl, { responseType: "text" }))
       .then(response => {
         const isEnabled = response === "OpenAI";
-        console.log(
-          isEnabled ? "AI Assistant successfully started" : "No AI Assistant or OpenAI authentication key error"
-        );
         return isEnabled;
       })
       .catch(() => {
-        console.log("Error in checking AI Assistant status");
         return false;
       });
   }
@@ -469,7 +465,7 @@ export class ReportGenerationService {
 
     // If AI Assistant is not enabled, return a specific message
     if (!aiEnabled) {
-      return "You do not turn on the AI function or your AI key has a problem";
+      return "";
     }
 
     // If AI Assistant is enabled, proceed with the usual logic
@@ -530,7 +526,7 @@ export class ReportGenerationService {
 
     // If AI Assistant is not enabled, return a specific message
     if (!aiEnabled) {
-      return "You do not turn on the AI function or your AI key has a problem";
+      return "";
     }
 
     // If AI Assistant is enabled, proceed with the usual logic
