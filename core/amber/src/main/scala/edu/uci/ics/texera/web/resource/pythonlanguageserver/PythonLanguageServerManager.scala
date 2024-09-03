@@ -11,6 +11,7 @@ object PythonLanguageServerManager {
   val pythonLanguageServerPort: Int = pythonLanguageServerConfig.getInt("port")
   private val logger = Logger.getLogger("PythonLanguageServerManager")
 
+  // For retry
   private val MAX_TRY_COUNT: Int = 2
   private val UNIT_WAIT_TIME_MS = 200
 
@@ -84,15 +85,28 @@ object PythonLanguageServerManager {
     }
   }
 
-  private def releasePort(port: Int): Unit = {
-    val scriptPath =
-      "../amber/src/main/scala/edu/uci/ics/texera/web/resource/pythonlanguageserver/release_port.py"
-    val command = Seq("python", scriptPath, port.toString)
-    val exitCode = command.!
-    if (exitCode == 0) {
-      logger.info(s"Successfully freed the port: $port")
+private def releasePort(port: Int): Unit = {
+  val findCommand = Seq("cmd", "/c", s"netstat -aon | findstr $port")
+  try {
+    val res = findCommand.!!
+    if (res.contains("LISTENING")) {
+      val lines = res.split("\\r?\\n")
+      val pidLine = lines.find(_.contains("LISTENING")).getOrElse("")
+      val pid = pidLine.split("\\s+").last
+
+      val killCommand = Seq("cmd", "/c", s"taskkill /F /PID $pid")
+      val killResult = killCommand.!
+      if (killResult == 0) {
+        logger.info(s"Successfully killed the process on port: $port")
+      } else {
+        logger.warning(s"Failed to kill the process on port: $port with exit code $killResult")
+      }
     } else {
-      logger.warning(s"Failed to free the port: $port")
+      logger.info(s"Port $port is free to use.")
+    }
+  } catch {
+    case e: Exception =>
+      logger.warning(s"Error while releasing port $port: ${e.getMessage}")
     }
   }
 }
