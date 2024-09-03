@@ -20,10 +20,44 @@
   overflow-y: auto; // Ensure dataset input section is scrollable
 }
 
+.equivalence-check {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+}
+
+.notebook-workflow-side-by-side {
+  display: flex;  /* Use flexbox for the container */
+  flex-direction: row;  /* Arrange children in a row */
+  gap: 20px; /* Optional: Adds space between the columns */
+}
+
+.left-half {
+  flex: 1; /* Adjusts to take available space */
+  max-width: 50%; /* Ensures it doesn't exceed half of the container */
+}
+
+.right-half {
+  flex: 1; /* Adjusts to take available space */
+  max-width: 50%; /* Ensures it doesn't exceed half of the container */
+}
+
 .notebook-preview {
-  margin-top: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: 2px solid #000000;
   padding: 10px;
-  max-height: 60vh; // Adjust max height for better visibility
+  height: 60vh; // Adjust max height for better visibility
+  overflow-y: auto;
+  background-color: #f7f7f7;
+}
+
+.workflow-preview {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: 2px solid #000000;
+  padding: 10px;
+  height: 60vh;
   overflow-y: auto;
   background-color: #f7f7f7;
 }

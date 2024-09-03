@@ -599,9 +599,9 @@ export class UserWorkflowComponent implements AfterViewInit {
     const modalRef = this.modalService.create({
       nzContent: JupyterUploadSuccessComponent,
       nzFooter: null,
-      nzTitle: "Upload Successful",
+      nzTitle: "Notebook to Workflow Conversion",
       nzCentered: true,
-      nzWidth: '80%',  // Set the modal width to 80% of the screen width
+      nzWidth: "80%",  // Set the modal width to 80% of the screen width
     });
 
     // Access the component instance of the modal and set the input property

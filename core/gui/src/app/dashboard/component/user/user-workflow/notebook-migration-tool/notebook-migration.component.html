@@ -1,11 +1,12 @@
-<div class="modal-content">
+<!-- Preview and Upload Dataset Window -->
+<div class="modal-content" *ngIf="popupStage === 0">
   <!-- Left Column: Jupyter Notebook Preview -->
   <div class="left-column">
     <h2>Upload Successful</h2>
     <p>Your Jupyter Notebook has been successfully uploaded!</p>
+    <h3>Notebook Preview:</h3>
 
     <div class="notebook-preview">
-      <h3>Notebook Preview:</h3>
       <div *ngFor="let cell of notebookContent?.cells" class="notebook-cell">
         <ng-container [ngSwitch]="cell.cell_type">
           <!-- Markdown Cell -->
@@ -43,8 +44,86 @@
       </ul>
     </div>
     <!-- Disable button when no datasets are selected -->
-    <button nz-button nzType="primary" (click)="convertToWorkflow()" [disabled]="datasets.length === 0">
+    <button nz-button nzType="primary"
+            (click)="convertToWorkflow()"
+            [disabled]="datasets.length === 0"
+            [nzLoading]="workflowGeneratingInProgress">
       Convert to Texera Workflow
+    </button>
+  </div>
+</div>
+
+<!-- Equivalence Check Window  -->
+<div *ngIf="popupStage === 1">
+  <h2>Notebook to Workflow Equivalence Check</h2>
+  <div class="notebook-workflow-side-by-side">
+    <div class="left-half">
+      <h3>Original Notebook</h3>
+      <div class="notebook-preview">
+        <div *ngFor="let cell of notebookContent?.cells" class="notebook-cell">
+          <ng-container [ngSwitch]="cell.cell_type">
+            <!-- Markdown Cell -->
+            <div *ngSwitchCase="'markdown'" class="markdown-cell">
+              <pre>{{ cell.source.join("") }}</pre>
+            </div>
+
+            <!-- Code Cell -->
+            <div *ngSwitchCase="'code'" class="code-cell">
+              <pre>{{ cell.source.join("") }}</pre>
+              <!-- Safe check for outputs -->
+              <div *ngIf="cell.outputs && cell.outputs.length > 0" class="output">
+                <h4>Output:</h4>
+                <pre *ngFor="let output of cell.outputs">{{ getOutputText(output) }}</pre>
+              </div>
+            </div>
+
+            <!-- Raw Cell -->
+            <div *ngSwitchCase="'raw'" class="raw-cell">
+              <pre>{{ cell.source.join("") }}</pre>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+    <div class="right-half">
+      <h3>Generated Texera Workflow</h3>
+      <div class="workflow-preview">
+        <!-- TODO render workflow -->
+        {{workflowJsonContent}}
+      </div>
+    </div>
+  </div>
+  <div class="equivalence-check">
+    <button nz-button nzType="primary" (click)="compareOutput()">
+      Compare Output
+    </button>
+  </div>
+</div>
+
+<div *ngIf="popupStage === 2">
+  <h2>Notebook to Workflow Equivalence Check</h2>
+  <div class="notebook-workflow-side-by-side">
+    <div class="left-half">
+      <h3>Original Notebook Output</h3>
+      <div class="notebook-preview">
+        <!-- TODO generate and show output -->
+        output goes here
+      </div>
+    </div>
+    <div class="right-half">
+      <h3>Generated Texera Workflow Output</h3>
+      <div class="workflow-preview">
+        <!-- TODO generate and show output -->
+        output goes here
+      </div>
+    </div>
+  </div>
+  <div class="equivalence-check">
+    <button nz-button nzType="primary" [style.background-color]="'red'" [style.margin-right]="'10px'">
+      Reject Workflow
+    </button>
+    <button nz-button nzType="primary">
+      Accept Workflow
     </button>
   </div>
 </div>
