@@ -45,21 +45,38 @@ object PythonLanguageServerManager {
           }
         }
         if (!started) {
-          logger.severe(s"Failed to start Pyright after $MAX_TRY_COUNT attempts. Abort!")
+          logger.warning(s"Failed to start Pyright after $MAX_TRY_COUNT attempts. Abort!")
         }
 
       // The situation when the provider is Pylsp
       case "pylsp" =>
         logger.info("Starting Pylsp...")
         releasePort(pythonLanguageServerPort)
-        try {
-          Process(s"pylsp --ws --port $pythonLanguageServerPort").run(
-            ProcessLogger(_ => (), err => logger.warning(s"Error during Pylsp startup: $err"))
-          )
-          logger.info(s"Pylsp language server is running on port $pythonLanguageServerPort")
-        } catch {
-          case e: Exception =>
-            logger.warning(s"Failed to start Pylsp: ${e.getMessage}")
+        var tryCount = 0
+        var started = false
+        while (tryCount < MAX_TRY_COUNT && !started) {
+          try {
+            val result = {
+              Process(s"pylsp --ws --port $pythonLanguageServerPort").run(
+                ProcessLogger(_ => (), err => logger.warning(s"Error during Pylsp startup: $err"))
+              )
+            }
+            logger.info(s"Pylsp language server is running on port $pythonLanguageServerPort")
+            started = true
+          } catch {
+            case e: Exception =>
+              logger.warning(
+                s"Failed to start Pylsp (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}"
+              )
+              if (tryCount < MAX_TRY_COUNT - 1) {
+                logger.info(s"Retrying in $UNIT_WAIT_TIME_MS ms...")
+                Thread.sleep(UNIT_WAIT_TIME_MS)
+              }
+              tryCount += 1
+          }
+        }
+        if (!started) {
+          logger.warning(s"Failed to start Pylsp after $MAX_TRY_COUNT attempts. Abort!")
         }
 
       case _ =>
