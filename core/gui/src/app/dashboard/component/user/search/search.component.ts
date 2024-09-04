@@ -103,7 +103,6 @@ export class SearchComponent implements AfterViewInit {
       if (userIds.size > 0) {
         userIdToInfoMap = await firstValueFrom(this.searchService.getUserInfo(Array.from(userIds)));
       }
-      console.log(userIdToInfoMap)
 
       return {
         entries: results.results.map(i => {
