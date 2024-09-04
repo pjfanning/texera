@@ -21,7 +21,6 @@ object PythonLanguageServerManager {
       // The situation when the provider is Pyright
       case "pyright" =>
         logger.info("Starting Pyright...")
-        releasePort(pythonLanguageServerPort)
         var tryCount = 0
         var started = false
         while (tryCount < MAX_TRY_COUNT && !started) {
@@ -52,7 +51,6 @@ object PythonLanguageServerManager {
       // The situation when the provider is Pylsp
       case "pylsp" =>
         logger.info("Starting Pylsp...")
-        releasePort(pythonLanguageServerPort)
         var tryCount = 0
         var started = false
         while (tryCount < MAX_TRY_COUNT && !started) {
@@ -82,31 +80,6 @@ object PythonLanguageServerManager {
 
       case _ =>
         logger.warning(s"Unknown language server: $pythonLanguageServerPort")
-    }
-  }
-
-  private def releasePort(port: Int): Unit = {
-    val findCommand = Seq("cmd", "/c", s"netstat -aon | findstr $port")
-    try {
-      val res = findCommand.!!
-      if (res.contains("LISTENING")) {
-        val lines = res.split("\\r?\\n")
-        val pidLine = lines.find(_.contains("LISTENING")).getOrElse("")
-        val pid = pidLine.split("\\s+").last
-
-        val killCommand = Seq("cmd", "/c", s"taskkill /F /PID $pid")
-        val killResult = killCommand.!
-        if (killResult == 0) {
-          logger.info(s"Successfully killed the process on port: $port")
-        } else {
-          logger.warning(s"Failed to kill the process on port: $port with exit code $killResult")
-        }
-      } else {
-        logger.info(s"Port $port is free to use.")
-      }
-    } catch {
-      case e: Exception =>
-        logger.warning(s"Error while releasing port $port: ${e.getMessage}")
     }
   }
 }
