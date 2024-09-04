@@ -26,6 +26,7 @@ import { exhaustiveGuard } from "../../../common/util/switch";
 import { WorkflowStatusService } from "../workflow-status/workflow-status.service";
 import { isDefined } from "../../../common/util/predicate";
 import { intersection } from "../../../common/util/set";
+import { Workflow, WorkflowContent, WorkflowSettings } from "../../../common/type/workflow";
 
 // TODO: change this declaration
 export const FORM_DEBOUNCE_TIME_MS = 150;
@@ -163,18 +164,21 @@ export class ExecuteWorkflowService {
       this.workflowActionService.getTexeraGraph(),
       targetOperatorId
     );
+    const settings = this.workflowActionService.getWorkflowSettings();
     this.resetExecutionState();
     this.workflowStatusService.resetStatus();
-    this.sendExecutionRequest(executionName, logicalPlan);
+    this.sendExecutionRequest(executionName, logicalPlan, settings);
   }
 
   public executeWorkflowWithReplay(replayExecutionInfo: ReplayExecutionInfo): void {
     const logicalPlan = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
+    const settings = this.workflowActionService.getWorkflowSettings();
     this.resetExecutionState();
     this.workflowStatusService.resetStatus();
     this.sendExecutionRequest(
       `Replay run of ${replayExecutionInfo.eid} to ${replayExecutionInfo.interaction}`,
       logicalPlan,
+      settings,
       replayExecutionInfo,
     );
   }
@@ -182,6 +186,7 @@ export class ExecuteWorkflowService {
   public sendExecutionRequest(
     executionName: string,
     logicalPlan: LogicalPlan,
+    workflowSettings: WorkflowSettings,
     replayExecutionInfo: ReplayExecutionInfo | undefined = undefined,
   ): void {
     const workflowExecuteRequest = {
@@ -189,6 +194,7 @@ export class ExecuteWorkflowService {
       engineVersion: version.hash,
       logicalPlan: logicalPlan,
       replayFromExecution: replayExecutionInfo,
+      workflowSettings: workflowSettings,
     };
     // wait for the form debounce to complete, then send
     window.setTimeout(() => {
