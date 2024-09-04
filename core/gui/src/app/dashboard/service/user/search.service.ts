@@ -5,6 +5,7 @@ import { SearchResult } from "../../type/search-result";
 import { AppSettings } from "../../../common/app-setting";
 import { SearchFilterParameters, toQueryStrings } from "../../type/search-filter-parameters";
 import { SortMethod } from "../../type/sort-method";
+import { UserInfo } from "../../type/dashboard-entry";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 
@@ -38,10 +39,10 @@ export class SearchService {
     );
   }
 
-  public getUserNames(userIds: number[]): Observable<{ [key: number]: string }> {
-    const queryString = userIds.map(id => `userIds=${encodeURIComponent(id)}`).join('&');
-    return this.http.get<{ [key: number]: string }>(
-      `${AppSettings.getApiEndpoint()}/dashboard/results_owners?${queryString}`
+  public getUserInfo(userIds: number[]): Observable<{ [key: number]: UserInfo }> {
+    const queryString = userIds.map(id => `userIds=${encodeURIComponent(id)}`).join("&");
+    return this.http.get<{ [key: number]: UserInfo }>(
+      `${AppSettings.getApiEndpoint()}/dashboard/resultsOwnersInfo?${queryString}`
     );
   }
 }

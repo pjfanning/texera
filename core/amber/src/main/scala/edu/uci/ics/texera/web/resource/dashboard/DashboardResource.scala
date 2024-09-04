@@ -24,6 +24,8 @@ object DashboardResource {
       dataset: Option[DashboardDataset] = None
   )
 
+  case class UserInfo(userId: UInteger, userName: String, googleAvatar: Option[String])
+
   case class DashboardSearchResult(results: List[DashboardClickableFileEntry], more: Boolean)
 
   /*
@@ -161,17 +163,23 @@ class DashboardResource {
   }
 
   @GET
-  @Path("/results_owners")
-  def getUserNames(@QueryParam("userIds") userIds: util.List[UInteger]): util.Map[UInteger, String] = {
-    print(userIds)
+  @Path("/resultsOwnersInfo")
+  def resultsOwnersInfo(@QueryParam("userIds") userIds: util.List[UInteger]): util.Map[UInteger, UserInfo] = {
     val scalaUserIds: Set[UInteger] = userIds.asScala.toSet
-    val userIdToNameMap = context
-      .select(USER.UID, USER.NAME)
+
+    val records = context
+      .select(USER.UID, USER.NAME, USER.GOOGLE_AVATAR)
       .from(USER)
       .where(USER.UID.in(scalaUserIds.asJava))
-      .fetchMap(USER.UID, USER.NAME)
+      .fetch()
 
-    print(userIdToNameMap)
-    userIdToNameMap
+    val userIdToInfoMap = records.asScala.map { record =>
+      val userId = record.get(USER.UID)
+      val userName = record.get(USER.NAME)
+      val googleAvatar = Option(record.get(USER.GOOGLE_AVATAR))
+      userId -> UserInfo(userId, userName, googleAvatar)
+    }.toMap.asJava
+
+    userIdToInfoMap
   }
 }

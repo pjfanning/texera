@@ -5,7 +5,7 @@ import { Router } from "@angular/router";
 import { SearchService } from "../../../service/user/search.service";
 import { DatasetService } from "../../../service/user/dataset/dataset.service";
 import { SortMethod } from "../../../type/sort-method";
-import { DashboardEntry } from "../../../type/dashboard-entry";
+import { DashboardEntry, UserInfo } from "../../../type/dashboard-entry";
 import { SearchResultsComponent } from "../search-results/search-results.component";
 import { FiltersComponent } from "../filters/filters.component";
 import { firstValueFrom } from "rxjs";
@@ -95,18 +95,24 @@ export class UserDatasetComponent implements AfterViewInit {
         }
       });
 
-      let userIdToNameMap: { [key: number]: string } = {};
+      let userIdToInfoMap: { [key: number]: UserInfo } = {};
       if (userIds.size > 0) {
-        userIdToNameMap = await firstValueFrom(this.searchService.getUserNames(Array.from(userIds)));
+        userIdToInfoMap = await firstValueFrom(this.searchService.getUserInfo(Array.from(userIds)));
       }
 
       return {
         entries: results.results.map(i => {
           if (i.dataset) {
             const entry = new DashboardEntry(i.dataset);
+
+            // 获取 ownerUid 对应的用户名和头像，并设置到 entry 中
             const ownerUid = i.dataset.dataset?.ownerUid;
-            const userName = ownerUid !== undefined ? userIdToNameMap[ownerUid] || "" : "";
-            entry.setOwnerName(userName);
+            if (ownerUid !== undefined) {
+              const userInfo = userIdToInfoMap[ownerUid] || { userName: "", googleAvatar: "" };
+              entry.setOwnerName(userInfo.userName);
+              entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+            }
+
             return entry;
           } else {
             throw new Error("Unexpected type in SearchResult.");

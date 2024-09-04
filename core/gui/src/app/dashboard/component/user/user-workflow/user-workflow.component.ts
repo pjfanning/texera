@@ -8,7 +8,7 @@ import {
 } from "../../../../common/service/workflow-persist/workflow-persist.service";
 import { NgbdModalAddProjectWorkflowComponent } from "../user-project/user-project-section/ngbd-modal-add-project-workflow/ngbd-modal-add-project-workflow.component";
 import { NgbdModalRemoveProjectWorkflowComponent } from "../user-project/user-project-section/ngbd-modal-remove-project-workflow/ngbd-modal-remove-project-workflow.component";
-import { DashboardEntry } from "../../../type/dashboard-entry";
+import { DashboardEntry, UserInfo } from "../../../type/dashboard-entry";
 import { UserService } from "../../../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
@@ -171,10 +171,31 @@ export class UserWorkflowComponent implements AfterViewInit {
           this.sortMethod
         )
       );
+
+      const userIds = new Set<number>();
+      results.results.forEach(i => {
+        if (i.workflow && i.workflow.ownerId) {
+          userIds.add(i.workflow.ownerId);
+        }
+      });
+
+      let userIdToInfoMap: { [key: number]: UserInfo } = {};
+      if (userIds.size > 0) {
+        userIdToInfoMap = await firstValueFrom(this.searchService.getUserInfo(Array.from(userIds)));
+      }
+
       return {
         entries: results.results.map(i => {
           if (i.workflow) {
-            return new DashboardEntry(i.workflow);
+            const entry = new DashboardEntry(i.workflow);
+
+            const userInfo = userIdToInfoMap[i.workflow.ownerId];
+            if (userInfo) {
+              entry.setOwnerName(userInfo.userName);
+              entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+            }
+
+            return entry;
           } else {
             throw new Error("Unexpected type in SearchResult.");
           }

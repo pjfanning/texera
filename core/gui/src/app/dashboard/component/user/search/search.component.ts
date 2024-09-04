@@ -1,5 +1,5 @@
 import { Component, AfterViewInit, ViewChild } from "@angular/core";
-import { DashboardEntry } from "../../../type/dashboard-entry";
+import { DashboardEntry, UserInfo } from "../../../type/dashboard-entry";
 import { SearchService } from "../../../service/user/search.service";
 import { FiltersComponent } from "../filters/filters.component";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -93,16 +93,17 @@ export class SearchComponent implements AfterViewInit {
           const ownerUid = i.dataset.dataset?.ownerUid;
           if (ownerUid !== undefined) {
             userIds.add(ownerUid);
-          } else {
-            console.warn(`Dataset with ID ${i.dataset.dataset?.did} does not have an ownerUid.`);
           }
+        } else if (i.workflow) {
+          userIds.add(i.workflow.ownerId);
         }
       });
 
-      let userIdToNameMap: { [key: number]: string } = {};
+      let userIdToInfoMap: { [key: number]: UserInfo } = {};
       if (userIds.size > 0) {
-        userIdToNameMap = await firstValueFrom(this.searchService.getUserNames(Array.from(userIds)));
+        userIdToInfoMap = await firstValueFrom(this.searchService.getUserInfo(Array.from(userIds)));
       }
+      console.log(userIdToInfoMap)
 
       return {
         entries: results.results.map(i => {
@@ -110,17 +111,28 @@ export class SearchComponent implements AfterViewInit {
 
           if (i.workflow) {
             entry = new DashboardEntry(i.workflow);
+            const userInfo = userIdToInfoMap[i.workflow.ownerId];
+            if (userInfo) {
+              entry.setOwnerName(userInfo.userName);
+              entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+            }
           } else if (i.project) {
             entry = new DashboardEntry(i.project);
-            const userName = userIdToNameMap[i.project.ownerId] || "";
-            entry.setOwnerName(userName);
-          } else if (i.file) {
-            entry = new DashboardEntry(i.file);
+            const userInfo = userIdToInfoMap[i.project.ownerId];
+            if (userInfo) {
+              entry.setOwnerName(userInfo.userName);
+              entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+            }
           } else if (i.dataset) {
             entry = new DashboardEntry(i.dataset);
             const ownerUid = i.dataset.dataset?.ownerUid;
-            const userName = ownerUid !== undefined ? userIdToNameMap[ownerUid] || "" : "";
-            entry.setOwnerName(userName);
+            if (ownerUid !== undefined) {
+              const userInfo = userIdToInfoMap[ownerUid];
+              if (userInfo) {
+                entry.setOwnerName(userInfo.userName);
+                entry.setOwnerGoogleAvatar(userInfo.googleAvatar ?? "");
+              }
+            }
           } else {
             throw new Error("Unexpected type in SearchResult.");
           }
