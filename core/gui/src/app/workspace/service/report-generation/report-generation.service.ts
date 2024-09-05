@@ -120,8 +120,7 @@ export class ReportGenerationService {
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
       this.checkAiAssistantEnabled().then(async aiEnabled => {
-
-        console.log(`Processing ${operatorId}`)
+        console.log(`Processing ${operatorId}`);
         try {
           // Retrieve the result service and paginated result service for the operator
           const resultService = this.workflowResultService.getResultService(operatorId);

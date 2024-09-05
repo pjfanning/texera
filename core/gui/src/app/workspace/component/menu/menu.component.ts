@@ -292,7 +292,7 @@ export class MenuComponent implements OnInit {
         error: (e: unknown) => {
           this.notificationService.error((e as Error).message);
           this.isReportGenerating = false;
-        }
+        },
       });
   }
 
