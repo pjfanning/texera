@@ -1,4 +1,12 @@
 <div id="menu-container">
+
+  <div class="report-generation-spinner" *ngIf="isReportGenerating">
+    <div class="spinner-content">
+      <nz-spin [nzSize]="'large'" nzTip="Generating">
+      </nz-spin>
+    </div>
+  </div>
+
   <div
     *ngIf="!userSystemEnabled"
     id="logo">

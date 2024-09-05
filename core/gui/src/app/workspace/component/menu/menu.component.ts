@@ -53,6 +53,7 @@ import { ReportGenerationService } from "../../service/report-generation/report-
   styleUrls: ["menu.component.scss"],
 })
 export class MenuComponent implements OnInit {
+  public isReportGenerating = false;
   public executionState: ExecutionState; // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public isWorkflowValid: boolean = true; // this will check whether the workflow error or not
@@ -254,6 +255,8 @@ export class MenuComponent implements OnInit {
    */
   public onClickGenerateReport(): void {
     // Get notification
+    this.isReportGenerating = true;
+
     this.notificationService.info("The report is being generated...");
 
     const workflowName = this.currentWorkflowName;
@@ -278,13 +281,18 @@ export class MenuComponent implements OnInit {
                 );
                 // Generate the final report as HTML after all results are retrieved
                 this.reportGenerationService.generateReportAsHtml(workflowSnapshotURL, sortedResults, workflowName);
+                this.isReportGenerating = false;
               },
               error: (error: unknown) => {
                 this.notificationService.error("Error in retrieving operator results: " + (error as Error).message);
+                this.isReportGenerating = false;
               },
             });
         },
-        error: (e: unknown) => this.notificationService.error((e as Error).message),
+        error: (e: unknown) => {
+          this.notificationService.error((e as Error).message);
+          this.isReportGenerating = false;
+        }
       });
   }
 
