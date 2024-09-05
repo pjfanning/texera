@@ -67,7 +67,7 @@ class NetworkReceiver(Runnable, Stoppable):
             if payload_type == "Data":
                 payload = DataFrame(table)
             elif payload_type == "State":
-                payload = MarkerFrame(State().from_dict(table.to_pandas().iloc[0].to_dict()))
+                payload = MarkerFrame(State().from_table(table))
             elif payload_type == "EndOfUpstream":
                 payload = MarkerFrame(EndOfUpstream())
             shared_queue.put(
