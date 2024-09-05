@@ -3,10 +3,10 @@
  * Licensed under the MIT License. See LICENSE in the package root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { WebSocketServer } from 'ws';
+import { WebSocketServer } from "ws";
 import { Server } from 'node:http';
 import express from 'express';
-import { getLocalDirectory, LanguageServerRunConfig, upgradeWsServer } from './server-commons.js';
+import { getLocalDirectory, LanguageServerRunConfig, upgradeWsServer } from './server-commons.ts';
 
 /** LSP server runner */
 export const runLanguageServer = (
