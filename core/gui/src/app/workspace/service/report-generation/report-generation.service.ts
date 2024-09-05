@@ -14,7 +14,7 @@ const AI_ASSISTANT_API_BASE_URL = `${AppSettings.getApiEndpoint()}`;
   providedIn: "root",
 })
 export class ReportGenerationService {
-  private isAiAssistantEnabled: boolean | null = null;
+  private isAIAssistantEnabled: boolean | null = null;
   constructor(
     private http: HttpClient,
     public workflowActionService: WorkflowActionService,
@@ -119,7 +119,7 @@ export class ReportGenerationService {
     allResults: { operatorId: string; html: string }[]
   ): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      this.checkAiAssistantEnabled().then(async aiEnabled => {
+      this.checkAIAssistantEnabled().then(async AIEnabled => {
         console.log(`Processing ${operatorId}`);
         try {
           // Retrieve the result service and paginated result service for the operator
@@ -413,9 +413,9 @@ export class ReportGenerationService {
    * @returns {Promise<boolean>} A promise that resolves to a boolean indicating whether the AI Assistant is enabled.
    *                             Returns `false` if the request fails or the response is undefined.
    */
-  public checkAiAssistantEnabled(): Promise<boolean> {
-    if (this.isAiAssistantEnabled !== null) {
-      return Promise.resolve(this.isAiAssistantEnabled);
+  public checkAIAssistantEnabled(): Promise<boolean> {
+    if (this.isAIAssistantEnabled !== null) {
+      return Promise.resolve(this.isAIAssistantEnabled);
     }
 
     const apiUrl = `${AI_ASSISTANT_API_BASE_URL}/aiassistant/isenabled`;
@@ -460,10 +460,10 @@ export class ReportGenerationService {
     let attempts = 0;
 
     // Check if AI Assistant is enabled
-    const aiEnabled = await this.checkAiAssistantEnabled();
+    const AIEnabled = await this.checkAIAssistantEnabled();
 
     // If AI Assistant is not enabled, return a specific message
-    if (!aiEnabled) {
+    if (!AIEnabled) {
       return "";
     }
 
@@ -521,10 +521,10 @@ export class ReportGenerationService {
     let attempts = 0;
 
     // Check if AI Assistant is enabled
-    const aiEnabled = await this.checkAiAssistantEnabled();
+    const AIEnabled = await this.checkAIAssistantEnabled();
 
     // If AI Assistant is not enabled, return a specific message
-    if (!aiEnabled) {
+    if (!AIEnabled) {
       return "";
     }
 
