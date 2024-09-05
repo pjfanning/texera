@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from pyarrow.lib import Table
+
 from core.models.marker import Marker
 
 
@@ -7,9 +9,11 @@ from core.models.marker import Marker
 class DataPayload:
     pass
 
+
 @dataclass
 class DataFrame(DataPayload):
     frame: Table
+
 
 @dataclass
 class MarkerFrame(DataPayload):
