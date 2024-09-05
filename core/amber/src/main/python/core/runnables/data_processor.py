@@ -34,8 +34,8 @@ class DataProcessor(Runnable, Stoppable):
             self._switch_context()
 
     def process_state(self) -> None:
-        state_ = self._context.tuple_processing_manager.get_input_state()
-        if state_ is not None:
+        state = self._context.tuple_processing_manager.get_input_state()
+        if state is not None:
             try:
                 executor = self._context.executor_manager.executor
                 port_id = self._context.tuple_processing_manager.current_input_port_id
@@ -50,7 +50,7 @@ class DataProcessor(Runnable, Stoppable):
                         self._context.worker_id,
                         self._context.console_message_manager.print_buf,
                 ):
-                    self._set_output_state(executor.process_state(state_, port))
+                    self._set_output_state(executor.process_state(state, port))
 
             except Exception as err:
                 logger.exception(err)
