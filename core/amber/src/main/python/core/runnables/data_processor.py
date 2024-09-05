@@ -102,12 +102,12 @@ class DataProcessor(Runnable, Stoppable):
             finally:
                 self._switch_context()
 
-    def _set_output_tuple(self, output_tuple):
+    def _set_output_tuple(self, output_tuple) -> None:
         if output_tuple is not None:
             output_tuple.finalize(self._context.output_manager.get_port().get_schema())
         self._context.tuple_processing_manager.current_output_tuple = output_tuple
 
-    def _set_output_state(self, output_state: State):
+    def _set_output_state(self, output_state: State) -> None:
         self._context.tuple_processing_manager.current_output_state = output_state
 
     def _switch_context(self) -> None:
