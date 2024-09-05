@@ -8,7 +8,7 @@ const runPythonServer = (baseDir: string, relativeDir: string, serverPort: numbe
   const processRunPath = resolve(baseDir, relativeDir);
   runLanguageServer({
     serverName: "PYRIGHT",
-    pathName: "/pyright",
+    pathName: "/python-language-server",
     serverPort: serverPort,
     runCommand: LanguageName.node,
     runCommandArgs: [
