@@ -34,11 +34,42 @@ import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.managed.ProgressiveSinkOpDesc
-import edu.uci.ics.texera.workflow.operators.sklearn.{SklearnAdaptiveBoostingOpDesc, SklearnBaggingOpDesc, SklearnBernoulliNaiveBayesOpDesc, SklearnComplementNaiveBayesOpDesc, SklearnDecisionTreeOpDesc, SklearnDummyClassifierOpDesc, SklearnExtraTreeOpDesc, SklearnExtraTreesOpDesc, SklearnGaussianNaiveBayesOpDesc, SklearnGradientBoostingOpDesc, SklearnKNNOpDesc, SklearnLinearRegressionOpDesc, SklearnLinearSVMOpDesc, SklearnLogisticRegressionCVOpDesc, SklearnLogisticRegressionOpDesc, SklearnMultiLayerPerceptronOpDesc, SklearnMultinomialNaiveBayesOpDesc, SklearnNearestCentroidOpDesc, SklearnPassiveAggressiveOpDesc, SklearnPerceptronOpDesc, SklearnPredictionOpDesc, SklearnProbabilityCalibrationOpDesc, SklearnRandomForestOpDesc, SklearnRidgeCVOpDesc, SklearnRidgeOpDesc, SklearnSDGOpDesc, SklearnSVMOpDesc}
+import edu.uci.ics.texera.workflow.operators.sklearn.{
+  SklearnAdaptiveBoostingOpDesc,
+  SklearnBaggingOpDesc,
+  SklearnBernoulliNaiveBayesOpDesc,
+  SklearnComplementNaiveBayesOpDesc,
+  SklearnDecisionTreeOpDesc,
+  SklearnDummyClassifierOpDesc,
+  SklearnExtraTreeOpDesc,
+  SklearnExtraTreesOpDesc,
+  SklearnGaussianNaiveBayesOpDesc,
+  SklearnGradientBoostingOpDesc,
+  SklearnKNNOpDesc,
+  SklearnLinearRegressionOpDesc,
+  SklearnLinearSVMOpDesc,
+  SklearnLogisticRegressionCVOpDesc,
+  SklearnLogisticRegressionOpDesc,
+  SklearnMultiLayerPerceptronOpDesc,
+  SklearnMultinomialNaiveBayesOpDesc,
+  SklearnNearestCentroidOpDesc,
+  SklearnPassiveAggressiveOpDesc,
+  SklearnPerceptronOpDesc,
+  SklearnPredictionOpDesc,
+  SklearnProbabilityCalibrationOpDesc,
+  SklearnRandomForestOpDesc,
+  SklearnRidgeCVOpDesc,
+  SklearnRidgeOpDesc,
+  SklearnSDGOpDesc,
+  SklearnSVMOpDesc
+}
 import edu.uci.ics.texera.workflow.operators.sort.SortOpDesc
 import edu.uci.ics.texera.workflow.operators.sortPartitions.SortPartitionsOpDesc
 import edu.uci.ics.texera.workflow.operators.source.apis.reddit.RedditSearchSourceOpDesc
-import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{TwitterFullArchiveSearchSourceOpDesc, TwitterSearchSourceOpDesc}
+import edu.uci.ics.texera.workflow.operators.source.apis.twitter.v2.{
+  TwitterFullArchiveSearchSourceOpDesc,
+  TwitterSearchSourceOpDesc
+}
 import edu.uci.ics.texera.workflow.operators.source.fetcher.URLFetcherOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.FileScanSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.source.scan.csv.CSVScanSourceOpDesc
@@ -53,7 +84,12 @@ import edu.uci.ics.texera.workflow.operators.symmetricDifference.SymmetricDiffer
 import edu.uci.ics.texera.workflow.operators.typecasting.TypeCastingOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.java.JavaUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.udf.python.source.PythonUDFSourceOpDescV2
-import edu.uci.ics.texera.workflow.operators.udf.python.{DualInputPortsPythonUDFOpDescV2, PythonLambdaFunctionOpDesc, PythonTableReducerOpDesc, PythonUDFOpDescV2}
+import edu.uci.ics.texera.workflow.operators.udf.python.{
+  DualInputPortsPythonUDFOpDescV2,
+  PythonLambdaFunctionOpDesc,
+  PythonTableReducerOpDesc,
+  PythonUDFOpDescV2
+}
 import edu.uci.ics.texera.workflow.operators.udf.r.{RUDFOpDesc, RUDFSourceOpDesc}
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
 import edu.uci.ics.texera.workflow.operators.unneststring.UnnestStringOpDesc
