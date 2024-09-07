@@ -94,8 +94,8 @@ class DataProcessor(
         executor.onFinishMultiPort(portId)
       )
       val outputState = executor.onFinishProduceState(portId)
-      if (outputState!= null) {
-        outputManager.emitMarker(outputState)
+      if (outputState.isDefined) {
+        outputManager.emitMarker(outputState.get)
       }
     } catch safely {
       case e =>
