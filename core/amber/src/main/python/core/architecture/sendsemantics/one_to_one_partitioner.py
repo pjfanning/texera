@@ -38,7 +38,7 @@ class OneToOnePartitioner(Partitioner):
     def add_state_to_batch(self, state: State):
         if len(self.batch) > 0:
             yield self.receiver, deepcopy(self.batch)
-            self.batch.clear()
+            self.reset()
 
         yield self.receiver, state
 
