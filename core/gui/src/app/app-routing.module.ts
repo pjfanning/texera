@@ -22,21 +22,8 @@ import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 
-const routes: Routes = [
-  {
-    path: "",
-    component: environment.userSystemEnabled ? UserWorkflowComponent : WorkspaceComponent,
-    canActivate: [AuthGuardService],
-  },
-];
+const routes: Routes = [];
 if (environment.userSystemEnabled) {
-  /*
-   *  The user dashboard is under path '/dashboard'
-   *  The saved workflow is under path '/dashboard/workflow'
-   *  The user dictionary is under path '/dashboard/user-dictionary'
-   *  The user project list is under path '/dashboard/project'
-   *  The single user project is under path 'dashboard/project/{pid}'
-   */
   routes.push({
     path: "dashboard",
     component: DashboardComponent,
@@ -132,11 +119,27 @@ if (environment.userSystemEnabled) {
       },
     ],
   });
+
+  routes.push({
+    path: "home",
+    component: HomeComponent,
+  });
+
+  routes.push({
+    path: "",
+    redirectTo: "dashboard/workflow",
+    pathMatch: "full",
+  });
+} else {
+  routes.push({
+    path: "",
+    component: WorkspaceComponent,
+  });
 }
 // redirect all other paths to index.
 routes.push({
   path: "**",
-  redirectTo: "",
+  redirectTo: "dashboard/workflow",
 });
 @NgModule({
   imports: [RouterModule.forRoot(routes)],

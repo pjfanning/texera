@@ -50,6 +50,7 @@ import edu.uci.ics.texera.web.resource.dashboard.user.workflow.{
   WorkflowResource,
   WorkflowVersionResource
 }
+import edu.uci.ics.texera.web.resource.languageserver.PythonLanguageServerManager
 import edu.uci.ics.texera.web.service.ExecutionsMetadataPersistService
 import edu.uci.ics.texera.web.storage.MongoDatabaseManager
 import edu.uci.ics.texera.web.workflowruntimestate.WorkflowAggregatedState.{COMPLETED, FAILED}
@@ -138,6 +139,7 @@ object TexeraWebApplication {
         .resolve("web-config.yml")
         .toString
     )
+    PythonLanguageServerManager.startLanguageServer()
   }
 }
 
@@ -260,6 +262,7 @@ class TexeraWebApplication
     environment.jersey.register(classOf[AdminExecutionResource])
     environment.jersey.register(classOf[UserQuotaResource])
     environment.jersey.register(classOf[UserDiscussionResource])
+    environment.jersey.register(classOf[AiAssistantResource])
   }
 
   /**
