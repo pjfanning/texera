@@ -1,4 +1,3 @@
-import datetime
 import threading
 import time
 import typing
@@ -24,6 +23,7 @@ from core.models.marker import State
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement
+from core.util.console_message.timestamp import current_time_in_local_timezone
 from proto.edu.uci.ics.amber.engine.architecture.worker import (
     ControlCommandV2,
     ConsoleMessageType,
@@ -347,7 +347,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
                 PythonConsoleMessageV2(
                     ConsoleMessage(
                         worker_id=self.context.worker_id,
-                        timestamp=datetime.datetime.now(),
+                        timestamp=current_time_in_local_timezone(),
                         msg_type=ConsoleMessageType.DEBUGGER,
                         source="(Pdb)",
                         title=debug_event,
