@@ -55,7 +55,7 @@ object PythonLanguageServerManager {
         if (!started) {
           logger.warning(s"Failed to start Pyright after $MAX_TRY_COUNT attempts. Abort!")
         }
-
+      
       // The situation when the provider is Pylsp
       case "pylsp" =>
         logger.info("Starting Pylsp...")
