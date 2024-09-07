@@ -31,14 +31,20 @@ object PythonLanguageServerManager {
             val workingDir = new File("C:/Users/Owner/new/texera/core/pyright-language-server")
             val exitCode = Process(command, workingDir).!
             if (exitCode == 0) {
-              logger.info(s"Pyright language server started successfully on port $pythonLanguageServerPort")
+              logger.info(
+                s"Pyright language server started successfully on port $pythonLanguageServerPort"
+              )
               started = true
             } else {
-              logger.warning(s"Pyright failed to start with exit code: $exitCode (attempt ${tryCount + 1}/$MAX_TRY_COUNT)")
+              logger.warning(
+                s"Pyright failed to start with exit code: $exitCode (attempt ${tryCount + 1}/$MAX_TRY_COUNT)"
+              )
             }
           } catch {
             case e: Exception =>
-              logger.warning(s"Failed to start Pyright (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}")
+              logger.warning(
+                s"Failed to start Pyright (attempt ${tryCount + 1}/$MAX_TRY_COUNT): ${e.getMessage}"
+              )
           }
           if (!started && tryCount < MAX_TRY_COUNT - 1) {
             logger.info(s"Retrying in $UNIT_WAIT_TIME_MS ms...")
