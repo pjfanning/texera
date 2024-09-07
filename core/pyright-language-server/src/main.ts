@@ -1,3 +1,5 @@
+//The source file can be referred to: https://github.com/TypeFox/monaco-languageclient/blob/main/packages/examples/src/python/server/main.ts
+
 import { resolve } from "node:path";
 import { runLanguageServer } from "./language-server-runner.ts";
 import { getLocalDirectory, LanguageName } from "./server-commons.ts";

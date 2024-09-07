@@ -2,6 +2,7 @@
  * Copyright (c) 2024 TypeFox and others.
  * Licensed under the MIT License. See LICENSE in the package root for license information.
  * ------------------------------------------------------------------------------------------ */
+//The source file can be referred to: https://github.com/TypeFox/monaco-languageclient/blob/main/packages/examples/src/common/node/server-commons.ts
 import { ServerOptions, WebSocketServer } from "ws";
 import { IncomingMessage, Server } from "node:http";
 import { fileURLToPath, URL } from "node:url";
