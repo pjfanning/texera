@@ -10,7 +10,7 @@ const runPythonServer = (baseDir: string, relativeDir: string, serverPort: numbe
   const processRunPath = resolve(baseDir, relativeDir);
   runLanguageServer({
     serverName: "PYRIGHT",
-    pathName: "/python-language-server",
+    pathName: clientPathName,
     serverPort: serverPort,
     runCommand: LanguageName.node,
     runCommandArgs: [
@@ -37,5 +37,6 @@ const amberConfigContent = fs.readFileSync(amberConfigFilePath, "utf-8");
 const applicationConfig = hoconParser(amberConfigContent) as Record<string, any>;
 
 const pythonLanguageServerPort = applicationConfig["python-language-server"].port;
+const clientPathName = config.clientPathName
 
 runPythonServer(baseDir, relativeDir, pythonLanguageServerPort);
