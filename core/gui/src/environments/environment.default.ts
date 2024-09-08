@@ -13,6 +13,11 @@ export const defaultEnvironment = {
   apiUrl: "api",
 
   /**
+   * texera API URL of the backend
+   */
+  texeraApiUrl: "api/texera",
+
+  /**
    * whether fetching available source tables is enabled
    * see SourceTablesService for details
    */
@@ -32,7 +37,7 @@ export const defaultEnvironment = {
   /**
    * whether export execution result is supported
    */
-  exportExecutionResultEnabled: false,
+  exportExecutionResultEnabled: true,
 
   /**
    * Whether automatically correcting attribute name on change is enabled
@@ -43,7 +48,7 @@ export const defaultEnvironment = {
   /**
    * whether user system is enabled
    */
-  userSystemEnabled: false,
+  userSystemEnabled: true,
 
   /**
    * whether local login is enabled
@@ -63,7 +68,7 @@ export const defaultEnvironment = {
   /**
    * whether workflow executions tracking feature is enabled
    */
-  workflowExecutionsTrackingEnabled: false,
+  workflowExecutionsTrackingEnabled: true,
 
   /**
    * whether linkBreakpoint is supported
