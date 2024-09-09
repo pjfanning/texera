@@ -20,7 +20,7 @@ import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.mutable
 import com.twitter.util.Promise
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, State}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream, State}
 
 import java.nio.charset.Charset
 
@@ -103,7 +103,10 @@ private class AmberProducer(
     // closing the stream will release the dictionaries
     flightStream.takeDictionaryOwnership
 
-    if (dataHeader.payloadType == EndOfUpstream().getClass.getSimpleName) {
+    if (dataHeader.payloadType == StartOfUpstream().getClass.getSimpleName) {
+      assert(root.getRowCount == 0)
+      outputPort.sendTo(to, MarkerFrame(StartOfUpstream()))
+    } else if (dataHeader.payloadType == EndOfUpstream().getClass.getSimpleName) {
       assert(root.getRowCount == 0)
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
     } else if (dataHeader.payloadType == State().getClass.getSimpleName) {

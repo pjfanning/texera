@@ -20,7 +20,7 @@ from core.models import (
 )
 from core.models.internal_marker import StartOfAll
 from core.models.internal_queue import DataElement, ControlElement
-from core.models.marker import State, EndOfUpstream
+from core.models.marker import State, EndOfUpstream, StartOfUpstream
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement
@@ -244,6 +244,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         :param _: StartOfAll Internal Marker
         """
+        for to, batch in self.context.output_manager.emit_marker(StartOfUpstream()):
+            self._output_queue.put(DataElement(tag=to, payload=batch))
+            self._check_and_process_control()
 
 
     def _process_end_of_all_marker(self, _: EndOfAll) -> None:
