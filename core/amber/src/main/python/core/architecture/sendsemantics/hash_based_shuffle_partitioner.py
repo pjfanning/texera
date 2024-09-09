@@ -43,16 +43,6 @@ class HashBasedShufflePartitioner(Partitioner):
             self.receivers[hash_code] = (receiver, list())
 
     @overrides
-    def no_more(
-        self,
-    ) -> Iterator[
-        typing.Tuple[
-            ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
-        ]
-    ]:
-        return self.flush(EndOfUpstream())
-
-    @overrides
     def flush(
             self, marker: Marker
     ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
