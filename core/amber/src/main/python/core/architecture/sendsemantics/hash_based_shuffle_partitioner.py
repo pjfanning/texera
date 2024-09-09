@@ -6,7 +6,7 @@ from overrides import overrides
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
 from core.models import Tuple, State
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, Marker
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     HashBasedShufflePartitioning,
@@ -43,15 +43,6 @@ class HashBasedShufflePartitioner(Partitioner):
             self.receivers[hash_code] = (receiver, list())
 
     @overrides
-    def add_state_to_batch(self, state: State):
-        for receiver, batch in self.receivers:
-            if len(batch) > 0:
-                yield receiver, deepcopy(batch)
-            yield receiver, deepcopy(batch)
-            batch.clear()
-            yield receiver, state
-
-    @overrides
     def no_more(
         self,
     ) -> Iterator[
@@ -59,7 +50,13 @@ class HashBasedShufflePartitioner(Partitioner):
             ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
         ]
     ]:
+        return self.flush(EndOfUpstream())
+
+    @overrides
+    def flush(
+            self, marker: Marker
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
         for receiver, batch in self.receivers:
             if len(batch) > 0:
                 yield receiver, batch
-            yield receiver, EndOfUpstream()
+            yield receiver, marker

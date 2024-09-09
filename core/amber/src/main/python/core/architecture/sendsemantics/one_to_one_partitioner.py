@@ -6,7 +6,7 @@ from overrides import overrides
 from copy import deepcopy
 from core.architecture.sendsemantics.partitioner import Partitioner
 from core.models import Tuple, State
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, Marker
 from core.util import set_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
     OneToOnePartitioning,
@@ -35,25 +35,13 @@ class OneToOnePartitioner(Partitioner):
             self.reset()
 
     @overrides
-    def add_state_to_batch(self, state: State):
-        if len(self.batch) > 0:
-            yield self.receiver, deepcopy(self.batch)
-            self.reset()
-
-        yield self.receiver, state
-
-    @overrides
-    def no_more(
-        self,
-    ) -> Iterator[
-        typing.Tuple[
-            ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
-        ]
-    ]:
+    def flush(
+            self, marker: Marker
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
         if len(self.batch) > 0:
             yield self.receiver, self.batch
         self.reset()
-        yield self.receiver, EndOfUpstream()
+        yield self.receiver, marker
 
     @overrides
     def reset(self) -> None:

@@ -108,12 +108,12 @@ class OutputManager:
                     (
                         receiver,
                         (
-                            MarkerFrame(tuples)
-                            if isinstance(tuples, State)
-                            else self.tuple_to_frame(tuples)
+                            MarkerFrame(payload)
+                            if isinstance(payload, State)
+                            else self.tuple_to_frame(payload)
                         ),
                     )
-                    for receiver, tuples in partitioner.add_state_to_batch(state)
+                    for receiver, payload in partitioner.flush(state)
                 )
                 for partitioner in self._partitioners.values()
             )

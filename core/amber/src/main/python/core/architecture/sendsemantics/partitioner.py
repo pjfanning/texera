@@ -5,7 +5,7 @@ from typing import Iterator
 from betterproto import Message
 
 from core.models import Tuple, State
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, Marker
 from core.util import get_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import Partitioning
 from proto.edu.uci.ics.amber.engine.common import ActorVirtualIdentity
@@ -19,9 +19,6 @@ class Partitioner(ABC):
         self, tuple_: Tuple
     ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.List[Tuple]]]:
         pass
-
-    def add_state_to_batch(self, state: State):
-        pass
         
     def no_more(
         self,
@@ -30,6 +27,11 @@ class Partitioner(ABC):
             ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
         ]
     ]:
+        return self.flush(EndOfUpstream())
+
+    def flush(
+            self, marker: Marker
+    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.Union[Marker, typing.List[Tuple]]]]:
         pass
 
     def reset(self) -> None:
