@@ -11,7 +11,7 @@ import edu.uci.ics.amber.engine.common.rpc.AsyncRPCServer.ControlCommand
 import edu.uci.ics.amber.engine.common.virtualidentity.ChannelIdentity
 import edu.uci.ics.amber.engine.common.virtualidentity.util.SOURCE_STARTER_ACTOR
 import edu.uci.ics.amber.engine.common.workflow.PortIdentity
-import edu.uci.ics.texera.workflow.common.{EndOfUpstream, State}
+import edu.uci.ics.texera.workflow.common.{EndOfUpstream, StartOfUpstream, State}
 
 object StartHandler {
   final case class StartWorker() extends ControlCommand[WorkerState]
@@ -31,6 +31,10 @@ trait StartHandler {
       dp.inputGateway
         .getChannel(ChannelIdentity(SOURCE_STARTER_ACTOR, actorId, isControl = false))
         .setPortId(dummyInputPortId)
+      dp.processDataPayload(
+        ChannelIdentity(SOURCE_STARTER_ACTOR, dp.actorId, isControl = false),
+        MarkerFrame(StartOfUpstream())
+      )
       dp.processDataPayload(
         ChannelIdentity(SOURCE_STARTER_ACTOR, dp.actorId, isControl = false),
         MarkerFrame(EndOfUpstream())

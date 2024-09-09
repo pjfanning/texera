@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 sealed trait Marker
 
+final case class StartOfUpstream() extends Marker
 final case class EndOfUpstream() extends Marker
 
 final case class State() extends Marker {

@@ -9,6 +9,8 @@ trait OperatorExecutor {
 
   def open(): Unit = {}
 
+  def onStartProduceState(port: Int): Option[State] = None
+
   def processState(state: State, port: Int): State = state
 
   def processTupleMultiPort(

@@ -7,6 +7,10 @@ class Marker:
     pass
 
 @dataclass
+class StartOfUpstream(Marker):
+    pass
+
+@dataclass
 class EndOfUpstream(Marker):
     pass
 
