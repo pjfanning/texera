@@ -22,7 +22,7 @@ from core.architecture.sendsemantics.broad_cast_partitioner import (
     BroadcastPartitioner,
 )
 from core.models import Tuple, Schema, MarkerFrame, State
-from core.models.marker import EndOfUpstream
+from core.models.marker import EndOfUpstream, Marker
 from core.models.payload import DataPayload, DataFrame
 from core.util import get_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (
@@ -99,9 +99,9 @@ class OutputManager:
             )
         )
 
-    def state_to_batch(
-            self, state: State
-    ) -> Iterator[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
+    def emit_marker(
+            self, marker: Marker
+    ) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
         return chain(
             *(
                 (
@@ -109,16 +109,15 @@ class OutputManager:
                         receiver,
                         (
                             MarkerFrame(payload)
-                            if isinstance(payload, State)
+                            if isinstance(payload, Marker)
                             else self.tuple_to_frame(payload)
                         ),
                     )
-                    for receiver, payload in partitioner.flush(state)
+                    for receiver, payload in partitioner.flush(marker)
                 )
                 for partitioner in self._partitioners.values()
             )
         )
-
 
     def tuple_to_frame(self, tuples: typing.List[Tuple]) -> DataFrame:
         return DataFrame(
@@ -128,25 +127,5 @@ class OutputManager:
                     for name in self.get_port().get_schema().get_attr_names()
                 },
                 schema=self.get_port().get_schema().as_arrow_schema(),
-            )
-        )
-
-    def emit_end_of_upstream(
-        self,
-    ) -> Iterable[typing.Tuple[ActorVirtualIdentity, DataPayload]]:
-        return chain(
-            *(
-                (
-                    (
-                        receiver,
-                        (
-                            MarkerFrame(tuples)
-                            if isinstance(tuples, EndOfUpstream)
-                            else self.tuple_to_frame(tuples)
-                        ),
-                    )
-                    for receiver, tuples in partitioner.no_more()
-                )
-                for partitioner in self._partitioners.values()
             )
         )

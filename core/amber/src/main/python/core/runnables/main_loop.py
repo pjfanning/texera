@@ -18,8 +18,9 @@ from core.models import (
     SenderChange,
     Tuple,
 )
+from core.models.internal_marker import StartOfAll
 from core.models.internal_queue import DataElement, ControlElement
-from core.models.marker import State
+from core.models.marker import State, EndOfUpstream
 from core.runnables.data_processor import DataProcessor
 from core.util import StoppableQueueBlockingRunnable, get_one_of, set_one_of
 from core.util.customized_queue.queue_base import QueueElement
@@ -171,7 +172,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     for (to, batch) in self.context.output_manager.tuple_to_batch(output_data):
                         self._output_queue.put(DataElement(tag=to, payload=batch))
                 elif isinstance(output_data, State):
-                    for (to, batch) in self.context.output_manager.state_to_batch(output_data):
+                    for (to, batch) in self.context.output_manager.emit_marker(output_data):
                         self._output_queue.put(DataElement(tag=to, payload=batch))
 
     def process_tuple_with_udf(self) -> Iterator[Optional[Tuple]]:
@@ -235,6 +236,16 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self.context.input_manager.get_port_id(sender_change_marker.channel_id)
         )
 
+
+    def _process_start_of_all_marker(self, _: StartOfAll) -> None:
+        """
+        Upon receipt of an StartOfAllMarker, which indicates the start of all input links,
+        send the StartOfUpstream to all downstream workers.
+
+        :param _: StartOfAll Internal Marker
+        """
+
+
     def _process_end_of_all_marker(self, _: EndOfAll) -> None:
         """
         Upon receipt of an EndOfAllMarker, which indicates the end of all input links,
@@ -244,7 +255,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         :param _: EndOfAllMarker
         """
-        for to, batch in self.context.output_manager.emit_end_of_upstream():
+        for to, batch in self.context.output_manager.emit_marker(EndOfUpstream()):
             self._output_queue.put(DataElement(tag=to, payload=batch))
             self._check_and_process_control()
             control_command = set_one_of(
@@ -293,6 +304,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     self._process_input_exhausted,
                     SenderChange,
                     self._process_sender_change_marker,
+                    StartOfAll,
+                    self._process_start_of_all_marker,
                     EndOfAll,
                     self._process_end_of_all_marker,
                     State,

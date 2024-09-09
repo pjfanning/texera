@@ -19,15 +19,6 @@ class Partitioner(ABC):
         self, tuple_: Tuple
     ) -> Iterator[typing.Tuple[ActorVirtualIdentity, typing.List[Tuple]]]:
         pass
-        
-    def no_more(
-        self,
-    ) -> Iterator[
-        typing.Tuple[
-            ActorVirtualIdentity, typing.Union[EndOfUpstream, typing.List[Tuple]]
-        ]
-    ]:
-        return self.flush(EndOfUpstream())
 
     def flush(
             self, marker: Marker

@@ -1,8 +1,8 @@
 from typing import Iterator, Optional, Union, Dict, List
 
 from core.models import Tuple, ArrowTableTupleProvider, Schema, InputExhausted
-from core.models.internal_marker import EndOfAll, InternalMarker, SenderChange
-from core.models.marker import EndOfUpstream, State
+from core.models.internal_marker import EndOfAll, InternalMarker, SenderChange, StartOfAll
+from core.models.marker import EndOfUpstream, State, StartOfUpstream
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
 from proto.edu.uci.ics.amber.engine.common import (
     ActorVirtualIdentity,
@@ -110,6 +110,8 @@ class InputManager:
         elif isinstance(payload, MarkerFrame):
             if isinstance(payload.frame, State):
                 yield payload.frame
+            if isinstance(payload.frame, StartOfUpstream):
+                yield StartOfAll()
             if isinstance(payload.frame, EndOfUpstream):
                 channel = self._channels[self._current_channel_id]
                 channel.complete()
