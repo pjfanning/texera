@@ -121,12 +121,6 @@
   <div
     *ngIf="isPrivateSearch"
     class="button-group">
-    <nz-switch
-      [ngModel]="isPublic"
-      *ngIf="entry.type==='workflow'"
-      nzCheckedChildren="Public"
-      nzUnCheckedChildren="Private"
-      (ngModelChange)="visibilityChange()"></nz-switch>
     <button
       nz-button
       nzType="text"

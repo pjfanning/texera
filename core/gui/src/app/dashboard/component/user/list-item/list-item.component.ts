@@ -118,6 +118,7 @@ export class ListItemComponent implements OnInit, OnChanges {
         nzFooter: null,
         nzTitle: "Share this workflow with others",
         nzCentered: true,
+        nzWidth: "700px",
       });
     } else if (this.entry.type === "dataset") {
       this.modalService.create({
@@ -130,6 +131,7 @@ export class ListItemComponent implements OnInit, OnChanges {
         nzFooter: null,
         nzTitle: "Share this dataset with others",
         nzCentered: true,
+        nzWidth: "700px",
       });
     }
   }
