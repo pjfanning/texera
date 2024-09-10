@@ -39,10 +39,6 @@ trait StartHandler {
         ChannelIdentity(SOURCE_STARTER_ACTOR, dp.actorId, isControl = false),
         MarkerFrame(EndOfUpstream())
       )
-      dp.processDataPayload(
-        ChannelIdentity(SOURCE_STARTER_ACTOR, dp.actorId, isControl = false),
-        MarkerFrame(State())
-      )
       dp.stateManager.getCurrentState
     } else {
       throw new WorkflowRuntimeException(
