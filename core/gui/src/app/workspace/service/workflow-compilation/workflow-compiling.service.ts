@@ -10,6 +10,7 @@ import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.ser
 import { DEFAULT_WORKFLOW, WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
 import { catchError, debounceTime, filter, mergeMap } from "rxjs/operators";
 import { DynamicSchemaService } from "../dynamic-schema/dynamic-schema.service";
+import {PhysicalPlan} from "../../../common/type/physical-plan";
 
 // endpoint for schema propagation
 export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
@@ -54,11 +55,11 @@ export class WorkflowCompilingService {
     )
       .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
       .pipe(
-        mergeMap(() => this.invokeSchemaPropagationAPI()),
-        filter(response => response.code === 0)
+        mergeMap(() => this.invokeWorkflowCompilationAPI()),
+        filter(response => response.physicalPlan != undefined)
       )
       .subscribe(response => {
-        this.operatorInputSchemaMap = response.result;
+        this.operatorInputSchemaMap = response.operatorInputSchemas;
         this.operatorInputSchemaChangedStream.next();
         this._applySchemaPropagationResult(this.operatorInputSchemaMap);
       });
@@ -130,7 +131,7 @@ export class WorkflowCompilingService {
    * that users can easily set the properties of the next operator. For eg: If there are two operators Source:Scan and KeywordSearch and
    * a link is created between them, the attributed of the table selected in Source can be propagated to the KeywordSearch operator.
    */
-  private invokeSchemaPropagationAPI(): Observable<SchemaPropagationResponse> {
+  private invokeWorkflowCompilationAPI(): Observable<WorkflowCompilationResponse> {
     // create a Logical Plan based on the workflow graph
     const body = ExecuteWorkflowService.getLogicalPlanRequest(this.workflowActionService.getTexeraGraph());
     // remove unnecessary information for schema propagation.
@@ -142,7 +143,7 @@ export class WorkflowCompilingService {
     };
     // make a http post request to the API endpoint with the logical plan object
     return this.httpClient
-      .post<SchemaPropagationResponse>(
+      .post<WorkflowCompilationResponse>(
         `${AppSettings.getTexeraApiEndpoint()}/${WORKFLOW_COMPILATION_ENDPOINT}/${
           this.workflowActionService.getWorkflow().wid ?? DEFAULT_WORKFLOW.wid
         }`,
@@ -330,13 +331,12 @@ export type OperatorInputSchema = ReadonlyArray<PortInputSchema | undefined>;
 export type PortInputSchema = ReadonlyArray<SchemaAttribute>;
 
 /**
- * The backend interface of the return object of a successful execution
- * of autocomplete API
+ * The backend interface of the return object of a successful/failed workflow compilation
  *
  * An example data format for AutocompleteSuccessResult will look like:
  * {
- *  code: 0,
- *  result: {
+ *  physicalPlan: Physical Plan | Null(if compilation failed),
+ *  operatorInputSchemas: {
  *    'operatorID1' : [ ['attribute1','attribute2','attribute3'] ],
  *    'operatorID2' : [ [ {attributeName: 'name', attributeType: 'string'},
  *                      {attributeName: 'text', attributeType: 'string'},
@@ -345,12 +345,15 @@ export type PortInputSchema = ReadonlyArray<SchemaAttribute>;
  *  }
  * }
  */
-export interface SchemaPropagationResponse
+export interface WorkflowCompilationResponse
   extends Readonly<{
-    code: 0;
-    result: {
+    physicalPlan: PhysicalPlan | null;
+    operatorInputSchemas: {
       [key: string]: OperatorInputSchema;
     };
+    operatorErrors: {
+      [key: string]: string;
+    }
   }> {}
 
 /**
