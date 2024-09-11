@@ -20,8 +20,6 @@ import {
 import { Workflow } from "src/app/common/type/workflow";
 import { FileSaverService } from "src/app/dashboard/service/user/file/file-saver.service";
 import { firstValueFrom } from "rxjs";
-import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
-
 
 @UntilDestroy()
 @Component({
@@ -40,7 +38,6 @@ export class ListItemComponent implements OnInit, OnChanges {
   ROUTER_DATASET_BASE_URL = "/dashboard/dataset";
   public entryLink: string = "";
   public iconType: string = "";
-  isPublic: boolean = false;
 
   @Input() isPrivateSearch = false;
   @Input() editable = false;
@@ -66,7 +63,6 @@ export class ListItemComponent implements OnInit, OnChanges {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private fileSaverService: FileSaverService,
-    private publicWorkflowService: PublicWorkflowService
   ) {}
 
   initializeEntry() {
@@ -89,14 +85,6 @@ export class ListItemComponent implements OnInit, OnChanges {
 
   ngOnInit(): void {
     this.initializeEntry();
-
-    this.publicWorkflowService
-      .getWorkflowType(this.entry.id as number)
-      .pipe(untilDestroyed(this))
-      .subscribe(type => {
-        this.isPublic = type === "Public";
-        console.log((this.isPublic))
-      });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -231,22 +219,6 @@ export class ListItemComponent implements OnInit, OnChanges {
       return `${weeksAgo} weeks ago`;
     } else {
       return new Date(timestamp).toLocaleDateString();
-    }
-  }
-
-  public visibilityChange(): void {
-    console.log("visibilityChange Occurred");
-    console.log("The pid used is " + this.entry.id);
-    if (this.isPublic) {
-      this.publicWorkflowService
-        .makePrivate(this.entry.id as number)
-        .pipe(untilDestroyed(this))
-        .subscribe(() => this.ngOnInit());
-    } else {
-      this.publicWorkflowService
-        .makePublic(this.entry.id as number)
-        .pipe(untilDestroyed(this))
-        .subscribe(() => this.ngOnInit());
     }
   }
 }

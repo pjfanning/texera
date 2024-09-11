@@ -9,8 +9,8 @@ import { NZ_MODAL_DATA, NzModalRef, NzModalService } from "ng-zorro-antd/modal";
 import { NotificationService } from "../../../../common/service/notification/notification.service";
 import { HttpErrorResponse } from "@angular/common/http";
 import { NzMessageService } from "ng-zorro-antd/message";
-import { PublicWorkflowService } from "src/app/dashboard/service/user/public-workflow/public-workflow.service";
 import { DatasetService } from "../../../service/user/dataset/dataset.service";
+import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
 
 @UntilDestroy()
 @Component({
@@ -42,7 +42,7 @@ export class ShareAccessComponent implements OnInit {
     private notificationService: NotificationService,
     private message: NzMessageService,
     private modalService: NzModalService,
-    private publicWorkflowService: PublicWorkflowService,
+    private workflowPersistService: WorkflowPersistService,
     private datasetService: DatasetService,
 ) {
     this.validateForm = this.formBuilder.group({
@@ -64,8 +64,8 @@ export class ShareAccessComponent implements OnInit {
         this.owner = name;
       });
     if (this.type === "workflow") {
-      this.publicWorkflowService
-        .getWorkflowType(this.id)
+      this.workflowPersistService
+        .getWorkflowIsPublished(this.id)
         .pipe(untilDestroyed(this))
         .subscribe(dashboardWorkflow => {
           this.isPublic = dashboardWorkflow === "Public";
@@ -190,7 +190,6 @@ export class ShareAccessComponent implements OnInit {
               } else if (this.type === "dataset") {
                 this.publishDataset();
               }
-              alert(`Your ${this.type} is published!`);
               modal.close();
             },
           },
@@ -218,7 +217,6 @@ export class ShareAccessComponent implements OnInit {
               } else if (this.type === "dataset") {
                 this.unpublishDataset();
               }
-              alert(`Your ${this.type} is unpublished!`);
               modal.close();
             },
           },
@@ -230,8 +228,8 @@ export class ShareAccessComponent implements OnInit {
   public publishWorkflow(): void {
     if (!this.isPublic) {
       console.log("Workflow " + this.id + " is published");
-      this.publicWorkflowService
-        .makePublic(this.id)
+      this.workflowPersistService
+        .updateWorkflowIsPublished(this.id, true)
         .pipe(untilDestroyed(this))
         .subscribe(() => (this.isPublic = true));
     } else {
@@ -242,8 +240,8 @@ export class ShareAccessComponent implements OnInit {
   public unpublishWorkflow(): void {
     if (this.isPublic) {
       console.log("Workflow " + this.id + " is unpublished");
-      this.publicWorkflowService
-        .makePrivate(this.id)
+      this.workflowPersistService
+        .updateWorkflowIsPublished(this.id, false)
         .pipe(untilDestroyed(this))
         .subscribe(() => (this.isPublic = false));
     } else {

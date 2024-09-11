@@ -89,6 +89,7 @@ object WorkflowResource {
       content: String,
       creationTime: Timestamp,
       lastModifiedTime: Timestamp,
+      isPublished: Byte,
       readonly: Boolean
   )
 
@@ -265,6 +266,7 @@ class WorkflowResource extends LazyLogging {
         workflow.getContent,
         workflow.getCreationTime,
         workflow.getLastModifiedTime,
+        workflow.getIsPublished,
         !WorkflowAccessResource.hasWriteAccess(wid, user.getUid)
       )
     } else {
