@@ -3,10 +3,10 @@ import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/
 import {
   AttributeType,
   SchemaAttribute,
-  SchemaPropagationService,
 } from "src/app/workspace/service/dynamic-schema/schema-propagation/schema-propagation.service";
 import { filter, map } from "rxjs/operators";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
+import {WorkflowCompilingService} from "../../../service/workflow-compilation/workflow-compiling.service";
 
 // correspond to operator type specified in backend OperatorDescriptor
 export const TYPE_CASTING_OPERATOR_TYPE = "TypeCasting";
@@ -24,7 +24,7 @@ export class TypeCastingDisplayComponent implements OnInit, OnChanges {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private schemaPropagationService: SchemaPropagationService
+    private workflowCompilingService: WorkflowCompilingService
   ) {}
 
   ngOnInit(): void {
@@ -63,7 +63,7 @@ export class TypeCastingDisplayComponent implements OnInit, OnChanges {
   }
 
   private registerInputSchemaChangeHandler() {
-    this.schemaPropagationService
+    this.workflowCompilingService
       .getOperatorInputSchemaChangedStream()
       .pipe(untilDestroyed(this))
       .subscribe(_ => {
@@ -76,7 +76,7 @@ export class TypeCastingDisplayComponent implements OnInit, OnChanges {
       return;
     }
     this.schemaToDisplay = [];
-    const inputSchema = this.schemaPropagationService.getOperatorInputSchema(this.currentOperatorId);
+    const inputSchema = this.workflowCompilingService.getOperatorInputSchema(this.currentOperatorId);
 
     const operatorPredicate = this.workflowActionService.getTexeraGraph().getOperator(this.currentOperatorId);
 

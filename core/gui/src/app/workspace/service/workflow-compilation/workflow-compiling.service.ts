@@ -118,7 +118,6 @@ export class WorkflowCompilingService {
       }
 
       if (!isEqual(currentDynamicSchema, newDynamicSchema)) {
-        // SchemaPropagationService.resetAttributeOfOperator(this.workflowActionService, operatorID);
         this.dynamicSchemaService.setDynamicSchema(operatorID, newDynamicSchema);
       }
     });
