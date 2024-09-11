@@ -1,19 +1,19 @@
-<div class="workflow-access-button-group" *ngIf="isPublic !== null">
-  <button nz-button class="workflow-access-button"
+<div class="access-button-group" *ngIf="isPublic !== null">
+  <button nz-button class="access-button"
           [nzType]="isPublic ? 'default' : 'primary'" (click)="verifyUnpublish()">
     <div nz-icon nzType="lock" nzTheme="outline" class="button-icon"></div>
     <div class="button-text">
       <div class="button-text-header" >Private</div>
-      <p>Only collaborators can view this workflow</p>
+      <p>Only collaborators can view this workflow {{ type }}</p>
     </div>
   </button>
 
-  <button nz-button class="workflow-access-button"
+  <button nz-button class="access-button"
           [nzType]="isPublic ? 'primary' : 'default'" (click)="verifyPublish()">
     <div nz-icon nzType="user" nzTheme="outline" class="button-icon"></div>
     <div class="button-text">
       <div class="button-text-header">Public</div>
-      <p>Anyone on Texera can find and view this workflow</p>
+      <p>Anyone on Texera can find and view this {{ type }}</p>
     </div>
   </button>
 </div>
