@@ -489,7 +489,7 @@ export class MenuComponent implements OnInit {
       .persistWorkflow(this.workflowActionService.getWorkflow())
       .pipe(
         tap((updatedWorkflow: Workflow) => {
-          this.workflowActionService.setWorkflowMetadata(updatedWorkflow)
+          this.workflowActionService.setWorkflowMetadata(updatedWorkflow);
         }),
         filter(workflow => isDefined(localPid) && isDefined(workflow.wid)),
         mergeMap(workflow => this.userProjectService.addWorkflowToProject(localPid!, workflow.wid!)),

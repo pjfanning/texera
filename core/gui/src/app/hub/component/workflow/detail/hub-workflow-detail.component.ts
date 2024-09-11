@@ -4,7 +4,6 @@ import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { Location } from "@angular/common";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
 
-
 @UntilDestroy()
 @Component({
   selector: "texera-hub-workflow-result",
@@ -56,7 +55,8 @@ export class HubWorkflowDetailComponent {
   }
 
   cloneWorkflow(): void {
-    this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+    this.hubWorkflowService
+      .cloneWorkflow(Number(this.wid))
       .pipe(untilDestroyed(this))
       .subscribe(newWid => {
         this.clonedWorklowId = newWid;

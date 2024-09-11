@@ -384,9 +384,9 @@ class WorkflowResource extends LazyLogging {
   @Consumes(Array(MediaType.APPLICATION_JSON))
   @Produces(Array(MediaType.APPLICATION_JSON))
   @Path("/clone/{wid}")
-  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger  = {
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger = {
     val workflow: Workflow = workflowDao.fetchOneByWid(wid)
-    val newWorkflow: DashboardWorkflow =  createWorkflow(
+    val newWorkflow: DashboardWorkflow = createWorkflow(
       new Workflow(
         workflow.getName + "_clone",
         workflow.getDescription,

@@ -62,7 +62,7 @@ export class ListItemComponent implements OnInit, OnChanges {
   constructor(
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
-    private fileSaverService: FileSaverService,
+    private fileSaverService: FileSaverService
   ) {}
 
   initializeEntry() {

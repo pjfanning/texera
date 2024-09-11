@@ -46,8 +46,8 @@ export class ShareAccessComponent implements OnInit {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private datasetService: DatasetService,
-    private workflowActionService: WorkflowActionService,
-) {
+    private workflowActionService: WorkflowActionService
+  ) {
     this.validateForm = this.formBuilder.group({
       email: [null, Validators.email],
       accessLevel: ["READ"],
@@ -77,7 +77,7 @@ export class ShareAccessComponent implements OnInit {
       this.datasetService
         .getDataset(this.id)
         .pipe(untilDestroyed(this))
-        .subscribe(dashboardDataset  => {
+        .subscribe(dashboardDataset => {
           this.isPublic = dashboardDataset.dataset.isPublic === 1;
         });
     }
@@ -177,8 +177,7 @@ export class ShareAccessComponent implements OnInit {
     if (!this.isPublic) {
       const modal: NzModalRef = this.modalService.create({
         nzTitle: "Notice",
-        nzContent:
-          `Publishing your ${this.type} would grant all Texera users read access to your  ${this.type} along with the right to clone your work.`,
+        nzContent: `Publishing your ${this.type} would grant all Texera users read access to your  ${this.type} along with the right to clone your work.`,
         nzFooter: [
           {
             label: "Cancel",
@@ -192,7 +191,7 @@ export class ShareAccessComponent implements OnInit {
                 this.publishWorkflow();
 
                 if (this.inWorkspace) {
-                  this.workflowActionService.setWorkflowIsPublished(1)
+                  this.workflowActionService.setWorkflowIsPublished(1);
                 }
               } else if (this.type === "dataset") {
                 this.publishDataset();
@@ -222,7 +221,7 @@ export class ShareAccessComponent implements OnInit {
               if (this.type === "workflow") {
                 this.unpublishWorkflow();
                 if (this.inWorkspace) {
-                  this.workflowActionService.setWorkflowIsPublished(0)
+                  this.workflowActionService.setWorkflowIsPublished(0);
                 }
               } else if (this.type === "dataset") {
                 this.unpublishDataset();

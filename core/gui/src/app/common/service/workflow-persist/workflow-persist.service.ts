@@ -175,7 +175,7 @@ export class WorkflowPersistService {
   }
 
   public updateWorkflowIsPublished(wid: number, isPublished: boolean): Observable<void> {
-    if (isPublished){
+    if (isPublished) {
       return this.http.put<void>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/public/${wid}`, null);
     } else {
       return this.http.put<void>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_BASE_URL}/private/${wid}`, null);
