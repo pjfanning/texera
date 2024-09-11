@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from "@angular/core";
+import { Component, inject, Input, OnInit } from "@angular/core";
 import { FormBuilder, FormGroup, Validators, FormControl } from "@angular/forms";
 import { ShareAccessService } from "../../../service/user/share-access/share-access.service";
 import { ShareAccess } from "../../../type/share-access.interface";
@@ -11,6 +11,7 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { NzMessageService } from "ng-zorro-antd/message";
 import { DatasetService } from "../../../service/user/dataset/dataset.service";
 import { WorkflowPersistService } from "src/app/common/service/workflow-persist/workflow-persist.service";
+import { WorkflowActionService } from "src/app/workspace/service/workflow-graph/model/workflow-action.service";
 
 @UntilDestroy()
 @Component({
@@ -25,6 +26,7 @@ export class ShareAccessComponent implements OnInit {
   readonly id: number = this.nzModalData.id;
   readonly allOwners: string[] = this.nzModalData.allOwners;
 
+  readonly inWorkspace: boolean = this.nzModalData.inWorkspace;
   public validateForm: FormGroup;
   public accessList: ReadonlyArray<ShareAccess> = [];
   public owner: string = "";
@@ -44,6 +46,7 @@ export class ShareAccessComponent implements OnInit {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private datasetService: DatasetService,
+    private workflowActionService: WorkflowActionService,
 ) {
     this.validateForm = this.formBuilder.group({
       email: [null, Validators.email],
@@ -187,6 +190,10 @@ export class ShareAccessComponent implements OnInit {
             onClick: () => {
               if (this.type === "workflow") {
                 this.publishWorkflow();
+
+                if (this.inWorkspace) {
+                  this.workflowActionService.setWorkflowIsPublished(1)
+                }
               } else if (this.type === "dataset") {
                 this.publishDataset();
               }
@@ -214,6 +221,9 @@ export class ShareAccessComponent implements OnInit {
             onClick: () => {
               if (this.type === "workflow") {
                 this.unpublishWorkflow();
+                if (this.inWorkspace) {
+                  this.workflowActionService.setWorkflowIsPublished(0)
+                }
               } else if (this.type === "dataset") {
                 this.unpublishDataset();
               }

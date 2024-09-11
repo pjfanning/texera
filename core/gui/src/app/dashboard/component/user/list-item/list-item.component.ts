@@ -102,6 +102,7 @@ export class ListItemComponent implements OnInit, OnChanges {
           type: this.entry.type,
           id: this.entry.id,
           allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),
+          inWorkspace: false,
         },
         nzFooter: null,
         nzTitle: "Share this workflow with others",
