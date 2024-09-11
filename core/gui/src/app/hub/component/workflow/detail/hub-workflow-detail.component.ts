@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
 import { Location } from "@angular/common";
 import { HubWorkflowService } from "../../../service/workflow/hub-workflow.service";
@@ -13,6 +13,7 @@ import { HubWorkflowService } from "../../../service/workflow/hub-workflow.servi
 })
 export class HubWorkflowDetailComponent {
   wid: string | null;
+  clonedWorklowId: number | undefined;
 
   workflow = {
     name: "Example Workflow",
@@ -44,7 +45,8 @@ export class HubWorkflowDetailComponent {
   constructor(
     private route: ActivatedRoute,
     private location: Location,
-    private hubWorkflowService: HubWorkflowService
+    private hubWorkflowService: HubWorkflowService,
+    private router: Router
   ) {
     this.wid = this.route.snapshot.queryParamMap.get("wid");
   }
@@ -54,7 +56,11 @@ export class HubWorkflowDetailComponent {
   }
 
   cloneWorkflow(): void {
-    alert("Workflow " + this.wid + " is cloned to your workspace.");
-    this.hubWorkflowService.cloneWorkflow(Number(this.wid)).pipe(untilDestroyed(this)).subscribe();
+    this.hubWorkflowService.cloneWorkflow(Number(this.wid))
+      .pipe(untilDestroyed(this))
+      .subscribe(newWid => {
+        this.clonedWorklowId = newWid;
+        this.router.navigate([`/workflow/${this.clonedWorklowId}`]);
+      });
   }
 }

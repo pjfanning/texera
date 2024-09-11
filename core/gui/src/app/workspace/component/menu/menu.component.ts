@@ -61,6 +61,7 @@ export class MenuComponent implements OnInit {
   public isWorkflowModifiable: boolean = false;
   public workflowId?: number;
 
+  @Input() public writeAccess: boolean = false;
   @Input() public pid?: number = undefined;
   @Input() public autoSaveState: string = "";
   @Input() public currentWorkflowName: string = ""; // reset workflowName
@@ -156,7 +157,7 @@ export class MenuComponent implements OnInit {
     this.modalService.create({
       nzContent: ShareAccessComponent,
       nzData: {
-        writeAccess: true,
+        writeAccess: this.writeAccess,
         type: "workflow",
         id: this.workflowId,
         allOwners: await firstValueFrom(this.workflowPersistService.retrieveOwners()),

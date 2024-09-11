@@ -22,7 +22,7 @@ export class HubWorkflowService {
     return this.http.get<HubWorkflow[]>(`${this.BASE_URL}/list`);
   }
 
-  public cloneWorkflow(wid: number): Observable<void> {
-    return this.http.post<void>(`${WORKFLOW_BASE_URL}/clone/${wid}`, null);
+  public cloneWorkflow(wid: number): Observable<number> {
+    return this.http.post<number>(`${WORKFLOW_BASE_URL}/clone/${wid}`, null);
   }
 }
