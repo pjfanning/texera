@@ -67,7 +67,7 @@ class NetworkReceiver(Runnable, Stoppable):
             if payload_type == "Data":
                 payload = DataFrame(table)
             elif payload_type == "State":
-                payload = MarkerFrame(State().from_table(table))
+                payload = MarkerFrame(State(table))
             elif payload_type == "StartOfUpstream":
                 payload = MarkerFrame(StartOfUpstream())
             elif payload_type == "EndOfUpstream":

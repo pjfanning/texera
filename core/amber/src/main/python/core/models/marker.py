@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 from pyarrow import Table
 from pandas import DataFrame
+from typing import Optional
+from .schema import Schema, AttributeType
+from .schema.attribute_type import FROM_PYOBJECT_MAPPING
+
 
 @dataclass
 class Marker:
@@ -16,28 +20,29 @@ class EndOfUpstream(Marker):
 
 @dataclass
 class State(Marker):
-    def __init__(self):
-        self.data = {}
+    def __init__(self, table: Optional[Table] = None):
+        if table is None:
+            self.data = {}
+            self.schema = Schema()
+        else:
+            self.data = table.to_pandas().iloc[0].to_dict()
+            self.schema = table.schema
 
-    def add(self, key: str, value: any) -> None:
+    def add(self, key: str, value: any, value_type: Optional[AttributeType] = None) -> None:
         self.data[key] = value
+        if value_type is not None:
+            self.schema.add(key, value_type)
+        else:
+            self.schema.add(key, FROM_PYOBJECT_MAPPING[type(value)])
 
     def get(self, key: str) -> any:
         return self.data[key]
 
-    def from_dict(self, dictionary: dict) -> "State":
-        for key, value in dictionary.items():
-            self.add(key, value)
-        return self
-
     def to_table(self) -> Table:
-        return Table.from_pandas(df=DataFrame([self.data]))
+        return Table.from_pandas(df=DataFrame([self.data]), schema=self.schema.as_arrow_schema(),)
 
-    def from_table(self, table: Table) -> "State":
-        return self.from_dict(table.to_pandas().iloc[0].to_dict())
-
-    def __setitem__(self, key: str, value: any):
-        self.add(key, value)
+    def __setitem__(self, key: str, value: any, value_type: AttributeType) -> None:
+        self.add(key, value, value_type)
 
     def __getitem__(self, key: str) -> any:
         return self.get(key)
