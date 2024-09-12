@@ -12,8 +12,8 @@ final case class EndOfUpstream() extends Marker
 final case class State() extends Marker {
   val list: mutable.Map[String, (AttributeType, Any)] = mutable.HashMap()
 
-  def add(attributeName: String, attributeType: AttributeType, field: Any): Unit = {
-    list.put(attributeName, (attributeType, field))
+  def add(key: String, value: Any, valueType: AttributeType): Unit = {
+    list.put(key, (valueType, value))
   }
 
   def get(key: String): Any = list(key)._2
@@ -36,7 +36,7 @@ final case class State() extends Marker {
 
   def fromTuple(tuple: Tuple): State = {
     tuple.getSchema.getAttributes.foreach { attribute =>
-      add(attribute.getName, attribute.getType, tuple.getField(attribute.getName))
+      add(attribute.getName, tuple.getField(attribute.getName), attribute.getType)
     }
     this
   }

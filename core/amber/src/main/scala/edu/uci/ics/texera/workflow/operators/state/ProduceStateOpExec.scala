@@ -10,7 +10,7 @@ class ProduceStateOpExec extends OperatorExecutor {
 
   override def onStartProduceState(port: Int): Option[State] = {
     val state = State()
-    state.add("i", AttributeType.INTEGER, 1)
+    state.add("i", 1, AttributeType.INTEGER)
     Some(state)
   }
 
