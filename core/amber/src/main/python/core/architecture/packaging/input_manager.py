@@ -105,8 +105,6 @@ class InputManager:
                     ].get_schema(),
                 )
 
-
-
         elif isinstance(payload, MarkerFrame):
             if isinstance(payload.frame, State):
                 yield payload.frame
