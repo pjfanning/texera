@@ -414,6 +414,9 @@ class WorkflowResource extends LazyLogging {
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
     val user = sessionUser.getUser
+    if (workflow.getIsPublished == null) {
+      workflow.setIsPublished(0.toByte)
+    }
     if (workflow.getWid != null) {
       throw new BadRequestException("Cannot create a new workflow with a provided id.")
     } else {
