@@ -17,9 +17,7 @@ import org.jooq.types.UInteger;
 @SuppressWarnings({ "all", "unchecked", "rawtypes" })
 public class Workflow implements IWorkflow {
 
-//    private static final long serialVersionUID = -380738907;
     private static final long serialVersionUID = 171585219;
-
 
     private String    name;
     private String    description;
