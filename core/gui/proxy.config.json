@@ -1,11 +1,14 @@
 {
-  "/api": {
-    "target": "http://localhost:8080",
-    "secure": false,
-    "changeOrigin": false
-  },
   "/api/texera": {
     "target": "http://localhost:9090",
+    "secure": false,
+    "changeOrigin": false,
+    "pathRewrite": {
+      "^/api/texera": "/api/texera"
+    }
+  },
+  "/api": {
+    "target": "http://localhost:8080",
     "secure": false,
     "changeOrigin": false
   },

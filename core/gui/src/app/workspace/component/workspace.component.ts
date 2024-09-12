@@ -46,7 +46,7 @@ export class WorkspaceComponent implements AfterViewInit, OnInit, OnDestroy {
     private userService: UserService,
     // list additional services in constructor so they are initialized even if no one use them directly
     private workflowCompilingService: WorkflowCompilingService,
-    private operatorReuseCacheStatus: OperatorReuseCacheStatusService,
+    // private operatorReuseCacheStatus: OperatorReuseCacheStatusService,
     private workflowConsoleService: WorkflowConsoleService,
     private undoRedoService: UndoRedoService,
     private workflowCacheService: WorkflowCacheService,
