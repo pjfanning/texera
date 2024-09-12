@@ -22,14 +22,14 @@ services:
     restart: always
     environment:
       MONGO_INITDB_DATABASE: texera_storage
-    command: mongod --storageEngine=wiredTiger --batchSize=1000
+    command: mongod --storageEngine=wiredTiger
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db  # Named volume for MongoDB data, you may modify this if you want to persist the data volumes outside the containers
 
   texera_service:
-    image: texera/texera:usersys-1.0
+    image: texera/texera:usersys
     container_name: texera_service
     restart: always
     depends_on:
