@@ -22,7 +22,19 @@ import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 
-const routes: Routes = [];
+const routes: Routes = [
+  {
+    path: "",
+    component: WorkspaceComponent,
+    canActivate: [AuthGuardService],
+  },
+  {
+    path: "dashboard/user/workflow/:id",
+    component: WorkspaceComponent,
+    canActivate: [AuthGuardService],
+  },
+];
+
 if (environment.userSystemEnabled) {
   routes.push({
     path: "dashboard",
@@ -56,91 +68,91 @@ if (environment.userSystemEnabled) {
         ],
       },
       {
-        path: "user-project",
-        component: UserProjectComponent,
-      },
-      {
-        path: "user-project/:pid",
-        component: UserProjectSectionComponent,
-      },
-      {
-        path: "workspace/:id",
-        component: WorkspaceComponent,
+        path: "user",
         canActivate: [AuthGuardService],
+        children: [
+          {
+            path: "project",
+            component: UserProjectComponent,
+          },
+          {
+            path: "project/:pid",
+            component: UserProjectSectionComponent,
+          },
+          {
+            path: "workspace/:id",
+            component: WorkspaceComponent,
+          },
+          {
+            path: "workflow",
+            component: UserWorkflowComponent,
+          },
+          {
+            path: "dataset",
+            component: UserDatasetComponent,
+          },
+          {
+            path: "dataset/:did",
+            component: UserDatasetExplorerComponent,
+          },
+          {
+            path: "dataset/create",
+            component: UserDatasetExplorerComponent,
+          },
+          {
+            path: "quota",
+            component: UserQuotaComponent,
+          },
+          {
+            path: "search",
+            component: SearchComponent,
+          },
+          {
+            path: "discussion",
+            component: FlarumComponent,
+          },
+        ],
       },
       {
-        path: "workflow",
-        component: UserWorkflowComponent,
-      },
-      {
-        path: "dataset",
-        component: UserDatasetComponent,
-      },
-      // the below two URLs route to the same Component. The component will render the page accordingly
-      {
-        path: "dataset/:did",
-        component: UserDatasetExplorerComponent,
-      },
-      {
-        path: "dataset/create",
-        component: UserDatasetExplorerComponent,
-      },
-      {
-        path: "user-quota",
-        component: UserQuotaComponent,
-      },
-      {
-        path: "search",
-        component: SearchComponent,
-      },
-      {
-        path: "discussion",
-        component: FlarumComponent,
-      },
-      {
-        path: "admin/user",
-        component: AdminUserComponent,
+        path: "admin",
         canActivate: [AdminGuardService],
-      },
-      {
-        path: "admin/user",
-        component: AdminUserComponent,
-        canActivate: [AdminGuardService],
-      },
-      {
-        path: "admin/gmail",
-        component: AdminGmailComponent,
-        canActivate: [AdminGuardService],
-      },
-      {
-        path: "admin/execution",
-        component: AdminExecutionComponent,
-        canActivate: [AdminGuardService],
+        children: [
+          {
+            path: "user",
+            component: AdminUserComponent,
+          },
+          {
+            path: "gmail",
+            component: AdminGmailComponent,
+          },
+          {
+            path: "execution",
+            component: AdminExecutionComponent,
+          },
+        ],
       },
     ],
   });
 
   routes.push({
-    path: "home",
-    component: HomeComponent,
-  });
-
-  routes.push({
     path: "",
-    redirectTo: "dashboard/workflow",
+    redirectTo: "dashboard/user/workflow",
     pathMatch: "full",
   });
 } else {
   routes.push({
     path: "",
     component: WorkspaceComponent,
+    canActivate: [AuthGuardService],
   });
 }
+
 // redirect all other paths to index.
 routes.push({
   path: "**",
-  redirectTo: "dashboard/workflow",
+  redirectTo: "dashboard/user/workflow",
 });
+
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule],
