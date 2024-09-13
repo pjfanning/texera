@@ -40,11 +40,11 @@ class KubernetesClientService(
   private val appsApi: AppsV1Api = KubernetesClientConfig.createKubernetesAppsClient()
 
   /**
-    * Retrieves the list of all pods in the specified namespace.
-    *
-    * @param namespace        The namespace of the pods to be returned.
-    * @return A list of V1Pod objects.
-    */
+   * Retrieves the list of all pods in the specified namespace.
+   *
+   * @param namespace        The namespace of the pods to be returned.
+   * @return A list of V1Pod objects.
+   */
   def getPodsList(namespace: String): List[V1Pod] = {
     coreApi.listNamespacedPod(namespace).execute().getItems.asScala.toList
   }
