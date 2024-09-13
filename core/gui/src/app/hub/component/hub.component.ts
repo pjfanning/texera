@@ -5,6 +5,6 @@ import { Component, Input } from "@angular/core";
   templateUrl: "hub.component.html",
   styleUrls: ["hub.component.scss"],
 })
-export class HubComponent{
+export class HubComponent {
   @Input() isLogin: boolean = false;
 }
