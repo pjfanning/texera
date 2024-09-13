@@ -22,7 +22,7 @@ export class HomeComponent implements OnInit {
     private route: ActivatedRoute,
     private googleAuthService: GoogleAuthService,
     private notificationService: NotificationService,
-    private router: Router,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
