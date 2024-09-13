@@ -18,7 +18,15 @@
           height="50"
           src="../../../../assets/logos/logo.png" />
       </li>
-      <ng-container *ngComponentOutlet="currentComponent;"></ng-container>
+
+      <li
+        nz-submenu
+        nzTitle="Community"
+        nzIcon="usergroup-add"
+        nzOpen="true">
+        <texera-hub [isLogin]="isLogin"></texera-hub>
+      </li>
+
       <li
         *ngIf="isLogin"
         nz-submenu

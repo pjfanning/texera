@@ -13,6 +13,7 @@ texera-filters-instructions {
 
 texera-search-bar {
   flex: 1;
+  max-width: calc(100% - 20px);
 }
 
 texera-google-login {
@@ -22,11 +23,6 @@ texera-google-login {
 
 texera-user-icon {
   padding: 0 24px;
-}
-
-texera-google-login {
-  float: right;
-  padding: 5px 0;
 }
 
 texera-user-icon {

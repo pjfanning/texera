@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from "@angular/core";
 import { WorkflowPersistService } from "../../common/service/workflow-persist/workflow-persist.service";
 import { UserService } from "../../common/service/user/user.service";
 import { UntilDestroy, untilDestroyed } from "@ngneat/until-destroy";
@@ -15,13 +15,14 @@ import { HubComponent } from "../../hub/component/hub.component";
 })
 @UntilDestroy()
 export class DashboardComponent implements OnInit {
+  @ViewChild(HubComponent) hubComponent!: HubComponent;
+
   isAdmin: boolean = this.userService.isAdmin();
   isLogin = this.userService.isLogin();
   displayForum: boolean = true;
   displayNavbar: boolean = true;
   isCollpased: boolean = false;
   routesWithoutNavbar: string[] = ["/workspace", "/home"];
-  currentComponent = HubComponent;
 
   constructor(
     private userService: UserService,
