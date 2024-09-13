@@ -89,6 +89,7 @@ object WorkflowResource {
       content: String,
       creationTime: Timestamp,
       lastModifiedTime: Timestamp,
+      isPublished: Byte,
       readonly: Boolean
   )
 
@@ -265,6 +266,7 @@ class WorkflowResource extends LazyLogging {
         workflow.getContent,
         workflow.getCreationTime,
         workflow.getLastModifiedTime,
+        workflow.getIsPublished,
         !WorkflowAccessResource.hasWriteAccess(wid, user.getUid)
       )
     } else {
@@ -349,7 +351,8 @@ class WorkflowResource extends LazyLogging {
               null,
               workflow.getContent,
               null,
-              null
+              null,
+              0.toByte
             ),
             sessionUser
           )
@@ -389,6 +392,7 @@ class WorkflowResource extends LazyLogging {
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
     val user = sessionUser.getUser
+    // Todo: may change here
     if (workflow.getWid != null) {
       throw new BadRequestException("Cannot create a new workflow with a provided id.")
     } else {
