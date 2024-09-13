@@ -134,7 +134,7 @@
       *ngIf="displayNavbar"
       id="nav">
       <texera-search-bar></texera-search-bar>
-      <texera-user-icon></texera-user-icon>
+      <texera-user-icon *ngIf="isLogin"></texera-user-icon>
     </div>
     <nz-content>
       <router-outlet></router-outlet>

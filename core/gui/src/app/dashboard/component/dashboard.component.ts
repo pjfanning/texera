@@ -20,7 +20,7 @@ export class DashboardComponent implements OnInit {
   displayForum: boolean = true;
   displayNavbar: boolean = true;
   isCollpased: boolean = false;
-  routesWithoutNavbar: string[] = ["/workspace"];
+  routesWithoutNavbar: string[] = ["/workspace", "/home"];
   currentComponent = HubComponent;
 
   constructor(
@@ -41,7 +41,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit(): void {
     this.isCollpased = false;
-    if (!document.cookie.includes("flarum_remember")) {
+    if (!document.cookie.includes("flarum_remember") && this.isLogin) {
       this.flarumService
         .auth()
         .pipe(untilDestroyed(this))

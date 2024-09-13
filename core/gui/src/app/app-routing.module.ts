@@ -22,18 +22,7 @@ import { HubWorkflowResultComponent } from "./hub/component/workflow/result/hub-
 import { HubWorkflowComponent } from "./hub/component/workflow/hub-workflow.component";
 import { HubWorkflowDetailComponent } from "./hub/component/workflow/detail/hub-workflow-detail.component";
 
-const routes: Routes = [
-  {
-    path: "",
-    component: WorkspaceComponent,
-    canActivate: [AuthGuardService],
-  },
-  {
-    path: "dashboard/user/workflow/:id",
-    component: WorkspaceComponent,
-    canActivate: [AuthGuardService],
-  },
-];
+const routes: Routes = [];
 
 if (environment.userSystemEnabled) {
   routes.push({
@@ -143,7 +132,6 @@ if (environment.userSystemEnabled) {
   routes.push({
     path: "",
     component: WorkspaceComponent,
-    canActivate: [AuthGuardService],
   });
 }
 

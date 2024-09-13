@@ -72,7 +72,7 @@ export class LocalLoginComponent {
         untilDestroyed(this)
       )
       .subscribe(() =>
-        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/workflow")
+        this.router.navigateByUrl(this.route.snapshot.queryParams["returnUrl"] || "/dashboard/user/workflow")
       );
   }
 
