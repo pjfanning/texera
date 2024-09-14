@@ -17,7 +17,7 @@ import javax.ws.rs.core.MediaType
 case class WorkflowCompilationResponse(
     physicalPlan: Option[PhysicalPlan],
     operatorInputSchemas: Map[String, List[Option[List[Attribute]]]],
-    operatorErrors: Map[String, WorkflowFatalError]
+    operatorErrors: List[WorkflowFatalError]
 )
 
 @Consumes(Array(MediaType.APPLICATION_JSON))
@@ -54,9 +54,7 @@ class WorkflowCompilationResource extends LazyLogging {
           }
           (opId, attributes)
       },
-      operatorErrors = workflowCompilationResult.operatorIdToError.map {
-        case (operatorIdentity, error) => (operatorIdentity.id, error)
-      }
+      operatorErrors = workflowCompilationResult.operatorErrors
     )
 
     println(s"OperatorInputSchemas: ${Utils.objectMapper.writeValueAsString(response.operatorInputSchemas)}")

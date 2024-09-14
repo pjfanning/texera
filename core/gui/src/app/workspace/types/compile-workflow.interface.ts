@@ -1,5 +1,6 @@
 import {PhysicalPlan} from "../../common/type/physical-plan";
 import {OperatorInputSchema} from "../service/workflow-compilation/workflow-compiling.service";
+import {WorkflowFatalError} from "./workflow-websocket.interface";
 
 export enum CompilationState {
   Uninitialized = "Uninitialized",
@@ -15,8 +16,6 @@ export type CompilationStateInfo = Readonly<
     physicalPlan: PhysicalPlan;
     // a map from opId to InputSchema, used for autocompletion of schema
     operatorInputSchemaMap: Readonly<Record<string, OperatorInputSchema>>;
-    // a map from opId to static error description, used for static error display
-    operatorStaticErrorMap: Readonly<Record<string, string>>;
    }
   | {
     state: CompilationState.Uninitialized
@@ -24,6 +23,6 @@ export type CompilationStateInfo = Readonly<
   | {
   state: CompilationState.Failed
   operatorInputSchemaMap: Readonly<Record<string, OperatorInputSchema>>;
-  operatorStaticErrorMap: Readonly<Record<string, string>>;
+  operatorErrors: Readonly<Array<WorkflowFatalError>>;
 }
 >

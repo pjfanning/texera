@@ -12,6 +12,7 @@ import {catchError, debounceTime, mergeMap} from "rxjs/operators";
 import {DynamicSchemaService} from "../dynamic-schema/dynamic-schema.service";
 import {PhysicalPlan} from "../../../common/type/physical-plan";
 import {CompilationState, CompilationStateInfo} from "../../types/compile-workflow.interface";
+import {WorkflowFatalError} from "../../types/workflow-websocket.interface";
 
 // endpoint for schema propagation
 export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
@@ -34,7 +35,7 @@ export const WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS = 500;
   providedIn: "root",
 })
 export class WorkflowCompilingService {
-  private currentCompilationState: CompilationStateInfo = {
+  private currentCompilationStateInfo: CompilationStateInfo = {
     state: CompilationState.Uninitialized
   }
   private compilationStateInfoChangedStream = new Subject<void>()
@@ -63,37 +64,48 @@ export class WorkflowCompilingService {
       )
       .subscribe(response => {
         if (response.physicalPlan) {
-          this.currentCompilationState = {
+          this.currentCompilationStateInfo = {
             state: CompilationState.Succeeded,
             physicalPlan: response.physicalPlan,
             operatorInputSchemaMap: response.operatorInputSchemas,
-            operatorStaticErrorMap: response.operatorErrors,
           }
         } else {
-          this.currentCompilationState = {
+          this.currentCompilationStateInfo = {
             state: CompilationState.Failed,
             operatorInputSchemaMap: response.operatorInputSchemas,
-            operatorStaticErrorMap: response.operatorErrors,
+            operatorErrors: response.operatorErrors,
           }
         }
-        console.log(this.currentCompilationState);
+        console.log(this.currentCompilationStateInfo);
         this.compilationStateInfoChangedStream.next();
-        this._applySchemaPropagationResult(this.currentCompilationState.operatorInputSchemaMap)
+        this._applySchemaPropagationResult(this.currentCompilationStateInfo.operatorInputSchemaMap)
       });
   }
 
+  public getWorkflowCompilationState(): CompilationState {
+    return this.currentCompilationStateInfo.state;
+  }
+
+  public getWorkflowCompilationErrors(): Readonly<Array<WorkflowFatalError>> {
+    if (this.currentCompilationStateInfo.state === CompilationState.Succeeded
+      || this.currentCompilationStateInfo.state === CompilationState.Uninitialized) {
+      return [];
+    }
+    return this.currentCompilationStateInfo.operatorErrors;
+  }
+
   public getOperatorInputSchemaMap(): Readonly<Record<string, OperatorInputSchema>> {
-    if (this.currentCompilationState.state == CompilationState.Uninitialized) {
+    if (this.currentCompilationStateInfo.state == CompilationState.Uninitialized) {
       return {}
     }
-    return this.currentCompilationState.operatorInputSchemaMap;
+    return this.currentCompilationStateInfo.operatorInputSchemaMap;
   }
 
   public getOperatorInputSchema(operatorID: string): OperatorInputSchema | undefined {
-    if (this.currentCompilationState.state == CompilationState.Uninitialized) {
+    if (this.currentCompilationStateInfo.state == CompilationState.Uninitialized) {
       return undefined
     }
-    return this.currentCompilationState.operatorInputSchemaMap[operatorID];
+    return this.currentCompilationStateInfo.operatorInputSchemaMap[operatorID];
   }
 
   public getPortInputSchema(operatorID: string, portIndex: number): PortInputSchema | undefined {
@@ -373,9 +385,7 @@ export interface WorkflowCompilationResponse
     operatorInputSchemas: {
       [key: string]: OperatorInputSchema;
     };
-    operatorErrors: {
-      [key: string]: string;
-    }
+    operatorErrors: Array<WorkflowFatalError>
   }> {}
 
 /**
