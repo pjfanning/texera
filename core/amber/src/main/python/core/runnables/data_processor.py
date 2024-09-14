@@ -41,22 +41,19 @@ class DataProcessor(Runnable, Stoppable):
         try:
             executor = self._context.executor_manager.executor
             port = self._context.tuple_processing_manager.get_input_port()
-            with replace_print(
-                    self._context.worker_id,
-                    self._context.console_message_manager.print_buf,
-            ):
-                if isinstance(marker, StartOfUpstream):
-                    self._set_output_state(executor.produce_state_on_start(port))
-                elif isinstance(marker, State):
-                    self._set_output_state(executor.process_state(marker, port))
-                elif isinstance(marker, EndOfUpstream):
-                    output_iterator = executor.on_finish(port)
-                    for output in output_iterator:
-                        # output could be a None, a TupleLike, or a TableLike.
-                        for output_tuple in all_output_to_tuple(output):
-                            self._set_output_tuple(output_tuple)
-                            self._switch_context()
-                    finished_current.set()
+
+            if isinstance(marker, StartOfUpstream):
+                self._set_output_state(executor.produce_state_on_start(port))
+            elif isinstance(marker, State):
+                self._set_output_state(executor.process_state(marker, port))
+            elif isinstance(marker, EndOfUpstream):
+                print("here!!")
+                output_iterator = executor.on_finish(port)
+                for output in output_iterator:
+                    # output could be a None, a TupleLike, or a TableLike.
+                    for output_tuple in all_output_to_tuple(output):
+                        self._set_output_tuple(output_tuple)
+                        self._switch_context()
 
 
         except Exception as err:
@@ -79,6 +76,7 @@ class DataProcessor(Runnable, Stoppable):
                 if isinstance(tuple_, Tuple):
                     output_iterator = executor.process_tuple(tuple_, port)
                 else:
+                    print("here2!!", tuple_)
                     self._set_output_state(executor.produce_state_on_finish(port))
                     output_iterator = executor.on_finish(port)
                 with replace_print(

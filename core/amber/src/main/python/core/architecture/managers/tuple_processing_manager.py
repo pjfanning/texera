@@ -16,16 +16,16 @@ class TupleProcessingManager:
         self.context_switch_condition: Condition = Condition()
         self.finished_current: Event = Event()
 
+    def get_input_marker(self) -> Optional[State]:
+        ret, self.current_input_marker = self.current_input_marker, None
+        return ret
+
     def get_output_tuple(self) -> Optional[Tuple]:
         ret, self.current_output_tuple = self.current_output_tuple, None
         return ret
 
     def get_output_state(self) -> Optional[State]:
         ret, self.current_output_state = self.current_output_state, None
-        return ret
-
-    def get_input_marker(self) -> Optional[State]:
-        ret, self.current_input_marker = self.current_input_marker, None
         return ret
 
     def get_input_port(self) -> int:
