@@ -47,10 +47,6 @@ class WorkflowCompiler(
     val opIdToError = mutable.Map[OperatorIdentity, WorkflowFatalError]()
 
     var logicalPlan: LogicalPlan = LogicalPlan(logicalPlanPojo)
-    logicalPlan = SinkInjectionTransformer.transform(
-      logicalPlanPojo.opsToViewResult,
-      logicalPlan
-    )
 
     // step1: come up with the physical plan and do the schema propagation
     // from logical plan to physical plan
@@ -73,6 +69,10 @@ class WorkflowCompiler(
       .toMap
 
     // step2: propagate schema to get any static errors
+    logicalPlan = SinkInjectionTransformer.transform(
+      logicalPlanPojo.opsToViewResult,
+      logicalPlan
+    )
     try {
       logicalPlan.propagateWorkflowSchema(context, Some(errorList))
     } catch {

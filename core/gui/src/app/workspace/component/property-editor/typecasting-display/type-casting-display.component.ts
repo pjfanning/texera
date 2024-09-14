@@ -64,7 +64,7 @@ export class TypeCastingDisplayComponent implements OnInit, OnChanges {
 
   private registerInputSchemaChangeHandler() {
     this.workflowCompilingService
-      .getOperatorInputSchemaChangedStream()
+      .getCompilationStateInfoChangedStream()
       .pipe(untilDestroyed(this))
       .subscribe(_ => {
         this.rerender();

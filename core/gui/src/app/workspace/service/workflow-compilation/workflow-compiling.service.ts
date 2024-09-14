@@ -1,16 +1,17 @@
-import { HttpClient } from "@angular/common/http";
-import { Injectable } from "@angular/core";
-import { isEqual } from "lodash-es";
-import { EMPTY, merge, Observable, Subject } from "rxjs";
-import { CustomJSONSchema7 } from "src/app/workspace/types/custom-json-schema.interface";
-import { environment } from "../../../../environments/environment";
-import { AppSettings } from "../../../common/app-setting";
-import { OperatorSchema } from "../../types/operator-schema.interface";
-import { ExecuteWorkflowService } from "../execute-workflow/execute-workflow.service";
-import { DEFAULT_WORKFLOW, WorkflowActionService } from "../workflow-graph/model/workflow-action.service";
-import { catchError, debounceTime, filter, mergeMap } from "rxjs/operators";
-import { DynamicSchemaService } from "../dynamic-schema/dynamic-schema.service";
+import {HttpClient} from "@angular/common/http";
+import {Injectable} from "@angular/core";
+import {isEqual} from "lodash-es";
+import {EMPTY, merge, Observable, Subject} from "rxjs";
+import {CustomJSONSchema7} from "src/app/workspace/types/custom-json-schema.interface";
+import {environment} from "../../../../environments/environment";
+import {AppSettings} from "../../../common/app-setting";
+import {OperatorSchema} from "../../types/operator-schema.interface";
+import {ExecuteWorkflowService} from "../execute-workflow/execute-workflow.service";
+import {DEFAULT_WORKFLOW, WorkflowActionService} from "../workflow-graph/model/workflow-action.service";
+import {catchError, debounceTime, mergeMap} from "rxjs/operators";
+import {DynamicSchemaService} from "../dynamic-schema/dynamic-schema.service";
 import {PhysicalPlan} from "../../../common/type/physical-plan";
+import {CompilationState, CompilationStateInfo} from "../../types/compile-workflow.interface";
 
 // endpoint for schema propagation
 export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
@@ -18,22 +19,25 @@ export const WORKFLOW_COMPILATION_ENDPOINT = "compilation";
 export const WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS = 500;
 
 /**
- * Schema Propagation Service provides autocomplete functionality for attribute property of operators.
- * When user creates and connects operators in workflow, the backend can propagate the schema information,
- * so that an operator knows its input attributes (column names).
+ * Workflow Compiling Service provides mainly 3 functionalities:
+ * 1. autocomplete attribute property of operators (previously done by the SchemaPropagationService)
+ * 2. receive static errors (previously done by sending EditingTimeCompilationRequest and saving in the ExecutionStateInfo)
+ * 3. manage PhysicalPlan (TODO: send the physical plan to the standalone WorkflowExecutingService once we have it)
  *
- * The input box for the attribute can be changed to be a drop-down menu to select the available attributes.
+ * When user creates and connects operators in workflow, the WorkflowCompilingService's api will be triggered, which,
+ * propagate the schemas, compiles the user's workflow to get the physical plan and static errors(if any).
  *
- * By contract, property name `attribute` and `attributes` indicate the field is a column of the operator's input,
+ * Specifically for schema autocomplete, by contract, property name `attribute` and `attributes` indicate the field is a column of the operator's input,
  *  and schema propagation can provide autocomplete for the column names.
  */
 @Injectable({
   providedIn: "root",
 })
 export class WorkflowCompilingService {
-  private operatorInputSchemaMap: Readonly<Record<string, OperatorInputSchema>> = {};
-
-  private operatorInputSchemaChangedStream = new Subject<void>();
+  private currentCompilationState: CompilationStateInfo = {
+    state: CompilationState.Uninitialized
+  }
+  private compilationStateInfoChangedStream = new Subject<void>()
 
   constructor(
     private httpClient: HttpClient,
@@ -58,18 +62,37 @@ export class WorkflowCompilingService {
         mergeMap(() => this.invokeWorkflowCompilationAPI()),
       )
       .subscribe(response => {
-        this.operatorInputSchemaMap = response.operatorInputSchemas;
-        this.operatorInputSchemaChangedStream.next();
-        this._applySchemaPropagationResult(this.operatorInputSchemaMap);
+        if (response.physicalPlan) {
+          this.currentCompilationState = {
+            state: CompilationState.Succeeded,
+            physicalPlan: response.physicalPlan,
+            operatorInputSchemaMap: response.operatorInputSchemas,
+            operatorStaticErrorMap: response.operatorErrors,
+          }
+        } else {
+          this.currentCompilationState = {
+            state: CompilationState.Failed,
+            operatorInputSchemaMap: response.operatorInputSchemas,
+            operatorStaticErrorMap: response.operatorErrors,
+          }
+        }
+        this.compilationStateInfoChangedStream.next();
+        this._applySchemaPropagationResult(this.currentCompilationState.operatorInputSchemaMap)
       });
   }
 
   public getOperatorInputSchemaMap(): Readonly<Record<string, OperatorInputSchema>> {
-    return this.operatorInputSchemaMap;
+    if (this.currentCompilationState.state == CompilationState.Uninitialized) {
+      return {}
+    }
+    return this.currentCompilationState.operatorInputSchemaMap;
   }
 
   public getOperatorInputSchema(operatorID: string): OperatorInputSchema | undefined {
-    return this.operatorInputSchemaMap[operatorID];
+    if (this.currentCompilationState.state == CompilationState.Uninitialized) {
+      return undefined
+    }
+    return this.currentCompilationState.operatorInputSchemaMap[operatorID];
   }
 
   public getPortInputSchema(operatorID: string, portIndex: number): PortInputSchema | undefined {
@@ -309,8 +332,8 @@ export class WorkflowCompilingService {
     };
   }
 
-  public getOperatorInputSchemaChangedStream(): Observable<void> {
-    return this.operatorInputSchemaChangedStream.asObservable();
+  public getCompilationStateInfoChangedStream(): Observable<void> {
+    return this.compilationStateInfoChangedStream.asObservable();
   }
 }
 
@@ -345,7 +368,7 @@ export type PortInputSchema = ReadonlyArray<SchemaAttribute>;
  */
 export interface WorkflowCompilationResponse
   extends Readonly<{
-    physicalPlan: PhysicalPlan | null;
+    physicalPlan?: PhysicalPlan;
     operatorInputSchemas: {
       [key: string]: OperatorInputSchema;
     };

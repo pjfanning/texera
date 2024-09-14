@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import edu.uci.ics.amber.engine.common.virtualidentity.WorkflowIdentity
 import edu.uci.ics.texera.Utils
 import edu.uci.ics.texera.web.model.websocket.request.LogicalPlanPojo
+import edu.uci.ics.texera.web.workflowruntimestate.WorkflowFatalError
 import edu.uci.ics.texera.workflow.common.WorkflowContext
 import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute
 import edu.uci.ics.texera.workflow.common.workflow.{PhysicalPlan, WorkflowCompiler}
@@ -16,7 +17,7 @@ import javax.ws.rs.core.MediaType
 case class WorkflowCompilationResponse(
     physicalPlan: Option[PhysicalPlan],
     operatorInputSchemas: Map[String, List[Option[List[Attribute]]]],
-    operatorErrors: Map[String, String]
+    operatorErrors: Map[String, WorkflowFatalError]
 )
 
 @Consumes(Array(MediaType.APPLICATION_JSON))
@@ -54,7 +55,7 @@ class WorkflowCompilationResource extends LazyLogging {
           (opId, attributes)
       },
       operatorErrors = workflowCompilationResult.operatorIdToError.map {
-        case (operatorIdentity, error) => (operatorIdentity.id, error.toString)
+        case (operatorIdentity, error) => (operatorIdentity.id, error)
       }
     )
   }

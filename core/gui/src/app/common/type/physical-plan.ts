@@ -7,7 +7,7 @@ export interface PhysicalOp {
   workflowId: WorkflowIdentity;
   executionId: ExecutionIdentity;
   parallelizable: boolean;
-  partitionRequirement: Array<PartitionInfoUnion | null>;
+  // partitionRequirement: Array<PartitionInfoUnion | null>;
   isOneToManyOp: boolean;
   suggestedWorkerNum: number | null;
 }
