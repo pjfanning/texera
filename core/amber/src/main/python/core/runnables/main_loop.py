@@ -294,7 +294,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
         if self.context.tuple_processing_manager.current_input_iter is None:
             return
-        # here the self.context.processing_manager.current_input_tuple_iter
+        # here the self.context.processing_manager.current_input_iter
         # could be modified during iteration, thus we are using the while :=
         # way to iterate through the iterator, instead of the for-each-loop
         # syntax sugar.
