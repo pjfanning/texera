@@ -380,6 +380,28 @@ class WorkflowResource extends LazyLogging {
     resultWorkflows.toList
   }
 
+  @POST
+  @Consumes(Array(MediaType.APPLICATION_JSON))
+  @Produces(Array(MediaType.APPLICATION_JSON))
+  @Path("/clone/{wid}")
+  def cloneWorkflow(@PathParam("wid") wid: UInteger, @Auth sessionUser: SessionUser): UInteger = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    val newWorkflow: DashboardWorkflow = createWorkflow(
+      new Workflow(
+        workflow.getName + "_clone",
+        workflow.getDescription,
+        null,
+        workflow.getContent,
+        null,
+        null,
+        0.toByte
+      ),
+      sessionUser
+    )
+    //TODO: copy the environment as well
+    newWorkflow.workflow.getWid
+  }
+
   /**
     * This method creates and insert a new workflow to database
     *
@@ -392,7 +414,6 @@ class WorkflowResource extends LazyLogging {
   @Path("/create")
   def createWorkflow(workflow: Workflow, @Auth sessionUser: SessionUser): DashboardWorkflow = {
     val user = sessionUser.getUser
-    // Todo: may change here
     if (workflow.getWid != null) {
       throw new BadRequestException("Cannot create a new workflow with a provided id.")
     } else {
@@ -484,5 +505,35 @@ class WorkflowResource extends LazyLogging {
       userWorkflow.setDescription(description)
       workflowDao.update(userWorkflow)
     }
+  }
+
+  @PUT
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/public/{wid}")
+  def makePublic(@PathParam("wid") wid: UInteger, @Auth user: SessionUser): Unit = {
+    println(wid + " is public now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(1.toByte)
+    workflowDao.update(workflow)
+  }
+
+  @PUT
+  @RolesAllowed(Array("REGULAR", "ADMIN"))
+  @Path("/private/{wid}")
+  def makePrivate(@PathParam("wid") wid: UInteger): Unit = {
+    println(wid + " is private now")
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    workflow.setIsPublished(0.toByte)
+    workflowDao.update(workflow)
+  }
+
+  @GET
+  @Path("/type/{wid}")
+  def getWorkflowType(@PathParam("wid") wid: UInteger): String = {
+    val workflow: Workflow = workflowDao.fetchOneByWid(wid)
+    if (workflow.getIsPublished() == 1.toByte)
+      "Public"
+    else
+      "Private"
   }
 }
