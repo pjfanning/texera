@@ -2,7 +2,7 @@ from inspect import Traceback
 from typing import NamedTuple
 
 from .internal_queue import InternalQueue
-from .internal_marker import EndOfAll, InternalMarker, SenderChange, InputExhausted
+from .internal_marker import EndOfAll, InternalMarker, SenderChange
 from .tuple import Tuple, TupleLike, ArrowTableTupleProvider
 from .table import Table, TableLike
 from .batch import Batch, BatchLike
@@ -30,7 +30,6 @@ __all__ = [
     "EndOfAll",
     "InternalMarker",
     "SenderChange",
-    "InputExhausted",
     "Tuple",
     "TupleLike",
     "ArrowTableTupleProvider",

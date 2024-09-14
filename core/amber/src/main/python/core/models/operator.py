@@ -7,7 +7,7 @@ import pandas
 
 from deprecated import deprecated
 
-from . import InputExhausted, Table, TableLike, Tuple, TupleLike, Batch, BatchLike
+from . import Table, TableLike, Tuple, TupleLike, Batch, BatchLike
 from .marker import State
 from .table import all_output_to_tuple
 
@@ -244,7 +244,7 @@ class TupleOperator(Operator):
 
     @abstractmethod
     def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
+        self, tuple_: Tuple, input_: int
     ) -> Iterator[Optional[TupleLike]]:
         """
         Process an input Tuple from the given link.
@@ -257,9 +257,3 @@ class TupleOperator(Operator):
             time, or None.
         """
         yield
-
-    def on_finish(self, port: int) -> Iterator[Optional[TupleLike]]:
-        """
-        For backward compatibility.
-        """
-        yield from self.process_tuple(InputExhausted(), input_=port)

@@ -1,6 +1,6 @@
 from typing import Iterator, Optional, Union, Dict, List
 
-from core.models import Tuple, ArrowTableTupleProvider, Schema, InputExhausted
+from core.models import Tuple, ArrowTableTupleProvider, Schema
 from core.models.internal_marker import EndOfAll, InternalMarker, SenderChange, StartOfAny
 from core.models.marker import EndOfUpstream, State, StartOfUpstream
 from core.models.payload import DataFrame, DataPayload, MarkerFrame
@@ -79,10 +79,10 @@ class InputManager:
 
     def process_data_payload(
         self, from_: ActorVirtualIdentity, payload: DataPayload
-    ) -> Iterator[Union[Tuple, InputExhausted, InternalMarker]]:
+    ) -> Iterator[Union[Tuple, EndOfUpstream, InternalMarker]]:
         # special case used to yield for source op
         if from_ == InputManager.SOURCE_STARTER:
-            yield InputExhausted()
+            yield EndOfUpstream()
             yield EndOfAll()
             return
         current_channel_id = None
@@ -126,7 +126,7 @@ class InputManager:
                 )
 
                 if port_completed:
-                    yield InputExhausted()
+                    yield EndOfUpstream()
 
                 all_ports_completed = all(
                     map(lambda port: port.is_completed(), self._ports.values())

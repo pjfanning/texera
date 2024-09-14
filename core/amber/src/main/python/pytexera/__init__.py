@@ -13,7 +13,6 @@ from .udf.udf_operator import (
 
 __all__ = [
     "State",
-    "InputExhausted",
     "Tuple",
     "TupleLike",
     "UDFOperator",

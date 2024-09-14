@@ -1,5 +1,4 @@
 from core.models import (
-    InputExhausted,
     Tuple,
     TupleLike,
     TupleOperator,
@@ -15,7 +14,6 @@ from core.models import (
 )
 
 __all__ = [
-    "InputExhausted",
     "Tuple",
     "TupleLike",
     "TupleOperator",

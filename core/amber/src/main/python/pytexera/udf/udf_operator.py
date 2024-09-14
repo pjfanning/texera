@@ -2,7 +2,6 @@ from abc import abstractmethod
 from typing import Iterator, Optional, Union
 from deprecated import deprecated
 
-from core.models import InputExhausted
 from pyamber import *
 
 
@@ -17,7 +16,7 @@ class UDFOperator(TupleOperator):
 
     @abstractmethod
     def process_tuple(
-        self, tuple_: Union[Tuple, InputExhausted], input_: int
+        self, tuple_: Tuple, input_: int
     ) -> Iterator[Optional[TupleLike]]:
         """
         Process an input Tuple from the given link.

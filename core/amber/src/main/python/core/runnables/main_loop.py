@@ -13,7 +13,6 @@ from core.architecture.packaging.input_manager import EndOfAll
 from core.architecture.rpc.async_rpc_client import AsyncRPCClient
 from core.architecture.rpc.async_rpc_server import AsyncRPCServer
 from core.models import (
-    InputExhausted,
     InternalQueue,
     SenderChange,
     Tuple,
@@ -201,7 +200,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         """
         self.process_control_payload(control_element.tag, control_element.payload)
 
-    def _process_tuple(self, tuple_: Union[Tuple, InputExhausted]) -> None:
+    def _process_tuple(self, tuple_: Tuple) -> None:
         self.context.tuple_processing_manager.current_input_tuple = tuple_
         self.process_input()
         self._check_and_process_control()
@@ -216,8 +215,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self.process_input()
         self._switch_context()
 
-    def _process_input_exhausted(self, input_exhausted: InputExhausted):
-        self._process_tuple(input_exhausted)
+    def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream):
+        self.context.tuple_processing_manager.current_input_marker = end_of_upstream
+        self._switch_context()
         if self.context.tuple_processing_manager.current_input_port_id is not None:
             control_command = set_one_of(
                 ControlCommandV2,
@@ -310,8 +310,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     self._process_tuple,
                     StartOfUpstream,
                     self._process_start_of_upstream,
-                    InputExhausted,
-                    self._process_input_exhausted,
+                    EndOfUpstream,
+                    self._process_end_of_upstream,
                     SenderChange,
                     self._process_sender_change_marker,
                     StartOfAny,
