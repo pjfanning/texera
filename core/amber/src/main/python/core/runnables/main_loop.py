@@ -151,8 +151,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def process_input(self) -> None:
         """
-        Process the current input tuple with the current input link. Send all result
-        Tuples to downstream workers.
+        Process the current input tuple or state with the current input link. Send all result
+        Tuples or State to downstream workers.
 
         This is being invoked for each Tuple/Marker that are unpacked from the
         DataElement.
