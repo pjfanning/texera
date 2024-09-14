@@ -175,13 +175,13 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     for (to, batch) in self.context.output_manager.emit_marker(output_data):
                         self._output_queue.put(DataElement(tag=to, payload=batch))
 
-    def process_tuple_with_udf(self) -> Iterator[Optional[Tuple]]:
+    def process_tuple_with_udf(self) -> Union[Iterator[Optional[Tuple]], State]:
         """
         Process the Tuple/InputExhausted with the current link.
 
         This is a wrapper to invoke processing of the executor.
 
-        :return: Iterator[Tuple], iterator of result Tuple(s).
+        :return: Iterator[Tuple], iterator of result Tuple(s) or State.
         """
         finished_current = self.context.tuple_processing_manager.finished_current
         finished_current.clear()
@@ -286,13 +286,13 @@ class MainLoop(StoppableQueueBlockingRunnable):
         if self.context.state_manager.confirm_state(WorkerState.READY):
             self.context.state_manager.transit_to(WorkerState.RUNNING)
 
-        self.context.tuple_processing_manager.current_input_tuple_iter = (
+        self.context.tuple_processing_manager.current_input_iter = (
             self.context.input_manager.process_data_payload(
                 data_element.tag, data_element.payload
             )
         )
 
-        if self.context.tuple_processing_manager.current_input_tuple_iter is None:
+        if self.context.tuple_processing_manager.current_input_iter is None:
             return
         # here the self.context.processing_manager.current_input_tuple_iter
         # could be modified during iteration, thus we are using the while :=
@@ -300,7 +300,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         # syntax sugar.
         while (
             element := next(
-                self.context.tuple_processing_manager.current_input_tuple_iter, None
+                self.context.tuple_processing_manager.current_input_iter, None
             )
         ) is not None:
             try:

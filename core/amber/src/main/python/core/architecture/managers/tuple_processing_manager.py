@@ -11,7 +11,7 @@ class TupleProcessingManager:
         self.current_input_marker: Optional[Marker] = None
         self.current_input_tuple: Optional[Union[Tuple, InputExhausted]] = None
         self.current_input_port_id: Optional[PortIdentity] = None
-        self.current_input_tuple_iter: Optional[
+        self.current_input_iter: Optional[
             Iterator[Union[Tuple, InputExhausted]]
         ] = None
         self.current_input_state: Optional[State] = None

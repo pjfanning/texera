@@ -57,7 +57,7 @@ class Operator(ABC):
         """
         pass
 
-    def produce_state(self, port: int) -> State:
+    def produce_state_on_finish(self, port: int) -> State:
         """
         Produce a State after the input port is exhausted.
 

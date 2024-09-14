@@ -7,7 +7,7 @@ from loguru import logger
 
 from core.architecture.managers import Context
 from core.models import Tuple, ExceptionInfo, State
-from core.models.marker import Marker
+from core.models.marker import Marker, StartOfUpstream
 from core.models.table import all_output_to_tuple
 from core.util import Stoppable
 from core.util.console_message.replace_print import replace_print
@@ -42,7 +42,8 @@ class DataProcessor(Runnable, Stoppable):
         try:
             executor = self._context.executor_manager.executor
             port = self._context.tuple_processing_manager.get_input_port()
-            self._set_output_state(executor.produce_state_on_start(port))
+            if isinstance(marker, StartOfUpstream):
+                self._set_output_state(executor.produce_state_on_start(port))
 
         except Exception as err:
             logger.exception(err)
@@ -86,7 +87,7 @@ class DataProcessor(Runnable, Stoppable):
                 if isinstance(tuple_, Tuple):
                     output_iterator = executor.process_tuple(tuple_, port)
                 else:
-                    self._set_output_state(executor.produce_state(port))
+                    self._set_output_state(executor.produce_state_on_finish(port))
                     output_iterator = executor.on_finish(port)
                 with replace_print(
                         self._context.worker_id,
