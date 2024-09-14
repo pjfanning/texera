@@ -41,7 +41,7 @@ class WorkflowCompilationResource extends LazyLogging {
     val workflowCompilationResult =
       new WorkflowCompiler(context).compile(logicalPlanPojo)
     // return the result
-    WorkflowCompilationResponse(
+    val response = WorkflowCompilationResponse(
       physicalPlan = workflowCompilationResult.physicalPlan,
       operatorInputSchemas = workflowCompilationResult.operatorIdToInputSchemas.map {
         case (operatorIdentity, schemas) =>
@@ -58,5 +58,17 @@ class WorkflowCompilationResource extends LazyLogging {
         case (operatorIdentity, error) => (operatorIdentity.id, error)
       }
     )
+
+    println(s"OperatorInputSchemas: ${Utils.objectMapper.writeValueAsString(response.operatorInputSchemas)}")
+    println(s"OperatorErrors: ${Utils.objectMapper.writeValueAsString(response.operatorErrors)}")
+    try {
+      val physicalPlanStr = Utils.objectMapper.writeValueAsString(response.physicalPlan)
+      println(s"PhysicalPlan: $physicalPlanStr")
+    } catch {
+      case e: Exception =>
+        logger.error("Error serializing PhysicalPlan", e) // This will log the error message and the stack trace
+    }
+
+    response
   }
 }

@@ -227,6 +227,7 @@ case class PhysicalOp(
     outputPorts.forall(port => port._2._2.isEmpty)
   }
 
+  @JsonIgnore
   def isPythonBased: Boolean = {
     opExecInitInfo match {
       case opExecInfo: OpExecInitInfoWithCode =>

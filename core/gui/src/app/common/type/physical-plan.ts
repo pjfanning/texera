@@ -1,5 +1,4 @@
 import {ExecutionIdentity, PhysicalOpIdentity, WorkflowIdentity} from "./proto/edu/uci/ics/amber/engine/common/virtualidentity";
-import {PartitionInfoUnion} from "./partition-info";
 import {PhysicalLink} from "./proto/edu/uci/ics/amber/engine/common/workflow";
 
 export interface PhysicalOp {
@@ -7,9 +6,10 @@ export interface PhysicalOp {
   workflowId: WorkflowIdentity;
   executionId: ExecutionIdentity;
   parallelizable: boolean;
-  // partitionRequirement: Array<PartitionInfoUnion | null>;
   isOneToManyOp: boolean;
   suggestedWorkerNum: number | null;
+  sourceOperator: boolean;
+  sinkOperator: boolean;
 }
 
 export interface PhysicalPlan {

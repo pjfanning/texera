@@ -76,6 +76,7 @@ export class WorkflowCompilingService {
             operatorStaticErrorMap: response.operatorErrors,
           }
         }
+        console.log(this.currentCompilationState);
         this.compilationStateInfoChangedStream.next();
         this._applySchemaPropagationResult(this.currentCompilationState.operatorInputSchemaMap)
       });
