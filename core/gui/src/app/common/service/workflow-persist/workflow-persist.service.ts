@@ -182,7 +182,6 @@ export class WorkflowPersistService {
     }
   }
 
-
   public setWorkflowPersistFlag(flag: boolean): void {
     this.workflowPersistFlag = flag;
   }

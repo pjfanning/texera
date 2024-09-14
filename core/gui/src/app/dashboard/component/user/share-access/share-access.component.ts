@@ -46,7 +46,8 @@ export class ShareAccessComponent implements OnInit {
     private modalService: NzModalService,
     private workflowPersistService: WorkflowPersistService,
     private datasetService: DatasetService,
-    private workflowActionService: WorkflowActionService  ) {
+    private workflowActionService: WorkflowActionService
+  ) {
     this.validateForm = this.formBuilder.group({
       email: [null, Validators.email],
       accessLevel: ["READ"],
