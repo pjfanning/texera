@@ -26,7 +26,7 @@ class State(Marker):
             self.schema = Schema()
         else:
             self.data = table.to_pandas().iloc[0].to_dict()
-            self.schema = table.schema
+            self.schema = Schema(table.schema)
 
     def add(self, key: str, value: any, value_type: Optional[AttributeType] = None) -> None:
         self.data[key] = value

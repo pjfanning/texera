@@ -2,27 +2,26 @@ import typing
 from collections import OrderedDict
 from itertools import chain
 from loguru import logger
+from pyarrow import Table
 from typing import Iterable, Iterator
 
-from pyarrow import Table
-
 from core.architecture.packaging.input_manager import WorkerPort, Channel
-from core.architecture.sendsemantics.hash_based_shuffle_partitioner import (
-    HashBasedShufflePartitioner,
-)
-from core.architecture.sendsemantics.range_based_shuffle_partitioner import (
-    RangeBasedShufflePartitioner,
-)
-from core.architecture.sendsemantics.one_to_one_partitioner import OneToOnePartitioner
-from core.architecture.sendsemantics.partitioner import Partitioner
-from core.architecture.sendsemantics.round_robin_partitioner import (
-    RoundRobinPartitioner,
-)
 from core.architecture.sendsemantics.broad_cast_partitioner import (
     BroadcastPartitioner,
 )
-from core.models import Tuple, Schema, MarkerFrame, State
-from core.models.marker import EndOfUpstream, Marker
+from core.architecture.sendsemantics.hash_based_shuffle_partitioner import (
+    HashBasedShufflePartitioner,
+)
+from core.architecture.sendsemantics.one_to_one_partitioner import OneToOnePartitioner
+from core.architecture.sendsemantics.partitioner import Partitioner
+from core.architecture.sendsemantics.range_based_shuffle_partitioner import (
+    RangeBasedShufflePartitioner,
+)
+from core.architecture.sendsemantics.round_robin_partitioner import (
+    RoundRobinPartitioner,
+)
+from core.models import Tuple, Schema, MarkerFrame
+from core.models.marker import Marker
 from core.models.payload import DataPayload, DataFrame
 from core.util import get_one_of
 from proto.edu.uci.ics.amber.engine.architecture.sendsemantics import (

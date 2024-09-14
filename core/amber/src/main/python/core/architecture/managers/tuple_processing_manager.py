@@ -11,10 +11,7 @@ class TupleProcessingManager:
         self.current_input_marker: Optional[Marker] = None
         self.current_input_tuple: Optional[Union[Tuple, InputExhausted]] = None
         self.current_input_port_id: Optional[PortIdentity] = None
-        self.current_input_iter: Optional[
-            Iterator[Union[Tuple, InputExhausted]]
-        ] = None
-        self.current_input_state: Optional[State] = None
+        self.current_input_iter: Optional[Iterator[Union[Tuple, InputExhausted]]] = None
         self.current_output_state: Optional[State] = None
         self.current_output_tuple: Optional[Tuple] = None
         self.context_switch_condition: Condition = Condition()
@@ -22,10 +19,6 @@ class TupleProcessingManager:
 
     def get_output_tuple(self) -> Optional[Tuple]:
         ret, self.current_output_tuple = self.current_output_tuple, None
-        return ret
-
-    def get_input_state(self) -> Optional[State]:
-        ret, self.current_input_state = self.current_input_state, None
         return ret
 
     def get_output_state(self) -> Optional[State]:

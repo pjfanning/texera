@@ -31,11 +31,10 @@ class DataProcessor(Runnable, Stoppable):
         self._switch_context()
         while self._running.is_set():
             marker = self._context.tuple_processing_manager.get_input_marker()
-            print("DataProcessor running:", marker)
             if marker is not None:
                 self.process_marker(marker)
-            self.process_state()
-            self.process_tuple()
+            else:
+                self.process_tuple()
             self._switch_context()
 
     def process_marker(self, marker: Marker) -> None:
@@ -44,6 +43,8 @@ class DataProcessor(Runnable, Stoppable):
             port = self._context.tuple_processing_manager.get_input_port()
             if isinstance(marker, StartOfUpstream):
                 self._set_output_state(executor.produce_state_on_start(port))
+            elif isinstance(marker, State):
+                self._set_output_state(executor.process_state(marker, port))
 
         except Exception as err:
             logger.exception(err)
@@ -53,28 +54,6 @@ class DataProcessor(Runnable, Stoppable):
 
         finally:
             self._switch_context()
-
-    def process_state(self) -> None:
-        state = self._context.tuple_processing_manager.get_input_state()
-        if state is not None:
-            try:
-                executor = self._context.executor_manager.executor
-                port = self._context.tuple_processing_manager.get_input_port()
-
-                with replace_print(
-                        self._context.worker_id,
-                        self._context.console_message_manager.print_buf,
-                ):
-                    self._set_output_state(executor.process_state(state, port))
-
-            except Exception as err:
-                logger.exception(err)
-                exc_info = sys.exc_info()
-                self._context.exception_manager.set_exception_info(exc_info)
-                self._report_exception(exc_info)
-
-            finally:
-                self._switch_context()
 
     def process_tuple(self) -> None:
         finished_current = self._context.tuple_processing_manager.finished_current
