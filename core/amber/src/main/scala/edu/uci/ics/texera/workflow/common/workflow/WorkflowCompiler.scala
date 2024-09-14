@@ -52,36 +52,12 @@ class WorkflowCompiler(
       logicalPlan
     )
 
-    logicalPlan.propagateWorkflowSchema(context, Some(errorList))
-    // map compilation errors with op id
-    if (errorList.nonEmpty) {
-      errorList.foreach {
-        case (opId, err) =>
-          logger.error("error occurred in logical plan compilation", err)
-          opIdToError += (opId -> WorkflowFatalError(
-            COMPILATION_ERROR,
-            Timestamp(Instant.now),
-            err.toString,
-            getStackTraceWithAllCauses(err),
-            opId.id
-          ))
-      }
-    }
-
-    if (opIdToError.nonEmpty) {
-      // encounter errors during compile pojo to logical plan,
-      //   so directly return None as physical plan, schema map and non-empty error map
-      return WorkflowCompilationResult(
-        physicalPlan = None,
-        operatorIdToInputSchemas = Map.empty,
-        operatorIdToError = opIdToError.toMap
-      )
-    }
+    // step1: come up with the physical plan and do the schema propagation
     // from logical plan to physical plan
-    val physicalPlan = PhysicalPlan(context, logicalPlan)
+    var physicalPlan: Option[PhysicalPlan] = Some(PhysicalPlan(context, logicalPlan))
 
     // Extract physical input schemas, excluding internal ports
-    val physicalInputSchemas = physicalPlan.operators.map { physicalOp =>
+    val physicalInputSchemas = physicalPlan.get.operators.map { physicalOp =>
       physicalOp.id -> physicalOp.inputPorts.values
         .filterNot(_._1.id.internal)
         .map {
@@ -96,7 +72,33 @@ class WorkflowCompiler(
       .mapValues(_.flatMap(_._2).toList.sortBy(_._1.id).map(_._2))
       .toMap
 
-    WorkflowCompilationResult(Some(physicalPlan), opIdToInputSchemas, Map.empty)
+    // step2: propagate schema to get any static errors
+    try {
+      logicalPlan.propagateWorkflowSchema(context, Some(errorList))
+    } catch {
+      case ex: Throwable =>
+        errorList.append((new OperatorIdentity(""), ex))
+    } finally {
+      if (errorList.nonEmpty) {
+        errorList.foreach {
+          case (opId, err) =>
+            logger.error(s"Error occurred in logical plan compilation for opId: $opId", err)
+            opIdToError += (opId -> WorkflowFatalError(
+              COMPILATION_ERROR,
+              Timestamp(Instant.now),
+              err.getMessage,
+              getStackTraceWithAllCauses(err),
+              opId.id
+            ))
+        }
+      }
+    }
+    if (opIdToError.nonEmpty) {
+      // encounter errors during static error check,
+      //   so directly return None as physical plan, schema map and non-empty error map
+      physicalPlan = None
+    }
+    WorkflowCompilationResult(physicalPlan, opIdToInputSchemas, Map.empty)
   }
 
   /**

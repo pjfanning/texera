@@ -10,7 +10,6 @@ import edu.uci.ics.texera.web.model.websocket.request.python.{
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
   Array(
-    new Type(value = classOf[EditingTimeCompilationRequest]),
     new Type(value = classOf[HeartBeatRequest]),
     new Type(value = classOf[ModifyLogicRequest]),
     new Type(value = classOf[ResultExportRequest]),

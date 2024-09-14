@@ -18,7 +18,6 @@ import { isDefined } from "../../common/util/predicate";
 import { NotificationService } from "src/app/common/service/notification/notification.service";
 import { Version } from "../../../environments/version";
 import { WorkflowConsoleService } from "../service/workflow-console/workflow-console.service";
-import { OperatorReuseCacheStatusService } from "../service/workflow-status/operator-reuse-cache-status.service";
 import { CodeEditorService } from "../service/code-editor/code-editor.service";
 import {WorkflowCompilingService} from "../service/workflow-compilation/workflow-compiling.service";
 import { WorkflowMetadata } from "src/app/dashboard/type/workflow-metadata.interface";

@@ -56,7 +56,6 @@ export class WorkflowCompilingService {
       .pipe(debounceTime(WORKFLOW_COMPILATION_DEBOUNCE_TIME_MS))
       .pipe(
         mergeMap(() => this.invokeWorkflowCompilationAPI()),
-        filter(response => response.physicalPlan != undefined)
       )
       .subscribe(response => {
         this.operatorInputSchemaMap = response.operatorInputSchemas;
