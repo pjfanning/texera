@@ -7,6 +7,7 @@ from loguru import logger
 
 from core.architecture.managers import Context
 from core.models import Tuple, ExceptionInfo, State
+from core.models.marker import Marker
 from core.models.table import all_output_to_tuple
 from core.util import Stoppable
 from core.util.console_message.replace_print import replace_print
@@ -29,8 +30,27 @@ class DataProcessor(Runnable, Stoppable):
         self._running.set()
         self._switch_context()
         while self._running.is_set():
+            marker = self._context.tuple_processing_manager.get_input_marker()
+            print("DataProcessor running:", marker)
+            if marker is not None:
+                self.process_marker(marker)
             self.process_state()
             self.process_tuple()
+            self._switch_context()
+
+    def process_marker(self, marker: Marker) -> None:
+        try:
+            executor = self._context.executor_manager.executor
+            port = self._context.tuple_processing_manager.get_input_port()
+            self._set_output_state(executor.produce_state_on_start(port))
+
+        except Exception as err:
+            logger.exception(err)
+            exc_info = sys.exc_info()
+            self._context.exception_manager.set_exception_info(exc_info)
+            self._report_exception(exc_info)
+
+        finally:
             self._switch_context()
 
     def process_state(self) -> None:
@@ -38,13 +58,7 @@ class DataProcessor(Runnable, Stoppable):
         if state is not None:
             try:
                 executor = self._context.executor_manager.executor
-                port_id = self._context.tuple_processing_manager.current_input_port_id
-                port: int
-                if port_id is None:
-                    # no upstream, special case for source executor.
-                    port = 0
-                else:
-                    port = port_id.id
+                port = self._context.tuple_processing_manager.get_input_port()
 
                 with replace_print(
                         self._context.worker_id,
@@ -67,13 +81,7 @@ class DataProcessor(Runnable, Stoppable):
             try:
                 executor = self._context.executor_manager.executor
                 tuple_ = self._context.tuple_processing_manager.current_input_tuple
-                port_id = self._context.tuple_processing_manager.current_input_port_id
-                port: int
-                if port_id is None:
-                    # no upstream, special case for source executor.
-                    port = 0
-                else:
-                    port = port_id.id
+                port = self._context.tuple_processing_manager.get_input_port()
 
                 if isinstance(tuple_, Tuple):
                     output_iterator = executor.process_tuple(tuple_, port)

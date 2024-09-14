@@ -19,14 +19,19 @@ class SenderChange(InternalMarker):
     channel_id: ChannelIdentity
 
 @dataclass
-class StartOfAll(InternalMarker):
+class StartOfAny(InternalMarker):
     pass
 
 @dataclass
 class EndOfAll(InternalMarker):
     pass
 
+@dataclass
+class InputInitialized(InternalMarker):
+    pass
 
 @dataclass
 class InputExhausted(InternalMarker):
     pass
+
+

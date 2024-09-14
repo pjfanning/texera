@@ -18,7 +18,7 @@ from core.models import (
     SenderChange,
     Tuple,
 )
-from core.models.internal_marker import StartOfAll
+from core.models.internal_marker import StartOfAny, InputInitialized
 from core.models.internal_queue import DataElement, ControlElement
 from core.models.marker import State, EndOfUpstream, StartOfUpstream
 from core.runnables.data_processor import DataProcessor
@@ -211,6 +211,11 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self._check_and_process_control()
         self._switch_context()
 
+    def _process_input_initialized(self, input_initialized: InputInitialized):
+        self.context.tuple_processing_manager.current_input_marker = input_initialized
+        self.process_input_tuple()
+        self._switch_context()
+
     def _process_input_exhausted(self, input_exhausted: InputExhausted):
         self._process_tuple(input_exhausted)
         if self.context.tuple_processing_manager.current_input_port_id is not None:
@@ -237,12 +242,12 @@ class MainLoop(StoppableQueueBlockingRunnable):
         )
 
 
-    def _process_start_of_all_marker(self, _: StartOfAll) -> None:
+    def _process_start_of_any_marker(self, _: StartOfAny) -> None:
         """
-        Upon receipt of an StartOfAllMarker, which indicates the start of all input links,
+        Upon receipt of an StartOfAllMarker, which indicates the start of any input links,
         send the StartOfUpstream to all downstream workers.
 
-        :param _: StartOfAll Internal Marker
+        :param _: StartOfAny Internal Marker
         """
         for to, batch in self.context.output_manager.emit_marker(StartOfUpstream()):
             self._output_queue.put(DataElement(tag=to, payload=batch))
@@ -303,12 +308,14 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     element,
                     Tuple,
                     self._process_tuple,
+                    InputInitialized,
+                    self._process_input_initialized,
                     InputExhausted,
                     self._process_input_exhausted,
                     SenderChange,
                     self._process_sender_change_marker,
-                    StartOfAll,
-                    self._process_start_of_all_marker,
+                    StartOfAny,
+                    self._process_start_of_any_marker,
                     EndOfAll,
                     self._process_end_of_all_marker,
                     State,
