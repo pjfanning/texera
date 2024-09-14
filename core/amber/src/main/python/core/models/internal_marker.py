@@ -27,10 +27,6 @@ class EndOfAll(InternalMarker):
     pass
 
 @dataclass
-class InputInitialized(InternalMarker):
-    pass
-
-@dataclass
 class InputExhausted(InternalMarker):
     pass
 

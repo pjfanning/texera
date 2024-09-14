@@ -18,7 +18,7 @@ from core.models import (
     SenderChange,
     Tuple,
 )
-from core.models.internal_marker import StartOfAny, InputInitialized
+from core.models.internal_marker import StartOfAny
 from core.models.internal_queue import DataElement, ControlElement
 from core.models.marker import State, EndOfUpstream, StartOfUpstream
 from core.runnables.data_processor import DataProcessor
@@ -149,7 +149,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             end_time - self.context.statistics_manager.worker_start_time
         )
 
-    def process_input_tuple(self) -> None:
+    def process_input(self) -> None:
         """
         Process the current input tuple with the current input link. Send all result
         Tuples to downstream workers.
@@ -203,7 +203,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_tuple(self, tuple_: Union[Tuple, InputExhausted]) -> None:
         self.context.tuple_processing_manager.current_input_tuple = tuple_
-        self.process_input_tuple()
+        self.process_input()
         self._check_and_process_control()
 
     def _process_state(self, state_: State):
@@ -211,9 +211,9 @@ class MainLoop(StoppableQueueBlockingRunnable):
         self._check_and_process_control()
         self._switch_context()
 
-    def _process_input_initialized(self, input_initialized: InputInitialized):
-        self.context.tuple_processing_manager.current_input_marker = input_initialized
-        self.process_input_tuple()
+    def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream):
+        self.context.tuple_processing_manager.current_input_marker = start_of_upstream
+        self.process_input()
         self._switch_context()
 
     def _process_input_exhausted(self, input_exhausted: InputExhausted):
@@ -308,8 +308,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
                     element,
                     Tuple,
                     self._process_tuple,
-                    InputInitialized,
-                    self._process_input_initialized,
+                    StartOfUpstream,
+                    self._process_start_of_upstream,
                     InputExhausted,
                     self._process_input_exhausted,
                     SenderChange,
