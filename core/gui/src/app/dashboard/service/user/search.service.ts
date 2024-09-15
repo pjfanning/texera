@@ -25,7 +25,8 @@ export class SearchService {
     start: number,
     count: number,
     type: "workflow" | "project" | "file" | "dataset" | null,
-    orderBy: SortMethod
+    orderBy: SortMethod,
+    includePublic: boolean = false
   ): Observable<SearchResult> {
     return this.http.get<SearchResult>(
       `${AppSettings.getApiEndpoint()}/${DASHBOARD_SEARCH_URL}?${toQueryStrings(
@@ -35,7 +36,7 @@ export class SearchService {
         count,
         type,
         orderBy
-      )}`
+      )}&includePublic=${includePublic}`
     );
   }
 

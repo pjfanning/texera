@@ -80,7 +80,7 @@ export class SearchComponent implements AfterViewInit {
           start,
           count,
           this.selectedType,
-          this.sortMethod
+          this.sortMethod,
         )
       );
 
