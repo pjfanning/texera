@@ -217,6 +217,8 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream):
         self.context.tuple_processing_manager.current_input_marker = end_of_upstream
+        self._check_and_process_control()
+        self._switch_context()
         if self.context.tuple_processing_manager.current_input_port_id is not None:
             control_command = set_one_of(
                 ControlCommandV2,

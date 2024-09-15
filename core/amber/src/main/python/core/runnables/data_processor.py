@@ -48,6 +48,7 @@ class DataProcessor(Runnable, Stoppable):
                 self._set_output_state(executor.process_state(marker, port))
             elif isinstance(marker, EndOfUpstream):
                 print("here!!")
+                self._set_output_state(executor.produce_state_on_finish(port))
                 output_iterator = executor.on_finish(port)
                 for output in output_iterator:
                     # output could be a None, a TupleLike, or a TableLike.
@@ -72,13 +73,12 @@ class DataProcessor(Runnable, Stoppable):
                 executor = self._context.executor_manager.executor
                 tuple_ = self._context.tuple_processing_manager.current_input_tuple
                 port = self._context.tuple_processing_manager.get_input_port()
-
+                print("here1!!", tuple_)
                 if isinstance(tuple_, Tuple):
                     output_iterator = executor.process_tuple(tuple_, port)
                 else:
                     print("here2!!", tuple_)
-                    self._set_output_state(executor.produce_state_on_finish(port))
-                    output_iterator = executor.on_finish(port)
+
                 with replace_print(
                         self._context.worker_id,
                         self._context.console_message_manager.print_buf,
