@@ -121,13 +121,13 @@ class DataProcessor(
     */
   private[this] def processEndOfUpstream(portId: Int): Unit = {
     try {
-      outputManager.outputIterator.setTupleOutput(
-        executor.onFinishMultiPort(portId)
-      )
       val outputState = executor.onFinishProduceState(portId)
       if (outputState.isDefined) {
         outputManager.emitMarker(outputState.get)
       }
+      outputManager.outputIterator.setTupleOutput(
+        executor.onFinishMultiPort(portId)
+      )
     } catch safely {
       case e =>
         // forward input tuple to the user and pause DP thread

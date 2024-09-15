@@ -96,7 +96,6 @@ class InputManager:
         ):
             self._current_channel_id = current_channel_id
             yield SenderChange(current_channel_id)
-
         if isinstance(payload, DataFrame):
             for field_accessor in ArrowTableTupleProvider(payload.frame):
                 yield Tuple(
@@ -109,12 +108,12 @@ class InputManager:
         elif isinstance(payload, MarkerFrame):
             if isinstance(payload.frame, State):
                 yield payload.frame
-            if isinstance(payload.frame, StartOfUpstream):
+            if isinstance(payload.frame, StartOfUpstream): #StartOfInputChannel()
                 if not self.started:
-                    yield StartOfAny()
+                    yield StartOfAny() #StartOfOutputPorts()
                 self.started = True
-                yield StartOfUpstream()
-            if isinstance(payload.frame, EndOfUpstream):
+                yield StartOfUpstream() #StartOfInputChannel()
+            if isinstance(payload.frame, EndOfUpstream): #EndOfInputChannel()
                 channel = self._channels[self._current_channel_id]
                 channel.complete()
                 port_id = channel.port_id
@@ -126,14 +125,14 @@ class InputManager:
                 )
 
                 if port_completed:
-                    yield EndOfUpstream()
+                    yield EndOfUpstream() #EndOfInputPort()
 
                 all_ports_completed = all(
                     map(lambda port: port.is_completed(), self._ports.values())
                 )
 
                 if all_ports_completed:
-                    yield EndOfAll()
+                    yield EndOfAll() #EndOfOutputPorts()
 
         else:
             raise NotImplementedError()

@@ -148,7 +148,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
             end_time - self.context.statistics_manager.worker_start_time
         )
 
-    def process_input(self) -> None:
+    def process_input_tuple(self) -> None:
         """
         Process the current input tuple or state with the current input link. Send all result
         Tuples or State to downstream workers.
@@ -164,17 +164,22 @@ class MainLoop(StoppableQueueBlockingRunnable):
         for output_data in self.process_tuple_with_udf():
             self._check_and_process_control()
             if output_data is not None:
-                if isinstance(output_data, Tuple):
-                    self.context.statistics_manager.increase_output_tuple_count(
-                        PortIdentity(0)
-                    )
-                    for (to, batch) in self.context.output_manager.tuple_to_batch(output_data):
-                        self._output_queue.put(DataElement(tag=to, payload=batch))
-                elif isinstance(output_data, State):
-                    for (to, batch) in self.context.output_manager.emit_marker(output_data):
-                        self._output_queue.put(DataElement(tag=to, payload=batch))
+                self.context.statistics_manager.increase_output_tuple_count(
+                    PortIdentity(0)
+                )
+                for (to, batch) in self.context.output_manager.tuple_to_batch(output_data):
+                    self._output_queue.put(DataElement(tag=to, payload=batch))
 
-    def process_tuple_with_udf(self) -> Union[Iterator[Optional[Tuple]], State]:
+    def process_input_state(self) -> None:
+        self._switch_context()
+        output_state = self.context.marker_processing_manager.get_output_state()
+        self._switch_context()
+        if output_state is not None:
+            for (to, batch) in self.context.output_manager.emit_marker(output_state):
+                self._output_queue.put(DataElement(tag=to, payload=batch))
+
+
+    def process_tuple_with_udf(self) -> Iterator[Optional[Tuple]]:
         """
         Process the Tuple/InputExhausted with the current link.
 
@@ -189,8 +194,6 @@ class MainLoop(StoppableQueueBlockingRunnable):
             self._check_and_process_control()
             self._switch_context()
             yield self.context.tuple_processing_manager.get_output_tuple()
-            self._check_and_process_control()
-            yield self.context.tuple_processing_manager.get_output_state()
 
     def _process_control_element(self, control_element: ControlElement) -> None:
         """
@@ -202,23 +205,22 @@ class MainLoop(StoppableQueueBlockingRunnable):
 
     def _process_tuple(self, tuple_: Tuple) -> None:
         self.context.tuple_processing_manager.current_input_tuple = tuple_
-        self.process_input()
+        self.process_input_tuple()
         self._check_and_process_control()
 
     def _process_state(self, state_: State):
-        self.context.tuple_processing_manager.current_input_marker = state_
+        self.context.marker_processing_manager.current_input_marker = state_
         self._check_and_process_control()
         self._switch_context()
 
     def _process_start_of_upstream(self, start_of_upstream: StartOfUpstream):
-        self.context.tuple_processing_manager.current_input_marker = start_of_upstream
-        self.process_input()
-        self._switch_context()
+        self.context.marker_processing_manager.current_input_marker = start_of_upstream
+        self.process_input_state()
 
     def _process_end_of_upstream(self, end_of_upstream: EndOfUpstream):
-        self.context.tuple_processing_manager.current_input_marker = end_of_upstream
-        self._check_and_process_control()
-        self._switch_context()
+        self.context.marker_processing_manager.current_input_marker = end_of_upstream
+        self.process_input_state()
+        self.process_input_tuple()
         if self.context.tuple_processing_manager.current_input_port_id is not None:
             control_command = set_one_of(
                 ControlCommandV2,
@@ -287,13 +289,13 @@ class MainLoop(StoppableQueueBlockingRunnable):
         if self.context.state_manager.confirm_state(WorkerState.READY):
             self.context.state_manager.transit_to(WorkerState.RUNNING)
 
-        self.context.tuple_processing_manager.current_input_iter = (
+        self.context.tuple_processing_manager.current_input_tuple_iter = (
             self.context.input_manager.process_data_payload(
                 data_element.tag, data_element.payload
             )
         )
 
-        if self.context.tuple_processing_manager.current_input_iter is None:
+        if self.context.tuple_processing_manager.current_input_tuple_iter is None:
             return
         # here the self.context.processing_manager.current_input_iter
         # could be modified during iteration, thus we are using the while :=
@@ -301,7 +303,7 @@ class MainLoop(StoppableQueueBlockingRunnable):
         # syntax sugar.
         while (
             element := next(
-                self.context.tuple_processing_manager.current_input_iter, None
+                self.context.tuple_processing_manager.current_input_tuple_iter, None
             )
         ) is not None:
             try:
