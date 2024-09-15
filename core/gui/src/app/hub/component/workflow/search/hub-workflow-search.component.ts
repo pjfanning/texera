@@ -5,12 +5,6 @@ import { SearchResultsComponent } from "../../../../dashboard/component/user/sea
 import { FiltersComponent } from "../../../../dashboard/component/user/filters/filters.component";
 import { SortMethod } from "../../../../dashboard/type/sort-method";
 import { UserService } from "../../../../common/service/user/user.service";
-import { WorkflowPersistService } from "../../../../common/service/workflow-persist/workflow-persist.service";
-import { UserProjectService } from "../../../../dashboard/service/user/project/user-project.service";
-import { NotificationService } from "../../../../common/service/notification/notification.service";
-import { NzModalService } from "ng-zorro-antd/modal";
-import { Router } from "@angular/router";
-import { FileSaverService } from "../../../../dashboard/service/user/file/file-saver.service";
 import { SearchService } from "../../../../dashboard/service/user/search.service";
 import { isDefined } from "../../../../common/util/predicate";
 import { firstValueFrom } from "rxjs";
@@ -23,6 +17,7 @@ import { DashboardEntry, UserInfo } from "../../../../dashboard/type/dashboard-e
   styleUrls: ["hub-workflow-search.component.scss"],
 })
 export class HubWorkflowSearchComponent {
+  private isLogin = this.userService.isLogin()
   private _searchResultsComponent?: SearchResultsComponent;
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
@@ -54,7 +49,14 @@ export class HubWorkflowSearchComponent {
   constructor(
     private userService: UserService,
     private searchService: SearchService
-  ) {}
+  ) {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.isLogin = this.userService.isLogin();
+      });
+  }
 
   ngAfterViewInit() {
     this.userService
@@ -86,13 +88,15 @@ export class HubWorkflowSearchComponent {
     }
     this.searchResultsComponent.reset(async (start, count) => {
       const results = await firstValueFrom(
-        this.searchService.publicSearch(
+        this.searchService.search(
           [""],
           filterParams,
           start,
           count,
           "workflow",
-          this.sortMethod
+          this.sortMethod,
+          this.isLogin,
+          true
         )
       );
 

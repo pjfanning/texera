@@ -8,6 +8,7 @@ import { SearchResultsComponent } from "../search-results/search-results.compone
 import { SortMethod } from "../../../type/sort-method";
 import { Location } from "@angular/common";
 import { ActivatedRoute } from "@angular/router";
+import { UserService } from "../../../../common/service/user/user.service";
 
 @UntilDestroy()
 @Component({
@@ -19,6 +20,7 @@ export class SearchComponent implements AfterViewInit {
   public searchParam: string = "";
   sortMethod = SortMethod.EditTimeDesc;
   lastSortMethod: SortMethod | null = null;
+  private isLogin = this.userService.isLogin()
 
   selectedType: "project" | "workflow" | "dataset" | null = null;
   lastSelectedType: "project" | "workflow" | "dataset" | null = null;
@@ -42,8 +44,16 @@ export class SearchComponent implements AfterViewInit {
   constructor(
     private location: Location,
     private searchService: SearchService,
+    private userService: UserService,
     private activatedRoute: ActivatedRoute
-  ) {}
+  ) {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.isLogin = this.userService.isLogin();
+      });
+  }
 
   ngAfterViewInit() {
     this.activatedRoute.queryParams.pipe(untilDestroyed(this)).subscribe(params => {
@@ -81,6 +91,8 @@ export class SearchComponent implements AfterViewInit {
           count,
           this.selectedType,
           this.sortMethod,
+          this.isLogin,
+          true
         )
       );
 

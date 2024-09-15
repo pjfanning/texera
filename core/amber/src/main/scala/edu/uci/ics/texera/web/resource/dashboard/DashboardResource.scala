@@ -166,8 +166,11 @@ class DashboardResource {
 
   @GET
   @Path("/publicSearch")
-  def searchAllPublicResourceCall(@BeanParam params: SearchQueryParams): DashboardSearchResult = {
-    DashboardResource.searchAllResources(new SessionUser(new User()), params, includePublic = true)
+  def searchAllPublicResourceCall(
+      @BeanParam params: SearchQueryParams,
+      @QueryParam("includePublic") includePublic: Boolean = true
+  ): DashboardSearchResult = {
+    DashboardResource.searchAllResources(new SessionUser(new User()), params, includePublic = includePublic)
   }
 
   @GET

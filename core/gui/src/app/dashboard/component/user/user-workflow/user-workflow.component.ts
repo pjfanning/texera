@@ -60,6 +60,7 @@ import { DashboardWorkflow } from "../../../type/dashboard-workflow.interface";
 export class UserWorkflowComponent implements AfterViewInit {
   public ROUTER_WORKFLOW_BASE_URL = "/dashboard/user/workspace";
   private _searchResultsComponent?: SearchResultsComponent;
+  private isLogin = this.userService.isLogin()
   @ViewChild(SearchResultsComponent) get searchResultsComponent(): SearchResultsComponent {
     if (this._searchResultsComponent) {
       return this._searchResultsComponent;
@@ -97,7 +98,14 @@ export class UserWorkflowComponent implements AfterViewInit {
     private router: Router,
     private fileSaverService: FileSaverService,
     private searchService: SearchService
-  ) {}
+  ) {
+    this.userService
+      .userChanged()
+      .pipe(untilDestroyed(this))
+      .subscribe(() => {
+        this.isLogin = this.userService.isLogin();
+      });
+  }
 
   public multiWorkflowsOperationButtonEnabled(): boolean {
     if (this._searchResultsComponent) {
@@ -170,7 +178,9 @@ export class UserWorkflowComponent implements AfterViewInit {
           start,
           count,
           "workflow",
-          this.sortMethod
+          this.sortMethod,
+          this.isLogin,
+          false
         )
       );
 

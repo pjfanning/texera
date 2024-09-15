@@ -6,6 +6,8 @@ import { AppSettings } from "../../../common/app-setting";
 import { SearchFilterParameters, toQueryStrings } from "../../type/search-filter-parameters";
 import { SortMethod } from "../../type/sort-method";
 import { UserInfo } from "../../type/dashboard-entry";
+import { UserService } from "../../../common/service/user/user.service";
+import { untilDestroyed } from "@ngneat/until-destroy";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
 const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
@@ -14,6 +16,7 @@ const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
   providedIn: "root",
 })
 export class SearchService {
+
   constructor(private http: HttpClient) {}
 
   /**
@@ -27,19 +30,20 @@ export class SearchService {
     count: number,
     type: "workflow" | "project" | "file" | "dataset" | null,
     orderBy: SortMethod,
-    includePublic: boolean = false
+    isLogin: boolean,
+    includePublic: boolean = false,
   ): Observable<SearchResult> {
+    const url = isLogin
+      ? `${AppSettings.getApiEndpoint()}/${DASHBOARD_SEARCH_URL}`
+      : `${AppSettings.getApiEndpoint()}/${DASHBOARD_PUBLIC_SEARCH_URL}`;
+
+    const finalIncludePublic = isLogin ? includePublic : true;
+
     return this.http.get<SearchResult>(
-      `${AppSettings.getApiEndpoint()}/${DASHBOARD_SEARCH_URL}?${toQueryStrings(
-        keywords,
-        params,
-        start,
-        count,
-        type,
-        orderBy
-      )}&includePublic=${includePublic}`
+      `${url}?${toQueryStrings(keywords, params, start, count, type, orderBy)}&includePublic=${finalIncludePublic}`
     );
   }
+
 
   public publicSearch(
     keywords: string[],
@@ -48,6 +52,7 @@ export class SearchService {
     count: number,
     type: "workflow" | "project" | "file" | "dataset" | null,
     orderBy: SortMethod,
+    includePublic: boolean = true
   ): Observable<SearchResult> {
     return this.http.get<SearchResult>(
       `${AppSettings.getApiEndpoint()}/${DASHBOARD_PUBLIC_SEARCH_URL}?${toQueryStrings(
@@ -57,7 +62,7 @@ export class SearchService {
         count,
         type,
         orderBy
-      )}`
+      )}&includePublic=${includePublic}`
     );
   }
 

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, Input } from "@angular/core";
 import { Router } from "@angular/router";
 import { SearchService } from "../../../service/user/search.service";
 import { SearchFilterParameters } from "../../../type/search-filter-parameters";
@@ -16,6 +16,7 @@ import { debounceTime, switchMap } from "rxjs/operators";
   styleUrls: ["./search-bar.component.scss"],
 })
 export class SearchBarComponent {
+  @Input() isLogin!: boolean;
   public searchParam: string = "";
   public listOfResult: string[] = [];
   private searchSubject = new Subject<string>();
@@ -55,7 +56,11 @@ export class SearchBarComponent {
     if (this.searchCache.has(query)) {
       return of(this.searchCache.get(query)!);
     } else {
-      return this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc).pipe(
+      const searchObservable = this.isLogin
+        ? this.searchService.search([query], this.params, 0, 5, null, SortMethod.NameAsc, true)
+        : this.searchService.publicSearch([query], this.params, 0, 5, null, SortMethod.NameAsc);
+
+      return searchObservable.pipe(
         switchMap((result: SearchResult) => {
           const uniqueResults = Array.from(new Set(result.results.map(item => this.convertToName(item))));
           this.addToCache(query, uniqueResults);
