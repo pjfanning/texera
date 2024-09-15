@@ -8,6 +8,7 @@ import { SortMethod } from "../../type/sort-method";
 import { UserInfo } from "../../type/dashboard-entry";
 
 const DASHBOARD_SEARCH_URL = "dashboard/search";
+const DASHBOARD_PUBLIC_SEARCH_URL = "dashboard/publicSearch";
 
 @Injectable({
   providedIn: "root",
@@ -37,6 +38,26 @@ export class SearchService {
         type,
         orderBy
       )}&includePublic=${includePublic}`
+    );
+  }
+
+  public publicSearch(
+    keywords: string[],
+    params: SearchFilterParameters,
+    start: number,
+    count: number,
+    type: "workflow" | "project" | "file" | "dataset" | null,
+    orderBy: SortMethod,
+  ): Observable<SearchResult> {
+    return this.http.get<SearchResult>(
+      `${AppSettings.getApiEndpoint()}/${DASHBOARD_PUBLIC_SEARCH_URL}?${toQueryStrings(
+        keywords,
+        params,
+        start,
+        count,
+        type,
+        orderBy
+      )}`
     );
   }
 

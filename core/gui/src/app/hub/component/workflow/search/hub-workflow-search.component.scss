@@ -1,20 +1,34 @@
-.container {
-  background-color: #f4f4f4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+$section-height: 76px;
+$section-margin: 24px;
+
+.public_workflow_container {
+  width: 100%;
   height: 100%;
-}
+  display: flex;
+  flex-direction: column;
 
-.box {
-  background: #fff;
-  padding: 40px 60px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
+  .filter-section {
+    width: 100%;
+    height: $section-height;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-i {
-  color: #666;
-  font-style: normal;
+    texera-sort-button{
+      margin-left: $section-margin;
+    }
+
+    .filter {
+      margin-right: $section-margin;
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+
+  .hub-workflow-search-result {
+    width: 100%;
+    flex-grow: 1;
+  }
 }

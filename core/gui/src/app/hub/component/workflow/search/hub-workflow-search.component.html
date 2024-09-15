@@ -1,12 +1,16 @@
-<div class="container">
-  <div class="box">
-    <h1>Welcome to Texera Community Hub</h1>
-    <br />
-    <i>Access <a routerLink="/dashboard/hub/workflow/search/result">{{workflowCount}} workflows</a></i>
-    <br />
-    <i>provided by Texera and our community.</i>
-    <br />
-    <br />
-    <texera-hub-workflow-search-bar></texera-hub-workflow-search-bar>
+<div class="public_workflow_container">
+  <div class="filter-section">
+    <div class="filter">
+      <texera-sort-button (sortMethodChange)="sortMethod = $event; search()"></texera-sort-button>
+      <texera-filters #filters></texera-filters>
+    </div>
+  </div>
+
+
+    <div class="hub-workflow-search-result">
+    <texera-search-results
+      [showResourceTypes]="true"
+      [searchKeywords]="this.filters.getSearchKeywords()">
+    </texera-search-results>
   </div>
 </div>
