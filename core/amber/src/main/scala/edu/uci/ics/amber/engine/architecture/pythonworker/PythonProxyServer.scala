@@ -111,7 +111,7 @@ private class AmberProducer(
       outputPort.sendTo(to, MarkerFrame(EndOfUpstream()))
     } else if (dataHeader.payloadType == State().getClass.getSimpleName) {
       assert(root.getRowCount == 1)
-      outputPort.sendTo(to, MarkerFrame(State().fromTuple(ArrowUtils.getTexeraTuple(0, root))))
+      outputPort.sendTo(to, MarkerFrame(State(Some(ArrowUtils.getTexeraTuple(0, root)))))
     } else {
       // normal data batches
       val queue = mutable.Queue[Tuple]()

@@ -20,10 +20,11 @@ class EndOfUpstream(Marker):
 
 @dataclass
 class State(Marker):
-    def __init__(self, table: Optional[Table] = None):
+    def __init__(self, table: Optional[Table] = None, pass_to_all_downstream: bool = False):
         if table is None:
             self.data = {}
             self.schema = Schema()
+            self.add("passToAllDownstream", pass_to_all_downstream)
         else:
             self.data = table.to_pandas().iloc[0].to_dict()
             self.schema = Schema(table.schema)
